@@ -26,6 +26,22 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-}
       UPLOAD_PATH: /data/uploads
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      # Reminders and notifications (see .env.example); empty = channel off.
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_TO: ${MAIL_TO:-}
+      NTFY_URL: ${NTFY_URL:-}
+      NTFY_TOKEN: ${NTFY_TOKEN:-}
+      GOTIFY_URL: ${GOTIFY_URL:-}
+      GOTIFY_TOKEN: ${GOTIFY_TOKEN:-}
+      GOTIFY_PRIORITY: ${GOTIFY_PRIORITY:-5}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
+      SCHEDULER_INTERVAL: ${SCHEDULER_INTERVAL:-900}
     volumes:
       - logbook_data:/data
     depends_on:

@@ -6,6 +6,44 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added — Phase 4: reminders and notifications
+- **Reminders** (new *Reminders* page in the navigation): every maintenance
+  schedule and every document with an expiry date becomes a reminder,
+  grouped as overdue, due soon and upcoming. Mark done, dismiss or reopen in
+  one click; logging the work or renewing the document clears it. Add your
+  own reminders too ("Pay road tax on 1 Oct"). The home page shows what needs
+  attention.
+- **Lead times** in Settings → Reminders: how many days (and, for
+  maintenance, how many miles or km) before something counts as due. The
+  vehicle pages use the same lead times.
+- **Notifications**: reminders are sent when they come due and again if they
+  become overdue — never more — by email (SMTP), [ntfy](https://ntfy.sh),
+  [Gotify](https://gotify.net) and/or any JSON webhook. Several at once
+  arrive as one message. Choose channels and your email address in Settings,
+  and send a test from there. Optional monthly "what's due this month" digest.
+- **Calendar feed**: subscribe to your reminders from any calendar app
+  (iCal / webcal), with an alert at each lead time. The secret link can be
+  replaced or turned off.
+- **Scheduled task**: `bin/run-scheduled-tasks.php` now does the work. The
+  Docker image runs it every 15 minutes by itself (`SCHEDULER_ENABLED`,
+  `SCHEDULER_INTERVAL`); bare-PHP installs add one cron line.
+- Notification channels are pluggable: adding one (Telegram, Discord, …) means
+  implementing one interface — see `docs/notification-channels.md`.
+
+### Upgrade notes
+- New table `reminders`, created by a reversible migration that runs
+  automatically on start (Docker) or with `vendor/bin/phinx migrate` (bare
+  PHP).
+- Bare PHP: install the cron entry from docs/deployment.md (if you added it
+  earlier, it now does something). Docker: nothing to do.
+- New optional variables: `MAIL_TO`, `GOTIFY_URL`, `GOTIFY_TOKEN`,
+  `GOTIFY_PRIORITY`, `SCHEDULER_ENABLED`, `SCHEDULER_INTERVAL`. The compose
+  files now pass the notification variables through from `.env`. Set
+  `APP_URL` to your public address so links in notifications and the
+  calendar feed work.
+- Calendar feed links are keyed with `SESSION_SECRET`: changing it disables
+  existing links (create a new one in Settings).
+
 ## [0.3.0] — 2026-09-27
 
 Phase 3: maintenance and documents.

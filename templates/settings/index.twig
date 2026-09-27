@@ -117,6 +117,22 @@
             </section>
         </form>
 
+        <section class="card" aria-labelledby="reminders-heading">
+            <h2 id="reminders-heading" class="card__title">{{ 'reminders.settings.title'|trans }}</h2>
+            <ul class="list">
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.reminders') }}">
+                        <span class="list__icon">{{ ui.icon('notifications') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'reminders.settings.link'|trans }}</span>
+                            <span class="list__meta">{{ 'reminders.settings.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+            </ul>
+        </section>
+
         <section class="card" aria-labelledby="installation-heading">
             <h2 id="installation-heading" class="card__title">{{ 'settings.installation'|trans }}</h2>
             <ul class="list">

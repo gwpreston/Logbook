@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Service\Notification;
+
+use DateTimeImmutable;
+use IntlDateFormatter;
+use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Domain\User\User;
+use Logbook\Service\Reminder\ReminderEntry;
+use Logbook\Service\Reminder\ReminderWording;
+use Logbook\Support\Display\UserDisplayScope;
+use Logbook\Support\Http\AbsoluteUrl;
+use Symfony\Component\Translation\Translator;
+
+/**
+ * Words notifications for one owner: in their language, units and time zone
+ * (spec.md §7.11), whatever the current request or CLI run is set to. All
+ * text comes from the message catalogue (`notifications.*`).
+ */
+final readonly class NotificationComposer
+{
+    public function __construct(
+        private Translator $translator,
+        private UserDisplayScope $scope,
+        private ReminderWording $wording,
+        private AbsoluteUrl $urls,
+    ) {
+    }
+
+    /**
+     * Reminders that have just become due or overdue, as one notification.
+     *
+     * @param non-empty-list<ReminderEntry> $entries
+     * @param DateTimeImmutable $today the owner's calendar date
+     */
+    public function reminders(User $user, array $entries, DateTimeImmutable $today): Notification
+    {
+        return $this->scope->run($user, function () use ($entries, $today): Notification {
+            $items = $this->items($entries, $today);
+            $title = count($items) === 1
+                ? $this->translator->trans('notifications.reminders.title_one', [
+                    'item' => $items[0]->title,
+                    'when' => $items[0]->detail,
+                ])
+                : $this->translator->trans('notifications.reminders.title_many', ['count' => count($items)]);
+
+            return new Notification(
+                kind: NotificationKind::Reminders,
+                title: $title,
+                message: $this->lines($items, 'notifications.reminders.intro'),
+                url: $this->urls->route('reminders.index'),
+                urgent: $this->anyOverdue($entries),
+                items: $items,
+            );
+        });
+    }
+
+    /**
+     * "What's due this month": open reminders due by the end of the month,
+     * overdue ones included.
+     *
+     * @param non-empty-list<ReminderEntry> $entries
+     * @param DateTimeImmutable $today the owner's calendar date
+     */
+    public function digest(User $user, array $entries, DateTimeImmutable $today): Notification
+    {
+        return $this->scope->run($user, function () use ($entries, $today): Notification {
+            // Stand-alone month name ("October 2026"); the date is a calendar date, so UTC.
+            $formatter = new IntlDateFormatter(
+                $this->translator->getLocale(),
+                IntlDateFormatter::NONE,
+                IntlDateFormatter::NONE,
+                'UTC',
+                null,
+                'LLLL y',
+            );
+            $month = (string) $formatter->format($today);
+            $items = $this->items($entries, $today);
+
+            return new Notification(
+                kind: NotificationKind::Digest,
+                title: $this->translator->trans('notifications.digest.title', ['month' => $month]),
+                message: $this->lines($items, 'notifications.digest.intro', ['count' => count($items), 'month' => $month]),
+                url: $this->urls->route('reminders.index'),
+                urgent: false,
+                items: $items,
+            );
+        });
+    }
+
+    public function test(User $user): Notification
+    {
+        return $this->scope->run($user, fn (): Notification => new Notification(
+            kind: NotificationKind::Test,
+            title: $this->translator->trans('notifications.test.title'),
+            message: $this->translator->trans('notifications.test.message', ['name' => $user->displayName]),
+            url: $this->urls->route('reminders.index'),
+        ));
+    }
+
+    /**
+     * @param list<ReminderEntry> $entries
+     * @return list<NotificationItem>
+     */
+    private function items(array $entries, DateTimeImmutable $today): array
+    {
+        return array_map(fn (ReminderEntry $e): NotificationItem => new NotificationItem(
+            reminderId: $e->reminder->id,
+            title: $this->translator->trans('notifications.item_title', [
+                'name' => $this->wording->name($e->reminder),
+                'vehicle' => $e->vehicle->name(),
+            ]),
+            detail: $this->wording->whenWithDate($e->reminder, $today),
+            status: $e->reminder->status->value,
+            dueOn: $e->reminder->dueOn?->format('Y-m-d'),
+        ), $entries);
+    }
+
+    /**
+     * An intro line, then one "• title: detail" line per item.
+     *
+     * @param list<NotificationItem> $items
+     * @param array<string, int|string> $params
+     */
+    private function lines(array $items, string $introKey, array $params = []): string
+    {
+        $lines = [$this->translator->trans($introKey, $params + ['count' => count($items)]), ''];
+        foreach ($items as $item) {
+            $lines[] = $this->translator->trans('notifications.item_line', ['title' => $item->title, 'detail' => $item->detail]);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @param list<ReminderEntry> $entries
+     */
+    private function anyOverdue(array $entries): bool
+    {
+        foreach ($entries as $entry) {
+            if ($entry->reminder->status === ReminderStatus::Overdue) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

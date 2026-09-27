@@ -9,6 +9,7 @@ use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
@@ -29,6 +30,7 @@ final readonly class ComplianceListAction
         private AttachmentService $attachments,
         private View $view,
         private ClockInterface $clock,
+        private ReminderSettingsStore $reminderSettings,
     ) {
     }
 
@@ -39,7 +41,8 @@ final readonly class ComplianceListAction
     {
         $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
         $user = RequestContext::requireUser($request);
-        $states = $this->compliance->states($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone()));
+        $leadDays = $this->reminderSettings->reminderPreferences($user->id)->documentDays;
+        $states = $this->compliance->states($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone()), $leadDays);
 
         return $this->view->render($request, $response, 'compliance/index.twig', [
             'vehicle' => $vehicle,
@@ -48,6 +51,7 @@ final readonly class ComplianceListAction
             'replaced' => array_values(array_filter($states, static fn (DocumentState $s): bool => !$s->status->isCurrent())),
             'attachments' => $this->attachments->index($vehicle),
             'types' => ComplianceType::cases(),
+            'lead_days' => $leadDays,
         ]);
     }
 }

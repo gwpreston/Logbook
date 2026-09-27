@@ -1,0 +1,118 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'settings' %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+{% set days = 'reminders.days_suffix'|trans %}
+
+{% block title %}{{ 'reminders.settings.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <h1 class="page-header__title">{{ 'reminders.settings.title'|trans }}</h1>
+        </header>
+
+        <form class="form" method="post" action="{{ url_for('settings.reminders') }}">
+            {{ ui.csrf(csrf) }}
+
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+
+            <section class="card" aria-labelledby="lead-heading">
+                <h2 id="lead-heading" class="card__title">{{ 'reminders.settings.lead_heading'|trans }}</h2>
+                <p class="field__hint">{{ 'reminders.settings.lead_intro'|trans }}</p>
+                <div class="form-row">
+                    {{ ui.input('schedule_days', 'reminders.settings.schedule_days'|trans, values, errors, {type: 'number', required: true, step: 1, min: 0, max: 365, inputmode: 'numeric', suffix: days}) }}
+                    {{ ui.input('schedule_distance', 'reminders.settings.schedule_distance'|trans, values, errors, {type: 'number', required: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('document_days', 'reminders.settings.document_days'|trans, values, errors, {type: 'number', required: true, step: 1, min: 0, max: 365, inputmode: 'numeric', suffix: days}) }}
+                    {{ ui.input('manual_days', 'reminders.settings.manual_days'|trans, values, errors, {type: 'number', required: true, step: 1, min: 0, max: 365, inputmode: 'numeric', suffix: days, hint: 'reminders.settings.manual_days_hint'|trans}) }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="channels-heading">
+                <h2 id="channels-heading" class="card__title">{{ 'reminders.settings.channels_heading'|trans }}</h2>
+                <p class="field__hint">{{ 'reminders.settings.channels_intro'|trans }}</p>
+                <fieldset class="fieldset">
+                    <legend class="visually-hidden">{{ 'reminders.settings.channels_heading'|trans }}</legend>
+                    {% for channel in channels %}
+                        <label class="toggle{{ channel.configured ? '' : ' toggle--disabled' }}">
+                            <input type="checkbox" name="channels[]" value="{{ channel.key }}"
+                                {%- if channel.enabled and channel.configured %} checked{% endif %}
+                                {%- if not channel.configured %} disabled{% endif %}>
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ channel.label|trans }}</span>
+                                <span class="toggle__hint">{{ (channel.configured ? 'reminders.settings.configured' : 'reminders.settings.not_configured')|trans }}</span>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </fieldset>
+                {{ ui.input('email', 'reminders.settings.email'|trans, values, errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: 'reminders.settings.email_hint'|trans}) }}
+                <label class="toggle">
+                    <input type="checkbox" name="digest" value="1"{% if digest %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'reminders.settings.digest'|trans }}</span>
+                        <span class="toggle__hint">{{ 'reminders.settings.digest_hint'|trans }}</span>
+                    </span>
+                </label>
+                <p class="field__hint">{{ 'reminders.settings.when_sent'|trans }}</p>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'reminders.settings.save'|trans }}</button>
+            </div>
+        </form>
+
+        <section class="card" aria-labelledby="test-heading">
+            <h2 id="test-heading" class="card__title">{{ 'reminders.settings.test_heading'|trans }}</h2>
+            <p class="field__hint">{{ (any_active ? 'reminders.settings.test_intro' : 'reminders.settings.test_none')|trans }}</p>
+            <form method="post" action="{{ url_for('settings.reminders.test') }}">
+                {{ ui.csrf(csrf) }}
+                <button type="submit" class="btn"{% if not any_active %} disabled{% endif %}>{{ ui.icon('send') }}{{ 'reminders.settings.test_send'|trans }}</button>
+            </form>
+        </section>
+
+        <section class="card" id="calendar" aria-labelledby="calendar-heading">
+            <h2 id="calendar-heading" class="card__title">{{ 'reminders.calendar.heading'|trans }}</h2>
+            <p class="field__hint">{{ 'reminders.calendar.intro'|trans }}</p>
+
+            {% if new_feed %}
+                <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ 'reminders.calendar.copy_now'|trans }}</span></div>
+                <div class="field">
+                    <label class="field__label" for="f-feed-webcal">{{ 'reminders.calendar.webcal_label'|trans }}</label>
+                    <input class="input tabular" id="f-feed-webcal" type="text" readonly value="{{ new_feed.webcal }}">
+                </div>
+                <div class="field">
+                    <label class="field__label" for="f-feed-https">{{ 'reminders.calendar.https_label'|trans }}</label>
+                    <input class="input tabular" id="f-feed-https" type="text" readonly value="{{ new_feed.https }}">
+                </div>
+                <div class="btn-row">
+                    <a class="btn btn--soft" href="{{ new_feed.webcal }}">{{ ui.icon('calendar_month') }}{{ 'reminders.calendar.subscribe'|trans }}</a>
+                </div>
+            {% elseif feed_enabled %}
+                <p>{{ 'reminders.calendar.on'|trans }}</p>
+            {% endif %}
+
+            <div class="btn-row">
+                <form method="post" action="{{ url_for('settings.reminders.calendar') }}">
+                    {{ ui.csrf(csrf) }}
+                    <input type="hidden" name="feed" value="issue">
+                    <button type="submit" class="btn">{{ ui.icon('calendar_month') }}{{ (feed_enabled ? 'reminders.calendar.reset' : 'reminders.calendar.enable')|trans }}</button>
+                </form>
+                {% if feed_enabled %}
+                    <form method="post" action="{{ url_for('settings.reminders.calendar') }}">
+                        {{ ui.csrf(csrf) }}
+                        <input type="hidden" name="feed" value="disable">
+                        <button type="submit" class="btn btn--ghost">{{ ui.icon('close') }}{{ 'reminders.calendar.disable'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+            {% if feed_enabled %}<p class="field__hint">{{ 'reminders.calendar.reset_hint'|trans }}</p>{% endif %}
+        </section>
+    </div>
+{% endblock %}

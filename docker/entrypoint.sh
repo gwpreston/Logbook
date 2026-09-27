@@ -39,6 +39,22 @@ if [ "${1:-}" = "apache2-foreground" ]; then
 
     # Migrations may have created the SQLite file as root.
     chown -R www-data:www-data "$DATA_DIR" var 2>/dev/null || true
+
+    # Scheduled task (reminders and notifications), so no host cron is
+    # needed: every SCHEDULER_INTERVAL seconds, as www-data (it may write the
+    # SQLite database), for as long as the container runs. It logs through
+    # the app logger; a failed run never stops the loop.
+    if [ "${SCHEDULER_ENABLED:-true}" = "true" ]; then
+        interval="${SCHEDULER_INTERVAL:-900}"
+        case "$interval" in ''|*[!0-9]*|0) interval=900 ;; esac
+        (
+            while :; do
+                setpriv --reuid=www-data --regid=www-data --init-groups php bin/run-scheduled-tasks.php || true
+                sleep "$interval"
+            done
+        ) &
+        echo "logbook: scheduled tasks run every ${interval}s (SCHEDULER_INTERVAL)."
+    fi
 fi
 
 exec "$@"

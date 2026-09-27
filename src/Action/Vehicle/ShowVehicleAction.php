@@ -12,6 +12,7 @@ use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
@@ -39,6 +40,7 @@ final readonly class ShowVehicleAction
         private ComplianceService $compliance,
         private View $view,
         private ClockInterface $clock,
+        private ReminderSettingsStore $reminderSettings,
     ) {
     }
 
@@ -51,10 +53,11 @@ final readonly class ShowVehicleAction
         $user = RequestContext::requireUser($request);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $odometer = $this->odometer->history($vehicle);
+        $lead = $this->reminderSettings->reminderPreferences($user->id);
         $fuel = $this->fuel->history($vehicle);
         $kind = Fuel::defaultFor($vehicle->data->fuelType)->kind();
         $documents = array_filter(
-            $this->compliance->states($vehicle, $today),
+            $this->compliance->states($vehicle, $today, $lead->documentDays),
             static fn (DocumentState $s): bool => $s->status->isCurrent(),
         );
 
@@ -67,7 +70,11 @@ final readonly class ShowVehicleAction
             'electric' => $kind === EnergyKind::Electric,
             'recent_fills' => array_slice($fuel->newestFirst(), 0, self::RECENT_FILLS),
             'maintenance' => $this->maintenance->history($vehicle),
-            'schedules' => array_slice($this->schedules->states($vehicle, $today, $odometer), 0, self::SCHEDULES_SHOWN),
+            'schedules' => array_slice(
+                $this->schedules->states($vehicle, $today, $odometer, $lead->scheduleDays, $lead->scheduleKm),
+                0,
+                self::SCHEDULES_SHOWN,
+            ),
             'documents' => array_values($documents),
         ]);
     }

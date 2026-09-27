@@ -40,6 +40,7 @@ const icons = [
   'bar_chart',
   'battery_charging_full',
   'build',
+  'calendar_month',
   'car_repair',
   'check_circle',
   'chevron_left',
@@ -71,6 +72,7 @@ const icons = [
   'oil_barrel',
   'person',
   'picture_as_pdf',
+  'send',
   'settings',
   'space_dashboard',
   'speed',
@@ -78,6 +80,7 @@ const icons = [
   'tire_repair',
   'two_wheeler',
   'unarchive',
+  'undo',
   'verified_user',
   'warning',
 ];

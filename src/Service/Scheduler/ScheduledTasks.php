@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Service\Scheduler;
+
+use Logbook\Repository\UserRepository;
+use Logbook\Service\Notification\ReminderNotifier;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Everything bin/run-scheduled-tasks.php does on each run (cron every 15
+ * minutes, or the Docker entrypoint's loop; spec.md §10). One owner's
+ * failure is logged and never stops the others.
+ */
+final readonly class ScheduledTasks
+{
+    public function __construct(
+        private UserRepository $users,
+        private ReminderNotifier $notifier,
+        private LoggerInterface $logger,
+    ) {
+    }
+
+    public function run(): TaskSummary
+    {
+        $users = 0;
+        $reminders = 0;
+        $digests = 0;
+        $failures = 0;
+
+        foreach ($this->users->listAll() as $user) {
+            $users++;
+            try {
+                $report = $this->notifier->run($user);
+                $reminders += $report->remindersSent;
+                $digests += $report->digestSent ? 1 : 0;
+            } catch (Throwable $e) {
+                $failures++;
+                $this->logger->error('Scheduled reminders failed for user {user}: {message}', [
+                    'user' => $user->id,
+                    'message' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
+            }
+        }
+
+        $summary = new TaskSummary($users, $reminders, $digests, $failures);
+        $this->logger->info('Scheduled tasks: {summary}', ['summary' => $summary->describe()]);
+
+        return $summary;
+    }
+}

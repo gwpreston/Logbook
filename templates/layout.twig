@@ -5,14 +5,15 @@
  # visitors): a slim top bar only.
  #
  # Primary navigation entries: route name, translation key, icon, and the
- # `active_nav` value that marks it current. Later phases add Reminders and
- # Reports here (gated by feature toggles). The bottom bar adds the "Log"
+ # `active_nav` value that marks it current. Later phases add Reports here
+ # (gated by feature toggles). The bottom bar adds the "Log"
  # button (the fast fill-up path) as its third entry, as in the design.
  #}
 {% set signed_in = user is not null %}
 {% set nav_items = [
     {route: 'home', label: 'nav.dashboard', icon: 'space_dashboard', key: 'home'},
     {route: 'garage', label: 'nav.garage', icon: 'garage', key: 'garage'},
+    {route: 'reminders.index', label: 'nav.reminders', icon: 'notifications', key: 'reminders'},
     {route: 'settings', label: 'nav.settings', icon: 'settings', key: 'settings'},
 ] %}
 {% set current_nav = active_nav|default('') %}

@@ -34,6 +34,7 @@ final class MigrationsTest extends AppTestCase
         'maintenance_entries',
         'compliance_documents',
         'attachments',
+        'reminders',
     ];
 
     protected function tearDown(): void
@@ -62,9 +63,10 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 3 tables, then the column Phase 3 added to
-        // odometer_readings, then Phase 2 and Phase 1 tables.
+        // Newest first: the Phase 4 and Phase 3 tables, then the column Phase 3
+        // added to odometer_readings, then Phase 2 and Phase 1 tables.
         $expected = [
+            ['reminders', ['attachments', 'vehicles', 'settings']],
             ['attachments', ['compliance_documents', 'vehicles']],
             ['compliance_documents', ['maintenance_entries', 'vehicles']],
         ];
@@ -142,6 +144,27 @@ final class MigrationsTest extends AppTestCase
         self::assertInstanceOf(DateTimeType::class, $attachments['uploaded_at']->getType());
         foreach (['vehicle_id', 'owner_type', 'owner_id', 'filename', 'mime', 'size', 'stored_path', 'uploaded_at'] as $name) {
             self::assertTrue($attachments[$name]->getNotnull(), sprintf('attachments.%s must be NOT NULL', $name));
+        }
+    }
+
+    public function testReminderColumns(): void
+    {
+        $reminders = $this->columnsOrSkip('reminders');
+
+        self::assertInstanceOf(DateType::class, $reminders['due_on']->getType());
+        self::assertFalse($reminders['due_on']->getNotnull(), 'a distance-only schedule may have no date');
+        self::assertInstanceOf(DecimalType::class, $reminders['due_km']->getType());
+        self::assertSame(3, $reminders['due_km']->getScale());
+        self::assertInstanceOf(JsonType::class, $reminders['channels_notified']->getType());
+        foreach (['last_notified_at', 'closed_at', 'created_at', 'updated_at'] as $instant) {
+            self::assertInstanceOf(DateTimeType::class, $reminders[$instant]->getType(), $instant);
+        }
+        foreach (['vehicle_id', 'source', 'title', 'lead_time_days', 'status', 'created_at', 'updated_at'] as $required) {
+            self::assertTrue($reminders[$required]->getNotnull(), sprintf('reminders.%s must be NOT NULL', $required));
+        }
+        $optionals = ['source_id', 'occurrence', 'category', 'notes', 'notified_status', 'channels_notified', 'last_notified_at'];
+        foreach ($optionals as $optional) {
+            self::assertFalse($reminders[$optional]->getNotnull(), sprintf('reminders.%s is optional', $optional));
         }
     }
 

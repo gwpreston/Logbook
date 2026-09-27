@@ -69,6 +69,17 @@ case "$variant" in
     *) echo "usage: $0 pgsql|mysql" >&2; exit 2 ;;
 esac
 
+# Reminders: the page works, and the entrypoint's scheduler has run the task.
+expect "$base/reminders" 200 'Nothing coming up'
+i=0
+until $compose logs app 2>&1 | grep -q 'Scheduled tasks: '; do
+    i=$((i + 1)); [ "$i" -lt 30 ] || fail "the scheduled task never ran"; sleep 1
+done
+echo "ok  scheduler ran inside the container"
+out="$($compose exec -T app setpriv --reuid=www-data --regid=www-data --init-groups php bin/run-scheduled-tasks.php -v)" \
+    || fail "scheduled task exited non-zero"
+case "$out" in *"1 account(s) checked"*) echo "ok  scheduled task (manual run): $out" ;; *) fail "scheduled task said: $out" ;; esac
+
 # Restarting must be idempotent (migrations already applied) and keep sessions.
 $compose restart app >/dev/null
 $compose up -d --wait --no-build >/dev/null || fail "stack unhealthy after restart"

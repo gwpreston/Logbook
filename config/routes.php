@@ -31,8 +31,17 @@ use Logbook\Action\Odometer\CreateOdometerReadingAction;
 use Logbook\Action\Odometer\DeleteOdometerReadingAction;
 use Logbook\Action\Odometer\EditOdometerReadingAction;
 use Logbook\Action\Odometer\OdometerLogAction;
+use Logbook\Action\Reminder\CalendarFeedAction;
+use Logbook\Action\Reminder\CreateReminderAction;
+use Logbook\Action\Reminder\DeleteReminderAction;
+use Logbook\Action\Reminder\EditReminderAction;
+use Logbook\Action\Reminder\ReminderListAction;
+use Logbook\Action\Reminder\ReminderStatusAction;
+use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
+use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\SavePreferencesAction;
+use Logbook\Action\Settings\SendTestNotificationAction;
 use Logbook\Action\Settings\SetThemeAction;
 use Logbook\Action\Settings\SettingsAction;
 use Logbook\Action\Vehicle\ArchiveVehicleAction;
@@ -58,6 +67,10 @@ use Slim\Interfaces\RouteCollectorProxyInterface as Group;
  */
 return static function (App $app): void {
     $app->get('/health', HealthAction::class)->setName('health');
+
+    // Calendar apps cannot sign in: the secret token in the URL is the
+    // authentication, and the feed never touches the session.
+    $app->get('/calendar/{token:[0-9]+-[a-f0-9]{64}}.ics', CalendarFeedAction::class)->setName('calendar.feed');
 
     // Signed-out pages.
     $app->group('', function (Group $group): void {
@@ -124,7 +137,19 @@ return static function (App $app): void {
                 ->setName('attachments.delete');
         });
 
+        $group->get('/reminders', ReminderListAction::class)->setName('reminders.index');
+        $group->map(['GET', 'POST'], '/reminders/new', CreateReminderAction::class)->setName('reminders.create');
+        $group->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/edit', EditReminderAction::class)->setName('reminders.edit');
+        $group->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/delete', DeleteReminderAction::class)
+            ->setName('reminders.delete');
+        $group->post('/reminders/{reminder:[0-9]+}/{action:done|dismiss|reopen}', ReminderStatusAction::class)
+            ->setName('reminders.status');
+
         $group->get('/settings', SettingsAction::class)->setName('settings');
+        $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');
+        $group->post('/settings/reminders/test', SendTestNotificationAction::class)->setName('settings.reminders.test');
+        $group->post('/settings/reminders/calendar', CalendarFeedSettingsAction::class)
+            ->setName('settings.reminders.calendar');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');

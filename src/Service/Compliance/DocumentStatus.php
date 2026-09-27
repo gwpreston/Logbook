@@ -10,7 +10,7 @@ namespace Logbook\Service\Compliance;
 enum DocumentStatus: string
 {
     case Valid = 'valid';
-    /** Expires within DocumentState::SOON_DAYS. */
+    /** Expires within the owner's lead time (DocumentState::evaluate()). */
     case Expiring = 'expiring';
     case Expired = 'expired';
     /** Starts in the future (a renewal bought ahead). */

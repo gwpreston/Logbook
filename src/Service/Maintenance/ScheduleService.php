@@ -47,17 +47,24 @@ final readonly class ScheduleService
      * Every schedule with its due state, most urgent first.
      *
      * @param DateTimeImmutable $today the owner's calendar date
+     * @param int $leadDays the owner's schedule lead time (ReminderPreferences)
+     * @param string $leadKm the owner's lead distance, km
      * @return list<ScheduleState>
      */
-    public function states(Vehicle $vehicle, DateTimeImmutable $today, OdometerHistory $odometer): array
-    {
+    public function states(
+        Vehicle $vehicle,
+        DateTimeImmutable $today,
+        OdometerHistory $odometer,
+        int $leadDays = DueState::SOON_DAYS,
+        string $leadKm = DueState::SOON_KM,
+    ): array {
         $current = $odometer->latest()?->readingKm;
         $perDay = $odometer->averageKmPerDay();
 
         $states = array_map(
             static fn (MaintenanceSchedule $s): ScheduleState => new ScheduleState(
                 $s,
-                DueState::evaluate($s->nextDue, $today, $current, $perDay),
+                DueState::evaluate($s->nextDue, $today, $current, $perDay, $leadDays, $leadKm),
             ),
             $this->list($vehicle),
         );

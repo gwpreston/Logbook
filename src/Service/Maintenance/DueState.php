@@ -21,9 +21,9 @@ use Logbook\Support\Number\Decimal;
  */
 final readonly class DueState
 {
-    /** Due within this many days counts as "soon" (reminder lead times arrive in Phase 4). */
+    /** Default lead time: due within this many days counts as "soon" (see ReminderPreferences). */
     public const int SOON_DAYS = 30;
-    /** Due within this many kilometres counts as "soon". */
+    /** Default lead distance: due within this many kilometres counts as "soon". */
     public const string SOON_KM = '1000';
 
     public function __construct(
@@ -45,9 +45,17 @@ final readonly class DueState
      * @param DateTimeImmutable $today calendar date (see LocalTime::today())
      * @param string|null $currentKm latest odometer reading, km
      * @param float|null $kmPerDay average daily distance, for the projection
+     * @param int $soonDays lead time: due within this many days is "soon"
+     * @param string $soonKm lead distance, km: due within this distance is "soon"
      */
-    public static function evaluate(NextDue $next, DateTimeImmutable $today, ?string $currentKm, ?float $kmPerDay): self
-    {
+    public static function evaluate(
+        NextDue $next,
+        DateTimeImmutable $today,
+        ?string $currentKm,
+        ?float $kmPerDay,
+        int $soonDays = self::SOON_DAYS,
+        string $soonKm = self::SOON_KM,
+    ): self {
         if (!$next->isKnown()) {
             return new self(DueStatus::Unknown);
         }
@@ -74,8 +82,8 @@ final readonly class DueState
 
         $status = match (true) {
             $dateOverdue || $kmOverdue => DueStatus::Overdue,
-            ($daysLeft !== null && $daysLeft <= self::SOON_DAYS)
-                || ($kmLeft !== null && Decimal::compare($kmLeft, self::SOON_KM) <= 0) => DueStatus::Soon,
+            ($daysLeft !== null && $daysLeft <= $soonDays)
+                || ($kmLeft !== null && Decimal::compare($kmLeft, $soonKm) <= 0) => DueStatus::Soon,
             $trigger === null => DueStatus::Unknown,
             default => DueStatus::Ok,
         };

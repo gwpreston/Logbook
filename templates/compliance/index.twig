@@ -38,7 +38,7 @@
                         {{ docs.row(state, vehicle, currency, attachments.of('compliance', state.document.id)) }}
                     {% endfor %}
                 </ul>
-                <p class="field__hint">{{ 'compliance.expiring_note'|trans({days: 30}) }}</p>
+                <p class="field__hint">{{ 'compliance.expiring_note'|trans({days: lead_days}) }}</p>
             {% endif %}
         </section>
 
