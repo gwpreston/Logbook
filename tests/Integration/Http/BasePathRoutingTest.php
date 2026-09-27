@@ -34,6 +34,8 @@ final class BasePathRoutingTest extends AppTestCase
         self::assertStringContainsString('href="/logbook/"', $html);
         self::assertMatchesRegularExpression('~href="/logbook/assets/css/app\.css\?v=[0-9a-f]+"~', $html);
         self::assertStringNotContainsString('href="/assets/', $html);
+        self::assertStringNotContainsString('src="/assets/', $html);
+        self::assertStringContainsString('<use href="/logbook/assets/vendor/icons.svg?v=', $html);
     }
 
     /**

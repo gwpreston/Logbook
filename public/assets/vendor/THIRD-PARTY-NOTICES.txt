@@ -3,3 +3,6 @@ Third-party libraries bundled with Logbook
 alpine.min.js: alpinejs 3.17.4 — MIT license — https://alpinejs.dev
 chart.umd.min.js: chart.js 4.5.1 — MIT license — https://www.chartjs.org
 sortable.min.js: sortablejs 1.15.7 — MIT license — https://github.com/SortableJS/Sortable
+fonts/outfit-*.woff2: @fontsource-variable/outfit 5.3.0 — OFL-1.1 license — https://fontsource.org/fonts/outfit
+fonts/plus-jakarta-sans-*.woff2: @fontsource-variable/plus-jakarta-sans 5.3.0 — OFL-1.1 license — https://fontsource.org/fonts/plus-jakarta-sans
+icons.svg: @material-symbols/svg-400 0.47.5 (Material Symbols Rounded) — Apache-2.0 license — https://marella.github.io/material-symbols/demo/

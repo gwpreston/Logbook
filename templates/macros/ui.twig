@@ -1,0 +1,27 @@
+{#
+ # Shared UI fragments. Import with: {% import 'macros/ui.twig' as ui %}
+ #}
+
+{# Decorative icon from the vendored Material Symbols sprite (assets/vendor/icons.svg).
+   Names must be listed in bin/vendor-assets.mjs. Give the surrounding control
+   its own accessible name; the icon is hidden from assistive tech. #}
+{% macro icon(name, class = '') -%}
+    <svg class="icon{{ class ? ' ' ~ class }}" aria-hidden="true" focusable="false"><use href="{{ asset('vendor/icons.svg') }}#{{ name }}"></use></svg>
+{%- endmacro %}
+
+{# Brand lock-up: mark + two-tone wordmark, linking to the dashboard. #}
+{% macro brand() -%}
+    <a class="brand" href="{{ url_for('home') }}">
+        <img class="brand__mark" src="{{ asset('images/logbook-mark.png') }}" alt="" width="256" height="242">
+        <span class="brand__wordmark"><span class="visually-hidden">{{ 'app.name'|trans }}</span><span aria-hidden="true">{{ 'brand.wordmark_lead'|trans }}<span class="brand__wordmark-tail">{{ 'brand.wordmark_tail'|trans }}</span></span></span>
+    </a>
+{%- endmacro %}
+
+{# Theme toggle; hidden until js/theme.js enables it. `compact` = icon only. #}
+{% macro theme_toggle(class = 'btn', compact = false) -%}
+    {% import _self as ui %}
+    <button type="button" class="{{ class }}" data-theme-toggle hidden>
+        <span class="theme-toggle__to-dark">{{ ui.icon('dark_mode') }}<span{% if compact %} class="visually-hidden"{% endif %}>{{ 'theme.to_dark'|trans }}</span></span>
+        <span class="theme-toggle__to-light">{{ ui.icon('light_mode') }}<span{% if compact %} class="visually-hidden"{% endif %}>{{ 'theme.to_light'|trans }}</span></span>
+    </button>
+{%- endmacro %}

@@ -24,3 +24,12 @@ is called out explicitly.
   placeholder, `composer start` dev server.
 - Quality gates: phpcs (PSR-12), PHPStan (level max), PHPUnit. CI runs them on
   PostgreSQL, MySQL and MariaDB (PHP 8.4 and 8.5) and smoke-tests the image.
+
+### Added — design system and app shell
+- Design tokens (colour, typography, spacing, radii) for light and dark themes,
+  following the OS by default with a JS toggle that is remembered per browser.
+- Responsive shell: sidebar on wide screens, top bar and bottom tab bar on
+  phones; Logbook logo and wordmark.
+- Self-hosted Outfit and Plus Jakarta Sans fonts and a Material Symbols icon
+  sprite (no CDN requests); base components for cards, lists, buttons, chips,
+  forms, pills and alerts.

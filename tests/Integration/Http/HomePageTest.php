@@ -33,6 +33,27 @@ final class HomePageTest extends AppTestCase
         self::assertStringContainsString('/assets/vendor/sortable.min.js', $html);
     }
 
+    public function testRendersTheAppShell(): void
+    {
+        $html = self::body($this->get($this->createApp(), '/'));
+
+        $v = '\?v=[0-9a-f]+';
+
+        // Brand lock-up with a translated accessible name.
+        self::assertMatchesRegularExpression("~<img class=\"brand__mark\" src=\"/assets/images/logbook-mark\\.png{$v}\"~", $html);
+        self::assertStringContainsString('<span class="visually-hidden">Logbook</span>', $html);
+        // Sidebar and bottom tab bar both mark the current page.
+        self::assertSame(2, substr_count($html, 'aria-current="page"'));
+        self::assertStringContainsString('Dashboard', $html);
+        // Icons come from the self-hosted sprite; no third-party font/CDN requests.
+        self::assertMatchesRegularExpression("~<use href=\"/assets/vendor/icons\\.svg{$v}#space_dashboard\">~", $html);
+        self::assertStringNotContainsString('fonts.googleapis.com', $html);
+        // Theme script runs before first paint; the toggle stays hidden without JS.
+        self::assertMatchesRegularExpression("~<script src=\"/assets/js/theme\\.js{$v}\"></script>~", $html);
+        self::assertStringContainsString('data-theme-toggle hidden', $html);
+        self::assertStringContainsString('Dark mode', $html);
+    }
+
     public function testUnsupportedBrowserLanguageFallsBackToEnglish(): void
     {
         $response = $this->get($this->createApp(), '/', ['Accept-Language' => 'xx-YY, zz;q=0.5']);

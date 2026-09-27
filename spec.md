@@ -264,6 +264,12 @@ Ship the framework so translations are easy to add; do not hard-code strings.
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
+- **Appearance:** light and dark themes from one token set (`assets/css/app.css`).
+  The OS preference applies by default and without JS; a toggle overrides it
+  (per browser until accounts exist, then a per-user System/Light/Dark
+  setting). App shell: sidebar on wide screens (>= 960px); sticky top bar and
+  bottom tab bar on narrow ones. Fonts and icons are self-hosted: no
+  third-party requests at runtime.
 
 ---
 

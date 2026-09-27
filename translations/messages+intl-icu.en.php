@@ -14,11 +14,19 @@ return [
         'name' => 'Logbook',
         'tagline' => 'Your garage, on your own server.',
     ],
+    // Two-tone wordmark next to the logo; normally left untranslated.
+    'brand' => [
+        'wordmark_lead' => 'Log',
+        'wordmark_tail' => 'book',
+    ],
     'nav' => [
         'label' => 'Main navigation',
-        'home' => 'Home',
+        'dashboard' => 'Dashboard',
         'skip_to_content' => 'Skip to main content',
-        'open_menu' => 'Menu',
+    ],
+    'theme' => [
+        'to_dark' => 'Dark mode',
+        'to_light' => 'Light mode',
     ],
     'home' => [
         'title' => 'Welcome to Logbook',
