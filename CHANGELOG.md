@@ -6,6 +6,10 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-27
+
+Phase 3: maintenance and documents.
+
 ### Added — Phase 3: maintenance and documents
 - Vehicle pages gain two tabs: **Maintenance** and **Documents**. The
   overview shows what maintenance is due next and where each document stands.
@@ -143,6 +147,7 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/gwpreston16/Logbook/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/gwpreston16/Logbook/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/gwpreston16/Logbook/releases/tag/v0.1.0
