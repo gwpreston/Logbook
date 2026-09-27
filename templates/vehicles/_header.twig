@@ -1,0 +1,60 @@
+{#
+ # Vehicle page header shared by the overview, mileage and fuel tabs:
+ # back link (+ actions on the overview), hero, and the tab bar. Each tab is
+ # its own URL, so tabs work without JS and survive a hard refresh.
+ #
+ # Expects: vehicle, active_tab ('overview' | 'odometer' | 'fuel').
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% set data = vehicle.data %}
+{% set tabs = [
+    {route: 'vehicles.show', key: 'overview', icon: 'space_dashboard', label: 'vehicle.tab.overview'},
+    {route: 'odometer.index', key: 'odometer', icon: 'speed', label: 'vehicle.tab.odometer'},
+    {route: 'fuel.index', key: 'fuel', icon: data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station', label: 'vehicle.tab.fuel'},
+] %}
+
+<div class="toolbar">
+    <a class="back-link" href="{{ url_for('garage', {}, vehicle.isArchived() ? {archived: '1'} : {}) }}">{{ ui.icon('chevron_left') }}{{ 'garage.title'|trans }}</a>
+    {% if active_tab == 'overview' %}
+        <div class="btn-row">
+            <a class="btn" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+            {% if vehicle.isArchived() %}
+                <form method="post" action="{{ url_for('vehicles.restore', {id: vehicle.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn">{{ ui.icon('unarchive') }}{{ 'vehicle.restore'|trans }}</button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn">{{ ui.icon('archive') }}{{ 'vehicle.archive'|trans }}</button>
+                </form>
+            {% endif %}
+            <a class="btn btn--danger" href="{{ url_for('vehicles.delete', {id: vehicle.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+        </div>
+    {% endif %}
+</div>
+
+<header class="vehicle-hero">
+    {{ ui.vehicle_photo(vehicle, 'vehicle-photo--hero') }}
+    <div class="vehicle-hero__text">
+        <div class="vehicle-card__tags">
+            {% if data.registration %}<span class="plate">{{ data.registration }}</span>{% endif %}
+            <span class="pill">{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</span>
+            {% if vehicle.isArchived() %}
+                <span class="pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.archived_on'|trans({date: vehicle.archivedAt|instant_date}) }}</span>
+            {% endif %}
+        </div>
+        {% if active_tab == 'overview' %}
+            <h1>{{ vehicle.name() }}</h1>
+        {% else %}
+            <p class="vehicle-hero__name">{{ vehicle.name() }}</p>
+        {% endif %}
+        <p class="muted">{{ vehicle.description() }}</p>
+    </div>
+</header>
+
+<nav class="tabs" aria-label="{{ 'vehicle.tab.label'|trans({name: vehicle.name()}) }}">
+    {% for tab in tabs %}
+        <a class="tabs__link" href="{{ url_for(tab.route, {id: vehicle.id}) }}"{% if tab.key == active_tab %} aria-current="page"{% endif %}>{{ ui.icon(tab.icon) }}{{ tab.label|trans }}</a>
+    {% endfor %}
+</nav>

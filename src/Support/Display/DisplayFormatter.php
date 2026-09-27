@@ -10,6 +10,9 @@ use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
+use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DistanceUnit;
+use Logbook\Support\Units\ElectricEfficiencyUnit;
 use NumberFormatter;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -58,13 +61,55 @@ final readonly class DisplayFormatter
             ? $amount
             : Money::of($amount, $currency ?? $this->context->preferences()->currency);
 
-        $formatter = new NumberFormatter($this->locale(), NumberFormatter::CURRENCY);
         $digits = Currency::fractionDigits($money->currency);
-        $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, $digits);
-        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $digits);
-        $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, NumberFormatter::ROUND_HALFUP);
 
-        return (string) $formatter->formatCurrency($money->toFloat(), $money->currency);
+        return $this->formatMoney($money->toFloat(), $money->currency, $digits, $digits);
+    }
+
+    /**
+     * A price per litre (or per kWh for electricity), in the user's volume
+     * unit, with one more decimal than the currency normally uses:
+     * "£1.459/L", "$3.499/US gal", "£0.245/kWh".
+     *
+     * @param string|null $perUnit canonical decimal per litre (or kWh)
+     */
+    public function unitPrice(?string $perUnit, string $currency, bool $electric): string
+    {
+        if ($perUnit === null || !Decimal::isCanonical($perUnit)) {
+            return '';
+        }
+
+        $digits = Currency::fractionDigits($currency);
+        if ($electric) {
+            $price = $this->formatMoney((float) $perUnit, $currency, $digits, $digits + 1);
+
+            return $this->translator->trans('units.price.kwh', ['price' => $price]);
+        }
+
+        $unit = $this->context->preferences()->volumeUnit;
+        $price = $this->formatMoney((float) $unit->pricePerUnit($perUnit, 6), $currency, $digits, $digits + 1);
+
+        return $this->translator->trans('units.price.' . $unit->value, ['price' => $price]);
+    }
+
+    /**
+     * A cost per kilometre, per the user's distance unit: "£0.123/mi".
+     *
+     * @param string|null $perKm canonical decimal
+     */
+    public function perDistance(?string $perKm, string $currency): string
+    {
+        if ($perKm === null || !Decimal::isCanonical($perKm)) {
+            return '';
+        }
+
+        $unit = $this->context->preferences()->distanceUnit;
+        $value = $unit === DistanceUnit::Mile ? (float) $perKm * DistanceUnit::KM_PER_MILE : (float) $perKm;
+        $digits = Currency::fractionDigits($currency);
+
+        return $this->translator->trans('units.per_distance.' . $unit->value, [
+            'price' => $this->formatMoney($value, $currency, $digits, $digits + 1),
+        ]);
     }
 
     /**
@@ -78,9 +123,12 @@ final readonly class DisplayFormatter
         }
 
         $unit = $this->context->preferences()->distanceUnit;
+        // A stored decimal converts back exactly to what was typed (3 places)
+        // before rounding, so 1,234.5 mi shows as "1,235 mi", not "1,234 mi".
+        $converted = is_string($km) ? (float) $unit->fromKmDecimal($km, 3) : $unit->fromKm($value);
 
         return $this->translator->trans('units.distance.' . $unit->value, [
-            'value' => $this->number($unit->fromKm($value), $decimals, $decimals),
+            'value' => $this->number($converted, $decimals, $decimals),
         ]);
     }
 
@@ -117,15 +165,19 @@ final readonly class DisplayFormatter
     /**
      * Consumption over a distance, in the user's consumption unit: "48.7 mpg".
      */
-    public function consumption(int|float|string|null $km, int|float|string|null $litres, int $decimals = 1): string
-    {
+    public function consumption(
+        int|float|string|null $km,
+        int|float|string|null $litres,
+        int $decimals = 1,
+        ?ConsumptionUnit $unit = null,
+    ): string {
         $distance = self::toFloat($km);
         $volume = self::toFloat($litres);
         if ($distance === null || $volume === null) {
             return '';
         }
 
-        $unit = $this->context->preferences()->consumptionUnit;
+        $unit ??= $this->context->preferences()->consumptionUnit;
         $value = $unit->fromDistanceAndVolume($distance, $volume);
         if ($value === null) {
             return '';
@@ -134,6 +186,55 @@ final readonly class DisplayFormatter
         return $this->translator->trans('units.consumption.' . $unit->value, [
             'value' => $this->number($value, $decimals, $decimals),
         ]);
+    }
+
+    /**
+     * Electric efficiency over a distance: kWh/100 km for kilometre users,
+     * mi/kWh for mile users ("4.1 mi/kWh").
+     */
+    public function efficiency(
+        int|float|string|null $km,
+        int|float|string|null $kwh,
+        int $decimals = 1,
+        ?ElectricEfficiencyUnit $unit = null,
+    ): string {
+        $distance = self::toFloat($km);
+        $energy = self::toFloat($kwh);
+        if ($distance === null || $energy === null) {
+            return '';
+        }
+
+        $unit ??= ElectricEfficiencyUnit::forDistanceUnit($this->context->preferences()->distanceUnit);
+        $value = $unit->fromDistanceAndEnergy($distance, $energy);
+        if ($value === null) {
+            return '';
+        }
+
+        return $this->translator->trans('units.efficiency.' . $unit->value, [
+            'value' => $this->number($value, $decimals, $decimals),
+        ]);
+    }
+
+    /**
+     * Consumption for liquid fuel, efficiency for electricity.
+     */
+    public function economy(
+        int|float|string|null $km,
+        int|float|string|null $volume,
+        bool $electric,
+        int $decimals = 1,
+    ): string {
+        return $electric
+            ? $this->efficiency($km, $volume, $decimals)
+            : $this->consumption($km, $volume, $decimals);
+    }
+
+    /**
+     * Litres (in the user's volume unit), or kWh for electricity.
+     */
+    public function quantity(int|float|string|null $value, bool $electric, int $maxDecimals = 2): string
+    {
+        return $electric ? $this->energy($value, $maxDecimals) : $this->volume($value, $maxDecimals);
     }
 
     /**
@@ -185,6 +286,16 @@ final readonly class DisplayFormatter
         $formatted = $formatter->format($value);
 
         return is_string($formatted) ? $formatted : $value->format('Y-m-d H:i');
+    }
+
+    private function formatMoney(float $value, string $currency, int $minDigits, int $maxDigits): string
+    {
+        $formatter = new NumberFormatter($this->locale(), NumberFormatter::CURRENCY);
+        $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, $minDigits);
+        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $maxDigits);
+        $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, NumberFormatter::ROUND_HALFUP);
+
+        return (string) $formatter->formatCurrency($value, $currency);
     }
 
     private function locale(): string

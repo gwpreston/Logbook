@@ -23,6 +23,8 @@ use Twig\TwigFunction;
  *
  *   {{ km|distance }}  {{ litres|volume }}  {{ kwh|energy }}
  *   {{ amount|money(currency) }}  {{ n|number(2) }}
+ *   {{ volume|quantity(electric) }}  {{ km|economy(volume, electric) }}
+ *   {{ per_litre|unit_price(currency, electric) }}  {{ per_km|per_distance(currency) }}
  *   {{ calendar_date|local_date }}  {{ instant|local_datetime }}  {{ instant|instant_date }}
  */
 final class TwigExtension extends AbstractExtension
@@ -49,6 +51,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFunction('prefs', fn (): DisplayPreferences => $this->display->preferences()),
             new TwigFunction('currency_name', fn (string $code): string => Currency::name($code, $this->locale())),
             new TwigFunction('currency_symbol', fn (string $code): string => Currency::symbol($code, $this->locale())),
+            new TwigFunction('currency_digits', Currency::fractionDigits(...)),
         ];
     }
 
@@ -61,6 +64,12 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('distance', $this->formatter->distance(...)),
             new TwigFilter('volume', $this->formatter->volume(...)),
             new TwigFilter('energy', $this->formatter->energy(...)),
+            new TwigFilter('quantity', $this->formatter->quantity(...)),
+            new TwigFilter('consumption', $this->formatter->consumption(...)),
+            new TwigFilter('efficiency', $this->formatter->efficiency(...)),
+            new TwigFilter('economy', $this->formatter->economy(...)),
+            new TwigFilter('unit_price', $this->formatter->unitPrice(...)),
+            new TwigFilter('per_distance', $this->formatter->perDistance(...)),
             new TwigFilter('local_date', $this->formatter->date(...)),
             new TwigFilter('local_datetime', $this->formatter->dateTime(...)),
             new TwigFilter('instant_date', $this->formatter->instantDate(...)),

@@ -93,6 +93,68 @@ final class Decimal
         return self::toScaledInt($a, $scale) <=> self::toScaledInt($b, $scale);
     }
 
+    public static function add(string $a, string $b): string
+    {
+        $scale = max(self::scaleOf($a), self::scaleOf($b));
+
+        return self::fromScaledInt(self::toScaledInt($a, $scale) + self::toScaledInt($b, $scale), $scale);
+    }
+
+    public static function subtract(string $a, string $b): string
+    {
+        $scale = max(self::scaleOf($a), self::scaleOf($b));
+
+        return self::fromScaledInt(self::toScaledInt($a, $scale) - self::toScaledInt($b, $scale), $scale);
+    }
+
+    /**
+     * $a × $b rounded to $scale places (half away from zero), exactly.
+     *
+     * Only if the intermediate product would not fit in a PHP int (far beyond
+     * any real fuel quantity or price) does it fall back to float arithmetic.
+     */
+    public static function multiply(string $a, string $b, int $scale): string
+    {
+        $scaleA = self::scaleOf($a);
+        $scaleB = self::scaleOf($b);
+        $intA = self::toScaledInt($a, $scaleA);
+        $intB = self::toScaledInt($b, $scaleB);
+
+        if ($intB !== 0 && abs($intA) > intdiv(PHP_INT_MAX, abs($intB))) {
+            return self::fromFloat((float) $a * (float) $b, $scale);
+        }
+
+        return self::rescale($intA * $intB, $scaleA + $scaleB, $scale) ?? self::fromFloat((float) $a * (float) $b, $scale);
+    }
+
+    /**
+     * $a ÷ $b rounded to $scale places (half away from zero), exactly (with
+     * the same float fallback as multiply()).
+     *
+     * @throws InvalidArgumentException when $b is zero
+     */
+    public static function divide(string $a, string $b, int $scale): string
+    {
+        $scaleA = self::scaleOf($a);
+        $scaleB = self::scaleOf($b);
+        $numerator = self::toScaledInt($a, $scaleA);
+        $denominator = self::toScaledInt($b, $scaleB);
+        if ($denominator === 0) {
+            throw new InvalidArgumentException('Division by zero.');
+        }
+
+        // a/b = (A / 10^sa) / (B / 10^sb); the result scaled by 10^scale is
+        // A × 10^(scale + sb - sa) / B.
+        $shift = $scale + $scaleB - $scaleA;
+        $numerator = $shift >= 0 ? self::timesPowerOfTen($numerator, $shift) : $numerator;
+        $denominator = $shift < 0 ? self::timesPowerOfTen($denominator, -$shift) : $denominator;
+        if ($numerator === null || $denominator === null) {
+            return self::fromFloat((float) $a / (float) $b, $scale);
+        }
+
+        return self::fromScaledInt(self::roundedDivision($numerator, $denominator), $scale);
+    }
+
     /**
      * Drop insignificant zeros: "12.500" → "12.5", "3.000" → "3".
      */
@@ -112,5 +174,46 @@ final class Decimal
         $dot = strpos($value, '.');
 
         return $dot === false ? 0 : strlen($value) - $dot - 1;
+    }
+
+    /**
+     * An integer at scale $from re-expressed at scale $to (rounded), or null
+     * on overflow.
+     */
+    private static function rescale(int $value, int $from, int $to): ?string
+    {
+        if ($to >= $from) {
+            $scaled = self::timesPowerOfTen($value, $to - $from);
+
+            return $scaled === null ? null : self::fromScaledInt($scaled, $to);
+        }
+
+        return self::fromScaledInt(self::roundedDivision($value, 10 ** ($from - $to)), $to);
+    }
+
+    private static function timesPowerOfTen(int $value, int $exponent): ?int
+    {
+        if ($exponent > 18) {
+            return $value === 0 ? 0 : null;
+        }
+        $factor = 10 ** $exponent;
+
+        return abs($value) > intdiv(PHP_INT_MAX, $factor) ? null : $value * $factor;
+    }
+
+    /**
+     * $numerator / $denominator rounded half away from zero.
+     */
+    private static function roundedDivision(int $numerator, int $denominator): int
+    {
+        $quotient = intdiv($numerator, $denominator);
+        $remainder = abs($numerator % $denominator);
+
+        // 2r >= |d|, written so it cannot overflow.
+        if ($remainder >= abs($denominator) - $remainder) {
+            $quotient += ($numerator < 0) === ($denominator < 0) ? 1 : -1;
+        }
+
+        return $quotient;
     }
 }

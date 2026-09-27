@@ -6,6 +6,36 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added — Phase 2: mileage and fuel
+- Vehicle pages have tabs — Overview, Mileage and Fuel — each its own URL
+  (works without JavaScript and survives a hard refresh). The overview shows
+  the current odometer, average economy, fuel cost per distance, total spend
+  and the latest fill-ups.
+- Mileage log: add, edit and delete odometer readings (typed in your distance
+  unit and time zone; stored in km and UTC). Fill-ups add their reading to the
+  same series automatically. Current reading, monthly average, distance
+  logged, a trend chart, and warnings — never refusals — for readings that go
+  backwards or jump implausibly (over 2,000 km a day).
+- Fuel log: add, edit and delete fill-ups with date and time, odometer, fuel,
+  volume, price per unit and total — any two work out the third, exactly —
+  plus "partial fill" and "missed the previous fill-up" flags, station and
+  notes. Economy is measured full tank to full tank, so partial fills and
+  missing receipts never distort it; figures are recalculated on every view.
+  Shown in L/100 km, km/L, mpg (UK) and mpg (US), with average price, cost
+  per distance, total spend, and economy and price trend charts.
+- Electric vehicles use the same log in kWh, with efficiency in kWh/100 km
+  or mi/kWh (following your distance unit). A plug-in hybrid's petrol and
+  charging figures are kept apart.
+- A "Log fill-up" button in the sidebar and in the middle of the mobile tab
+  bar: one tap to the form with a single vehicle, a vehicle picker with more.
+- Long logs are paginated (25 per page).
+- The demo seed (`bin/dev seed`) now includes a year of fill-ups and readings.
+
+### Upgrade notes
+- Two new tables (`fuel_entries`, `odometer_readings`), created by reversible
+  migrations that run automatically on start (Docker) or with
+  `vendor/bin/phinx migrate` (bare PHP). No configuration changes.
+
 ## [0.1.0] — 2026-09-27
 
 First release: Phases 0 and 1 (foundations, accounts and garage).

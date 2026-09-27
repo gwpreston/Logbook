@@ -1,0 +1,97 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/fuel.twig' as fuel_ui %}
+
+{% set active_nav = 'garage' %}
+{% set dash = '—' %}
+
+{% block title %}{{ 'fuel.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'fuel'} %}
+
+        <div class="toolbar">
+            <h1 class="section-title">{{ 'fuel.title'|trans }}</h1>
+            {% if not vehicle.isArchived() %}
+                <a class="btn btn--primary" href="{{ url_for('fuel.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'fuel.add'|trans }}</a>
+            {% endif %}
+        </div>
+
+        {% for section in sections %}
+            {% set summary = section.summary %}
+            {% set electric = section.electric %}
+            {% set last = summary.lastSegment %}
+            <section class="page__stack" aria-labelledby="summary-{{ section.kind.value }}">
+                <h2 id="summary-{{ section.kind.value }}" class="{{ sections|length > 1 ? 'section-title section-title--sm' : 'visually-hidden' }}">{{ ('fuel.kind.' ~ section.kind.value)|trans }}</h2>
+
+                <dl class="stats">
+                    {{ ui.stat((electric ? 'fuel.stat.average_ev' : 'fuel.stat.average')|trans,
+                        summary.hasEconomy() ? summary.measuredDistanceKm|economy(summary.measuredVolume, electric) : dash,
+                        summary.hasEconomy() ? 'fuel.stat.average_over'|trans({distance: summary.measuredDistanceKm|distance}) : 'fuel.stat.need_two_full'|trans,
+                        summary.hasEconomy() ? 'good' : '') }}
+                    {{ ui.stat('fuel.stat.last'|trans,
+                        last ? last.distanceKm|economy(last.volume, electric) : dash,
+                        last ? 'fuel.stat.last_over'|trans({distance: last.distanceKm|distance, date: last.endedAt|instant_date}) : '') }}
+                    {{ ui.stat('fuel.stat.average_price'|trans,
+                        summary.averagePricePerUnit() is null ? dash : summary.averagePricePerUnit()|unit_price(currency, electric),
+                        'fuel.stat.bought'|trans({amount: summary.totalVolume|quantity(electric, 0), count: summary.fills})) }}
+                    {{ ui.stat((electric ? 'fuel.stat.cost_per_distance_ev' : 'fuel.stat.cost_per_distance')|trans,
+                        summary.costPerKm() is null ? dash : summary.costPerKm()|per_distance(currency),
+                        (electric ? 'fuel.stat.charging_only' : 'fuel.stat.fuel_only')|trans) }}
+                    {{ ui.stat((electric ? 'fuel.stat.spend_ev' : 'fuel.stat.spend')|trans, summary.totalCost|money(currency), 'fuel.stat.all_time'|trans) }}
+                </dl>
+
+                {% if summary.hasEconomy() and not electric %}
+                    <p class="muted economy-units">
+                        {{ 'fuel.also_as'|trans }}
+                        {% for unit in consumption_units|filter(u => u != prefs().consumptionUnit) %}
+                            <span class="tabular">{{ summary.measuredDistanceKm|consumption(summary.measuredVolume, 1, unit) }}</span>{% if not loop.last %} · {% endif %}
+                        {% endfor %}
+                    </p>
+                {% endif %}
+
+                <div class="card-grid">
+                    <section class="card" aria-labelledby="economy-{{ section.kind.value }}">
+                        <h3 id="economy-{{ section.kind.value }}" class="card__title">{{ (electric ? 'fuel.chart.efficiency_title' : 'fuel.chart.economy_title')|trans }}</h3>
+                        {% if section.economy_chart.hasData() %}
+                            {{ ui.chart(section.economy_chart, (electric ? 'fuel.chart.efficiency_title' : 'fuel.chart.economy_title')|trans) }}
+                            <p class="field__hint">{{ 'fuel.chart.economy_hint'|trans }}</p>
+                        {% else %}
+                            <p class="muted">{{ 'fuel.chart.need_more'|trans }}</p>
+                        {% endif %}
+                    </section>
+                    <section class="card" aria-labelledby="price-{{ section.kind.value }}">
+                        <h3 id="price-{{ section.kind.value }}" class="card__title">{{ 'fuel.chart.price_title'|trans }}</h3>
+                        {% if section.price_chart.hasData() %}
+                            {{ ui.chart(section.price_chart, 'fuel.chart.price_title'|trans) }}
+                        {% else %}
+                            <p class="muted">{{ 'fuel.chart.need_two'|trans }}</p>
+                        {% endif %}
+                    </section>
+                </div>
+            </section>
+        {% endfor %}
+
+        <section class="card" aria-labelledby="fills-heading">
+            <div class="card__header">
+                <h2 id="fills-heading" class="card__title">{{ 'fuel.fills'|trans }}</h2>
+            </div>
+            {% if history.isEmpty() %}
+                <div class="empty">
+                    {{ ui.icon(vehicle.data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station') }}
+                    <p class="empty__title">{{ 'fuel.empty_title'|trans }}</p>
+                    <p>{{ 'fuel.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for fill in rows %}
+                        {{ fuel_ui.row(fill, vehicle, currency) }}
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'fuel.index', {id: vehicle.id}) }}
+                <p class="field__hint">{{ 'fuel.full_to_full_note'|trans }}</p>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

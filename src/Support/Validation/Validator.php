@@ -6,6 +6,7 @@ namespace Logbook\Support\Validation;
 
 use BackedEnum;
 use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Number\DecimalParser;
@@ -156,6 +157,25 @@ final class Validator
         }
 
         return $date;
+    }
+
+    /**
+     * A wall-clock date and time typed in the user's zone (as
+     * `<input type="datetime-local">` submits it), returned as a UTC instant.
+     */
+    public function dateTime(string $field, DateTimeZone $zone, bool $required = false): ?DateTimeImmutable
+    {
+        $value = $this->raw($field);
+        if ($value === '') {
+            return $this->missing($field, $required);
+        }
+
+        $instant = LocalTime::toUtc($value, $zone);
+        if ($instant === null) {
+            $this->errors->add($field, 'validation.datetime');
+        }
+
+        return $instant;
     }
 
     /**

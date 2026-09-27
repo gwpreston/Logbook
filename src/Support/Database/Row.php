@@ -49,6 +49,35 @@ final class Row
     }
 
     /**
+     * A boolean column: PostgreSQL returns a bool, MySQL and SQLite 0/1 as
+     * ints or strings.
+     *
+     * @param array<string, mixed> $row
+     */
+    public static function bool(array $row, string $column): bool
+    {
+        $value = self::value($row, $column);
+
+        return match (true) {
+            is_bool($value) => $value,
+            $value === 1, $value === '1', $value === 't', $value === 'true' => true,
+            $value === 0, $value === '0', $value === 'f', $value === 'false' => false,
+            default => throw new UnexpectedValueException(sprintf('Column "%s" is not a boolean.', $column)),
+        };
+    }
+
+    /**
+     * A DECIMAL column that is never null, as a canonical string at $scale.
+     *
+     * @param array<string, mixed> $row
+     */
+    public static function decimal(array $row, string $column, int $scale): string
+    {
+        return self::nullableDecimal($row, $column, $scale)
+            ?? throw new UnexpectedValueException(sprintf('Column "%s" is null.', $column));
+    }
+
+    /**
      * @param array<string, mixed> $row
      */
     public static function nullableString(array $row, string $column): ?string

@@ -104,7 +104,7 @@ abstract class AppTestCase extends TestCase
     protected function resetDatabase(App $app): void
     {
         $connection = $this->connection($app);
-        foreach (['sessions', 'vehicles', 'users', 'settings'] as $table) {
+        foreach (['sessions', 'odometer_readings', 'fuel_entries', 'vehicles', 'users', 'settings'] as $table) {
             $connection->executeStatement('DELETE FROM ' . $table);
         }
     }

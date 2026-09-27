@@ -1,7 +1,7 @@
 {
-    "css/app.css": "76336eedf87e",
+    "css/app.css": "a294058ec8ae",
     "images/logbook-mark.png": "26fcc6f7ed96",
-    "js/app.js": "63e16fc9adeb",
+    "js/app.js": "8f7ff9364d27",
     "js/theme.js": "effc85a28e76",
     "vendor/THIRD-PARTY-NOTICES.txt": "95a5844d48b4",
     "vendor/alpine.min.js": "232519394c6c",
@@ -10,6 +10,6 @@
     "vendor/fonts/outfit-latin-wght-normal.woff2": "6c18d579fd87",
     "vendor/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2": "38e3b8fd8045",
     "vendor/fonts/plus-jakarta-sans-latin-wght-normal.woff2": "153fc85b7029",
-    "vendor/icons.svg": "4bb28254ffba",
+    "vendor/icons.svg": "bb2eecd3a02d",
     "vendor/sortable.min.js": "bf4241bc73fe"
 }
