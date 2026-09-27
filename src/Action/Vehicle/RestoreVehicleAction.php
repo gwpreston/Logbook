@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Action\Vehicle;
+
+use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Http\Redirector;
+use Logbook\Support\Http\RequestContext;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+
+/**
+ * POST /vehicles/{id}/restore — bring an archived vehicle back to the garage.
+ */
+final readonly class RestoreVehicleAction
+{
+    public function __construct(
+        private VehicleService $vehicles,
+        private Redirector $redirect,
+    ) {
+    }
+
+    /**
+     * @param array<string, string> $args
+     */
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+
+        $this->vehicles->restore(RequestContext::requireUser($request), $vehicle);
+        RequestContext::session($request)->flash('success', 'vehicle.restored', ['name' => $vehicle->name()]);
+
+        return $this->redirect->toRoute('vehicles.show', ['id' => (string) $vehicle->id]);
+    }
+}

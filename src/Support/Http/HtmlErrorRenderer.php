@@ -19,7 +19,7 @@ use Throwable;
  */
 final readonly class HtmlErrorRenderer implements ErrorRendererInterface
 {
-    private const array KNOWN_STATUSES = [400, 403, 404, 405, 500, 503];
+    private const array KNOWN_STATUSES = [400, 403, 404, 405, 413, 500, 503];
 
     public function __construct(private View $view)
     {
@@ -28,7 +28,11 @@ final readonly class HtmlErrorRenderer implements ErrorRendererInterface
     public function __invoke(Throwable $exception, bool $displayErrorDetails): string
     {
         $status = $exception instanceof HttpException ? $exception->getCode() : 500;
-        $key = in_array($status, self::KNOWN_STATUSES, true) ? (string) $status : ($status < 500 ? '4xx' : '5xx');
+        $key = match (true) {
+            $exception instanceof CsrfFailedException => 'csrf',
+            in_array($status, self::KNOWN_STATUSES, true) => (string) $status,
+            default => $status < 500 ? '4xx' : '5xx',
+        };
 
         $details = $displayErrorDetails ? self::details($exception) : [];
 

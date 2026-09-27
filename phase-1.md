@@ -8,6 +8,21 @@ Read `spec.md` (§6, §7.1, §7.9, §8) and `CLAUDE.md` (§8, §9) before starti
 
 **Prerequisites:** Phase 0 complete and green.
 
+**Status: complete (2026-09-27).** Decisions recorded in `spec.md`:
+- §6 User: instead of a single `unit_system`, users store distance, volume
+  and consumption units separately (Metric/UK/US are presets), plus currency
+  and theme — the design lets people mix km with mpg.
+- §6 Session / §7.9: sessions are database-backed (portable, survive
+  container restarts, allow "sign out other devices"); the cookie token is
+  stored only as an HMAC keyed with `SESSION_SECRET`.
+- §5: CSRF and the auth guard sit on route groups, not globally, so `/health`
+  never creates sessions; the session itself is lazy.
+- §8: the locale preference can carry a region (`en_GB`) for formatting while
+  the `en` catalogue translates. New config `APP_CURRENCY` (§9).
+- Verified locally with `bin/test-all-dbs.sh` on PostgreSQL 17, MySQL 8.4,
+  MariaDB 11.4 and SQLite, and with `bin/smoke-test.sh` (now doing a real
+  first-run setup and sign-in) against the production image.
+
 ---
 
 ## Scope
@@ -25,74 +40,74 @@ is shaped for it; only one account is created/used).
 ## Tasks
 
 ### 1.1 User + settings tables
-- [ ] Migration: `users` (id, username, password_hash, display_name, locale,
+- [x] Migration: `users` (id, username, password_hash, display_name, locale,
       unit_system, currency, timezone, created_at) — shaped for multi-user but
       single-row in use.
-- [ ] Migration: `settings` (key, value JSON, scope) if not created in Phase 0.
-- [ ] Applies + rolls back on MySQL and Postgres.
+- [x] Migration: `settings` (key, value JSON, scope) if not created in Phase 0.
+- [x] Applies + rolls back on MySQL and Postgres.
 
 ### 1.2 First-run setup
-- [ ] If no user exists, all routes redirect to a setup screen that creates the
+- [x] If no user exists, all routes redirect to a setup screen that creates the
       initial account (username, password, display name, locale, unit system,
       currency, timezone).
-- [ ] After setup, the app is normal; setup is unreachable once a user exists.
+- [x] After setup, the app is normal; setup is unreachable once a user exists.
 
 ### 1.3 Authentication + sessions
-- [ ] `password_hash()` with `PASSWORD_ARGON2ID`; verify on login.
-- [ ] Session middleware: `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS;
+- [x] `password_hash()` with `PASSWORD_ARGON2ID`; verify on login.
+- [x] Session middleware: `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS;
       regenerate session id on login (fixation protection).
-- [ ] Login, logout, and "change password" flows.
-- [ ] Auth-guard middleware protecting all app routes except setup/login/health.
+- [x] Login, logout, and "change password" flows.
+- [x] Auth-guard middleware protecting all app routes except setup/login/health.
 
 ### 1.4 CSRF
-- [ ] `slim/csrf` enabled; tokens embedded and validated on every state-changing
+- [x] `slim/csrf` enabled; tokens embedded and validated on every state-changing
       form (setup, login where applicable, all vehicle forms, change password).
 
 ### 1.5 Support layer (used by all later phases)
-- [ ] **Units:** converter with canonical SI storage (litres, km) and display in
+- [x] **Units:** converter with canonical SI storage (litres, km) and display in
       metric/imperial; consumption in L/100km, **mpg UK, mpg US**, and km/L.
-- [ ] **Money:** value object; DECIMAL storage; `intl` formatting; per-vehicle
+- [x] **Money:** value object; DECIMAL storage; `intl` formatting; per-vehicle
       currency override resolving over the user default; **zero is valid**.
-- [ ] **Dates:** helper using `DateTimeImmutable`; parse/display in user locale +
+- [x] **Dates:** helper using `DateTimeImmutable`; parse/display in user locale +
       timezone, store UTC. Unit-test round-trips across timezones and DST.
-- [ ] **Validation:** shared validator with clear messages; never rejects
+- [x] **Validation:** shared validator with clear messages; never rejects
       legitimate edge values.
 
 ### 1.6 Vehicle domain
-- [ ] `Vehicle` entity + enums (type car|bike, fuel type) per `spec.md` §6.
-- [ ] `VehicleRepository` (DBAL) and `VehicleService`.
-- [ ] Migration for `vehicles` (incl. status active|archived, currency override,
+- [x] `Vehicle` entity + enums (type car|bike, fuel type) per `spec.md` §6.
+- [x] `VehicleRepository` (DBAL) and `VehicleService`.
+- [x] Migration for `vehicles` (incl. status active|archived, currency override,
       purchase/sale fields, photo reference).
 
 ### 1.7 Vehicle CRUD (Actions + Twig)
-- [ ] Garage list (active by default; "show archived" toggle).
-- [ ] Add / edit / delete vehicle forms with validation.
-- [ ] Vehicle detail page shell (sections for later phases stubbed/empty).
-- [ ] **Archive / unarchive**: archived vehicles hidden from active views and
+- [x] Garage list (active by default; "show archived" toggle).
+- [x] Add / edit / delete vehicle forms with validation.
+- [x] Vehicle detail page shell (sections for later phases stubbed/empty).
+- [x] **Archive / unarchive**: archived vehicles hidden from active views and
       excluded from fleet scope unless explicitly included; history retained.
 
 ### 1.8 Vehicle photo upload
-- [ ] Upload/replace/remove a photo; validate mime + size (`MAX_UPLOAD_MB`).
-- [ ] Store under `UPLOAD_PATH` (outside web root); serve via an authenticated
+- [x] Upload/replace/remove a photo; validate mime + size (`MAX_UPLOAD_MB`).
+- [x] Store under `UPLOAD_PATH` (outside web root); serve via an authenticated
       handler, never a public path. (This handler is the seed for general
       attachments in Phase 3.)
 
 ### 1.9 Preferences
-- [ ] Settings page to change unit system, currency, timezone, locale, display
+- [x] Settings page to change unit system, currency, timezone, locale, display
       name, password.
-- [ ] Changing locale/units/currency/timezone is reflected immediately across
+- [x] Changing locale/units/currency/timezone is reflected immediately across
       the UI.
 
 ### 1.10 i18n
-- [ ] All new strings translatable; English catalogue updated. No hard-coded
+- [x] All new strings translatable; English catalogue updated. No hard-coded
       strings in templates or Actions.
 
 ### 1.11 Tests
-- [ ] Unit: units converter (incl. UK vs US mpg), money (incl. zero + override),
+- [x] Unit: units converter (incl. UK vs US mpg), money (incl. zero + override),
       dates (timezone/DST round-trips), validation edge cases.
-- [ ] Integration: first-run setup, login/logout, session regeneration, change
+- [x] Integration: first-run setup, login/logout, session regeneration, change
       password, CSRF rejection, vehicle CRUD, archive/unarchive, photo upload.
-- [ ] All pass on **both** MySQL and Postgres.
+- [x] All pass on **both** MySQL and Postgres.
 
 ---
 
@@ -102,16 +117,16 @@ A single-owner app where you complete first-run setup, log in, manage vehicles
 that visibly drive formatting everywhere.
 
 ## Acceptance criteria
-- [ ] Fresh instance forces setup; second visit goes to login.
-- [ ] Secure login/logout/change-password; session id regenerates on login;
+- [x] Fresh instance forces setup; second visit goes to login.
+- [x] Secure login/logout/change-password; session id regenerates on login;
       CSRF blocks forged posts.
-- [ ] Vehicle add/edit/delete/archive all work; archived excluded from active
+- [x] Vehicle add/edit/delete/archive all work; archived excluded from active
       views and fleet scope by default.
-- [ ] Photo upload stored outside web root and served only when authenticated.
-- [ ] Preference changes (units incl. mpg variant, currency, timezone, locale)
+- [x] Photo upload stored outside web root and served only when authenticated.
+- [x] Preference changes (units incl. mpg variant, currency, timezone, locale)
       reflect immediately; a zero-cost value is accepted; ≥3-decimal inputs
       round-trip.
-- [ ] Everything translatable; suite green on both DBs; works behind a subpath
+- [x] Everything translatable; suite green on both DBs; works behind a subpath
       reverse proxy.
 
 ## Gotchas

@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/vehicles.twig' as vehicle_ui %}
 
 {% set active_nav = 'home' %}
 
@@ -7,49 +8,40 @@
     <div class="page__stack">
         <header class="page-header">
             <div>
-                <h1 class="page-header__title">{{ 'home.title'|trans }}</h1>
+                <p class="page-header__eyebrow">{{ today|local_date(constant('IntlDateFormatter::FULL')) }}</p>
+                <h1 class="page-header__title">{{ 'home.greeting'|trans({name: user.displayName}) }}</h1>
                 <p class="page-header__lead">{{ 'home.intro'|trans }}</p>
             </div>
         </header>
 
-        <div class="card-grid">
-            <section class="card" aria-labelledby="garage-heading">
-                <div class="card__header">
-                    <h2 id="garage-heading" class="card__title">{{ trans('home.vehicle_count', {count: vehicle_count}) }}</h2>
-                </div>
+        <section class="card" aria-labelledby="garage-heading">
+            <div class="card__header">
+                <h2 id="garage-heading" class="card__title">{{ trans('home.vehicle_count', {count: counts.active}) }}</h2>
+                {% if counts.active > 0 or counts.archived > 0 %}
+                    <a class="card__link" href="{{ url_for('garage') }}">{{ 'home.open_garage'|trans }}</a>
+                {% endif %}
+            </div>
+            {% if vehicles is empty %}
                 <div class="empty">
                     {{ ui.icon('garage') }}
-                    <p>{{ 'home.coming_soon'|trans }}</p>
+                    <p class="empty__title">{{ 'garage.empty_title'|trans }}</p>
+                    <p>{{ 'garage.empty_body'|trans }}</p>
+                    <a class="btn btn--primary" href="{{ url_for('vehicles.create') }}">{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
                 </div>
-            </section>
+            {% else %}
+                <div class="vehicle-grid">
+                    {% for vehicle in vehicles %}
+                        {{ vehicle_ui.card(vehicle) }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
 
-            <section class="card" aria-labelledby="status-heading">
-                <div class="card__header">
-                    <h2 id="status-heading" class="card__title">{{ 'home.status_heading'|trans }}</h2>
-                </div>
-                <ul class="list">
-                    <li>
-                        <a class="list__item" href="{{ url_for('health') }}">
-                            <span class="list__icon">{{ ui.icon('check_circle') }}</span>
-                            <span class="list__body">
-                                <span class="list__title">{{ 'home.status_health'|trans }}</span>
-                                <span class="list__meta">{{ 'home.status_health_hint'|trans }}</span>
-                            </span>
-                            {{ ui.icon('arrow_forward', 'list__trail') }}
-                        </a>
-                    </li>
-                    <li>
-                        <a class="list__item" href="{{ url_for('diagnostics.deep-link') }}">
-                            <span class="list__icon">{{ ui.icon('speed') }}</span>
-                            <span class="list__body">
-                                <span class="list__title">{{ 'home.status_deep_link'|trans }}</span>
-                                <span class="list__meta">{{ 'home.status_deep_link_hint'|trans }}</span>
-                            </span>
-                            {{ ui.icon('arrow_forward', 'list__trail') }}
-                        </a>
-                    </li>
-                </ul>
-            </section>
-        </div>
+        <section class="card" aria-labelledby="coming-heading">
+            <div class="card__header">
+                <h2 id="coming-heading" class="card__title">{{ 'home.coming_heading'|trans }}</h2>
+            </div>
+            <p class="muted">{{ 'home.coming_body'|trans }}</p>
+        </section>
     </div>
 {% endblock %}

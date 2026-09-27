@@ -1,0 +1,116 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'garage' %}
+{% set editing = vehicle is not null %}
+{% set heading = editing ? 'vehicle.edit_title'|trans({name: vehicle.name()}) : 'vehicle.add_title'|trans %}
+{% set volume_symbol = ('units.symbol.' ~ prefs().volumeUnit.value)|trans %}
+{% set energy_symbol = 'units.symbol.kwh'|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ editing ? url_for('vehicles.show', {id: vehicle.id}) : url_for('garage') }}">{{ ui.icon('chevron_left') }}{{ editing ? vehicle.name() : 'garage.title'|trans }}</a>
+
+        <header class="page-header">
+            <h1 class="page-header__title">{{ heading }}</h1>
+        </header>
+
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" enctype="multipart/form-data"
+              action="{{ editing ? url_for('vehicles.edit', {id: vehicle.id}) : url_for('vehicles.create') }}"
+              x-data="{ fuel: '{{ (values.fuel_type ?? 'petrol')|e('js') }}' }">
+            {{ ui.csrf(csrf) }}
+
+            <section class="card" aria-labelledby="basics-heading">
+                <h2 id="basics-heading" class="card__title">{{ 'vehicle.section.basics'|trans }}</h2>
+
+                {% set type_options = [] %}
+                {% for type in types %}
+                    {% set type_options = type_options|merge([{value: type.value, label: ('vehicle.type.' ~ type.value)|trans, icon: type.icon()}]) %}
+                {% endfor %}
+                {{ ui.chips('type', 'vehicle.field.type'|trans, values, errors, type_options, {required: true}) }}
+
+                <div class="form-row">
+                    {{ ui.input('make', 'vehicle.field.make'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
+                    {{ ui.input('model', 'vehicle.field.model'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
+                </div>
+                {{ ui.input('nickname', 'vehicle.field.nickname'|trans, values, errors, {optional: true, maxlength: 100, hint: 'vehicle.hint.nickname'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input('year', 'vehicle.field.year'|trans, values, errors, {type: 'number', optional: true, inputmode: 'numeric', min: first_year, step: 1}) }}
+                    {{ ui.input('registration', 'vehicle.field.registration'|trans, values, errors, {optional: true, maxlength: 20, autocomplete: 'off'}) }}
+                </div>
+
+                {% set fuel_options = [] %}
+                {% for fuel in fuel_types %}
+                    {% set fuel_options = fuel_options|merge([{value: fuel.value, label: ('vehicle.fuel.' ~ fuel.value)|trans}]) %}
+                {% endfor %}
+                <div class="form-row">
+                    <div class="field">
+                        <label class="field__label" for="f-fuel_type">{{ 'vehicle.field.fuel_type'|trans }}</label>
+                        <select class="select" id="f-fuel_type" name="fuel_type" required x-model="fuel"{{ ui.described_by('fuel_type', errors, false) }}>
+                            {% for option in fuel_options %}
+                                <option value="{{ option.value }}"{% if option.value == (values.fuel_type ?? '') %} selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                        {{ ui.field_error(errors, 'fuel_type') }}
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="f-capacity">{{ 'vehicle.field.capacity'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                        <div class="input-group">
+                            <input class="input" id="f-capacity" name="capacity" type="number" step="any" min="0" inputmode="decimal" value="{{ values.capacity ?? '' }}"{{ ui.described_by('capacity', errors, true) }}>
+                            <span class="input-group__suffix" aria-hidden="true" x-text="fuel === 'ev' ? '{{ energy_symbol|e('js') }}' : '{{ volume_symbol|e('js') }}'">{{ (values.fuel_type ?? '') == 'ev' ? energy_symbol : volume_symbol }}</span>
+                        </div>
+                        <p class="field__hint" id="f-capacity-hint">{{ 'vehicle.hint.capacity'|trans({unit: volume_symbol}) }}</p>
+                        {{ ui.field_error(errors, 'capacity') }}
+                    </div>
+                </div>
+                {{ ui.input('vin', 'vehicle.field.vin'|trans, values, errors, {optional: true, maxlength: 40, autocomplete: 'off', hint: 'vehicle.hint.vin'|trans}) }}
+            </section>
+
+            <section class="card" aria-labelledby="photo-heading">
+                <h2 id="photo-heading" class="card__title">{{ 'vehicle.section.photo'|trans }}</h2>
+                <div class="photo-field">
+                    {% if editing %}{{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}{% endif %}
+                    <div class="field">
+                        <label class="field__label" for="f-photo">{{ (editing and vehicle.hasPhoto() ? 'vehicle.field.photo_replace' : 'vehicle.field.photo')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                        <input class="input input--file" id="f-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"{{ ui.described_by('photo', errors, true) }}>
+                        <p class="field__hint" id="f-photo-hint">{{ 'vehicle.hint.photo'|trans({max: max_upload_mb}) }}</p>
+                        {{ ui.field_error(errors, 'photo') }}
+                    </div>
+                </div>
+                {% if editing and vehicle.hasPhoto() %}
+                    <label class="checkbox">
+                        <input type="checkbox" name="remove_photo" value="1"{% if (values.remove_photo ?? '') == '1' %} checked{% endif %}>
+                        <span>{{ 'vehicle.field.remove_photo'|trans }}</span>
+                    </label>
+                {% endif %}
+            </section>
+
+            <section class="card" aria-labelledby="money-heading">
+                <h2 id="money-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>
+
+                {% set currency_choices = [{value: '', label: 'vehicle.currency_default'|trans({currency: default_currency})}]|merge(currency_options) %}
+                {{ ui.select('currency', 'vehicle.field.currency'|trans, values, errors, currency_choices, {hint: 'vehicle.hint.currency'|trans}) }}
+
+                <div class="form-row">
+                    {{ ui.input('purchase_date', 'vehicle.field.purchase_date'|trans, values, errors, {type: 'date', optional: true}) }}
+                    {{ ui.input('purchase_price', 'vehicle.field.purchase_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal'}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('sale_date', 'vehicle.field.sale_date'|trans, values, errors, {type: 'date', optional: true}) }}
+                    {{ ui.input('sale_price', 'vehicle.field.sale_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal'}) }}
+                </div>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'vehicle.add_submit')|trans }}</button>
+                <a class="btn btn--lg" href="{{ editing ? url_for('vehicles.show', {id: vehicle.id}) : url_for('garage') }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

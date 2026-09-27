@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Http;
 
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\TestBrowser;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
@@ -49,12 +50,46 @@ final class BasePathRoutingTest extends AppTestCase
     }
 
     #[DataProvider('rootRequests')]
-    public function testHomeAtASubpath(string $path): void
+    public function testHomeAtASubpathRedirectsToPrefixedSetup(string $path): void
     {
-        $response = $this->get($this->createApp(['APP_BASE_PATH' => 'logbook/']), $path);
+        $app = $this->createApp(['APP_BASE_PATH' => 'logbook/']);
+        $this->resetDatabase($app);
 
-        self::assertSame(200, $response->getStatusCode());
-        self::assertStringContainsString('href="/logbook/health"', self::body($response));
+        $response = $this->get($app, $path);
+
+        self::assertSame(303, $response->getStatusCode());
+        self::assertSame('/logbook/setup', $response->getHeaderLine('Location'));
+
+        $setup = $this->get($app, '/logbook/setup');
+        self::assertSame(200, $setup->getStatusCode());
+        self::assertStringContainsString('action="/logbook/setup"', self::body($setup));
+    }
+
+    public function testSignedInPagesAndSessionCookieAtASubpath(): void
+    {
+        $app = $this->createApp(['APP_BASE_PATH' => '/logbook']);
+        $this->resetDatabase($app);
+        $this->createOwner($app);
+        $browser = new TestBrowser($app);
+
+        // Deep link while signed out: sign in, then land back on it.
+        $redirect = $browser->get('/logbook/vehicles/new');
+        self::assertSame('/logbook/login?next=%2Flogbook%2Fvehicles%2Fnew', $redirect->getHeaderLine('Location'));
+
+        $browser->get('/logbook/login');
+        $response = $browser->post('/logbook/login', [
+            'username' => 'owner',
+            'password' => self::PASSWORD,
+            'next' => '/logbook/vehicles/new',
+        ]);
+        self::assertSame('/logbook/vehicles/new', $response->getHeaderLine('Location'));
+        self::assertStringContainsString('Path=/logbook;', $response->getHeaderLine('Set-Cookie'));
+
+        // Hard refresh of the deep link, prefix stripped by the proxy.
+        $page = $browser->get('/vehicles/new');
+        self::assertSame(200, $page->getStatusCode());
+        self::assertStringContainsString('action="/logbook/vehicles/new"', self::body($page));
+        self::assertStringContainsString('href="/logbook/garage"', self::body($page));
     }
 
     public function testHealthAtASubpath(): void

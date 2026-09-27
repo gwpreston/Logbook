@@ -84,9 +84,14 @@ disagree):
 
 - Front controller (`public/index.php`) → Slim app → middleware stack → Action.
 - **Middleware order (outer→inner):** error handling → base-path → session →
-  locale resolution → CSRF → routing → auth guard (per protected route group,
-  since it needs the matched route). Phase 0 wires error, base-path, locale and
-  routing; session, CSRF and auth arrive in Phase 1.
+  current user → locale + display preferences → routing → per route group:
+  auth guard → CSRF. The session is global but lazy (no cookie or database
+  row until something is stored in it). CSRF and the auth guard sit on route
+  groups rather than globally so machine endpoints such as `/health` never
+  create sessions; every HTML route is inside a CSRF-protected group.
+- **Current user:** resolved once per request from the session by middleware
+  and exposed as the `user` request attribute. Actions never read the session
+  to find the user, so multi-user can slot in without touching them.
 - **Base path:** Slim's router is configured with `APP_BASE_PATH`; the
   base-path middleware restores the prefix when a reverse proxy has stripped
   it, so both proxy styles route identically. All URLs come from `url_for()`,
@@ -113,7 +118,8 @@ Established in Phase 0 and enforced by the migration tests on every engine:
 |---|---|---|
 | Timestamps | `datetime` | UTC with no offset on every engine; written via `Support\Database\UtcDateTime`, never by DB defaults such as `CURRENT_TIMESTAMP`. MySQL `TIMESTAMP` is avoided (2038 limit, implicit conversion). |
 | Calendar dates | `date` | Dates with no time (e.g. an expiry day) stay plain dates; no time-zone conversion. |
-| Money, volumes, prices | `decimal` | Never `float`. ≥3 decimals for fuel price and volume. |
+| Money, volumes, prices | `decimal` | Never `float`. Money amounts `decimal(14,3)` (covers 3-decimal currencies); quantities in SI units `decimal(12,3)`; ≥3 decimals for fuel price and volume. PHP side: `Support\Money\Money` (integer micro-units, no floats) and canonical decimal strings. |
+| Enumerations | `string` | Short lower-case codes backed by PHP enums (`car`, `archived`, …); no DB enum types. |
 | Flags | `boolean` | |
 | Structured values | `json` | **Object key order is not preserved on MySQL**; use lists where order matters. |
 | Nullability | explicit `'null' => true/false` | Phinx 0.16 defaults columns to nullable: always state it. |
@@ -127,11 +133,15 @@ cannot be introspected by DBAL, so schema-shape tests run on PostgreSQL and
 MySQL only.
 
 **Vehicle**
-- id, name/nickname, type (`car` | `bike`), make, model, year, registration,
-  VIN (optional), fuel type (`petrol`|`diesel`|`ev`|`hybrid`|`lpg`|`other`),
-  tank/battery capacity (optional), currency override (optional),
-  photo (optional), purchase date/price (optional), sale date/price (optional),
-  status (`active` | `archived`), created/updated (UTC).
+- id, user_id (owner), name/nickname (optional), type (`car` | `bike`), make,
+  model, year (optional), registration (optional: a vehicle may not be
+  registered yet), VIN (optional, up to 17 characters), fuel type
+  (`petrol`|`diesel`|`ev`|`hybrid`|`lpg`|`other`), tank/battery capacity
+  (optional; litres, or kWh for `ev`), currency override (optional), photo
+  (optional: stored path + MIME type), purchase date/price (optional), sale
+  date/price (optional), status (`active` | `archived`), archived_at,
+  created/updated (UTC). Deleting a vehicle deletes its history and photo;
+  archiving keeps everything.
 
 **OdometerReading**
 - id, vehicle_id, reading_km, recorded_at (UTC/date), source
@@ -172,8 +182,19 @@ MySQL only.
 - id, owner_type, owner_id, filename, mime, size, stored_path, uploaded_at.
 
 **User**
-- id, username, password_hash (Argon2id), display name, locale, unit_system,
-  timezone, created_at. (Single row day-one; table shaped for multi-user later.)
+- id, username (stored lower-case, so sign-in is case-insensitive on every
+  engine), password_hash (Argon2id), display name, locale, timezone, and the
+  unit preferences: distance unit (`km`|`mi`), volume unit
+  (`l`|`gal_uk`|`gal_us`), consumption unit (`l_per_100km`|`km_per_l`|
+  `mpg_uk`|`mpg_us`), default currency (ISO 4217), theme
+  (`system`|`light`|`dark`); created/updated (UTC). "Metric", "UK" and "US"
+  are presets that fill in the three unit preferences. (Single row day-one;
+  table shaped for multi-user later.)
+
+**Session**
+- id (HMAC-SHA256 of the random cookie token, keyed with `SESSION_SECRET`; the
+  token itself is never stored), user_id (optional), data (JSON), created_at,
+  last_activity_at (UTC). Expires after 30 days without activity.
 
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
@@ -186,6 +207,18 @@ MySQL only.
 Add/edit/delete vehicles; upload a photo; set per-vehicle fuel type and currency.
 **Archive** sold vehicles: hidden from active views, history retained, excluded
 from fleet totals unless "include archived" is toggled.
+
+- Required: type, make, model, fuel type. Everything else is optional; zero
+  prices are valid. Year must be between 1885 and next year; a sale date
+  cannot precede the purchase date.
+- Deleting asks for confirmation on its own page (works without JS) and
+  removes the vehicle, its history and its photo. Archive/restore is one click.
+- Currency resolves as: vehicle override → the owner's default currency →
+  `APP_CURRENCY`.
+- Photo: JPEG, PNG or WebP (checked by content, not by file name), up to
+  `MAX_UPLOAD_MB`; stored under `UPLOAD_PATH` with a random name and served
+  only to the signed-in owner through an authenticated route. Replacing or
+  removing a photo deletes the old file.
 
 ### 7.2 Odometer
 First-class mileage log with manual entries plus readings derived from fuel and
@@ -228,6 +261,25 @@ toggles.
 Username/password login, Argon2id, secure sessions, logout, change password.
 First-run setup creates the initial account. CSRF on all forms.
 
+- **First run:** while no user exists every page redirects to `/setup`, which
+  creates the account (username, password, display name, locale, time zone,
+  unit preset, currency) and signs it in. Once a user exists `/setup` redirects
+  to sign-in; it can never create a second account.
+- **Passwords:** 8–1024 characters, no other composition rules; hashed with
+  Argon2id and transparently re-hashed when PHP's defaults change.
+- **Sessions:** stored in the database (see §6 Session); cookie `HttpOnly`,
+  `SameSite=Lax`, `Secure` when `SESSION_SECURE`, scoped to `APP_BASE_PATH`.
+  The session id is regenerated on sign-in (fixation protection); sign-out
+  destroys it. Changing the password signs out every other session.
+- **Sign-in redirect:** an unauthenticated page request goes to sign-in and
+  returns to the original page afterwards (local paths only; no open
+  redirects).
+- **CSRF:** `slim/csrf` in persistent-token mode (one token per session, so
+  several tabs and the back button keep working), rotated on sign-in. A
+  forged or stale post gets a friendly 400 page, never a state change. A post
+  that exceeds PHP's `post_max_size` is reported as "too large" rather than as
+  a CSRF failure.
+
 ### 7.10 Feature toggles
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
 Disabled modules are removed from nav, routes, and dashboard.
@@ -265,11 +317,19 @@ Ship the framework so translations are easy to add; do not hard-code strings.
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
 - **Appearance:** light and dark themes from one token set (`assets/css/app.css`).
-  The OS preference applies by default and without JS; a toggle overrides it
-  (per browser until accounts exist, then a per-user System/Light/Dark
-  setting). App shell: sidebar on wide screens (>= 960px); sticky top bar and
-  bottom tab bar on narrow ones. Fonts and icons are self-hosted: no
-  third-party requests at runtime.
+  The OS preference applies by default and without JS. Signed out (setup,
+  sign-in) a JS toggle overrides it per browser; signed in, the per-user
+  System/Light/Dark setting applies (server-rendered, so no flash), and the
+  quick toggle saves that setting. App shell: sidebar on wide screens
+  (>= 960px); sticky top bar and bottom tab bar on narrow ones. Fonts and icons
+  are self-hosted: no third-party requests at runtime.
+- **Display preferences:** the signed-in user's locale, time zone, units and
+  currency apply to every page from the next request on; signed out, the
+  locale comes from `Accept-Language` / `APP_LOCALE` and everything else from
+  the app defaults (metric, `APP_TIMEZONE`, `APP_CURRENCY`).
+- **Numbers in forms:** decimal inputs use `type="number"` (`step="any"`), so
+  browsers submit a canonical `1234.5`; the server also accepts the user's
+  locale format (`1.234,5`) as a fallback.
 
 ---
 
@@ -282,11 +342,14 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 - `APP_ENV` (`production`|`development`|`testing`; default `production`),
   `APP_DEBUG` (default on in development only)
-- `APP_URL`, `APP_BASE_PATH` (subpath support), `APP_TIMEZONE`, `APP_LOCALE`
+- `APP_URL`, `APP_BASE_PATH` (subpath support), `APP_TIMEZONE`, `APP_LOCALE`,
+  `APP_CURRENCY` (ISO 4217; default `GBP`) — defaults for the first-run form
+  and for signed-out pages; each user then has their own
 - `DB_DRIVER` (`pgsql`|`mysql`|`sqlite`; default `sqlite`), `DB_HOST`,
   `DB_PORT` (default per driver), `DB_NAME` (for SQLite: the file path),
   `DB_USER`, `DB_PASSWORD`
-- `SESSION_SECRET`, `SESSION_SECURE` (default: true when `APP_URL` is https)
+- `SESSION_SECRET` (optional key for hashing session ids at rest; changing it
+  signs everyone out), `SESSION_SECURE` (default: true when `APP_URL` is https)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
 - `LOG_PATH` (default `php://stderr`), `LOG_LEVEL` (PSR-3 level)
 - `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,

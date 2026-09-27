@@ -6,6 +6,8 @@ use Doctrine\DBAL\Connection;
 use Logbook\Support\Clock\UtcClock;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\ConnectionFactory;
+use Logbook\Support\Display\DisplayContext;
+use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\I18n\AvailableLocales;
 use Logbook\Support\I18n\LocaleResolver;
 use Logbook\Support\I18n\TranslatorFactory;
@@ -19,11 +21,13 @@ use Monolog\Processor\PsrLogMessageProcessor;
 use Psr\Clock\ClockInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Slim\App;
 use Slim\Factory\AppFactory;
 use Slim\Interfaces\RouteParserInterface;
 use Slim\Psr7\Factory\ResponseFactory;
+use Slim\Psr7\Factory\StreamFactory;
 use Symfony\Component\Translation\Translator;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -53,6 +57,7 @@ return [
     },
 
     ResponseFactoryInterface::class => static fn (): ResponseFactoryInterface => new ResponseFactory(),
+    StreamFactoryInterface::class => static fn (): StreamFactoryInterface => new StreamFactory(),
 
     RouteParserInterface::class => static function (ContainerInterface $c): RouteParserInterface {
         $app = $c->get(App::class);
@@ -112,11 +117,15 @@ return [
         $routeParser = $c->get(RouteParserInterface::class);
         $assets = $c->get(AssetPackage::class);
         $translator = $c->get(Translator::class);
+        $formatter = $c->get(DisplayFormatter::class);
+        $display = $c->get(DisplayContext::class);
         assert($routeParser instanceof RouteParserInterface);
         assert($assets instanceof AssetPackage);
         assert($translator instanceof Translator);
+        assert($formatter instanceof DisplayFormatter);
+        assert($display instanceof DisplayContext);
 
-        return new TwigExtension($routeParser, $assets, $translator, $settingsOf($c)->basePath);
+        return new TwigExtension($routeParser, $assets, $translator, $formatter, $display, $settingsOf($c)->basePath);
     },
 
     Environment::class => static function (ContainerInterface $c) use ($settingsOf): Environment {

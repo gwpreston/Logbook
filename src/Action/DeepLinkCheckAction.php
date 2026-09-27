@@ -20,6 +20,6 @@ final readonly class DeepLinkCheckAction
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->view->render($response, 'diagnostics/deep-link.twig');
+        return $this->view->render($request, $response, 'diagnostics/deep-link.twig');
     }
 }

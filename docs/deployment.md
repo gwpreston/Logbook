@@ -42,7 +42,8 @@ docker run -d --name logbook -p 8080:80 -v logbook_data:/data logbook
 
 Both compose files work unedited. For a real deployment, put overrides in a
 `.env` file next to the compose file — at minimum a strong `DB_PASSWORD`, and
-from Phase 1 a `SESSION_SECRET`:
+ideally a `SESSION_SECRET` (it keys the hashes of session ids stored in the
+database; changing it later signs everyone out):
 
 ```dotenv
 DB_PASSWORD=a-long-random-password
@@ -52,6 +53,18 @@ APP_TIMEZONE=Europe/London
 ```
 
 The database containers are not published on host ports; only the app is.
+
+On first visit Logbook asks you to **create the owner account** (first-run
+setup); until then every page redirects there. Do that straight after
+deploying, before exposing the app publicly. Behind HTTPS, sessions use
+`Secure` cookies automatically when `APP_URL` starts with `https://` (or set
+`SESSION_SECURE=true`).
+
+Failed sign-ins are logged at `notice` level, e.g.
+`Failed sign-in for "admin" from 203.0.113.9`, so a tool such as fail2ban
+can watch the log (`LOG_PATH`) and ban repeat offenders. Behind a reverse
+proxy, make sure the web server logs/sees the real client address (Apache
+`mod_remoteip`, nginx `real_ip`).
 
 | Container variable | Default | Purpose |
 |---|---|---|
@@ -82,7 +95,13 @@ vendor/bin/phinx migrate -e production
 
 Make `var/` (cache, logs, SQLite) and your `UPLOAD_PATH` writable by the web
 server user, e.g. `chown -R www-data: var`. Keep `UPLOAD_PATH` **outside**
-`public/`.
+`public/`: vehicle photos (and, later, receipts) are served only through the
+app to the signed-in owner. PHP's `upload_max_filesize` and `post_max_size`
+must be at least `MAX_UPLOAD_MB` (default 10 MB); the Docker image sets 16M/20M.
+
+PHP must support **Argon2id** password hashing (`PASSWORD_ARGON2ID`), which
+distribution and official Docker builds of PHP 8.4 include; check with
+`php -r 'var_dump(defined("PASSWORD_ARGON2ID"));'`.
 
 The **web root must be `public/`** — never the project directory. Nothing else
 is meant to be reachable over HTTP.

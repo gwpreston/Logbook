@@ -1,0 +1,101 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'garage' %}
+{% set data = vehicle.data %}
+{% set dash = '—' %}
+
+{% block title %}{{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <div class="toolbar">
+            <a class="back-link" href="{{ url_for('garage', {}, vehicle.isArchived() ? {archived: '1'} : {}) }}">{{ ui.icon('chevron_left') }}{{ 'garage.title'|trans }}</a>
+            <div class="btn-row">
+                <a class="btn" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                {% if vehicle.isArchived() %}
+                    <form method="post" action="{{ url_for('vehicles.restore', {id: vehicle.id}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn">{{ ui.icon('unarchive') }}{{ 'vehicle.restore'|trans }}</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn">{{ ui.icon('archive') }}{{ 'vehicle.archive'|trans }}</button>
+                    </form>
+                {% endif %}
+                <a class="btn btn--danger" href="{{ url_for('vehicles.delete', {id: vehicle.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+            </div>
+        </div>
+
+        <header class="vehicle-hero">
+            {{ ui.vehicle_photo(vehicle, 'vehicle-photo--hero') }}
+            <div class="vehicle-hero__text">
+                <div class="vehicle-card__tags">
+                    {% if data.registration %}<span class="plate">{{ data.registration }}</span>{% endif %}
+                    <span class="pill">{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</span>
+                    {% if vehicle.isArchived() %}
+                        <span class="pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.archived_on'|trans({date: vehicle.archivedAt|instant_date}) }}</span>
+                    {% endif %}
+                </div>
+                <h1>{{ vehicle.name() }}</h1>
+                <p class="muted">{{ vehicle.description() }}</p>
+            </div>
+        </header>
+
+        {% if vehicle.isArchived() %}
+            <div class="alert alert--warning" role="status">{{ ui.icon('inventory_2') }}<span>{{ 'vehicle.archived_notice'|trans }}</span></div>
+        {% endif %}
+
+        <div class="card-grid">
+            <section class="card" aria-labelledby="details-heading">
+                <h2 id="details-heading" class="card__title">{{ 'vehicle.section.details'|trans }}</h2>
+                <dl class="details">
+                    <div><dt>{{ 'vehicle.field.type'|trans }}</dt><dd>{{ ('vehicle.type.' ~ data.type.value)|trans }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.make'|trans }}</dt><dd>{{ data.make }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.model'|trans }}</dt><dd>{{ data.model }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.year'|trans }}</dt><dd>{{ data.year ?? dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.registration'|trans }}</dt><dd>{{ data.registration ?? dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.vin'|trans }}</dt><dd class="tabular">{{ data.vin ?? dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.fuel_type'|trans }}</dt><dd>{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</dd></div>
+                    <div>
+                        <dt>{{ 'vehicle.field.capacity'|trans }}</dt>
+                        <dd class="tabular">{{ data.capacity is null ? dash : (data.fuelType.isElectric() ? data.capacity|energy : data.capacity|volume) }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="card" aria-labelledby="ownership-heading">
+                <h2 id="ownership-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>
+                <dl class="details">
+                    <div><dt>{{ 'vehicle.field.currency'|trans }}</dt><dd>{{ currency }} — {{ currency_name(currency) }}{% if data.currency is null %} <span class="muted">({{ 'vehicle.currency_inherited'|trans }})</span>{% endif %}</dd></div>
+                    <div><dt>{{ 'vehicle.field.purchase_date'|trans }}</dt><dd>{{ data.purchaseDate ? data.purchaseDate|local_date : dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.purchase_price'|trans }}</dt><dd class="tabular">{{ data.purchasePrice is null ? dash : data.purchasePrice|money(currency) }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.sale_date'|trans }}</dt><dd>{{ data.saleDate ? data.saleDate|local_date : dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.sale_price'|trans }}</dt><dd class="tabular">{{ data.salePrice is null ? dash : data.salePrice|money(currency) }}</dd></div>
+                    <div><dt>{{ 'vehicle.added'|trans }}</dt><dd>{{ vehicle.createdAt|local_datetime }}</dd></div>
+                </dl>
+            </section>
+        </div>
+
+        <section class="card" aria-labelledby="history-heading">
+            <h2 id="history-heading" class="card__title">{{ 'vehicle.section.history'|trans }}</h2>
+            <ul class="list">
+                {% for section in [
+                    {icon: 'speed', key: 'odometer'},
+                    {icon: 'local_gas_station', key: 'fuel'},
+                    {icon: 'build', key: 'maintenance'},
+                    {icon: 'description', key: 'documents'},
+                ] %}
+                    <li class="list__item">
+                        <span class="list__icon">{{ ui.icon(section.icon) }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ ('vehicle.upcoming.' ~ section.key)|trans }}</span>
+                            <span class="list__meta">{{ 'vehicle.upcoming.soon'|trans }}</span>
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+{% endblock %}
