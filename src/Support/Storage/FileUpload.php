@@ -8,25 +8,20 @@ use finfo;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
- * Checks an uploaded image by its content (never by its name or the
- * browser-supplied type): JPEG, PNG or WebP, within the size limit, and
- * actually decodable as an image of sane dimensions.
+ * The single check every upload goes through (vehicle photos and
+ * attachments alike). A file is judged by its content — never by its name
+ * or the browser-supplied type — against the kind's accepted types and the
+ * size limit (MAX_UPLOAD_MB). Images must also decode to sane dimensions;
+ * PDFs must start with a PDF header.
  */
-final readonly class ImageUpload
+final readonly class FileUpload
 {
-    /** MIME type → stored file extension. */
-    public const array TYPES = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-    ];
-
     private const int MAX_DIMENSION = 20000;
 
     private function __construct(
         public ?string $mime,
         public ?string $extension,
-        /** Translation key of the problem, or null when the image is acceptable. */
+        /** Translation key of the problem, or null when the file is acceptable. */
         public ?string $error,
     ) {
     }
@@ -40,7 +35,7 @@ final readonly class ImageUpload
         return $file !== null && $file->getError() !== UPLOAD_ERR_NO_FILE;
     }
 
-    public static function check(UploadedFileInterface $file, int $maxBytes): self
+    public static function check(UploadedFileInterface $file, int $maxBytes, UploadKind $kind): self
     {
         $error = match ($file->getError()) {
             UPLOAD_ERR_OK => null,
@@ -65,22 +60,37 @@ final readonly class ImageUpload
             return self::invalid('upload.failed');
         }
 
+        $types = $kind->types();
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($path);
-        if (!is_string($mime) || !isset(self::TYPES[$mime])) {
-            return self::invalid('upload.not_an_image');
+        if (!is_string($mime) || !isset($types[$mime]) || !self::contentMatches($path, $mime)) {
+            return self::invalid($kind->typeError());
         }
 
-        $info = @getimagesize($path);
-        if ($info === false || $info[0] < 1 || $info[1] < 1 || $info[0] > self::MAX_DIMENSION || $info[1] > self::MAX_DIMENSION) {
-            return self::invalid('upload.not_an_image');
-        }
-
-        return new self($mime, self::TYPES[$mime], null);
+        return new self($mime, $types[$mime], null);
     }
 
     public function isValid(): bool
     {
         return $this->error === null;
+    }
+
+    private static function contentMatches(string $path, string $mime): bool
+    {
+        if ($mime === 'application/pdf') {
+            $handle = fopen($path, 'rb');
+            $header = $handle === false ? false : fread($handle, 5);
+            if ($handle !== false) {
+                fclose($handle);
+            }
+
+            return $header === '%PDF-';
+        }
+
+        $info = @getimagesize($path);
+
+        return $info !== false
+            && $info[0] >= 1 && $info[1] >= 1
+            && $info[0] <= self::MAX_DIMENSION && $info[1] <= self::MAX_DIMENSION;
     }
 
     private static function invalid(string $error): self

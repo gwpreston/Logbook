@@ -1,0 +1,54 @@
+{#
+ # Attachment fragments. Import with: {% import 'macros/attachments.twig' as files %}
+ #}
+
+{# The attachments card of an entry's form: the files already attached (open,
+   delete) and an input to add one. The form must be multipart. The file is
+   checked with the rest of the form and saved with it. #}
+{% macro card(vehicle, attachments, errors, max_mb) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as files %}
+    <section class="card" aria-labelledby="attachments-heading">
+        <h2 id="attachments-heading" class="card__title">{{ 'attachment.title'|trans }}</h2>
+        {% if attachments is not empty %}
+            <ul class="attachment-list">
+                {% for attachment in attachments %}
+                    {{ files.item(vehicle, attachment, true) }}
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <div class="field">
+            <label class="field__label" for="f-attachment">{{ (attachments is empty ? 'attachment.field.add' : 'attachment.field.add_another')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+            <input class="input input--file" id="f-attachment" name="attachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"{{ ui.described_by('attachment', errors, true) }}>
+            <p class="field__hint" id="f-attachment-hint">{{ 'attachment.hint'|trans({max: max_mb}) }}</p>
+            {{ ui.field_error(errors, 'attachment') }}
+        </div>
+    </section>
+{%- endmacro %}
+
+{# One attached file: opens it (images in the browser, PDFs download), with
+   its size and upload date; `deletable` adds a delete link. #}
+{% macro item(vehicle, attachment, deletable = false) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <li class="attachment">
+        <a class="attachment__link" href="{{ url_for('attachments.show', {id: vehicle.id, attachment: attachment.id}, {v: attachment.version()}) }}">
+            {{- ui.icon(attachment.icon()) }}<span class="attachment__name">{{ attachment.filename }}</span>
+        </a>
+        <span class="attachment__meta">{{ attachment.size|file_size }} · {{ attachment.uploadedAt|instant_date }}</span>
+        {% if deletable %}
+            <a class="icon-btn attachment__delete" href="{{ url_for('attachments.delete', {id: vehicle.id, attachment: attachment.id}) }}">
+                {{- ui.icon('delete') }}<span class="visually-hidden">{{ 'attachment.delete_named'|trans({name: attachment.filename}) }}</span>
+            </a>
+        {% endif %}
+    </li>
+{%- endmacro %}
+
+{# A paperclip with the number of files, for list rows. #}
+{% macro count(attachments) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% if attachments is not empty %}
+        <span class="attachment-count" title="{{ 'attachment.count'|trans({count: attachments|length}) }}">
+            {{- ui.icon('attach_file') }}<span aria-hidden="true">{{ attachments|length }}</span><span class="visually-hidden">{{ 'attachment.count'|trans({count: attachments|length}) }}</span>
+        </span>
+    {% endif %}
+{%- endmacro %}

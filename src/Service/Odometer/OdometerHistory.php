@@ -114,4 +114,15 @@ final readonly class OdometerHistory
 
         return (float) $distance / $days * self::DAYS_PER_MONTH;
     }
+
+    /**
+     * Average kilometres per day (same rules as averageKmPerMonth()), for
+     * projecting when a distance will be reached.
+     */
+    public function averageKmPerDay(): ?float
+    {
+        $perMonth = $this->averageKmPerMonth();
+
+        return $perMonth === null ? null : $perMonth / self::DAYS_PER_MONTH;
+    }
 }

@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
 
 {% set active_nav = 'garage' %}
 {% set editing = entry is not null %}
@@ -28,7 +29,7 @@
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
-        <form class="form" method="post"
+        <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('fuel.edit', {id: vehicle.id, entry: entry.id}) : url_for('fuel.create', {id: vehicle.id}) }}"
               x-data="{ fuel: '{{ fuel|e('js') }}' }">
             {{ ui.csrf(csrf) }}
@@ -115,6 +116,8 @@
                     {{ ui.field_error(errors, 'notes') }}
                 </div>
             </details>
+
+            {{ files.card(vehicle, attachments, errors, max_upload_mb) }}
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'fuel.add_submit')|trans }}</button>

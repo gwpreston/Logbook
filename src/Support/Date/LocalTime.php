@@ -93,6 +93,30 @@ final class LocalTime
     }
 
     /**
+     * A calendar date plus whole months, clamped to the end of a shorter
+     * month: 31 Jan + 1 month is 28 (or 29) Feb, not 3 Mar as PHP's
+     * "+1 month" would give.
+     */
+    public static function addMonths(DateTimeImmutable $date, int $months): DateTimeImmutable
+    {
+        // Months since year 0; dates are AD, so this stays non-negative.
+        $total = (int) $date->format('Y') * 12 + (int) $date->format('n') - 1 + $months;
+        $firstOfMonth = $date->setDate(intdiv($total, 12), $total % 12 + 1, 1);
+        $day = min((int) $date->format('j'), (int) $firstOfMonth->format('t'));
+
+        return $firstOfMonth->setDate((int) $firstOfMonth->format('Y'), (int) $firstOfMonth->format('n'), $day);
+    }
+
+    /**
+     * Whole days from one calendar date to another (negative when $to is
+     * earlier). Both are midnight UTC, so there is no DST to skew it.
+     */
+    public static function daysBetween(DateTimeImmutable $from, DateTimeImmutable $to): int
+    {
+        return intdiv($to->getTimestamp() - $from->getTimestamp(), 86400);
+    }
+
+    /**
      * Today's calendar date for someone in $zone. Just after midnight in
      * Auckland it is already tomorrow there, while it is still today in UTC.
      */

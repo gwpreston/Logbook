@@ -1,5 +1,5 @@
 {
-    "css/app.css": "a294058ec8ae",
+    "css/app.css": "d411356e8e67",
     "images/logbook-mark.png": "26fcc6f7ed96",
     "js/app.js": "8f7ff9364d27",
     "js/theme.js": "effc85a28e76",
@@ -10,6 +10,6 @@
     "vendor/fonts/outfit-latin-wght-normal.woff2": "6c18d579fd87",
     "vendor/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2": "38e3b8fd8045",
     "vendor/fonts/plus-jakarta-sans-latin-wght-normal.woff2": "153fc85b7029",
-    "vendor/icons.svg": "bb2eecd3a02d",
+    "vendor/icons.svg": "3285edf401e8",
     "vendor/sortable.min.js": "bf4241bc73fe"
 }

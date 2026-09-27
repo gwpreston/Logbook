@@ -1,0 +1,85 @@
+{#
+ # Compliance fragments. Import with: {% import 'macros/compliance.twig' as docs %}
+ #}
+
+{# A document's name: its title, else its type. #}
+{% macro name(document) -%}
+    {{ document.data.title ?? ('compliance.type.' ~ document.data.type.value)|trans }}
+{%- endmacro %}
+
+{# Status pill for a Service\Compliance\DocumentState. #}
+{% macro status_pill(state) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set status = state.status.value %}
+    {% set data = state.document.data %}
+    <span class="pill{{ state.status.tone() ? ' pill--' ~ state.status.tone() }}">
+        {%- if status == 'expired' -%}
+            {{ ui.icon('warning') }}{{ 'compliance.status.expired'|trans({days: -state.daysLeft}) }}
+        {%- elseif status == 'expiring' or status == 'valid' -%}
+            {{ ('compliance.status.' ~ status)|trans({days: state.daysLeft}) }}
+        {%- elseif status == 'upcoming' -%}
+            {{ 'compliance.status.upcoming'|trans({date: data.startOn|local_date}) }}
+        {%- else -%}
+            {{ ('compliance.status.' ~ status)|trans }}
+        {%- endif -%}
+    </span>
+{%- endmacro %}
+
+{# The validity period: "1 Mar 2026 – 28 Feb 2027", "Expires 28 Feb 2027", … #}
+{% macro period(document) -%}
+    {% set data = document.data %}
+    {%- if data.startOn and data.expiryOn -%}
+        {{ 'compliance.period.both'|trans({start: data.startOn|local_date, expiry: data.expiryOn|local_date}) }}
+    {%- elseif data.expiryOn -%}
+        {{ 'compliance.period.expiry'|trans({expiry: data.expiryOn|local_date}) }}
+    {%- elseif data.startOn -%}
+        {{ 'compliance.period.start'|trans({start: data.startOn|local_date}) }}
+    {%- else -%}
+        {{ 'compliance.period.none'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# One document (a DocumentState) as a card-like row: name and status, who
+   issued it and its number, the period and cost, its files, and edit /
+   renew actions. #}
+{% macro row(state, vehicle, currency, attachments) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attachments.twig' as files %}
+    {% import _self as docs %}
+    {% set document = state.document %}
+    {% set data = document.data %}
+    <li class="document">
+        <div class="list__item">
+            <span class="list__icon">{{ ui.icon(data.type.icon()) }}</span>
+            <span class="list__body">
+                <a class="list__title" href="{{ url_for('compliance.edit', {id: vehicle.id, document: document.id}) }}">{{ docs.name(document) }}</a>
+                {% if data.title %}<span class="list__meta">{{ ('compliance.type.' ~ data.type.value)|trans }}</span>{% endif %}
+                {% if data.provider or data.reference %}
+                    <span class="list__meta">
+                        {{- data.provider ?? '' }}{% if data.provider and data.reference %} · {% endif %}{% if data.reference %}<span class="tabular">{{ data.reference }}</span>{% endif -%}
+                    </span>
+                {% endif %}
+                <span class="list__meta">{{ docs.period(document) }}</span>
+            </span>
+            <span class="list__end">
+                {{ docs.status_pill(state) }}
+                {% if data.cost != '0.000' %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
+            </span>
+        </div>
+        {% if attachments is not empty %}
+            <ul class="attachment-list attachment-list--inset">
+                {% for attachment in attachments %}
+                    {{ files.item(vehicle, attachment) }}
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if not vehicle.isArchived() %}
+            <div class="btn-row document__actions">
+                <a class="btn btn--soft" href="{{ url_for('compliance.edit', {id: vehicle.id, document: document.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}<span class="visually-hidden">: {{ docs.name(document) }}</span></a>
+                {% if data.type.isSuperseded() and state.status.value in ['expired', 'expiring', 'valid'] %}
+                    <a class="btn btn--soft" href="{{ url_for('compliance.create', {id: vehicle.id}, {type: data.type.value}) }}">{{ ui.icon('event_repeat') }}{{ 'compliance.renew'|trans }}<span class="visually-hidden">: {{ docs.name(document) }}</span></a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </li>
+{%- endmacro %}

@@ -117,6 +117,45 @@ final class LocalTimeTest extends TestCase
         self::assertSame('00:00:00 UTC', LocalTime::today($clock, new DateTimeZone('Pacific/Auckland'))->format('H:i:s T'));
     }
 
+    /**
+     * @return iterable<string, array{string, int, string}>
+     */
+    public static function monthAdditions(): iterable
+    {
+        yield 'plain' => ['2026-03-15', 12, '2027-03-15'];
+        yield 'end of January to February' => ['2026-01-31', 1, '2026-02-28'];
+        yield 'into a leap February' => ['2027-01-31', 13, '2028-02-29'];
+        yield 'leap day plus a year' => ['2024-02-29', 12, '2025-02-28'];
+        yield 'across the year end' => ['2026-11-30', 3, '2027-02-28'];
+        yield '31st to a 30-day month' => ['2026-08-31', 1, '2026-09-30'];
+        yield 'many years' => ['2026-05-10', 120, '2036-05-10'];
+        yield 'zero' => ['2026-05-10', 0, '2026-05-10'];
+    }
+
+    #[DataProvider('monthAdditions')]
+    public function testAddMonthsClampsToTheEndOfShorterMonths(string $from, int $months, string $expected): void
+    {
+        $date = LocalTime::parseDate($from);
+        self::assertNotNull($date);
+
+        $result = LocalTime::addMonths($date, $months);
+
+        self::assertSame($expected, $result->format('Y-m-d'));
+        self::assertSame('00:00:00 UTC', $result->format('H:i:s T'), 'still a calendar date');
+    }
+
+    public function testDaysBetweenCalendarDates(): void
+    {
+        $a = LocalTime::parseDate('2026-03-01');
+        $b = LocalTime::parseDate('2026-03-31');
+        self::assertNotNull($a);
+        self::assertNotNull($b);
+
+        self::assertSame(30, LocalTime::daysBetween($a, $b));
+        self::assertSame(-30, LocalTime::daysBetween($b, $a));
+        self::assertSame(0, LocalTime::daysBetween($a, $a));
+    }
+
     public function testTimezoneValidation(): void
     {
         self::assertTrue(LocalTime::isValidTimezone('Europe/London'));

@@ -1,0 +1,93 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/maintenance.twig' as maint %}
+
+{% set active_nav = 'garage' %}
+{% set dash = '—' %}
+{% set last = history.latest() %}
+{% set next = schedules|filter(s => s.due.status.value != 'unknown')|first %}
+{% set filter_params = category ? {category: category.value} : {} %}
+
+{% block title %}{{ 'maintenance.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'maintenance'} %}
+
+        <div class="toolbar">
+            <h1 class="section-title">{{ 'maintenance.title'|trans }}</h1>
+            {% if not vehicle.isArchived() %}
+                <a class="btn btn--primary" href="{{ url_for('maintenance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'maintenance.add'|trans }}</a>
+            {% endif %}
+        </div>
+
+        <dl class="stats">
+            {{ ui.stat('maintenance.stat.next'|trans,
+                next ? next.schedule.data.title : dash,
+                next ? maint.next_due(next.schedule) : 'maintenance.stat.no_schedules'|trans) }}
+            {{ ui.stat('maintenance.stat.last'|trans,
+                last ? last.data.performedOn|local_date : dash,
+                last ? last.data.title : 'maintenance.stat.none'|trans) }}
+            {{ ui.stat('maintenance.stat.spend'|trans,
+                history.isEmpty() ? dash : history.totalCost()|money(currency),
+                'maintenance.stat.entries'|trans({count: history.count()})) }}
+        </dl>
+
+        <section class="card" aria-labelledby="schedules-heading">
+            <div class="card__header">
+                <h2 id="schedules-heading" class="card__title">{{ 'maintenance.schedule.title'|trans }}</h2>
+                {% if not vehicle.isArchived() %}
+                    <a class="btn btn--soft" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}">{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>
+                {% endif %}
+            </div>
+            {% if schedules is empty %}
+                <div class="empty">
+                    {{ ui.icon('event_repeat') }}
+                    <p class="empty__title">{{ 'maintenance.schedule.empty_title'|trans }}</p>
+                    <p>{{ 'maintenance.schedule.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for state in schedules %}
+                        {{ maint.schedule_row(state, vehicle) }}
+                    {% endfor %}
+                </ul>
+                <p class="field__hint">{{ 'maintenance.schedule.whichever_first'|trans }}</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="history-heading">
+            <div class="card__header">
+                <h2 id="history-heading" class="card__title">{{ 'maintenance.history'|trans }}</h2>
+            </div>
+            {% if history.isEmpty() %}
+                <div class="empty">
+                    {{ ui.icon('build') }}
+                    <p class="empty__title">{{ 'maintenance.empty_title'|trans }}</p>
+                    <p>{{ 'maintenance.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                {% if history.categories()|length > 1 %}
+                    <nav class="chip-row" aria-label="{{ 'maintenance.filter_label'|trans }}">
+                        <a class="chip" href="{{ url_for('maintenance.index', {id: vehicle.id}) }}"{% if not category %} aria-current="true"{% endif %}>{{ 'maintenance.filter_all'|trans }}</a>
+                        {% for option in history.categories() %}
+                            <a class="chip" href="{{ url_for('maintenance.index', {id: vehicle.id}, {category: option.value}) }}"{% if category == option %} aria-current="true"{% endif %}>
+                                {{- ui.icon(option.icon()) }}{{ ('maintenance.category.' ~ option.value)|trans -}}
+                            </a>
+                        {% endfor %}
+                    </nav>
+                {% endif %}
+                {% if rows is empty %}
+                    <p class="muted">{{ 'maintenance.filter_empty'|trans }}</p>
+                {% else %}
+                    <ul class="list">
+                        {% for entry in rows %}
+                            {{ maint.entry_row(entry, vehicle, currency, attachments.of('maintenance', entry.id)) }}
+                        {% endfor %}
+                    </ul>
+                    {{ ui.pagination(pagination, 'maintenance.index', {id: vehicle.id}, filter_params) }}
+                {% endif %}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

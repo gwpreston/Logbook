@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Domain\Odometer;
 
 /**
- * Where an odometer reading came from. Readings from fill-ups (and, later,
- * maintenance) are owned by that entry and change with it.
+ * Where an odometer reading came from. Readings from fill-ups and
+ * maintenance entries are owned by that entry and change with it.
  */
 enum OdometerSource: string
 {

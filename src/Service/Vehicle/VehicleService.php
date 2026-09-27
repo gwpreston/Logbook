@@ -11,10 +11,11 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Storage\FileStorage;
-use Logbook\Support\Storage\ImageUpload;
+use Logbook\Support\Storage\FileUpload;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -32,6 +33,7 @@ final readonly class VehicleService
     public function __construct(
         private VehicleRepository $vehicles,
         private FileStorage $files,
+        private AttachmentService $attachments,
         private ClockInterface $clock,
         private AppSettings $settings,
     ) {
@@ -88,10 +90,11 @@ final readonly class VehicleService
     }
 
     /**
-     * Delete the vehicle with its history and photo.
+     * Delete the vehicle with its history, photo and attachments.
      */
     public function delete(User $user, Vehicle $vehicle): void
     {
+        $this->attachments->deleteFilesForVehicle($vehicle);
         $this->vehicles->delete($user->id, $vehicle->id);
         $this->files->delete($vehicle->photoPath);
     }
@@ -107,9 +110,9 @@ final readonly class VehicleService
     }
 
     /**
-     * Store a new photo (already checked with ImageUpload) and delete the old one.
+     * Store a new photo (already checked with FileUpload) and delete the old one.
      */
-    public function replacePhoto(User $user, Vehicle $vehicle, UploadedFileInterface $file, ImageUpload $checked): void
+    public function replacePhoto(User $user, Vehicle $vehicle, UploadedFileInterface $file, FileUpload $checked): void
     {
         if (!$checked->isValid() || $checked->extension === null || $checked->mime === null) {
             throw new InvalidArgumentException('Only a validated image can be stored.');

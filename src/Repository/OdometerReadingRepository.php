@@ -13,6 +13,7 @@ use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
+use LogicException;
 
 /**
  * The mileage series (`odometer_readings`). Every query is scoped to a
@@ -56,33 +57,50 @@ final readonly class OdometerReadingRepository
 
     public function findByFuelEntry(int $vehicleId, int $fuelEntryId): ?OdometerReading
     {
+        return $this->findByEntry($vehicleId, OdometerSource::Fuel, $fuelEntryId);
+    }
+
+    public function findByMaintenanceEntry(int $vehicleId, int $maintenanceEntryId): ?OdometerReading
+    {
+        return $this->findByEntry($vehicleId, OdometerSource::Maintenance, $maintenanceEntryId);
+    }
+
+    /**
+     * The reading owned by a fill-up or maintenance entry.
+     */
+    public function findByEntry(int $vehicleId, OdometerSource $source, int $entryId): ?OdometerReading
+    {
         $row = $this->select()
-            ->where('vehicle_id = :vehicle', 'fuel_entry_id = :entry')
+            ->where('vehicle_id = :vehicle', self::entryColumn($source) . ' = :entry')
             ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->setParameter('entry', $fuelEntryId, ParameterType::INTEGER)
+            ->setParameter('entry', $entryId, ParameterType::INTEGER)
             ->fetchAssociative();
 
         return $row === false ? null : $this->hydrate($row);
     }
 
+    /**
+     * @param int|null $entryId the owning fill-up or maintenance entry (per $source); null for manual readings
+     */
     public function insert(
         int $vehicleId,
         OdometerReadingData $data,
         OdometerSource $source,
-        ?int $fuelEntryId,
+        ?int $entryId,
         DateTimeImmutable $now,
     ): int {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
+        $owner = $source === OdometerSource::Manual ? [] : [self::entryColumn($source) => $entryId];
 
         $this->connection->insert(self::TABLE, [
             'vehicle_id' => $vehicleId,
             'source' => $source->value,
-            'fuel_entry_id' => $fuelEntryId,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
-        ] + $this->dataColumns($data), [
+        ] + $owner + $this->dataColumns($data), [
             'vehicle_id' => ParameterType::INTEGER,
-            'fuel_entry_id' => $fuelEntryId === null ? ParameterType::NULL : ParameterType::INTEGER,
+            'fuel_entry_id' => ParameterType::INTEGER,
+            'maintenance_entry_id' => ParameterType::INTEGER,
         ]);
 
         return (int) $this->connection->lastInsertId();
@@ -111,8 +129,17 @@ final readonly class OdometerReadingRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'reading_km', 'recorded_at', 'source', 'note', 'fuel_entry_id')
-            ->addSelect('created_at', 'updated_at')
+            ->addSelect('maintenance_entry_id', 'created_at', 'updated_at')
             ->from(self::TABLE);
+    }
+
+    private static function entryColumn(OdometerSource $source): string
+    {
+        return match ($source) {
+            OdometerSource::Fuel => 'fuel_entry_id',
+            OdometerSource::Maintenance => 'maintenance_entry_id',
+            OdometerSource::Manual => throw new LogicException('Manual readings have no owning entry.'),
+        };
     }
 
     /**
@@ -144,6 +171,7 @@ final readonly class OdometerReadingRepository
             fuelEntryId: Row::nullableInt($row, 'fuel_entry_id'),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
+            maintenanceEntryId: Row::nullableInt($row, 'maintenance_entry_id'),
         );
     }
 }

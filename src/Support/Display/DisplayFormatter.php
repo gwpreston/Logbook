@@ -238,6 +238,25 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * A file size: "830 B", "12 KB", "3.4 MB" (binary multiples, as file
+     * managers show them).
+     */
+    public function fileSize(?int $bytes): string
+    {
+        if ($bytes === null) {
+            return '';
+        }
+
+        [$unit, $value, $decimals] = match (true) {
+            $bytes < 1024 => ['b', $bytes, 0],
+            $bytes < 1024 * 1024 => ['kb', $bytes / 1024, 0],
+            default => ['mb', $bytes / (1024 * 1024), 1],
+        };
+
+        return $this->translator->trans('units.file.' . $unit, ['value' => $this->number($value, $decimals)]);
+    }
+
+    /**
      * A calendar date (no time, no zone): shown exactly as stored.
      */
     public function date(?DateTimeInterface $date, int $style = IntlDateFormatter::MEDIUM): string

@@ -152,7 +152,9 @@ MySQL only.
   coherent series (see #230-style requirement). A fill-up writes its reading in
   the same transaction and moves it when edited; only `manual` readings are
   edited or deleted directly (the others through the entry that owns them).
-  Phase 3 adds a maintenance reference the same way.
+  A maintenance entry does the same through maintenance_entry_id (optional,
+  `ON DELETE CASCADE`), only when it has an odometer; its reading is placed at
+  local noon on the entry's date.
 
 **FuelEntry**
 - id, vehicle_id, filled_at (UTC instant, typed in the user's time zone),
@@ -168,19 +170,32 @@ MySQL only.
   average price, cost/distance.
 
 **MaintenanceEntry**
-- id, vehicle_id, date, odometer_km, category (service, repair, tyres, brakes,
-  battery, other — extensible), title, description, cost (**0 allowed**), vendor,
-  attachments.
+- id, vehicle_id, performed_on (calendar date), odometer_km (optional: a
+  receipt may not show it), category (`service`|`oil`|`tyres`|`brakes`|
+  `battery`|`repair`|`bodywork`|`other` — stored as a code, so a new category
+  needs no migration; anything else is `other` with a descriptive title),
+  title, description (optional), cost (`decimal(14,3)`, **0 allowed**; blank
+  means 0), vendor (optional), schedule_id (optional: the recurring schedule
+  this work completes; `ON DELETE SET NULL`), created/updated (UTC), plus
+  attachments. Index `(vehicle_id, performed_on)`.
 
 **MaintenanceSchedule** (recurring)
-- id, vehicle_id, category, interval_km (optional), interval_months (optional),
-  last_done_at/odometer, next_due (computed) → feeds reminders.
+- id, vehicle_id, category, title, interval_km (optional), interval_months
+  (optional; at least one of the two), baseline_done_on / baseline_done_km
+  (optional: "last done" before any entry was logged against it), and the
+  **computed, stored** last_done_on / last_done_km and next_due_on /
+  next_due_km (indexed on next_due_on) → feeds reminders. Recomputed whenever
+  the schedule or an entry completing it is saved or deleted (see §7.4).
 
 **ComplianceDocument**
-- id, vehicle_id, type (`insurance`|`pollution/PUCC`|`registration`|`inspection`
-  |`other`), provider, policy/number, start_date, expiry_date, cost, attachments.
+- id, vehicle_id, type (`insurance`|`pollution` (PUC/PUCC)|`registration`|
+  `inspection`|`other`), title (optional; required for `other`), provider,
+  reference (policy/certificate number), start_on, expiry_on (calendar dates,
+  all optional; expiry not before start), cost (`decimal(14,3)`, 0 allowed,
+  blank = 0), notes, created/updated (UTC), plus attachments.
   Editing an existing document must work (guards against the known
-  "can't update compliance entry" bug).
+  "can't update compliance entry" bug): create and edit share one form and
+  one parser, and an edit updates the row in place (same id, attachments kept).
 
 **Reminder**
 - id, vehicle_id, source (schedule | compliance | manual), title, due_date,
@@ -191,7 +206,12 @@ MySQL only.
 - id, vehicle_id, date, category, amount, note, source ref.
 
 **Attachment**
-- id, owner_type, owner_id, filename, mime, size, stored_path, uploaded_at.
+- id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
+  (`fuel`|`maintenance`|`compliance`), owner_id, filename (the uploaded name,
+  sanitised, for display and downloads only), mime (detected from the
+  content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
+  uploaded_at (UTC). Index `(vehicle_id, owner_type, owner_id)`. Deleting the
+  entry, or the vehicle, deletes its files.
 
 **User**
 - id, username (stored lower-case, so sign-in is case-insensitive on every
@@ -239,7 +259,10 @@ jumps, going backwards) without blocking.
 
 - The vehicle page has tabs, each its own URL (works without JS, survives a
   hard refresh): Overview (`/vehicles/{id}`), Mileage
-  (`/vehicles/{id}/odometer`) and Fuel (`/vehicles/{id}/fuel`).
+  (`/vehicles/{id}/odometer`), Fuel (`/vehicles/{id}/fuel`), Maintenance
+  (`/vehicles/{id}/maintenance`) and Documents (`/vehicles/{id}/documents`).
+  The overview also shows the three most urgent schedules and where each
+  current document stands.
 - Mileage tab: current reading, monthly average (once there is a week of
   history), distance logged; odometer-over-time chart; readings newest first
   (25 per page) with the distance since the one before and their source.
@@ -288,9 +311,37 @@ Full service history per vehicle, categorised. **Recurring schedules**
 ("every 10,000 km or 12 months") that compute the next due point and raise
 reminders. Attach invoices/receipts. Cost of 0 is valid.
 
+- **Entries:** date (defaults to today), what was done, category, optional
+  odometer (typed in the user's distance unit; adds a reading to the mileage
+  log, with the usual plausibility warning), cost (blank or 0 for free work),
+  garage/shop, details, and optionally the schedule it completes. Listed
+  newest first (25 per page) and filterable by category (`?category=`).
+- **Last done** for a schedule is its latest entry (by date, then odometer);
+  with none yet, the "last done" typed on the schedule.
+- **Next due** = last done + months (a calendar date; the day is clamped to
+  the end of a shorter month, so 31 Jan + 1 month = 28/29 Feb) and/or + the
+  distance (an odometer reading). Each half needs its half of the last-done
+  point. Both are stored on the schedule so they can be queried.
+- **Whichever comes first:** the distance limit is placed on the calendar by
+  projecting the average daily distance (from the mileage log; needs a week
+  of history); the sooner of the two dates applies. Status: *overdue* once
+  either limit is passed; *due soon* within 30 days or 1,000 km (Phase 4
+  makes lead times configurable); otherwise *on track*; *not known yet* when
+  there is nothing to measure against.
+- Deleting a schedule keeps the entries that completed it; deleting an entry
+  falls the schedule back to the previous one (or the baseline).
+
 ### 7.5 Compliance
 Track insurance, pollution/PUCC, registration, inspection with expiry dates and
 documents. Create **and edit** must both work. Expiries feed reminders.
+
+- Documents tab: current documents, most urgent first, with status —
+  *expired*, *expires in N days* (within 30), *valid*, *starts on …* (a
+  renewal bought ahead), *no expiry* — then earlier documents, folded away.
+- Of several documents of one type, the one that runs latest is current and
+  the rest are *replaced*, so a renewed policy never nags. `other` documents
+  are unrelated and never replace each other. A *Renew* button opens a new
+  document of the same type.
 
 ### 7.6 Reminders
 Surface everything upcoming/due/overdue with configurable lead time. In-app list
@@ -344,6 +395,19 @@ Extensible channel interface so more can be added.
 Upload receipts, invoices, insurance/cert PDFs and images against fuel,
 maintenance, and compliance entries. Stored outside web root, served via an
 authenticated handler; type/size validated.
+
+- One path for every upload (vehicle photos included): content-checked
+  (`finfo`, never the name or browser type) — PDF, JPEG, PNG or WebP for
+  attachments; images must decode, PDFs must start with a PDF header — and
+  limited to `MAX_UPLOAD_MB`; stored under `UPLOAD_PATH` with a random name.
+- The add/edit form of each entry has an "attach a file" input (the form is
+  multipart; a rejected file fails the whole submission and nothing is
+  saved) and lists the files already attached, each with a delete link
+  (confirmation page, works without JS).
+- Served by `/vehicles/{id}/attachments/{attachment}` to the signed-in owner
+  only (the same responder as photos: `nosniff`, sandboxing CSP, private
+  caching). Images open inline; PDFs download under their original name
+  (browsers will not render a PDF inside the sandbox).
 
 ### 7.13 Import / export and backup
 CSV import and export per module (also eases migration from spreadsheets and

@@ -1,0 +1,56 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/compliance.twig' as docs %}
+
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'compliance.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'compliance'} %}
+
+        <div class="toolbar">
+            <h1 class="section-title">{{ 'compliance.title'|trans }}</h1>
+            {% if not vehicle.isArchived() %}
+                <a class="btn btn--primary" href="{{ url_for('compliance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
+            {% endif %}
+        </div>
+
+        <section class="card" aria-labelledby="current-heading">
+            <h2 id="current-heading" class="card__title">{{ 'compliance.current'|trans }}</h2>
+            {% if current is empty %}
+                <div class="empty">
+                    {{ ui.icon('verified_user') }}
+                    <p class="empty__title">{{ 'compliance.empty_title'|trans }}</p>
+                    <p>{{ 'compliance.empty_body'|trans }}</p>
+                    {% if not vehicle.isArchived() %}
+                        <div class="btn-row">
+                            {% for type in types|filter(t => t.value != 'other') %}
+                                <a class="btn btn--soft" href="{{ url_for('compliance.create', {id: vehicle.id}, {type: type.value}) }}">{{ ui.icon(type.icon()) }}{{ ('compliance.type.' ~ type.value)|trans }}</a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <ul class="list document-list">
+                    {% for state in current %}
+                        {{ docs.row(state, vehicle, currency, attachments.of('compliance', state.document.id)) }}
+                    {% endfor %}
+                </ul>
+                <p class="field__hint">{{ 'compliance.expiring_note'|trans({days: 30}) }}</p>
+            {% endif %}
+        </section>
+
+        {% if replaced is not empty %}
+            <details class="card disclosure">
+                <summary class="disclosure__summary">{{ 'compliance.replaced'|trans({count: replaced|length}) }}</summary>
+                <ul class="list document-list">
+                    {% for state in replaced %}
+                        {{ docs.row(state, vehicle, currency, attachments.of('compliance', state.document.id)) }}
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endif %}
+    </div>
+{% endblock %}

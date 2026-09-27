@@ -15,8 +15,9 @@ use Psr\Clock\ClockInterface;
 
 /**
  * A vehicle's mileage as one coherent series (spec.md §7.2): manual readings
- * are managed here directly; fill-ups record theirs through recordFor…(), so
- * every source lands in the same table and the same history.
+ * are managed here directly; fill-ups and maintenance entries record theirs
+ * through recordForEntry(), so every source lands in the same table and the
+ * same history.
  *
  * Callers pass a Vehicle already resolved for the signed-in owner.
  */
@@ -64,32 +65,58 @@ final readonly class OdometerService
     }
 
     /**
-     * Create or move the reading that belongs to a fill-up. Call inside the
-     * fill-up's transaction.
+     * Create or move the reading that belongs to a fill-up or maintenance
+     * entry; with no odometer ($km null) remove it. Call inside the entry's
+     * transaction.
      */
-    public function recordForFuelEntry(Vehicle $vehicle, int $fuelEntryId, string $km, DateTimeImmutable $at): void
-    {
+    public function recordForEntry(
+        Vehicle $vehicle,
+        OdometerSource $source,
+        int $entryId,
+        ?string $km,
+        DateTimeImmutable $at,
+    ): void {
+        self::assertOwned($source);
+        if ($km === null) {
+            $this->forgetEntry($vehicle, $source, $entryId);
+
+            return;
+        }
+
         $data = new OdometerReadingData($km, $at);
-        $existing = $this->readings->findByFuelEntry($vehicle->id, $fuelEntryId);
+        $existing = $this->readings->findByEntry($vehicle->id, $source, $entryId);
 
         if ($existing === null) {
-            $this->readings->insert($vehicle->id, $data, OdometerSource::Fuel, $fuelEntryId, $this->clock->now());
+            $this->readings->insert($vehicle->id, $data, $source, $entryId, $this->clock->now());
         } else {
             $this->readings->update($vehicle->id, $existing->id, $data, $this->clock->now());
         }
     }
 
-    public function forgetFuelEntry(Vehicle $vehicle, int $fuelEntryId): void
+    public function forgetEntry(Vehicle $vehicle, OdometerSource $source, int $entryId): void
     {
-        $existing = $this->readings->findByFuelEntry($vehicle->id, $fuelEntryId);
+        self::assertOwned($source);
+        $existing = $this->readings->findByEntry($vehicle->id, $source, $entryId);
         if ($existing !== null) {
             $this->readings->delete($vehicle->id, $existing->id);
         }
     }
 
-    public function readingForFuelEntry(Vehicle $vehicle, int $fuelEntryId): ?OdometerReading
+    public function readingForEntry(Vehicle $vehicle, OdometerSource $source, int $entryId): ?OdometerReading
     {
-        return $this->readings->findByFuelEntry($vehicle->id, $fuelEntryId);
+        self::assertOwned($source);
+
+        return $this->readings->findByEntry($vehicle->id, $source, $entryId);
+    }
+
+    /**
+     * Plausibility warning for the reading an entry owns, if it has one.
+     */
+    public function warningForEntry(Vehicle $vehicle, OdometerSource $source, int $entryId): ?OdometerWarning
+    {
+        $reading = $this->readingForEntry($vehicle, $source, $entryId);
+
+        return $reading === null ? null : $this->warningFor($vehicle, $reading->id);
     }
 
     /**
@@ -98,6 +125,13 @@ final readonly class OdometerService
     public function warningFor(Vehicle $vehicle, int $readingId): ?OdometerWarning
     {
         return $this->history($vehicle)->warningFor($readingId);
+    }
+
+    private static function assertOwned(OdometerSource $source): void
+    {
+        if ($source === OdometerSource::Manual) {
+            throw new LogicException('Manual readings are not owned by an entry.');
+        }
     }
 
     private static function assertManual(OdometerReading $reading): void

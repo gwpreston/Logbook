@@ -7,6 +7,7 @@ namespace Logbook\Action\Fuel;
 use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
+use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\RequestContext;
@@ -27,6 +28,7 @@ final readonly class FuelLogAction
         private VehicleService $vehicles,
         private FuelService $fuel,
         private FuelCharts $charts,
+        private AttachmentService $attachments,
         private View $view,
     ) {
     }
@@ -68,6 +70,7 @@ final readonly class FuelLogAction
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,
             'consumption_units' => ConsumptionUnit::cases(),
+            'attachments' => $this->attachments->index($vehicle),
         ]);
     }
 }

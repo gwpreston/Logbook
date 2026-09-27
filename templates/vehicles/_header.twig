@@ -1,9 +1,10 @@
 {#
- # Vehicle page header shared by the overview, mileage and fuel tabs:
- # back link (+ actions on the overview), hero, and the tab bar. Each tab is
- # its own URL, so tabs work without JS and survive a hard refresh.
+ # Vehicle page header shared by the vehicle's tabs: back link (+ actions on
+ # the overview), hero, and the tab bar. Each tab is its own URL, so tabs
+ # work without JS and survive a hard refresh.
  #
- # Expects: vehicle, active_tab ('overview' | 'odometer' | 'fuel').
+ # Expects: vehicle, active_tab ('overview' | 'odometer' | 'fuel' |
+ # 'maintenance' | 'compliance').
  #}
 {% import 'macros/ui.twig' as ui %}
 {% set data = vehicle.data %}
@@ -11,6 +12,8 @@
     {route: 'vehicles.show', key: 'overview', icon: 'space_dashboard', label: 'vehicle.tab.overview'},
     {route: 'odometer.index', key: 'odometer', icon: 'speed', label: 'vehicle.tab.odometer'},
     {route: 'fuel.index', key: 'fuel', icon: data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station', label: 'vehicle.tab.fuel'},
+    {route: 'maintenance.index', key: 'maintenance', icon: 'build', label: 'vehicle.tab.maintenance'},
+    {route: 'compliance.index', key: 'compliance', icon: 'verified_user', label: 'vehicle.tab.compliance'},
 ] %}
 
 <div class="toolbar">
