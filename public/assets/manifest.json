@@ -1,8 +1,15 @@
 {
-    "css/app.css": "7868e5fdb365",
+    "css/app.css": "df00339e79ca",
+    "images/logbook-mark.png": "26fcc6f7ed96",
     "js/app.js": "49ef3d353aa6",
-    "vendor/THIRD-PARTY-NOTICES.txt": "d523b40a2244",
+    "js/theme.js": "0c7614408f1d",
+    "vendor/THIRD-PARTY-NOTICES.txt": "95a5844d48b4",
     "vendor/alpine.min.js": "232519394c6c",
     "vendor/chart.umd.min.js": "48444a82d4ed",
+    "vendor/fonts/outfit-latin-ext-wght-normal.woff2": "0f53d1c03b39",
+    "vendor/fonts/outfit-latin-wght-normal.woff2": "6c18d579fd87",
+    "vendor/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2": "38e3b8fd8045",
+    "vendor/fonts/plus-jakarta-sans-latin-wght-normal.woff2": "153fc85b7029",
+    "vendor/icons.svg": "9c074364ab47",
     "vendor/sortable.min.js": "bf4241bc73fe"
 }

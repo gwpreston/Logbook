@@ -1,11 +1,27 @@
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Primary navigation. Each entry: route name, translation key, icon, and the
+ # `active_nav` value that marks it current. Later phases add Garage,
+ # Reminders, Reports and Settings here (gated by feature toggles).
+ #}
+{% set nav_items = [
+    {route: 'home', label: 'nav.dashboard', icon: 'space_dashboard', key: 'home'},
+] %}
+{% set current_nav = active_nav|default('') %}
 <!doctype html>
 <html lang="{{ html_lang() }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f3f5f8" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0a111c" media="(prefers-color-scheme: dark)">
     <title>{% block title %}{{ 'app.name'|trans }}{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logbook-mark.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logbook-mark.png') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    {# Sets data-theme before first paint; everything else is deferred. #}
+    <script src="{{ asset('js/theme.js') }}"></script>
     {# Vendored libraries: progressive enhancement only; every core flow works without JS. #}
     <script defer src="{{ asset('vendor/sortable.min.js') }}"></script>
     <script defer src="{{ asset('vendor/chart.umd.min.js') }}"></script>
@@ -16,34 +32,63 @@
 <body>
     <a class="skip-link" href="#main">{{ 'nav.skip_to_content'|trans }}</a>
 
-    <header class="site-header">
-        <div class="container site-header__inner">
-            <a class="brand" href="{{ url_for('home') }}">
-                <svg class="brand__mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5.5A1.5 1.5 0 0 1 4 18.5z" fill="none" stroke="currentColor" stroke-width="1.8"/>
-                    <path d="M8 4v16M11 9h6M11 13h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-                <span>{{ 'app.name'|trans }}</span>
-            </a>
+    <div class="app">
+        {# Wide screens (>= 960px): sidebar. Hidden on narrow screens. #}
+        <aside class="sidebar">
+            {{ ui.brand() }}
 
-            <nav class="site-nav" aria-label="{{ 'nav.label'|trans }}">
-                <ul class="site-nav__list">
-                    {% block nav %}
-                        <li><a href="{{ url_for('home') }}"{% if active_nav|default('') == 'home' %} aria-current="page"{% endif %}>{{ 'nav.home'|trans }}</a></li>
-                    {% endblock %}
+            {% block primary_action %}{% endblock %}
+
+            <nav aria-label="{{ 'nav.label'|trans }}">
+                <ul class="nav-list">
+                    {% for item in nav_items %}
+                        <li>
+                            <a class="nav-link" href="{{ url_for(item.route) }}"{% if current_nav == item.key %} aria-current="page"{% endif %}>
+                                {{ ui.icon(item.icon) }}
+                                <span class="nav-link__label">{{ item.label|trans }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
                 </ul>
             </nav>
-        </div>
-    </header>
 
-    <main id="main" class="container site-main" tabindex="-1">
-        {% block content %}{% endblock %}
-    </main>
+            {% block sidebar %}{% endblock %}
 
-    <footer class="site-footer">
-        <div class="container">
-            <p>{{ 'footer.self_hosted'|trans }}</p>
+            <div class="sidebar__footer">
+                {{ ui.theme_toggle('btn sidebar__theme') }}
+            </div>
+        </aside>
+
+        <div class="app__main">
+            {# Narrow screens: sticky top bar. Hidden on wide screens. #}
+            <header class="topbar">
+                {{ ui.brand() }}
+                {{ ui.theme_toggle('icon-btn', true) }}
+                {% block topbar_actions %}{% endblock %}
+            </header>
+
+            <main id="main" class="page" tabindex="-1">
+                {% block content %}{% endblock %}
+            </main>
+
+            <footer class="app-footer">
+                <p>{{ 'footer.self_hosted'|trans }}</p>
+            </footer>
         </div>
-    </footer>
+    </div>
+
+    {# Narrow screens: bottom tab bar. Hidden on wide screens. #}
+    <nav class="bottom-nav" aria-label="{{ 'nav.label'|trans }}">
+        <ul class="bottom-nav__list">
+            {% for item in nav_items %}
+                <li>
+                    <a class="bottom-nav__link" href="{{ url_for(item.route) }}"{% if current_nav == item.key %} aria-current="page"{% endif %}>
+                        <span class="bottom-nav__icon">{{ ui.icon(item.icon) }}</span>
+                        <span>{{ item.label|trans }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </nav>
 </body>
 </html>

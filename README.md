@@ -87,6 +87,14 @@ The built output is **committed**, so installs never need Node, and CI fails
 if it is stale. Third-party libraries in `assets/vendor` are pinned in
 `package.json`. Refreshing them is a maintainer-only step (`npm ci && npm run vendor`).
 
+The visual design (colours, type, spacing, radii) lives as CSS custom properties
+at the top of `assets/css/app.css`, with a light and a dark set; components use
+only those tokens. Fonts (Outfit, Plus Jakarta Sans) and icons (Material
+Symbols Rounded, bundled into `assets/vendor/icons.svg`) are self-hosted, so
+the app makes no third-party requests. To use a new icon, add its name to
+`bin/vendor-assets.mjs`, run `npm run vendor`, and reference it with the
+`ui.icon()` macro from `templates/macros/ui.twig`.
+
 ### Translations
 
 UI strings live in `translations/messages+intl-icu.<locale>.php` (ICU

@@ -6,6 +6,9 @@
     "vendor": "node bin/vendor-assets.mjs && php bin/build-assets.php"
   },
   "devDependencies": {
+    "@fontsource-variable/outfit": "5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "5.3.0",
+    "@material-symbols/svg-400": "0.47.5",
     "alpinejs": "3.17.4",
     "chart.js": "4.5.1",
     "sortablejs": "1.15.7"

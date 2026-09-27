@@ -1,29 +1,55 @@
 {% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
 
 {% set active_nav = 'home' %}
 
 {% block content %}
-    <section class="hero">
-        <h1>{{ 'home.title'|trans }}</h1>
-        <p class="lead">{{ 'home.intro'|trans }}</p>
-    </section>
+    <div class="page__stack">
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'home.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'home.intro'|trans }}</p>
+            </div>
+        </header>
 
-    <section class="card" aria-labelledby="garage-heading">
-        <h2 id="garage-heading" class="card__title">{{ trans('home.vehicle_count', {count: vehicle_count}) }}</h2>
-        <p class="muted">{{ 'home.coming_soon'|trans }}</p>
-    </section>
+        <div class="card-grid">
+            <section class="card" aria-labelledby="garage-heading">
+                <div class="card__header">
+                    <h2 id="garage-heading" class="card__title">{{ trans('home.vehicle_count', {count: vehicle_count}) }}</h2>
+                </div>
+                <div class="empty">
+                    {{ ui.icon('garage') }}
+                    <p>{{ 'home.coming_soon'|trans }}</p>
+                </div>
+            </section>
 
-    <section class="card" aria-labelledby="status-heading">
-        <h2 id="status-heading" class="card__title">{{ 'home.status_heading'|trans }}</h2>
-        <ul class="link-list">
-            <li>
-                <a href="{{ url_for('health') }}">{{ 'home.status_health'|trans }}</a>
-                <span class="muted">{{ 'home.status_health_hint'|trans }}</span>
-            </li>
-            <li>
-                <a href="{{ url_for('diagnostics.deep-link') }}">{{ 'home.status_deep_link'|trans }}</a>
-                <span class="muted">{{ 'home.status_deep_link_hint'|trans }}</span>
-            </li>
-        </ul>
-    </section>
+            <section class="card" aria-labelledby="status-heading">
+                <div class="card__header">
+                    <h2 id="status-heading" class="card__title">{{ 'home.status_heading'|trans }}</h2>
+                </div>
+                <ul class="list">
+                    <li>
+                        <a class="list__item" href="{{ url_for('health') }}">
+                            <span class="list__icon">{{ ui.icon('check_circle') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ 'home.status_health'|trans }}</span>
+                                <span class="list__meta">{{ 'home.status_health_hint'|trans }}</span>
+                            </span>
+                            {{ ui.icon('arrow_forward', 'list__trail') }}
+                        </a>
+                    </li>
+                    <li>
+                        <a class="list__item" href="{{ url_for('diagnostics.deep-link') }}">
+                            <span class="list__icon">{{ ui.icon('speed') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ 'home.status_deep_link'|trans }}</span>
+                                <span class="list__meta">{{ 'home.status_deep_link_hint'|trans }}</span>
+                            </span>
+                            {{ ui.icon('arrow_forward', 'list__trail') }}
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </div>
 {% endblock %}

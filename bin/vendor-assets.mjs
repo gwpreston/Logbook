@@ -1,26 +1,90 @@
-// Copy the pinned front-end libraries from node_modules into assets/vendor.
-// Maintainer-only (`npm ci && npm run vendor`); the results are committed so
-// neither Docker builds nor bare-PHP installs ever need Node.
+// Copy the pinned front-end libraries, fonts and icons from node_modules into
+// assets/vendor. Maintainer-only (`npm ci && npm run vendor`); the results are
+// committed so neither Docker builds nor bare-PHP installs ever need Node, and
+// the app never loads anything from a third-party CDN at runtime.
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const outDir = join(root, 'assets', 'vendor');
+const meta = (pkg) => JSON.parse(readFileSync(join(root, 'node_modules', pkg, 'package.json'), 'utf8'));
+const source = (m) =>
+  String(m.homepage || m.repository?.url || m.repository || '').replace(/^git\+|\.git$/g, '').replace(/^git:/, 'https:');
+
 const libs = [
   { pkg: 'alpinejs', file: 'dist/cdn.min.js', out: 'alpine.min.js' },
   { pkg: 'chart.js', file: 'dist/chart.umd.min.js', out: 'chart.umd.min.js' },
   { pkg: 'sortablejs', file: 'Sortable.min.js', out: 'sortable.min.js' },
 ];
 
-const outDir = join(root, 'assets', 'vendor');
-mkdirSync(outDir, { recursive: true });
+// Variable fonts, Latin + Latin Extended subsets (@font-face rules in app.css).
+const fonts = [
+  { pkg: '@fontsource-variable/outfit', files: ['outfit-latin-wght-normal.woff2', 'outfit-latin-ext-wght-normal.woff2'] },
+  {
+    pkg: '@fontsource-variable/plus-jakarta-sans',
+    files: ['plus-jakarta-sans-latin-wght-normal.woff2', 'plus-jakarta-sans-latin-ext-wght-normal.woff2'],
+  },
+];
 
+// Material Symbols (Rounded, weight 400) used by the templates, bundled into one
+// SVG sprite: <svg><use href="…/icons.svg#name"/></svg>. Add names here as
+// templates need them, then re-run `npm run vendor`.
+const iconPkg = '@material-symbols/svg-400';
+const icons = [
+  'add',
+  'arrow_forward',
+  'bar_chart',
+  'check_circle',
+  'close',
+  'contrast',
+  'dark_mode',
+  'error',
+  'garage',
+  'info',
+  'light_mode',
+  'local_gas_station',
+  'notifications',
+  'settings',
+  'space_dashboard',
+  'speed',
+  'warning',
+];
+
+mkdirSync(join(outDir, 'fonts'), { recursive: true });
 const notices = ['Third-party libraries bundled with Logbook', ''];
+
 for (const { pkg, file, out } of libs) {
-  const pkgDir = join(root, 'node_modules', pkg);
-  const meta = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
-  copyFileSync(join(pkgDir, file), join(outDir, out));
-  notices.push(`${out}: ${pkg} ${meta.version} — ${meta.license} license — ${meta.homepage || meta.repository?.url || meta.repository || ''}`);
-  console.log(`vendored ${pkg}@${meta.version} -> assets/vendor/${out}`);
+  const m = meta(pkg);
+  copyFileSync(join(root, 'node_modules', pkg, file), join(outDir, out));
+  notices.push(`${out}: ${pkg} ${m.version} — ${m.license} license — ${source(m)}`);
+  console.log(`vendored ${pkg}@${m.version} -> assets/vendor/${out}`);
 }
+
+for (const { pkg, files } of fonts) {
+  const m = meta(pkg);
+  for (const file of files) {
+    copyFileSync(join(root, 'node_modules', pkg, 'files', file), join(outDir, 'fonts', file));
+  }
+  notices.push(`fonts/${files[0].replace(/-latin-.*$/, '')}-*.woff2: ${pkg} ${m.version} — ${m.license} license — ${source(m)}`);
+  console.log(`vendored ${pkg}@${m.version} -> assets/vendor/fonts/ (${files.length} files)`);
+}
+
+const symbols = icons.map((name) => {
+  const svg = readFileSync(join(root, 'node_modules', iconPkg, 'rounded', `${name}.svg`), 'utf8');
+  const viewBox = /viewBox="([^"]+)"/.exec(svg)?.[1];
+  const body = /<svg[^>]*>([\s\S]*)<\/svg>/.exec(svg)?.[1];
+  if (!viewBox || !body) {
+    throw new Error(`cannot parse icon ${name}`);
+  }
+  return `<symbol id="${name}" viewBox="${viewBox}">${body.trim()}</symbol>`;
+});
+writeFileSync(
+  join(outDir, 'icons.svg'),
+  `<svg xmlns="http://www.w3.org/2000/svg">\n${symbols.join('\n')}\n</svg>\n`,
+);
+const im = meta(iconPkg);
+notices.push(`icons.svg: ${iconPkg} ${im.version} (Material Symbols Rounded) — ${im.license} license — ${source(im)}`);
+console.log(`vendored ${icons.length} icons from ${iconPkg}@${im.version} -> assets/vendor/icons.svg`);
+
 writeFileSync(join(outDir, 'THIRD-PARTY-NOTICES.txt'), notices.join('\n') + '\n');
