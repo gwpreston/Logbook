@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Database;
 
+use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Types\BigIntType;
 use Doctrine\DBAL\Types\BooleanType;
 use Doctrine\DBAL\Types\DateTimeType;
 use Doctrine\DBAL\Types\DateType;
@@ -21,7 +23,18 @@ use Logbook\Tests\Support\Migrator;
  */
 final class MigrationsTest extends AppTestCase
 {
-    private const array TABLES = ['settings', 'users', 'sessions', 'vehicles', 'fuel_entries', 'odometer_readings'];
+    private const array TABLES = [
+        'settings',
+        'users',
+        'sessions',
+        'vehicles',
+        'fuel_entries',
+        'odometer_readings',
+        'maintenance_schedules',
+        'maintenance_entries',
+        'compliance_documents',
+        'attachments',
+    ];
 
     protected function tearDown(): void
     {
@@ -49,9 +62,27 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: odometer readings (which reference fill-ups), fill-ups,
-        // then the Phase 1 tables.
+        // Newest first: the Phase 3 tables, then the column Phase 3 added to
+        // odometer_readings, then Phase 2 and Phase 1 tables.
         $expected = [
+            ['attachments', ['compliance_documents', 'vehicles']],
+            ['compliance_documents', ['maintenance_entries', 'vehicles']],
+        ];
+        foreach ($expected as [$dropped, $kept]) {
+            Migrator::run('rollback');
+            self::assertFalse($schema->tablesExist([$dropped]), sprintf('rollback must drop %s', $dropped));
+            self::assertTrue($schema->tablesExist($kept), sprintf('rolling back %s must keep the rest', $dropped));
+        }
+
+        self::assertTrue($this->hasColumn('odometer_readings', 'maintenance_entry_id'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('odometer_readings', 'maintenance_entry_id'), 'rollback must drop the column');
+        self::assertTrue($this->hasColumn('odometer_readings', 'fuel_entry_id'), 'and keep the rest of the table');
+        self::assertTrue($schema->tablesExist(['maintenance_entries', 'odometer_readings']));
+
+        $expected = [
+            ['maintenance_entries', ['maintenance_schedules', 'odometer_readings']],
+            ['maintenance_schedules', ['odometer_readings', 'fuel_entries']],
             ['odometer_readings', ['fuel_entries', 'vehicles']],
             ['fuel_entries', ['vehicles']],
             ['vehicles', ['users', 'sessions']],
@@ -61,6 +92,76 @@ final class MigrationsTest extends AppTestCase
             Migrator::run('rollback');
             self::assertFalse($schema->tablesExist([$dropped]), sprintf('rollback must drop %s', $dropped));
             self::assertTrue($schema->tablesExist($kept), sprintf('rolling back %s must keep the rest', $dropped));
+        }
+    }
+
+    public function testMaintenanceColumnsKeepPrecisionAndUseCalendarDates(): void
+    {
+        $entries = $this->columnsOrSkip('maintenance_entries');
+        self::assertInstanceOf(DateType::class, $entries['performed_on']->getType());
+        self::assertInstanceOf(DecimalType::class, $entries['cost']->getType());
+        self::assertSame(14, $entries['cost']->getPrecision());
+        self::assertSame(3, $entries['cost']->getScale());
+        self::assertTrue($entries['cost']->getNotnull(), 'cost is 0, never null');
+        self::assertInstanceOf(DecimalType::class, $entries['odometer_km']->getType());
+        self::assertSame(3, $entries['odometer_km']->getScale());
+        foreach (['odometer_km', 'schedule_id', 'vendor', 'description'] as $optional) {
+            self::assertFalse($entries[$optional]->getNotnull(), sprintf('maintenance_entries.%s is optional', $optional));
+        }
+        foreach (['vehicle_id', 'performed_on', 'category', 'title', 'created_at', 'updated_at'] as $required) {
+            self::assertTrue($entries[$required]->getNotnull(), sprintf('maintenance_entries.%s must be NOT NULL', $required));
+        }
+
+        $schedules = $this->columns('maintenance_schedules');
+        foreach (['baseline_done_on', 'last_done_on', 'next_due_on'] as $date) {
+            self::assertInstanceOf(DateType::class, $schedules[$date]->getType(), $date);
+            self::assertFalse($schedules[$date]->getNotnull(), $date);
+        }
+        foreach (['interval_km', 'baseline_done_km', 'last_done_km', 'next_due_km'] as $km) {
+            self::assertInstanceOf(DecimalType::class, $schedules[$km]->getType(), $km);
+            self::assertSame(3, $schedules[$km]->getScale(), $km);
+        }
+
+        $odometer = $this->columns('odometer_readings');
+        self::assertFalse($odometer['maintenance_entry_id']->getNotnull());
+    }
+
+    public function testComplianceAndAttachmentColumns(): void
+    {
+        $documents = $this->columnsOrSkip('compliance_documents');
+        self::assertInstanceOf(DateType::class, $documents['start_on']->getType());
+        self::assertInstanceOf(DateType::class, $documents['expiry_on']->getType());
+        self::assertInstanceOf(DecimalType::class, $documents['cost']->getType());
+        self::assertSame(3, $documents['cost']->getScale());
+        foreach (['vehicle_id', 'type', 'cost', 'created_at', 'updated_at'] as $required) {
+            self::assertTrue($documents[$required]->getNotnull(), sprintf('compliance_documents.%s must be NOT NULL', $required));
+        }
+
+        $attachments = $this->columns('attachments');
+        self::assertInstanceOf(BigIntType::class, $attachments['size']->getType());
+        self::assertInstanceOf(DateTimeType::class, $attachments['uploaded_at']->getType());
+        foreach (['vehicle_id', 'owner_type', 'owner_id', 'filename', 'mime', 'size', 'stored_path', 'uploaded_at'] as $name) {
+            self::assertTrue($attachments[$name]->getNotnull(), sprintf('attachments.%s must be NOT NULL', $name));
+        }
+    }
+
+    /**
+     * Whether a column exists, by querying it (works on SQLite too, where
+     * DBAL cannot introspect Phinx's column types).
+     */
+    private function hasColumn(string $table, string $column): bool
+    {
+        $query = $this->connection($this->createApp())->createQueryBuilder()
+            ->select($column)
+            ->from($table)
+            ->where('1 = 0');
+
+        try {
+            $query->executeQuery();
+
+            return true;
+        } catch (DbalException) {
+            return false;
         }
     }
 

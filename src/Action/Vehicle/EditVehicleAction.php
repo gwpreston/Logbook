@@ -9,7 +9,8 @@ use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
-use Logbook\Support\Storage\ImageUpload;
+use Logbook\Support\Storage\FileUpload;
+use Logbook\Support\Storage\UploadKind;
 use Logbook\Support\Validation\ValidationErrors;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -45,7 +46,7 @@ final readonly class EditVehicleAction
         $currentYear = (int) LocalTime::today($this->clock, $preferences->timeZone())->format('Y');
         $data = VehicleForm::parse($input, $preferences, $currentYear);
         $photo = VehicleRoute::photo($request);
-        $checked = $photo === null ? null : ImageUpload::check($photo, $this->vehicles->maxPhotoBytes());
+        $checked = $photo === null ? null : FileUpload::check($photo, $this->vehicles->maxPhotoBytes(), UploadKind::Image);
 
         if ($data instanceof ValidationErrors || ($checked !== null && !$checked->isValid())) {
             $errors = $data instanceof ValidationErrors ? $data : new ValidationErrors();

@@ -26,6 +26,7 @@ use Twig\TwigFunction;
  *   {{ volume|quantity(electric) }}  {{ km|economy(volume, electric) }}
  *   {{ per_litre|unit_price(currency, electric) }}  {{ per_km|per_distance(currency) }}
  *   {{ calendar_date|local_date }}  {{ instant|local_datetime }}  {{ instant|instant_date }}
+ *   {{ bytes|file_size }}
  */
 final class TwigExtension extends AbstractExtension
 {
@@ -70,6 +71,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('economy', $this->formatter->economy(...)),
             new TwigFilter('unit_price', $this->formatter->unitPrice(...)),
             new TwigFilter('per_distance', $this->formatter->perDistance(...)),
+            new TwigFilter('file_size', $this->formatter->fileSize(...)),
             new TwigFilter('local_date', $this->formatter->date(...)),
             new TwigFilter('local_datetime', $this->formatter->dateTime(...)),
             new TwigFilter('instant_date', $this->formatter->instantDate(...)),

@@ -1,0 +1,111 @@
+{#
+ # Maintenance fragments. Import with: {% import 'macros/maintenance.twig' as maint %}
+ #}
+
+{# "Every 10,000 mi or 12 months" for a schedule. #}
+{% macro interval(schedule) -%}
+    {% set data = schedule.data %}
+    {%- if data.intervalKm is not null and data.intervalMonths is not null -%}
+        {{ 'maintenance.schedule.every_both'|trans({distance: data.intervalKm|distance, months: data.intervalMonths}) }}
+    {%- elseif data.intervalKm is not null -%}
+        {{ 'maintenance.schedule.every_distance'|trans({distance: data.intervalKm|distance}) }}
+    {%- else -%}
+        {{ 'maintenance.schedule.every_months'|trans({months: data.intervalMonths}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# Where a schedule is next due: "Next due 3 Mar 2027 or at 52,000 mi". #}
+{% macro next_due(schedule) -%}
+    {% set next = schedule.nextDue %}
+    {%- if next.on and next.km is not null -%}
+        {{ 'maintenance.schedule.due_both'|trans({date: next.on|local_date, odometer: next.km|distance}) }}
+    {%- elseif next.on -%}
+        {{ 'maintenance.schedule.due_date'|trans({date: next.on|local_date}) }}
+    {%- elseif next.km is not null -%}
+        {{ 'maintenance.schedule.due_distance'|trans({odometer: next.km|distance}) }}
+    {%- else -%}
+        {{ 'maintenance.schedule.due_unknown'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# When a schedule was last done. #}
+{% macro last_done(schedule) -%}
+    {% set last = schedule.lastDone %}
+    {%- if last.on and last.km is not null -%}
+        {{ 'maintenance.schedule.last_both'|trans({date: last.on|local_date, odometer: last.km|distance}) }}
+    {%- elseif last.on -%}
+        {{ 'maintenance.schedule.last_date'|trans({date: last.on|local_date}) }}
+    {%- elseif last.km is not null -%}
+        {{ 'maintenance.schedule.last_distance'|trans({odometer: last.km|distance}) }}
+    {%- else -%}
+        {{ 'maintenance.schedule.last_never'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# Status pill for a Service\Maintenance\DueState: "Overdue", "Due in 12 days",
+   "1,200 mi to go", … #}
+{% macro due_pill(due) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set status = due.status.value %}
+    <span class="pill{{ due.status.tone() ? ' pill--' ~ due.status.tone() }}">
+        {%- if status == 'overdue' -%}
+            {{ ui.icon('warning') }}{{ 'maintenance.status.overdue'|trans }}
+        {%- elseif status == 'unknown' -%}
+            {{ 'maintenance.status.unknown'|trans }}
+        {%- elseif due.daysLeft is not null -%}
+            {{ (due.projected ? 'maintenance.status.in_days_projected' : 'maintenance.status.in_days')|trans({days: due.daysLeft}) }}
+        {%- elseif due.kmLeft is not null -%}
+            {{ 'maintenance.status.km_left'|trans({distance: due.kmLeft|distance}) }}
+        {%- else -%}
+            {{ ('maintenance.status.' ~ status)|trans }}
+        {%- endif -%}
+    </span>
+{%- endmacro %}
+
+{# One schedule (a Service\Maintenance\ScheduleState) as a list row: what,
+   how often, where it is due and when it was last done, with its status and
+   a "Log it" shortcut. #}
+{% macro schedule_row(state, vehicle) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as maint %}
+    {% set schedule = state.schedule %}
+    <li class="list__item schedule">
+        <span class="list__icon">{{ ui.icon(schedule.data.category.icon()) }}</span>
+        <span class="list__body">
+            <a class="list__title" href="{{ url_for('maintenance.schedules.edit', {id: vehicle.id, schedule: schedule.id}) }}">{{ schedule.data.title }}</a>
+            <span class="list__meta">{{ maint.interval(schedule) }}</span>
+            <span class="list__meta">{{ maint.next_due(schedule) }}</span>
+            <span class="list__meta">{{ maint.last_done(schedule) }}</span>
+        </span>
+        <span class="list__end">
+            {{ maint.due_pill(state.due) }}
+            {% if not vehicle.isArchived() %}
+                <a class="btn btn--soft" href="{{ url_for('maintenance.create', {id: vehicle.id}, {schedule: schedule.id}) }}">{{ ui.icon('check_circle') }}{{ 'maintenance.schedule.log_it'|trans }}<span class="visually-hidden">: {{ schedule.data.title }}</span></a>
+            {% endif %}
+        </span>
+    </li>
+{%- endmacro %}
+
+{# One maintenance entry as a list row linking to its edit page. #}
+{% macro entry_row(entry, vehicle, currency, attachments) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attachments.twig' as files %}
+    {% set data = entry.data %}
+    <li>
+        <a class="list__item" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) }}">
+            <span class="list__icon">{{ ui.icon(data.category.icon()) }}</span>
+            <span class="list__body">
+                <span class="list__title">{{ data.title }}</span>
+                <span class="list__meta">
+                    {{- data.performedOn|local_date }} · {{ ('maintenance.category.' ~ data.category.value)|trans -}}
+                    {%- if data.odometerKm is not null %} · <span class="tabular">{{ data.odometerKm|distance }}</span>{% endif -%}
+                    {%- if data.vendor %} · {{ data.vendor }}{% endif -%}
+                </span>
+            </span>
+            <span class="list__end">
+                <span class="list__amount tabular">{{ data.cost|money(currency) }}</span>
+                {{ files.count(attachments) }}
+            </span>
+        </a>
+    </li>
+{%- endmacro %}

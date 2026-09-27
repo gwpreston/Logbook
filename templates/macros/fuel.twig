@@ -5,8 +5,9 @@
 {# One fill-up (a Service\Fuel\FillEconomy) as a list row linking to its edit
    page: when, odometer · volume · price, total, and the economy of the
    full-to-full segment it closes (or why there is none). #}
-{% macro row(fill, vehicle, currency) -%}
+{% macro row(fill, vehicle, currency, attachments = []) -%}
     {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attachments.twig' as files %}
     {% set data = fill.entry.data %}
     {% set electric = data.fuel.isElectric() %}
     {% set status = fill.status.value %}
@@ -30,6 +31,7 @@
                 {% else %}
                     <span class="economy economy--none">{{ ('fuel.status.' ~ status ~ (electric ? '_ev' : ''))|trans }}</span>
                 {% endif %}
+                {{ files.count(attachments) }}
             </span>
         </a>
     </li>

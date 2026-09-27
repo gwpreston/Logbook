@@ -185,17 +185,18 @@
     </div>
 {%- endmacro %}
 
-{# Previous / next links for a Support\View\Pagination. #}
-{% macro pagination(pagination, route, params) -%}
+{# Previous / next links for a Support\View\Pagination. `query` keeps other
+   parameters (e.g. a filter) on the links. #}
+{% macro pagination(pagination, route, params, query = {}) -%}
     {% import _self as ui %}
     {% if pagination.pages() > 1 %}
         <nav class="pagination" aria-label="{{ 'pagination.label'|trans }}">
             {% if pagination.hasPrevious() %}
-                <a class="btn" rel="prev" href="{{ url_for(route, params, pagination.page > 2 ? {page: pagination.page - 1} : {}) }}">{{ ui.icon('chevron_left') }}{{ 'pagination.newer'|trans }}</a>
+                <a class="btn" rel="prev" href="{{ url_for(route, params, query|merge(pagination.page > 2 ? {page: pagination.page - 1} : {})) }}">{{ ui.icon('chevron_left') }}{{ 'pagination.newer'|trans }}</a>
             {% endif %}
             <span class="pagination__status muted">{{ 'pagination.status'|trans({first: pagination.first(), last: pagination.last(), total: pagination.total}) }}</span>
             {% if pagination.hasNext() %}
-                <a class="btn" rel="next" href="{{ url_for(route, params, {page: pagination.page + 1}) }}">{{ 'pagination.older'|trans }}{{ ui.icon('chevron_right') }}</a>
+                <a class="btn" rel="next" href="{{ url_for(route, params, query|merge({page: pagination.page + 1})) }}">{{ 'pagination.older'|trans }}{{ ui.icon('chevron_right') }}</a>
             {% endif %}
         </nav>
     {% endif %}

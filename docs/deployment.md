@@ -95,8 +95,8 @@ vendor/bin/phinx migrate -e production
 
 Make `var/` (cache, logs, SQLite) and your `UPLOAD_PATH` writable by the web
 server user, e.g. `chown -R www-data: var`. Keep `UPLOAD_PATH` **outside**
-`public/`: vehicle photos (and, later, receipts) are served only through the
-app to the signed-in owner. PHP's `upload_max_filesize` and `post_max_size`
+`public/`: vehicle photos and attachments (receipts, invoices, certificates)
+are served only through the app to the signed-in owner. PHP's `upload_max_filesize` and `post_max_size`
 must be at least `MAX_UPLOAD_MB` (default 10 MB); the Docker image sets 16M/20M.
 
 PHP must support **Argon2id** password hashing (`PASSWORD_ARGON2ID`), which

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
+use Logbook\Action\Attachment\AttachmentUpload;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -21,6 +23,7 @@ final readonly class FuelFormPage
     public function __construct(
         private View $view,
         private OdometerService $odometer,
+        private AttachmentUpload $upload,
     ) {
     }
 
@@ -45,6 +48,6 @@ final readonly class FuelFormPage
             'errors' => $errors?->all() ?? [],
             'fuels' => Fuel::cases(),
             'latest' => $this->odometer->history($vehicle)->latest(),
-        ], $status);
+        ] + $this->upload->formContext($vehicle, AttachmentOwner::Fuel, $entry?->id), $status);
     }
 }

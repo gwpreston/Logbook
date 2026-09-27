@@ -6,6 +6,39 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added — Phase 3: maintenance and documents
+- Vehicle pages gain two tabs: **Maintenance** and **Documents**. The
+  overview shows what maintenance is due next and where each document stands.
+- Service history: log services, repairs, tyres, brakes and more with date,
+  optional odometer (it joins the mileage log), cost — free work at 0 is
+  fine — garage and details. Newest first, filterable by category.
+- Recurring schedules ("every 10,000 mi or 12 months, whichever comes
+  first"): the next due date and odometer are worked out from the last time
+  it was logged (or the "last done" you enter), the distance is placed on
+  the calendar from your average mileage, and each schedule shows whether it
+  is on track, due soon or overdue. "Log it" pre-fills the entry.
+- Documents: insurance, pollution certificates (PUC), registration,
+  inspections (MOT) and anything else, with provider, number, validity dates
+  and cost. Create and edit both work (regression-tested). Expiring and
+  expired documents are flagged; a renewal replaces the old document.
+- Attachments: add receipts, invoices and certificates (PDF, JPEG, PNG or
+  WebP, up to `MAX_UPLOAD_MB`) to fill-ups, maintenance and documents. Files
+  are checked by content, stored outside the web root and served only to
+  you; deleting an entry or a vehicle deletes its files.
+- The demo seed now includes schedules, a service history and documents.
+
+### Changed
+- Vehicle photos and attachments share one upload check and one
+  authenticated file handler.
+
+### Upgrade notes
+- New tables `maintenance_schedules`, `maintenance_entries`,
+  `compliance_documents` and `attachments`, and a nullable
+  `maintenance_entry_id` column on `odometer_readings`, created by reversible
+  migrations that run automatically on start (Docker) or with
+  `vendor/bin/phinx migrate` (bare PHP). No configuration changes;
+  attachments live under the existing `UPLOAD_PATH` — include it in backups.
+
 ## [0.2.0] — 2026-09-27
 
 Phase 2: mileage and fuel.

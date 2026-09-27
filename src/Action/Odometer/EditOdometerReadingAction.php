@@ -19,7 +19,8 @@ use Slim\Exception\HttpNotFoundException;
 
 /**
  * GET|POST /vehicles/{id}/odometer/{reading}/edit — edit a manual reading.
- * A reading that belongs to a fill-up is changed by editing the fill-up.
+ * A reading that belongs to a fill-up or maintenance entry is changed by
+ * editing that entry.
  */
 final readonly class EditOdometerReadingAction
 {
@@ -68,13 +69,16 @@ final readonly class EditOdometerReadingAction
      */
     private function ownerOf(ServerRequestInterface $request, Vehicle $vehicle, OdometerReading $reading): ResponseInterface
     {
-        if ($reading->fuelEntryId === null) {
-            throw new HttpNotFoundException($request);
-        }
-
-        return $this->redirect->toRoute('fuel.edit', [
-            'id' => (string) $vehicle->id,
-            'entry' => (string) $reading->fuelEntryId,
-        ]);
+        return match (true) {
+            $reading->fuelEntryId !== null => $this->redirect->toRoute('fuel.edit', [
+                'id' => (string) $vehicle->id,
+                'entry' => (string) $reading->fuelEntryId,
+            ]),
+            $reading->maintenanceEntryId !== null => $this->redirect->toRoute('maintenance.edit', [
+                'id' => (string) $vehicle->id,
+                'entry' => (string) $reading->maintenanceEntryId,
+            ]),
+            default => throw new HttpNotFoundException($request),
+        };
     }
 }

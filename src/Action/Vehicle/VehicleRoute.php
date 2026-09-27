@@ -8,7 +8,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Vehicle\VehicleNotFound;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\RequestContext;
-use Logbook\Support\Storage\ImageUpload;
+use Logbook\Support\Storage\FileUpload;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -40,6 +40,6 @@ final class VehicleRoute
     {
         $file = $request->getUploadedFiles()['photo'] ?? null;
 
-        return $file instanceof UploadedFileInterface && ImageUpload::wasProvided($file) ? $file : null;
+        return $file instanceof UploadedFileInterface && FileUpload::wasProvided($file) ? $file : null;
     }
 }

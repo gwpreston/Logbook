@@ -115,6 +115,8 @@ final class DemoDataSeeder extends AbstractSeed
         ])->saveData();
 
         $this->seedFuel($now);
+        $this->seedMaintenance($now);
+        $this->seedDocuments($now);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
@@ -170,6 +172,169 @@ final class DemoDataSeeder extends AbstractSeed
             ];
         }
         $this->table('odometer_readings')->insert($readings)->saveData();
+    }
+
+    /**
+     * Schedules (one due soon, one on track, one by distance only) and a
+     * service history, including a DIY job that cost nothing. The computed
+     * last-done / next-due columns are written as the app would compute them.
+     */
+    private function seedMaintenance(string $now): void
+    {
+        $ids = $this->vehicleIds();
+        $golf = $ids['LB19 KTR'];
+        $bike = $ids['MT20 BKE'];
+
+        $schedule = static fn (array $values): array => array_merge([
+            'vehicle_id' => $golf,
+            'category' => 'service',
+            'title' => '',
+            'interval_km' => null,
+            'interval_months' => null,
+            'baseline_done_on' => null,
+            'baseline_done_km' => null,
+            'last_done_on' => null,
+            'last_done_km' => null,
+            'next_due_on' => null,
+            'next_due_km' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $values);
+        $this->table('maintenance_schedules')->insert([
+            // Every 10,000 mi or 12 months; last done by the entry below.
+            $schedule([
+                'title' => 'Annual service', 'interval_km' => '16093.440', 'interval_months' => 12,
+                'baseline_done_on' => '2024-10-01', 'baseline_done_km' => '55000.000',
+                'last_done_on' => '2025-10-02', 'last_done_km' => '62100.000',
+                'next_due_on' => '2026-10-02', 'next_due_km' => '78193.440',
+            ]),
+            $schedule([
+                'category' => 'brakes', 'title' => 'Brake fluid', 'interval_months' => 24,
+                'baseline_done_on' => '2024-11-15', 'last_done_on' => '2024-11-15', 'next_due_on' => '2026-11-15',
+            ]),
+            // Every 500 mi, by distance only.
+            $schedule([
+                'vehicle_id' => $bike, 'category' => 'oil', 'title' => 'Clean and lube the chain', 'interval_km' => '804.672',
+                'baseline_done_km' => '20600.000', 'last_done_km' => '20600.000', 'next_due_km' => '21404.672',
+            ]),
+        ])->saveData();
+
+        $serviceId = 0;
+        foreach ($this->fetchAll('SELECT id, title FROM maintenance_schedules') as $row) {
+            if (is_array($row) && ($row['title'] ?? null) === 'Annual service') {
+                $serviceId = self::intValue($row['id'] ?? null);
+            }
+        }
+
+        $entry = static fn (array $values): array => array_merge([
+            'vehicle_id' => $golf,
+            'schedule_id' => null,
+            'performed_on' => '',
+            'odometer_km' => null,
+            'category' => 'service',
+            'title' => '',
+            'description' => null,
+            'cost' => '0.000',
+            'vendor' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $values);
+        $this->table('maintenance_entries')->insert([
+            $entry([
+                'schedule_id' => $serviceId, 'performed_on' => '2025-10-02', 'odometer_km' => '62100.000',
+                'title' => 'Annual service', 'description' => 'Oil and filter, air filter, pollen filter.',
+                'cost' => '189.000', 'vendor' => 'Main Street Motors',
+            ]),
+            $entry(['performed_on' => '2026-01-20', 'category' => 'other', 'title' => 'Wiper blades (DIY)']),
+            $entry([
+                'performed_on' => '2026-03-10', 'odometer_km' => '69800.000', 'category' => 'tyres',
+                'title' => 'Two front tyres', 'cost' => '176.000', 'vendor' => 'Kwik Fit',
+            ]),
+            $entry([
+                'performed_on' => '2026-06-18', 'odometer_km' => '73950.000', 'category' => 'brakes',
+                'title' => 'Front brake pads', 'cost' => '95.500', 'vendor' => 'Main Street Motors',
+            ]),
+        ])->saveData();
+
+        // Each entry's odometer reading, at noon (UK summer/winter time) on its date.
+        $readings = [];
+        foreach ($this->fetchAll('SELECT id, vehicle_id, performed_on, odometer_km FROM maintenance_entries') as $row) {
+            if (!is_array($row) || $row['odometer_km'] === null || !is_string($row['performed_on'])) {
+                continue;
+            }
+            $noon = new DateTimeImmutable(substr($row['performed_on'], 0, 10) . ' 12:00', new DateTimeZone('Europe/London'));
+            $readings[] = [
+                'vehicle_id' => self::intValue($row['vehicle_id']),
+                'reading_km' => $row['odometer_km'],
+                'recorded_at' => $noon->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+                'source' => 'maintenance',
+                'maintenance_entry_id' => self::intValue($row['id']),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        $this->table('odometer_readings')->insert($readings)->saveData();
+    }
+
+    /**
+     * Insurance (one renewal due soon, with last year's policy replaced),
+     * an inspection, and a registration that never expires.
+     */
+    private function seedDocuments(string $now): void
+    {
+        $ids = $this->vehicleIds();
+
+        $document = static fn (array $values): array => array_merge([
+            'vehicle_id' => $ids['LB19 KTR'],
+            'type' => 'insurance',
+            'title' => null,
+            'provider' => null,
+            'reference' => null,
+            'start_on' => null,
+            'expiry_on' => null,
+            'cost' => '0.000',
+            'notes' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $values);
+        $this->table('compliance_documents')->insert([
+            $document([
+                'provider' => 'Admiral', 'reference' => 'P-88213901', 'start_on' => '2024-10-10',
+                'expiry_on' => '2025-10-09', 'cost' => '389.000',
+            ]),
+            $document([
+                'provider' => 'Admiral', 'reference' => 'P-88213901', 'start_on' => '2025-10-10',
+                'expiry_on' => '2026-10-09', 'cost' => '412.500', 'notes' => 'Fully comprehensive, protected NCD.',
+            ]),
+            $document([
+                'type' => 'inspection', 'provider' => 'Main Street Motors', 'reference' => '5512 8830 1127',
+                'start_on' => '2026-03-05', 'expiry_on' => '2027-03-04', 'cost' => '54.850',
+            ]),
+            $document(['type' => 'registration', 'title' => 'V5C logbook', 'reference' => 'DVLA 4421 90871']),
+            $document([
+                'vehicle_id' => $ids['MT20 BKE'], 'provider' => 'Bennetts', 'start_on' => '2026-04-22',
+                'expiry_on' => '2027-04-21', 'cost' => '189.000',
+            ]),
+            $document([
+                'vehicle_id' => $ids['EV23 KIA'], 'provider' => 'Allianz', 'start_on' => '2026-02-10',
+                'expiry_on' => '2027-02-09', 'cost' => '640.000',
+            ]),
+        ])->saveData();
+    }
+
+    /**
+     * @return array<string, int> vehicle id by registration
+     */
+    private function vehicleIds(): array
+    {
+        $ids = [];
+        foreach ($this->fetchAll('SELECT id, registration FROM vehicles') as $row) {
+            if (is_array($row) && is_string($row['registration'] ?? null)) {
+                $ids[$row['registration']] = self::intValue($row['id'] ?? null);
+            }
+        }
+
+        return $ids;
     }
 
     /**

@@ -1891,6 +1891,97 @@ a.list__item:hover {
     color: var(--muted);
 }
 
+/* List rows that are not links themselves but have a linked title
+   (schedules, documents) plus their own buttons. */
+a.list__title {
+    color: inherit;
+}
+
+a.list__title:hover {
+    color: var(--accent);
+}
+
+.list__end .btn--soft {
+    margin-top: var(--space-1);
+}
+
+/* Compliance documents: a row, its files and its actions. */
+.document + .document {
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+}
+
+.document__actions {
+    padding: 0 var(--space-2) var(--space-2) calc(2.375rem + var(--space-3) + var(--space-2));
+}
+
+/* Attachments: a compact file list, on forms and under documents. */
+.attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    list-style: none;
+}
+
+.attachment-list--inset {
+    margin: 0;
+    padding: 0 var(--space-2) var(--space-2) calc(2.375rem + var(--space-3) + var(--space-2));
+}
+
+.attachment {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    min-height: 2.375rem;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.attachment__link {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-weight: 700;
+}
+
+.attachment__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment__meta {
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.attachment__delete {
+    width: 2.25rem;
+    height: 2.25rem;
+    color: var(--red);
+}
+
+.attachment-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.attachment-count .icon {
+    width: 1rem;
+    height: 1rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

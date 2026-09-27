@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
+use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Vehicle\VehicleRoute;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -17,7 +19,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET|POST /vehicles/{id}/fuel/new — log a fill-up (or charge). Also writes
- * the matching odometer reading.
+ * the matching odometer reading, and stores a receipt if one was attached.
  */
 final readonly class CreateFuelEntryAction
 {
@@ -26,6 +28,7 @@ final readonly class CreateFuelEntryAction
         private FuelService $fuel,
         private FuelFormPage $page,
         private FuelSavedFlash $flash,
+        private AttachmentUpload $upload,
         private Redirector $redirect,
         private ClockInterface $clock,
     ) {
@@ -47,13 +50,16 @@ final readonly class CreateFuelEntryAction
         }
 
         $data = FuelEntryForm::parse(RequestContext::form($request), $user->preferences, $currency);
-        if ($data instanceof ValidationErrors) {
+        $file = $this->upload->fromRequest($request);
+        $errors = $this->upload->errors($data, $file);
+        if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $values, null, $data, 422);
+            return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
         }
 
         $entry = $this->fuel->create($vehicle, $data);
+        $this->upload->store($vehicle, AttachmentOwner::Fuel, $entry->id, $file);
         $this->flash->queue(RequestContext::session($request), $vehicle, $entry, 'fuel.created');
 
         return $this->redirect->toRoute('fuel.index', ['id' => (string) $vehicle->id]);

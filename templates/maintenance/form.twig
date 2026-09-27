@@ -1,0 +1,69 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
+
+{% set active_nav = 'garage' %}
+{% set editing = entry is not null %}
+{% set heading = (editing ? 'maintenance.edit_title' : 'maintenance.add_title')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('maintenance.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'maintenance.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+            </div>
+        </header>
+
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" enctype="multipart/form-data"
+              action="{{ editing ? url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) : url_for('maintenance.create', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+
+            <section class="card">
+                {{ ui.input('title', 'maintenance.field.title'|trans, values, errors, {required: true, maxlength: 150, hint: 'maintenance.hint.title'|trans}) }}
+                {{ ui.select('category', 'maintenance.field.category'|trans, values, errors,
+                    categories|map(c => {value: c.value, label: ('maintenance.category.' ~ c.value)|trans}), {required: true}) }}
+                <div class="form-row">
+                    {{ ui.input('performed_on', 'maintenance.field.performed_on'|trans, values, errors, {type: 'date', required: true}) }}
+                    {% set odometer_hint = latest and (not editing or latest.maintenanceEntryId != entry.id)
+                        ? 'odometer.hint.latest'|trans({reading: latest.readingKm|distance, date: latest.recordedAt|instant_date})
+                        : 'maintenance.hint.odometer'|trans %}
+                    {{ ui.input('odometer', 'maintenance.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, hint: odometer_hint}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('cost', 'maintenance.field.cost'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'maintenance.hint.cost'|trans}) }}
+                    {{ ui.input('vendor', 'maintenance.field.vendor'|trans, values, errors, {optional: true, maxlength: 100, hint: 'maintenance.hint.vendor'|trans}) }}
+                </div>
+                {% if schedules is not empty %}
+                    {{ ui.select('schedule', 'maintenance.field.schedule'|trans, values, errors,
+                        [{value: '', label: 'maintenance.field.schedule_none'|trans}]|merge(schedules|map(s => {value: s.id, label: s.data.title})),
+                        {hint: 'maintenance.hint.schedule'|trans}) }}
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-description">{{ 'maintenance.field.description'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-description" name="description" rows="4" maxlength="2000"{{ ui.described_by('description', errors, false) }}>{{ values.description ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'description') }}
+                </div>
+            </section>
+
+            {{ files.card(vehicle, attachments, errors, max_upload_mb) }}
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'maintenance.add_submit')|trans }}</button>
+                <a class="btn btn--lg" href="{{ url_for('maintenance.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('maintenance.delete', {id: vehicle.id, entry: entry.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+{% endblock %}

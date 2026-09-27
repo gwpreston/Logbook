@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Fuel;
 
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\FuelEntryRepository;
+use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Support\Database\Transaction;
@@ -25,6 +28,7 @@ final readonly class FuelService
     public function __construct(
         private FuelEntryRepository $entries,
         private OdometerService $odometer,
+        private AttachmentService $attachments,
         private Transaction $transaction,
         private ClockInterface $clock,
     ) {
@@ -48,7 +52,7 @@ final readonly class FuelService
     {
         $id = $this->transaction->run(function () use ($vehicle, $data): int {
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now());
-            $this->odometer->recordForFuelEntry($vehicle, $id, $data->odometerKm, $data->filledAt);
+            $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $id, $data->odometerKm, $data->filledAt);
 
             return $id;
         });
@@ -60,20 +64,24 @@ final readonly class FuelService
     {
         $this->transaction->run(function () use ($vehicle, $entry, $data): void {
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
-            $this->odometer->recordForFuelEntry($vehicle, $entry->id, $data->odometerKm, $data->filledAt);
+            $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $entry->id, $data->odometerKm, $data->filledAt);
         });
 
         return $this->get($vehicle, $entry->id);
     }
 
+    /**
+     * Delete a fill-up with its odometer reading and attachments.
+     */
     public function delete(Vehicle $vehicle, FuelEntry $entry): void
     {
         // The foreign key cascades too; removing it explicitly keeps the
         // series right even where cascades are off.
         $this->transaction->run(function () use ($vehicle, $entry): void {
-            $this->odometer->forgetFuelEntry($vehicle, $entry->id);
+            $this->odometer->forgetEntry($vehicle, OdometerSource::Fuel, $entry->id);
             $this->entries->delete($vehicle->id, $entry->id);
         });
+        $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Fuel, $entry->id);
     }
 
     /**
@@ -81,8 +89,6 @@ final readonly class FuelService
      */
     public function odometerWarning(Vehicle $vehicle, FuelEntry $entry): ?OdometerWarning
     {
-        $reading = $this->odometer->readingForFuelEntry($vehicle, $entry->id);
-
-        return $reading === null ? null : $this->odometer->warningFor($vehicle, $reading->id);
+        return $this->odometer->warningForEntry($vehicle, OdometerSource::Fuel, $entry->id);
     }
 }

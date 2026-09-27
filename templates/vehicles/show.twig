@@ -1,6 +1,8 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/fuel.twig' as fuel_ui %}
+{% import 'macros/maintenance.twig' as maint %}
+{% import 'macros/compliance.twig' as docs %}
 
 {% set active_nav = 'garage' %}
 {% set data = vehicle.data %}
@@ -58,6 +60,77 @@
                 {% endif %}
             </section>
 
+            <section class="card" aria-labelledby="maintenance-heading">
+                <div class="card__header">
+                    <h2 id="maintenance-heading" class="card__title">{{ 'maintenance.due_title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('maintenance.index', {id: vehicle.id}) }}">{{ 'maintenance.view_all'|trans }}</a>
+                </div>
+                {% if schedules is empty %}
+                    <div class="empty">
+                        {{ ui.icon('event_repeat') }}
+                        <p class="empty__title">{{ 'maintenance.schedule.empty_title'|trans }}</p>
+                        <p>{{ 'maintenance.schedule.empty_body'|trans }}</p>
+                    </div>
+                {% else %}
+                    <ul class="list">
+                        {% for state in schedules %}
+                            <li class="list__item">
+                                <span class="list__icon">{{ ui.icon(state.schedule.data.category.icon()) }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ state.schedule.data.title }}</span>
+                                    <span class="list__meta">{{ maint.next_due(state.schedule) }}</span>
+                                </span>
+                                <span class="list__end">{{ maint.due_pill(state.due) }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% set last_service = maintenance.latest() %}
+                {% if last_service %}
+                    <p class="muted">{{ 'maintenance.last_logged'|trans({title: last_service.data.title, date: last_service.data.performedOn|local_date}) }}</p>
+                {% endif %}
+                {% if not vehicle.isArchived() %}
+                    <div class="btn-row">
+                        <a class="btn btn--primary" href="{{ url_for('maintenance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'maintenance.add'|trans }}</a>
+                        <a class="btn" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}">{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="card" aria-labelledby="documents-heading">
+                <div class="card__header">
+                    <h2 id="documents-heading" class="card__title">{{ 'compliance.title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('compliance.index', {id: vehicle.id}) }}">{{ 'compliance.view_all'|trans }}</a>
+                </div>
+                {% if documents is empty %}
+                    <div class="empty">
+                        {{ ui.icon('verified_user') }}
+                        <p class="empty__title">{{ 'compliance.empty_title'|trans }}</p>
+                        <p>{{ 'compliance.empty_body'|trans }}</p>
+                    </div>
+                {% else %}
+                    <ul class="list">
+                        {% for state in documents %}
+                            <li>
+                                <a class="list__item" href="{{ url_for('compliance.edit', {id: vehicle.id, document: state.document.id}) }}">
+                                    <span class="list__icon">{{ ui.icon(state.document.data.type.icon()) }}</span>
+                                    <span class="list__body">
+                                        <span class="list__title">{{ docs.name(state.document) }}</span>
+                                        <span class="list__meta">{{ docs.period(state.document) }}</span>
+                                    </span>
+                                    <span class="list__end">{{ docs.status_pill(state) }}</span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if not vehicle.isArchived() %}
+                    <div class="btn-row">
+                        <a class="btn" href="{{ url_for('compliance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
+                    </div>
+                {% endif %}
+            </section>
+
             <section class="card" aria-labelledby="details-heading">
                 <h2 id="details-heading" class="card__title">{{ 'vehicle.section.details'|trans }}</h2>
                 <dl class="details">
@@ -87,23 +160,6 @@
                 </dl>
             </section>
 
-            <section class="card" aria-labelledby="history-heading">
-                <h2 id="history-heading" class="card__title">{{ 'vehicle.section.coming'|trans }}</h2>
-                <ul class="list">
-                    {% for section in [
-                        {icon: 'build', key: 'maintenance'},
-                        {icon: 'description', key: 'documents'},
-                    ] %}
-                        <li class="list__item">
-                            <span class="list__icon">{{ ui.icon(section.icon) }}</span>
-                            <span class="list__body">
-                                <span class="list__title">{{ ('vehicle.upcoming.' ~ section.key)|trans }}</span>
-                                <span class="list__meta">{{ 'vehicle.upcoming.soon'|trans }}</span>
-                            </span>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </section>
         </div>
     </div>
 {% endblock %}

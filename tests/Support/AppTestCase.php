@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Support;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use DI\Container;
 use Doctrine\DBAL\Connection;
 use Logbook\Domain\User\User;
@@ -14,6 +16,7 @@ use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Security\PasswordHasher;
 use Logbook\Support\Units\UnitPreset;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\App;
@@ -56,6 +59,21 @@ abstract class AppTestCase extends TestCase
         $container->set(PasswordHasher::class, new PasswordHasher(self::FAST_HASH));
 
         return $app;
+    }
+
+    /**
+     * Fix "now" for the app. Call before anything uses the clock (before signedIn()).
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function pinClock(App $app, string $utc): MutableClock
+    {
+        $clock = new MutableClock(new DateTimeImmutable($utc, new DateTimeZone('UTC')));
+        $container = $app->getContainer();
+        self::assertInstanceOf(Container::class, $container);
+        $container->set(ClockInterface::class, $clock);
+
+        return $clock;
     }
 
     /**
@@ -104,7 +122,19 @@ abstract class AppTestCase extends TestCase
     protected function resetDatabase(App $app): void
     {
         $connection = $this->connection($app);
-        foreach (['sessions', 'odometer_readings', 'fuel_entries', 'vehicles', 'users', 'settings'] as $table) {
+        $tables = [
+            'sessions',
+            'attachments',
+            'compliance_documents',
+            'odometer_readings',
+            'maintenance_entries',
+            'maintenance_schedules',
+            'fuel_entries',
+            'vehicles',
+            'users',
+            'settings',
+        ];
+        foreach ($tables as $table) {
             $connection->executeStatement('DELETE FROM ' . $table);
         }
     }

@@ -1,0 +1,127 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Service\Maintenance;
+
+use DateTimeImmutable;
+use DateTimeZone;
+use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Maintenance\MaintenanceEntry;
+use Logbook\Domain\Maintenance\MaintenanceEntryData;
+use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\MaintenanceEntryRepository;
+use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Odometer\OdometerWarning;
+use Logbook\Support\Database\Transaction;
+use Logbook\Support\Date\LocalTime;
+use Psr\Clock\ClockInterface;
+
+/**
+ * Service history (spec.md §7.4). Saving an entry, in one transaction:
+ * writes its odometer reading (when it has an odometer) into the mileage
+ * series, and recomputes the schedule it completes — both the old and the
+ * new one when an edit moves it.
+ *
+ * Callers pass a Vehicle already resolved for the signed-in owner.
+ */
+final readonly class MaintenanceService
+{
+    /** A dated entry's odometer reading is placed at local noon on that day. */
+    private const string READING_TIME = 'T12:00';
+
+    public function __construct(
+        private MaintenanceEntryRepository $entries,
+        private ScheduleService $schedules,
+        private OdometerService $odometer,
+        private AttachmentService $attachments,
+        private Transaction $transaction,
+        private ClockInterface $clock,
+    ) {
+    }
+
+    public function history(Vehicle $vehicle): MaintenanceHistory
+    {
+        return new MaintenanceHistory($this->entries->listForVehicle($vehicle->id));
+    }
+
+    /**
+     * @throws MaintenanceEntryNotFound
+     */
+    public function get(Vehicle $vehicle, int $id): MaintenanceEntry
+    {
+        return $this->entries->find($vehicle->id, $id)
+            ?? throw new MaintenanceEntryNotFound(sprintf('Maintenance entry %d not found.', $id));
+    }
+
+    /**
+     * @param DateTimeZone $zone the owner's zone: the entry's odometer
+     *                           reading is recorded at noon on its date there
+     */
+    public function create(Vehicle $vehicle, MaintenanceEntryData $data, DateTimeZone $zone): MaintenanceEntry
+    {
+        $id = $this->transaction->run(function () use ($vehicle, $data, $zone): int {
+            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now());
+            $this->recordOdometer($vehicle, $id, $data, $zone);
+            $this->recomputeSchedules($vehicle, $data->scheduleId);
+
+            return $id;
+        });
+
+        return $this->get($vehicle, $id);
+    }
+
+    public function update(
+        Vehicle $vehicle,
+        MaintenanceEntry $entry,
+        MaintenanceEntryData $data,
+        DateTimeZone $zone,
+    ): MaintenanceEntry {
+        $this->transaction->run(function () use ($vehicle, $entry, $data, $zone): void {
+            $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
+            $this->recordOdometer($vehicle, $entry->id, $data, $zone);
+            $this->recomputeSchedules($vehicle, $entry->data->scheduleId, $data->scheduleId);
+        });
+
+        return $this->get($vehicle, $entry->id);
+    }
+
+    /**
+     * Delete an entry with its odometer reading and attachments; the schedule
+     * it completed falls back to the previous entry (or its baseline).
+     */
+    public function delete(Vehicle $vehicle, MaintenanceEntry $entry): void
+    {
+        $this->transaction->run(function () use ($vehicle, $entry): void {
+            $this->odometer->forgetEntry($vehicle, OdometerSource::Maintenance, $entry->id);
+            $this->entries->delete($vehicle->id, $entry->id);
+            $this->recomputeSchedules($vehicle, $entry->data->scheduleId);
+        });
+        $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Maintenance, $entry->id);
+    }
+
+    /**
+     * Plausibility warning for the entry's odometer within the whole series.
+     */
+    public function odometerWarning(Vehicle $vehicle, MaintenanceEntry $entry): ?OdometerWarning
+    {
+        return $this->odometer->warningForEntry($vehicle, OdometerSource::Maintenance, $entry->id);
+    }
+
+    private function recordOdometer(Vehicle $vehicle, int $entryId, MaintenanceEntryData $data, DateTimeZone $zone): void
+    {
+        $at = LocalTime::toUtc($data->performedOn->format('Y-m-d') . self::READING_TIME, $zone)
+            ?? DateTimeImmutable::createFromInterface($data->performedOn);
+
+        $this->odometer->recordForEntry($vehicle, OdometerSource::Maintenance, $entryId, $data->odometerKm, $at);
+    }
+
+    private function recomputeSchedules(Vehicle $vehicle, ?int ...$scheduleIds): void
+    {
+        foreach (array_unique(array_filter($scheduleIds, static fn (?int $id): bool => $id !== null)) as $id) {
+            $this->schedules->recompute($vehicle, $id);
+        }
+    }
+}

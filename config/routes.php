@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+use Logbook\Action\Attachment\DeleteAttachmentAction;
+use Logbook\Action\Attachment\ShowAttachmentAction;
 use Logbook\Action\Auth\LoginAction;
 use Logbook\Action\Auth\LogoutAction;
 use Logbook\Action\Auth\SetupAction;
+use Logbook\Action\Compliance\ComplianceListAction;
+use Logbook\Action\Compliance\CreateComplianceDocumentAction;
+use Logbook\Action\Compliance\DeleteComplianceDocumentAction;
+use Logbook\Action\Compliance\EditComplianceDocumentAction;
 use Logbook\Action\DeepLinkCheckAction;
 use Logbook\Action\Fuel\CreateFuelEntryAction;
 use Logbook\Action\Fuel\DeleteFuelEntryAction;
@@ -14,6 +20,13 @@ use Logbook\Action\Fuel\QuickFuelAction;
 use Logbook\Action\Garage\GarageAction;
 use Logbook\Action\HealthAction;
 use Logbook\Action\HomeAction;
+use Logbook\Action\Maintenance\CreateMaintenanceEntryAction;
+use Logbook\Action\Maintenance\CreateScheduleAction;
+use Logbook\Action\Maintenance\DeleteMaintenanceEntryAction;
+use Logbook\Action\Maintenance\DeleteScheduleAction;
+use Logbook\Action\Maintenance\EditMaintenanceEntryAction;
+use Logbook\Action\Maintenance\EditScheduleAction;
+use Logbook\Action\Maintenance\MaintenanceLogAction;
 use Logbook\Action\Odometer\CreateOdometerReadingAction;
 use Logbook\Action\Odometer\DeleteOdometerReadingAction;
 use Logbook\Action\Odometer\EditOdometerReadingAction;
@@ -82,6 +95,34 @@ return static function (App $app): void {
             ->setName('fuel.edit');
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/delete', DeleteFuelEntryAction::class)
             ->setName('fuel.delete');
+
+        $group->group('/vehicles/{id:[0-9]+}', function (Group $vehicle): void {
+            $vehicle->get('/maintenance', MaintenanceLogAction::class)->setName('maintenance.index');
+            $vehicle->map(['GET', 'POST'], '/maintenance/new', CreateMaintenanceEntryAction::class)
+                ->setName('maintenance.create');
+            $vehicle->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/edit', EditMaintenanceEntryAction::class)
+                ->setName('maintenance.edit');
+            $vehicle->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/delete', DeleteMaintenanceEntryAction::class)
+                ->setName('maintenance.delete');
+            $vehicle->map(['GET', 'POST'], '/maintenance/schedules/new', CreateScheduleAction::class)
+                ->setName('maintenance.schedules.create');
+            $vehicle->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/edit', EditScheduleAction::class)
+                ->setName('maintenance.schedules.edit');
+            $vehicle->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/delete', DeleteScheduleAction::class)
+                ->setName('maintenance.schedules.delete');
+
+            $vehicle->get('/documents', ComplianceListAction::class)->setName('compliance.index');
+            $vehicle->map(['GET', 'POST'], '/documents/new', CreateComplianceDocumentAction::class)
+                ->setName('compliance.create');
+            $vehicle->map(['GET', 'POST'], '/documents/{document:[0-9]+}/edit', EditComplianceDocumentAction::class)
+                ->setName('compliance.edit');
+            $vehicle->map(['GET', 'POST'], '/documents/{document:[0-9]+}/delete', DeleteComplianceDocumentAction::class)
+                ->setName('compliance.delete');
+
+            $vehicle->get('/attachments/{attachment:[0-9]+}', ShowAttachmentAction::class)->setName('attachments.show');
+            $vehicle->map(['GET', 'POST'], '/attachments/{attachment:[0-9]+}/delete', DeleteAttachmentAction::class)
+                ->setName('attachments.delete');
+        });
 
         $group->get('/settings', SettingsAction::class)->setName('settings');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');

@@ -9,7 +9,7 @@ use DateTimeImmutable;
 /**
  * One point in a vehicle's mileage series (spec.md §6 OdometerReading).
  * Manual readings are edited directly; others follow the entry that owns
- * them (fuelEntryId for fill-ups).
+ * them (fuelEntryId for fill-ups, maintenanceEntryId for maintenance).
  */
 final readonly class OdometerReading
 {
@@ -25,6 +25,7 @@ final readonly class OdometerReading
         public ?int $fuelEntryId,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
+        public ?int $maintenanceEntryId = null,
     ) {
     }
 
