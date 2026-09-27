@@ -1,0 +1,64 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/reminders.twig' as rem %}
+
+{% set active_nav = 'reminders' %}
+
+{% block title %}{{ 'reminders.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'reminders.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'reminders.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <div class="toolbar">
+            <p class="section-title">{{ 'reminders.attention'|trans({count: overview.attentionCount()}) }}</p>
+            <div class="btn-row">
+                <a class="btn" href="{{ url_for('settings.reminders') }}">{{ ui.icon('settings') }}{{ 'reminders.settings_link'|trans }}</a>
+                {% if has_vehicles %}
+                    <a class="btn btn--primary" href="{{ url_for('reminders.create') }}">{{ ui.icon('add') }}{{ 'reminders.add'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if overview.open is empty %}
+            <section class="card">
+                <div class="empty">
+                    {{ ui.icon('notifications') }}
+                    <p class="empty__title">{{ 'reminders.empty_title'|trans }}</p>
+                    <p>{{ 'reminders.empty_body'|trans }}</p>
+                </div>
+            </section>
+        {% endif %}
+
+        {% for status, entries in groups %}
+            {% if entries is not empty %}
+                <section class="card" aria-labelledby="reminders-{{ status }}">
+                    <h2 id="reminders-{{ status }}" class="card__title">{{ ('reminders.group.' ~ status)|trans({count: entries|length}) }}</h2>
+                    <ul class="list reminder-list">
+                        {% for entry in entries %}
+                            {{ rem.row(entry, wording, overview.today, csrf) }}
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+        {% endfor %}
+
+        {% if overview.closed is not empty %}
+            <details class="card disclosure">
+                <summary class="disclosure__summary">{{ 'reminders.group.closed'|trans({count: overview.closed|length}) }}</summary>
+                <ul class="list reminder-list">
+                    {% for entry in overview.closed %}
+                        {{ rem.row(entry, wording, overview.today, csrf) }}
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endif %}
+
+        <p class="field__hint">{{ 'reminders.note'|trans }}</p>
+    </div>
+{% endblock %}

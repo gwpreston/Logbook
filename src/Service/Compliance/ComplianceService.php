@@ -33,11 +33,20 @@ final readonly class ComplianceService
      * Every document with its status on $today, most urgent first.
      *
      * @param DateTimeImmutable $today the owner's calendar date
+     * @param int $leadDays the owner's document lead time (ReminderPreferences)
      * @return list<DocumentState>
      */
-    public function states(Vehicle $vehicle, DateTimeImmutable $today): array
+    public function states(Vehicle $vehicle, DateTimeImmutable $today, int $leadDays = DocumentState::SOON_DAYS): array
     {
-        return DocumentState::evaluateAll($this->documents->listForVehicle($vehicle->id), $today);
+        return DocumentState::evaluateAll($this->documents->listForVehicle($vehicle->id), $today, $leadDays);
+    }
+
+    /**
+     * @return list<ComplianceDocument> in creation order
+     */
+    public function list(Vehicle $vehicle): array
+    {
+        return $this->documents->listForVehicle($vehicle->id);
     }
 
     /**

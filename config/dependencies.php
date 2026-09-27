@@ -3,6 +3,12 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use Logbook\Service\Notification\Channel\EmailChannel;
+use Logbook\Service\Notification\Channel\EmailConfig;
+use Logbook\Service\Notification\Channel\GotifyChannel;
+use Logbook\Service\Notification\Channel\NtfyChannel;
+use Logbook\Service\Notification\Channel\WebhookChannel;
+use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Support\Clock\UtcClock;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\ConnectionFactory;
@@ -28,12 +34,16 @@ use Slim\Factory\AppFactory;
 use Slim\Interfaces\RouteParserInterface;
 use Slim\Psr7\Factory\ResponseFactory;
 use Slim\Psr7\Factory\StreamFactory;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Mailer\Transport\TransportInterface as MailTransport;
 use Symfony\Component\Translation\Translator;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
+use function DI\autowire;
 use function DI\get;
 
 /*
@@ -143,5 +153,31 @@ return [
         $twig->addExtension($extension);
 
         return $twig;
+    },
+
+    /*
+     * Notification channels (spec.md §7.11). The registry — and so the
+     * dispatcher — knows only this list. To add a channel, implement
+     * NotificationChannel and append it here (another definitions file can
+     * use DI\add() instead); see docs/notification-channels.md.
+     */
+    'notification.channels' => [
+        get(EmailChannel::class),
+        get(NtfyChannel::class),
+        get(GotifyChannel::class),
+        get(WebhookChannel::class),
+    ],
+    ChannelRegistry::class => autowire()->constructorParameter('channels', get('notification.channels')),
+
+    HttpClientInterface::class => static fn (): HttpClientInterface => HttpClient::create([
+        'timeout' => 15,
+        'max_redirects' => 3,
+        'headers' => ['User-Agent' => 'Logbook'],
+    ]),
+    MailTransport::class => static function (ContainerInterface $c) use ($settingsOf): MailTransport {
+        $logger = $c->get(LoggerInterface::class);
+        assert($logger instanceof LoggerInterface);
+
+        return EmailConfig::fromEnv($settingsOf($c)->env)->createTransport($logger);
     },
 ];

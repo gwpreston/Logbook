@@ -198,9 +198,18 @@ MySQL only.
   one parser, and an edit updates the row in place (same id, attachments kept).
 
 **Reminder**
-- id, vehicle_id, source (schedule | compliance | manual), title, due_date,
-  lead_time_days, status (`upcoming`|`due`|`overdue`|`dismissed`|`done`),
-  channel(s) notified, last_notified_at.
+- id, vehicle_id (`ON DELETE CASCADE`), source (`schedule`|`compliance`|
+  `manual`), source_id (the schedule or document; none for manual),
+  occurrence (the due point a generated reminder was raised for, e.g. the
+  schedule's stored next-due date and distance), title, notes (manual only),
+  due_on (calendar date; empty only for a distance-only schedule that cannot
+  be placed on the calendar yet), due_km (optional), lead_time_days, status
+  (`upcoming`|`due`|`overdue`|`dismissed`|`done`), notified_status (the
+  status last notified), channels_notified (JSON list of channel keys),
+  last_notified_at, closed_at (UTC; when dismissed or done),
+  created/updated (UTC). Unique `(vehicle_id, source, source_id)`: one
+  reminder per schedule or document, for its current occurrence. Indexes on
+  status and due_on.
 
 **ExpenseEntry** (fuel and maintenance costs roll up here; plus ad-hoc)
 - id, vehicle_id, date, category, amount, note, source ref.
@@ -325,8 +334,8 @@ reminders. Attach invoices/receipts. Cost of 0 is valid.
 - **Whichever comes first:** the distance limit is placed on the calendar by
   projecting the average daily distance (from the mileage log; needs a week
   of history); the sooner of the two dates applies. Status: *overdue* once
-  either limit is passed; *due soon* within 30 days or 1,000 km (Phase 4
-  makes lead times configurable); otherwise *on track*; *not known yet* when
+  either limit is passed; *due soon* within the owner's schedule lead time
+  (default 30 days) or lead distance (default 1,000 km; see §7.6); otherwise *on track*; *not known yet* when
   there is nothing to measure against.
 - Deleting a schedule keeps the entries that completed it; deleting an entry
   falls the schedule back to the previous one (or the baseline).
@@ -336,7 +345,8 @@ Track insurance, pollution/PUCC, registration, inspection with expiry dates and
 documents. Create **and edit** must both work. Expiries feed reminders.
 
 - Documents tab: current documents, most urgent first, with status —
-  *expired*, *expires in N days* (within 30), *valid*, *starts on …* (a
+  *expired*, *expires in N days* (within the owner's document lead time,
+  default 30; see §7.6), *valid*, *starts on …* (a
   renewal bought ahead), *no expiry* — then earlier documents, folded away.
 - Of several documents of one type, the one that runs latest is current and
   the rest are *replaced*, so a renewed policy never nags. `other` documents
@@ -347,6 +357,44 @@ documents. Create **and edit** must both work. Expiries feed reminders.
 Surface everything upcoming/due/overdue with configurable lead time. In-app list
 + dashboard widget. Outbound delivery (§7.11). Dismiss / mark done. Optional
 iCal/webcal feed so items appear in the user's calendar.
+
+- **Sources.** Generated from every maintenance schedule whose next-due
+  point can be judged (§7.4) and every current compliance document with an
+  expiry date (a replaced one raises nothing, so renewing clears it); plus
+  **manual** reminders (vehicle, title, due date, lead time, notes).
+  Archived vehicles raise none, and their manual reminders are neither
+  listed nor sent until the vehicle is restored.
+- **Lead times** (per owner, Settings → Reminders): days before a schedule
+  is due (default 30), distance before a schedule is due (default 1,000 km,
+  typed in the owner's distance unit), days before a document expires
+  (default 30), and the default for new manual reminders (default 7); days
+  0–365. The vehicle tabs use the same lead times, so their badges and the
+  reminders always agree.
+- **Status**, judged against the owner's *today* (in their time zone):
+  *overdue* once the due date (or, for a schedule, either limit) has passed;
+  *due* within the lead time (a document expiring today is due, not yet
+  overdue); otherwise *upcoming*. A schedule's due date is the sooner of its
+  date limit and the projected date of its distance limit (§7.4).
+  *Dismissed* and *done* are set by the owner and stick to that occurrence;
+  *reopen* undoes them.
+- **Sync.** Generated reminders are reconciled with their sources whenever
+  the reminder list, the calendar feed or the scheduled task reads them: a
+  new source adds a reminder, a changed one updates it, a removed one
+  deletes it. When a source moves to a new due point (a schedule is logged,
+  a document's expiry is edited) the occurrence changes: the reminder opens
+  again for the new point and its notification state is cleared. Rows are
+  written only when something differs.
+- **In-app list** (`/reminders`): overdue, due, then upcoming, each with the
+  vehicle, when it is due and a link to its source; dismissed and done are
+  folded away. Mark done, dismiss and reopen are one-click forms (work
+  without JS). Manual reminders are added, edited and deleted there.
+- **Calendar feed** (optional): Settings → Reminders creates a secret feed
+  URL (`/calendar/{token}.ics`), shown once together with its `webcal://`
+  form; resetting it invalidates the old URL, and it can be turned off. Only
+  a keyed hash of the token is stored. The feed is an iCalendar (RFC 5545)
+  file of the open reminders that have a date, as all-day events with an
+  alarm at the lead time. It needs no session (calendar apps cannot sign
+  in); an unknown or revoked token gets a 404.
 
 ### 7.7 Expenses and reports
 Per-vehicle and fleet cost breakdowns over time (fuel vs maintenance vs
@@ -390,6 +438,37 @@ Disabled modules are removed from nav, routes, and dashboard.
 In-app always; plus at least one outbound channel — email (SMTP) and/or a
 webhook such as ntfy — configurable. Optional digest ("what's due this month").
 Extensible channel interface so more can be added.
+
+- **Channels shipped:** email (SMTP via symfony/mailer), ntfy, Gotify and a
+  generic JSON webhook. Each implements one `NotificationChannel` interface
+  (`key()`, `isConfigured()`, `send()`) and is registered in the DI list
+  `notification.channels`; the dispatcher only ever sees that interface. A
+  channel is *configured* when its environment variables are set (§9) and
+  *enabled* per owner in Settings → Reminders (until the owner saves a
+  choice: every configured channel). Only enabled **and** configured
+  channels are used. Adding a channel means implementing the interface,
+  adding it to the list and reading its own environment variables — nothing
+  else changes (`docs/notification-channels.md`).
+- **When:** the scheduled task (§10) syncs every owner's reminders and
+  notifies each reminder once per status: when it becomes *due* and again
+  when it becomes *overdue* (one that goes straight to overdue is sent
+  once). Upcoming, dismissed, done and archived-vehicle reminders are never
+  sent. Everything newly due for one owner in a run goes out as one
+  notification.
+- **Idempotency:** before sending, each reminder is claimed with a
+  conditional update of `notified_status` (only one run can win), and
+  `last_notified_at` / `channels_notified` record what went out. If every
+  channel fails, the claims are released so the next run retries; a
+  partial failure is logged and not retried (the channels that succeeded
+  must not repeat).
+- **Digest** (optional, off by default): on the first run of each month in
+  the owner's time zone, one summary of every open reminder due by the end
+  of that month, overdue ones included. Nothing is sent when nothing is due.
+- **Content** is translated into the owner's language and formatted in their
+  units and time zone, and links to the reminder list (absolute URL from
+  `APP_URL` and `APP_BASE_PATH`).
+- Settings → Reminders can send a **test notification** through the enabled
+  channels.
 
 ### 7.12 Attachments
 Upload receipts, invoices, insurance/cert PDFs and images against fuel,
@@ -463,16 +542,24 @@ Real environment variables override `.env`; an empty value counts as unset.
 - `DB_DRIVER` (`pgsql`|`mysql`|`sqlite`; default `sqlite`), `DB_HOST`,
   `DB_PORT` (default per driver), `DB_NAME` (for SQLite: the file path),
   `DB_USER`, `DB_PASSWORD`
-- `SESSION_SECRET` (optional key for hashing session ids at rest; changing it
-  signs everyone out), `SESSION_SECURE` (default: true when `APP_URL` is https)
+- `SESSION_SECRET` (optional key for hashing session ids and calendar-feed
+  tokens at rest; changing it signs everyone out and disables feed links),
+  `SESSION_SECURE` (default: true when `APP_URL` is https)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
 - `LOG_PATH` (default `php://stderr`), `LOG_LEVEL` (PSR-3 level)
-- `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,
-  `MAIL_ENCRYPTION`, `MAIL_FROM` (SMTP); `NTFY_URL`, `NTFY_TOKEN`,
-  `WEBHOOK_URL`
+- Notifications (§7.11): `MAIL_HOST` (email is configured when set),
+  `MAIL_PORT` (default 587), `MAIL_USERNAME`, `MAIL_PASSWORD`,
+  `MAIL_ENCRYPTION` (`tls` = STARTTLS required, `ssl` = implicit TLS,
+  `none`; default `tls`), `MAIL_FROM` (default `logbook@localhost`),
+  `MAIL_TO` (default recipient; each owner can set their own); `NTFY_URL`
+  (topic URL), `NTFY_TOKEN`; `GOTIFY_URL` (server URL), `GOTIFY_TOKEN`
+  (application token), `GOTIFY_PRIORITY` (0–10, default 5; overdue
+  reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_*` defaults (optional)
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
-  `DB_WAIT_TIMEOUT` (default `60`)
+  `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
+  task inside the container; default `true`), `SCHEDULER_INTERVAL` (seconds
+  between runs; default `900`)
 - Test suite only: `TEST_DB_*` (same shape as `DB_*`; default SQLite
   `var/testing.sqlite`). PHPUnit never reads `DB_*`.
 
@@ -487,9 +574,13 @@ Real environment variables override `.env`; an empty value counts as unset.
   database and applies pending migrations before starting. Multi-arch build:
   amd64 and arm64 (Raspberry Pi 3/4/5 on a 64-bit OS). **64-bit only:** Phinx
   requires 64-bit PHP, so 32-bit ARM (arm/v7) and 32-bit PHP hosts are not
-  supported.
+  supported. The entrypoint also runs the scheduled task (reminders and
+  notifications) every `SCHEDULER_INTERVAL` seconds as `www-data`, so no
+  host cron is needed.
 - **Bare PHP 8.4:** document web root = `public/`, Composer install, Phinx
-  migrate, cron entry for the reminder/notification task, and Nginx/Apache
+  migrate, cron entry for the reminder/notification task
+  (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
+  overlapping), and Nginx/Apache
   vhost + reverse-proxy examples.
 - **Health check:** `/health` endpoint (app + DB connectivity) for monitoring.
 

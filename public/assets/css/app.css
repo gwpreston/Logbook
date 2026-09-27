@@ -1991,3 +1991,27 @@ a.list__title:hover {
         scroll-behavior: auto !important;
     }
 }
+
+/* Reminders: a row with its done / dismiss / reopen actions underneath. */
+.reminder + .reminder {
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+}
+
+.reminder__actions {
+    padding: 0 var(--space-2) var(--space-2) calc(2.375rem + var(--space-3) + var(--space-2));
+}
+
+.reminder__actions form {
+    display: contents;
+}
+
+/* A choice the server cannot offer (e.g. an unconfigured notification channel). */
+.toggle--disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.fieldset > .toggle + .toggle {
+    margin-top: var(--space-2);
+}

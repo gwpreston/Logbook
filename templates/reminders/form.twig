@@ -1,0 +1,51 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # One template for adding and editing a manual reminder.
+ #}
+
+{% set active_nav = 'reminders' %}
+{% set editing = reminder is not null %}
+{% set heading = (editing ? 'reminders.edit_title' : 'reminders.add_title')|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('reminders.index') }}">{{ ui.icon('chevron_left') }}{{ 'reminders.title'|trans }}</a>
+
+        <header class="page-header">
+            <h1 class="page-header__title">{{ heading }}</h1>
+        </header>
+
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ editing ? url_for('reminders.edit', {reminder: reminder.id}) : url_for('reminders.create') }}">
+            {{ ui.csrf(csrf) }}
+
+            <section class="card">
+                {{ ui.select('vehicle_id', 'reminders.field.vehicle'|trans, values, errors, vehicle_options, {required: true}) }}
+                {{ ui.input('title', 'reminders.field.title'|trans, values, errors, {required: true, maxlength: 150, hint: 'reminders.hint.title'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input('due_on', 'reminders.field.due_on'|trans, values, errors, {type: 'date', required: true}) }}
+                    {{ ui.input('lead_time_days', 'reminders.field.lead_time_days'|trans, values, errors, {type: 'number', required: true, step: 1, min: 0, max: 365, inputmode: 'numeric', suffix: 'reminders.days_suffix'|trans, hint: 'reminders.hint.lead_time_days'|trans}) }}
+                </div>
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'reminders.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'reminders.add_submit')|trans }}</button>
+                <a class="btn btn--lg" href="{{ url_for('reminders.index') }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('reminders.delete', {reminder: reminder.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+{% endblock %}

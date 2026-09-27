@@ -117,6 +117,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedFuel($now);
         $this->seedMaintenance($now);
         $this->seedDocuments($now);
+        $this->seedReminders($now);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
@@ -319,6 +320,27 @@ final class DemoDataSeeder extends AbstractSeed
                 'vehicle_id' => $ids['EV23 KIA'], 'provider' => 'Allianz', 'start_on' => '2026-02-10',
                 'expiry_on' => '2027-02-09', 'cost' => '640.000',
             ]),
+        ])->saveData();
+    }
+
+    /**
+     * A reminder of your own. Schedules and documents raise theirs on the
+     * first sync (opening Reminders, or the scheduled task).
+     */
+    private function seedReminders(string $now): void
+    {
+        $this->table('reminders')->insert([
+            [
+                'vehicle_id' => $this->vehicleIds()['LB19 KTR'],
+                'source' => 'manual',
+                'title' => 'Winter tyres on',
+                'notes' => 'Stored at Main Street Motors.',
+                'due_on' => '2026-11-01',
+                'lead_time_days' => 14,
+                'status' => 'upcoming',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ])->saveData();
     }
 

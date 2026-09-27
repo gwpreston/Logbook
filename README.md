@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: Phase 3 (maintenance and documents).** First-run setup, secure
+> **Status: Phase 4 (reminders and notifications).** First-run setup, secure
 > sign-in, vehicles with photos and archiving, per-user units, currency,
 > language and time zone; a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
@@ -12,8 +12,11 @@ your own server.
 > history with recurring schedules ("every 10,000 mi or 12 months") that work
 > out when each job is next due; insurance, pollution certificates,
 > registration and inspections with their expiry; and receipts, invoices and
-> certificates attached to any of them. Reminders arrive in Phase 4. See
-> [`spec.md`](spec.md) §13 for the roadmap.
+> certificates attached to any of them; and reminders for all of it, with
+> lead times you choose, sent by email, ntfy, Gotify or a webhook when they
+> come due, plus an optional monthly digest and a calendar feed. Expenses,
+> reports and the dashboard arrive in Phase 5. See [`spec.md`](spec.md) §13
+> for the roadmap.
 
 ## Quick start
 
@@ -44,7 +47,9 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 Everything is an environment variable (or a line in `.env`); all are
 documented in [`.env.example`](.env.example). The most important are
 `DB_DRIVER`/`DB_HOST`/`DB_NAME`/`DB_USER`/`DB_PASSWORD`, `APP_URL`,
-`APP_BASE_PATH` and `APP_TIMEZONE`.
+`APP_BASE_PATH` and `APP_TIMEZONE`. Reminders are sent through whichever
+notification channels you configure (`MAIL_*`, `NTFY_*`, `GOTIFY_*`,
+`WEBHOOK_URL`; see [docs/notification-channels.md](docs/notification-channels.md)).
 
 On first visit you create the owner account; after that, units, currency,
 language and time zone are per-user settings in the app.

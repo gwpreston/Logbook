@@ -34,6 +34,11 @@ final readonly class AppSettings
         /** @var LogLevel::* */
         public string $logLevel,
         public string $cacheDir,
+        /**
+         * The environment these were resolved from, for components that read
+         * their own variables (notification channels; spec.md §7.11).
+         */
+        public Env $env = new Env([]),
     ) {
     }
 
@@ -69,6 +74,7 @@ final readonly class AppSettings
             logPath: self::path($env->string('LOG_PATH', 'php://stderr'), $rootDir),
             logLevel: self::logLevel($env->string('LOG_LEVEL', $isProduction ? LogLevel::INFO : LogLevel::DEBUG)),
             cacheDir: $rootDir . '/var/cache',
+            env: $env,
         );
     }
 

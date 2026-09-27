@@ -42,7 +42,7 @@ final class TestBrowser
      * POST a form, adding the session's CSRF token unless $withCsrf is false
      * (fetching a page first if none has been seen yet).
      *
-     * @param array<string, string> $fields
+     * @param array<string, string|list<string>> $fields (a list for multi-value fields such as checkboxes[])
      * @param array<string, UploadedFileInterface> $files
      */
     public function post(string $path, array $fields = [], array $files = [], bool $withCsrf = true): ResponseInterface
@@ -107,7 +107,7 @@ final class TestBrowser
     }
 
     /**
-     * @param array<string, string> $fields
+     * @param array<string, string|list<string>> $fields (a list for multi-value fields such as checkboxes[])
      * @param array<string, UploadedFileInterface> $files
      * @param array<string, string> $headers
      */

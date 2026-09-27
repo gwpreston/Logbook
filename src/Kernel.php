@@ -48,7 +48,7 @@ final class Kernel
 
         $builder = new ContainerBuilder();
         $builder->useAutowiring(true);
-        $builder->addDefinitions([AppSettings::class => $settings]);
+        $builder->addDefinitions([AppSettings::class => $settings, Env::class => $settings->env]);
         $builder->addDefinitions($definitions);
 
         return $builder->build();

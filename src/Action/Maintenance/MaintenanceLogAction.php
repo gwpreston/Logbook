@@ -10,6 +10,7 @@ use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
@@ -31,6 +32,7 @@ final readonly class MaintenanceLogAction
         private MaintenanceService $maintenance,
         private ScheduleService $schedules,
         private OdometerService $odometer,
+        private ReminderSettingsStore $reminderSettings,
         private AttachmentService $attachments,
         private View $view,
         private ClockInterface $clock,
@@ -46,6 +48,7 @@ final readonly class MaintenanceLogAction
         $user = RequestContext::requireUser($request);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $history = $this->maintenance->history($vehicle);
+        $lead = $this->reminderSettings->reminderPreferences($user->id);
 
         $query = $request->getQueryParams();
         $category = is_string($query['category'] ?? null) ? MaintenanceCategory::tryFrom($query['category']) : null;
@@ -59,7 +62,13 @@ final readonly class MaintenanceLogAction
             'category' => $category,
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,
-            'schedules' => $this->schedules->states($vehicle, $today, $this->odometer->history($vehicle)),
+            'schedules' => $this->schedules->states(
+                $vehicle,
+                $today,
+                $this->odometer->history($vehicle),
+                $lead->scheduleDays,
+                $lead->scheduleKm,
+            ),
             'attachments' => $this->attachments->index($vehicle),
         ]);
     }

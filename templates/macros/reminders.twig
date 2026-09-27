@@ -1,0 +1,83 @@
+{#
+ # Reminder fragments. Import with: {% import 'macros/reminders.twig' as rem %}
+ # `wording` is a Service\Reminder\ReminderWording, `today` the owner's date.
+ #}
+
+{# Where the reminder comes from, as a link target. #}
+{% macro source_url(reminder) -%}
+    {%- if reminder.source.value == 'schedule' -%}
+        {{ url_for('maintenance.index', {id: reminder.vehicleId}) }}
+    {%- elseif reminder.source.value == 'compliance' -%}
+        {{ url_for('compliance.index', {id: reminder.vehicleId}) }}
+    {%- else -%}
+        {{ url_for('reminders.edit', {reminder: reminder.id}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# Status pill: "Due in 5 days", "Expired 2 days ago", "Done", … #}
+{% macro pill(reminder, wording, today) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set tone = reminder.status.tone() %}
+    <span class="pill{{ tone ? ' pill--' ~ tone }}">
+        {%- if reminder.status.value == 'overdue' %}{{ ui.icon('warning') }}{% endif -%}
+        {%- if reminder.status.isOpen() -%}
+            {{ wording.when(reminder, today) }}
+        {%- else -%}
+            {{ ('reminders.status.' ~ reminder.status.value)|trans }}
+        {%- endif -%}
+    </span>
+{%- endmacro %}
+
+{# One reminder (a Service\Reminder\ReminderEntry) with its actions:
+   done / dismiss while open, reopen once closed; edit for manual ones. #}
+{% macro row(entry, wording, today, csrf) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as rem %}
+    {% set reminder = entry.reminder %}
+    {% set name = wording.name(reminder) %}
+    <li class="reminder">
+        <div class="list__item">
+            <span class="list__icon">{{ ui.icon(reminder.icon()) }}</span>
+            <span class="list__body">
+                <a class="list__title" href="{{ rem.source_url(reminder) }}">{{ name }}</a>
+                <span class="list__meta">{{ entry.vehicle.name() }} · {{ ('reminders.source.' ~ reminder.source.value)|trans }}</span>
+                {% if reminder.dueOn or reminder.dueKm is not null %}
+                    <span class="list__meta">
+                        {%- if reminder.dueOn and reminder.dueKm is not null -%}
+                            {{ 'reminders.due_both'|trans({date: reminder.dueOn|local_date, odometer: reminder.dueKm|distance}) }}
+                        {%- elseif reminder.dueOn -%}
+                            {{ 'reminders.due_date'|trans({date: reminder.dueOn|local_date}) }}
+                        {%- else -%}
+                            {{ wording.atOdometer(reminder.dueKm) }}
+                        {%- endif -%}
+                    </span>
+                {% endif %}
+                {% if reminder.notes %}<span class="list__meta list__meta--note">{{ reminder.notes }}</span>{% endif %}
+                {% if reminder.closedAt %}
+                    <span class="list__meta">{{ ('reminders.closed_on.' ~ reminder.status.value)|trans({date: reminder.closedAt|instant_date}) }}</span>
+                {% endif %}
+            </span>
+            <span class="list__end">{{ rem.pill(reminder, wording, today) }}</span>
+        </div>
+        <div class="btn-row reminder__actions">
+            {% if reminder.status.isOpen() %}
+                <form method="post" action="{{ url_for('reminders.status', {reminder: reminder.id, action: 'done'}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--soft">{{ ui.icon('check_circle') }}{{ 'reminders.action.done'|trans }}<span class="visually-hidden">: {{ name }}</span></button>
+                </form>
+                <form method="post" action="{{ url_for('reminders.status', {reminder: reminder.id, action: 'dismiss'}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--ghost">{{ ui.icon('close') }}{{ 'reminders.action.dismiss'|trans }}<span class="visually-hidden">: {{ name }}</span></button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ url_for('reminders.status', {reminder: reminder.id, action: 'reopen'}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--ghost">{{ ui.icon('undo') }}{{ 'reminders.action.reopen'|trans }}<span class="visually-hidden">: {{ name }}</span></button>
+                </form>
+            {% endif %}
+            {% if reminder.source.value == 'manual' %}
+                <a class="btn btn--ghost" href="{{ url_for('reminders.edit', {reminder: reminder.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}<span class="visually-hidden">: {{ name }}</span></a>
+            {% endif %}
+        </div>
+    </li>
+{%- endmacro %}

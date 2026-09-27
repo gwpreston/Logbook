@@ -70,6 +70,40 @@ proxy, make sure the web server logs/sees the real client address (Apache
 |---|---|---|
 | `MIGRATE_ON_START` | `true` | Apply pending migrations at start-up |
 | `DB_WAIT_TIMEOUT` | `60` | Seconds to wait for the database before failing |
+| `SCHEDULER_ENABLED` | `true` | Run the reminder/notification task inside the container |
+| `SCHEDULER_INTERVAL` | `900` | Seconds between scheduled-task runs |
+
+The container runs the scheduled task itself (as `www-data`, every
+`SCHEDULER_INTERVAL` seconds), so reminders go out without a host cron job.
+Each run logs a line such as `Scheduled tasks: 1 account(s) checked, 2
+reminder(s) sent, …`. To run it by hand:
+`docker compose exec app setpriv --reuid=www-data --regid=www-data --init-groups php bin/run-scheduled-tasks.php -v`.
+
+### Notifications
+
+Reminders always show in the app. To also have them sent when they come due,
+set one or more channels in the `.env` next to the compose file, then choose
+which to use in **Settings → Reminders** (where *Send a test* checks them):
+
+```dotenv
+APP_URL=https://garage.example.com        # used for links in notifications and the calendar feed
+# Email (SMTP)
+MAIL_HOST=smtp.example.com
+MAIL_USERNAME=logbook@example.com
+MAIL_PASSWORD=app-password
+MAIL_FROM="Logbook <logbook@example.com>"
+MAIL_TO=you@example.com
+# ntfy
+NTFY_URL=https://ntfy.sh/a-long-unguessable-topic
+# Gotify
+GOTIFY_URL=https://gotify.example.com
+GOTIFY_TOKEN=AbCdEf123
+# Any JSON webhook (Home Assistant, n8n, …)
+WEBHOOK_URL=https://ha.example.com/api/webhook/logbook
+```
+
+All variables are listed in `.env.example`; adding another kind of channel is
+described in [notification-channels.md](notification-channels.md).
 
 ---
 
@@ -184,13 +218,20 @@ location = /logbook {
 
 ### Scheduled tasks (cron)
 
-Reminders and notifications (Phase 4) are processed by a runner that should be
-called every 15 minutes. It is a harmless no-op until then, so you can install
-the cron entry now:
+Reminders are brought up to date and sent through the notification channels
+(see [Notifications](#notifications) above; the same `MAIL_*`, `NTFY_*`,
+`GOTIFY_*` and `WEBHOOK_URL` variables go in `.env`) by a runner that should be
+called every 15 minutes, as the web server user. In `/etc/cron.d/logbook`:
 
 ```cron
 */15 * * * *  www-data  cd /var/www/logbook && php bin/run-scheduled-tasks.php
 ```
+
+(or `crontab -u www-data -e` with the same line minus the user field). It is
+quiet unless something fails — cron mails any output — and logs a summary
+line to `LOG_PATH` on every run; add `-v` to print it. A lock file
+(`var/cache/scheduled-tasks.lock`) stops runs overlapping, and each reminder is sent
+only once per status, so running it more often is harmless.
 
 ### Trying it locally without a web server
 

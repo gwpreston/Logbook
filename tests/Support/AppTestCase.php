@@ -124,6 +124,7 @@ abstract class AppTestCase extends TestCase
         $connection = $this->connection($app);
         $tables = [
             'sessions',
+            'reminders',
             'attachments',
             'compliance_documents',
             'odometer_readings',

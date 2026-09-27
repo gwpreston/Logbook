@@ -19,7 +19,7 @@ use Logbook\Support\Date\LocalTime;
  */
 final readonly class DocumentState
 {
-    /** Expiring within this many days counts as "expiring" (lead times arrive in Phase 4). */
+    /** Default lead time: expiring within this many days counts as "expiring" (see ReminderPreferences). */
     public const int SOON_DAYS = 30;
 
     public function __construct(
@@ -33,9 +33,10 @@ final readonly class DocumentState
     /**
      * @param list<ComplianceDocument> $documents one vehicle's documents
      * @param DateTimeImmutable $today calendar date (see LocalTime::today())
+     * @param int $soonDays lead time: expiring within this many days is "expiring"
      * @return list<DocumentState> most urgent first, then by expiry
      */
-    public static function evaluateAll(array $documents, DateTimeImmutable $today): array
+    public static function evaluateAll(array $documents, DateTimeImmutable $today, int $soonDays = self::SOON_DAYS): array
     {
         $current = [];
         foreach ($documents as $document) {
@@ -53,7 +54,7 @@ final readonly class DocumentState
         foreach ($documents as $document) {
             $type = $document->data->type;
             $replaced = $type->isSuperseded() && ($current[$type->value] ?? null) !== $document;
-            $states[] = self::evaluate($document, $today, $replaced);
+            $states[] = self::evaluate($document, $today, $replaced, $soonDays);
         }
 
         usort($states, static fn (self $a, self $b): int => ($a->status->urgency() <=> $b->status->urgency())
@@ -63,8 +64,15 @@ final readonly class DocumentState
         return $states;
     }
 
-    public static function evaluate(ComplianceDocument $document, DateTimeImmutable $today, bool $replaced = false): self
-    {
+    /**
+     * @param int $soonDays lead time: expiring within this many days is "expiring"
+     */
+    public static function evaluate(
+        ComplianceDocument $document,
+        DateTimeImmutable $today,
+        bool $replaced = false,
+        int $soonDays = self::SOON_DAYS,
+    ): self {
         $expiry = $document->data->expiryOn;
         $start = $document->data->startOn;
         $daysLeft = $expiry === null ? null : LocalTime::daysBetween($today, $expiry);
@@ -74,7 +82,7 @@ final readonly class DocumentState
             $start !== null && $start > $today => DocumentStatus::Upcoming,
             $daysLeft === null => DocumentStatus::Open,
             $daysLeft < 0 => DocumentStatus::Expired,
-            $daysLeft <= self::SOON_DAYS => DocumentStatus::Expiring,
+            $daysLeft <= $soonDays => DocumentStatus::Expiring,
             default => DocumentStatus::Valid,
         };
 

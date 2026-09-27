@@ -53,6 +53,22 @@ final readonly class UserRepository
     }
 
     /**
+     * Every account, oldest first (the scheduled task works through them).
+     *
+     * @return list<User>
+     */
+    public function listAll(): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select(...self::COLUMNS)
+            ->from(self::TABLE)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
      * @param string $username already normalised (lower-case)
      */
     public function findByUsername(string $username): ?User
