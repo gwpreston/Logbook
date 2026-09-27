@@ -6,10 +6,14 @@ namespace Logbook\Support\I18n;
 
 /**
  * Picks the request locale. Order of preference:
- *   1. (Phase 1+) the signed-in user's saved locale
+ *   1. the signed-in user's saved locale
  *   2. the browser's Accept-Language, matched against shipped catalogues
  *   3. APP_LOCALE
  *   4. English
+ *
+ * The result keeps a known region ("de-AT" → "de_AT"): the translator falls
+ * back from "de_AT" to the "de" catalogue, while dates, numbers and money are
+ * formatted the Austrian way.
  */
 final readonly class LocaleResolver
 {
@@ -21,8 +25,11 @@ final readonly class LocaleResolver
 
     public function resolve(?string $acceptLanguage, ?string $preferred = null): string
     {
-        if ($preferred !== null && $this->available->supports($preferred)) {
-            return $preferred;
+        if ($preferred !== null) {
+            $match = $this->match($preferred);
+            if ($match !== null) {
+                return $match;
+            }
         }
 
         foreach ($this->parseAcceptLanguage($acceptLanguage ?? '') as $candidate) {
@@ -36,8 +43,9 @@ final readonly class LocaleResolver
     }
 
     /**
-     * Normalise a tag like "en-gb" / "en_GB" and match it exactly, then by
-     * primary language ("en-GB" → "en").
+     * Normalise a tag like "en-gb" / "en_GB" and match it: an exact
+     * catalogue, else the language with its region when ICU knows the
+     * combination, else the bare language.
      */
     private function match(string $tag): ?string
     {
@@ -48,7 +56,7 @@ final readonly class LocaleResolver
         }
 
         $region = isset($parts[1]) ? strtoupper($parts[1]) : null;
-        if ($region !== null && $this->available->supports($language . '_' . $region)) {
+        if ($region !== null && $this->available->supportsFormatting($language . '_' . $region)) {
             return $language . '_' . $region;
         }
 

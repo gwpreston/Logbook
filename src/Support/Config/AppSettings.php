@@ -7,6 +7,7 @@ namespace Logbook\Support\Config;
 use DateTimeZone;
 use InvalidArgumentException;
 use Logbook\Support\Http\BasePath;
+use Logbook\Support\Money\Currency;
 use Psr\Log\LogLevel;
 
 /**
@@ -23,6 +24,7 @@ final readonly class AppSettings
         public string $basePath,
         public string $timezone,
         public string $locale,
+        public string $currency,
         public DatabaseConfig $database,
         public string $sessionSecret,
         public bool $sessionSecure,
@@ -58,6 +60,7 @@ final readonly class AppSettings
             basePath: BasePath::normalise($env->string('APP_BASE_PATH')),
             timezone: $timezone,
             locale: $env->string('APP_LOCALE', 'en'),
+            currency: self::currency($env->string('APP_CURRENCY', 'GBP')),
             database: $database,
             sessionSecret: $env->string('SESSION_SECRET'),
             sessionSecure: $env->bool('SESSION_SECURE', str_starts_with($url, 'https://')),
@@ -93,6 +96,19 @@ final readonly class AppSettings
                 $value,
             )),
         };
+    }
+
+    private static function currency(string $value): string
+    {
+        $code = strtoupper($value);
+        if (!Currency::isSupported($code)) {
+            throw new InvalidArgumentException(sprintf(
+                'APP_CURRENCY "%s" is not supported (expected an ISO 4217 code such as GBP, EUR or USD).',
+                $value,
+            ));
+        }
+
+        return $code;
     }
 
     private static function path(string $path, string $rootDir): string

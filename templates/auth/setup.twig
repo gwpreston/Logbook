@@ -1,0 +1,56 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% block title %}{{ 'setup.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="auth auth--wide">
+        <section class="card auth__card" aria-labelledby="setup-heading">
+            <header class="auth__header">
+                <p class="page-header__eyebrow">{{ 'setup.eyebrow'|trans }}</p>
+                <h1 id="setup-heading">{{ 'setup.title'|trans }}</h1>
+                <p class="muted">{{ 'setup.lead'|trans }}</p>
+            </header>
+
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+
+            <form class="form" method="post" action="{{ url_for('setup') }}">
+                {{ ui.csrf(csrf) }}
+
+                <h2 class="form__section">{{ 'setup.account'|trans }}</h2>
+                {{ ui.input('username', 'auth.username'|trans, values, errors, {
+                    required: true, autocomplete: 'username', maxlength: 64,
+                    hint: 'auth.username_hint'|trans({min: 3, max: 64}),
+                }) }}
+                {{ ui.input('display_name', 'prefs.display_name'|trans, values, errors, {
+                    optional: true, autocomplete: 'name', maxlength: 100, hint: 'setup.display_name_hint'|trans,
+                }) }}
+                <div class="form-row">
+                    {{ ui.input('password', 'auth.password'|trans, values, errors, {
+                        type: 'password', required: true, autocomplete: 'new-password', hint: 'auth.password_hint'|trans,
+                    }) }}
+                    {{ ui.input('password_confirm', 'auth.password_confirm'|trans, values, errors, {
+                        type: 'password', required: true, autocomplete: 'new-password',
+                    }) }}
+                </div>
+
+                <h2 class="form__section">{{ 'setup.preferences'|trans }}</h2>
+                {% set preset_options = [] %}
+                {% for preset in unit_presets %}
+                    {% set preset_options = preset_options|merge([{value: preset.value, label: ('units.preset.' ~ preset.value)|trans}]) %}
+                {% endfor %}
+                {{ ui.chips('units', 'prefs.units'|trans, values, errors, preset_options, {required: true, hint: 'setup.units_hint'|trans}) }}
+
+                <div class="form-row">
+                    {{ ui.select('currency', 'prefs.currency'|trans, values, errors, currency_options, {required: true}) }}
+                    {{ ui.select('locale', 'prefs.locale'|trans, values, errors, locale_options, {required: true}) }}
+                </div>
+                {{ ui.timezone_select(values, errors, timezone_options, errors is empty) }}
+
+                <button type="submit" class="btn btn--primary btn--lg btn--block">{{ ui.icon('check_circle') }}{{ 'setup.submit'|trans }}</button>
+            </form>
+        </section>
+    </div>
+{% endblock %}

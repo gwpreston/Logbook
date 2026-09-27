@@ -18,7 +18,9 @@ final class LocaleResolverTest extends TestCase
     {
         yield 'no header uses APP_LOCALE' => [null, 'de', 'de'];
         yield 'exact match' => ['fr', 'en', 'fr'];
-        yield 'region falls back to language' => ['de-AT,de;q=0.9', 'en', 'de'];
+        yield 'known region kept for formatting' => ['de-AT,de;q=0.9', 'en', 'de_AT'];
+        yield 'unknown region falls back to language' => ['de-XX', 'en', 'de'];
+        yield 'regional APP_LOCALE' => [null, 'en-gb', 'en_GB'];
         yield 'regional catalogue preferred' => ['pt-BR', 'en', 'pt_BR'];
         yield 'q-values ordered' => ['fr;q=0.4, de;q=0.8, es;q=0.1', 'en', 'de'];
         yield 'unsupported falls back to default' => ['ja, zh;q=0.5', 'fr', 'fr'];
@@ -41,6 +43,9 @@ final class LocaleResolverTest extends TestCase
         $resolver = new LocaleResolver(new AvailableLocales(['de', 'en']), 'en');
 
         self::assertSame('de', $resolver->resolve('en', 'de'));
+        self::assertSame('en_GB', $resolver->resolve('de', 'en_GB'));
+        // A saved locale whose catalogue was removed no longer applies.
+        self::assertSame('en', $resolver->resolve('en', 'fr_FR'));
     }
 
     public function testDiscoversLocalesFromCatalogueFiles(): void

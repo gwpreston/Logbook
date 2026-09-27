@@ -6,6 +6,44 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added — Phase 1: accounts and garage
+- First-run setup: a fresh instance asks for the owner account (username,
+  password, display name, units, currency, language, time zone) and is
+  unreachable once an account exists.
+- Sign in / sign out / change password. Argon2id hashes; database-backed
+  sessions (`HttpOnly`, `SameSite=Lax`, `Secure` over HTTPS, scoped to
+  `APP_BASE_PATH`, 30-day idle expiry, new id on sign-in); changing the
+  password signs out other devices; failed sign-ins are logged for fail2ban.
+- CSRF protection (slim/csrf) on every form, with a friendly "form expired"
+  page; oversized uploads are reported as "too large".
+- Garage: add, edit, delete (with a confirmation page) and archive/restore
+  vehicles — cars and motorbikes, fuel type, tank or battery capacity, VIN,
+  purchase and sale details, and a per-vehicle currency. Archived vehicles are
+  hidden from active views and left out of fleet totals, history kept.
+- Vehicle photos (JPEG, PNG, WebP up to `MAX_UPLOAD_MB`), checked by content,
+  stored under `UPLOAD_PATH` with random names and served only to the
+  signed-in owner.
+- Settings: display name, theme (System/Light/Dark, also from the quick
+  toggle), distance / fuel volume / fuel economy units (L/100 km, km/L,
+  mpg UK and mpg US; Metric/UK/US presets), default currency, language with
+  regional formats (e.g. English (United Kingdom)) and time zone. Changes apply
+  on the next page.
+- Units, money and dates engine for later phases: SI storage with conversion
+  at the edges, exact decimal money (zero is valid, ≥3 decimals), calendar
+  dates vs UTC instants, DST-safe local-time parsing.
+- New configuration: `APP_CURRENCY` (default `GBP`). `SESSION_SECRET` is now
+  used (optional).
+
+### Development
+- `bin/dev`: start/stop the Docker dev stack, switch between PostgreSQL,
+  MySQL, MariaDB and SQLite (each keeps its own data), reset the database and
+  load sample data (`DemoDataSeeder`: a demo owner and five vehicles).
+- Shell scripts in `bin/` are now committed as executable.
+
+### Database
+- New tables `users`, `sessions` and `vehicles` (reversible migrations,
+  tested on PostgreSQL, MySQL, MariaDB and SQLite). No manual upgrade steps.
+
 ### Added — Phase 0: foundations
 - Slim 4 application skeleton with PHP-DI, Doctrine DBAL, Twig, Monolog and
   symfony/translation (ICU); English catalogue as default and fallback.

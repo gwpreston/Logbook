@@ -1,0 +1,26 @@
+{#
+ # Vehicle fragments. Import with: {% import 'macros/vehicles.twig' as vehicles %}
+ #}
+
+{# Garage card: photo, plate, fuel type, name. The whole card is one link. #}
+{% macro card(vehicle) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <a class="vehicle-card{{ vehicle.isArchived() ? ' vehicle-card--archived' : '' }}" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
+        <div class="vehicle-card__media">
+            {{ ui.vehicle_photo(vehicle) }}
+            {% if vehicle.isArchived() %}
+                <span class="vehicle-card__badge pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.status.archived'|trans }}</span>
+            {% endif %}
+        </div>
+        <div class="vehicle-card__body">
+            <div class="vehicle-card__tags">
+                {% if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span>{% endif %}
+                <span class="pill">{{ ('vehicle.fuel.' ~ vehicle.data.fuelType.value)|trans }}</span>
+            </div>
+            <div>
+                <h2 class="vehicle-card__name">{{ vehicle.name() }}</h2>
+                <p class="vehicle-card__sub">{{ vehicle.description() }}</p>
+            </div>
+        </div>
+    </a>
+{%- endmacro %}

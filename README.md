@@ -4,9 +4,9 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: Phase 0 (foundations).** The skeleton runs on Docker and plain
-> PHP, against PostgreSQL, MySQL/MariaDB or SQLite, with a localized landing
-> page and `/health`. Vehicle tracking starts in Phase 1. See
+> **Status: Phase 1 (accounts and garage).** First-run setup, secure sign-in,
+> vehicles with photos and archiving, and per-user units, currency, language
+> and time zone. Mileage and fuel logging arrive in Phase 2. See
 > [`spec.md`](spec.md) §13 for the roadmap.
 
 ## Quick start
@@ -40,6 +40,9 @@ documented in [`.env.example`](.env.example). The most important are
 `DB_DRIVER`/`DB_HOST`/`DB_NAME`/`DB_USER`/`DB_PASSWORD`, `APP_URL`,
 `APP_BASE_PATH` and `APP_TIMEZONE`.
 
+On first visit you create the owner account; after that, units, currency,
+language and time zone are per-user settings in the app.
+
 ## Development
 
 Stack: PHP 8.4 · Slim 4 · PHP-DI · Doctrine DBAL · Phinx · Twig ·
@@ -60,14 +63,45 @@ composer rollback -- -e development
 composer build-assets        # assets/ → public/assets (+ cache-busting manifest)
 ```
 
-No local PHP? The dev compose stack has everything, including PostgreSQL,
-MySQL and MariaDB for cross-engine testing:
+### Local development with Docker (`bin/dev`)
+
+No local PHP needed: `bin/dev` runs the dev stack (`docker-compose.dev.yml`)
+with the source bind-mounted, so PHP and Twig changes show up on reload. It
+starts the app on the database engine of your choice and can load sample data.
+Requires Docker with Compose v2; on Windows run it from **Git Bash** (or as
+`sh bin/dev …`).
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d           # app on :8080, code bind-mounted
-docker compose -f docker-compose.dev.yml exec app composer check
-bin/test-all-dbs.sh                                      # suite on SQLite, Postgres, MySQL, MariaDB
-bin/smoke-test.sh pgsql                                  # production image end-to-end (after docker build -t logbook:local .)
+bin/dev up                  # start on PostgreSQL → http://localhost:8080
+bin/dev seed                # add sample data, then sign in as demo / logbook-demo
+bin/dev down                # stop (your data is kept)
+```
+
+| Command | What it does |
+|---|---|
+| `bin/dev up [engine]` | Start the stack, wait until the app is ready and print its URL. Without an engine it uses the last one (PostgreSQL the first time). |
+| `bin/dev db <engine>` | Switch the database: `pgsql`, `mysql`, `mariadb` or `sqlite`. Each engine keeps its own data and photos, so you can switch back and forth. |
+| `bin/dev seed` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and five vehicles — four active (petrol, hybrid, electric, a motorbike) and one sold and archived. Does nothing if an account already exists. |
+| `bin/dev reset [--seed] [-y]` | Empty the current engine's database (full rollback + migrate) and delete its uploads, optionally re-seeding. Asks first unless `-y`. |
+| `bin/dev status` | Show the engine, URL and containers. |
+| `bin/dev logs` | Follow the app log (errors, failed sign-ins). |
+| `bin/dev down [--volumes]` | Stop everything. `--volumes` also deletes all dev databases, uploads and the `vendor/` volume. |
+
+Migrations are applied automatically whenever the app starts. The chosen
+engine and port are remembered in `var/dev.env` (git-ignored). If port 8080 is
+taken, pick another once: `APP_PORT=8081 bin/dev up`.
+
+The sample data comes from a Phinx seed
+([`db/seeds/DemoDataSeeder.php`](db/seeds/DemoDataSeeder.php)); it refuses to
+run when `APP_ENV=production`. Without Docker, run it with
+`vendor/bin/phinx seed:run -e development -s DemoDataSeeder`.
+
+Other tasks run inside the app container:
+
+```bash
+docker compose -f docker-compose.dev.yml exec app composer check   # lint + analyse + test
+bin/test-all-dbs.sh                                                 # suite on SQLite, Postgres, MySQL, MariaDB
+bin/smoke-test.sh pgsql                                             # production image end-to-end (after docker build -t logbook:local .)
 ```
 
 ### Tests and databases

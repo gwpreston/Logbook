@@ -10,14 +10,36 @@ set -eu
 cd "$(dirname "$0")/.."
 variant="${1:-pgsql}"
 export APP_PORT="${APP_PORT:-18080}" PROXY_PORT="${PROXY_PORT:-18081}"
+jar="$(mktemp)"
+trap 'rm -f "$jar" /tmp/smoke.body' EXIT
 
 fail() { echo "SMOKE FAIL: $*" >&2; $compose logs --no-color >&2 || true; $compose down -v >/dev/null 2>&1 || true; exit 1; }
 
 expect() { # expect <url> <status> [body-substring]
-    body="$(curl -s -o /tmp/smoke.body -w '%{http_code}' "$1")" || fail "request to $1 failed"
+    body="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code}' "$1")" || fail "request to $1 failed"
     [ "$body" = "$2" ] || fail "$1 returned $body, expected $2"
     if [ -n "${3:-}" ]; then grep -q -- "$3" /tmp/smoke.body || fail "$1 body lacks: $3"; fi
     echo "ok  $2  $1"
+}
+
+field() { # field <name>: value of a hidden input on the last page
+    sed -n "s/.*name=\"$1\" value=\"\([^\"]*\)\".*/\1/p" /tmp/smoke.body | head -n 1
+}
+
+# First-run setup through the real stack: session cookie, CSRF, Argon2id, DB writes.
+setup_flow() { # setup_flow <base> <expected-redirect>
+    expect "$1/" 303
+    expect "$1/setup" 200 'Create your account'
+    status="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code} %{redirect_url}' \
+        --data-urlencode "csrf_name=$(field csrf_name)" --data-urlencode "csrf_value=$(field csrf_value)" \
+        --data-urlencode 'username=smoke' --data-urlencode 'password=smoke test passphrase' \
+        --data-urlencode 'password_confirm=smoke test passphrase' --data-urlencode 'units=uk' \
+        --data-urlencode 'currency=GBP' --data-urlencode 'locale=en_GB' --data-urlencode 'timezone=Europe/London' \
+        "$1/setup")"
+    case "$status" in "303 "*"$2") echo "ok  303  POST $1/setup" ;; *) fail "setup returned: $status" ;; esac
+    expect "$1/" 200 'Hello, smoke'
+    expect "$1/garage" 200 'Your garage is empty'
+    expect "$1/setup" 303
 }
 
 case "$variant" in
@@ -26,27 +48,30 @@ case "$variant" in
         $compose up -d --wait --no-build || fail "stack did not become healthy"
         base="http://localhost:$PROXY_PORT/logbook"
         expect "$base/health" 200 '"database":"ok"'
-        expect "$base/" 200 'Welcome to Logbook'
         expect "$base/diagnostics/deep/link" 200 'href="/logbook/"'
         expect "$base/assets/css/app.css" 200
         expect "http://localhost:$PROXY_PORT/stripped/diagnostics/deep/link" 200 'Deep link works'
         expect "$base/no/such/page" 404 'Page not found'
+        setup_flow "$base" "/logbook/"
+        # Hard refresh of a deep, signed-in link.
+        expect "$base/vehicles/new" 200 'action="/logbook/vehicles/new"'
         ;;
     mysql)
         compose="docker compose -p logbook-smoke -f docker-compose.mysql.yml"
         $compose up -d --wait --no-build || fail "stack did not become healthy"
         base="http://localhost:$APP_PORT"
         expect "$base/health" 200 '"database":"ok"'
-        expect "$base/" 200 'Welcome to Logbook'
         expect "$base/diagnostics/deep/link" 200 'Deep link works'
+        setup_flow "$base" "/"
         ;;
     *) echo "usage: $0 pgsql|mysql" >&2; exit 2 ;;
 esac
 
-# Restarting must be idempotent (migrations already applied).
+# Restarting must be idempotent (migrations already applied) and keep sessions.
 $compose restart app >/dev/null
 $compose up -d --wait --no-build >/dev/null || fail "stack unhealthy after restart"
 expect "$base/health" 200 '"status":"ok"'
+expect "$base/" 200 'Hello, smoke'
 
 $compose down -v >/dev/null
 echo "smoke test ($variant) passed"

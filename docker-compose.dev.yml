@@ -1,6 +1,8 @@
 # Development stack: source bind-mounted (PHP + Twig changes apply on reload),
 # plus PostgreSQL, MySQL and MariaDB for cross-engine testing.
 #
+# Day to day, use bin/dev (start/stop, switch database, sample data).
+#
 #   docker compose -f docker-compose.dev.yml up -d                 # app on :8080 (Postgres)
 #   docker compose -f docker-compose.dev.yml exec app composer check
 #   bin/test-all-dbs.sh                                            # suite on every engine
@@ -23,19 +25,19 @@ services:
       APP_ENV: development
       APP_URL: http://localhost:${APP_PORT:-8080}
       APP_BASE_PATH: ${APP_BASE_PATH:-}
-      DB_DRIVER: pgsql
-      DB_HOST: pgsql
-      DB_NAME: logbook
+      # Chosen by `bin/dev db <engine>`; Postgres when run by hand. The
+      # entrypoint waits for the database, so no depends_on is needed.
+      DB_DRIVER: ${DEV_DB_DRIVER:-pgsql}
+      DB_HOST: ${DEV_DB_HOST:-pgsql}
+      DB_NAME: ${DEV_DB_NAME:-logbook}
       DB_USER: logbook
       DB_PASSWORD: logbook
-      UPLOAD_PATH: /data/uploads
+      # Per engine under bin/dev, so each database keeps its own photos.
+      UPLOAD_PATH: ${DEV_UPLOAD_PATH:-/data/uploads}
     volumes:
       - .:/var/www/html
       - vendor:/var/www/html/vendor
       - dev_data:/data
-    depends_on:
-      pgsql:
-        condition: service_healthy
 
   pgsql:
     image: postgres:17-alpine

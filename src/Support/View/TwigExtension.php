@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Support\View;
 
+use Logbook\Support\Display\DisplayContext;
+use Logbook\Support\Display\DisplayFormatter;
+use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Money\Currency;
 use Slim\Interfaces\RouteParserInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -13,7 +17,13 @@ use Twig\TwigFunction;
 
 /**
  * Template helpers. Every URL a template emits must come from `url_for`,
- * `base_path` or `asset` so the app works behind a subpath proxy.
+ * `base_path` or `asset` so the app works behind a subpath proxy. Every
+ * number, unit, amount and date goes through the formatting filters so the
+ * user's preferences apply everywhere:
+ *
+ *   {{ km|distance }}  {{ litres|volume }}  {{ kwh|energy }}
+ *   {{ amount|money(currency) }}  {{ n|number(2) }}
+ *   {{ calendar_date|local_date }}  {{ instant|local_datetime }}  {{ instant|instant_date }}
  */
 final class TwigExtension extends AbstractExtension
 {
@@ -21,6 +31,8 @@ final class TwigExtension extends AbstractExtension
         private readonly RouteParserInterface $routeParser,
         private readonly AssetPackage $assets,
         private readonly TranslatorInterface&LocaleAwareInterface $translator,
+        private readonly DisplayFormatter $formatter,
+        private readonly DisplayContext $display,
         private readonly string $basePath,
     ) {
     }
@@ -34,6 +46,9 @@ final class TwigExtension extends AbstractExtension
             new TwigFunction('current_locale', $this->translator->getLocale(...)),
             new TwigFunction('html_lang', fn (): string => str_replace('_', '-', $this->translator->getLocale())),
             new TwigFunction('trans', $this->trans(...)),
+            new TwigFunction('prefs', fn (): DisplayPreferences => $this->display->preferences()),
+            new TwigFunction('currency_name', fn (string $code): string => Currency::name($code, $this->locale())),
+            new TwigFunction('currency_symbol', fn (string $code): string => Currency::symbol($code, $this->locale())),
         ];
     }
 
@@ -41,16 +56,33 @@ final class TwigExtension extends AbstractExtension
     {
         return [
             new TwigFilter('trans', $this->trans(...)),
+            new TwigFilter('number', $this->formatter->number(...)),
+            new TwigFilter('money', $this->formatter->money(...)),
+            new TwigFilter('distance', $this->formatter->distance(...)),
+            new TwigFilter('volume', $this->formatter->volume(...)),
+            new TwigFilter('energy', $this->formatter->energy(...)),
+            new TwigFilter('local_date', $this->formatter->date(...)),
+            new TwigFilter('local_datetime', $this->formatter->dateTime(...)),
+            new TwigFilter('instant_date', $this->formatter->instantDate(...)),
         ];
     }
 
     /**
-     * @param array<string, string> $data
-     * @param array<string, string> $query
+     * @param array<string, int|string> $data
+     * @param array<string, int|string> $query
      */
     public function urlFor(string $routeName, array $data = [], array $query = []): string
     {
-        return $this->routeParser->urlFor($routeName, $data, $query);
+        return $this->routeParser->urlFor(
+            $routeName,
+            array_map(strval(...), $data),
+            array_map(strval(...), $query),
+        );
+    }
+
+    private function locale(): string
+    {
+        return $this->translator->getLocale();
     }
 
     /**

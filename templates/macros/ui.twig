@@ -17,11 +17,153 @@
     </a>
 {%- endmacro %}
 
-{# Theme toggle; hidden until js/theme.js enables it. `compact` = icon only. #}
-{% macro theme_toggle(class = 'btn', compact = false) -%}
+{# Theme toggle; hidden until js/theme.js enables it. `compact` = icon only.
+   Signed in, it is a small form that saves the preference (theme.js fills in
+   the value); signed out, theme.js remembers the choice per browser. #}
+{% macro theme_toggle(class = 'btn', compact = false, signed_in = false, csrf = null, return_to = '') -%}
     {% import _self as ui %}
-    <button type="button" class="{{ class }}" data-theme-toggle hidden>
-        <span class="theme-toggle__to-dark">{{ ui.icon('dark_mode') }}<span{% if compact %} class="visually-hidden"{% endif %}>{{ 'theme.to_dark'|trans }}</span></span>
-        <span class="theme-toggle__to-light">{{ ui.icon('light_mode') }}<span{% if compact %} class="visually-hidden"{% endif %}>{{ 'theme.to_light'|trans }}</span></span>
-    </button>
+    {% set button %}
+        <button type="{{ signed_in ? 'submit' : 'button' }}" class="{{ class }}" data-theme-toggle hidden>
+            <span class="theme-toggle__to-dark">{{ ui.icon('dark_mode') }}<span{% if compact %} class="visually-hidden"{% endif %}>{{ 'theme.to_dark'|trans }}</span></span>
+            <span class="theme-toggle__to-light">{{ ui.icon('light_mode') }}<span{% if compact %} class="visually-hidden"{% endif %}>{{ 'theme.to_light'|trans }}</span></span>
+        </button>
+    {% endset %}
+    {% if signed_in %}
+        <form method="post" action="{{ url_for('settings.theme') }}" class="theme-toggle-form" data-theme-form>
+            {{ ui.csrf(csrf) }}
+            <input type="hidden" name="theme" value="system" data-theme-value>
+            <input type="hidden" name="return_to" value="{{ return_to }}">
+            {{ button }}
+        </form>
+    {% else %}
+        {{ button }}
+    {% endif %}
+{%- endmacro %}
+
+{# Hidden CSRF fields; put inside every POST form. #}
+{% macro csrf(csrf) -%}
+    {% if csrf %}
+        <input type="hidden" name="{{ csrf.name_key }}" value="{{ csrf.name }}">
+        <input type="hidden" name="{{ csrf.value_key }}" value="{{ csrf.value }}">
+    {% endif %}
+{%- endmacro %}
+
+{# Error message for a field, from the `errors` map a form Action passes in. #}
+{% macro field_error(errors, name) -%}
+    {% set error = errors[name] ?? null %}
+    {% if error %}<p class="field__error" id="f-{{ name }}-error">{{ trans(error.key, error.params) }}</p>{% endif %}
+{%- endmacro %}
+
+{# aria attributes linking an input to its hint and error. #}
+{% macro described_by(name, errors, hint) -%}
+    {% set ids = [] %}
+    {% if hint %}{% set ids = ids|merge(['f-' ~ name ~ '-hint']) %}{% endif %}
+    {% if errors[name] ?? null %}{% set ids = ids|merge(['f-' ~ name ~ '-error']) %}{% endif %}
+    {% if ids is not empty %} aria-describedby="{{ ids|join(' ') }}"{% endif %}{% if errors[name] ?? null %} aria-invalid="true"{% endif %}
+{%- endmacro %}
+
+{# Label + input + hint + error.
+   opts: type, required, optional (shows "optional"), hint, autocomplete, inputmode,
+         step, min, max, maxlength, suffix (unit shown after the input), placeholder #}
+{% macro input(name, label, values, errors, opts = {}) -%}
+    {% import _self as ui %}
+    {% set hint = opts.hint ?? null %}
+    <div class="field">
+        <label class="field__label" for="f-{{ name }}">{{ label }}{% if opts.optional ?? false %} <span class="field__optional">{{ 'form.optional'|trans }}</span>{% endif %}</label>
+        {% if opts.suffix ?? null %}<div class="input-group">{% endif %}
+        <input class="input" id="f-{{ name }}" name="{{ name }}" type="{{ opts.type ?? 'text' }}"
+            {%- if opts.type ?? 'text' != 'password' %} value="{{ values[name] ?? '' }}"{% endif %}
+            {%- if opts.required ?? false %} required{% endif %}
+            {%- if opts.autocomplete ?? null %} autocomplete="{{ opts.autocomplete }}"{% endif %}
+            {%- if opts.inputmode ?? null %} inputmode="{{ opts.inputmode }}"{% endif %}
+            {%- if opts.step ?? null %} step="{{ opts.step }}"{% endif %}
+            {%- if (opts.min ?? null) is not null %} min="{{ opts.min }}"{% endif %}
+            {%- if (opts.max ?? null) is not null %} max="{{ opts.max }}"{% endif %}
+            {%- if opts.maxlength ?? null %} maxlength="{{ opts.maxlength }}"{% endif %}
+            {%- if opts.placeholder ?? null %} placeholder="{{ opts.placeholder }}"{% endif %}
+            {{- ui.described_by(name, errors, hint) }}>
+        {% if opts.suffix ?? null %}<span class="input-group__suffix" aria-hidden="true">{{ opts.suffix }}</span></div>{% endif %}
+        {% if hint %}<p class="field__hint" id="f-{{ name }}-hint">{{ hint }}</p>{% endif %}
+        {{ ui.field_error(errors, name) }}
+    </div>
+{%- endmacro %}
+
+{# Label + select + error. options: list of {value, label}. #}
+{% macro select(name, label, values, errors, options, opts = {}) -%}
+    {% import _self as ui %}
+    {% set hint = opts.hint ?? null %}
+    {% set current = values[name] ?? '' %}
+    <div class="field">
+        <label class="field__label" for="f-{{ name }}">{{ label }}</label>
+        <select class="select" id="f-{{ name }}" name="{{ name }}"{% if opts.required ?? false %} required{% endif %}{{ ui.described_by(name, errors, hint) }}>
+            {% for option in options %}
+                <option value="{{ option.value }}"{% if option.value == current %} selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+        </select>
+        {% if hint %}<p class="field__hint" id="f-{{ name }}-hint">{{ hint }}</p>{% endif %}
+        {{ ui.field_error(errors, name) }}
+    </div>
+{%- endmacro %}
+
+{# Time-zone picker grouped by region (FormOptions::timezones()). #}
+{% macro timezone_select(values, errors, groups, detect = false) -%}
+    {% import _self as ui %}
+    {% set current = values.timezone ?? '' %}
+    <div class="field">
+        <label class="field__label" for="f-timezone">{{ 'prefs.timezone'|trans }}</label>
+        <select class="select" id="f-timezone" name="timezone" required{% if detect %} data-detect-timezone{% endif %}{{ ui.described_by('timezone', errors, true) }}>
+            {% for region, zones in groups %}
+                <optgroup label="{{ region }}">
+                    {% for zone in zones %}
+                        <option value="{{ zone }}"{% if zone == current %} selected{% endif %}>{{ zone|replace({'_': ' '}) }}</option>
+                    {% endfor %}
+                </optgroup>
+            {% endfor %}
+        </select>
+        <p class="field__hint" id="f-timezone-hint">{{ 'prefs.timezone_hint'|trans }}</p>
+        {{ ui.field_error(errors, 'timezone') }}
+    </div>
+{%- endmacro %}
+
+{# A group of radio chips. options: list of {value, label, icon?}. #}
+{% macro chips(name, legend, values, errors, options, opts = {}) -%}
+    {% import _self as ui %}
+    {% set current = values[name] ?? '' %}
+    <fieldset class="field fieldset"{% if errors[name] ?? null %} aria-describedby="f-{{ name }}-error"{% endif %}>
+        <legend class="field__label">{{ legend }}</legend>
+        <div class="chip-row">
+            {% for option in options %}
+                <label class="chip">
+                    <input type="radio" name="{{ name }}" value="{{ option.value }}"{% if option.value == current %} checked{% endif %}{% if opts.required ?? false %} required{% endif %}{% if opts.data ?? null %} {{ opts.data }}{% endif %}>
+                    {% if option.icon ?? null %}{{ ui.icon(option.icon) }}{% endif %}
+                    <span>{{ option.label }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        {% if opts.hint ?? null %}<p class="field__hint">{{ opts.hint }}</p>{% endif %}
+        {{ ui.field_error(errors, name) }}
+    </fieldset>
+{%- endmacro %}
+
+{# Flash messages queued with Session::flash(). #}
+{% macro flashes(flashes) -%}
+    {% import _self as ui %}
+    {% for flash in flashes %}
+        <div class="alert alert--{{ flash.type }}" role="{{ flash.type == 'error' ? 'alert' : 'status' }}">
+            {{ ui.icon(flash.type == 'success' ? 'check_circle' : (flash.type == 'error' ? 'error' : (flash.type == 'warning' ? 'warning' : 'info'))) }}
+            <span>{{ trans(flash.key, flash.params) }}</span>
+        </div>
+    {% endfor %}
+{%- endmacro %}
+
+{# Vehicle photo, or a striped placeholder with the vehicle-type icon. #}
+{% macro vehicle_photo(vehicle, class = '') -%}
+    {% import _self as ui %}
+    <div class="vehicle-photo{{ class ? ' ' ~ class }}">
+        {% if vehicle.hasPhoto() %}
+            <img src="{{ url_for('vehicles.photo', {id: vehicle.id}, {v: vehicle.photoVersion()}) }}" alt="{{ 'vehicle.photo_alt'|trans({name: vehicle.name()}) }}" loading="lazy">
+        {% else %}
+            <span class="vehicle-photo__placeholder">{{ ui.icon(vehicle.data.type.icon()) }}</span>
+        {% endif %}
+    </div>
 {%- endmacro %}

@@ -1,0 +1,33 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'vehicle.delete_title'|trans({name: vehicle.name()}) }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <section class="card" aria-labelledby="delete-heading">
+            <h1 id="delete-heading" class="card__title card__title--lg">{{ 'vehicle.delete_title'|trans({name: vehicle.name()}) }}</h1>
+            <p>{{ 'vehicle.delete_body'|trans }}</p>
+            {% if not vehicle.isArchived() %}
+                <div class="alert" role="note">{{ ui.icon('info') }}<span>{{ 'vehicle.delete_archive_hint'|trans }}</span></div>
+            {% endif %}
+            <div class="btn-row">
+                <form method="post" action="{{ url_for('vehicles.delete', {id: vehicle.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'vehicle.delete_confirm'|trans }}</button>
+                </form>
+                {% if not vehicle.isArchived() %}
+                    <form method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn">{{ ui.icon('archive') }}{{ 'vehicle.archive_instead'|trans }}</button>
+                    </form>
+                {% endif %}
+                <a class="btn btn--ghost" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </section>
+    </div>
+{% endblock %}

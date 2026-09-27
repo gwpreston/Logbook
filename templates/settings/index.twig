@@ -1,0 +1,151 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'settings.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    {% set theme_options = [] %}
+    {% for theme in themes %}
+        {% set theme_options = theme_options|merge([{value: theme.value, label: ('theme.option.' ~ theme.value)|trans, icon: {system: 'contrast', light: 'light_mode', dark: 'dark_mode'}[theme.value]}]) %}
+    {% endfor %}
+    {% set distance_options = [] %}
+    {% for unit in distance_units %}
+        {% set distance_options = distance_options|merge([{value: unit.value, label: ('units.name.' ~ unit.value)|trans}]) %}
+    {% endfor %}
+    {% set volume_options = [] %}
+    {% for unit in volume_units %}
+        {% set volume_options = volume_options|merge([{value: unit.value, label: ('units.name.' ~ unit.value)|trans}]) %}
+    {% endfor %}
+    {% set consumption_options = [] %}
+    {% for unit in consumption_units %}
+        {% set consumption_options = consumption_options|merge([{value: unit.value, label: ('units.name.' ~ unit.value)|trans}]) %}
+    {% endfor %}
+
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header">
+            <h1 class="page-header__title">{{ 'settings.title'|trans }}</h1>
+        </header>
+
+        <form class="form" method="post" action="{{ url_for('settings.preferences') }}" aria-labelledby="prefs-heading">
+            {{ ui.csrf(csrf) }}
+            <h2 id="prefs-heading" class="visually-hidden">{{ 'settings.preferences'|trans }}</h2>
+
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+
+            <section class="card" aria-labelledby="profile-heading">
+                <h3 id="profile-heading" class="card__title">{{ 'settings.profile'|trans }}</h3>
+                <div class="form-row">
+                    {{ ui.input('display_name', 'prefs.display_name'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'name'}) }}
+                    <div class="field">
+                        <span class="field__label">{{ 'auth.username'|trans }}</span>
+                        <span class="field__static">{{ user.username }}</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="appearance-heading">
+                <h3 id="appearance-heading" class="card__title">{{ 'settings.appearance'|trans }}</h3>
+                {{ ui.chips('theme', 'prefs.theme'|trans, values, errors, theme_options, {required: true}) }}
+            </section>
+
+            <section class="card" aria-labelledby="units-heading">
+                <h3 id="units-heading" class="card__title">{{ 'settings.units'|trans }}</h3>
+
+                <div class="field" data-unit-presets hidden>
+                    <span class="field__label">{{ 'settings.quick_setup'|trans }}</span>
+                    <div class="chip-row">
+                        {% for preset in unit_presets %}
+                            <button type="button" class="chip" data-unit-preset
+                                    data-distance-unit="{{ preset.distance().value }}"
+                                    data-volume-unit="{{ preset.volume().value }}"
+                                    data-consumption-unit="{{ preset.consumption().value }}">{{ ('units.preset.' ~ preset.value)|trans }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {{ ui.chips('distance_unit', 'prefs.distance_unit'|trans, values, errors, distance_options, {required: true}) }}
+                {{ ui.chips('volume_unit', 'prefs.volume_unit'|trans, values, errors, volume_options, {required: true}) }}
+                {{ ui.chips('consumption_unit', 'prefs.consumption_unit'|trans, values, errors, consumption_options, {required: true, hint: 'settings.mpg_hint'|trans}) }}
+                {{ ui.select('currency', 'prefs.currency'|trans, values, errors, currency_options, {required: true, hint: 'settings.currency_hint'|trans}) }}
+                <p class="field__hint">{{ 'settings.units_note'|trans }}</p>
+            </section>
+
+            <section class="card" aria-labelledby="region-heading">
+                <h3 id="region-heading" class="card__title">{{ 'settings.region'|trans }}</h3>
+                {{ ui.select('locale', 'prefs.locale'|trans, values, errors, locale_options, {required: true}) }}
+                {{ ui.timezone_select(values, errors, timezone_options) }}
+            </section>
+
+            <section class="card card--quiet" aria-labelledby="preview-heading">
+                <h3 id="preview-heading" class="card__title">{{ 'settings.preview'|trans }}</h3>
+                <dl class="details details--compact" data-testid="format-preview">
+                    <div><dt>{{ 'settings.preview_distance'|trans }}</dt><dd class="tabular">{{ 12345.6|distance }}</dd></div>
+                    <div><dt>{{ 'settings.preview_volume'|trans }}</dt><dd class="tabular">{{ 45.5|volume }}</dd></div>
+                    <div><dt>{{ 'settings.preview_money'|trans }}</dt><dd class="tabular">{{ '1234.5'|money }}</dd></div>
+                    <div><dt>{{ 'settings.preview_date'|trans }}</dt><dd>{{ now|local_datetime }}</dd></div>
+                </dl>
+                <p class="field__hint">{{ 'settings.preview_hint'|trans }}</p>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'settings.save'|trans }}</button>
+            </div>
+        </form>
+
+        <form class="form" method="post" action="{{ url_for('settings.password') }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card" aria-labelledby="password-heading">
+                <h2 id="password-heading" class="card__title">{{ 'settings.password'|trans }}</h2>
+                {% if password_errors is not empty %}
+                    <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                {% endif %}
+                {# Lets password managers associate the new password with the account. #}
+                <input type="text" name="username" value="{{ user.username }}" autocomplete="username" hidden>
+                {{ ui.input('current_password', 'settings.current_password'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'current-password'}) }}
+                <div class="form-row">
+                    {{ ui.input('new_password', 'settings.new_password'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password', hint: 'auth.password_hint'|trans}) }}
+                    {{ ui.input('new_password_confirm', 'auth.password_confirm'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password'}) }}
+                </div>
+                <p class="field__hint">{{ 'settings.password_note'|trans }}</p>
+                <div class="btn-row">
+                    <button type="submit" class="btn">{{ ui.icon('lock') }}{{ 'settings.change_password'|trans }}</button>
+                </div>
+            </section>
+        </form>
+
+        <section class="card" aria-labelledby="installation-heading">
+            <h2 id="installation-heading" class="card__title">{{ 'settings.installation'|trans }}</h2>
+            <ul class="list">
+                <li>
+                    <a class="list__item" href="{{ url_for('health') }}">
+                        <span class="list__icon">{{ ui.icon('check_circle') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'home.status_health'|trans }}</span>
+                            <span class="list__meta">{{ 'home.status_health_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                <li>
+                    <a class="list__item" href="{{ url_for('diagnostics.deep-link') }}">
+                        <span class="list__icon">{{ ui.icon('speed') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'home.status_deep_link'|trans }}</span>
+                            <span class="list__meta">{{ 'home.status_deep_link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+            </ul>
+        </section>
+
+        <form method="post" action="{{ url_for('logout') }}" class="settings-signout">
+            {{ ui.csrf(csrf) }}
+            <button type="submit" class="btn btn--block">{{ ui.icon('logout') }}{{ 'auth.sign_out'|trans }}</button>
+        </form>
+    </div>
+{% endblock %}
