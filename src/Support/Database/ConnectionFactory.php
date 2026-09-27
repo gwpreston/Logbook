@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Support\Database;
+
+use Doctrine\DBAL\Configuration;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
+use Logbook\Support\Config\DatabaseConfig;
+use Logbook\Support\Config\DatabaseDriver;
+
+/**
+ * Builds the shared DBAL connection. Connecting is lazy: nothing touches the
+ * database until the first query, so a down database never breaks boot.
+ */
+final class ConnectionFactory
+{
+    public static function create(DatabaseConfig $config): Connection
+    {
+        $configuration = (new Configuration())
+            ->setMiddlewares([new SessionInitMiddleware($config->driver)]);
+
+        $params = match ($config->driver) {
+            DatabaseDriver::Sqlite => $config->name === ':memory:'
+                ? ['driver' => 'pdo_sqlite', 'memory' => true]
+                : ['driver' => 'pdo_sqlite', 'path' => $config->name],
+            DatabaseDriver::Mysql => [
+                'driver' => 'pdo_mysql',
+                'host' => $config->host,
+                'port' => (int) $config->port,
+                'dbname' => $config->name,
+                'user' => $config->user,
+                'password' => $config->password,
+                'charset' => 'utf8mb4',
+            ],
+            DatabaseDriver::Pgsql => [
+                'driver' => 'pdo_pgsql',
+                'host' => $config->host,
+                'port' => (int) $config->port,
+                'dbname' => $config->name,
+                'user' => $config->user,
+                'password' => $config->password,
+                'charset' => 'utf8',
+            ],
+        };
+
+        return DriverManager::getConnection($params, $configuration);
+    }
+}

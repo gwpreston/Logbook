@@ -1,0 +1,5 @@
+Third-party libraries bundled with Logbook
+
+alpine.min.js: alpinejs 3.17.4 — MIT license — https://alpinejs.dev
+chart.umd.min.js: chart.js 4.5.1 — MIT license — https://www.chartjs.org
+sortable.min.js: sortablejs 1.15.7 — MIT license — https://github.com/SortableJS/Sortable

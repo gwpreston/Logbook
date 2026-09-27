@@ -1,0 +1,82 @@
+# Development stack: source bind-mounted (PHP + Twig changes apply on reload),
+# plus PostgreSQL, MySQL and MariaDB for cross-engine testing.
+#
+#   docker compose -f docker-compose.dev.yml up -d                 # app on :8080 (Postgres)
+#   docker compose -f docker-compose.dev.yml exec app composer check
+#   bin/test-all-dbs.sh                                            # suite on every engine
+
+name: logbook-dev
+
+x-db-env: &db-env
+  POSTGRES_DB: logbook
+  POSTGRES_USER: logbook
+  POSTGRES_PASSWORD: logbook
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_ENV: development
+      APP_URL: http://localhost:${APP_PORT:-8080}
+      APP_BASE_PATH: ${APP_BASE_PATH:-}
+      DB_DRIVER: pgsql
+      DB_HOST: pgsql
+      DB_NAME: logbook
+      DB_USER: logbook
+      DB_PASSWORD: logbook
+      UPLOAD_PATH: /data/uploads
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+      - dev_data:/data
+    depends_on:
+      pgsql:
+        condition: service_healthy
+
+  pgsql:
+    image: postgres:17-alpine
+    environment: *db-env
+    volumes:
+      - ./docker/dev/pgsql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logbook -d logbook"]
+      interval: 3s
+      retries: 30
+
+  mysql:
+    image: mysql:8.4
+    profiles: ["mysql", "all"]
+    environment:
+      MYSQL_DATABASE: logbook
+      MYSQL_USER: logbook
+      MYSQL_PASSWORD: logbook
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - ./docker/dev/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -ulogbook -plogbook --silent"]
+      interval: 3s
+      retries: 40
+
+  mariadb:
+    image: mariadb:11.4
+    profiles: ["mariadb", "all"]
+    environment:
+      MARIADB_DATABASE: logbook
+      MARIADB_USER: logbook
+      MARIADB_PASSWORD: logbook
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - ./docker/dev/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      retries: 40
+
+volumes:
+  vendor:
+  dev_data:

@@ -62,7 +62,12 @@ each vehicle costs.*
 | i18n | symfony/translation | ICU, pluralization, multi-locale |
 | Auth | PHP sessions + Argon2id + slim/csrf | Standard, secure, no external IdP needed |
 | Logging | Monolog | PSR-3 |
+| Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
+| Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
 | Tests | PHPUnit + PHPStan + phpcs | Quality gates against both DBs |
+| Web server (Docker) | Apache 2.4 + mod_php (`php:8.4-apache`) | Multi-arch incl. ARM; one process; doubles as the Apache reference config |
+
+PHP namespace: `Logbook\` (PSR-4, `src/`); tests `Logbook\Tests\`.
 
 **Decisions worth confirming** (defaults chosen; override in this section if you
 disagree):
@@ -79,7 +84,13 @@ disagree):
 
 - Front controller (`public/index.php`) → Slim app → middleware stack → Action.
 - **Middleware order (outer→inner):** error handling → base-path → session →
-  locale resolution → CSRF → auth guard (for protected routes) → routing.
+  locale resolution → CSRF → routing → auth guard (per protected route group,
+  since it needs the matched route). Phase 0 wires error, base-path, locale and
+  routing; session, CSRF and auth arrive in Phase 1.
+- **Base path:** Slim's router is configured with `APP_BASE_PATH`; the
+  base-path middleware restores the prefix when a reverse proxy has stripped
+  it, so both proxy styles route identically. All URLs come from `url_for()`,
+  `base_path()` or `asset()` in templates.
 - **Action → Service → Repository → DBAL → DB.** Twig renders the response.
 - Reminders and report aggregation live in Services; a scheduled task
   (cron in bare install, entrypoint-scheduled in Docker) evaluates reminders and
@@ -93,6 +104,27 @@ disagree):
 
 Canonical storage: **SI units** (litres, kilometres), **UTC** timestamps,
 **DECIMAL** money. Conversion happens only at input/display.
+
+### 6.1 Portable storage conventions (all migrations)
+
+Established in Phase 0 and enforced by the migration tests on every engine:
+
+| Concern | Phinx column | Notes |
+|---|---|---|
+| Timestamps | `datetime` | UTC with no offset on every engine; written via `Support\Database\UtcDateTime`, never by DB defaults such as `CURRENT_TIMESTAMP`. MySQL `TIMESTAMP` is avoided (2038 limit, implicit conversion). |
+| Calendar dates | `date` | Dates with no time (e.g. an expiry day) stay plain dates; no time-zone conversion. |
+| Money, volumes, prices | `decimal` | Never `float`. ≥3 decimals for fuel price and volume. |
+| Flags | `boolean` | |
+| Structured values | `json` | **Object key order is not preserved on MySQL**; use lists where order matters. |
+| Nullability | explicit `'null' => true/false` | Phinx 0.16 defaults columns to nullable: always state it. |
+
+Every connection sets its session time zone to UTC (PostgreSQL, MySQL) or
+enables foreign keys (SQLite) on connect (`Support\Database\SessionInitMiddleware`,
+the one documented platform branch). Integer columns may come back as strings
+from `pdo_mysql`, so repositories read rows through `Support\Database\Row`.
+SQLite is supported for the zero-config quick start, but its Phinx column types
+cannot be introspected by DBAL, so schema-shape tests run on PostgreSQL and
+MySQL only.
 
 **Vehicle**
 - id, name/nickname, type (`car` | `bike`), make, model, year, registration,
@@ -240,21 +272,38 @@ Ship the framework so translations are easy to add; do not hard-code strings.
 Documented in `.env.example`; sensible defaults so `docker compose up` works
 unedited.
 
+Real environment variables override `.env`; an empty value counts as unset.
+
+- `APP_ENV` (`production`|`development`|`testing`; default `production`),
+  `APP_DEBUG` (default on in development only)
 - `APP_URL`, `APP_BASE_PATH` (subpath support), `APP_TIMEZONE`, `APP_LOCALE`
-- `DB_DRIVER` (`pgsql`|`mysql`|`sqlite`), `DB_HOST`, `DB_PORT`, `DB_NAME`,
+- `DB_DRIVER` (`pgsql`|`mysql`|`sqlite`; default `sqlite`), `DB_HOST`,
+  `DB_PORT` (default per driver), `DB_NAME` (for SQLite: the file path),
   `DB_USER`, `DB_PASSWORD`
-- `SESSION_SECRET`, `SESSION_SECURE`
+- `SESSION_SECRET`, `SESSION_SECURE` (default: true when `APP_URL` is https)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
-- `MAIL_*` (SMTP), `NTFY_URL` / webhook settings
+- `LOG_PATH` (default `php://stderr`), `LOG_LEVEL` (PSR-3 level)
+- `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,
+  `MAIL_ENCRYPTION`, `MAIL_FROM` (SMTP); `NTFY_URL`, `NTFY_TOKEN`,
+  `WEBHOOK_URL`
 - `FEATURES_*` defaults (optional)
+- Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
+  `DB_WAIT_TIMEOUT` (default `60`)
+- Test suite only: `TEST_DB_*` (same shape as `DB_*`; default SQLite
+  `var/testing.sqlite`). PHPUnit never reads `DB_*`.
 
 ---
 
 ## 10. Deployment
 
-- **Docker:** single image `ghcr.io/<owner>/<app>:latest`; one persistent volume
-  for `/data` (uploads + SQLite if used); compose examples for app + Postgres and
-  app + MySQL. Multi-arch build including ARM (Raspberry Pi).
+- **Docker:** single image `ghcr.io/<owner>/logbook:latest` (PHP 8.4 +
+  Apache); one persistent volume for `/data` (uploads + SQLite if used);
+  compose examples for app + Postgres and app + MySQL. Run without compose,
+  the image defaults to SQLite on `/data`. The entrypoint waits for the
+  database and applies pending migrations before starting. Multi-arch build:
+  amd64 and arm64 (Raspberry Pi 3/4/5 on a 64-bit OS). **64-bit only:** Phinx
+  requires 64-bit PHP, so 32-bit ARM (arm/v7) and 32-bit PHP hosts are not
+  supported.
 - **Bare PHP 8.4:** document web root = `public/`, Composer install, Phinx
   migrate, cron entry for the reminder/notification task, and Nginx/Apache
   vhost + reverse-proxy examples.

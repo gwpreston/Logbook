@@ -1,0 +1,54 @@
+# Logbook + MySQL 8.4. Works unedited:   docker compose -f docker-compose.mysql.yml up -d
+# MariaDB works too: change the db image to mariadb:11.4 (and the healthcheck to
+# ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]).
+
+name: logbook-mysql
+
+services:
+  app:
+    image: logbook:local
+    build: .
+    pull_policy: build
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_BASE_PATH: ${APP_BASE_PATH:-}
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      APP_LOCALE: ${APP_LOCALE:-en}
+      DB_DRIVER: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-logbook}
+      DB_USER: ${DB_USER:-logbook}
+      DB_PASSWORD: ${DB_PASSWORD:-logbook}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      UPLOAD_PATH: /data/uploads
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+    volumes:
+      - logbook_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-logbook}
+      MYSQL_USER: ${DB_USER:-logbook}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-logbook}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  logbook_data:
+  mysql_data:

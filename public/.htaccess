@@ -1,0 +1,10 @@
+# Logbook — Apache front-controller rules for bare-PHP installs.
+# (The Docker image puts the same rules in its vhost and ignores this file.)
+# Works at the domain root or in a subdirectory; set APP_BASE_PATH to match.
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>

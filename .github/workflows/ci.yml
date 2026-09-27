@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint + static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer validate --no-check-publish
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: composer lint
+      - run: composer analyse
+      - name: Built assets are committed and current
+        run: php bin/build-assets.php --check
+
+  tests:
+    name: Tests (PHP ${{ matrix.php }}, ${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: "8.4", db: pgsql,   driver: pgsql,  image: "postgres:17",  port: 5432, health: "pg_isready -U logbook -d logbook_test" }
+          - { php: "8.4", db: mysql,   driver: mysql,  image: "mysql:8.4",    port: 3306, health: "mysqladmin ping -h 127.0.0.1 -ulogbook -plogbook" }
+          - { php: "8.4", db: mariadb, driver: mysql,  image: "mariadb:11.4", port: 3306, health: "healthcheck.sh --connect --innodb_initialized" }
+          - { php: "8.4", db: sqlite,  driver: sqlite, image: "",             port: 0,    health: "" }
+          - { php: "8.5", db: pgsql,   driver: pgsql,  image: "postgres:17",  port: 5432, health: "pg_isready -U logbook -d logbook_test" }
+          - { php: "8.5", db: mysql,   driver: mysql,  image: "mysql:8.4",    port: 3306, health: "mysqladmin ping -h 127.0.0.1 -ulogbook -plogbook" }
+    services:
+      db:
+        # An empty image (the sqlite row) skips the service container.
+        image: ${{ matrix.image }}
+        env:
+          POSTGRES_DB: logbook_test
+          POSTGRES_USER: logbook
+          POSTGRES_PASSWORD: logbook
+          MYSQL_DATABASE: logbook_test
+          MYSQL_USER: logbook
+          MYSQL_PASSWORD: logbook
+          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+          MARIADB_DATABASE: logbook_test
+          MARIADB_USER: logbook
+          MARIADB_PASSWORD: logbook
+          MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+        ports:
+          - 5432:5432
+          - 3306:3306
+        options: >-
+          --health-cmd "${{ matrix.health }}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      TEST_DB_DRIVER: ${{ matrix.driver }}
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_PORT: ${{ matrix.port }}
+      TEST_DB_NAME: ${{ matrix.driver == 'sqlite' && 'var/testing.sqlite' || 'logbook_test' }}
+      TEST_DB_USER: logbook
+      TEST_DB_PASSWORD: logbook
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Migrations apply, fully roll back, and re-apply
+        run: |
+          vendor/bin/phinx migrate  -e testing
+          vendor/bin/phinx rollback -e testing -t 0
+          vendor/bin/phinx migrate  -e testing
+      - run: composer test
+
+  docker:
+    name: Docker image (smoke test + multi-arch build)
+    runs-on: ubuntu-latest
+    needs: [quality, tests]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build amd64 image for smoke tests
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: logbook:local
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test — PostgreSQL, served at a subpath behind nginx
+        run: bin/smoke-test.sh pgsql
+      - name: Smoke test — MySQL, served at the root
+        run: bin/smoke-test.sh mysql
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/logbook
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # 64-bit only: Phinx requires 64-bit PHP (no arm/v7). arm64 covers Raspberry Pi 3/4/5.
+      - name: Build multi-arch (amd64, arm64); push on main and tags
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

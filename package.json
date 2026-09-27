@@ -1,0 +1,13 @@
+{
+  "name": "logbook-assets",
+  "private": true,
+  "description": "Maintainer-only: refreshes the vendored front-end libraries in assets/vendor. Not needed to run or install Logbook.",
+  "scripts": {
+    "vendor": "node bin/vendor-assets.mjs && php bin/build-assets.php"
+  },
+  "devDependencies": {
+    "alpinejs": "3.17.4",
+    "chart.js": "4.5.1",
+    "sortablejs": "1.15.7"
+  }
+}
