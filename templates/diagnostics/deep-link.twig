@@ -1,0 +1,11 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ 'diagnostics.deep_link.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <section class="card">
+        <h1>{{ 'diagnostics.deep_link.title'|trans }}</h1>
+        <p>{{ 'diagnostics.deep_link.body'|trans }}</p>
+        <p><a href="{{ url_for('home') }}">{{ 'diagnostics.deep_link.back'|trans }}</a></p>
+    </section>
+{% endblock %}

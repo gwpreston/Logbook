@@ -1,0 +1,11 @@
+parameters:
+    level: max
+    paths:
+        - bin
+        - config
+        - db
+        - public
+        - src
+        - tests
+        - phinx.php
+    tmpDir: var/cache/phpstan

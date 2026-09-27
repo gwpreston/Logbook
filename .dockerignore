@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+vendor
+node_modules
+var/*
+!var/.gitkeep
+data
+tests
+docs
+.phpunit.cache
+.phpcs-cache
+*.md
+!README.md

@@ -1,0 +1,85 @@
+{
+    "name": "logbook/logbook",
+    "description": "Self-hosted vehicle logbook: garage, odometer, fuel, maintenance, compliance, reminders and reports.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.4",
+        "ext-intl": "*",
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "doctrine/dbal": "^4.5",
+        "monolog/monolog": "^3.12",
+        "php-di/php-di": "^7.1",
+        "psr/clock": "^1.0",
+        "robmorgan/phinx": "^0.16.12",
+        "slim/csrf": "^1.5",
+        "slim/psr7": "^1.8",
+        "slim/slim": "^4.15",
+        "symfony/dotenv": "^8.0",
+        "symfony/translation": "^8.0",
+        "twig/twig": "^3.30"
+    },
+    "suggest": {
+        "ext-pdo_pgsql": "PostgreSQL support",
+        "ext-pdo_mysql": "MySQL / MariaDB support",
+        "ext-pdo_sqlite": "SQLite (zero-config quick start)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Logbook\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Logbook\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "8.4.0"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require-dev": {
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^12.5",
+        "squizlabs/php_codesniffer": "^4.0"
+    },
+    "scripts": {
+        "start": [
+            "Composer\\Config::disableProcessTimeout",
+            "php -S 0.0.0.0:8080 -t public bin/dev-router.php"
+        ],
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite unit",
+        "test:integration": "phpunit --testsuite integration",
+        "lint": "phpcs",
+        "cs-fix": "phpcbf",
+        "analyse": "phpstan analyse --memory-limit=1G --no-progress",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ],
+        "migrate": "phinx migrate --configuration=phinx.php",
+        "rollback": "phinx rollback --configuration=phinx.php",
+        "seed": "phinx seed:run --configuration=phinx.php",
+        "build-assets": "php bin/build-assets.php"
+    },
+    "scripts-descriptions": {
+        "start": "Run the PHP built-in dev server on http://localhost:8080",
+        "test": "Run the PHPUnit suite (TEST_DB_* selects the database; default SQLite)",
+        "lint": "Check coding style (PSR-12)",
+        "cs-fix": "Fix coding style automatically",
+        "analyse": "Run PHPStan static analysis",
+        "check": "lint + analyse + test",
+        "migrate": "Apply pending Phinx migrations (add -e <environment>)",
+        "rollback": "Roll back Phinx migrations (add -e <environment>, -t 0 for all)",
+        "seed": "Run Phinx seeders",
+        "build-assets": "Copy assets/ into public/assets and write the cache-busting manifest"
+    }
+}

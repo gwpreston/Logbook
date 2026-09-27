@@ -1,0 +1,52 @@
+# Logbook + PostgreSQL. Works unedited:   docker compose up -d   → http://localhost:8080
+# Override any variable in a .env file next to this one (see .env.example).
+# MySQL instead? docker compose -f docker-compose.mysql.yml up -d
+
+name: logbook
+
+services:
+  app:
+    image: logbook:local
+    build: .
+    pull_policy: build
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_BASE_PATH: ${APP_BASE_PATH:-}
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      APP_LOCALE: ${APP_LOCALE:-en}
+      DB_DRIVER: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-logbook}
+      DB_USER: ${DB_USER:-logbook}
+      DB_PASSWORD: ${DB_PASSWORD:-logbook}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      UPLOAD_PATH: /data/uploads
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+    volumes:
+      - logbook_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-logbook}
+      POSTGRES_USER: ${DB_USER:-logbook}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-logbook}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  logbook_data:
+  postgres_data:

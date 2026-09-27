@@ -1,0 +1,29 @@
+{% extends 'layout.twig' %}
+
+{% set active_nav = 'home' %}
+
+{% block content %}
+    <section class="hero">
+        <h1>{{ 'home.title'|trans }}</h1>
+        <p class="lead">{{ 'home.intro'|trans }}</p>
+    </section>
+
+    <section class="card" aria-labelledby="garage-heading">
+        <h2 id="garage-heading" class="card__title">{{ trans('home.vehicle_count', {count: vehicle_count}) }}</h2>
+        <p class="muted">{{ 'home.coming_soon'|trans }}</p>
+    </section>
+
+    <section class="card" aria-labelledby="status-heading">
+        <h2 id="status-heading" class="card__title">{{ 'home.status_heading'|trans }}</h2>
+        <ul class="link-list">
+            <li>
+                <a href="{{ url_for('health') }}">{{ 'home.status_health'|trans }}</a>
+                <span class="muted">{{ 'home.status_health_hint'|trans }}</span>
+            </li>
+            <li>
+                <a href="{{ url_for('diagnostics.deep-link') }}">{{ 'home.status_deep_link'|trans }}</a>
+                <span class="muted">{{ 'home.status_deep_link_hint'|trans }}</span>
+            </li>
+        </ul>
+    </section>
+{% endblock %}

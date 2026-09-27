@@ -1,0 +1,24 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ ('error.' ~ key ~ '.title')|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <section class="card error-page">
+        <p class="error-page__code">{{ trans('error.status_code', {status: status}) }}</p>
+        <h1>{{ ('error.' ~ key ~ '.title')|trans }}</h1>
+        <p>{{ ('error.' ~ key ~ '.body')|trans }}</p>
+        <p><a href="{{ url_for('home') }}">{{ 'error.back_home'|trans }}</a></p>
+    </section>
+
+    {% if details is not empty %}
+        <section class="card error-details">
+            <h2 class="card__title">{{ 'error.details'|trans }}</h2>
+            {% for detail in details %}
+                <h3><code>{{ detail.class }}</code></h3>
+                <p>{{ detail.message }}</p>
+                <p class="muted"><code>{{ detail.location }}</code></p>
+                <pre>{{ detail.trace }}</pre>
+            {% endfor %}
+        </section>
+    {% endif %}
+{% endblock %}
