@@ -110,6 +110,41 @@ final class DisplayFormatterTest extends TestCase
         self::assertSame('1 Jul 2026, 13:00', $this->formatter->dateTime(new DateTimeImmutable('2026-07-01T12:00:00Z')));
     }
 
+    public function testUnitPricesFollowTheVolumeUnitWithOneExtraDecimal(): void
+    {
+        $this->prefs('en_GB', 'Europe/London');
+        self::assertSame('£1.459/L', $this->formatter->unitPrice('1.459000', 'GBP', false));
+        self::assertSame('£0.245/kWh', $this->formatter->unitPrice('0.245000', 'GBP', true));
+
+        $this->prefs('en_US', 'America/New_York', DistanceUnit::Mile, VolumeUnit::UsGallon, ConsumptionUnit::MpgUs);
+        self::assertSame('$3.499/US gal', $this->formatter->unitPrice('0.924338', 'USD', false));
+        self::assertSame('$0.289/kWh', $this->formatter->unitPrice('0.289000', 'USD', true), 'kWh is never converted');
+        self::assertSame('', $this->formatter->unitPrice(null, 'USD', false));
+    }
+
+    public function testCostPerDistance(): void
+    {
+        $this->prefs('en_GB', 'Europe/London', DistanceUnit::Mile);
+        self::assertSame('£0.169/mi', $this->formatter->perDistance('0.105000', 'GBP'));
+
+        $this->prefs('en_GB', 'Europe/London');
+        self::assertSame('£0.105/km', $this->formatter->perDistance('0.105000', 'GBP'));
+    }
+
+    public function testEconomyPicksConsumptionOrEfficiency(): void
+    {
+        $this->prefs('en_GB', 'Europe/London', DistanceUnit::Mile, VolumeUnit::Litre, ConsumptionUnit::MpgUk);
+        self::assertSame('40.4 mpg', $this->formatter->economy('500.000', '35.000', false));
+        self::assertSame('33.6 mpg (US)', $this->formatter->consumption('500', '35', 1, ConsumptionUnit::MpgUs));
+        self::assertSame('6.2 mi/kWh', $this->formatter->economy('600', '60', true));
+        self::assertSame('58.3 kWh', $this->formatter->quantity('58.300', true));
+        self::assertSame('35 L', $this->formatter->quantity('35.000', false));
+
+        $this->prefs('de_DE', 'Europe/Berlin');
+        self::assertSame('10,0 kWh/100 km', $this->formatter->efficiency('600', '60'));
+        self::assertSame('7,0 L/100 km', $this->formatter->economy('500', '35', false));
+    }
+
     private function prefs(
         string $locale,
         string $timezone,

@@ -1,0 +1,83 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'garage' %}
+{% set dash = '—' %}
+{% set latest = history.latest() %}
+{% set per_month = history.averageKmPerMonth() %}
+{% set total = history.totalDistanceKm() %}
+
+{% block title %}{{ 'odometer.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'odometer'} %}
+
+        <h1 class="visually-hidden">{{ 'odometer.title'|trans }} · {{ vehicle.name() }}</h1>
+
+        <dl class="stats">
+            {{ ui.stat('odometer.stat.current'|trans,
+                latest ? latest.readingKm|distance : dash,
+                latest ? 'odometer.stat.as_of'|trans({date: latest.recordedAt|instant_date}) : 'odometer.stat.none'|trans) }}
+            {{ ui.stat('odometer.stat.per_month'|trans,
+                per_month is null ? dash : per_month|distance,
+                per_month is null ? 'odometer.stat.per_month_need'|trans : 'odometer.stat.per_month_hint'|trans) }}
+            {{ ui.stat('odometer.stat.logged'|trans,
+                total is null ? dash : total|distance,
+                history.first() and total is not null ? 'odometer.stat.since'|trans({date: history.first().recordedAt|instant_date}) : '') }}
+        </dl>
+
+        <section class="card" aria-labelledby="trend-heading">
+            <div class="card__header">
+                <h2 id="trend-heading" class="card__title">{{ 'odometer.chart.title'|trans }}</h2>
+                {% if not vehicle.isArchived() %}
+                    <a class="btn btn--soft" href="{{ url_for('odometer.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'odometer.add'|trans }}</a>
+                {% endif %}
+            </div>
+            {% if chart.hasData() %}
+                {{ ui.chart(chart, 'odometer.chart.title'|trans) }}
+            {% else %}
+                <p class="muted">{{ 'odometer.chart.need_two'|trans }}</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="readings-heading">
+            <div class="card__header">
+                <h2 id="readings-heading" class="card__title">{{ 'odometer.readings'|trans }}</h2>
+            </div>
+            {% if history.isEmpty() %}
+                <div class="empty">
+                    {{ ui.icon('speed') }}
+                    <p class="empty__title">{{ 'odometer.empty_title'|trans }}</p>
+                    <p>{{ 'odometer.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for reading in rows %}
+                        {% set warning = warnings[reading.id] ?? null %}
+                        {% set delta = deltas[reading.id] ?? null %}
+                        <li>
+                            <a class="list__item" href="{{ url_for('odometer.edit', {id: vehicle.id, reading: reading.id}) }}">
+                                <span class="list__icon{{ warning ? ' list__icon--warning' }}">{{ ui.icon(warning ? 'warning' : reading.source.icon()) }}</span>
+                                <span class="list__body">
+                                    <span class="list__title tabular">{{ reading.readingKm|distance }}</span>
+                                    <span class="list__meta">{{ reading.recordedAt|local_datetime }}{% if reading.note %} · {{ reading.note }}{% endif %}</span>
+                                    {% if warning %}
+                                        <span class="list__meta list__meta--warning">{{ ('odometer.warning.' ~ warning.type)|trans(warning.params) }}</span>
+                                    {% endif %}
+                                </span>
+                                <span class="list__end">
+                                    {% if delta is not null %}
+                                        <span class="list__delta tabular">{{ (delta starts with '-' ? '−' ~ delta|slice(1)|distance : '+' ~ delta|distance) }}</span>
+                                    {% endif %}
+                                    <span class="pill">{{ ('odometer.source.' ~ reading.source.value)|trans }}</span>
+                                </span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'odometer.index', {id: vehicle.id}) }}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

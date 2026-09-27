@@ -6,7 +6,8 @@
  #
  # Primary navigation entries: route name, translation key, icon, and the
  # `active_nav` value that marks it current. Later phases add Reminders and
- # Reports here (gated by feature toggles).
+ # Reports here (gated by feature toggles). The bottom bar adds the "Log"
+ # button (the fast fill-up path) as its third entry, as in the design.
  #}
 {% set signed_in = user is not null %}
 {% set nav_items = [
@@ -47,7 +48,7 @@
                 {{ ui.brand() }}
 
                 {% block primary_action %}
-                    <a class="btn btn--primary btn--block" href="{{ url_for('vehicles.create') }}">{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
+                    <a class="btn btn--primary btn--block" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>{{ ui.icon('add') }}{{ 'nav.log_fill_up'|trans }}</a>
                 {% endblock %}
 
                 <nav aria-label="{{ 'nav.label'|trans }}">
@@ -104,6 +105,14 @@
         <nav class="bottom-nav" aria-label="{{ 'nav.label'|trans }}">
             <ul class="bottom-nav__list">
                 {% for item in nav_items %}
+                    {% if loop.index == 3 %}
+                        <li>
+                            <a class="bottom-nav__link bottom-nav__link--fab" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>
+                                <span class="bottom-nav__icon">{{ ui.icon('add') }}</span>
+                                <span class="visually-hidden">{{ 'nav.log_fill_up'|trans }}</span>
+                            </a>
+                        </li>
+                    {% endif %}
                     <li>
                         <a class="bottom-nav__link" href="{{ url_for(item.route) }}"{% if current_nav == item.key %} aria-current="page"{% endif %}>
                             <span class="bottom-nav__icon">{{ ui.icon(item.icon) }}</span>

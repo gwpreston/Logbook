@@ -114,11 +114,127 @@ final class DemoDataSeeder extends AbstractSeed
             ]),
         ])->saveData();
 
+        $this->seedFuel($now);
+
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
             self::USERNAME,
             self::PASSWORD,
         ));
+    }
+
+    /**
+     * A year of fill-ups (with partial fills, one missed fill-up and EV
+     * charges), each with its odometer reading, plus manual readings for the
+     * hybrid. Deterministic, so every reset looks the same.
+     */
+    private function seedFuel(string $now): void
+    {
+        mt_srand(20260927);
+        $ids = [];
+        foreach ($this->fetchAll('SELECT id, registration FROM vehicles') as $row) {
+            if (is_array($row) && is_string($row['registration'] ?? null)) {
+                $ids[$row['registration']] = self::intValue($row['id'] ?? null);
+            }
+        }
+
+        $entries = [
+            // Golf: ~45 mpg (UK), fill every ~12 days; partial every 6th; one fill-up never logged.
+            ...$this->fillUps($ids['LB19 KTR'], '2025-09-20', 30, 61155.0, 540.0, 15.9, 1.479, 'petrol', 6, 17, $now),
+            ...$this->fillUps($ids['MT20 BKE'], '2026-03-15', 12, 18500.0, 230.0, 19.5, 1.529, 'petrol', 0, null, $now),
+            // EV6: charges in kWh, ~5.6 km/kWh, most of them partial.
+            ...$this->fillUps($ids['EV23 KIA'], '2026-01-05', 24, 21000.0, 260.0, 5.6, 0.285, 'ev', -3, null, $now),
+        ];
+        $this->table('fuel_entries')->insert($entries)->saveData();
+
+        // Each fill-up's odometer reading (portable INSERT … SELECT).
+        $this->execute(
+            'INSERT INTO odometer_readings'
+            . ' (vehicle_id, reading_km, recorded_at, source, note, fuel_entry_id, created_at, updated_at)'
+            . " SELECT vehicle_id, odometer_km, filled_at, 'fuel', NULL, id, created_at, updated_at FROM fuel_entries",
+        );
+
+        $readings = [];
+        $km = 30500.0;
+        for ($month = 0; $month < 12; $month++) {
+            $km += 900 + mt_rand(0, 500);
+            $readings[] = [
+                'vehicle_id' => $ids['LK22 VXN'],
+                'reading_km' => number_format($km, 3, '.', ''),
+                'recorded_at' => gmdate('Y-m-d H:i:s', (int) strtotime(sprintf('2025-10-01 +%d months 09:00', $month))),
+                'source' => 'manual',
+                'note' => $month === 5 ? 'MOT' : null,
+                'fuel_entry_id' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        $this->table('odometer_readings')->insert($readings)->saveData();
+    }
+
+    /**
+     * Simulated fill-ups: the tank's deficit since the last full fill is what
+     * a full fill adds, so full-to-full economy comes out at $kmPerUnit.
+     *
+     * @param int $partialEvery every Nth fill is partial (0: none; negative: all but every Nth)
+     * @param int|null $missed index of a fill-up that happens but is never logged
+     * @return list<array<string, mixed>>
+     */
+    private function fillUps(
+        int $vehicleId,
+        string $start,
+        int $count,
+        float $km,
+        float $kmPerFill,
+        float $kmPerUnit,
+        float $price,
+        string $fuel,
+        int $partialEvery,
+        ?int $missed,
+        string $now,
+    ): array {
+        $rows = [];
+        $deficit = 0.0;
+        $time = (int) strtotime($start . ' 08:00 UTC');
+        $afterGap = false;
+
+        for ($i = 0; $i < $count; $i++) {
+            $distance = $kmPerFill * (0.8 + mt_rand(0, 400) / 1000);
+            $km += $distance;
+            $deficit += $distance / ($kmPerUnit * (0.93 + mt_rand(0, 140) / 1000));
+            $time += (int) ($distance / $kmPerFill * 11 * 86400) + mt_rand(0, 36000);
+
+            $partial = $partialEvery > 0 ? ($i % $partialEvery === $partialEvery - 1)
+                : ($partialEvery < 0 && $i % -$partialEvery !== 0);
+            $volume = $partial ? $deficit * 0.55 : $deficit;
+            $deficit -= $volume;
+
+            if ($i === $missed) {
+                $afterGap = true;
+
+                continue;
+            }
+
+            $unitPrice = round($price * (1 + 0.04 * sin($i / 5)) + mt_rand(-10, 10) / 1000, 3);
+            $rows[] = [
+                'vehicle_id' => $vehicleId,
+                'filled_at' => gmdate('Y-m-d H:i:s', $time),
+                'odometer_km' => number_format($km, 3, '.', ''),
+                'fuel' => $fuel,
+                'volume' => number_format($volume, 3, '.', ''),
+                'price_per_unit' => number_format($unitPrice, 6, '.', ''),
+                'total_cost' => number_format(round($volume * $unitPrice, 2), 3, '.', ''),
+                'is_partial' => $partial,
+                'is_missed_previous' => $afterGap,
+                'station' => $fuel === 'ev' ? 'Home' : ($i % 3 === 0 ? 'Tesco Extra' : 'Shell'),
+                'notes' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+            $afterGap = false;
+        }
+
+        return $rows;
     }
 
     /**

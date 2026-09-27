@@ -167,3 +167,36 @@
         {% endif %}
     </div>
 {%- endmacro %}
+
+{# Figure tile: label, big value, optional caption. `tone`: '', 'good'. #}
+{% macro stat(label, value, sub = '', tone = '') -%}
+    <div class="stat{{ tone ? ' stat--' ~ tone }}">
+        <dt class="stat__label">{{ label }}</dt>
+        <dd class="stat__value tabular">{{ value }}</dd>
+        {% if sub %}<dd class="stat__sub">{{ sub }}</dd>{% endif %}
+    </div>
+{%- endmacro %}
+
+{# A LineChart drawn by js/app.js with Chart.js. Hidden without JS: every
+   chart sits next to a list with the same figures. #}
+{% macro chart(chart, label) -%}
+    <div class="chart">
+        <canvas data-chart="{{ chart|json_encode }}" role="img" aria-label="{{ label }}"></canvas>
+    </div>
+{%- endmacro %}
+
+{# Previous / next links for a Support\View\Pagination. #}
+{% macro pagination(pagination, route, params) -%}
+    {% import _self as ui %}
+    {% if pagination.pages() > 1 %}
+        <nav class="pagination" aria-label="{{ 'pagination.label'|trans }}">
+            {% if pagination.hasPrevious() %}
+                <a class="btn" rel="prev" href="{{ url_for(route, params, pagination.page > 2 ? {page: pagination.page - 1} : {}) }}">{{ ui.icon('chevron_left') }}{{ 'pagination.newer'|trans }}</a>
+            {% endif %}
+            <span class="pagination__status muted">{{ 'pagination.status'|trans({first: pagination.first(), last: pagination.last(), total: pagination.total}) }}</span>
+            {% if pagination.hasNext() %}
+                <a class="btn" rel="next" href="{{ url_for(route, params, {page: pagination.page + 1}) }}">{{ 'pagination.older'|trans }}{{ ui.icon('chevron_right') }}</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+{%- endmacro %}

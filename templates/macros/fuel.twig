@@ -1,0 +1,36 @@
+{#
+ # Fuel fragments. Import with: {% import 'macros/fuel.twig' as fuel_ui %}
+ #}
+
+{# One fill-up (a Service\Fuel\FillEconomy) as a list row linking to its edit
+   page: when, odometer · volume · price, total, and the economy of the
+   full-to-full segment it closes (or why there is none). #}
+{% macro row(fill, vehicle, currency) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set data = fill.entry.data %}
+    {% set electric = data.fuel.isElectric() %}
+    {% set status = fill.status.value %}
+    <li>
+        <a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}">
+            <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
+            <span class="list__body">
+                <span class="list__title">{{ data.filledAt|local_datetime }}</span>
+                <span class="list__meta tabular">
+                    {{- data.odometerKm|distance }} · {{ data.volume|quantity(electric) }} · {{ data.pricePerUnit|unit_price(currency, electric) -}}
+                    {%- if data.station %} · {{ data.station }}{% endif -%}
+                </span>
+                {% if fill.followsGap() %}
+                    <span class="list__meta list__meta--note">{{ ui.icon('info') }}{{ 'fuel.status.after_gap'|trans }}</span>
+                {% endif %}
+            </span>
+            <span class="list__end">
+                <span class="list__amount tabular">{{ data.totalCost|money(currency) }}</span>
+                {% if fill.segment %}
+                    <span class="economy tabular">{{ fill.segment.distanceKm|economy(fill.segment.volume, electric) }}</span>
+                {% else %}
+                    <span class="economy economy--none">{{ ('fuel.status.' ~ status ~ (electric ? '_ev' : ''))|trans }}</span>
+                {% endif %}
+            </span>
+        </a>
+    </li>
+{%- endmacro %}

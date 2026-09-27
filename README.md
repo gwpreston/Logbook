@@ -4,9 +4,11 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: Phase 1 (accounts and garage).** First-run setup, secure sign-in,
-> vehicles with photos and archiving, and per-user units, currency, language
-> and time zone. Mileage and fuel logging arrive in Phase 2. See
+> **Status: Phase 2 (mileage and fuel).** First-run setup, secure sign-in,
+> vehicles with photos and archiving, per-user units, currency, language and
+> time zone; a mileage log with plausibility warnings, and fuel / EV charging
+> logs with full-to-full economy (L/100 km, mpg UK and US, km/L, kWh/100 km,
+> mi/kWh), prices and running costs. Maintenance arrives in Phase 3. See
 > [`spec.md`](spec.md) §13 for the roadmap.
 
 ## Quick start
@@ -81,7 +83,7 @@ bin/dev down                # stop (your data is kept)
 |---|---|
 | `bin/dev up [engine]` | Start the stack, wait until the app is ready and print its URL. Without an engine it uses the last one (PostgreSQL the first time). |
 | `bin/dev db <engine>` | Switch the database: `pgsql`, `mysql`, `mariadb` or `sqlite`. Each engine keeps its own data and photos, so you can switch back and forth. |
-| `bin/dev seed` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and five vehicles — four active (petrol, hybrid, electric, a motorbike) and one sold and archived. Does nothing if an account already exists. |
+| `bin/dev seed` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and five vehicles — four active (petrol, hybrid, electric, a motorbike) and one sold and archived — with a year of fill-ups (including partial fills, a missed fill-up and EV charges) and monthly odometer readings. Does nothing if an account already exists. |
 | `bin/dev reset [--seed] [-y]` | Empty the current engine's database (full rollback + migrate) and delete its uploads, optionally re-seeding. Asks first unless `-y`. |
 | `bin/dev status` | Show the engine, URL and containers. |
 | `bin/dev logs` | Follow the app log (errors, failed sign-ins). |

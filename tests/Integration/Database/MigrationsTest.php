@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Database;
 
 use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Types\BooleanType;
 use Doctrine\DBAL\Types\DateTimeType;
 use Doctrine\DBAL\Types\DateType;
 use Doctrine\DBAL\Types\DecimalType;
@@ -20,7 +21,7 @@ use Logbook\Tests\Support\Migrator;
  */
 final class MigrationsTest extends AppTestCase
 {
-    private const array TABLES = ['settings', 'users', 'sessions', 'vehicles'];
+    private const array TABLES = ['settings', 'users', 'sessions', 'vehicles', 'fuel_entries', 'odometer_readings'];
 
     protected function tearDown(): void
     {
@@ -44,18 +45,59 @@ final class MigrationsTest extends AppTestCase
         self::assertTrue($schema->tablesExist(self::TABLES));
     }
 
-    public function testStepwiseRollbackOfPhaseOneTables(): void
+    public function testStepwiseRollbackOneMigrationAtATime(): void
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Undo the newest migration only (vehicles), then the rest one at a time.
-        Migrator::run('rollback');
-        self::assertFalse($schema->tablesExist(['vehicles']));
-        self::assertTrue($schema->tablesExist(['users', 'sessions']));
+        // Newest first: odometer readings (which reference fill-ups), fill-ups,
+        // then the Phase 1 tables.
+        $expected = [
+            ['odometer_readings', ['fuel_entries', 'vehicles']],
+            ['fuel_entries', ['vehicles']],
+            ['vehicles', ['users', 'sessions']],
+            ['sessions', ['users']],
+        ];
+        foreach ($expected as [$dropped, $kept]) {
+            Migrator::run('rollback');
+            self::assertFalse($schema->tablesExist([$dropped]), sprintf('rollback must drop %s', $dropped));
+            self::assertTrue($schema->tablesExist($kept), sprintf('rolling back %s must keep the rest', $dropped));
+        }
+    }
 
-        Migrator::run('rollback');
-        self::assertFalse($schema->tablesExist(['sessions']));
-        self::assertTrue($schema->tablesExist(['users']));
+    public function testFuelEntryColumnsKeepPrecisionAndUseUtcInstants(): void
+    {
+        $columns = $this->columnsOrSkip('fuel_entries');
+
+        $decimals = ['odometer_km' => [12, 3], 'volume' => [12, 3], 'price_per_unit' => [14, 6], 'total_cost' => [14, 3]];
+        foreach ($decimals as $name => [$precision, $scale]) {
+            self::assertInstanceOf(DecimalType::class, $columns[$name]->getType(), $name);
+            self::assertSame($precision, $columns[$name]->getPrecision(), $name);
+            self::assertSame($scale, $columns[$name]->getScale(), $name);
+        }
+        self::assertInstanceOf(BooleanType::class, $columns['is_partial']->getType());
+        self::assertInstanceOf(BooleanType::class, $columns['is_missed_previous']->getType());
+        self::assertInstanceOf(DateTimeType::class, $columns['filled_at']->getType());
+
+        $required = ['vehicle_id', 'filled_at', 'odometer_km', 'fuel', 'volume', 'price_per_unit', 'total_cost'];
+        foreach ([...$required, 'is_partial', 'is_missed_previous', 'created_at', 'updated_at'] as $name) {
+            self::assertTrue($columns[$name]->getNotnull(), sprintf('fuel_entries.%s must be NOT NULL', $name));
+        }
+        self::assertFalse($columns['station']->getNotnull());
+        self::assertFalse($columns['notes']->getNotnull());
+    }
+
+    public function testOdometerReadingColumns(): void
+    {
+        $columns = $this->columnsOrSkip('odometer_readings');
+
+        self::assertInstanceOf(DecimalType::class, $columns['reading_km']->getType());
+        self::assertSame(3, $columns['reading_km']->getScale());
+        self::assertInstanceOf(DateTimeType::class, $columns['recorded_at']->getType());
+        foreach (['vehicle_id', 'reading_km', 'recorded_at', 'source', 'created_at', 'updated_at'] as $name) {
+            self::assertTrue($columns[$name]->getNotnull(), sprintf('odometer_readings.%s must be NOT NULL', $name));
+        }
+        self::assertFalse($columns['fuel_entry_id']->getNotnull());
+        self::assertFalse($columns['note']->getNotnull());
     }
 
     public function testSettingsColumnsUsePortableTypesAndNullability(): void

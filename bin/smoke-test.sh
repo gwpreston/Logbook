@@ -55,6 +55,8 @@ case "$variant" in
         setup_flow "$base" "/logbook/"
         # Hard refresh of a deep, signed-in link.
         expect "$base/vehicles/new" 200 'action="/logbook/vehicles/new"'
+        # The fast fill-up path (no vehicle yet: offers to add one).
+        expect "$base/fuel/new" 303
         ;;
     mysql)
         compose="docker compose -p logbook-smoke -f docker-compose.mysql.yml"

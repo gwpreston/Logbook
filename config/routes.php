@@ -6,9 +6,18 @@ use Logbook\Action\Auth\LoginAction;
 use Logbook\Action\Auth\LogoutAction;
 use Logbook\Action\Auth\SetupAction;
 use Logbook\Action\DeepLinkCheckAction;
+use Logbook\Action\Fuel\CreateFuelEntryAction;
+use Logbook\Action\Fuel\DeleteFuelEntryAction;
+use Logbook\Action\Fuel\EditFuelEntryAction;
+use Logbook\Action\Fuel\FuelLogAction;
+use Logbook\Action\Fuel\QuickFuelAction;
 use Logbook\Action\Garage\GarageAction;
 use Logbook\Action\HealthAction;
 use Logbook\Action\HomeAction;
+use Logbook\Action\Odometer\CreateOdometerReadingAction;
+use Logbook\Action\Odometer\DeleteOdometerReadingAction;
+use Logbook\Action\Odometer\EditOdometerReadingAction;
+use Logbook\Action\Odometer\OdometerLogAction;
 use Logbook\Action\Settings\ChangePasswordAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SetThemeAction;
@@ -57,6 +66,22 @@ return static function (App $app): void {
         $group->post('/vehicles/{id:[0-9]+}/archive', ArchiveVehicleAction::class)->setName('vehicles.archive');
         $group->post('/vehicles/{id:[0-9]+}/restore', RestoreVehicleAction::class)->setName('vehicles.restore');
         $group->get('/vehicles/{id:[0-9]+}/photo', VehiclePhotoAction::class)->setName('vehicles.photo');
+
+        $group->get('/vehicles/{id:[0-9]+}/odometer', OdometerLogAction::class)->setName('odometer.index');
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/new', CreateOdometerReadingAction::class)
+            ->setName('odometer.create');
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/{reading:[0-9]+}/edit', EditOdometerReadingAction::class)
+            ->setName('odometer.edit');
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/{reading:[0-9]+}/delete', DeleteOdometerReadingAction::class)
+            ->setName('odometer.delete');
+
+        $group->get('/fuel/new', QuickFuelAction::class)->setName('fuel.quick');
+        $group->get('/vehicles/{id:[0-9]+}/fuel', FuelLogAction::class)->setName('fuel.index');
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/new', CreateFuelEntryAction::class)->setName('fuel.create');
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/edit', EditFuelEntryAction::class)
+            ->setName('fuel.edit');
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/delete', DeleteFuelEntryAction::class)
+            ->setName('fuel.delete');
 
         $group->get('/settings', SettingsAction::class)->setName('settings');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');

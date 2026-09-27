@@ -1,0 +1,30 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Confirmation page for deleting one log entry (works without JS).
+ # Expects: vehicle, title/body (translation keys), params (for both),
+ # action and cancel ([route name, route params]).
+ #}
+
+{% set active_nav = 'garage' %}
+{% set heading = title|trans(params) %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for(cancel[0], cancel[1]) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <section class="card" aria-labelledby="delete-heading">
+            <h1 id="delete-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            <p>{{ body|trans(params) }}</p>
+            <div class="btn-row">
+                <form method="post" action="{{ url_for(action[0], action[1]) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'form.delete_confirm'|trans }}</button>
+                </form>
+                <a class="btn btn--ghost" href="{{ url_for(cancel[0], cancel[1]) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </section>
+    </div>
+{% endblock %}

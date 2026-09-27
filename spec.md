@@ -144,16 +144,28 @@ MySQL only.
   archiving keeps everything.
 
 **OdometerReading**
-- id, vehicle_id, reading_km, recorded_at (UTC/date), source
-  (`manual`|`fuel`|`maintenance`), note.
+- id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
+  source (`manual`|`fuel`|`maintenance`), note (optional), fuel_entry_id
+  (optional; set for `fuel` readings, removed with the fill-up by
+  `ON DELETE CASCADE`), created/updated (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
-  coherent series (see #230-style requirement).
+  coherent series (see #230-style requirement). A fill-up writes its reading in
+  the same transaction and moves it when edited; only `manual` readings are
+  edited or deleted directly (the others through the entry that owns them).
+  Phase 3 adds a maintenance reference the same way.
 
 **FuelEntry**
-- id, vehicle_id, date, odometer_km, volume_litres, price_per_unit,
-  total_cost, is_partial (bool), is_missed_previous (bool, for gap handling),
-  station/notes, fuel_type (defaults to vehicle's). Derived: distance since last
-  full, consumption, cost/distance.
+- id, vehicle_id, filled_at (UTC instant, typed in the user's time zone),
+  odometer_km, fuel (`petrol`|`diesel`|`lpg`|`ev`|`other`; defaults to the
+  vehicle's fuel type, petrol for a hybrid), volume (litres, or kWh when fuel
+  is `ev`; always > 0), price_per_unit (per litre or kWh, `decimal(14,6)` so a
+  price typed per gallon converts back exactly), total_cost
+  (`decimal(14,3)`; 0 is valid), is_partial (bool), is_missed_previous (bool,
+  for gap handling), station, notes, created/updated (UTC).
+  Index `(vehicle_id, filled_at)`.
+- Derived on every read, never stored (so edits cannot leave stale figures):
+  distance since the previous fill, full-to-full segments, consumption,
+  average price, cost/distance.
 
 **MaintenanceEntry**
 - id, vehicle_id, date, odometer_km, category (service, repair, tyres, brakes,
@@ -225,12 +237,51 @@ First-class mileage log with manual entries plus readings derived from fuel and
 maintenance. History table + trend chart. Warn on implausible readings (large
 jumps, going backwards) without blocking.
 
+- The vehicle page has tabs, each its own URL (works without JS, survives a
+  hard refresh): Overview (`/vehicles/{id}`), Mileage
+  (`/vehicles/{id}/odometer`) and Fuel (`/vehicles/{id}/fuel`).
+- Mileage tab: current reading, monthly average (once there is a week of
+  history), distance logged; odometer-over-time chart; readings newest first
+  (25 per page) with the distance since the one before and their source.
+- Plausibility: each reading is compared with the previous one in time.
+  **Backwards** = lower than it; **jump** = more than 2,000 km per day since
+  it (counting at least one day). The reading is always saved; the user gets
+  a warning notice and the row is flagged in the list.
+- A first reading of 0 is valid.
+
 ### 7.3 Fuel
 Log fill-ups with date, odometer, volume, price/unit, total (any two derive the
 third), partial-fill flag, and a "missed previous fill-up" flag so consumption
 math stays correct across gaps. Show per-fill and rolling consumption
 (L/100km, mpg UK, mpg US, km/L), price trend, and cost/distance. Handle EVs
 (kWh + efficiency) via the same shape.
+
+- **Any two derive the third**, exactly (decimal arithmetic, no floats), in
+  the units typed: volume × price → total rounded to the currency's minor
+  unit; total ÷ volume → price (6 places); total ÷ price → volume (3 places,
+  needs a non-zero price). All three given are kept as entered (a loyalty
+  discount makes the total differ legitimately); money figures use the total.
+- **Consumption is full-to-full only.** The first full fill is a baseline; a
+  partial fill joins the segment the next full fill closes; a fill flagged
+  "missed previous" discards the open segment (and, if full, restarts from
+  itself); a full fill whose odometer is not past the segment start restarts
+  measuring. Averages are weighted (total distance ÷ total volume). Liquid
+  fuel and electricity are separate series (plug-in hybrids).
+- **EV:** volume is kWh; efficiency is kWh/100 km for kilometre users and
+  mi/kWh for mile users (follows the distance unit; no extra preference).
+- Fuel tab: average economy, last full-to-full, average price, cost per
+  distance, total spend (per kind of energy); the average in the other
+  consumption units (mpg UK vs US, L/100 km, km/L); economy trend (each
+  segment + running average) and price trend charts; fill-ups newest first
+  (25 per page) with per-fill economy or why there is none.
+- **Fast path:** a "Log fill-up" button (sidebar, and the centre "+" of the
+  mobile tab bar) opens `/fuel/new`: straight to the form with one active
+  vehicle, a one-tap vehicle picker with several, "add a vehicle" with none.
+  The form is mobile-first: odometer, date/time (defaults to now), fuel,
+  then the three amounts with a live preview of the derived one (JS), the
+  partial / missed flags, and station/notes folded away.
+- Saving shows the fill's economy when it closes a segment, and any odometer
+  plausibility warning.
 
 ### 7.4 Maintenance
 Full service history per vehicle, categorised. **Recurring schedules**

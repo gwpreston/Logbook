@@ -1,53 +1,63 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/fuel.twig' as fuel_ui %}
 
 {% set active_nav = 'garage' %}
 {% set data = vehicle.data %}
 {% set dash = '—' %}
+{% set latest = odometer.latest() %}
 
 {% block title %}{{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
 {% block content %}
     <div class="page__stack">
-        <div class="toolbar">
-            <a class="back-link" href="{{ url_for('garage', {}, vehicle.isArchived() ? {archived: '1'} : {}) }}">{{ ui.icon('chevron_left') }}{{ 'garage.title'|trans }}</a>
-            <div class="btn-row">
-                <a class="btn" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
-                {% if vehicle.isArchived() %}
-                    <form method="post" action="{{ url_for('vehicles.restore', {id: vehicle.id}) }}">
-                        {{ ui.csrf(csrf) }}
-                        <button type="submit" class="btn">{{ ui.icon('unarchive') }}{{ 'vehicle.restore'|trans }}</button>
-                    </form>
-                {% else %}
-                    <form method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
-                        {{ ui.csrf(csrf) }}
-                        <button type="submit" class="btn">{{ ui.icon('archive') }}{{ 'vehicle.archive'|trans }}</button>
-                    </form>
-                {% endif %}
-                <a class="btn btn--danger" href="{{ url_for('vehicles.delete', {id: vehicle.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
-            </div>
-        </div>
-
-        <header class="vehicle-hero">
-            {{ ui.vehicle_photo(vehicle, 'vehicle-photo--hero') }}
-            <div class="vehicle-hero__text">
-                <div class="vehicle-card__tags">
-                    {% if data.registration %}<span class="plate">{{ data.registration }}</span>{% endif %}
-                    <span class="pill">{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</span>
-                    {% if vehicle.isArchived() %}
-                        <span class="pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.archived_on'|trans({date: vehicle.archivedAt|instant_date}) }}</span>
-                    {% endif %}
-                </div>
-                <h1>{{ vehicle.name() }}</h1>
-                <p class="muted">{{ vehicle.description() }}</p>
-            </div>
-        </header>
+        {% include 'vehicles/_header.twig' with {active_tab: 'overview'} %}
 
         {% if vehicle.isArchived() %}
             <div class="alert alert--warning" role="status">{{ ui.icon('inventory_2') }}<span>{{ 'vehicle.archived_notice'|trans }}</span></div>
         {% endif %}
 
+        <dl class="stats">
+            {{ ui.stat('odometer.stat.current'|trans,
+                latest ? latest.readingKm|distance : dash,
+                latest ? 'odometer.stat.as_of'|trans({date: latest.recordedAt|instant_date}) : 'odometer.stat.none'|trans) }}
+            {{ ui.stat((electric ? 'fuel.stat.average_ev' : 'fuel.stat.average')|trans,
+                fuel_summary and fuel_summary.hasEconomy() ? fuel_summary.measuredDistanceKm|economy(fuel_summary.measuredVolume, electric) : dash,
+                fuel_summary and fuel_summary.hasEconomy() ? 'fuel.stat.all_time'|trans : 'fuel.stat.need_two_full'|trans,
+                fuel_summary and fuel_summary.hasEconomy() ? 'good' : '') }}
+            {{ ui.stat((electric ? 'fuel.stat.cost_per_distance_ev' : 'fuel.stat.cost_per_distance')|trans,
+                fuel_summary and fuel_summary.costPerKm() is not null ? fuel_summary.costPerKm()|per_distance(currency) : dash,
+                (electric ? 'fuel.stat.charging_only' : 'fuel.stat.fuel_only')|trans) }}
+            {{ ui.stat((electric ? 'fuel.stat.spend_ev' : 'fuel.stat.spend')|trans, fuel.isEmpty() ? dash : fuel.totalCost()|money(currency), 'fuel.stat.all_time'|trans) }}
+        </dl>
+
         <div class="card-grid">
+            <section class="card" aria-labelledby="fills-heading">
+                <div class="card__header">
+                    <h2 id="fills-heading" class="card__title">{{ 'fuel.recent'|trans }}</h2>
+                    {% if not fuel.isEmpty() %}<a class="card__link" href="{{ url_for('fuel.index', {id: vehicle.id}) }}">{{ 'fuel.view_all'|trans }}</a>{% endif %}
+                </div>
+                {% if recent_fills is empty %}
+                    <div class="empty">
+                        {{ ui.icon(data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station') }}
+                        <p class="empty__title">{{ 'fuel.empty_title'|trans }}</p>
+                        <p>{{ 'fuel.empty_body'|trans }}</p>
+                    </div>
+                {% else %}
+                    <ul class="list">
+                        {% for fill in recent_fills %}
+                            {{ fuel_ui.row(fill, vehicle, currency) }}
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if not vehicle.isArchived() %}
+                    <div class="btn-row">
+                        <a class="btn btn--primary" href="{{ url_for('fuel.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'fuel.add'|trans }}</a>
+                        <a class="btn" href="{{ url_for('odometer.create', {id: vehicle.id}) }}">{{ ui.icon('speed') }}{{ 'odometer.add'|trans }}</a>
+                    </div>
+                {% endif %}
+            </section>
+
             <section class="card" aria-labelledby="details-heading">
                 <h2 id="details-heading" class="card__title">{{ 'vehicle.section.details'|trans }}</h2>
                 <dl class="details">
@@ -76,26 +86,24 @@
                     <div><dt>{{ 'vehicle.added'|trans }}</dt><dd>{{ vehicle.createdAt|local_datetime }}</dd></div>
                 </dl>
             </section>
-        </div>
 
-        <section class="card" aria-labelledby="history-heading">
-            <h2 id="history-heading" class="card__title">{{ 'vehicle.section.history'|trans }}</h2>
-            <ul class="list">
-                {% for section in [
-                    {icon: 'speed', key: 'odometer'},
-                    {icon: 'local_gas_station', key: 'fuel'},
-                    {icon: 'build', key: 'maintenance'},
-                    {icon: 'description', key: 'documents'},
-                ] %}
-                    <li class="list__item">
-                        <span class="list__icon">{{ ui.icon(section.icon) }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ ('vehicle.upcoming.' ~ section.key)|trans }}</span>
-                            <span class="list__meta">{{ 'vehicle.upcoming.soon'|trans }}</span>
-                        </span>
-                    </li>
-                {% endfor %}
-            </ul>
-        </section>
+            <section class="card" aria-labelledby="history-heading">
+                <h2 id="history-heading" class="card__title">{{ 'vehicle.section.coming'|trans }}</h2>
+                <ul class="list">
+                    {% for section in [
+                        {icon: 'build', key: 'maintenance'},
+                        {icon: 'description', key: 'documents'},
+                    ] %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon(section.icon) }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ ('vehicle.upcoming.' ~ section.key)|trans }}</span>
+                                <span class="list__meta">{{ 'vehicle.upcoming.soon'|trans }}</span>
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
     </div>
 {% endblock %}
