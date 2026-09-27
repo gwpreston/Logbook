@@ -6,6 +6,10 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-09-27
+
+First release: Phases 0 and 1 (foundations, accounts and garage).
+
 ### Added — Phase 1: accounts and garage
 - First-run setup: a fresh instance asks for the owner account (username,
   password, display name, units, currency, language, time zone) and is
@@ -71,3 +75,6 @@ is called out explicitly.
 - Self-hosted Outfit and Plus Jakarta Sans fonts and a Material Symbols icon
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
+
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/gwpreston16/Logbook/releases/tag/v0.1.0
