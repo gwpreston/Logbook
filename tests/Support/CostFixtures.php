@@ -145,6 +145,7 @@ trait CostFixtures
                 $expiry === null ? null : self::day($expiry),
                 $cost,
             ),
+            new DateTimeZone('Europe/London'),
         );
     }
 

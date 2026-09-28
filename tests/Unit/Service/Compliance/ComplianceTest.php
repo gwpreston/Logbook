@@ -40,7 +40,7 @@ final class ComplianceTest extends TestCase
         self::assertSame('2027-02-28', $data->expiryOn?->format('Y-m-d'));
         self::assertSame('412.500', $data->cost);
 
-        $values = ComplianceDocumentForm::values(self::document(1, $data));
+        $values = ComplianceDocumentForm::values(self::document(1, $data), self::uk());
         self::assertSame('insurance', $values['type']);
         self::assertSame('2026-03-01', $values['start_on']);
         self::assertSame('2027-02-28', $values['expiry_on']);

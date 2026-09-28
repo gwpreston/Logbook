@@ -405,6 +405,7 @@ return [
             'manual' => 'Manuell',
             'fuel' => 'Tankfüllung',
             'maintenance' => 'Wartung',
+            'document' => 'Dokument',
         ],
         'stat' => [
             'current' => 'Kilometerstand',
@@ -746,6 +747,8 @@ return [
         'view_all' => 'Alle anzeigen',
         'title_required' => 'Gib diesem Dokument einen Namen.',
         'expiry_before_start' => 'Das Ablaufdatum darf nicht vor dem Beginn liegen.',
+        'odometer_needs_start' => 'Tragen Sie das Ausstellungsdatum ein, um den Kilometerstand zu erfassen.',
+        'odometer_shown' => 'Kilometerstand {reading}',
         'type' => [
             'insurance' => 'Versicherung',
             'pollution' => 'Abgasuntersuchung (AU)',
@@ -775,6 +778,7 @@ return [
             'start_on' => 'Gültig ab',
             'expiry_on' => 'Läuft ab am',
             'cost' => 'Kosten',
+            'odometer' => 'Kilometerstand',
             'notes' => 'Notizen',
         ],
         'hint' => [
@@ -782,6 +786,7 @@ return [
             'provider' => 'Versicherer, Prüfstelle oder Behörde.',
             'expiry_on' => 'Der letzte gültige Tag. Leer lassen, wenn es nicht abläuft.',
             'cost' => 'Leer lassen oder 0 eingeben, wenn es kostenlos war.',
+            'odometer' => 'Der Stand auf der Bescheinigung, falls sie einen zeigt (ein HU-Bericht tut es).',
         ],
     ],
     'reminders' => [

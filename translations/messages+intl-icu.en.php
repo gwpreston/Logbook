@@ -405,6 +405,7 @@ return [
             'manual' => 'Manual',
             'fuel' => 'Fill-up',
             'maintenance' => 'Service',
+            'document' => 'Document',
         ],
         'stat' => [
             'current' => 'Odometer',
@@ -747,6 +748,8 @@ return [
         'view_all' => 'View all',
         'title_required' => 'Give this document a name.',
         'expiry_before_start' => 'The expiry date cannot be before the start date.',
+        'odometer_needs_start' => 'Add the date it was issued to record the odometer.',
+        'odometer_shown' => 'Odometer {reading}',
         'type' => [
             'insurance' => 'Insurance',
             'pollution' => 'Pollution certificate (PUC)',
@@ -776,6 +779,7 @@ return [
             'start_on' => 'Valid from',
             'expiry_on' => 'Expires on',
             'cost' => 'Cost',
+            'odometer' => 'Odometer',
             'notes' => 'Notes',
         ],
         'hint' => [
@@ -783,6 +787,7 @@ return [
             'provider' => 'Insurer, testing station or authority.',
             'expiry_on' => 'The last day it is valid. Leave blank if it does not expire.',
             'cost' => 'Leave blank or enter 0 if it was free.',
+            'odometer' => 'The reading on the certificate, if it shows one (an MOT certificate does).',
         ],
     ],
     'reminders' => [

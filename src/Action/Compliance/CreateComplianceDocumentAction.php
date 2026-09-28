@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Compliance;
 
 use Logbook\Action\Attachment\AttachmentUpload;
+use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceType;
@@ -29,6 +30,7 @@ final readonly class CreateComplianceDocumentAction
         private ComplianceService $compliance,
         private ComplianceFormPage $page,
         private AttachmentUpload $upload,
+        private OdometerWarningFlash $warnings,
         private Redirector $redirect,
     ) {
     }
@@ -58,9 +60,11 @@ final readonly class CreateComplianceDocumentAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
         }
 
-        $document = $this->compliance->create($vehicle, $data);
+        $document = $this->compliance->create($vehicle, $data, $user->preferences->timeZone());
         $this->upload->store($vehicle, AttachmentOwner::Compliance, $document->id, $file);
-        RequestContext::session($request)->flash('success', 'compliance.created');
+        $session = RequestContext::session($request);
+        $session->flash('success', 'compliance.created');
+        $this->warnings->queue($session, $this->compliance->odometerWarning($vehicle, $document));
 
         return $this->redirect->toRoute('compliance.index', ['id' => (string) $vehicle->id]);
     }

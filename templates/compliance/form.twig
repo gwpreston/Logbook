@@ -9,6 +9,7 @@
 {% set active_nav = 'garage' %}
 {% set editing = document is not null %}
 {% set heading = (editing ? 'compliance.edit_title' : 'compliance.add_title')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
 
 {% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
@@ -45,7 +46,10 @@
                     {{ ui.input('start_on', 'compliance.field.start_on'|trans, values, errors, {type: 'date', optional: true}) }}
                     {{ ui.input('expiry_on', 'compliance.field.expiry_on'|trans, values, errors, {type: 'date', optional: true, hint: 'compliance.hint.expiry_on'|trans}) }}
                 </div>
-                {{ ui.input('cost', 'compliance.field.cost'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'compliance.hint.cost'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input('cost', 'compliance.field.cost'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'compliance.hint.cost'|trans}) }}
+                    {{ ui.input('odometer', 'compliance.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, hint: 'compliance.hint.odometer'|trans}) }}
+                </div>
                 <div class="field">
                     <label class="field__label" for="f-notes">{{ 'compliance.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
                     <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>

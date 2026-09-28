@@ -210,6 +210,7 @@ final readonly class CsvExporter
      */
     private function documentsTable(User $user, Vehicle $vehicle): array
     {
+        $prefs = $user->preferences;
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $rows = [];
         foreach ($this->documents->listForVehicle($vehicle->id) as $document) {
@@ -221,6 +222,7 @@ final readonly class CsvExporter
                 $data->reference,
                 $data->startOn?->format('Y-m-d'),
                 $data->expiryOn?->format('Y-m-d'),
+                $data->odometerKm === null ? null : CsvNumber::distance($data->odometerKm, $prefs->distanceUnit),
                 CsvNumber::money($data->cost, $currency),
                 $currency,
                 $data->notes,
@@ -234,6 +236,7 @@ final readonly class CsvExporter
             'export.column.reference',
             'export.column.start',
             'export.column.expiry',
+            ['export.column.odometer', ['unit' => $this->t('units.name.' . $prefs->distanceUnit->value)]],
             'export.column.cost',
             'export.column.currency',
             'export.column.notes',

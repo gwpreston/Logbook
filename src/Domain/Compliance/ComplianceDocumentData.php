@@ -26,6 +26,8 @@ final readonly class ComplianceDocumentData
         /** 0 is valid. */
         public string $cost = '0.000',
         public ?string $notes = null,
+        /** The odometer shown on the document, in km (canonical decimal); needs startOn. */
+        public ?string $odometerKm = null,
     ) {
     }
 }
