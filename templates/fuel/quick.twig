@@ -17,7 +17,7 @@
         <ul class="pick-list">
             {% for vehicle in vehicles %}
                 <li>
-                    <a class="pick" href="{{ url_for('fuel.create', {id: vehicle.id}) }}">
+                    <a class="pick" href="{{ url_for('fuel.create', {id: vehicle.id}) }}" data-offline-cache>
                         {{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}
                         <span class="pick__body">
                             <span class="pick__name">{{ vehicle.name() }}</span>

@@ -23,6 +23,7 @@
             {{ ui.stat('odometer.stat.current'|trans,
                 latest ? latest.readingKm|distance : dash,
                 latest ? 'odometer.stat.as_of'|trans({date: latest.recordedAt|instant_date}) : 'odometer.stat.none'|trans) }}
+            {% if feature_enabled('fuel') %}
             {{ ui.stat((electric ? 'fuel.stat.average_ev' : 'fuel.stat.average')|trans,
                 fuel_summary and fuel_summary.hasEconomy() ? fuel_summary.measuredDistanceKm|economy(fuel_summary.measuredVolume, electric) : dash,
                 fuel_summary and fuel_summary.hasEconomy() ? 'fuel.stat.all_time'|trans : 'fuel.stat.need_two_full'|trans,
@@ -31,9 +32,11 @@
                 fuel_summary and fuel_summary.costPerKm() is not null ? fuel_summary.costPerKm()|per_distance(currency) : dash,
                 (electric ? 'fuel.stat.charging_only' : 'fuel.stat.fuel_only')|trans) }}
             {{ ui.stat((electric ? 'fuel.stat.spend_ev' : 'fuel.stat.spend')|trans, fuel.isEmpty() ? dash : fuel.totalCost()|money(currency), 'fuel.stat.all_time'|trans) }}
+            {% endif %}
         </dl>
 
         <div class="card-grid">
+            {% if feature_enabled('fuel') %}
             <section class="card" aria-labelledby="fills-heading">
                 <div class="card__header">
                     <h2 id="fills-heading" class="card__title">{{ 'fuel.recent'|trans }}</h2>
@@ -59,7 +62,9 @@
                     </div>
                 {% endif %}
             </section>
+            {% endif %}
 
+            {% if feature_enabled('maintenance') %}
             <section class="card" aria-labelledby="maintenance-heading">
                 <div class="card__header">
                     <h2 id="maintenance-heading" class="card__title">{{ 'maintenance.due_title'|trans }}</h2>
@@ -96,7 +101,9 @@
                     </div>
                 {% endif %}
             </section>
+            {% endif %}
 
+            {% if feature_enabled('compliance') %}
             <section class="card" aria-labelledby="documents-heading">
                 <div class="card__header">
                     <h2 id="documents-heading" class="card__title">{{ 'compliance.title'|trans }}</h2>
@@ -130,6 +137,7 @@
                     </div>
                 {% endif %}
             </section>
+            {% endif %}
 
             <section class="card" aria-labelledby="details-heading">
                 <h2 id="details-heading" class="card__title">{{ 'vehicle.section.details'|trans }}</h2>

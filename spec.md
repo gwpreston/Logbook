@@ -100,8 +100,9 @@ disagree):
 - Reminders and report aggregation live in Services; a scheduled task
   (cron in bare install, entrypoint-scheduled in Docker) evaluates reminders and
   dispatches notifications.
-- Feature toggles gate route registration and navigation so disabled modules are
-  truly absent, not just hidden.
+- Feature toggles gate each module's route group (a middleware answering 404)
+  and its navigation, so disabled modules are truly absent, not just hidden
+  (§7.10).
 
 ---
 
@@ -516,10 +517,28 @@ Disabled modules are removed from nav, routes, and dashboard.
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`. A
   module is enabled unless the global setting `features` (a JSON object of
   module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
-  (default true). Phase 5: the dashboard hides the widgets of a disabled
-  module, and reports leave out its costs (`reports` off hides the spend
-  widget and the Reports navigation entry). Phase 6 adds the settings UI and
-  removes disabled modules' routes and navigation everywhere.
+  (default true). The garage, mileage log and expenses are core and cannot
+  be switched off.
+- **Settings → Modules** (`/settings/modules`): one switch per module with
+  what it covers; saving writes the whole `features` object (a plain form,
+  works without JS). Switching a module off never deletes its data:
+  switching it back on restores everything as it was.
+- **A disabled module is absent, not hidden:** its routes answer 404 (a
+  route-group middleware, so the check is one settings read per request and
+  a bookmarked or deep link cannot reach it), and it disappears from the
+  navigation, the vehicle tabs and overview, the dashboard (its widgets) and
+  links elsewhere (e.g. a report line whose source page is gone).
+  - `fuel` off: fill-up pages, the "Log fill-up" button and tab-bar "+",
+    the Fuel tab and fuel CSV export/import; fill-up costs leave reports.
+    Readings already written by fill-ups stay in the mileage log.
+  - `maintenance` off: entries and schedules, the tab and its CSV; schedule
+    reminders are neither listed nor sent (kept, untouched, for when the
+    module returns); maintenance costs leave reports.
+  - `compliance` off: the same for documents and document reminders.
+  - `reminders` off: the reminder list, Settings → Reminders' notification
+    part, the calendar feed (404) and the scheduled notifications; lead
+    times still drive the due badges on the vehicle tabs.
+  - `reports` off: Reports, its CSV export and the spend widget.
 
 ### 7.11 Notifications (reminder delivery)
 In-app always; plus at least one outbound channel — email (SMTP) and/or a
@@ -580,10 +599,105 @@ CSV import and export per module (also eases migration from spreadsheets and
 other apps). One-click **backup and restore** of the whole dataset from within
 the app — important given data lives on the user's own box.
 
+**CSV import** (`/vehicles/{id}/import/{fuel|odometer|maintenance|documents|expenses}`,
+linked as "Import CSV" next to each tab's "Export CSV"; not for archived
+vehicles; a disabled module cannot be imported).
+
+- **Three steps, nothing written until the last.** (1) Upload a CSV (UTF-8,
+  with or without BOM; Windows-1252 is converted; comma, semicolon or tab
+  detected from the header row; up to `MAX_UPLOAD_MB` and 5,000 rows). The
+  file is staged under `var/cache/staged` with a random name bound to the
+  session and deleted after the import or within a day. (2) Map columns and
+  preview (a GET form, so it is bookmarkable and works without JS): each
+  field of the module gets a column picker, pre-selected by matching the
+  header against the export's column names (in the owner's language and in
+  English) and the field codes; the file's units (distance, volume) default
+  to the unit named in the header, else the owner's; the date order
+  (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
+  defaults to ISO. The preview lists every row with what will happen to it.
+  (3) Import: one transaction; the result page lists what was imported and
+  every row that was not, with its line number and reason.
+- **Rows are read exactly as the forms read them** (the same parsers, so
+  the same validation and messages): quantities in the chosen units, amounts
+  in the vehicle's currency, times in the owner's time zone. Choice columns
+  accept the code (`petrol`), the label in the owner's language or in
+  English; yes/no columns accept yes/no/true/false/1/0/y/n and the
+  translated yes/no. A fill-up row's own unit column ("UK gallons", "kWh")
+  overrides the file's volume unit. A currency column that differs from the
+  vehicle's currency makes the row invalid (amounts are never converted).
+- **Row outcomes:** *import*; *invalid* (errors listed, never silently
+  dropped; importing the valid rows then needs an explicit "skip the invalid
+  rows" tick); *duplicate* (skipped: the same entry already exists or appears
+  earlier in the file — fill-up: same time and odometer; reading: same time
+  and odometer, whatever its source; maintenance: same date, category, title
+  and cost; document: same type, reference, start and expiry; expense: same
+  date, category, amount and note), so importing a file twice changes
+  nothing; *implied* (odometer rows whose source is a fill-up or service:
+  imported fill-ups and maintenance create those readings themselves, so
+  importing both files never doubles them).
+- Imports go through the same services as the forms: a fill-up writes its
+  odometer reading, a maintenance entry with an odometer writes its reading
+  at local noon; schedules and reminders follow as usual. Maintenance rows
+  are not linked to schedules and no attachments are imported.
+
+**Backup and restore** (Settings → Backup, `/settings/backup`; also
+`bin/backup.php` on the command line).
+
+- **Backup** downloads one ZIP (`logbook-backup-<date>-<time>.zip`, needs
+  PHP's `zip` extension) containing `manifest.json` (format, app version,
+  schema version = latest applied migration, creation time, source engine,
+  row count per table, file count), `database/<table>.json` for every data
+  table (rows as JSON lists of column → string/null, so a backup restores
+  onto any supported engine: SQLite → PostgreSQL works) and `uploads/…`
+  (every file under `UPLOAD_PATH`: photos and attachments). Sessions are
+  not included.
+- **Restore** (upload a backup, then confirm on a second page that shows
+  what the archive contains and requires ticking "replace all data") is
+  destructive and so: the archive is fully validated first (format, same
+  schema version as this install, known tables and columns only, file names
+  that are safe relative paths; anything wrong changes nothing), then an
+  automatic backup of the current data is written to `BACKUP_PATH`
+  (`pre-restore-<timestamp>.zip`), then every table is emptied and refilled
+  in one transaction (PostgreSQL id sequences are moved past the restored
+  ids: the one documented platform branch), then the uploads directory is
+  swapped for the archive's files. Every session ends (sign in again with
+  the restored account's password).
+- A backup from another app version with a different schema is refused with
+  a clear message: restore it with the matching version, then upgrade.
+- CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
+  and `php bin/backup.php restore <file> --yes` (same checks, same
+  pre-restore backup); suitable for cron.
+
 ### 7.14 Internationalisation
 All user-facing strings translatable via symfony/translation. English default
 and fallback. Locale controls translation, number/date/currency formatting.
 Ship the framework so translations are easy to add; do not hard-code strings.
+
+- Catalogues: `translations/messages+intl-icu.<locale>.php` (ICU
+  MessageFormat, nested keys). English is complete and the fallback for any
+  missing key; German (`de`) ships as the second locale. A new file is
+  picked up automatically (locale picker, `Accept-Language`).
+- Tests keep it honest: every key used in templates and PHP exists in the
+  English catalogue; every other catalogue uses only English keys with the
+  same ICU placeholders. How to add a language: `docs/translations.md`.
+
+### 7.15 Installable app (PWA)
+- A web app manifest (`/manifest.webmanifest`) and service worker
+  (`/sw.js`), both served by the app so their `start_url`, `scope` and
+  cached URLs carry `APP_BASE_PATH` (a subpath install works offline too).
+  Installable on a phone (standalone display, app icons).
+- The service worker caches the built assets (cache named after their
+  content hashes, so a new release replaces it) and an offline page; pages
+  are network-first and only the fill-up forms (`/fuel/new` and each active
+  vehicle's `/vehicles/{id}/fuel/new`) are kept for offline use. Other pages
+  offline show the offline page.
+- **Offline fill-up:** submitting the fill-up form without a connection
+  stores the entry in the browser (IndexedDB) and says so; it is sent as
+  soon as the device is online again (on the `online` event or the next page
+  load), fetching a fresh CSRF token from the form first. A sent entry is
+  removed from the queue; one the server rejects (validation) stays queued,
+  and the fill-up page lists it with a link to review. Attachments cannot be
+  queued. Nothing else works offline.
 
 ---
 
@@ -633,6 +747,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   tokens at rest; changing it signs everyone out and disables feed links),
   `SESSION_SECURE` (default: true when `APP_URL` is https)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
+- `BACKUP_PATH` (pre-restore backups and `bin/backup.php create`; default
+  `var/backups`, Docker `/data/backups`), `MAX_RESTORE_MB` (largest backup
+  accepted by the restore form; default 256, and PHP's upload limits must
+  allow it)
 - `LOG_PATH` (default `php://stderr`), `LOG_LEVEL` (PSR-3 level)
 - Notifications (§7.11): `MAIL_HOST` (email is configured when set),
   `MAIL_PORT` (default 587), `MAIL_USERNAME`, `MAIL_PASSWORD`,
@@ -664,7 +782,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   requires 64-bit PHP, so 32-bit ARM (arm/v7) and 32-bit PHP hosts are not
   supported. The entrypoint also runs the scheduled task (reminders and
   notifications) every `SCHEDULER_INTERVAL` seconds as `www-data`, so no
-  host cron is needed.
+  host cron is needed. Safety and command-line backups go to `/data/backups`
+  (`BACKUP_PATH`); the image includes PHP's `zip` extension for them.
 - **Bare PHP 8.4:** document web root = `public/`, Composer install, Phinx
   migrate, cron entry for the reminder/notification task
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs

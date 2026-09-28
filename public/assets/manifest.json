@@ -1,7 +1,12 @@
 {
-    "css/app.css": "64cbeb83837b",
+    "css/app.css": "17127d54ef3c",
+    "images/apple-touch-icon.png": "5d20e32cd66d",
+    "images/icon-192.png": "4655ae88d21d",
+    "images/icon-512.png": "c9e6d3a34934",
+    "images/icon-maskable-512.png": "a4bb5e694ae9",
     "images/logbook-mark.png": "26fcc6f7ed96",
-    "js/app.js": "2bf37183841a",
+    "js/app.js": "a6be522963c5",
+    "js/service-worker.js": "e58eaafc75c8",
     "js/theme.js": "effc85a28e76",
     "vendor/THIRD-PARTY-NOTICES.txt": "95a5844d48b4",
     "vendor/alpine.min.js": "232519394c6c",
@@ -10,6 +15,6 @@
     "vendor/fonts/outfit-latin-wght-normal.woff2": "6c18d579fd87",
     "vendor/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2": "38e3b8fd8045",
     "vendor/fonts/plus-jakarta-sans-latin-wght-normal.woff2": "153fc85b7029",
-    "vendor/icons.svg": "c9a96032e256",
+    "vendor/icons.svg": "17cc8b4cca90",
     "vendor/sortable.min.js": "bf4241bc73fe"
 }

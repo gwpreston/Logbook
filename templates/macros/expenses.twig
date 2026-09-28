@@ -69,8 +69,12 @@
     </nav>
 {%- endmacro %}
 
-{# "Export CSV" link for one of a vehicle's lists. #}
+{# "Export CSV" (and, unless the vehicle is archived, "Import CSV") links for
+   one of a vehicle's lists (spec.md §7.7, §7.13). #}
 {% macro export_link(vehicle, module) -%}
     {% import 'macros/ui.twig' as ui %}
     <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: module}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+    {% if not vehicle.isArchived() %}
+        <a class="btn btn--ghost" href="{{ url_for('import.upload', {id: vehicle.id, module: module}) }}">{{ ui.icon('upload_file') }}{{ 'import.csv'|trans }}</a>
+    {% endif %}
 {%- endmacro %}

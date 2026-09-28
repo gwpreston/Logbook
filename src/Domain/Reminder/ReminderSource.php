@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Domain\Reminder;
 
+use Logbook\Domain\Feature\Feature;
+
 /**
  * Where a reminder comes from (spec.md §7.6).
  */
@@ -22,5 +24,18 @@ enum ReminderSource: string
     public function isGenerated(): bool
     {
         return $this !== self::Manual;
+    }
+
+    /**
+     * The module the source belongs to: while it is switched off its
+     * reminders are neither listed nor sent (spec.md §7.10).
+     */
+    public function feature(): ?Feature
+    {
+        return match ($this) {
+            self::Schedule => Feature::Maintenance,
+            self::Compliance => Feature::Compliance,
+            self::Manual => null,
+        };
     }
 }

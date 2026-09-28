@@ -91,7 +91,7 @@ final class PreferencesTest extends AppTestCase
         $response = $browser->post('/settings/theme', ['theme' => 'dark', 'return_to' => '/garage']);
         self::assertSame('/garage', $response->getHeaderLine('Location'));
         self::assertStringContainsString(
-            '<html lang="en-GB" data-theme-pref="dark" data-theme="dark">',
+            '<html lang="en-GB" data-base="" data-theme-pref="dark" data-theme="dark">',
             self::body($browser->follow($response)),
         );
 

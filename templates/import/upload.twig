@@ -1,0 +1,54 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # CSV import, step 1: choose the file. Expects: vehicle, module
+ # (Service\Export\ExportModule), fields, error, max_upload_mb, max_rows.
+ #}
+
+{% set active_nav = 'garage' %}
+{% set heading = ('import.title.' ~ module.value)|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for(module.indexRoute(), {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'import.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <form class="form" method="post" enctype="multipart/form-data" action="{{ url_for('import.upload', {id: vehicle.id, module: module.value}) }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card">
+                {% if error %}
+                    <div class="alert alert--error" role="alert" id="f-file-error">{{ ui.icon('error') }}<span>{{ trans(error.key, error.params) }}</span></div>
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-file">{{ 'import.file'|trans }}</label>
+                    <input class="input input--file" id="f-file" name="file" type="file" accept=".csv,.txt,text/csv,text/plain" required aria-describedby="f-file-hint{{ error ? ' f-file-error' }}"{% if error %} aria-invalid="true"{% endif %}>
+                    <p class="field__hint" id="f-file-hint">{{ 'import.file_hint'|trans({max: max_upload_mb, rows: max_rows}) }}</p>
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary">{{ ui.icon('upload_file') }}{{ 'import.upload'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ url_for(module.indexRoute(), {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                </div>
+            </section>
+        </form>
+
+        <section class="card card--quiet" aria-labelledby="columns-heading">
+            <h2 id="columns-heading" class="card__title">{{ 'import.columns_heading'|trans }}</h2>
+            <p>{{ 'import.columns_intro'|trans }}</p>
+            <ul class="plain-list">
+                {% for field in fields %}
+                    <li>{{ field.labelKey()|trans }}{% if field.required %} <span class="muted">({{ 'import.required'|trans }})</span>{% endif %}</li>
+                {% endfor %}
+            </ul>
+            <p class="field__hint">{{ 'import.units_note'|trans }}</p>
+        </section>
+    </div>
+{% endblock %}

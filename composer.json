@@ -25,7 +25,8 @@
     "suggest": {
         "ext-pdo_pgsql": "PostgreSQL support",
         "ext-pdo_mysql": "MySQL / MariaDB support",
-        "ext-pdo_sqlite": "SQLite (zero-config quick start)"
+        "ext-pdo_sqlite": "SQLite (zero-config quick start)",
+        "ext-zip": "Backup and restore (Settings → Backup, bin/backup.php)"
     },
     "autoload": {
         "psr-4": {

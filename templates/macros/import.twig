@@ -1,0 +1,58 @@
+{#
+ # CSV import fragments (spec.md §7.13). Import with:
+ # {% import 'macros/import.twig' as imp %}
+ #}
+
+{# Status of one row, as a pill. #}
+{% macro status(status) -%}
+    {% set tone = {import: 'valid', invalid: 'overdue', duplicate: 'soon', implied: 'soon'}[status.value] %}
+    <span class="pill pill--{{ tone }}">{{ ('import.status.' ~ status.value)|trans }}</span>
+{%- endmacro %}
+
+{# Counts by status (a Service\Import\ImportPreview). #}
+{% macro counts(preview, statuses) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <dl class="stats">
+        {% for status in statuses %}
+            {{ ui.stat(('import.count.' ~ status.value)|trans, preview.count(status)|number) }}
+        {% endfor %}
+    </dl>
+{%- endmacro %}
+
+{# Rows with their line number, what happens to them and why. #}
+{% macro rows(rows, field_labels, caption) -%}
+    {% import _self as imp %}
+    <div class="table-wrap">
+        <table class="table">
+            <caption class="visually-hidden">{{ caption }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col" class="table__num">{{ 'import.column.line'|trans }}</th>
+                    <th scope="col">{{ 'import.column.status'|trans }}</th>
+                    <th scope="col">{{ 'import.column.row'|trans }}</th>
+                    <th scope="col">{{ 'import.column.problem'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <th scope="row" class="table__num tabular">{{ row.line }}</th>
+                        <td>{{ imp.status(row.status) }}</td>
+                        <td>{{ row.summary() }}</td>
+                        <td>
+                            {% if row.errors is not empty %}
+                                <ul class="plain-list">
+                                    {% for error in row.errors %}
+                                        <li>{{ (field_labels[error.field] ?? 'import.field.row')|trans }}: {{ trans(error.key, error.params) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% elseif row.status.value != 'import' %}
+                                {{ ('import.reason.' ~ row.status.value)|trans }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{%- endmacro %}

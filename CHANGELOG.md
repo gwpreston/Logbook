@@ -6,6 +6,61 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 6: feature toggles, import, backup and polish (to be released as 0.6.0).
+
+### Added — Phase 6: feature toggles, import, backup and polish
+- **Modules** (Settings → Modules): switch off fuel, maintenance, documents,
+  reminders or reports. A switched-off module disappears everywhere — menus,
+  vehicle tabs and overview, dashboard, reports, reminders and notifications,
+  the calendar feed — and its pages answer "not found". Its data is kept:
+  switch it back on and everything is as it was. `FEATURES_*` set the
+  defaults until the setting is saved.
+- **CSV import** ("Import CSV" next to "Export CSV" on each vehicle tab):
+  upload a file, match its columns (familiar names are matched for you), pick
+  its date order, units and time zone, then preview every row before
+  anything is saved. Rows are checked exactly like the forms check what you
+  type; rows with problems are listed with their row number and reason, and
+  are only skipped when you say so. Entries already logged are recognised, so
+  importing a file twice changes nothing, and odometer readings that imported
+  fill-ups or services already created are never doubled. Logbook's own
+  exports import back exactly, in any units; so do files from spreadsheets
+  (semicolons, day-first dates, Windows-1252 text). See `docs/import.md`.
+- **Backup and restore** (Settings → Backup and restore): download everything
+  — database, photos and attachments — as one ZIP; restore one after checking
+  it and confirming, with an automatic safety backup of the current data
+  first. Backups restore onto any supported database (SQLite → PostgreSQL
+  works). `php bin/backup.php create | check | restore` does the same from the
+  command line or cron.
+- **Installable app (PWA)**: add Logbook to a phone's home screen. The
+  fill-up form works offline: a fill-up saved without a connection is kept on
+  the phone and sent when it is back online (with a *Review* option if the
+  server rejects it). Works at a subpath too.
+- **German** translation, complete. The language is picked from your settings
+  or the browser.
+- Guides: `docs/configuration.md` (every variable), `docs/import.md`,
+  `docs/translations.md`; the deployment guide now covers the phone app,
+  backups (including nightly cron backups and moving between databases) and a
+  step-by-step upgrade procedure.
+
+### Changed
+- Accessibility: the green, amber and red status labels in the light theme
+  are slightly darker, to meet WCAG AA contrast on their tinted backgrounds.
+  Core pages are checked automatically for labels, headings, names, contrast
+  and translations in every language.
+- Settings → Reminders shows only the lead times while the reminders module
+  is off.
+
+### Upgrade notes
+- No database changes.
+- New optional variables: `BACKUP_PATH` (default `var/backups`; Docker
+  `/data/backups`) and `MAX_RESTORE_MB` (default 256).
+- The Docker image now includes PHP's `zip` extension and accepts uploads up
+  to 256 MB (for restoring backups; attachments are still capped by
+  `MAX_UPLOAD_MB`). Behind nginx, raise `client_max_body_size` if you want to
+  restore large backups through the browser.
+- Bare PHP: install `php-zip` to use backups (`composer` lists it under
+  "suggest"); nothing else needs it.
+
 ## [0.5.0] — 2026-09-28
 
 Phase 5: expenses, reports and dashboard.

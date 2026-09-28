@@ -79,10 +79,19 @@ final readonly class ReminderNotifier
             return 0;
         }
 
+        // Entries leave out what must not be sent (an archived vehicle, a
+        // switched-off module): release those claims straight away.
         $entries = $this->service->entries($user, $claimed)['open'];
+        $sending = array_map(static fn (ReminderEntry $e): int => $e->reminder->id, $entries);
+        $this->release(array_values(array_filter(
+            $claimed,
+            static fn (Reminder $r): bool => !in_array($r->id, $sending, true),
+        )));
+        $claimed = array_values(array_filter(
+            $claimed,
+            static fn (Reminder $r): bool => in_array($r->id, $sending, true),
+        ));
         if ($entries === []) {
-            $this->release($claimed);
-
             return 0;
         }
 

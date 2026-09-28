@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Scheduler;
 
+use Logbook\Domain\Feature\Feature;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Notification\ReminderNotifier;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -12,19 +14,28 @@ use Throwable;
 /**
  * Everything bin/run-scheduled-tasks.php does on each run (cron every 15
  * minutes, or the Docker entrypoint's loop; spec.md §10). One owner's
- * failure is logged and never stops the others.
+ * failure is logged and never stops the others. With the reminders module
+ * switched off nothing is sent (spec.md §7.10).
  */
 final readonly class ScheduledTasks
 {
     public function __construct(
         private UserRepository $users,
         private ReminderNotifier $notifier,
+        private FeatureToggles $features,
         private LoggerInterface $logger,
     ) {
     }
 
     public function run(): TaskSummary
     {
+        if (!$this->features->isEnabled(Feature::Reminders)) {
+            $summary = new TaskSummary(0, 0, 0, 0);
+            $this->logger->info('Scheduled tasks: the reminders module is switched off; nothing to send.');
+
+            return $summary;
+        }
+
         $users = 0;
         $reminders = 0;
         $digests = 0;

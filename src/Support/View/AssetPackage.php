@@ -31,6 +31,32 @@ final class AssetPackage
     }
 
     /**
+     * Every built asset's URL (for the service worker to cache), except
+     * those matching $exclude (a regular expression on the asset path).
+     *
+     * @return list<string>
+     */
+    public function urls(string $exclude = '/^$/'): array
+    {
+        $urls = [];
+        foreach (array_keys($this->manifest()) as $path) {
+            if (preg_match($exclude, $path) !== 1) {
+                $urls[] = $this->url($path);
+            }
+        }
+
+        return $urls;
+    }
+
+    /**
+     * A short hash of every asset's version: changes whenever any asset does.
+     */
+    public function version(): string
+    {
+        return substr(hash('sha256', (string) json_encode($this->manifest())), 0, 12);
+    }
+
+    /**
      * @return array<string, string>
      */
     private function manifest(): array
