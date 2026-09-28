@@ -7,6 +7,10 @@ use Logbook\Action\Attachment\ShowAttachmentAction;
 use Logbook\Action\Auth\LoginAction;
 use Logbook\Action\Auth\LogoutAction;
 use Logbook\Action\Auth\SetupAction;
+use Logbook\Action\Backup\BackupPageAction;
+use Logbook\Action\Backup\ConfirmRestoreAction;
+use Logbook\Action\Backup\DownloadBackupAction;
+use Logbook\Action\Backup\UploadRestoreAction;
 use Logbook\Action\Compliance\ComplianceListAction;
 use Logbook\Action\Compliance\CreateComplianceDocumentAction;
 use Logbook\Action\Compliance\DeleteComplianceDocumentAction;
@@ -26,6 +30,8 @@ use Logbook\Action\Fuel\QuickFuelAction;
 use Logbook\Action\Garage\GarageAction;
 use Logbook\Action\HealthAction;
 use Logbook\Action\HomeAction;
+use Logbook\Action\Import\ImportAction;
+use Logbook\Action\Import\ImportUploadAction;
 use Logbook\Action\Maintenance\CreateMaintenanceEntryAction;
 use Logbook\Action\Maintenance\CreateScheduleAction;
 use Logbook\Action\Maintenance\DeleteMaintenanceEntryAction;
@@ -37,6 +43,9 @@ use Logbook\Action\Odometer\CreateOdometerReadingAction;
 use Logbook\Action\Odometer\DeleteOdometerReadingAction;
 use Logbook\Action\Odometer\EditOdometerReadingAction;
 use Logbook\Action\Odometer\OdometerLogAction;
+use Logbook\Action\Pwa\OfflineAction;
+use Logbook\Action\Pwa\ServiceWorkerAction;
+use Logbook\Action\Pwa\WebManifestAction;
 use Logbook\Action\Reminder\CalendarFeedAction;
 use Logbook\Action\Reminder\CreateReminderAction;
 use Logbook\Action\Reminder\DeleteReminderAction;
@@ -47,6 +56,7 @@ use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
+use Logbook\Action\Settings\ModuleSettingsAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
@@ -59,8 +69,12 @@ use Logbook\Action\Vehicle\EditVehicleAction;
 use Logbook\Action\Vehicle\RestoreVehicleAction;
 use Logbook\Action\Vehicle\ShowVehicleAction;
 use Logbook\Action\Vehicle\VehiclePhotoAction;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Middleware\AuthGuardMiddleware;
 use Logbook\Middleware\CsrfMiddleware;
+use Logbook\Middleware\FeatureGateMiddleware;
+use Logbook\Service\Feature\FeatureToggles;
+use Psr\Container\ContainerInterface;
 use Slim\App;
 use Slim\Interfaces\RouteCollectorProxyInterface as Group;
 
@@ -70,15 +84,30 @@ use Slim\Interfaces\RouteCollectorProxyInterface as Group;
  *
  * Every HTML route sits in a CSRF-protected group; machine endpoints such as
  * /health stay outside so they never create sessions. Group middleware runs
- * last-added first: auth guard, then CSRF. (Group closures must not be
- * static: Slim binds them to the container.)
+ * last-added first: auth guard, then CSRF, then (module groups) the feature
+ * gate, so a switched-off module's pages answer 404 (spec.md §7.10). Group
+ * closures must not be static: Slim binds them to the container.
  */
 return static function (App $app): void {
+    $container = $app->getContainer();
+    assert($container instanceof ContainerInterface);
+    $toggles = $container->get(FeatureToggles::class);
+    assert($toggles instanceof FeatureToggles);
+    $module = static fn (Feature $feature): FeatureGateMiddleware => new FeatureGateMiddleware($feature, $toggles);
+
     $app->get('/health', HealthAction::class)->setName('health');
+
+    // Installable app (spec.md §7.15): served by the app so every URL in them
+    // carries APP_BASE_PATH. No session: they are fetched by the browser itself.
+    $app->get('/manifest.webmanifest', WebManifestAction::class)->setName('pwa.manifest');
+    $app->get('/sw.js', ServiceWorkerAction::class)->setName('pwa.worker');
+    $app->get('/offline', OfflineAction::class)->setName('pwa.offline');
 
     // Calendar apps cannot sign in: the secret token in the URL is the
     // authentication, and the feed never touches the session.
-    $app->get('/calendar/{token:[0-9]+-[a-f0-9]{64}}.ics', CalendarFeedAction::class)->setName('calendar.feed');
+    $app->get('/calendar/{token:[0-9]+-[a-f0-9]{64}}.ics', CalendarFeedAction::class)
+        ->setName('calendar.feed')
+        ->add($module(Feature::Reminders));
 
     // Signed-out pages.
     $app->group('', function (Group $group): void {
@@ -88,7 +117,7 @@ return static function (App $app): void {
     })->add(CsrfMiddleware::class);
 
     // Signed-in pages.
-    $app->group('', function (Group $group): void {
+    $app->group('', function (Group $group) use ($module): void {
         $group->get('/', HomeAction::class)->setName('home');
         $group->post('/logout', LogoutAction::class)->setName('logout');
         $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
@@ -110,36 +139,42 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/{reading:[0-9]+}/delete', DeleteOdometerReadingAction::class)
             ->setName('odometer.delete');
 
-        $group->get('/fuel/new', QuickFuelAction::class)->setName('fuel.quick');
-        $group->get('/vehicles/{id:[0-9]+}/fuel', FuelLogAction::class)->setName('fuel.index');
-        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/new', CreateFuelEntryAction::class)->setName('fuel.create');
-        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/edit', EditFuelEntryAction::class)
-            ->setName('fuel.edit');
-        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/delete', DeleteFuelEntryAction::class)
-            ->setName('fuel.delete');
+        $group->group('', function (Group $fuel): void {
+            $fuel->get('/fuel/new', QuickFuelAction::class)->setName('fuel.quick');
+            $fuel->get('/vehicles/{id:[0-9]+}/fuel', FuelLogAction::class)->setName('fuel.index');
+            $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/new', CreateFuelEntryAction::class)->setName('fuel.create');
+            $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/edit', EditFuelEntryAction::class)
+                ->setName('fuel.edit');
+            $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/delete', DeleteFuelEntryAction::class)
+                ->setName('fuel.delete');
+        })->add($module(Feature::Fuel));
 
-        $group->group('/vehicles/{id:[0-9]+}', function (Group $vehicle): void {
-            $vehicle->get('/maintenance', MaintenanceLogAction::class)->setName('maintenance.index');
-            $vehicle->map(['GET', 'POST'], '/maintenance/new', CreateMaintenanceEntryAction::class)
-                ->setName('maintenance.create');
-            $vehicle->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/edit', EditMaintenanceEntryAction::class)
-                ->setName('maintenance.edit');
-            $vehicle->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/delete', DeleteMaintenanceEntryAction::class)
-                ->setName('maintenance.delete');
-            $vehicle->map(['GET', 'POST'], '/maintenance/schedules/new', CreateScheduleAction::class)
-                ->setName('maintenance.schedules.create');
-            $vehicle->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/edit', EditScheduleAction::class)
-                ->setName('maintenance.schedules.edit');
-            $vehicle->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/delete', DeleteScheduleAction::class)
-                ->setName('maintenance.schedules.delete');
+        $group->group('/vehicles/{id:[0-9]+}', function (Group $vehicle) use ($module): void {
+            $vehicle->group('', function (Group $maintenance): void {
+                $maintenance->get('/maintenance', MaintenanceLogAction::class)->setName('maintenance.index');
+                $maintenance->map(['GET', 'POST'], '/maintenance/new', CreateMaintenanceEntryAction::class)
+                    ->setName('maintenance.create');
+                $maintenance->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/edit', EditMaintenanceEntryAction::class)
+                    ->setName('maintenance.edit');
+                $maintenance->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/delete', DeleteMaintenanceEntryAction::class)
+                    ->setName('maintenance.delete');
+                $maintenance->map(['GET', 'POST'], '/maintenance/schedules/new', CreateScheduleAction::class)
+                    ->setName('maintenance.schedules.create');
+                $maintenance->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/edit', EditScheduleAction::class)
+                    ->setName('maintenance.schedules.edit');
+                $maintenance->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/delete', DeleteScheduleAction::class)
+                    ->setName('maintenance.schedules.delete');
+            })->add($module(Feature::Maintenance));
 
-            $vehicle->get('/documents', ComplianceListAction::class)->setName('compliance.index');
-            $vehicle->map(['GET', 'POST'], '/documents/new', CreateComplianceDocumentAction::class)
-                ->setName('compliance.create');
-            $vehicle->map(['GET', 'POST'], '/documents/{document:[0-9]+}/edit', EditComplianceDocumentAction::class)
-                ->setName('compliance.edit');
-            $vehicle->map(['GET', 'POST'], '/documents/{document:[0-9]+}/delete', DeleteComplianceDocumentAction::class)
-                ->setName('compliance.delete');
+            $vehicle->group('', function (Group $documents): void {
+                $documents->get('/documents', ComplianceListAction::class)->setName('compliance.index');
+                $documents->map(['GET', 'POST'], '/documents/new', CreateComplianceDocumentAction::class)
+                    ->setName('compliance.create');
+                $documents->map(['GET', 'POST'], '/documents/{document:[0-9]+}/edit', EditComplianceDocumentAction::class)
+                    ->setName('compliance.edit');
+                $documents->map(['GET', 'POST'], '/documents/{document:[0-9]+}/delete', DeleteComplianceDocumentAction::class)
+                    ->setName('compliance.delete');
+            })->add($module(Feature::Compliance));
 
             $vehicle->get('/expenses', VehicleExpensesAction::class)->setName('expenses.index');
             $vehicle->map(['GET', 'POST'], '/expenses/new', CreateExpenseAction::class)->setName('expenses.create');
@@ -148,30 +183,48 @@ return static function (App $app): void {
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/delete', DeleteExpenseAction::class)
                 ->setName('expenses.delete');
 
+            // Export and import check the module's toggle themselves (one route, several modules).
             $vehicle->get('/export/{module:fuel|odometer|maintenance|documents|expenses}.csv', ExportModuleAction::class)
                 ->setName('export.module');
+            $csvModule = '{module:fuel|odometer|maintenance|documents|expenses}';
+            $vehicle->map(['GET', 'POST'], '/import/' . $csvModule, ImportUploadAction::class)
+                ->setName('import.upload');
+            $vehicle->map(['GET', 'POST'], '/import/' . $csvModule . '/{token:[a-f0-9]{32}}', ImportAction::class)
+                ->setName('import.map');
 
             $vehicle->get('/attachments/{attachment:[0-9]+}', ShowAttachmentAction::class)->setName('attachments.show');
             $vehicle->map(['GET', 'POST'], '/attachments/{attachment:[0-9]+}/delete', DeleteAttachmentAction::class)
                 ->setName('attachments.delete');
         });
 
-        $group->get('/reminders', ReminderListAction::class)->setName('reminders.index');
-        $group->map(['GET', 'POST'], '/reminders/new', CreateReminderAction::class)->setName('reminders.create');
-        $group->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/edit', EditReminderAction::class)->setName('reminders.edit');
-        $group->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/delete', DeleteReminderAction::class)
-            ->setName('reminders.delete');
-        $group->post('/reminders/{reminder:[0-9]+}/{action:done|dismiss|reopen}', ReminderStatusAction::class)
-            ->setName('reminders.status');
+        $group->group('', function (Group $reminders): void {
+            $reminders->get('/reminders', ReminderListAction::class)->setName('reminders.index');
+            $reminders->map(['GET', 'POST'], '/reminders/new', CreateReminderAction::class)->setName('reminders.create');
+            $reminders->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/edit', EditReminderAction::class)
+                ->setName('reminders.edit');
+            $reminders->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/delete', DeleteReminderAction::class)
+                ->setName('reminders.delete');
+            $reminders->post('/reminders/{reminder:[0-9]+}/{action:done|dismiss|reopen}', ReminderStatusAction::class)
+                ->setName('reminders.status');
+            $reminders->post('/settings/reminders/test', SendTestNotificationAction::class)->setName('settings.reminders.test');
+            $reminders->post('/settings/reminders/calendar', CalendarFeedSettingsAction::class)
+                ->setName('settings.reminders.calendar');
+        })->add($module(Feature::Reminders));
 
-        $group->get('/reports', ReportAction::class)->setName('reports.index');
-        $group->get('/reports/export.csv', ReportExportAction::class)->setName('reports.export');
+        $group->group('', function (Group $reports): void {
+            $reports->get('/reports', ReportAction::class)->setName('reports.index');
+            $reports->get('/reports/export.csv', ReportExportAction::class)->setName('reports.export');
+        })->add($module(Feature::Reports));
 
         $group->get('/settings', SettingsAction::class)->setName('settings');
+        // Lead times also drive the vehicle tabs' due badges, so this page stays when reminders are off.
         $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');
-        $group->post('/settings/reminders/test', SendTestNotificationAction::class)->setName('settings.reminders.test');
-        $group->post('/settings/reminders/calendar', CalendarFeedSettingsAction::class)
-            ->setName('settings.reminders.calendar');
+        $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules');
+        $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index');
+        $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download');
+        $group->post('/settings/backup/restore', UploadRestoreAction::class)->setName('backup.restore');
+        $group->map(['GET', 'POST'], '/settings/backup/restore/{token:[a-f0-9]{32}}', ConfirmRestoreAction::class)
+            ->setName('backup.restore.confirm');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');

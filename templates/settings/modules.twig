@@ -1,0 +1,40 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'modules.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'modules.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'modules.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <form class="form" method="post" action="{{ url_for('settings.modules') }}">
+            {{ ui.csrf(csrf) }}
+            <fieldset class="card fieldset">
+                <legend class="card__title fieldset__legend">{{ 'modules.legend'|trans }}</legend>
+                {% for module in modules %}
+                    <label class="toggle">
+                        <input type="checkbox" name="{{ module.value }}" value="1"{% if enabled[module.value] %} checked{% endif %} aria-describedby="m-{{ module.value }}-hint">
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ ui.icon(module.icon()) }} {{ ('modules.module.' ~ module.value ~ '.title')|trans }}</span>
+                            <span class="toggle__hint" id="m-{{ module.value }}-hint">{{ ('modules.module.' ~ module.value ~ '.hint')|trans }}</span>
+                        </span>
+                    </label>
+                {% endfor %}
+                <p class="field__hint">{{ 'modules.core_note'|trans }}</p>
+            </fieldset>
+            <p class="muted">{{ 'modules.data_kept'|trans }}</p>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'modules.save'|trans }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

@@ -35,6 +35,7 @@
                 </div>
             </section>
 
+            {% if feature_enabled('reminders') %}
             <section class="card" aria-labelledby="channels-heading">
                 <h2 id="channels-heading" class="card__title">{{ 'reminders.settings.channels_heading'|trans }}</h2>
                 <p class="field__hint">{{ 'reminders.settings.channels_intro'|trans }}</p>
@@ -62,12 +63,14 @@
                 </label>
                 <p class="field__hint">{{ 'reminders.settings.when_sent'|trans }}</p>
             </section>
+            {% endif %}
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'reminders.settings.save'|trans }}</button>
             </div>
         </form>
 
+        {% if feature_enabled('reminders') %}
         <section class="card" aria-labelledby="test-heading">
             <h2 id="test-heading" class="card__title">{{ 'reminders.settings.test_heading'|trans }}</h2>
             <p class="field__hint">{{ (any_active ? 'reminders.settings.test_intro' : 'reminders.settings.test_none')|trans }}</p>
@@ -114,5 +117,6 @@
             </div>
             {% if feed_enabled %}<p class="field__hint">{{ 'reminders.calendar.reset_hint'|trans }}</p>{% endif %}
         </section>
+        {% endif %}
     </div>
 {% endblock %}

@@ -34,6 +34,10 @@ final readonly class AppSettings
         /** @var LogLevel::* */
         public string $logLevel,
         public string $cacheDir,
+        /** Pre-restore safety backups and `bin/backup.php create` (spec.md §7.13). */
+        public string $backupPath = '',
+        /** Largest backup the restore form accepts, in megabytes. */
+        public int $maxRestoreMb = 256,
         /**
          * The environment these were resolved from, for components that read
          * their own variables (notification channels; spec.md §7.11).
@@ -74,6 +78,8 @@ final readonly class AppSettings
             logPath: self::path($env->string('LOG_PATH', 'php://stderr'), $rootDir),
             logLevel: self::logLevel($env->string('LOG_LEVEL', $isProduction ? LogLevel::INFO : LogLevel::DEBUG)),
             cacheDir: $rootDir . '/var/cache',
+            backupPath: self::path($env->string('BACKUP_PATH', 'var/backups'), $rootDir),
+            maxRestoreMb: $env->int('MAX_RESTORE_MB', 256),
             env: $env,
         );
     }

@@ -12,6 +12,7 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Support\Date\LocalTime;
 use LogicException;
 use Psr\Clock\ClockInterface;
@@ -19,7 +20,9 @@ use Psr\Clock\ClockInterface;
 /**
  * Reminders as the owner sees and handles them (spec.md §7.6): the grouped
  * list, dismiss / mark done / reopen, and manual reminders. Every read
- * syncs first, so what is shown is always current.
+ * syncs first, so what is shown is always current. Reminders raised by a
+ * switched-off module (maintenance, documents) are left out of every list,
+ * and so are never sent either (spec.md §7.10).
  */
 final readonly class ReminderService
 {
@@ -28,6 +31,7 @@ final readonly class ReminderService
         private VehicleRepository $vehicles,
         private ReminderSync $sync,
         private ClockInterface $clock,
+        private FeatureToggles $features,
     ) {
     }
 
@@ -54,11 +58,13 @@ final readonly class ReminderService
             $vehicles[$vehicle->id] = $vehicle;
         }
 
+        $enabled = $this->features->all();
         $open = [];
         $closed = [];
         foreach ($reminders as $reminder) {
             $vehicle = $vehicles[$reminder->vehicleId] ?? null;
-            if ($vehicle === null) {
+            $feature = $reminder->source->feature();
+            if ($vehicle === null || ($feature !== null && !$enabled[$feature->value])) {
                 continue;
             }
             $entry = new ReminderEntry($reminder, $vehicle);

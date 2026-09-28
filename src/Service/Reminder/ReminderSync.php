@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Logbook\Service\Reminder;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\User\User;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Compliance\ComplianceService;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Support\Date\LocalTime;
@@ -31,6 +33,7 @@ final readonly class ReminderSync
         private ReminderRepository $reminders,
         private ReminderSettingsStore $settings,
         private ClockInterface $clock,
+        private FeatureToggles $features,
     ) {
     }
 
@@ -44,20 +47,35 @@ final readonly class ReminderSync
             $existing[GeneratedReminder::keyOf($reminder->vehicleId, $reminder->source, $reminder->sourceId)] = $reminder;
         }
 
+        // A switched-off module's reminders are left exactly as they are (not
+        // generated, not deleted), so switching it back on loses nothing.
+        $enabled = $this->features->all();
+        $withSchedules = $enabled[Feature::Maintenance->value];
+        $withDocuments = $enabled[Feature::Compliance->value];
+        foreach ($existing as $key => $reminder) {
+            $feature = $reminder->source->feature();
+            if ($feature !== null && !$enabled[$feature->value]) {
+                unset($existing[$key]);
+            }
+        }
+
         // Archived vehicles raise nothing, so their reminders fall out below.
         foreach ($this->vehicles->listForUser($user->id, false) as $vehicle) {
-            $schedules = $this->schedules->states(
-                $vehicle,
-                $today,
-                $this->odometer->history($vehicle),
-                $preferences->scheduleDays,
-                $preferences->scheduleKm,
-            );
-            $documents = $this->compliance->states($vehicle, $today, $preferences->documentDays);
-            $wanted = [
-                ...ReminderGenerator::fromSchedules($vehicle->id, $schedules, $preferences),
-                ...ReminderGenerator::fromDocuments($vehicle->id, $documents, $today, $preferences),
-            ];
+            $wanted = [];
+            if ($withSchedules) {
+                $schedules = $this->schedules->states(
+                    $vehicle,
+                    $today,
+                    $this->odometer->history($vehicle),
+                    $preferences->scheduleDays,
+                    $preferences->scheduleKm,
+                );
+                $wanted = ReminderGenerator::fromSchedules($vehicle->id, $schedules, $preferences);
+            }
+            if ($withDocuments) {
+                $documents = $this->compliance->states($vehicle, $today, $preferences->documentDays);
+                $wanted = [...$wanted, ...ReminderGenerator::fromDocuments($vehicle->id, $documents, $today, $preferences)];
+            }
 
             foreach ($wanted as $generated) {
                 $stored = $existing[$generated->key()] ?? null;

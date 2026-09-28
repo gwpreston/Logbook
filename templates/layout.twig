@@ -5,26 +5,30 @@
  # visitors): a slim top bar only.
  #
  # Primary navigation entries: route name, translation key, icon, and the
- # `active_nav` value that marks it current. Reports is left out when the
- # module is switched off (spec.md §7.10). The bottom bar shows the first
- # four entries with the "Log" button (the fast fill-up path) in the middle,
- # as in the design; Settings is then reached from the top bar.
+ # `active_nav` value that marks it current. Reminders and Reports are left
+ # out when their module is switched off, and the "Log fill-up" buttons with
+ # Fuel (spec.md §7.10). The bottom bar shows the first four entries with the
+ # "Log" button (the fast fill-up path) in the middle, as in the design;
+ # Settings is then reached from the top bar.
  #}
 {% set signed_in = user is not null %}
 {% set nav_items = [
     {route: 'home', label: 'nav.dashboard', icon: 'space_dashboard', key: 'home'},
     {route: 'garage', label: 'nav.garage', icon: 'garage', key: 'garage'},
-    {route: 'reminders.index', label: 'nav.reminders', icon: 'notifications', key: 'reminders'},
 ] %}
+{% if signed_in and feature_enabled('reminders') %}
+    {% set nav_items = nav_items|merge([{route: 'reminders.index', label: 'nav.reminders', icon: 'notifications', key: 'reminders'}]) %}
+{% endif %}
 {% if signed_in and feature_enabled('reports') %}
     {% set nav_items = nav_items|merge([{route: 'reports.index', label: 'nav.reports', icon: 'bar_chart', key: 'reports'}]) %}
 {% endif %}
 {% set nav_items = nav_items|merge([{route: 'settings', label: 'nav.settings', icon: 'settings', key: 'settings'}]) %}
 {% set bottom_items = nav_items|slice(0, 4) %}
 {% set current_nav = active_nav|default('') %}
+{% set can_log = signed_in and feature_enabled('fuel') %}
 {% set theme = signed_in ? user.preferences.theme.value : null %}
 <!doctype html>
-<html lang="{{ html_lang() }}"{% if theme %} data-theme-pref="{{ theme }}"{% endif %}{% if theme and theme != 'system' %} data-theme="{{ theme }}"{% endif %}>
+<html lang="{{ html_lang() }}" data-base="{{ base_path() }}"{% if theme %} data-theme-pref="{{ theme }}"{% endif %}{% if theme and theme != 'system' %} data-theme="{{ theme }}"{% endif %}>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -33,7 +37,10 @@
     <meta name="theme-color" content="#0a111c" media="(prefers-color-scheme: dark)">
     <title>{% block title %}{{ 'app.name'|trans }}{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logbook-mark.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/logbook-mark.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ url_for('pwa.manifest') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="{{ 'app.name'|trans }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     {# Sets data-theme before first paint; everything else is deferred. #}
     <script src="{{ asset('js/theme.js') }}"></script>
@@ -54,7 +61,9 @@
                 {{ ui.brand() }}
 
                 {% block primary_action %}
-                    <a class="btn btn--primary btn--block" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>{{ ui.icon('add') }}{{ 'nav.log_fill_up'|trans }}</a>
+                    {% if can_log %}
+                        <a class="btn btn--primary btn--block" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>{{ ui.icon('add') }}{{ 'nav.log_fill_up'|trans }}</a>
+                    {% endif %}
                 {% endblock %}
 
                 <nav aria-label="{{ 'nav.label'|trans }}">
@@ -100,6 +109,18 @@
                 {% if flashes is not empty %}
                     <div class="flashes">{{ ui.flashes(flashes) }}</div>
                 {% endif %}
+                {% if can_log %}
+                    {# Fill-ups saved offline, waiting to be sent (js/app.js; spec.md §7.15). #}
+                    <section class="card outbox" data-offline-outbox hidden aria-labelledby="outbox-heading"
+                             data-text-queued="{{ 'pwa.queued'|trans }}" data-text-waiting="{{ 'pwa.waiting'|trans }}"
+                             data-text-pending="{{ 'pwa.pending'|trans }}" data-text-sent="{{ 'pwa.sent'|trans }}"
+                             data-text-rejected="{{ 'pwa.rejected'|trans }}" data-text-review="{{ 'pwa.review'|trans }}"
+                             data-text-discard="{{ 'pwa.discard'|trans }}" data-text-signed-out="{{ 'pwa.signed_out'|trans }}">
+                        <h2 id="outbox-heading" class="card__title">{{ ui.icon('cloud_off') }}{{ 'pwa.outbox_title'|trans }}</h2>
+                        <p data-outbox-status role="status"></p>
+                        <ul class="outbox__list" data-outbox-list></ul>
+                    </section>
+                {% endif %}
                 {% block content %}{% endblock %}
             </main>
 
@@ -114,7 +135,7 @@
         <nav class="bottom-nav" aria-label="{{ 'nav.label'|trans }}">
             <ul class="bottom-nav__list">
                 {% for item in bottom_items %}
-                    {% if loop.index == 3 %}
+                    {% if loop.index == 3 and can_log %}
                         <li>
                             <a class="bottom-nav__link bottom-nav__link--fab" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>
                                 <span class="bottom-nav__icon">{{ ui.icon('add') }}</span>

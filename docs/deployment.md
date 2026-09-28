@@ -7,9 +7,13 @@ an **ordinary PHP 8.4 web server**. Both use the same environment variables
 - [Docker](#docker)
 - [Bare PHP 8.4](#bare-php-84)
 - [Running at a subpath / behind a reverse proxy](#subpath-and-reverse-proxies)
+- [Installing on a phone (PWA)](#installing-on-a-phone-pwa)
 - [Health check](#health-check)
 - [Backups](#backups)
 - [Upgrading](#upgrading)
+
+Every environment variable, with its default, is listed in
+[configuration.md](configuration.md).
 
 ---
 
@@ -17,9 +21,10 @@ an **ordinary PHP 8.4 web server**. Both use the same environment variables
 
 The image is PHP 8.4 + Apache, built for `linux/amd64` and `linux/arm64`
 (Raspberry Pi 3/4/5 running 64-bit Raspberry Pi OS). 32-bit systems are not
-supported: the migration tool requires 64-bit PHP. Everything the app writes lives under **`/data`**
-(uploads, plus the database file when using SQLite). On start the entrypoint
-waits for the database, applies pending migrations, then starts Apache.
+supported: the migration tool requires 64-bit PHP. Everything the app writes lives under **`/data`**:
+uploads (`/data/uploads`), safety and command-line backups (`/data/backups`),
+and the database file when using SQLite. On start the entrypoint waits for the
+database, applies pending migrations, then starts Apache.
 
 ### With PostgreSQL (default)
 
@@ -113,6 +118,7 @@ described in [notification-channels.md](notification-channels.md).
 
 - **64-bit** PHP **8.4** (8.5 also works) with `intl`, `pdo`, and `pdo_pgsql` **or**
   `pdo_mysql` (`pdo_sqlite` for SQLite); Composer 2.
+- `zip` (`php-zip`) for backup and restore; everything else works without it.
 - PostgreSQL 13+ or MySQL 8.0+ / MariaDB 10.6+ (or SQLite for a trial).
 - Apache 2.4 with `mod_rewrite`, or nginx + php-fpm.
 
@@ -127,11 +133,15 @@ cp .env.example .env              # then edit: DB_*, APP_URL, APP_TIMEZONE, …
 vendor/bin/phinx migrate -e production
 ```
 
-Make `var/` (cache, logs, SQLite) and your `UPLOAD_PATH` writable by the web
-server user, e.g. `chown -R www-data: var`. Keep `UPLOAD_PATH` **outside**
-`public/`: vehicle photos and attachments (receipts, invoices, certificates)
-are served only through the app to the signed-in owner. PHP's `upload_max_filesize` and `post_max_size`
-must be at least `MAX_UPLOAD_MB` (default 10 MB); the Docker image sets 16M/20M.
+Make `var/` (cache, logs, SQLite, `var/backups`) and your `UPLOAD_PATH`
+writable by the web server user, e.g. `chown -R www-data: var`. Keep
+`UPLOAD_PATH` and `BACKUP_PATH` **outside** `public/`: vehicle photos and
+attachments (receipts, invoices, certificates) are served only through the app
+to the signed-in owner, and a backup contains everything. PHP's
+`upload_max_filesize` and `post_max_size` must be at least `MAX_UPLOAD_MB`
+(default 10 MB) for attachments and CSV imports, and at least `MAX_RESTORE_MB`
+(default 256 MB) to restore a backup through the browser (larger ones restore
+with `bin/backup.php`); the Docker image sets 256M/260M.
 
 PHP must support **Argon2id** password hashing (`PASSWORD_ARGON2ID`), which
 distribution and official Docker builds of PHP 8.4 include; check with
@@ -262,7 +272,7 @@ location /logbook/ {
     proxy_set_header Host              $host;
     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    client_max_body_size 20m;
+    client_max_body_size 260m;                  # restoring a backup (MAX_RESTORE_MB)
 }
 ```
 
@@ -289,6 +299,28 @@ Behind HTTPS, set `APP_URL=https://…` so cookies are marked `Secure`.
 To check a set-up, open **`<your URL>/diagnostics/deep/link`** and press F5.
 The page should reload.
 
+The web app manifest (`<base>/manifest.webmanifest`) and service worker
+(`<base>/sw.js`) are served by the app itself with the base path built in, so
+a subpath install is installable and works offline like one at the root; the
+proxy needs no extra rules. Browsers only allow service workers over HTTPS (or
+on `localhost`).
+
+---
+
+## Installing on a phone (PWA)
+
+Logbook is a Progressive Web App. Open it in the phone's browser over HTTPS,
+sign in, then choose **Install app** (Chrome/Edge on Android) or **Share → Add
+to Home Screen** (Safari on iOS). It opens full-screen like an app, with a
+*Log fill-up* shortcut on Android.
+
+Offline, the fill-up form still opens (once it has been visited online, or the
+vehicle picker has been shown). A fill-up saved without a connection is kept on
+the phone — the page says so — and sent automatically when the connection
+returns. If the server rejects it (say, a typo in the odometer), it stays on
+the phone and the fill-up page offers **Review**. Attachments cannot be added
+offline. Other pages show an "offline" notice until the connection is back.
+
 ---
 
 ## Health check
@@ -306,23 +338,86 @@ written to the log. The Docker image uses it as its `HEALTHCHECK`.
 
 ## Backups
 
-Back up **the database** and **the upload directory**:
+Everything Logbook knows is in **the database** and **the upload directory**
+(`UPLOAD_PATH`). Logbook can back both up into a single ZIP file, and restore
+it — onto the same or a different database engine.
 
-- Docker: the `logbook_data` volume (`/data`), plus the database volume
-  (`postgres_data` / `mysql_data`) — or better, a logical dump:
-  `docker compose exec db pg_dump -U logbook logbook > logbook.sql`.
-- Bare PHP: `UPLOAD_PATH`, your database (`pg_dump` / `mysqldump`), and `.env`.
+### From the app
 
-In-app backup and restore arrives in Phase 6.
+**Settings → Backup and restore → Download backup** gives you
+`logbook-backup-<date>-<time>.zip`. Keep copies somewhere other than the server.
+
+To restore, choose the file under *Restore a backup*. Logbook checks the whole
+archive first and shows what it contains; nothing changes until you tick
+**Replace all data with this backup** and press *Restore*. Then it:
+
+1. saves a **safety backup** of the current data to `BACKUP_PATH`
+   (`pre-restore-<date>-<time>.zip`; Docker: `/data/backups`),
+2. replaces every table in one transaction (an error leaves the old data),
+3. replaces the uploaded photos and attachments,
+4. signs everyone out. Sign in with the account and password **from the backup**.
+
+A backup can only be restored by the Logbook version whose database it matches
+(the version is shown on the confirmation page). To restore an older backup,
+install that version, restore, then upgrade as usual.
+
+### From the command line (and cron)
+
+```bash
+php bin/backup.php create                      # → BACKUP_PATH/logbook-backup-….zip
+php bin/backup.php create /mnt/nas/logbook.zip
+php bin/backup.php check  logbook-backup.zip   # validate only
+php bin/backup.php restore logbook-backup.zip --yes
+```
+
+Run it as the web server user so files keep the right owner. Docker:
+`docker compose exec -u www-data app php bin/backup.php create`. A nightly
+backup from the host's cron:
+
+```cron
+30 3 * * *  www-data  cd /var/www/logbook && php bin/backup.php create
+```
+
+Old files in `BACKUP_PATH` are not deleted automatically; prune them from the
+same cron job, e.g. `find /var/www/logbook/var/backups -name '*.zip' -mtime +30 -delete`.
+
+### What else to keep
+
+- `.env` (or your compose overrides) — in particular **`SESSION_SECRET`**: a
+  restored database with a different secret still works, but everyone signs in
+  again and calendar feed links must be re-created.
+- Your reverse-proxy and TLS configuration.
+
+### Moving to another database engine
+
+Backups are engine-independent: make a backup on the old install (for example
+the SQLite quick start), start a fresh install on PostgreSQL or MySQL (same
+Logbook version), and restore the backup there — with `bin/backup.php restore`,
+or in the browser after creating a throwaway account at first-run setup (the
+restore replaces it with your real one). Classic dumps (`pg_dump`, `mysqldump`) of the database plus a copy of
+`UPLOAD_PATH` also remain a perfectly good backup.
 
 ---
 
 ## Upgrading
 
-1. Read [CHANGELOG.md](../CHANGELOG.md).
-2. Back up (above).
-3. Docker: pull or rebuild the image, then `docker compose up -d`. Migrations
-   run automatically.
-   Bare PHP: `git pull && composer install --no-dev -o && vendor/bin/phinx migrate -e production`.
+1. Read [CHANGELOG.md](../CHANGELOG.md), especially each release's **Upgrade
+   notes** between your version and the new one (new variables, anything
+   beyond "pull and restart").
+2. Back up: `php bin/backup.php create` (Docker:
+   `docker compose exec -u www-data app php bin/backup.php create`), and copy
+   the file off the server.
+3. Upgrade:
+   - Docker: pull or rebuild the image, then `docker compose up -d`. The
+     entrypoint applies new migrations before Apache starts.
+   - Bare PHP: `git pull && composer install --no-dev -o && vendor/bin/phinx migrate -e production`.
+     If PHP runs with opcache, reload php-fpm/Apache afterwards.
+4. Check `<your URL>/health` and sign in.
 
-Every migration can be rolled back (`vendor/bin/phinx rollback -e production`).
+Database changes always ship as reversible migrations. To go back: restore the
+previous code, run `vendor/bin/phinx rollback -e production -t <version>`
+(the version before the upgrade, from `vendor/bin/phinx status`), or restore
+the backup from step 2 with the previous version.
+
+New environment variables always have a default that keeps the old behaviour,
+so an existing `.env` keeps working.

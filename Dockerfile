@@ -17,8 +17,8 @@ FROM php:${PHP_VERSION}-apache AS base
 RUN set -eux; \
     savedAptMark="$(apt-mark showmanual)"; \
     apt-get update; \
-    apt-get install -y --no-install-recommends libicu-dev libpq-dev; \
-    docker-php-ext-install -j"$(nproc)" intl pdo_mysql pdo_pgsql opcache; \
+    apt-get install -y --no-install-recommends libicu-dev libpq-dev libzip-dev; \
+    docker-php-ext-install -j"$(nproc)" intl pdo_mysql pdo_pgsql opcache zip; \
     # keep only the runtime libraries the compiled extensions link against
     apt-mark auto '.*' > /dev/null; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
@@ -27,7 +27,7 @@ RUN set -eux; \
         | sort -u | xargs -r dpkg-query --search | cut -d: -f1 | sort -u | xargs -r apt-mark manual; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
     rm -rf /var/lib/apt/lists/*; \
-    php -m | grep -qi '^intl$'; php -m | grep -qi '^pdo_pgsql$'; php -m | grep -qi '^pdo_mysql$'; php -m | grep -qi '^pdo_sqlite$'
+    php -m | grep -qi '^intl$'; php -m | grep -qi '^pdo_pgsql$'; php -m | grep -qi '^pdo_mysql$'; php -m | grep -qi '^pdo_sqlite$'; php -m | grep -qi '^zip$'
 
 RUN set -eux; \
     a2enmod rewrite headers; \
@@ -45,7 +45,8 @@ ENV APP_ENV=production \
     APP_BASE_PATH="" \
     DB_DRIVER=sqlite \
     DB_NAME=/data/logbook.sqlite \
-    UPLOAD_PATH=/data/uploads
+    UPLOAD_PATH=/data/uploads \
+    BACKUP_PATH=/data/backups
 
 # ---------------------------------------------------------------------------
 # build: install production Composer dependencies.

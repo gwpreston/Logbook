@@ -1,0 +1,43 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/import.twig' as imp %}
+{#
+ # CSV import, done: what was imported, and every row that was not, with
+ # its reason. Expects: vehicle, module, filename, result
+ # (Service\Import\ImportPreview), statuses, field_labels.
+ #}
+
+{% set active_nav = 'garage' %}
+{% set heading = ('import.title.' ~ module.value)|trans %}
+{% set skipped = result.skipped() %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for(module.indexRoute(), {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }} · {{ filename }}</p>
+                <h1 class="page-header__title">{{ 'import.done_title'|trans }}</h1>
+            </div>
+        </header>
+
+        <div class="alert alert--success" role="status">{{ ui.icon('check_circle') }}<span>{{ 'import.done'|trans({count: result.count(statuses[0])}) }}</span></div>
+
+        {{ imp.counts(result, statuses) }}
+
+        {% if skipped is not empty %}
+            <section class="page__stack" aria-labelledby="skipped-heading">
+                <h2 id="skipped-heading" class="section-title">{{ 'import.skipped_heading'|trans({count: skipped|length}) }}</h2>
+                {{ imp.rows(skipped, field_labels, 'import.skipped_heading'|trans({count: skipped|length})) }}
+            </section>
+        {% endif %}
+
+        <div class="btn-row">
+            <a class="btn btn--primary" href="{{ url_for(module.indexRoute(), {id: vehicle.id}) }}">{{ ui.icon('arrow_forward') }}{{ ('import.view.' ~ module.value)|trans }}</a>
+            <a class="btn" href="{{ url_for('import.upload', {id: vehicle.id, module: module.value}) }}">{{ ui.icon('upload_file') }}{{ 'import.another'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

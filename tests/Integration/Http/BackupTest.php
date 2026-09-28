@@ -1,0 +1,326 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Tests\Integration\Http;
+
+use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Reminder\ManualReminderData;
+use Logbook\Repository\BackupRepository;
+use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Backup\BackupService;
+use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Reminder\ReminderService;
+use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Storage\FileStorage;
+use Logbook\Support\Storage\FileUpload;
+use Logbook\Support\Storage\UploadKind;
+use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\CostFixtures;
+use Logbook\Tests\Support\TestBrowser;
+use Psr\Container\ContainerInterface;
+use Slim\App;
+use Slim\Psr7\UploadedFile;
+use ZipArchive;
+
+/**
+ * Whole-dataset backup and restore (spec.md §7.13): a backup restores every
+ * table and upload exactly, restoring needs an explicit confirmation and
+ * leaves a safety backup, and a bad archive changes nothing.
+ */
+final class BackupTest extends AppTestCase
+{
+    use CostFixtures;
+
+    private const string NOW = '2026-09-27T10:00:00Z';
+
+    /** A valid 1×1 PNG. */
+    private const string PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    private const string PDF = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+        . "2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
+
+    private string $backupDir = '';
+
+    /** @var list<string> */
+    private array $tempFiles = [];
+
+    protected function setUp(): void
+    {
+        if (!BackupService::isAvailable()) {
+            self::markTestSkipped('PHP\'s zip extension is not installed.');
+        }
+        $this->backupDir = sys_get_temp_dir() . '/logbook-test-backups-' . bin2hex(random_bytes(6));
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ($this->tempFiles as $file) {
+            @unlink($file);
+        }
+        foreach (glob($this->backupDir . '/*') ?: [] as $file) {
+            unlink($file);
+        }
+        if (is_dir($this->backupDir)) {
+            rmdir($this->backupDir);
+        }
+        parent::tearDown();
+    }
+
+    public function testABackupRestoresEveryTableAndFileExactly(): void
+    {
+        $app = $this->createApp(['BACKUP_PATH' => $this->backupDir]);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $this->populate($app);
+        $before = $this->snapshot($app);
+        self::assertCount(2, $before['files']);
+
+        $response = $browser->get('/settings/backup/download');
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('application/zip', $response->getHeaderLine('Content-Type'));
+        self::assertSame(
+            'attachment; filename="logbook-backup-2026-09-27-100000.zip"',
+            $response->getHeaderLine('Content-Disposition'),
+        );
+        $backup = $this->tempFile(self::body($response));
+
+        $zip = new ZipArchive();
+        self::assertTrue($zip->open($backup));
+        /** @var array{format: string, tables: array<string, int>, files: int} $manifest */
+        $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
+        self::assertSame('logbook-backup', $manifest['format']);
+        self::assertSame(1, $manifest['tables']['vehicles']);
+        self::assertSame(2, $manifest['files']);
+        self::assertFalse($zip->getFromName('database/sessions.json'), 'sessions are never backed up');
+        $zip->close();
+
+        // Then things change: a vehicle and a file go, another vehicle arrives.
+        $owner = $this->owner($app);
+        $vehicles = $this->service($app, VehicleService::class);
+        $golf = $vehicles->listFleet($owner)[0];
+        $vehicles->removePhoto($owner, $golf);
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $this->expense($app, $polo, '2026-09-20', '12');
+        $this->service($app, FeatureToggles::class)->save(Feature::cases());
+
+        // Step 1: upload. Nothing changes yet.
+        $response = $browser->post('/settings/backup/restore', [], ['backup' => $this->upload($backup, 'backup.zip')]);
+        self::assertSame(303, $response->getStatusCode(), self::body($response));
+        $confirm = $response->getHeaderLine('Location');
+        self::assertMatchesRegularExpression('#^/settings/backup/restore/[a-f0-9]{32}$#', $confirm);
+        $html = self::body($browser->get($confirm));
+        self::assertStringContainsString('Restore this backup?', $html);
+        self::assertStringContainsString('name="confirm" value="1"', $html);
+
+        // Step 2 needs the box ticked.
+        $response = $browser->post($confirm, []);
+        self::assertSame(422, $response->getStatusCode());
+        self::assertStringContainsString('Tick the box', self::body($response));
+        self::assertCount(2, $this->service($app, VehicleRepository::class)->listForUser($owner->id, true));
+
+        $response = $browser->post($confirm, ['confirm' => '1']);
+        self::assertSame(303, $response->getStatusCode(), self::body($response));
+        self::assertSame('/login', $response->getHeaderLine('Location'));
+        self::assertStringContainsString('The backup was restored.', self::body($browser->follow($response)));
+        self::assertSame(303, $browser->get('/')->getStatusCode(), 'everyone is signed out');
+
+        self::assertEquals($before, $this->snapshot($app), 'every row and file as it was');
+
+        // The data from before the restore was kept, just in case.
+        $safety = glob($this->backupDir . '/pre-restore-*.zip') ?: [];
+        self::assertCount(1, $safety);
+        self::assertSame(2, $this->service($app, BackupService::class)->inspect($safety[0])->rows('vehicles'));
+
+        // New rows get new ids (PostgreSQL's sequences were moved on).
+        $browser->post('/login', ['username' => 'owner', 'password' => self::PASSWORD]);
+        $again = $this->vehicle($app, 'Skoda', 'Fabia');
+        self::assertGreaterThan($golf->id, $again->id);
+        self::assertSame(200, $browser->get('/vehicles/' . $again->id)->getStatusCode());
+    }
+
+    public function testEveryTableIsBackedUpOrDeliberatelyLeftOut(): void
+    {
+        $app = $this->createApp();
+        $tables = $this->service($app, BackupRepository::class)->tableNames();
+        $known = [...BackupRepository::TABLES, ...BackupRepository::EXCLUDED];
+
+        self::assertSame([], array_values(array_diff($tables, $known)), 'a new table needs a place in BackupRepository::TABLES');
+        self::assertSame([], array_values(array_diff($known, $tables)));
+    }
+
+    public function testTheCommandLineMakesTheSameBackups(): void
+    {
+        $app = $this->createApp(['BACKUP_PATH' => $this->backupDir]);
+        $this->pinClock($app, self::NOW);
+        $this->signedIn($app);
+        $this->populate($app);
+        $before = $this->snapshot($app);
+
+        $backups = $this->service($app, BackupService::class);
+        $file = $this->backupDir . '/nightly.zip';
+        mkdir($this->backupDir);
+        $manifest = $backups->create($file);
+        self::assertSame(2, $manifest->files);
+
+        $this->resetDatabase($app);
+        foreach ($this->service($app, FileStorage::class)->all() as $relative) {
+            $this->service($app, FileStorage::class)->delete($relative);
+        }
+        self::assertSame([], $this->snapshot($app)['files']);
+
+        $backups->restore($file);
+        self::assertEquals($before, $this->snapshot($app));
+    }
+
+    public function testABadArchiveChangesNothing(): void
+    {
+        $app = $this->createApp(['BACKUP_PATH' => $this->backupDir]);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $this->populate($app);
+        mkdir($this->backupDir);
+        $good = $this->backupDir . '/good.zip';
+        $this->service($app, BackupService::class)->create($good);
+        $before = $this->snapshot($app);
+
+        $cases = [
+            'This is not a ZIP file.' => $this->tempFile('just text'),
+            'This ZIP file is not a Logbook backup.' => $this->variant(
+                $good,
+                static fn (ZipArchive $z) => $z->deleteName('manifest.json'),
+            ),
+            'whose database differs from this one' => $this->variant($good, static function (ZipArchive $zip): void {
+                $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
+                assert(is_array($manifest));
+                $manifest['schema_version'] = '20200101000000';
+                $manifest['app_version'] = '0.1.0';
+                $zip->addFromString('manifest.json', (string) json_encode($manifest));
+            }),
+            'does not belong in it (uploads/../../evil.php)' => $this->variant(
+                $good,
+                static fn (ZipArchive $z) => $z->addFromString('uploads/../../evil.php', '<?php'),
+            ),
+            'damaged or incomplete' => $this->variant($good, static function (ZipArchive $zip): void {
+                /** @var array{columns: list<string>, rows: list<list<string|null>>} $table */
+                $table = json_decode((string) $zip->getFromName('database/vehicles.json'), true);
+                $table['columns'][1] = 'is_admin';
+                $zip->addFromString('database/vehicles.json', (string) json_encode($table));
+            }),
+        ];
+        foreach ($cases as $message => $file) {
+            $response = $browser->post('/settings/backup/restore', [], ['backup' => $this->upload($file, 'backup.zip')]);
+            self::assertSame(422, $response->getStatusCode(), $message);
+            self::assertStringContainsString(htmlspecialchars($message, ENT_QUOTES), self::body($response));
+        }
+
+        self::assertEquals($before, $this->snapshot($app));
+        self::assertSame([], glob($this->backupDir . '/pre-restore-*.zip') ?: []);
+    }
+
+    public function testARestoreBelongsToTheSessionThatUploadedIt(): void
+    {
+        $app = $this->createApp(['BACKUP_PATH' => $this->backupDir]);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        mkdir($this->backupDir);
+        $file = $this->backupDir . '/b.zip';
+        $this->service($app, BackupService::class)->create($file);
+
+        $confirm = $browser->post('/settings/backup/restore', [], ['backup' => $this->upload($file, 'b.zip')])
+            ->getHeaderLine('Location');
+        $other = new TestBrowser($app);
+        $other->post('/login', ['username' => 'owner', 'password' => self::PASSWORD]);
+        self::assertSame(404, $other->get($confirm)->getStatusCode());
+        self::assertSame(404, $other->post($confirm, ['confirm' => '1'])->getStatusCode());
+        self::assertSame(200, $browser->get($confirm)->getStatusCode());
+    }
+
+    /**
+     * A little of everything, with a photo and an attachment on disk.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    private function populate(App $app): void
+    {
+        $owner = $this->owner($app);
+        $golf = $this->vehicle($app);
+        $photo = $this->upload($this->tempFile((string) base64_decode(self::PNG)), 'golf.png');
+        $vehicles = $this->service($app, VehicleService::class);
+        $vehicles->replacePhoto($owner, $golf, $photo, FileUpload::check($photo, 1024 * 1024, UploadKind::Image));
+
+        $this->fillUp($app, $golf, '2026-09-01T08:00:00Z', '1000.5', '40.123', '60.18', true);
+        $service = $this->maintenance($app, $golf, '2026-09-14', 'Annual service', '189.5', '1609.344');
+        $pdf = $this->upload($this->tempFile(self::PDF), 'invoice.pdf');
+        $this->service($app, AttachmentService::class)->attach(
+            $golf,
+            AttachmentOwner::Maintenance,
+            $service->id,
+            $pdf,
+            FileUpload::check($pdf, 1024 * 1024, UploadKind::Document),
+        );
+        $this->expense($app, $golf, '2026-09-20', '0', note: 'Free, “for once”');
+        $due = LocalTime::parseDate('2026-10-01');
+        assert($due !== null);
+        $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));
+        $this->service($app, FeatureToggles::class)->save([Feature::Fuel, Feature::Maintenance, Feature::Reminders]);
+    }
+
+    /**
+     * Every backed-up row, and every stored file's contents.
+     *
+     * @param App<ContainerInterface> $app
+     * @return array{tables: array<string, list<array<string, string|null>>>, files: array<string, string>}
+     */
+    private function snapshot(App $app): array
+    {
+        $repository = $this->service($app, BackupRepository::class);
+        $tables = [];
+        foreach (BackupRepository::TABLES as $table) {
+            $tables[$table] = $repository->rows($table);
+        }
+        $storage = $this->service($app, FileStorage::class);
+        $files = [];
+        foreach ($storage->all() as $relative) {
+            $files[$relative] = hash_file('sha256', $storage->absolutePath($relative)) ?: '';
+        }
+
+        return ['tables' => $tables, 'files' => $files];
+    }
+
+    /**
+     * A copy of $source changed by $change.
+     *
+     * @param callable(ZipArchive): mixed $change
+     */
+    private function variant(string $source, callable $change): string
+    {
+        $copy = $this->tempFile((string) file_get_contents($source));
+        $zip = new ZipArchive();
+        self::assertTrue($zip->open($copy));
+        $change($zip);
+        $zip->close();
+
+        return $copy;
+    }
+
+    private function tempFile(string $contents): string
+    {
+        $path = (string) tempnam(sys_get_temp_dir(), 'logbook-backup-test-');
+        file_put_contents($path, $contents);
+        $this->tempFiles[] = $path;
+
+        return $path;
+    }
+
+    private function upload(string $path, string $name): UploadedFile
+    {
+        // A copy, since the app moves uploads away.
+        $copy = $this->tempFile((string) file_get_contents($path));
+
+        return new UploadedFile($copy, $name, 'application/octet-stream', (int) filesize($copy), UPLOAD_ERR_OK);
+    }
+}

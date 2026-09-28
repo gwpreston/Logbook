@@ -4,8 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: Phase 5 (expenses, reports and dashboard).** First-run setup, secure
-> sign-in, vehicles with photos and archiving, per-user units, currency,
+> **Status: all six core phases complete.** First-run setup, secure sign-in, vehicles with photos and archiving, per-user units, currency,
 > language and time zone; a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
 > kWh/100 km, mi/kWh), prices and running costs; a categorised service
@@ -16,9 +15,11 @@ your own server.
 > lead times you choose, sent by email, ntfy, Gotify or a webhook when they
 > come due, plus an optional monthly digest and a calendar feed; every cost
 > rolled up into per-vehicle and fleet reports (by category, per month, per
-> mile or km, any date range) with CSV export; and a dashboard of widgets you
-> can rearrange. Feature toggles, import and backup arrive in Phase 6. See
-> [`ROADMAP.md`](ROADMAP.md) for the plan.
+> mile or km, any date range) with CSV export; a dashboard of widgets you can
+> rearrange; modules you can switch off; CSV import with a preview; one-click
+> backup and restore of everything; an installable phone app that logs
+> fill-ups offline; in English and German. See [`ROADMAP.md`](ROADMAP.md) for
+> the plan and what may come next.
 
 ## Quick start
 
@@ -41,20 +42,35 @@ vendor/bin/phinx migrate -e production
 ```
 
 Full instructions, including Apache/nginx configs, reverse proxies, subpaths
-(`APP_BASE_PATH`), cron, backups and upgrades, are in
+(`APP_BASE_PATH`), cron, installing on a phone, backups and upgrades, are in
 [docs/deployment.md](docs/deployment.md).
+
+## Documentation
+
+| Guide | For |
+|---|---|
+| [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
+| [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
+| [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
+| [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
+| [docs/translations.md](docs/translations.md) | Adding or improving a language |
+| [CHANGELOG.md](CHANGELOG.md) | What changed in each release, with upgrade notes |
 
 ## Configuration
 
 Everything is an environment variable (or a line in `.env`); all are
-documented in [`.env.example`](.env.example). The most important are
+documented in [`.env.example`](.env.example) and
+[docs/configuration.md](docs/configuration.md). The most important are
 `DB_DRIVER`/`DB_HOST`/`DB_NAME`/`DB_USER`/`DB_PASSWORD`, `APP_URL`,
 `APP_BASE_PATH` and `APP_TIMEZONE`. Reminders are sent through whichever
 notification channels you configure (`MAIL_*`, `NTFY_*`, `GOTIFY_*`,
 `WEBHOOK_URL`; see [docs/notification-channels.md](docs/notification-channels.md)).
 
 On first visit you create the owner account; after that, units, currency,
-language and time zone are per-user settings in the app.
+language and time zone are per-user settings in the app. **Settings → Modules**
+switches off what you don't use (fuel, maintenance, documents, reminders,
+reports), and **Settings → Backup and restore** downloads or restores
+everything in one file (`php bin/backup.php` does the same from cron).
 
 ## Development
 
@@ -145,9 +161,11 @@ the app makes no third-party requests. To use a new icon, add its name to
 ### Translations
 
 UI strings live in `translations/messages+intl-icu.<locale>.php` (ICU
-MessageFormat; English is the default and fallback). To add a language, copy
-the English file and translate the values; it is detected automatically.
-Templates use `{{ 'key'|trans }}` and never contain literal UI text.
+MessageFormat; English is the default and fallback, German ships complete). To
+add a language, copy the English file and translate the values; it is detected
+automatically — see [docs/translations.md](docs/translations.md). Templates use
+`{{ 'key'|trans }}` and never contain literal UI text; the test suite checks
+keys, placeholders and templates.
 
 ## Layout
 
@@ -161,6 +179,6 @@ assets/        CSS/JS sources and vendored libraries
 translations/  message catalogues
 tests/         Unit/ and Integration/
 docker/        Apache vhost, PHP ini, entrypoint, nginx example, dev DB init
-bin/           CLI helpers (asset build, dev router, wait-for-db, scheduler, test scripts)
-docs/          deployment guide
+bin/           CLI helpers (asset build, backup, dev router, wait-for-db, scheduler, test scripts)
+docs/          deployment, configuration, import, notification and translation guides
 ```

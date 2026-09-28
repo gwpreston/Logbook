@@ -133,6 +133,32 @@
             </ul>
         </section>
 
+        <section class="card" aria-labelledby="data-heading">
+            <h2 id="data-heading" class="card__title">{{ 'settings.data_heading'|trans }}</h2>
+            <ul class="list">
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.modules') }}">
+                        <span class="list__icon">{{ ui.icon('tune') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'modules.link'|trans }}</span>
+                            <span class="list__meta">{{ 'modules.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                <li>
+                    <a class="list__item" href="{{ url_for('backup.index') }}">
+                        <span class="list__icon">{{ ui.icon('backup') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'backup.link'|trans }}</span>
+                            <span class="list__meta">{{ 'backup.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+            </ul>
+        </section>
+
         <section class="card" aria-labelledby="installation-heading">
             <h2 id="installation-heading" class="card__title">{{ 'settings.installation'|trans }}</h2>
             <ul class="list">

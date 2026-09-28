@@ -57,6 +57,15 @@ case "$variant" in
         expect "$base/vehicles/new" 200 'action="/logbook/vehicles/new"'
         # The fast fill-up path (no vehicle yet: offers to add one).
         expect "$base/fuel/new" 303
+        # Installable app at the subpath.
+        expect "$base/manifest.webmanifest" 200 '"start_url": "/logbook/"'
+        expect "$base/sw.js" 200 '"base":"/logbook"'
+        expect "$base/offline" 200 'href="/logbook/fuel/new"'
+        # Backups: the page, a download, and the command line as www-data.
+        expect "$base/settings/backup" 200 'href="/logbook/settings/backup/download"'
+        expect "$base/settings/backup/download" 200 'manifest.json'
+        $compose exec -T -u www-data app php bin/backup.php create >/dev/null || fail "bin/backup.php create failed"
+        echo "ok  bin/backup.php create"
         ;;
     mysql)
         compose="docker compose -p logbook-smoke -f docker-compose.mysql.yml"

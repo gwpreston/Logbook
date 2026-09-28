@@ -16,6 +16,9 @@ use Slim\App;
  */
 final class Kernel
 {
+    /** The release, as recorded in CHANGELOG.md (and in backups; spec.md §7.13). */
+    public const string VERSION = '0.6.0';
+
     public static function rootDir(): string
     {
         return dirname(__DIR__);

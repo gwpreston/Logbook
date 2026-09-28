@@ -1,0 +1,146 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/import.twig' as imp %}
+{#
+ # CSV import, steps 2 and 3: match columns to fields (a GET form, so the
+ # preview is a plain URL and works without JS), preview every row, then
+ # import (POST). See Action\Import\ImportAction for the variables.
+ #}
+
+{% set active_nav = 'garage' %}
+{% set heading = ('import.title.' ~ module.value)|trans %}
+{% set route_params = {id: vehicle.id, module: module.value, token: token} %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for(module.indexRoute(), {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'import.file_summary'|trans({name: filename, rows: row_count}) }}</p>
+            </div>
+        </header>
+
+        {% if error %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ error|trans({count: invalid_count}) }}</span></div>
+        {% endif %}
+
+        <form class="form" method="get" action="{{ url_for('import.map', route_params) }}" aria-labelledby="map-heading">
+            <section class="card">
+                <h2 id="map-heading" class="card__title">{{ 'import.map_heading'|trans }}</h2>
+                <p class="field__hint">{{ 'import.map_intro'|trans }}</p>
+                <div class="form-row form-row--3">
+                    {% for field in fields %}
+                        {% set current = options.column(field.key) %}
+                        <div class="field">
+                            <label class="field__label" for="f-map-{{ field.key }}">{{ field.labelKey()|trans }}{% if field.required %} <span class="field__optional">({{ 'import.required'|trans }})</span>{% endif %}</label>
+                            <select class="select" id="f-map-{{ field.key }}" name="map_{{ field.key }}">
+                                <option value=""{% if current is null %} selected{% endif %}>{{ 'import.not_in_file'|trans }}</option>
+                                {% for column in columns %}
+                                    <option value="{{ column.index }}"{% if current is same as(column.index) %} selected{% endif %}>{{ column.name }}{% if column.sample != '' %} ({{ 'import.sample'|trans({value: column.sample}) }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="card">
+                <h2 class="card__title">{{ 'import.reading_heading'|trans }}</h2>
+                <div class="form-row form-row--3">
+                    <div class="field">
+                        <label class="field__label" for="f-date-order">{{ 'import.date_order'|trans }}</label>
+                        <select class="select" id="f-date-order" name="date_order">
+                            {% for order in date_orders %}
+                                <option value="{{ order.value }}"{% if order == options.dateOrder %} selected{% endif %}>{{ ('import.date_order_option.' ~ order.value)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if uses_distance %}
+                        <div class="field">
+                            <label class="field__label" for="f-distance-unit">{{ 'import.distance_unit'|trans }}</label>
+                            <select class="select" id="f-distance-unit" name="distance_unit">
+                                {% for unit in distance_units %}
+                                    <option value="{{ unit.value }}"{% if unit == options.distanceUnit %} selected{% endif %}>{{ ('units.name.' ~ unit.value)|trans }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% else %}
+                        <input type="hidden" name="distance_unit" value="{{ options.distanceUnit.value }}">
+                    {% endif %}
+                    {% if module.value == 'fuel' %}
+                        <div class="field">
+                            <label class="field__label" for="f-volume-unit">{{ 'import.volume_unit'|trans }}</label>
+                            <select class="select" id="f-volume-unit" name="volume_unit" aria-describedby="f-volume-unit-hint">
+                                {% for unit in volume_units %}
+                                    <option value="{{ unit.value }}"{% if unit == options.volumeUnit %} selected{% endif %}>{{ ('units.name.' ~ unit.value)|trans }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="field__hint" id="f-volume-unit-hint">{{ 'import.volume_unit_hint'|trans }}</p>
+                        </div>
+                    {% else %}
+                        <input type="hidden" name="volume_unit" value="{{ options.volumeUnit.value }}">
+                    {% endif %}
+                    {% if uses_time %}
+                        <div class="field">
+                            <label class="field__label" for="f-zone">{{ 'import.zone'|trans }}</label>
+                            <select class="select" id="f-zone" name="zone">
+                                {% for region, zones in timezone_options %}
+                                    <optgroup label="{{ region }}">
+                                        {% for zone in zones %}
+                                            <option value="{{ zone }}"{% if zone == options.timezone %} selected{% endif %}>{{ zone|replace({'_': ' '}) }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% else %}
+                        <input type="hidden" name="zone" value="{{ options.timezone }}">
+                    {% endif %}
+                </div>
+                <p class="field__hint">{{ 'import.currency_note'|trans({currency: currency}) }}</p>
+                <div class="btn-row">
+                    <button type="submit" class="btn{{ preview is null ? ' btn--primary' }}">{{ ui.icon('visibility') }}{{ 'import.preview'|trans }}</button>
+                </div>
+            </section>
+        </form>
+
+        {% if preview %}
+            <section class="page__stack" aria-labelledby="preview-heading">
+                <h2 id="preview-heading" class="section-title">{{ 'import.preview_heading'|trans }}</h2>
+                {{ imp.counts(preview, statuses) }}
+
+                {% if listed is not empty %}
+                    {{ imp.rows(listed, field_labels, 'import.preview_heading'|trans) }}
+                    {% if unlisted_count > 0 %}
+                        <p class="muted">{{ 'import.more_rows'|trans({count: unlisted_count}) }}</p>
+                    {% endif %}
+                {% endif %}
+
+                <form class="form card" method="post" action="{{ url_for('import.map', route_params) }}">
+                    {{ ui.csrf(csrf) }}
+                    {% for name, value in query %}
+                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                    {% endfor %}
+                    {% if invalid_count > 0 %}
+                        <label class="toggle">
+                            <input type="checkbox" name="skip_invalid" value="1">
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ 'import.skip_invalid'|trans({count: invalid_count}) }}</span>
+                                <span class="toggle__hint">{{ 'import.skip_invalid_hint'|trans }}</span>
+                            </span>
+                        </label>
+                    {% endif %}
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary btn--lg"{% if importable_count == 0 %} disabled{% endif %}>{{ ui.icon('upload_file') }}{{ 'import.submit'|trans({count: importable_count}) }}</button>
+                        <a class="btn btn--lg btn--ghost" href="{{ url_for(module.indexRoute(), {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                    </div>
+                </form>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

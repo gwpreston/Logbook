@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Service\Feature;
 
 use Logbook\Domain\Feature\Feature;
-use Logbook\Domain\Setting\SettingScope;
 use Logbook\Repository\SettingRepository;
 use Logbook\Support\Config\Env;
 
@@ -13,8 +12,8 @@ use Logbook\Support\Config\Env;
  * Which modules are switched on (spec.md §7.10): the global `features`
  * setting (module → bool) wins, then FEATURES_<MODULE>, then on.
  *
- * Phase 5 consults it for the dashboard and reports; Phase 6 adds the
- * settings screen and gates routes and navigation.
+ * Consulted by the route gate (FeatureGateMiddleware), the navigation
+ * (`feature_enabled()` in templates), the dashboard, reports and reminders.
  */
 final readonly class FeatureToggles
 {
@@ -46,5 +45,22 @@ final readonly class FeatureToggles
         }
 
         return $states;
+    }
+
+    /**
+     * Save every module's state (Settings → Modules). Modules left out are
+     * switched off. Nothing is deleted: switching a module back on restores
+     * it as it was.
+     *
+     * @param list<Feature> $enabled
+     */
+    public function save(array $enabled): void
+    {
+        $states = [];
+        foreach (Feature::cases() as $feature) {
+            $states[$feature->value] = in_array($feature, $enabled, true);
+        }
+
+        $this->settings->save(self::SETTING, $states);
     }
 }

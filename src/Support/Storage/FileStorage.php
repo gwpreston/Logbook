@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Storage;
 
+use FilesystemIterator;
 use InvalidArgumentException;
 use Logbook\Support\Config\AppSettings;
 use Psr\Http\Message\UploadedFileInterface;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
+use SplFileInfo;
 
 /**
  * Uploaded files under UPLOAD_PATH, which lives outside the web root: files
@@ -46,9 +50,60 @@ final readonly class FileStorage
         return $relative;
     }
 
+    /**
+     * The upload directory (UPLOAD_PATH), without a trailing slash.
+     */
+    public function root(): string
+    {
+        return $this->root;
+    }
+
+    /**
+     * Whether $relative has the shape of a stored file's path ("dir/<random>.ext").
+     */
+    public static function isStoredPath(string $relative): bool
+    {
+        return preg_match(self::RELATIVE_PATH, $relative) === 1;
+    }
+
+    /**
+     * Every stored file under the upload directory, as relative paths.
+     * Anything else there (a restore's staging directory, stray files) is
+     * left out.
+     *
+     * @return list<string>
+     */
+    public function all(): array
+    {
+        return is_dir($this->root) ? self::storedFilesIn($this->root) : [];
+    }
+
+    /**
+     * @return list<string> relative to $directory
+     */
+    public static function storedFilesIn(string $directory): array
+    {
+        $files = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+        );
+        foreach ($iterator as $file) {
+            if (!$file instanceof SplFileInfo || !$file->isFile() || $file->isLink()) {
+                continue;
+            }
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($directory) + 1));
+            if (self::isStoredPath($relative)) {
+                $files[] = $relative;
+            }
+        }
+        sort($files);
+
+        return $files;
+    }
+
     public function absolutePath(string $relative): string
     {
-        if (preg_match(self::RELATIVE_PATH, $relative) !== 1) {
+        if (!self::isStoredPath($relative)) {
             throw new InvalidArgumentException(sprintf('Invalid stored file path "%s".', $relative));
         }
 

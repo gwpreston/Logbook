@@ -31,7 +31,8 @@
 
         <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('fuel.edit', {id: vehicle.id, entry: entry.id}) : url_for('fuel.create', {id: vehicle.id}) }}"
-              x-data="{ fuel: '{{ fuel|e('js') }}' }">
+              x-data="{ fuel: '{{ fuel|e('js') }}' }"
+              {%- if not editing %} data-offline-queue data-offline-label="{{ vehicle.name() }}" data-zone="{{ prefs().timezone }}"{% if errors is empty %} data-now-field="filled_at"{% endif %}{% endif %}>
             {{ ui.csrf(csrf) }}
 
             <section class="card">

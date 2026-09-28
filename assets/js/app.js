@@ -279,7 +279,246 @@
         update();
     }
 
+    /*
+     * Installable app and offline fill-ups (spec.md §7.15). The service
+     * worker (<base>/sw.js) keeps the fill-up forms for offline use; a
+     * fill-up submitted without a connection is queued here, in IndexedDB,
+     * and sent once the device is online again.
+     */
+    var outbox = (function () {
+        function open() {
+            return new Promise(function (resolve, reject) {
+                var request = window.indexedDB.open('logbook', 1);
+                request.onupgradeneeded = function () {
+                    request.result.createObjectStore('outbox', { keyPath: 'id', autoIncrement: true });
+                };
+                request.onsuccess = function () { resolve(request.result); };
+                request.onerror = function () { reject(request.error); };
+            });
+        }
+
+        function run(mode, work) {
+            return open().then(function (db) {
+                return new Promise(function (resolve, reject) {
+                    var transaction = db.transaction('outbox', mode);
+                    var request = work(transaction.objectStore('outbox'));
+                    transaction.oncomplete = function () { resolve(request.result); };
+                    transaction.onerror = function () { reject(transaction.error); };
+                });
+            });
+        }
+
+        return {
+            available: 'indexedDB' in window,
+            add: function (item) { return run('readwrite', function (store) { return store.add(item); }); },
+            put: function (item) { return run('readwrite', function (store) { return store.put(item); }); },
+            get: function (id) { return run('readonly', function (store) { return store.get(id); }); },
+            remove: function (id) { return run('readwrite', function (store) { return store.delete(id); }); },
+            all: function () { return run('readonly', function (store) { return store.getAll(); }); },
+        };
+    })();
+
+    var outboxBox = null;
+    var outboxNote = '';
+
+    function text(name) {
+        return outboxBox ? outboxBox.getAttribute('data-text-' + name) || '' : '';
+    }
+
+    function renderOutbox() {
+        if (!outboxBox || !outbox.available) {
+            return;
+        }
+        outbox.all().then(function (items) {
+            var list = outboxBox.querySelector('[data-outbox-list]');
+            var status = outboxBox.querySelector('[data-outbox-status]');
+            list.textContent = '';
+            outboxBox.hidden = items.length === 0 && outboxNote === '';
+            status.textContent = outboxNote || (items.length ? text('waiting') : '');
+            var when = new Intl.DateTimeFormat(document.documentElement.lang || undefined, { dateStyle: 'medium', timeStyle: 'short' });
+            items.forEach(function (item) {
+                var li = document.createElement('li');
+                li.className = 'outbox__item';
+                var label = document.createElement('span');
+                label.textContent = item.label + ' · ' + when.format(new Date(item.savedAt))
+                    + ' — ' + (item.rejected ? text('rejected') : text('pending'));
+                li.appendChild(label);
+                if (item.rejected) {
+                    var review = document.createElement('a');
+                    review.className = 'btn btn--ghost';
+                    review.href = item.url + '#offline-' + item.id;
+                    review.textContent = text('review');
+                    li.appendChild(review);
+                }
+                var discard = document.createElement('button');
+                discard.type = 'button';
+                discard.className = 'btn btn--ghost';
+                discard.textContent = text('discard');
+                discard.addEventListener('click', function () {
+                    outbox.remove(item.id).then(renderOutbox);
+                });
+                li.appendChild(discard);
+                list.appendChild(li);
+            });
+        }).catch(function () {});
+    }
+
+    // Send one queued fill-up with a fresh CSRF token from its form.
+    function sendQueued(item) {
+        var path = new URL(item.url, window.location.href).pathname;
+        return fetch(item.url, { credentials: 'same-origin' })
+            .then(function (response) {
+                if (!response.ok || new URL(response.url).pathname !== path) {
+                    throw new Error('signed-out');
+                }
+                return response.text();
+            })
+            .then(function (html) {
+                var form = new DOMParser().parseFromString(html, 'text/html');
+                var body = new FormData();
+                form.querySelectorAll('input[name^="csrf_"]').forEach(function (input) {
+                    body.append(input.name, input.value);
+                });
+                item.fields.forEach(function (field) { body.append(field[0], field[1]); });
+                return fetch(item.url, { method: 'POST', body: body, credentials: 'same-origin' });
+            })
+            .then(function (response) {
+                if (response.ok && response.redirected) {
+                    return outbox.remove(item.id).then(function () { return true; });
+                }
+                if (response.status === 422) {
+                    item.rejected = true;
+                    return outbox.put(item).then(function () { return false; });
+                }
+                return false;
+            });
+    }
+
+    var flushing = false;
+    function flushOutbox() {
+        if (flushing || navigator.onLine === false || !outbox.available) {
+            return;
+        }
+        flushing = true;
+        var sent = 0;
+        outbox.all()
+            .then(function (items) {
+                return items.filter(function (item) { return !item.rejected; }).reduce(function (chain, item) {
+                    return chain.then(function () {
+                        return sendQueued(item).then(function (ok) { sent += ok ? 1 : 0; });
+                    });
+                }, Promise.resolve());
+            })
+            .then(function () { outboxNote = sent ? text('sent') : ''; })
+            .catch(function (error) { outboxNote = error && error.message === 'signed-out' ? text('signed-out') : ''; })
+            .then(function () {
+                flushing = false;
+                renderOutbox();
+            });
+    }
+
+    function enhanceOfflineForm(form) {
+        // A form kept by the service worker shows the time it was stored:
+        // move an untouched "now" to the actual now (in the owner's zone).
+        var field = form.getAttribute('data-now-field');
+        var zone = form.getAttribute('data-zone');
+        var input = field ? form.querySelector('#f-' + field) : null;
+        if (input && zone && input.value) {
+            try {
+                var parts = {};
+                new Intl.DateTimeFormat('en-CA', {
+                    timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+                }).formatToParts(new Date()).forEach(function (part) { parts[part.type] = part.value; });
+                var now = parts.year + '-' + parts.month + '-' + parts.day + 'T' + parts.hour + ':' + parts.minute;
+                if (Math.abs(Date.parse(now) - Date.parse(input.value)) > 10 * 60 * 1000) {
+                    input.value = now;
+                }
+            } catch (e) {
+                // Unknown zone: keep the server's value.
+            }
+        }
+
+        // "Review" on a rejected queued fill-up: put it back into the form.
+        var match = /^#offline-(\d+)$/.exec(window.location.hash);
+        if (match && outbox.available) {
+            outbox.get(parseInt(match[1], 10)).then(function (item) {
+                if (!item) {
+                    return;
+                }
+                item.fields.forEach(function (pair) {
+                    var element = form.elements.namedItem(pair[0]);
+                    if (element && element.type === 'checkbox') {
+                        element.checked = pair[1] !== '';
+                    } else if (element) {
+                        element.value = pair[1];
+                    }
+                });
+                return outbox.remove(item.id).then(renderOutbox);
+            }).catch(function () {});
+        }
+
+        form.addEventListener('submit', function (event) {
+            if (navigator.onLine !== false || !outbox.available) {
+                return;
+            }
+            event.preventDefault();
+            var fields = [];
+            new FormData(form).forEach(function (value, name) {
+                if (typeof value === 'string' && name.indexOf('csrf_') !== 0) {
+                    fields.push([name, value]);
+                }
+            });
+            outbox.add({
+                url: form.action,
+                label: form.getAttribute('data-offline-label') || '',
+                fields: fields,
+                savedAt: Date.now(),
+                rejected: false,
+            }).then(function () {
+                outboxNote = text('queued');
+                form.reset();
+                renderOutbox();
+                if (outboxBox) {
+                    outboxBox.scrollIntoView({ block: 'nearest' });
+                }
+            });
+        });
+    }
+
+    // The vehicle picker: keep each vehicle's fill-up form for offline use.
+    function cacheOfflineForms(links) {
+        if (!links.length || !('caches' in window) || navigator.onLine === false) {
+            return;
+        }
+        caches.open('logbook-pages').then(function (cache) {
+            links.forEach(function (link) {
+                fetch(link.href, { credentials: 'same-origin' }).then(function (response) {
+                    if (response.ok && !response.redirected) {
+                        cache.put(new URL(link.href).pathname, response);
+                    }
+                }).catch(function () {});
+            });
+        });
+    }
+
+    function registerServiceWorker() {
+        if (!('serviceWorker' in navigator) || !window.isSecureContext) {
+            return;
+        }
+        var base = document.documentElement.getAttribute('data-base') || '';
+        navigator.serviceWorker.register(base + '/sw.js', { scope: base + '/' }).catch(function () {});
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        registerServiceWorker();
+        outboxBox = document.querySelector('[data-offline-outbox]');
+        document.querySelectorAll('form[data-offline-queue]').forEach(enhanceOfflineForm);
+        cacheOfflineForms(Array.prototype.slice.call(document.querySelectorAll('a[data-offline-cache]')));
+        renderOutbox();
+        flushOutbox();
+        window.addEventListener('online', flushOutbox);
+
         // Settings: "Quick setup" buttons fill in the three unit preferences.
         document.querySelectorAll('[data-unit-presets]').forEach(function (group) {
             group.hidden = false;

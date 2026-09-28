@@ -61,11 +61,11 @@
     --accent: #1667d9;
     --accent-soft: rgba(22, 103, 217, 0.1);
     --on-accent: #ffffff;
-    --green: #0a8560;
+    --green: #087552;     /* 4.5:1 on --green-soft (WCAG AA) */
     --green-soft: rgba(10, 133, 96, 0.11);
-    --amber: #a96400;
+    --amber: #945700;     /* 4.5:1 on --amber-soft (WCAG AA) */
     --amber-soft: rgba(232, 150, 20, 0.16);
-    --red: #cf3434;
+    --red: #c02c2c;       /* 4.5:1 on --red-soft (WCAG AA) */
     --red-soft: rgba(207, 52, 52, 0.1);
     --plate: #f6cf3a;
     --on-plate: #111111;
@@ -2384,4 +2384,70 @@ a.list__title:hover {
 
 .fleet .vehicle-photo--thumb {
     width: 4.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Phase 6: import, backup, offline outbox.
+ * ------------------------------------------------------------------------- */
+
+/* A list without bullets or indentation (field lists, row problems). */
+.plain-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.plain-list > li + li {
+    margin-top: var(--space-1);
+}
+
+/* Commands to copy (Settings → Backup). */
+.code-block {
+    margin: 0;
+    padding: var(--space-3);
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    white-space: pre;
+}
+
+/* Fill-ups saved offline, waiting to be sent (js/app.js). */
+.outbox {
+    margin-bottom: var(--space-4);
+}
+
+.outbox .card__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.outbox__list {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.outbox__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.outbox__item > span {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+/* A toggle title with an icon (Settings → Modules): icon and text on one line. */
+.toggle__title:has(> .icon) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
 }

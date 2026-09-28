@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Domain\Feature\Feature;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Service\Reminder\ReminderSettingsForm;
 use Logbook\Service\Reminder\ReminderSettingsStore;
@@ -15,7 +17,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET|POST /settings/reminders — lead times, notification channels, the
- * email address and the monthly digest.
+ * email address and the monthly digest. With the reminders module off only
+ * the lead times are shown and saved (they drive the vehicle tabs' badges);
+ * the notification choices are kept as they were.
  */
 final readonly class ReminderSettingsAction
 {
@@ -24,6 +28,7 @@ final readonly class ReminderSettingsAction
         private ReminderSettingsStore $settings,
         private ChannelRegistry $channels,
         private Redirector $redirect,
+        private FeatureToggles $features,
     ) {
     }
 
@@ -51,7 +56,9 @@ final readonly class ReminderSettingsAction
 
         [$reminders, $notifications] = $parsed;
         $this->settings->saveReminderPreferences($user->id, $reminders);
-        $this->settings->saveNotificationPreferences($user->id, $notifications);
+        if ($this->features->isEnabled(Feature::Reminders)) {
+            $this->settings->saveNotificationPreferences($user->id, $notifications);
+        }
         RequestContext::session($request)->flash('success', 'reminders.settings.saved');
 
         return $this->redirect->toRoute('settings.reminders');
