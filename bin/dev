@@ -98,8 +98,10 @@ up() {
             $compose stop "$service"
         fi
     done
-    # Recreates the app container when the engine changed.
-    $compose up -d app
+    
+    # Recreates the app container when the engine changed; --build picks up
+    # Dockerfile changes (e.g. new PHP extensions) and is cached otherwise.
+    $compose up -d --build app
     wait_for_app
 
     echo "Logbook is running at $(url) (database: $DEV_ENGINE)"
