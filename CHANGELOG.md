@@ -6,7 +6,9 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 6: feature toggles, import, backup and polish (to be released as 0.6.0).
+## [0.6.0] — 2026-09-28
+
+Phase 6: feature toggles, import, backup and polish.
 
 ### Added — Phase 6: feature toggles, import, backup and polish
 - **Modules** (Settings → Modules): switch off fuel, maintenance, documents,
@@ -277,7 +279,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/gwpreston16/Logbook/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/gwpreston16/Logbook/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/gwpreston16/Logbook/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/gwpreston16/Logbook/compare/v0.2.0...v0.3.0
