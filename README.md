@@ -93,33 +93,41 @@ composer rollback -- -e development
 composer build-assets        # assets/ → public/assets (+ cache-busting manifest)
 ```
 
-### Local development with Docker (`bin/dev`)
+### Local development with Docker (`bin/dev-setup.sh`)
 
-No local PHP needed: `bin/dev` runs the dev stack (`docker-compose.dev.yml`)
+No local PHP needed: `bin/dev-setup.sh` runs the dev stack (`docker-compose.dev.yml`)
 with the source bind-mounted, so PHP and Twig changes show up on reload. It
 starts the app on the database engine of your choice and can load sample data.
-Requires Docker with Compose v2; on Windows run it from **Git Bash** (or as
-`sh bin/dev …`).
+Requires Docker with Compose v2 and `curl`. It checks both before doing
+anything (on macOS it starts Docker Desktop if it isn't running), and it won't
+start if something else already holds the app port. On Windows run it from
+**Git Bash** (or as `bash bin/dev-setup.sh …`).
 
 ```bash
-bin/dev up                  # start on PostgreSQL → http://localhost:8090
-bin/dev seed                # add sample data, then sign in as demo / logbook-demo
-bin/dev down                # stop (your data is kept)
+./bin/dev-setup.sh                     # set up and start on PostgreSQL → http://localhost:8090
+./bin/dev-setup.sh --with-sample-data  # ...and add sample data (sign in as demo / logbook-demo)
+./bin/dev-setup.sh --mysql             # use MySQL instead (or --mariadb, --sqlite)
+./bin/dev-setup.sh --port 8081         # serve on another port
+./bin/dev-setup.sh --reset             # start over from an empty database
+./bin/dev-setup.sh --stop              # stop the stack, keeping all data
+./bin/dev-setup.sh --stop --reset      # stop it and delete the data too
 ```
 
-| Command | What it does |
+| Option | What it does |
 |---|---|
-| `bin/dev up [engine]` | Start the stack, wait until the app is ready and print its URL. Without an engine it uses the last one (PostgreSQL the first time). |
-| `bin/dev db <engine>` | Switch the database: `pgsql`, `mysql`, `mariadb` or `sqlite`. Each engine keeps its own data and photos, so you can switch back and forth. |
-| `bin/dev seed` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and five vehicles — four active (petrol, hybrid, electric, a motorbike) and one sold and archived — with a year of fill-ups (including partial fills, a missed fill-up and EV charges) and monthly odometer readings. Does nothing if an account already exists. |
-| `bin/dev reset [--seed] [-y]` | Empty the current engine's database (full rollback + migrate) and delete its uploads, optionally re-seeding. Asks first unless `-y`. |
-| `bin/dev status` | Show the engine, URL and containers. |
-| `bin/dev logs` | Follow the app log (errors, failed sign-ins). |
-| `bin/dev down [--volumes]` | Stop everything. `--volumes` also deletes all dev databases, uploads and the `vendor/` volume. |
+| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and five vehicles — four active (petrol, hybrid, electric, a motorbike) and one sold and archived — with a year of fill-ups (including partial fills, a missed fill-up and EV charges) and monthly odometer readings. Skipped if an account already exists. |
+| `--postgres`, `--mysql`, `--mariadb`, `--sqlite` | Which database engine to run. PostgreSQL is the default. Each engine keeps its own data and photos, so you can switch back and forth. |
+| `--reset` | Empty the chosen engine's database (full rollback + migrate) and delete its uploads. With `--stop`, delete every dev database, the uploads and the `vendor/` volume instead. Asks first unless `--yes`. |
+| `--stop`, `--down` | Stop the containers instead of starting them. |
+| `--status` | Show the containers and whether the app responds. |
+| `--logs` | Follow the app log (errors, failed sign-ins). |
+| `--port <number>` | Serve the app on this port (default 8090). Also accepted as `--port=<number>` or `APP_PORT=<number>`. 8080 is refused: it belongs to the production stack. |
+| `-y`, `--yes` | Do not prompt before anything destructive. |
 
-Migrations are applied automatically whenever the app starts. The chosen
-engine and port are remembered in `var/dev.env` (git-ignored). If port 8090 is
-taken, pick another once: `APP_PORT=8081 bin/dev up`.
+Migrations are applied automatically whenever the app starts. The dev stack
+runs on port 8090 so it never collides with the production stack on 8080 (the
+script refuses 8080). If 8090 is taken, pick another for the run:
+`./bin/dev-setup.sh --port 8081`.
 
 The sample data comes from a Phinx seed
 ([`db/seeds/DemoDataSeeder.php`](db/seeds/DemoDataSeeder.php)); it refuses to

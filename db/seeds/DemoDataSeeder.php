@@ -9,12 +9,12 @@ use Phinx\Seed\AbstractSeed;
  * Sample data for local development: a demo owner and a small garage (the
  * vehicles from the design mock-ups, one of them sold and archived).
  *
- *   bin/dev seed
+ *   ./bin/dev-setup.sh --with-sample-data
  *   vendor/bin/phinx seed:run -e development -s DemoDataSeeder
  *
  * Sign in as `demo` / `logbook-demo`. Refuses to run in production, and on a
  * database that already has an account (Logbook has a single owner): reset
- * first with `bin/dev reset`.
+ * first with `./bin/dev-setup.sh --reset`.
  */
 final class DemoDataSeeder extends AbstractSeed
 {
@@ -30,7 +30,7 @@ final class DemoDataSeeder extends AbstractSeed
         $existing = $this->fetchRow('SELECT COUNT(*) AS n FROM users');
         if (is_array($existing) && self::intValue($existing['n'] ?? $existing[0] ?? 0) > 0) {
             $this->getOutput()->writeln(
-                '<comment>An account already exists; sample data not added. Reset the database first (bin/dev reset).</comment>',
+                '<comment>An account already exists; sample data not added. Reset the database first (./bin/dev-setup.sh --reset --with-sample-data).</comment>',
             );
 
             return;
