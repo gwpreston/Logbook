@@ -115,10 +115,17 @@ final class VehicleDetailsTest extends AppTestCase
         $browser = $this->signedIn($app);
 
         $browser->get('/vehicles/new');
-        $response = $browser->post('/vehicles/new', ['current_odometer' => '100'] + self::FOCUS);
+        $vehicles = $this->service($app, VehicleRepository::class);
+
+        // Control: without a starting reading the vehicle is saved as usual.
+        $saved = $browser->post('/vehicles/new', ['current_odometer' => ''] + self::FOCUS);
+        self::assertSame(303, $saved->getStatusCode());
+        self::assertCount(1, $vehicles->listForUser($this->owner($app)->id, true));
+
+        $response = $browser->post('/vehicles/new', ['current_odometer' => '100', 'variant' => 'Doomed'] + self::FOCUS);
 
         self::assertSame(500, $response->getStatusCode());
-        self::assertSame([], $this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, true));
+        self::assertCount(1, $vehicles->listForUser($this->owner($app)->id, true), 'the inserted vehicle was rolled back');
     }
 
     public function testEditingShowsTheCurrentReadingAndNeverWritesOne(): void

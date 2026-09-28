@@ -107,9 +107,9 @@
                 {% if editing %}
                     {# The current odometer is the latest reading in the
                        mileage log; it is changed there, never here. #}
-                    <div class="field">
-                        <span class="field__label" id="current-reading-label">{{ 'vehicle.field.current_odometer'|trans }}</span>
-                        <p class="current-reading" aria-labelledby="current-reading-label">
+                    <dl class="field">
+                        <dt class="field__label">{{ 'vehicle.field.current_odometer'|trans }}</dt>
+                        <dd class="current-reading">
                             {% if current_reading %}
                                 <span class="tabular">{{ current_reading.readingKm|distance }}</span>
                                 <span class="muted">{{ 'odometer.stat.as_of'|trans({date: current_reading.recordedAt|instant_date}) }}</span>
@@ -117,9 +117,9 @@
                                 <span class="muted">{{ 'vehicle.no_readings'|trans }}</span>
                             {% endif %}
                             <a href="{{ url_for('odometer.create', {id: vehicle.id}) }}" data-modal>{{ 'odometer.add'|trans }}</a>
-                        </p>
-                        <p class="field__hint">{{ 'vehicle.hint.current_odometer_edit'|trans }}</p>
-                    </div>
+                        </dd>
+                        <dd class="field__hint">{{ 'vehicle.hint.current_odometer_edit'|trans }}</dd>
+                    </dl>
                 {% else %}
                     {{ ui.input('current_odometer', 'vehicle.field.current_odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: ('units.symbol.' ~ prefs().distanceUnit.value)|trans, hint: 'vehicle.hint.current_odometer'|trans}) }}
                 {% endif %}

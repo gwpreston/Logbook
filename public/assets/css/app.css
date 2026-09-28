@@ -1504,6 +1504,10 @@ a.list__item:hover {
 }
 
 /* Edit vehicle: the current odometer, read-only, with "Add reading". */
+.field > dd {
+    margin: 0;
+}
+
 .current-reading {
     display: flex;
     flex-wrap: wrap;
@@ -2853,9 +2857,15 @@ a.list__title:hover {
 
 .pinned__line {
     display: flex;
+    column-gap: 0.35em;
     min-width: 0;
     margin: 0;
     white-space: nowrap;
+}
+
+/* The odometer is never squeezed; the descriptive line gives way. */
+.pinned__line > :not(.truncate) {
+    flex-shrink: 0;
 }
 
 .pinned__name {
