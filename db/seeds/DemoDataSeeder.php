@@ -30,7 +30,8 @@ final class DemoDataSeeder extends AbstractSeed
         $existing = $this->fetchRow('SELECT COUNT(*) AS n FROM users');
         if (is_array($existing) && self::intValue($existing['n'] ?? $existing[0] ?? 0) > 0) {
             $this->getOutput()->writeln(
-                '<comment>An account already exists; sample data not added. Reset the database first (./bin/dev-setup.sh --reset --with-sample-data).</comment>',
+                '<comment>An account already exists; sample data not added. '
+                . 'Reset the database first (./bin/dev-setup.sh --reset --with-sample-data).</comment>',
             );
 
             return;
