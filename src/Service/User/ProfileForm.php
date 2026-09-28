@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\User;
 
 use Logbook\Domain\User\User;
+use Logbook\Support\Display\Accent;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Display\Theme;
 use Logbook\Support\I18n\AvailableLocales;
@@ -32,6 +33,7 @@ final class ProfileForm
         return [
             'display_name' => $user->displayName,
             'theme' => $preferences->theme->value,
+            'accent' => $preferences->accent->value,
             'distance_unit' => $preferences->distanceUnit->value,
             'volume_unit' => $preferences->volumeUnit->value,
             'consumption_unit' => $preferences->consumptionUnit->value,
@@ -50,6 +52,8 @@ final class ProfileForm
 
         $displayName = $validator->string('display_name', true, 100);
         $theme = $validator->enum('theme', Theme::class, true);
+        // Optional: a form without the chips (an older page) keeps the default.
+        $accent = $validator->enum('accent', Accent::class, false) ?? Accent::DEFAULT;
         $distance = $validator->enum('distance_unit', DistanceUnit::class, true);
         $volume = $validator->enum('volume_unit', VolumeUnit::class, true);
         $consumption = $validator->enum('consumption_unit', ConsumptionUnit::class, true);
@@ -77,6 +81,7 @@ final class ProfileForm
             consumptionUnit: $consumption,
             currency: $preferences['currency'],
             theme: $theme,
+            accent: $accent,
         ));
     }
 }

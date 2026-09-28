@@ -129,6 +129,25 @@
     color-scheme: light;
 }
 
+/* Accent colours (spec.md §8): `data-accent` on <html>, rendered by the
+   server from the owner's setting. Only the accent tokens change; the
+   status colours and the plate never do. Light values here (they must come
+   before the dark theme blocks, which override them); dark values after. */
+:root[data-accent="teal"] {
+    --accent: #0a7379;    /* 4.5:1 on --bg (the design's #0b7f86 is lighter) */
+    --accent-soft: rgba(11, 127, 134, 0.11);
+}
+
+:root[data-accent="indigo"] {
+    --accent: #4b4fd6;
+    --accent-soft: rgba(75, 79, 214, 0.1);
+}
+
+:root[data-accent="purple"] {
+    --accent: #7c3fc4;
+    --accent-soft: rgba(124, 63, 196, 0.1);
+}
+
 /* Dark theme: follows the OS unless the reader picked a theme (data-theme,
    set by js/theme.js). The two blocks below must stay identical. */
 @media (prefers-color-scheme: dark) {
@@ -189,7 +208,39 @@
     color-scheme: dark;
 }
 
-/* ------------------------------------------------------------------- Base */
+/* Dark accents: the same two selectors as the dark theme, each with the
+   accent added. */
+@media (prefers-color-scheme: dark) {
+    :root[data-accent="teal"]:not([data-theme="light"]) {
+        --accent: #3cc5cc;
+        --accent-soft: rgba(60, 197, 204, 0.15);
+    }
+
+    :root[data-accent="indigo"]:not([data-theme="light"]) {
+        --accent: #9296ff;
+        --accent-soft: rgba(146, 150, 255, 0.16);
+    }
+
+    :root[data-accent="purple"]:not([data-theme="light"]) {
+        --accent: #b794ff;
+        --accent-soft: rgba(183, 148, 255, 0.16);
+    }
+}
+
+:root[data-accent="teal"][data-theme="dark"] {
+    --accent: #3cc5cc;
+    --accent-soft: rgba(60, 197, 204, 0.15);
+}
+
+:root[data-accent="indigo"][data-theme="dark"] {
+    --accent: #9296ff;
+    --accent-soft: rgba(146, 150, 255, 0.16);
+}
+
+:root[data-accent="purple"][data-theme="dark"] {
+    --accent: #b794ff;
+    --accent-soft: rgba(183, 148, 255, 0.16);
+}
 
 *,
 *::before,
@@ -2450,4 +2501,446 @@ a.list__title:hover {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
+}
+
+/* ------------------------------------------------ Phase 7: design alignment */
+
+/* Status dot (sidebar vehicles; spec.md §8). Always paired with text. */
+.status-dot {
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--green);
+}
+
+.status-dot--soon {
+    background: var(--amber);
+}
+
+.status-dot--overdue {
+    background: var(--red);
+}
+
+.nav-link--vehicle[aria-current="true"] {
+    background: var(--surface-2);
+}
+
+.sidebar__version {
+    margin: var(--space-3) 0 0;
+    padding: 0 var(--space-3);
+    color: var(--muted);
+    font-size: var(--fs-xs);
+}
+
+/* "N due" badge: garage cards (on the photo) and dashboard tiles (text only). */
+.due-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 1.625rem;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--amber);
+    font-size: var(--fs-xs);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.due-badge--overdue {
+    color: var(--red);
+}
+
+.due-badge--text {
+    height: auto;
+    padding: 0;
+    background: none;
+}
+
+.vehicle-card__due {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    box-shadow: var(--shadow);
+}
+
+.vehicle-card__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    margin: var(--space-1) 0 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.vehicle-card__stats > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vehicle-card__stats dt {
+    display: flex;
+}
+
+.vehicle-card__stats .icon {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.vehicle-card__stats dd {
+    margin: 0;
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* Dashboard "Your vehicles" tiles. */
+.vehicle-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 13.5rem), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.vehicle-tile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: inherit;
+}
+
+.vehicle-tile:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+}
+
+.vehicle-tile__media {
+    position: relative;
+    display: block;
+}
+
+.vehicle-tile__media .vehicle-photo {
+    aspect-ratio: 3 / 1;
+}
+
+.vehicle-tile__plate {
+    position: absolute;
+    bottom: var(--space-2);
+    left: var(--space-3);
+}
+
+.vehicle-tile__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-3) 0.875rem;
+}
+
+.vehicle-tile__name {
+    font-weight: 700;
+}
+
+.vehicle-tile__meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+/* "Log something" chooser. */
+.log-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.log-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.625rem;
+    height: 100%;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 700;
+}
+
+.log-choice:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+}
+
+.log-choice__icon {
+    display: grid;
+    place-items: center;
+    width: 2.375rem;
+    height: 2.375rem;
+    border-radius: 11px;
+    background: var(--surface-2);
+    color: var(--tone, var(--accent));
+}
+
+/* Icon tiles in lists may take a tone (recent activity). */
+.list__icon {
+    color: var(--tone, var(--muted));
+}
+
+/* Accent colour chips (Settings, Appearance). */
+.accent-swatch {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 50%;
+    background: var(--swatch);
+    box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Dashboard vehicle filter. */
+.vehicle-filter__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chip[aria-current="page"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+.vehicle-filter__chip:hover {
+    text-decoration: none;
+}
+
+.vehicle-filter__chip:not([aria-current]):hover {
+    border-color: var(--accent);
+}
+
+/* The selected vehicle, pinned under the filter. */
+.pinned {
+    display: grid;
+    overflow: hidden;
+    padding: 0;
+}
+
+.pinned__media .vehicle-photo {
+    height: 100%;
+    min-height: 10rem;
+}
+
+.pinned__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-5);
+}
+
+.pinned__name {
+    margin: 0;
+    font-size: var(--fs-2xl);
+}
+
+.pinned__tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.pinned__tile {
+    min-width: 0;
+    padding: var(--space-3) 0.875rem;
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+}
+
+.pinned__tile dt {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+}
+
+.pinned__tile dd {
+    margin: 0;
+}
+
+.pinned__value {
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    font-weight: 600;
+}
+
+.pinned__value--soon {
+    color: var(--amber);
+}
+
+.pinned__value--overdue {
+    color: var(--red);
+}
+
+.pinned__sub {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pinned__open {
+    color: var(--accent);
+}
+
+@media (min-width: 60rem) {
+    .pinned {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    }
+
+    .pinned__tiles {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+/* Mileage widget: three figures side by side. */
+.figures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+}
+
+.figures dt {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+}
+
+.figures dd {
+    margin: 2px 0 0;
+}
+
+.figures__value {
+    font-family: var(--font-display);
+    font-size: 1.3125rem;
+    font-weight: 600;
+}
+
+/* Two columns, 50/50 on wide screens and stacked on narrow ones (spec.md §8). */
+.split {
+    display: grid;
+    gap: var(--space-4);
+    align-items: start;
+}
+
+@media (min-width: 60rem) {
+    .split {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.breakdown__icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-right: 6px;
+    color: var(--muted);
+    vertical-align: -0.2em;
+}
+
+/* Vehicle tab toolbar: CSV and add buttons right-aligned on every tab. */
+.list-toolbar__actions {
+    margin-left: auto;
+}
+
+/* Desktop modal forms (spec.md §5): a native dialog. */
+.modal {
+    width: min(100% - 2rem, 38rem);
+    max-height: min(92vh, 60rem);
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--radius-sheet);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow);
+}
+
+.modal[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal::backdrop {
+    background: var(--overlay);
+}
+
+.modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal__title {
+    margin: 0;
+    font-size: var(--fs-xl);
+}
+
+.modal__close {
+    background: var(--surface-2);
+}
+
+.modal__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    overflow-y: auto;
+}
+
+.modal[aria-busy="true"] .modal__body {
+    opacity: 0.6;
+}
+
+/* Forms in the modal: one surface, no nested cards. */
+.modal .card {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.modal .card__title {
+    font-size: var(--fs-base);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .modal[open] {
+        animation: modal-in 0.18s ease-out;
+    }
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.5rem);
+    }
 }

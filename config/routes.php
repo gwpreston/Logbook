@@ -32,6 +32,8 @@ use Logbook\Action\HealthAction;
 use Logbook\Action\HomeAction;
 use Logbook\Action\Import\ImportAction;
 use Logbook\Action\Import\ImportUploadAction;
+use Logbook\Action\Log\LogEntryAction;
+use Logbook\Action\Log\LogPickVehicleAction;
 use Logbook\Action\Maintenance\CreateMaintenanceEntryAction;
 use Logbook\Action\Maintenance\CreateScheduleAction;
 use Logbook\Action\Maintenance\DeleteMaintenanceEntryAction;
@@ -121,6 +123,11 @@ return static function (App $app): void {
         $group->get('/', HomeAction::class)->setName('home');
         $group->post('/logout', LogoutAction::class)->setName('logout');
         $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
+
+        // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
+        $group->get('/log/new', LogEntryAction::class)->setName('log.chooser');
+        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule}', LogPickVehicleAction::class)
+            ->setName('log.pick');
 
         $group->get('/garage', GarageAction::class)->setName('garage');
         $group->map(['GET', 'POST'], '/vehicles/new', CreateVehicleAction::class)->setName('vehicles.create');

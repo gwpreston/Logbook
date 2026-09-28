@@ -64,8 +64,15 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 5, 4 and 3 tables, then the column Phase 3
-        // added to odometer_readings, then Phase 2 and Phase 1 tables.
+        // Newest first: the Phase 7 accent column, the Phase 5, 4 and 3
+        // tables, then the column Phase 3 added to odometer_readings, then
+        // Phase 2 and Phase 1 tables.
+        self::assertTrue($this->hasColumn('users', 'accent'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('users', 'accent'), 'rollback must drop the accent column');
+        self::assertTrue($this->hasColumn('users', 'theme'), 'and keep the rest of the users table');
+        self::assertTrue($schema->tablesExist(['users', 'sessions', 'expense_entries']));
+
         $expected = [
             ['expense_entries', ['reminders', 'vehicles']],
             ['reminders', ['attachments', 'vehicles', 'settings']],

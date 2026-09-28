@@ -8,6 +8,7 @@
     spend: {route: 'reports.index', label: 'dashboard.link.reports'},
 } %}
 {% set widgets = customise ? dashboard.available : dashboard.visible() %}
+{% set selected = dashboard.selected %}
 
 {% block content %}
     <div class="page__stack">
@@ -26,6 +27,26 @@
             {% endif %}
         </header>
 
+        {# Vehicle filter (spec.md §7.8): plain links, so it works without JS and can be bookmarked. #}
+        {% if dashboard.hasFilter() and not customise %}
+            <nav class="vehicle-filter" aria-label="{{ 'dashboard.filter.label'|trans }}">
+                <ul class="vehicle-filter__list">
+                    <li>
+                        <a class="chip vehicle-filter__chip" href="{{ url_for('home') }}"{% if not selected %} aria-current="page"{% endif %}>{{ ui.icon('apps') }}<span>{{ 'dashboard.filter.all'|trans }}</span></a>
+                    </li>
+                    {% for vehicle in dashboard.vehicles %}
+                        <li>
+                            <a class="chip vehicle-filter__chip" href="{{ url_for('home', {}, {vehicle: vehicle.id}) }}"{% if selected and selected.id == vehicle.id %} aria-current="page"{% endif %}>{{ ui.icon(vehicle.data.type.icon()) }}<span>{{ vehicle.name() }}</span></a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
+
+        {% if dashboard.pinned %}
+            {% include 'dashboard/_pinned.twig' with {pinned: dashboard.pinned} %}
+        {% endif %}
+
         {% if not dashboard.hasVehicles() %}
             <section class="card" aria-labelledby="garage-heading">
                 <div class="card__header">
@@ -38,7 +59,7 @@
                     {{ ui.icon('garage') }}
                     <p class="empty__title">{{ 'garage.empty_title'|trans }}</p>
                     <p>{{ 'garage.empty_body'|trans }}</p>
-                    <a class="btn btn--primary" href="{{ url_for('vehicles.create') }}">{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
+                    <a class="btn btn--primary" href="{{ url_for('vehicles.create') }}" data-modal>{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
                 </div>
             </section>
         {% else %}

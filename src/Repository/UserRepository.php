@@ -10,6 +10,7 @@ use Doctrine\DBAL\ParameterType;
 use Logbook\Domain\User\User;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
+use Logbook\Support\Display\Accent;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Display\Theme;
 use Logbook\Support\Units\ConsumptionUnit;
@@ -24,7 +25,7 @@ final readonly class UserRepository
     private const string TABLE = 'users';
     private const array COLUMNS = [
         'id', 'username', 'password_hash', 'display_name', 'locale', 'timezone', 'distance_unit',
-        'volume_unit', 'consumption_unit', 'currency', 'theme', 'created_at', 'updated_at',
+        'volume_unit', 'consumption_unit', 'currency', 'theme', 'accent', 'created_at', 'updated_at',
     ];
 
     public function __construct(private Connection $connection)
@@ -143,6 +144,7 @@ final readonly class UserRepository
             'consumption_unit' => $preferences->consumptionUnit->value,
             'currency' => $preferences->currency,
             'theme' => $preferences->theme->value,
+            'accent' => $preferences->accent->value,
         ];
     }
 
@@ -166,6 +168,7 @@ final readonly class UserRepository
                 consumptionUnit: ConsumptionUnit::from(Row::string($row, 'consumption_unit')),
                 currency: Row::string($row, 'currency'),
                 theme: Theme::tryFrom(Row::string($row, 'theme')) ?? Theme::System,
+                accent: Accent::tryFrom(Row::nullableString($row, 'accent') ?? '') ?? Accent::DEFAULT,
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'], $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'], $platform),

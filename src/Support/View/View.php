@@ -22,8 +22,16 @@ use Twig\Environment;
  */
 final readonly class View
 {
+    /** Sent by js/app.js when it loads a page into the modal dialog (spec.md §5). */
+    public const string MODAL_HEADER = 'X-Logbook-Modal';
+
     public function __construct(private Environment $twig)
     {
+    }
+
+    public static function isModal(ServerRequestInterface $request): bool
+    {
+        return $request->getHeaderLine(self::MODAL_HEADER) === '1';
     }
 
     /**
@@ -40,7 +48,8 @@ final readonly class View
 
         return $response
             ->withStatus($status)
-            ->withHeader('Content-Type', 'text/html; charset=utf-8');
+            ->withHeader('Content-Type', 'text/html; charset=utf-8')
+            ->withAddedHeader('Vary', self::MODAL_HEADER);
     }
 
     /**
@@ -62,8 +71,10 @@ final readonly class View
         $value = $request->getAttribute(CsrfMiddleware::PREFIX . '_value');
         $session = $request->getAttribute(SessionMiddleware::ATTRIBUTE);
         $uri = $request->getUri();
+        $modal = self::isModal($request);
 
         return [
+            'modal' => $modal,
             'user' => RequestContext::user($request),
             'csrf' => is_string($name) && is_string($value) ? [
                 'name_key' => CsrfMiddleware::PREFIX . '_name',
@@ -71,7 +82,8 @@ final readonly class View
                 'name' => $name,
                 'value' => $value,
             ] : null,
-            'flashes' => $session instanceof Session ? $session->takeFlashes() : [],
+            // A form loaded into the modal leaves messages for the page behind it.
+            'flashes' => $session instanceof Session && !$modal ? $session->takeFlashes() : [],
             // Only pages reached by GET can be returned to (a form re-shown after
             // a failed POST lives at a POST-only address).
             'current_path' => $request->getMethod() === 'GET'
@@ -85,6 +97,6 @@ final readonly class View
      */
     private static function emptyRequestContext(): array
     {
-        return ['user' => null, 'csrf' => null, 'flashes' => [], 'current_path' => ''];
+        return ['modal' => false, 'user' => null, 'csrf' => null, 'flashes' => [], 'current_path' => ''];
     }
 }

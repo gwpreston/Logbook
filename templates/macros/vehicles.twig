@@ -2,14 +2,19 @@
  # Vehicle fragments. Import with: {% import 'macros/vehicles.twig' as vehicles %}
  #}
 
-{# Garage card: photo, plate, fuel type, name. The whole card is one link. #}
-{% macro card(vehicle) -%}
+{# Garage card (spec.md §7.1): photo with the due badge, plate, fuel type,
+   name, and a footer with the odometer and average economy. The whole card
+   is one link. `snapshot` is a Service\Vehicle\VehicleSnapshot. #}
+{% macro card(snapshot) -%}
     {% import 'macros/ui.twig' as ui %}
+    {% set vehicle = snapshot.vehicle %}
     <a class="vehicle-card{{ vehicle.isArchived() ? ' vehicle-card--archived' : '' }}" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
         <div class="vehicle-card__media">
             {{ ui.vehicle_photo(vehicle) }}
             {% if vehicle.isArchived() %}
                 <span class="vehicle-card__badge pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.status.archived'|trans }}</span>
+            {% else %}
+                {{ ui.due_badge(snapshot.due, 'vehicle-card__due') }}
             {% endif %}
         </div>
         <div class="vehicle-card__body">
@@ -21,6 +26,61 @@
                 <h2 class="vehicle-card__name">{{ vehicle.name() }}</h2>
                 <p class="vehicle-card__sub">{{ vehicle.description() }}</p>
             </div>
+            <dl class="vehicle-card__stats">
+                <div>
+                    <dt>{{ ui.icon('speed') }}<span class="visually-hidden">{{ 'garage.stat.odometer'|trans }}</span></dt>
+                    <dd class="tabular">{{ snapshot.latest ? snapshot.latest.readingKm|distance : '—' }}</dd>
+                </div>
+                {% if feature_enabled('fuel') %}
+                    <div>
+                        <dt>{{ ui.icon(snapshot.isElectric() ? 'ev_station' : 'local_gas_station') }}<span class="visually-hidden">{{ 'garage.stat.economy'|trans }}</span></dt>
+                        <dd class="tabular">{{ snapshot.hasEconomy() ? snapshot.economy.measuredDistanceKm|economy(snapshot.economy.measuredVolume, snapshot.isElectric()) : '—' }}</dd>
+                    </div>
+                {% endif %}
+            </dl>
         </div>
     </a>
+{%- endmacro %}
+
+{# Dashboard "Your vehicles" tile (spec.md §7.8): photo with the plate over
+   its lower-left corner, name, odometer and "N due". #}
+{% macro tile(snapshot) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set vehicle = snapshot.vehicle %}
+    <a class="vehicle-tile" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
+        <span class="vehicle-tile__media">
+            {{ ui.vehicle_photo(vehicle) }}
+            {% if vehicle.data.registration %}<span class="plate vehicle-tile__plate">{{ vehicle.data.registration }}</span>{% endif %}
+        </span>
+        <span class="vehicle-tile__body">
+            <span class="vehicle-tile__name">{{ vehicle.name() }}</span>
+            <span class="vehicle-tile__meta">
+                <span class="tabular">{{ snapshot.latest ? snapshot.latest.readingKm|distance : 'dashboard.fleet.no_odometer'|trans }}</span>
+                {{ ui.due_badge(snapshot.due, 'due-badge--text') }}
+            </span>
+        </span>
+    </a>
+{%- endmacro %}
+
+{# One-tap vehicle picker: each vehicle links to `route` (placeholder `id`).
+   `offline`: keep each form for offline use (fill-ups; spec.md §7.15). #}
+{% macro pick_list(vehicles, route, offline = false) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <ul class="pick-list">
+        {% for vehicle in vehicles %}
+            <li>
+                <a class="pick" href="{{ url_for(route, {id: vehicle.id}) }}" data-modal{% if offline %} data-offline-cache{% endif %}>
+                    {{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}
+                    <span class="pick__body">
+                        <span class="pick__name">{{ vehicle.name() }}</span>
+                        <span class="pick__meta">
+                            {% if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span>{% endif %}
+                            <span>{{ ('vehicle.fuel.' ~ vehicle.data.fuelType.value)|trans }}</span>
+                        </span>
+                    </span>
+                    {{ ui.icon('chevron_right', 'pick__chevron') }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
 {%- endmacro %}

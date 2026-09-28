@@ -67,6 +67,27 @@ final readonly class ReminderWording
     }
 
     /**
+     * The short form for tiles: "in 4 days", "today", "3 days overdue"; a
+     * reminder without a date says when() instead.
+     *
+     * @param DateTimeImmutable $today the owner's calendar date
+     */
+    public function relative(Reminder $reminder, DateTimeImmutable $today): string
+    {
+        if ($reminder->dueOn === null) {
+            return $this->when($reminder, $today);
+        }
+
+        $days = LocalTime::daysBetween($today, $reminder->dueOn);
+
+        return $days < 0
+            ? $this->translator->trans('reminders.relative.overdue', ['days' => -$days])
+            : ($reminder->status === ReminderStatus::Overdue
+                ? $this->translator->trans('reminders.when.overdue_now')
+                : $this->translator->trans('reminders.relative.in', ['days' => $days]));
+    }
+
+    /**
      * "Due at 60,000 mi" (in the owner's distance unit).
      */
     public function atOdometer(string $km): string

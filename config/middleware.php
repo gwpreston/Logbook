@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Logbook\Middleware\BasePathMiddleware;
 use Logbook\Middleware\CurrentUserMiddleware;
 use Logbook\Middleware\LocaleMiddleware;
+use Logbook\Middleware\ModalMiddleware;
 use Logbook\Middleware\SessionMiddleware;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\ErrorHandler;
@@ -19,7 +20,7 @@ use Slim\Middleware\ErrorMiddleware;
  * inner → outer. Resulting order (outer → inner), per spec.md §5:
  *
  *   error handling → base path → session → current user
- *   → locale + display preferences → routing → body parsing
+ *   → locale + display preferences → modal redirects → routing → body parsing
  *   → [route groups, config/routes.php: auth guard → CSRF] → Action
  */
 return static function (App $app): void {
@@ -33,6 +34,7 @@ return static function (App $app): void {
 
     $app->addBodyParsingMiddleware();
     $app->addRoutingMiddleware();
+    $app->add(ModalMiddleware::class);
     $app->add(LocaleMiddleware::class);
     $app->add(CurrentUserMiddleware::class);
     $app->add(SessionMiddleware::class);

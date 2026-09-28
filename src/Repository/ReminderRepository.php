@@ -17,6 +17,7 @@ use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Service\Reminder\GeneratedReminder;
+use Logbook\Service\Reminder\OpenReminderRow;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -104,6 +105,35 @@ final readonly class ReminderRepository
         $this->scopeToUser($query, $userId, true);
 
         return $this->hydrateAll($query->orderBy('id')->fetchAllAssociative());
+    }
+
+    /**
+     * Open reminders of the owner's active vehicles, only the columns the
+     * due counts need (one query on the status index; spec.md §8).
+     *
+     * @return list<OpenReminderRow>
+     */
+    public function listOpenForCounts(int $userId): array
+    {
+        $query = $this->connection->createQueryBuilder()
+            ->select('vehicle_id', 'source', 'status', 'due_on', 'lead_time_days')
+            ->from(self::TABLE)
+            ->where('status IN (:open)')
+            ->setParameter('open', self::openStatuses(), ArrayParameterType::STRING);
+        $this->scopeToUser($query, $userId, true);
+
+        $rows = [];
+        foreach ($query->fetchAllAssociative() as $row) {
+            $rows[] = new OpenReminderRow(
+                vehicleId: Row::int($row, 'vehicle_id'),
+                source: ReminderSource::tryFrom(Row::string($row, 'source')) ?? ReminderSource::Manual,
+                status: ReminderStatus::tryFrom(Row::string($row, 'status')) ?? ReminderStatus::Upcoming,
+                dueOn: Row::nullableDate($row, 'due_on'),
+                leadTimeDays: Row::int($row, 'lead_time_days'),
+            );
+        }
+
+        return $rows;
     }
 
     public function find(int $userId, int $id): ?Reminder

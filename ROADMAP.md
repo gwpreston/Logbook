@@ -28,6 +28,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [4](phase-4.md) | Reminders + Notifications | ✅ |
 | [5](phase-5.md) | Expenses + Reports + Dashboard | ✅ |
 | [6](phase-6.md) | Feature toggles + Import/backup + polish | ✅ |
+| [7](phase-7.md) | Design alignment + dashboard enhancements | 🚧 |
 
 *Update the status column as each phase lands.*
 
@@ -123,6 +124,23 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   full deployment/upgrade docs.
 
 → [`phase-6.md`](phase-6.md)
+
+## Phase 7 — Design alignment + dashboard enhancements
+*Match the design handoff, and make the dashboard answer "how is this car doing?"*
+
+- Desktop modals for the entry forms (progressive enhancement: every form
+  keeps its own page), and a "+ Log entry" chooser for everything you log.
+- Sidebar: overdue + due-soon count on *Reminders*, and a *Vehicles* list
+  with red / amber / green status dots.
+- Dashboard: filter by vehicle with a pinned vehicle card (economy, running
+  cost, spend, next due), new *Mileage* and *Recent activity* widgets, and
+  photo tiles for *Your vehicles*.
+- Garage cards with due badges and odometer + economy; the same header and
+  CSV toolbar on every vehicle tab; 50/50 layouts for fuel trends and reports.
+- Accent colour setting (Blue, Teal, Indigo, Purple) and the app version in
+  the sidebar, Settings and `/health`.
+
+→ [`phase-7.md`](phase-7.md)
 
 ---
 

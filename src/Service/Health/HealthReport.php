@@ -8,8 +8,9 @@ final readonly class HealthReport
 {
     /**
      * @param array<string, HealthStatus> $checks
+     * @param string $version the running release (spec.md §8)
      */
-    public function __construct(public array $checks)
+    public function __construct(public array $checks, public string $version = '')
     {
     }
 
@@ -24,13 +25,12 @@ final readonly class HealthReport
     }
 
     /**
-     * @return array{status: string, checks: array<string, string>}
+     * @return array{status: string, version?: string, checks: array<string, string>}
      */
     public function toArray(): array
     {
-        return [
-            'status' => $this->status()->value,
-            'checks' => array_map(static fn (HealthStatus $s): string => $s->value, $this->checks),
-        ];
+        return ['status' => $this->status()->value]
+            + ($this->version !== '' ? ['version' => $this->version] : [])
+            + ['checks' => array_map(static fn (HealthStatus $s): string => $s->value, $this->checks)];
     }
 }

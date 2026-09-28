@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Health;
 
+use Logbook\Kernel;
 use Logbook\Repository\DatabaseStatusRepository;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -24,7 +25,7 @@ final readonly class HealthCheck
         return new HealthReport([
             'app' => HealthStatus::Ok,
             'database' => $this->checkDatabase(),
-        ]);
+        ], Kernel::version());
     }
 
     private function checkDatabase(): HealthStatus

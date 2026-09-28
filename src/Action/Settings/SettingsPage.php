@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Settings;
 
 use Logbook\Service\User\ProfileForm;
+use Logbook\Support\Display\Accent;
 use Logbook\Support\Display\Theme;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\I18n\AvailableLocales;
@@ -50,6 +51,7 @@ final readonly class SettingsPage
             'errors' => $preferenceErrors?->all() ?? [],
             'password_errors' => $passwordErrors?->all() ?? [],
             'themes' => Theme::cases(),
+            'accents' => Accent::cases(),
             'distance_units' => DistanceUnit::cases(),
             'volume_units' => VolumeUnit::cases(),
             'consumption_units' => ConsumptionUnit::cases(),

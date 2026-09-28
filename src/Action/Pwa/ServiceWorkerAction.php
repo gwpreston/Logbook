@@ -31,7 +31,7 @@ final readonly class ServiceWorkerAction
     {
         $config = [
             'base' => $this->settings->basePath,
-            'version' => Kernel::VERSION . '-' . $this->assets->version(),
+            'version' => Kernel::version() . '-' . $this->assets->version(),
             'assets' => $this->assets->urls('#^vendor/THIRD-PARTY-NOTICES\.txt$|^js/service-worker\.js$#'),
             'offline' => $this->routes->urlFor('pwa.offline'),
         ];

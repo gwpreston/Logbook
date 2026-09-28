@@ -12,15 +12,7 @@
     <div class="page__stack">
         {% include 'vehicles/_header.twig' with {active_tab: 'fuel'} %}
 
-        <div class="toolbar">
-            <h1 class="section-title">{{ 'fuel.title'|trans }}</h1>
-            <div class="btn-row">
-                {{ exp.export_link(vehicle, 'fuel') }}
-                {% if not vehicle.isArchived() %}
-                    <a class="btn btn--primary" href="{{ url_for('fuel.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'fuel.add'|trans }}</a>
-                {% endif %}
-            </div>
-        </div>
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'fuel.title'|trans, module: 'fuel', add: {route: 'fuel.create', label: 'fuel.add'|trans}} %}
 
         {% for section in sections %}
             {% set summary = section.summary %}
@@ -55,7 +47,7 @@
                     </p>
                 {% endif %}
 
-                <div class="card-grid">
+                <div class="split">
                     <section class="card" aria-labelledby="economy-{{ section.kind.value }}">
                         <h3 id="economy-{{ section.kind.value }}" class="card__title">{{ (electric ? 'fuel.chart.efficiency_title' : 'fuel.chart.economy_title')|trans }}</h3>
                         {% if section.economy_chart.hasData() %}

@@ -124,7 +124,7 @@ final class FeatureToggleTest extends ReminderTestCase
 
         $this->service($app, FeatureToggles::class)->save(Feature::cases());
         $shell = self::body($browser->get("/vehicles/$id"));
-        foreach (['href="/fuel/new"', 'href="/reminders"', 'href="/reports"', "href=\"/vehicles/$id/fuel\""] as $link) {
+        foreach (['href="/log/new"', 'href="/reminders"', 'href="/reports"', "href=\"/vehicles/$id/fuel\""] as $link) {
             self::assertStringContainsString($link, $shell);
         }
         self::assertSame(200, $browser->get('/reports')->getStatusCode());
@@ -209,7 +209,7 @@ final class FeatureToggleTest extends ReminderTestCase
         self::assertSame(20, $this->service($app, ReminderSettingsStore::class)->reminderPreferences($owner->id)->documentDays);
     }
 
-    public function testDashboardLeavesOutSwitchedOffWidgetsAndTheLogButton(): void
+    public function testDashboardAndLogChooserLeaveOutSwitchedOffModules(): void
     {
         $app = $this->createApp();
         $this->pinClock($app, self::NOW);
@@ -225,8 +225,13 @@ final class FeatureToggleTest extends ReminderTestCase
         $html = self::body($browser->get('/'));
         self::assertStringNotContainsString('id="widget-recent_fuel"', $html);
         self::assertStringNotContainsString('id="widget-efficiency"', $html);
-        self::assertStringNotContainsString('bottom-nav__link--fab', $html);
         self::assertStringNotContainsString('Log fill-up', $html);
+        // "+ Log entry" stays (readings and expenses are core); its chooser drops fuel.
+        self::assertStringContainsString('bottom-nav__link--fab" href="/log/new"', $html);
+        $chooser = self::body($browser->get('/log/new'));
+        self::assertStringNotContainsString('href="/fuel/new"', $chooser);
+        self::assertStringContainsString('href="/log/new/odometer"', $chooser);
+        self::assertStringContainsString('href="/log/new/schedule"', $chooser);
     }
 
     /**

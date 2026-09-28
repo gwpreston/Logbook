@@ -13,7 +13,7 @@
                 <h1 class="page-header__title">{{ 'garage.title'|trans }}</h1>
                 <p class="page-header__lead">{{ trans('garage.summary', {active: counts.active, archived: counts.archived}) }}</p>
             </div>
-            <a class="btn btn--primary" href="{{ url_for('vehicles.create') }}">{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
+            <a class="btn btn--primary" href="{{ url_for('vehicles.create') }}" data-modal>{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
         </header>
 
         {% if vehicles is empty %}
@@ -24,8 +24,8 @@
             </div>
         {% else %}
             <div class="vehicle-grid">
-                {% for vehicle in vehicles %}
-                    {{ vehicle_ui.card(vehicle) }}
+                {% for snapshot in vehicles %}
+                    {{ vehicle_ui.card(snapshot) }}
                 {% endfor %}
             </div>
         {% endif %}

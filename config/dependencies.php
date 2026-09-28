@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
 use Logbook\Service\Feature\FeatureTwigExtension;
+use Logbook\Service\Navigation\SidebarTwigExtension;
 use Logbook\Service\Notification\Channel\EmailChannel;
 use Logbook\Service\Notification\Channel\EmailConfig;
 use Logbook\Service\Notification\Channel\GotifyChannel;
@@ -155,6 +156,9 @@ return [
         $features = $c->get(FeatureTwigExtension::class);
         assert($features instanceof FeatureTwigExtension);
         $twig->addExtension($features);
+        $sidebar = $c->get(SidebarTwigExtension::class);
+        assert($sidebar instanceof SidebarTwigExtension);
+        $twig->addExtension($sidebar);
 
         return $twig;
     },

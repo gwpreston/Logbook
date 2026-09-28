@@ -1,27 +1,8 @@
-{# Fleet summary: active vehicles with their odometer and most urgent reminder. #}
-{% import 'macros/ui.twig' as ui %}
-<ul class="fleet">
-    {% for item in dashboard.fleet %}
-        {% set vehicle = item.vehicle %}
-        <li>
-            <a class="fleet__item" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
-                {{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}
-                <span class="fleet__body">
-                    <span class="fleet__name">{{ vehicle.name() }}</span>
-                    <span class="fleet__meta">
-                        {%- if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span>{% endif -%}
-                        <span class="tabular">{{ item.latest ? item.latest.readingKm|distance : 'dashboard.fleet.no_odometer'|trans }}</span>
-                    </span>
-                    {% if item.next %}
-                        {% set reminder = item.next.reminder %}
-                        <span class="fleet__due">
-                            <span class="pill{{ reminder.status.tone() ? ' pill--' ~ reminder.status.tone() }}">{{ wording.when(reminder, today) }}</span>
-                            <span class="fleet__due-name">{{ wording.name(reminder) }}</span>
-                        </span>
-                    {% endif %}
-                </span>
-            </a>
-        </li>
+{# Your vehicles: a photo tile per active vehicle with its odometer and "N due" (spec.md §7.8). #}
+{% import 'macros/vehicles.twig' as vehicle_ui %}
+<ul class="vehicle-tiles">
+    {% for snapshot in dashboard.fleet %}
+        <li>{{ vehicle_ui.tile(snapshot) }}</li>
     {% endfor %}
 </ul>
 {% if dashboard.archivedCount > 0 %}

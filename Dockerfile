@@ -80,6 +80,9 @@ CMD ["apache2-foreground"]
 FROM base AS production
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY --from=build --chown=www-data:www-data /var/www/html /var/www/html
+# The release number shown in the app and /health comes from the VERSION file
+# copied above; fail the build rather than ship an image without it.
+RUN grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+' VERSION
 COPY docker/entrypoint.sh /usr/local/bin/logbook-entrypoint
 RUN chmod +x /usr/local/bin/logbook-entrypoint \
     && mkdir -p /data var/cache var/log \

@@ -18,6 +18,8 @@ enum DashboardWidget: string
     case RecentFuel = 'recent_fuel';
     case Efficiency = 'efficiency';
     case Compliance = 'compliance';
+    case Mileage = 'mileage';
+    case RecentActivity = 'recent_activity';
 
     /**
      * The module it shows, hidden with it (spec.md §7.10).
@@ -25,7 +27,7 @@ enum DashboardWidget: string
     public function feature(): ?Feature
     {
         return match ($this) {
-            self::Fleet => null,
+            self::Fleet, self::Mileage, self::RecentActivity => null,
             self::Reminders => Feature::Reminders,
             self::Spend => Feature::Reports,
             self::RecentFuel, self::Efficiency => Feature::Fuel,
@@ -42,6 +44,8 @@ enum DashboardWidget: string
             self::RecentFuel => 'local_gas_station',
             self::Efficiency => 'trending_up',
             self::Compliance => 'verified_user',
+            self::Mileage => 'speed',
+            self::RecentActivity => 'history',
         };
     }
 

@@ -7,8 +7,8 @@
  *
  *   - Built assets: cache first (the cache is named after their versions,
  *     so a new release replaces it).
- *   - Pages: network first. The fill-up forms are kept for offline use;
- *     any other page offline gets the offline page.
+ *   - Pages: network first. The Log entry chooser and the fill-up forms
+ *     are kept for offline use; any other page offline gets the offline page.
  *   - Everything else (POSTs, downloads, other sites) is left alone. An
  *     offline fill-up is queued by the page itself (js/app.js).
  */
@@ -17,7 +17,7 @@
 var CONFIG = self.LOGBOOK;
 var STATIC = 'logbook-static-' + CONFIG.version;
 var PAGES = 'logbook-pages';
-var FORM = new RegExp('^' + CONFIG.base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(fuel/new|vehicles/[0-9]+/fuel/new)$');
+var FORM = new RegExp('^' + CONFIG.base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(log/new|fuel/new|vehicles/[0-9]+/fuel/new)$');
 
 self.addEventListener('install', function (event) {
     event.waitUntil(

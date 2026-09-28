@@ -111,7 +111,7 @@
                         <p>{{ 'report.empty_body'|trans }}</p>
                     </div>
                 {% else %}
-                    <div class="card-grid report-grid">
+                    <div class="split report-grid">
                         <section class="card report-grid__wide" aria-labelledby="months-{{ currency }}">
                             <div class="card__header">
                                 <h3 id="months-{{ currency }}" class="card__title">{{ 'report.by_month'|trans }}</h3>
@@ -156,14 +156,15 @@
                             </div>
                         </section>
 
-                        <section class="card" aria-labelledby="groups-{{ currency }}">
+                        {% set by_vehicle = not selected and section.vehicles|length > 1 %}
+                        <section class="card{{ by_vehicle ? '' : ' report-grid__wide' }}" aria-labelledby="groups-{{ currency }}">
                             <div class="card__header">
                                 <h3 id="groups-{{ currency }}" class="card__title">{{ 'report.by_group'|trans }}</h3>
                             </div>
                             {{ exp.breakdown(section) }}
                         </section>
 
-                        {% if not selected and section.vehicles|length > 1 %}
+                        {% if by_vehicle %}
                             <section class="card" aria-labelledby="vehicles-{{ currency }}">
                                 <div class="card__header">
                                     <h3 id="vehicles-{{ currency }}" class="card__title">{{ 'report.by_vehicle'|trans }}</h3>
@@ -172,7 +173,7 @@
                                     {% for row in section.vehicles %}
                                         <li class="breakdown__row">
                                             <span class="breakdown__label">
-                                                <a href="{{ url_for('reports.index', {}, filter_query|merge({vehicle: row.vehicle.id})) }}">{{ row.vehicle.name() }}</a>
+                                                {{ ui.icon(row.vehicle.data.type.icon(), 'breakdown__icon') }}{{ row.vehicle.name() }}
                                                 {%- if row.vehicle.isArchived() %} <span class="muted">({{ 'vehicle.status.archived'|trans }})</span>{% endif -%}
                                             </span>
                                             <span class="breakdown__share">{{ row.costPerKm is not null ? row.costPerKm|per_distance(currency) : '' }}</span>

@@ -103,6 +103,26 @@ disagree):
 - Feature toggles gate each module's route group (a middleware answering 404)
   and its navigation, so disabled modules are truly absent, not just hidden
   (§7.10).
+- **Modal forms (progressive enhancement).** Every entry form is a real page
+  with its own URL. The add / edit forms for vehicles, fill-ups, odometer
+  readings, service records, service intervals, documents and expenses, and
+  the *Log entry* chooser (§7.3), are reached by links marked `data-modal`.
+  With JS **and** a wide viewport (>= 960px, the sidebar breakpoint), such a
+  link opens a native `<dialog>` instead: the page is fetched with the
+  request header `X-Logbook-Modal: 1`, and the same Action and template
+  render only the form (the template's `modal_body` block, titled by its
+  `heading`) — one form, one parser, two wrappers. Without JS, on narrow
+  screens, or for a page that has no `modal_body`, the link opens the page.
+  In a modal, a submit is sent with `fetch` (`FormData`, so files upload
+  too); a validation error (422) re-renders the form inside the dialog; a
+  redirect is answered as `204` with `X-Logbook-Location` (the
+  `ModalMiddleware`), after which the dialog closes and the browser follows
+  it, so the flash message shows as usual. Modal renders never consume
+  flash messages. A failed request falls back to a normal page load (or a
+  full-page submit). The dialog is labelled by its title, moves focus in
+  and back to the trigger, closes with Esc or ✕, and makes the page behind
+  it inert. Fetch URLs are the links' own `url_for()` URLs (subpath-safe)
+  and the form carries the page's CSRF token.
 
 ---
 
@@ -237,7 +257,8 @@ MySQL only.
   unit preferences: distance unit (`km`|`mi`), volume unit
   (`l`|`gal_uk`|`gal_us`), consumption unit (`l_per_100km`|`km_per_l`|
   `mpg_uk`|`mpg_us`), default currency (ISO 4217), theme
-  (`system`|`light`|`dark`); created/updated (UTC). "Metric", "UK" and "US"
+  (`system`|`light`|`dark`), accent colour (`blue`|`teal`|`indigo`|`purple`,
+  default `blue`; §8); created/updated (UTC). "Metric", "UK" and "US"
   are presets that fill in the three unit preferences. (Single row day-one;
   table shaped for multi-user later.)
 
@@ -258,6 +279,16 @@ Add/edit/delete vehicles; upload a photo; set per-vehicle fuel type and currency
 **Archive** sold vehicles: hidden from active views, history retained, excluded
 from fleet totals unless "include archived" is toggled.
 
+- **Garage cards** (`/garage`): photo (or a striped placeholder with the
+  car / motorbike icon), plate, fuel type, name and "year make model". A due
+  badge on the photo's top-right corner reads "N due" — the vehicle's open
+  reminders that are *overdue* or *due* (§7.6) — red when any is overdue,
+  amber otherwise, hidden at zero (and while the reminders module is off).
+  Below a hairline divider, a footer with the current odometer (owner's
+  distance unit) and the average economy over every full-to-full segment
+  (owner's consumption unit; kWh efficiency for an EV; "—" until a
+  segment is measured). Archived cards show neither badge nor footer figures
+  beyond the odometer.
 - Required: type, make, model, fuel type. Everything else is optional; zero
   prices are valid. Year must be between 1885 and next year; a sale date
   cannot precede the purchase date.
@@ -281,6 +312,12 @@ jumps, going backwards) without blocking.
   (`/vehicles/{id}/maintenance`), Documents (`/vehicles/{id}/documents`) and
   Expenses (`/vehicles/{id}/expenses`, §7.7). Each list tab has an
   "Export CSV" link (§7.7).
+  Every tab shares one vehicle header (`templates/vehicles/_header.twig`):
+  back link, then *Edit*, *Archive* / *Restore* and *Delete* in the same
+  place on every tab, the hero and the tab bar. Every list tab shares one
+  toolbar partial (`templates/vehicles/_list_toolbar.twig`): the tab's title
+  on the left; *Export CSV*, *Import CSV* and the tab's add button
+  right-aligned (as the Fuel tab always had them).
   The overview also shows the three most urgent schedules and where each
   current document stands.
 - Mileage tab: current reading, monthly average (once there is a week of
@@ -315,11 +352,17 @@ math stays correct across gaps. Show per-fill and rolling consumption
 - Fuel tab: average economy, last full-to-full, average price, cost per
   distance, total spend (per kind of energy); the average in the other
   consumption units (mpg UK vs US, L/100 km, km/L); economy trend (each
-  segment + running average) and price trend charts; fill-ups newest first
+  segment + running average) and price trend charts, side by side on wide
+  screens (§8); fill-ups newest first
   (25 per page) with per-fill economy or why there is none.
-- **Fast path:** a "Log fill-up" button (sidebar, and the centre "+" of the
-  mobile tab bar) opens `/fuel/new`: straight to the form with one active
-  vehicle, a one-tap vehicle picker with several, "add a vehicle" with none.
+- **Fast path:** a "+ Log entry" button (sidebar, and the centre "+" of the
+  mobile tab bar) opens the *Log something* chooser (`/log/new`; a modal on
+  desktop, §5): Fill-up, Odometer reading, Service record, Expense,
+  Document, Service interval — choices of a switched-off module are left
+  out. Fill-up goes to `/fuel/new`; the others to `/log/new/{odometer|
+  maintenance|expense|document|schedule}`. Each goes straight to the form
+  with one active vehicle, a one-tap vehicle picker with several, "add a
+  vehicle" with none.
   The form is mobile-first: odometer, date/time (defaults to now), fuel,
   then the three amounts with a live preview of the derived one (JS), the
   partial / missed flags, and station/notes folded away.
@@ -467,15 +510,48 @@ layout persisted per user): fleet summary, upcoming reminders, recent fuel,
 spend this month, efficiency trend, compliance status. Widgets respect feature
 toggles.
 
-- **Widgets** (`/`): *fleet summary* (active vehicles with photo, plate,
-  current odometer and their most urgent reminder; count of archived ones),
-  *upcoming reminders* (the five most urgent open reminders), *recent fuel*
-  (the last five fill-ups across active vehicles with their economy),
-  *spend this month* (per currency, by group, with last month for
-  comparison), *efficiency trend* (each active vehicle's average economy
-  over the last 12 months and a chart of per-fill economy), *compliance
-  status* (current documents that are expired or expiring, else "all in
-  order", per active vehicle). Archived vehicles never appear.
+- **Widgets** (`/`): *your vehicles* (id `fleet`: a tile per active vehicle —
+  photo or placeholder with the plate over its lower-left corner, name,
+  current odometer and "N due" as on the garage cards (§7.1); the title
+  links to the garage; count of archived ones), *upcoming reminders* (the
+  five most urgent open reminders), *recent fuel* (the last five fill-ups
+  across active vehicles with their economy), *spend this month* (per
+  currency, by group, with last month for comparison), *efficiency trend*
+  (each active vehicle's average economy over the last 12 months and a chart
+  of per-fill economy), *compliance status* (current documents that are
+  expired or expiring, else "all in order", per active vehicle), *mileage*
+  and *recent activity* (below). Archived vehicles never appear.
+- **Mileage** (id `mileage`): *This month*, *This year* and *Monthly avg* in
+  the owner's distance unit. This month / this year are the calendar month /
+  year to date in the owner's time zone, measured as a report's *distance
+  driven* (§7.7); monthly average is the Mileage tab's figure (§7.2). For
+  the fleet each figure is computed per vehicle and summed (readings of
+  different vehicles are never subtracted from each other). A figure with no
+  history shows "—", not 0.
+- **Recent activity** (id `recent_activity`): the latest eight entries across
+  fill-ups, manual odometer readings, service records, documents and ad-hoc
+  expenses — newest first by the owner's local date, then by when they were
+  added — each with an icon, what it was, the vehicle, the date and its
+  amount (or reading), linking to its edit page. Readings written by a
+  fill-up or service are left out (the entry itself is listed). Entries of
+  a switched-off module are left out.
+- **Vehicle filter:** with two or more active vehicles, a row of chips under
+  the greeting — *All vehicles* and one per active vehicle with its type
+  icon. Each chip is a link (`/?vehicle={id}`; the current one has
+  `aria-current`), so the choice works without JS, survives a refresh and
+  can be bookmarked. An unknown or archived id falls back to *All vehicles*.
+  With one vehicle selected every widget shows that vehicle only, *your
+  vehicles* is hidden, and a **pinned vehicle card** appears under the chips:
+  photo, plate, fuel type, name, "year make model · current odometer", and
+  four tiles — *Economy* (average over the full-to-full segments that ended
+  in the last 12 months, in the owner's unit), *Running cost* (all costs ÷
+  distance driven over the last 12 months, per the owner's distance unit),
+  *Spent* (last 12 months), *Next due* (the most urgent open reminder: "in
+  4 days" / "3 days overdue", coloured by status, with its title) — and
+  *Log fill-up*, *Add reading* and *Open vehicle* actions. "Last 12 months"
+  is the reports' preset (this month and the 11 before). The pinned card is
+  not a widget: it is never stored in the layout and cannot be moved or
+  hidden. Every figure comes from the fuel, report and reminder services.
 - **Layout** is an ordered list of widgets plus the hidden ones, stored as
   JSON in `settings` (scope user, key `dashboard.layout`). Unknown widget
   ids are dropped and widgets added in later releases are appended, so an old
@@ -688,8 +764,9 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   Installable on a phone (standalone display, app icons).
 - The service worker caches the built assets (cache named after their
   content hashes, so a new release replaces it) and an offline page; pages
-  are network-first and only the fill-up forms (`/fuel/new` and each active
-  vehicle's `/vehicles/{id}/fuel/new`) are kept for offline use. Other pages
+  are network-first and only the *Log entry* chooser (`/log/new`) and the
+  fill-up forms (`/fuel/new` and each active vehicle's
+  `/vehicles/{id}/fuel/new`) are kept for offline use. Other pages
   offline show the offline page.
 - **Offline fill-up:** submitting the fill-up form without a connection
   stores the entry in the browser (IndexedDB) and says so; it is sent as
@@ -711,6 +788,36 @@ Ship the framework so translations are easy to add; do not hard-code strings.
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
+- **Accent colour:** Settings → Appearance offers *Blue* (default), *Teal*,
+  *Indigo* and *Purple*, stored per user (`users.accent`). It is rendered
+  server-side as `data-accent` on `<html>` (no flash; signed-out pages use
+  blue) and switches only the accent tokens — primary, hover, pressed,
+  subtle background, focus ring and the first chart series — each with a
+  light and a dark value that meets WCAG AA for button text and focus rings.
+  Status colours (red overdue, amber due soon, green OK) and the yellow
+  number plate never change with the accent. Charts read the tokens when
+  they draw.
+- **Sidebar:** the *Reminders* link carries a red badge with the number of
+  open reminders that are *overdue* or *due* (hidden at zero). Below the
+  navigation a *Vehicles* list shows every active vehicle with its car /
+  motorbike icon, its name (linking to its overview) and a status dot —
+  red for any overdue reminder, amber for any due soon, green otherwise —
+  with a text alternative ("2 overdue", "1 due soon", "All up to date") for
+  screen readers and as a tooltip. The counts come from one query over the
+  stored reminders of active vehicles, judged against the owner's today
+  (a stored status is only ever made more urgent by the date); reminders of
+  a switched-off module count for nothing, and with the reminders module
+  off there is no badge and no dots. The same counts drive the garage and
+  dashboard "N due" badges.
+- **Two-column layouts:** one grid utility (`.split`) puts two cards side by
+  side at 50/50 on wide screens and stacks them on narrow ones: the Fuel
+  tab's *Economy trend* | *Price trend* and Reports' *By category* | *By
+  vehicle* (whose vehicle names are unlinked, each after its car / motorbike
+  icon).
+- **Version:** the release number lives in the `VERSION` file (updated with
+  each release and copied into the Docker image). It is shown in the sidebar
+  footer and on the Settings page ("Logbook v0.7.0") and returned by
+  `/health`; backups record it too.
 - **Appearance:** light and dark themes from one token set (`assets/css/app.css`).
   The OS preference applies by default and without JS. Signed out (setup,
   sign-in) a JS toggle overrides it per browser; signed in, the per-user
@@ -789,7 +896,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
   overlapping), and Nginx/Apache
   vhost + reverse-proxy examples.
-- **Health check:** `/health` endpoint (app + DB connectivity) for monitoring.
+- **Health check:** `/health` endpoint (app + DB connectivity, and the app
+  version) for monitoring.
 
 ---
 
@@ -840,6 +948,11 @@ task breakdowns live in the per-phase files; this is the map.
   export, draggable widget dashboard.
 - **Phase 6 — Feature toggles + Import/backup + polish.** Toggles, CSV import,
   backup/restore, PWA, accessibility pass, translations, docs.
+- **Phase 7 — Design alignment + dashboard enhancements.** Desktop modal
+  forms, "Log entry" chooser, sidebar reminder badge and vehicles list,
+  dashboard vehicle filter with a pinned vehicle card, Mileage and Recent
+  activity widgets, garage card badges and stats, consistent vehicle tabs,
+  two-column layouts, accent colour, visible app version.
 
 ---
 

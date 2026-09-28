@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Kernel;
 use Logbook\Tests\Support\AppTestCase;
 
 final class HealthEndpointTest extends AppTestCase
@@ -16,7 +17,7 @@ final class HealthEndpointTest extends AppTestCase
         self::assertSame('application/json', $response->getHeaderLine('Content-Type'));
         self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
         self::assertSame(
-            ['status' => 'ok', 'checks' => ['app' => 'ok', 'database' => 'ok']],
+            ['status' => 'ok', 'version' => Kernel::version(), 'checks' => ['app' => 'ok', 'database' => 'ok']],
             json_decode(self::body($response), true, 512, JSON_THROW_ON_ERROR),
         );
     }
@@ -35,7 +36,7 @@ final class HealthEndpointTest extends AppTestCase
 
         self::assertSame(503, $response->getStatusCode());
         self::assertSame(
-            ['status' => 'failing', 'checks' => ['app' => 'ok', 'database' => 'failing']],
+            ['status' => 'failing', 'version' => Kernel::version(), 'checks' => ['app' => 'ok', 'database' => 'failing']],
             json_decode($body, true, 512, JSON_THROW_ON_ERROR),
         );
         self::assertStringNotContainsString('must-not-leak', $body);

@@ -12,15 +12,7 @@
     <div class="page__stack">
         {% include 'vehicles/_header.twig' with {active_tab: 'expenses'} %}
 
-        <div class="toolbar">
-            <h1 class="section-title">{{ 'expense.title'|trans }}</h1>
-            <div class="btn-row">
-                {{ exp.export_link(vehicle, 'expenses') }}
-                {% if not vehicle.isArchived() %}
-                    <a class="btn btn--primary" href="{{ url_for('expenses.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'expense.add'|trans }}</a>
-                {% endif %}
-            </div>
-        </div>
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'expense.title'|trans, module: 'expenses', add: {route: 'expenses.create', label: 'expense.add'|trans}} %}
 
         {{ exp.range_chips(ranges, report.filter.period, 'expenses.index', {id: vehicle.id}) }}
 

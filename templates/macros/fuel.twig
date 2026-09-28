@@ -12,7 +12,7 @@
     {% set electric = data.fuel.isElectric() %}
     {% set status = fill.status.value %}
     <li>
-        <a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}">
+        <a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}" data-modal>
             <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
             <span class="list__body">
                 <span class="list__title">{{ data.filledAt|local_datetime }}</span>
