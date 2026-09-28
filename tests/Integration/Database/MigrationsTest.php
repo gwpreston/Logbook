@@ -64,10 +64,14 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 9.1 vehicle details, the Phase 8 grade
+        // Newest first: the Phase 9.2 plug-in hybrid data migration (no
+        // schema change), the Phase 9.1 vehicle details, the Phase 8 grade
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        Migrator::run('rollback');
+        self::assertTrue($this->hasColumn('vehicles', 'fuel_type'), 'the plug-in hybrid split changes data only');
+
         self::assertTrue($this->hasColumn('vehicles', 'variant'));
         self::assertTrue($this->hasColumn('vehicles', 'first_registered_on'));
         Migrator::run('rollback');

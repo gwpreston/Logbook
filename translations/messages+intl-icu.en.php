@@ -328,7 +328,8 @@ return [
             'vin' => 'VIN',
             'fuel_type' => 'Fuel',
             'default_grade' => 'Default grade',
-            'capacity' => 'Tank or battery capacity',
+            'capacity_tank' => 'Tank capacity',
+            'capacity_battery' => 'Battery capacity',
             'photo' => 'Photo',
             'photo_replace' => 'Replace photo',
             'remove_photo' => 'Remove the current photo',
@@ -360,8 +361,13 @@ return [
             'diesel' => 'Diesel',
             'ev' => 'Electric',
             'hybrid' => 'Hybrid',
+            'phev' => 'Plug-in hybrid',
             'lpg' => 'LPG',
             'other' => 'Other',
+        ],
+        'fuel_hint' => [
+            'hybrid' => 'Hybrid: self-charging or mild hybrid; fills with petrol only.',
+            'phev' => 'Plug-in hybrid: fills with petrol and charges from a plug.',
         ],
         'status' => [
             'archived' => 'Archived',

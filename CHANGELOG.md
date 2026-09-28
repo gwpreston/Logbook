@@ -6,6 +6,10 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-09-28
+
+Phase 9.1 (vehicle details) and Phase 9.2 (plug-in hybrids).
+
 ### Added — Phase 9.1: vehicle details
 - **Variant / trim** on each vehicle ("1.5 EcoBoost ST-Line X", "xDrive30d M
   Sport"): free text, shown after year, make and model on the garage cards,
@@ -26,13 +30,44 @@ is called out explicitly.
 - German translations for everything new (*Variante / Ausstattung*,
   *Erstzulassung*, *Aktueller Kilometerstand*, …).
 
+### Added — Phase 9.2: plug-in hybrids
+- **Hybrid** and **Plug-in hybrid** are now two fuel types. *Hybrid* is a
+  self-charging or mild hybrid that fills with petrol only; *Plug-in hybrid*
+  fills with petrol and charges from a plug. The vehicle form explains both
+  under the fuel type, and the garage cards, vehicle header and dashboard
+  show *Plug-in hybrid* where it applies.
+- A hybrid's fill-up form now leads with petrol only. Charging is still
+  there under *Other fuels*, and *Used on this vehicle* still lists a
+  charging type the vehicle has used. A plug-in hybrid's form is what every
+  hybrid's was: petrol and electricity, each remembering its own last grade.
+- The capacity field reads *Tank capacity*, or *Battery capacity* for an
+  electric vehicle (it was *Tank or battery capacity*).
+- The sample data (`bin/dev-setup.sh --with-sample-data`) adds a plug-in
+  hybrid with half a year of home charges and petrol fills beside the
+  self-charging Corolla: six vehicles in all.
+- German: *Hybrid (Voll- oder Mildhybrid)*, *Plug-in-Hybrid*, *Tankinhalt*,
+  *Akkukapazität*.
+
+### Changed
+- Figures are unchanged: fill-ups still record petrol or electricity, never
+  the kind of hybrid, so economy, cost, grades and CSV import and export
+  work as before.
+
 ### Upgrade notes
-- New nullable columns `vehicles.variant` and `vehicles.first_registered_on`,
-  added by a reversible migration that runs automatically on start (Docker)
-  or with `vendor/bin/phinx migrate` (bare PHP). Existing vehicles are
-  unchanged and every existing figure stays the same.
+- **Check your hybrids.** On upgrade, every *Hybrid* with at least one
+  electricity fill-up (charge) logged in Logbook, archived vehicles
+  included, becomes a *Plug-in hybrid*. Every other hybrid stays a *Hybrid*.
+  The upgrade decides from what you logged, so a plug-in hybrid you never
+  logged a charge for stays a *Hybrid*: change it on its edit page. The
+  migration is reversible; rolling back turns every plug-in hybrid back into
+  a hybrid.
+- New nullable columns `vehicles.variant` and `vehicles.first_registered_on`
+  (9.1). No other schema change. Both migrations run automatically on start
+  (Docker) or with `vendor/bin/phinx migrate` (bare PHP). Existing vehicles
+  are otherwise unchanged and every existing figure stays the same.
 - Backups record the database schema, so a backup made with 1.0.0 cannot be
-  restored into this version. Restore it with 1.0.0 first, then upgrade.
+  restored into this version. Restore it with 1.0.0 first, then upgrade; the
+  upgrade then sorts its hybrids as above.
 - No configuration changes.
 
 ## [1.0.0] — 2026-09-28
@@ -431,7 +466,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/gwpreston16/Logbook/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/gwpreston16/Logbook/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/gwpreston16/Logbook/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/gwpreston16/Logbook/compare/v0.5.0...v0.6.0

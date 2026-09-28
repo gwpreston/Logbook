@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleType;
@@ -53,6 +54,15 @@ final readonly class VehicleFormPage
             'types' => VehicleType::cases(),
             'fuel_types' => FuelType::cases(),
             'grade_groups' => FuelPicker::defaultGradeGroups($user->preferences->locale),
+            // Which family's grades fit each fuel type, for the form's script.
+            'grade_families' => array_combine(
+                array_map(static fn (FuelType $t): string => $t->value, FuelType::cases()),
+                array_map(static fn (FuelType $t): ?string => FuelGrade::defaultFamilyFor($t)?->value, FuelType::cases()),
+            ),
+            'capacity_labels' => array_combine(
+                array_map(static fn (FuelType $t): string => $t->value, FuelType::cases()),
+                array_map(static fn (FuelType $t): string => $t->capacityLabelKey(), FuelType::cases()),
+            ),
             'currency_options' => FormOptions::currencies(RequestContext::locale($request)),
             'default_currency' => $user->preferences->currency,
             'max_upload_mb' => $this->settings->maxUploadMb,

@@ -161,15 +161,26 @@ MySQL only.
   the registration document; not the model year, not the purchase date;
   never converted through a time zone), registration (optional: a vehicle
   may not be registered yet), VIN (optional, up to 17 characters), fuel type
-  (`petrol`|`diesel`|`ev`|`hybrid`|`lpg`|`other`), tank/battery capacity
-  (optional; litres, or kWh for `ev`), default_grade (optional fuel grade
-  code, §7.3, that must belong to the vehicle's fuel type — a petrol grade
-  for `hybrid`, a charging type for `ev`, none for `lpg` / `other`; changing
-  the fuel type clears one that no longer fits), currency override (optional), photo
+  (`petrol`|`diesel`|`ev`|`hybrid`|`phev`|`lpg`|`other`; `hybrid` is a
+  self-charging or mild hybrid that fills with petrol only, `phev` a plug-in
+  hybrid that fills with petrol and charges from a plug), capacity
+  (optional; the fuel tank in litres, the battery in kWh for `ev`; a
+  plug-in hybrid's battery is not recorded), default_grade (optional fuel
+  grade code, §7.3, that must belong to the vehicle's fuel type — a petrol
+  grade for `hybrid` and `phev`, a charging type for `ev`, none for `lpg` /
+  `other`; changing the fuel type clears one that no longer fits), currency override (optional), photo
   (optional: stored path + MIME type), purchase date/price (optional), sale
   date/price (optional), status (`active` | `archived`), archived_at,
   created/updated (UTC). Deleting a vehicle deletes its history and photo;
   archiving keeps everything.
+- The families a fuel type fits (§7.3) are defined once, on the fuel type
+  (`FuelType::fittingFamilies()`): petrol for `petrol` and `hybrid`, petrol
+  and electricity for `phev`, otherwise the type's own family. Nothing else
+  checks for `hybrid` or `phev`.
+- Upgrading to 1.1.0 sorts existing hybrids by their own history: a
+  `hybrid` with at least one fill-up of fuel `ev` (archived vehicles
+  included) becomes `phev`; every other stays `hybrid`. Rolling back turns
+  every `phev` into `hybrid`, which is what `hybrid` meant before.
 - There is no stored "current mileage": the current odometer is always the
   latest reading in the vehicle's one mileage series (OdometerReading).
   Vehicle age and the lifetime average are derived from
@@ -191,7 +202,8 @@ MySQL only.
 **FuelEntry**
 - id, vehicle_id, filled_at (UTC instant, typed in the user's time zone),
   odometer_km, fuel (`petrol`|`diesel`|`lpg`|`ev`|`other`; defaults to the
-  vehicle's fuel type, petrol for a hybrid), grade (optional code refining
+  vehicle's usual fuel, petrol for either kind of hybrid; there is no `hybrid`
+  or `phev` fuel), grade (optional code refining
   `fuel`, §7.3: `e10_95`, `b7`, `dc_rapid`, …; must belong to the entry's
   fuel; null = not recorded, always valid; an unknown stored code reads as
   null and is logged), volume (litres, or kWh when fuel
@@ -312,6 +324,15 @@ from fleet totals unless "include archived" is toggled.
   tiles, pinned card, pickers) it truncates with an ellipsis and carries the
   full text in a `title`; the vehicle header shows it in full. The sidebar
   vehicles list shows the name only.
+- **Fuel type** select: *Petrol*, *Diesel*, *Electric*, *Hybrid*, *Plug-in
+  hybrid*, *LPG*, *Other*, with the two hybrids side by side. A visible hint
+  under the select (tied to it with `aria-describedby`) explains both:
+  "Hybrid: self-charging or mild hybrid; fills with petrol only." and
+  "Plug-in hybrid: fills with petrol and charges from a plug." Cards, the
+  vehicle header and the dashboard's tiles and pinned card show the type's
+  label (*Plug-in hybrid*). The capacity field is labelled *Battery
+  capacity* for `ev` and *Tank capacity* for every other type (both
+  hybrids included); with JS the label follows the select.
 - Required: type, make, model, fuel type. Everything else is optional; zero
   prices are valid. Year must be between 1885 and next year; a sale date
   cannot precede the purchase date. Variant is at most 100 characters.
@@ -445,16 +466,18 @@ always valid; existing fill-ups are never guessed (they read "Not recorded").
   `family` or `family:grade` (`petrol:e10_95`), parsed server-side into both
   fields (works without JS). Groups, in order: *Used on this vehicle* (up to
   four grades from its fill-ups of the last 12 months, most used first);
-  then the families that fit the vehicle (petrol; petrol and electricity for
-  a hybrid; electricity for an EV; diesel; LPG), each starting with
-  "*Family* — grade not recorded"; then *Other fuels* (every other family);
+  then the families that fit the vehicle (petrol for a petrol car or a
+  self-charging / mild `hybrid`; petrol and electricity for a plug-in
+  `phev`; electricity for an EV; diesel; LPG), each starting with
+  "*Family* — grade not recorded"; then *Other fuels* (every other family,
+  so electricity stays reachable for a `hybrid` set to the wrong type);
   then *More grades* (regional grades for other regions). The owner's
   region is the region of their locale (`en_US` → US); a locale with no
   region sees every regional grade under *More grades*. A grade from another
   family is refused ("B7 is a diesel grade; this fill-up is petrol").
 - **Form default:** the grade of the vehicle's most recent graded fill-up
-  *of the family being logged* (a hybrid's charge never takes the petrol
-  grade; fill-ups logged before grades existed are skipped, not "none"),
+  *of the family being logged* (a plug-in hybrid's charge never takes the
+  petrol grade; fill-ups logged before grades existed are skipped, not "none"),
   else the vehicle's `default_grade` when it is of that family, else none.
   Editing keeps the stored grade. The offline queue sends whatever the form
   held; a queued entry from before grades existed (plain `fuel`) still sends.
@@ -1096,6 +1119,10 @@ task breakdowns live in the per-phase files; this is the map.
   date on each vehicle, a current odometer on the add form that writes the
   first reading, vehicle age and lifetime average mileage. Ships with
   Phase 9.2 as v1.1.0.
+- **Phase 9.2 — Plug-in hybrids + v1.1.0.** The `hybrid` fuel type split
+  into self-charging / mild `hybrid` (fills with petrol) and plug-in `phev`
+  (petrol and electricity); existing hybrids sorted from their own charges;
+  release v1.1.0 with Phase 9.1.
 
 ---
 

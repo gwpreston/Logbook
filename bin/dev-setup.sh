@@ -76,7 +76,7 @@ Local development for Logbook: start it, or stop it again.
   ./bin/dev-setup.sh --stop --reset      Stop it and delete the data too
 
 Options
-  --with-sample-data   A demo owner (demo / logbook-demo) and five vehicles with
+  --with-sample-data   A demo owner (demo / logbook-demo) and six vehicles with
                        a year of fill-ups, EV charges and odometer readings.
   --postgres, --mysql, --mariadb, --sqlite
                        Which database engine to run. PostgreSQL is the default.
@@ -430,7 +430,7 @@ if [ "$SAMPLE_DATA" -eq 1 ]; then
         info "start from an empty one with: ./bin/dev-setup.sh --reset --with-sample-data"
     else
         SAMPLE_LOADED=1
-        ok "a demo owner and five vehicles with a year of history"
+        ok "a demo owner and six vehicles with a year of history"
     fi
 fi
 

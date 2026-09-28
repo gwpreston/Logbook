@@ -10,7 +10,6 @@ use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelChoice;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelGrade;
-use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 
 /**
@@ -43,7 +42,7 @@ final class FuelPicker
             );
         }
 
-        $own = self::familiesFor($vehicle->data->fuelType);
+        $own = $vehicle->data->fuelType->fittingFamilies();
         foreach ($own as $family) {
             $groups[] = new FuelPickerGroup('fuel.fuel.' . $family->value, self::familyOptions($family, $region));
         }
@@ -96,17 +95,6 @@ final class FuelPicker
         $region = Locale::getRegion($locale);
 
         return is_string($region) && $region !== '' ? strtoupper($region) : null;
-    }
-
-    /**
-     * The families offered first for a vehicle: its own (petrol and
-     * electricity for a hybrid, since a plug-in hybrid also charges).
-     *
-     * @return list<Fuel>
-     */
-    public static function familiesFor(FuelType $type): array
-    {
-        return $type === FuelType::Hybrid ? [Fuel::Petrol, Fuel::Electricity] : [Fuel::defaultFor($type)];
     }
 
     /**

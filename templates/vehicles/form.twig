@@ -27,7 +27,9 @@
               x-data="{
                   fuel: '{{ (values.fuel_type ?? 'petrol')|e('js') }}',
                   grade: '{{ (values.default_grade ?? '')|e('js') }}',
-                  gradeFamily() { return { petrol: 'petrol', hybrid: 'petrol', diesel: 'diesel', ev: 'ev' }[this.fuel] ?? null; },
+                  families: {{ grade_families|json_encode }},
+                  capacityLabels: {{ capacity_labels|map(key => key|trans)|json_encode }},
+                  gradeFamily() { return this.families[this.fuel] ?? null; },
                   init() { this.$watch('fuel', this.dropUnfittingGrade.bind(this)); },
                   dropUnfittingGrade() {
                       var group = this.grade === '' ? null : this.$refs.grades.querySelector('option[value=&quot;' + this.grade + '&quot;]').parentElement;
@@ -69,15 +71,18 @@
                 <div class="form-row">
                     <div class="field">
                         <label class="field__label" for="f-fuel_type">{{ 'vehicle.field.fuel_type'|trans }}</label>
-                        <select class="select" id="f-fuel_type" name="fuel_type" required x-model="fuel"{{ ui.described_by('fuel_type', errors, false) }}>
+                        <select class="select" id="f-fuel_type" name="fuel_type" required x-model="fuel"{{ ui.described_by('fuel_type', errors, true) }}>
                             {% for option in fuel_options %}
                                 <option value="{{ option.value }}"{% if option.value == (values.fuel_type ?? '') %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
                         </select>
+                        {# Both kinds of hybrid explained up front, so the hint
+                           is right for any choice with or without JS. #}
+                        <p class="field__hint" id="f-fuel_type-hint">{{ 'vehicle.fuel_hint.hybrid'|trans }} {{ 'vehicle.fuel_hint.phev'|trans }}</p>
                         {{ ui.field_error(errors, 'fuel_type') }}
                     </div>
                     <div class="field">
-                        <label class="field__label" for="f-capacity">{{ 'vehicle.field.capacity'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                        <label class="field__label" for="f-capacity"><span x-text="capacityLabels[fuel] ?? capacityLabels.petrol">{{ (capacity_labels[values.fuel_type ?? 'petrol'] ?? capacity_labels.petrol)|trans }}</span> <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
                         <div class="input-group">
                             <input class="input" id="f-capacity" name="capacity" type="number" step="any" min="0" inputmode="decimal" value="{{ values.capacity ?? '' }}"{{ ui.described_by('capacity', errors, true) }}>
                             <span class="input-group__suffix" aria-hidden="true" x-text="fuel === 'ev' ? '{{ energy_symbol|e('js') }}' : '{{ volume_symbol|e('js') }}'">{{ (values.fuel_type ?? '') == 'ev' ? energy_symbol : volume_symbol }}</span>

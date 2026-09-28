@@ -116,6 +116,11 @@ final class DemoDataSeeder extends AbstractSeed
                 'sale_date' => '2025-11-20', 'sale_price' => '2100.000',
                 'status' => 'archived', 'archived_at' => '2025-11-20 12:00:00',
             ]),
+            $vehicle([
+                'type' => 'car', 'make' => 'Mitsubishi', 'model' => 'Outlander 2.4 PHEV', 'year' => 2021,
+                'registration' => 'YR21 PHV', 'fuel_type' => 'phev', 'default_grade' => 'e10_95', 'capacity' => '45.000',
+                'purchase_date' => '2025-12-05', 'purchase_price' => '21450.000',
+            ]),
         ])->saveData();
 
         $this->seedFuel($now);
@@ -134,7 +139,7 @@ final class DemoDataSeeder extends AbstractSeed
     /**
      * A year of fill-ups (with partial fills, one missed fill-up and EV
      * charges), each with its odometer reading, plus manual readings for the
-     * hybrid. Deterministic, so every reset looks the same.
+     * self-charging hybrid, which is never charged. Deterministic, so every reset looks the same.
      */
     private function seedFuel(string $now): void
     {
@@ -183,6 +188,7 @@ final class DemoDataSeeder extends AbstractSeed
                 $now,
                 ['home', 'home', 'home', 'dc_rapid', 'home', 'home', 'ac', 'home'],
             ),
+            ...$this->plugInHybrid($ids['YR21 PHV'], $now),
         ];
         $this->table('fuel_entries')->insert($entries)->saveData();
 
@@ -501,6 +507,47 @@ final class DemoDataSeeder extends AbstractSeed
                 'updated_at' => $now,
             ];
             $afterGap = false;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * A plug-in hybrid on one rising odometer: charged at home every other
+     * evening, filled with petrol every three weeks. Worked out without
+     * mt_rand(), so the other vehicles' figures stay as they were.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function plugInHybrid(int $vehicleId, string $now): array
+    {
+        $rows = [];
+        $km = 31200.0;
+        $start = (int) strtotime('2026-01-10 00:00 UTC');
+        for ($day = 1; $day <= 150; $day++) {
+            $km += 38 + 12 * sin($day);
+            $petrol = $day % 21 === 0;
+            if (!$petrol && $day % 2 !== 0) {
+                continue;
+            }
+            $volume = $petrol ? 27 + 4 * sin($day / 7) : 10.5 + 1.5 * sin($day / 3);
+            $price = $petrol ? round(1.459 + 0.03 * sin($day / 30), 3) : 0.285;
+            $rows[] = [
+                'vehicle_id' => $vehicleId,
+                'filled_at' => gmdate('Y-m-d H:i:s', $start + $day * 86400 + ($petrol ? 8 : 19) * 3600),
+                'odometer_km' => number_format($km, 3, '.', ''),
+                'fuel' => $petrol ? 'petrol' : 'ev',
+                'grade' => $petrol ? 'e10_95' : 'home',
+                'volume' => number_format($volume, 3, '.', ''),
+                'price_per_unit' => number_format($price, 6, '.', ''),
+                'total_cost' => number_format(round($volume * $price, 2), 3, '.', ''),
+                'is_partial' => false,
+                'is_missed_previous' => false,
+                'station' => $petrol ? 'Shell' : 'Home',
+                'notes' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
 
         return $rows;
