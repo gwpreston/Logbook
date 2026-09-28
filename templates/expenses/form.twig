@@ -1,0 +1,49 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'garage' %}
+{% set editing = entry is not null %}
+{% set heading = (editing ? 'expense.edit_title' : 'expense.add_title')|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('expenses.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'expense.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'expense.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post"
+              action="{{ editing ? url_for('expenses.edit', {id: vehicle.id, entry: entry.id}) : url_for('expenses.create', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+
+            <section class="card">
+                {{ ui.select('category', 'expense.field.category'|trans, values, errors,
+                    categories|map(c => {value: c.value, label: ('expense.category.' ~ c.value)|trans}), {required: true}) }}
+                <div class="form-row">
+                    {{ ui.input('spent_on', 'expense.field.spent_on'|trans, values, errors, {type: 'date', required: true}) }}
+                    {{ ui.input('amount', 'expense.field.amount'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'expense.hint.amount'|trans}) }}
+                </div>
+                {{ ui.input('note', 'expense.field.note'|trans, values, errors, {optional: true, maxlength: 500, hint: 'expense.hint.note'|trans}) }}
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'expense.add_submit')|trans }}</button>
+                <a class="btn btn--lg" href="{{ url_for('expenses.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('expenses.delete', {id: vehicle.id, entry: entry.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+{% endblock %}

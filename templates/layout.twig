@@ -5,17 +5,22 @@
  # visitors): a slim top bar only.
  #
  # Primary navigation entries: route name, translation key, icon, and the
- # `active_nav` value that marks it current. Later phases add Reports here
- # (gated by feature toggles). The bottom bar adds the "Log"
- # button (the fast fill-up path) as its third entry, as in the design.
+ # `active_nav` value that marks it current. Reports is left out when the
+ # module is switched off (spec.md §7.10). The bottom bar shows the first
+ # four entries with the "Log" button (the fast fill-up path) in the middle,
+ # as in the design; Settings is then reached from the top bar.
  #}
 {% set signed_in = user is not null %}
 {% set nav_items = [
     {route: 'home', label: 'nav.dashboard', icon: 'space_dashboard', key: 'home'},
     {route: 'garage', label: 'nav.garage', icon: 'garage', key: 'garage'},
     {route: 'reminders.index', label: 'nav.reminders', icon: 'notifications', key: 'reminders'},
-    {route: 'settings', label: 'nav.settings', icon: 'settings', key: 'settings'},
 ] %}
+{% if signed_in and feature_enabled('reports') %}
+    {% set nav_items = nav_items|merge([{route: 'reports.index', label: 'nav.reports', icon: 'bar_chart', key: 'reports'}]) %}
+{% endif %}
+{% set nav_items = nav_items|merge([{route: 'settings', label: 'nav.settings', icon: 'settings', key: 'settings'}]) %}
+{% set bottom_items = nav_items|slice(0, 4) %}
 {% set current_nav = active_nav|default('') %}
 {% set theme = signed_in ? user.preferences.theme.value : null %}
 <!doctype html>
@@ -85,6 +90,9 @@
             <header class="topbar">
                 {{ ui.brand() }}
                 {{ ui.theme_toggle('icon-btn', true, signed_in, csrf, current_path) }}
+                {% if signed_in and 'settings' not in bottom_items|map(i => i.key) %}
+                    <a class="icon-btn" href="{{ url_for('settings') }}"{% if current_nav == 'settings' %} aria-current="page"{% endif %}>{{ ui.icon('settings') }}<span class="visually-hidden">{{ 'nav.settings'|trans }}</span></a>
+                {% endif %}
                 {% block topbar_actions %}{% endblock %}
             </header>
 
@@ -105,7 +113,7 @@
         {# Narrow screens: bottom tab bar. Hidden on wide screens. #}
         <nav class="bottom-nav" aria-label="{{ 'nav.label'|trans }}">
             <ul class="bottom-nav__list">
-                {% for item in nav_items %}
+                {% for item in bottom_items %}
                     {% if loop.index == 3 %}
                         <li>
                             <a class="bottom-nav__link bottom-nav__link--fab" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>

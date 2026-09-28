@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/expenses.twig' as exp %}
 
 {% set active_nav = 'garage' %}
 {% set dash = '—' %}
@@ -13,7 +14,10 @@
     <div class="page__stack">
         {% include 'vehicles/_header.twig' with {active_tab: 'odometer'} %}
 
-        <h1 class="visually-hidden">{{ 'odometer.title'|trans }} · {{ vehicle.name() }}</h1>
+        <div class="toolbar">
+            <h1 class="section-title">{{ 'odometer.title'|trans }}</h1>
+            {{ exp.export_link(vehicle, 'odometer') }}
+        </div>
 
         <dl class="stats">
             {{ ui.stat('odometer.stat.current'|trans,

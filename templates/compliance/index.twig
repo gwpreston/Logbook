@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/compliance.twig' as docs %}
+{% import 'macros/expenses.twig' as exp %}
 
 {% set active_nav = 'garage' %}
 
@@ -12,9 +13,12 @@
 
         <div class="toolbar">
             <h1 class="section-title">{{ 'compliance.title'|trans }}</h1>
-            {% if not vehicle.isArchived() %}
-                <a class="btn btn--primary" href="{{ url_for('compliance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
-            {% endif %}
+            <div class="btn-row">
+                {{ exp.export_link(vehicle, 'documents') }}
+                {% if not vehicle.isArchived() %}
+                    <a class="btn btn--primary" href="{{ url_for('compliance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
+                {% endif %}
+            </div>
         </div>
 
         <section class="card" aria-labelledby="current-heading">

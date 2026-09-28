@@ -6,6 +6,35 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added — Phase 5: expenses, reports and dashboard
+- **Expenses**: every fill-up, and every maintenance job and document with a
+  cost, now counts as an expense automatically — nothing to enter twice and
+  nothing counted twice. Add anything else (parking, tolls, road tax,
+  cleaning, fines…) on the vehicle's new **Expenses** tab; free is fine.
+- **Reports** (new *Reports* page): the whole garage or one vehicle over this
+  month, the last 3 or 12 months, this year, all time or any dates you pick.
+  Total spend, running cost per mile or km (from your mileage log), distance
+  driven, average per month, spend by category and per month (table and
+  chart) and per vehicle. Sold (archived) vehicles are left out unless you
+  tick "Include archived vehicles". Vehicles in different currencies get
+  separate totals — amounts are never converted.
+- **CSV export** of any report, and of each vehicle's fuel, mileage,
+  maintenance, documents and expenses ("Export CSV" on each tab). Values are
+  in your units with the unit in the header, precise enough to import back.
+- **Dashboard**: widgets for your vehicles, upcoming reminders, spend this
+  month, recent fuel, efficiency trend and documents. *Customise* moves or
+  hides them (drag and drop too); the layout is saved to your account.
+- On phones, Reports takes Settings' place in the bottom bar; Settings moves
+  to the top bar.
+- `FEATURES_*` variables now take effect for the dashboard and reports
+  (e.g. `FEATURES_COMPLIANCE=false` hides the documents widget and leaves
+  document costs out of reports).
+
+### Upgrade notes
+- New table `expense_entries`, created by a reversible migration that runs
+  automatically on start (Docker) or with `vendor/bin/phinx migrate` (bare
+  PHP). Existing costs appear in reports straight away; nothing is copied.
+
 ## [0.4.0] — 2026-09-27
 
 Phase 4: reminders and notifications.

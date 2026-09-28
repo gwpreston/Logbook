@@ -1,8 +1,13 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
-{% import 'macros/vehicles.twig' as vehicle_ui %}
 
 {% set active_nav = 'home' %}
+{% set widget_links = {
+    fleet: {route: 'garage', label: 'dashboard.link.garage'},
+    reminders: {route: 'reminders.index', label: 'reminders.view_all'},
+    spend: {route: 'reports.index', label: 'dashboard.link.reports'},
+} %}
+{% set widgets = customise ? dashboard.available : dashboard.visible() %}
 
 {% block content %}
     <div class="page__stack">
@@ -10,66 +15,87 @@
             <div>
                 <p class="page-header__eyebrow">{{ today|local_date(constant('IntlDateFormatter::FULL')) }}</p>
                 <h1 class="page-header__title">{{ 'home.greeting'|trans({name: user.displayName}) }}</h1>
-                <p class="page-header__lead">{{ 'home.intro'|trans }}</p>
+                {% if not dashboard.hasVehicles() %}<p class="page-header__lead">{{ 'home.intro'|trans }}</p>{% endif %}
             </div>
+            {% if dashboard.hasVehicles() %}
+                {% if customise %}
+                    <a class="btn btn--primary" href="{{ url_for('home') }}">{{ ui.icon('check') }}{{ 'dashboard.done'|trans }}</a>
+                {% else %}
+                    <a class="btn" href="{{ url_for('home', {}, {customise: '1'}) }}">{{ ui.icon('tune') }}{{ 'dashboard.customise'|trans }}</a>
+                {% endif %}
+            {% endif %}
         </header>
 
-        <section class="card" aria-labelledby="garage-heading">
-            <div class="card__header">
-                <h2 id="garage-heading" class="card__title">{{ trans('home.vehicle_count', {count: counts.active}) }}</h2>
-                {% if counts.active > 0 or counts.archived > 0 %}
-                    <a class="card__link" href="{{ url_for('garage') }}">{{ 'home.open_garage'|trans }}</a>
-                {% endif %}
-            </div>
-            {% if vehicles is empty %}
+        {% if not dashboard.hasVehicles() %}
+            <section class="card" aria-labelledby="garage-heading">
+                <div class="card__header">
+                    <h2 id="garage-heading" class="card__title">{{ trans('home.vehicle_count', {count: 0}) }}</h2>
+                    {% if dashboard.archivedCount > 0 %}
+                        <a class="card__link" href="{{ url_for('garage', {}, {archived: '1'}) }}">{{ 'dashboard.fleet.archived'|trans({count: dashboard.archivedCount}) }}</a>
+                    {% endif %}
+                </div>
                 <div class="empty">
                     {{ ui.icon('garage') }}
                     <p class="empty__title">{{ 'garage.empty_title'|trans }}</p>
                     <p>{{ 'garage.empty_body'|trans }}</p>
                     <a class="btn btn--primary" href="{{ url_for('vehicles.create') }}">{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
                 </div>
-            {% else %}
-                <div class="vehicle-grid">
-                    {% for vehicle in vehicles %}
-                        {{ vehicle_ui.card(vehicle) }}
-                    {% endfor %}
+            </section>
+        {% else %}
+            {% if customise %}
+                <div class="alert alert--info customise-bar" role="status">
+                    {{ ui.icon('drag_indicator') }}
+                    <span>{{ 'dashboard.customise_hint'|trans }}</span>
+                    <form method="post" action="{{ url_for('dashboard.layout') }}" class="customise-bar__reset">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" name="reset" value="1" class="btn btn--ghost">{{ ui.icon('restart_alt') }}{{ 'dashboard.reset'|trans }}</button>
+                    </form>
+                </div>
+                {# Drag and drop (js/app.js) posts the new order with this form's token. #}
+                <form method="post" action="{{ url_for('dashboard.layout') }}" data-dashboard-order hidden>
+                    {{ ui.csrf(csrf) }}
+                    <input type="hidden" name="order" value="">
+                </form>
+            {% endif %}
+
+            {% if widgets is empty %}
+                <div class="card empty">
+                    {{ ui.icon('space_dashboard') }}
+                    <p class="empty__title">{{ 'dashboard.all_hidden_title'|trans }}</p>
+                    <p><a href="{{ url_for('home', {}, {customise: '1'}) }}">{{ 'dashboard.all_hidden_body'|trans }}</a></p>
                 </div>
             {% endif %}
-        </section>
 
-        {% if counts.active > 0 %}
-            <section class="card" aria-labelledby="reminders-heading">
-                <div class="card__header">
-                    <h2 id="reminders-heading" class="card__title">{{ 'reminders.attention'|trans({count: reminders.attentionCount()}) }}</h2>
-                    <a class="card__link" href="{{ url_for('reminders.index') }}">{{ 'reminders.view_all'|trans }}</a>
-                </div>
-                {% if top_reminders is empty %}
-                    <p class="muted">{{ 'reminders.empty_body'|trans }}</p>
-                {% else %}
-                    <ul class="list">
-                        {% for entry in top_reminders %}
-                            {% set reminder = entry.reminder %}
-                            <li class="list__item">
-                                <span class="list__icon">{{ ui.icon(reminder.icon()) }}</span>
-                                <span class="list__body">
-                                    <a class="list__title" href="{{ url_for('reminders.index') }}">{{ wording.name(reminder) }}</a>
-                                    <span class="list__meta">{{ entry.vehicle.name() }}</span>
-                                </span>
-                                <span class="list__end">
-                                    <span class="pill{{ reminder.status.tone() ? ' pill--' ~ reminder.status.tone() }}">{{ wording.when(reminder, reminders.today) }}</span>
-                                </span>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            </section>
-        {% endif %}
-
-        <section class="card" aria-labelledby="coming-heading">
-            <div class="card__header">
-                <h2 id="coming-heading" class="card__title">{{ 'home.coming_heading'|trans }}</h2>
+            <div class="dashboard{{ customise ? ' dashboard--customise' }}"{% if customise %} data-dashboard-sortable{% endif %}>
+                {% for widget in widgets %}
+                    {% set hidden = dashboard.isHidden(widget) %}
+                    {% set title = ('dashboard.widget.' ~ widget.value)|trans %}
+                    {% set link = widget_links[widget.value] ?? null %}
+                    <section class="widget{{ widget.isWide() ? ' widget--wide' }}{{ hidden ? ' widget--hidden' }}" id="widget-{{ widget.value }}" data-widget="{{ widget.value }}" aria-labelledby="widget-{{ widget.value }}-title">
+                        <div class="widget__header">
+                            {% if customise %}<span class="widget__handle" data-drag-handle hidden>{{ ui.icon('drag_indicator') }}</span>{% endif %}
+                            <span class="widget__icon">{{ ui.icon(widget.icon()) }}</span>
+                            <h2 class="widget__title" id="widget-{{ widget.value }}-title">{{ title }}</h2>
+                            {% if customise %}
+                                <form method="post" action="{{ url_for('dashboard.layout') }}" class="widget__controls">
+                                    {{ ui.csrf(csrf) }}
+                                    <input type="hidden" name="widget" value="{{ widget.value }}">
+                                    <button type="submit" name="move" value="up" class="icon-btn"{% if loop.first %} disabled{% endif %}>{{ ui.icon('arrow_upward') }}<span class="visually-hidden">{{ 'dashboard.move_up'|trans({widget: title}) }}</span></button>
+                                    <button type="submit" name="move" value="down" class="icon-btn"{% if loop.last %} disabled{% endif %}>{{ ui.icon('arrow_downward') }}<span class="visually-hidden">{{ 'dashboard.move_down'|trans({widget: title}) }}</span></button>
+                                    <button type="submit" name="toggle" value="1" class="icon-btn" aria-pressed="{{ hidden ? 'false' : 'true' }}">{{ ui.icon(hidden ? 'visibility_off' : 'visibility') }}<span class="visually-hidden">{{ (hidden ? 'dashboard.show' : 'dashboard.hide')|trans({widget: title}) }}</span></button>
+                                </form>
+                            {% elseif link and (widget.value != 'spend' or feature_enabled('reports')) %}
+                                <a class="card__link" href="{{ url_for(link.route) }}">{{ link.label|trans }}</a>
+                            {% endif %}
+                        </div>
+                        {% if hidden %}
+                            <p class="muted widget__hidden-note">{{ 'dashboard.hidden_note'|trans }}</p>
+                        {% else %}
+                            {% include 'dashboard/_' ~ widget.value ~ '.twig' %}
+                        {% endif %}
+                    </section>
+                {% endfor %}
             </div>
-            <p class="muted">{{ 'home.coming_body'|trans }}</p>
-        </section>
+        {% endif %}
     </div>
 {% endblock %}

@@ -75,6 +75,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('local_date', $this->formatter->date(...)),
             new TwigFilter('local_datetime', $this->formatter->dateTime(...)),
             new TwigFilter('instant_date', $this->formatter->instantDate(...)),
+            new TwigFilter('local_month', $this->formatter->month(...)),
         ];
     }
 

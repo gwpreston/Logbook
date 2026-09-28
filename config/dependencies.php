@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use Logbook\Service\Feature\FeatureTwigExtension;
 use Logbook\Service\Notification\Channel\EmailChannel;
 use Logbook\Service\Notification\Channel\EmailConfig;
 use Logbook\Service\Notification\Channel\GotifyChannel;
@@ -151,6 +152,9 @@ return [
             'debug' => $config->debug,
         ]);
         $twig->addExtension($extension);
+        $features = $c->get(FeatureTwigExtension::class);
+        assert($features instanceof FeatureTwigExtension);
+        $twig->addExtension($features);
 
         return $twig;
     },

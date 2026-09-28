@@ -1,0 +1,205 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/expenses.twig' as exp %}
+
+{% set active_nav = 'reports' %}
+{% set dash = '—' %}
+{% set period = report.period %}
+{% set selected = report.vehicle() %}
+{% set scope_label = selected ? selected.name() : 'report.fleet'|trans %}
+{% set custom = filter.period.range.value == 'custom' %}
+
+{% block title %}{{ 'report.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'report.title'|trans }}</h1>
+                <p class="page-header__lead">
+                    {{- scope_label }} · {{ 'report.period'|trans({from: period.from|local_date, to: period.to|local_date}) -}}
+                    {%- if not selected and filter.includeArchived %} · {{ 'report.archived_included'|trans }}{% endif -%}
+                </p>
+            </div>
+            <a class="btn" href="{{ url_for('reports.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+        </header>
+
+        <form class="card report-filter" method="get" action="{{ url_for('reports.index') }}" data-auto-submit>
+            <div class="form-row">
+                <div class="field">
+                    <label class="field__label" for="f-vehicle">{{ 'report.field.vehicle'|trans }}</label>
+                    <select class="select" id="f-vehicle" name="vehicle">
+                        <option value="">{{ 'report.fleet'|trans }}</option>
+                        {% for vehicle in all_vehicles %}
+                            <option value="{{ vehicle.id }}"{% if filter.vehicleId == vehicle.id %} selected{% endif %}>
+                                {{- vehicle.name() }}{% if vehicle.isArchived() %} ({{ 'vehicle.status.archived'|trans }}){% endif -%}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <label class="checkbox report-filter__archived">
+                    <input type="checkbox" name="include_archived" value="1"{% if filter.includeArchived %} checked{% endif %}>
+                    <span>{{ 'report.field.include_archived'|trans }}</span>
+                </label>
+            </div>
+
+            <fieldset class="field fieldset">
+                <legend class="field__label">{{ 'report.period_label'|trans }}</legend>
+                <div class="chip-row">
+                    {% for range in ranges %}
+                        {% set value = range.value %}
+                        <label class="chip">
+                            <input type="radio" name="range" value="{{ value }}"{% if filter.period.range.value == value %} checked{% endif %}{% if value == 'custom' %} data-custom-range{% endif %}>
+                            <span>{{ ('report.range.' ~ value)|trans }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <div class="form-row">
+                <div class="field">
+                    <label class="field__label" for="f-from">{{ 'report.field.from'|trans }}</label>
+                    <input class="input" id="f-from" name="from" type="date" value="{{ custom and filter.period.from ? filter.period.from.format('Y-m-d') : '' }}" data-custom-date>
+                </div>
+                <div class="field">
+                    <label class="field__label" for="f-to">{{ 'report.field.to'|trans }}</label>
+                    <input class="input" id="f-to" name="to" type="date" value="{{ custom ? filter.period.to.format('Y-m-d') : '' }}" data-custom-date>
+                </div>
+            </div>
+            <p class="field__hint">{{ 'report.hint.custom'|trans }}</p>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary">{{ ui.icon('check') }}{{ 'report.apply'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url_for('reports.index') }}">{{ 'report.reset'|trans }}</a>
+            </div>
+        </form>
+
+        {% if report.vehicles is empty %}
+            <div class="card empty">
+                {{ ui.icon('garage') }}
+                <p class="empty__title">{{ 'report.no_vehicles_title'|trans }}</p>
+                <p>{{ 'report.no_vehicles_body'|trans }}</p>
+            </div>
+        {% endif %}
+
+        {% for section in report.currencies %}
+            {% set currency = section.currency %}
+            {% set chart = charts[loop.index0] %}
+            {% set spent_groups = section.spentGroups() %}
+            <section class="page__stack report-section" aria-labelledby="report-{{ currency }}-heading">
+                {% if report.hasSeveralCurrencies() %}
+                    <h2 id="report-{{ currency }}-heading" class="section-title">{{ 'report.in_currency'|trans({currency: currency_name(currency)}) }}</h2>
+                {% else %}
+                    <h2 id="report-{{ currency }}-heading" class="visually-hidden">{{ 'report.summary'|trans }}</h2>
+                {% endif %}
+
+                <dl class="stats">
+                    {{ ui.stat('report.stat.total'|trans, section.total|money, 'report.costs_count'|trans({count: section.count})) }}
+                    {{ ui.stat('report.stat.per_distance'|trans,
+                        section.costPerKm is not null ? section.costPerKm|per_distance(currency) : dash,
+                        'report.all_costs'|trans) }}
+                    {{ ui.stat('report.stat.distance'|trans,
+                        section.distanceKm is not null ? section.distanceKm|distance : dash,
+                        'report.from_mileage_log'|trans) }}
+                    {{ ui.stat('report.stat.per_month'|trans, section.averagePerMonth|money, 'report.months'|trans({count: report.monthCount()})) }}
+                </dl>
+
+                {% if section.isEmpty() %}
+                    <div class="card empty">
+                        {{ ui.icon('payments') }}
+                        <p class="empty__title">{{ 'report.empty_title'|trans }}</p>
+                        <p>{{ 'report.empty_body'|trans }}</p>
+                    </div>
+                {% else %}
+                    <div class="card-grid report-grid">
+                        <section class="card report-grid__wide" aria-labelledby="months-{{ currency }}">
+                            <div class="card__header">
+                                <h3 id="months-{{ currency }}" class="card__title">{{ 'report.by_month'|trans }}</h3>
+                            </div>
+                            {% if chart.hasData() %}
+                                {{ ui.chart(chart, 'report.chart_label'|trans({currency: currency})) }}
+                            {% endif %}
+                            <div class="table-wrap">
+                                <table class="table">
+                                    <caption class="visually-hidden">{{ 'report.by_month'|trans }}</caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">{{ 'report.column.month'|trans }}</th>
+                                            {% for total in spent_groups %}
+                                                <th scope="col" class="table__num">{{ exp.swatch(total.group) }}{{ ('expense.group.' ~ total.group.value)|trans }}</th>
+                                            {% endfor %}
+                                            <th scope="col" class="table__num">{{ 'report.column.total'|trans }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for month in section.months|reverse %}
+                                            <tr>
+                                                <th scope="row">{{ month.month|local_month }}</th>
+                                                {% for total in spent_groups %}
+                                                    {% set amount = month.amount(total.group) %}
+                                                    <td class="table__num tabular">{{ amount.isZero() ? dash : amount|money }}</td>
+                                                {% endfor %}
+                                                <td class="table__num tabular"><strong>{{ month.total|money }}</strong></td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th scope="row">{{ 'report.column.total'|trans }}</th>
+                                            {% for total in spent_groups %}
+                                                <td class="table__num tabular">{{ total.amount|money }}</td>
+                                            {% endfor %}
+                                            <td class="table__num tabular"><strong>{{ section.total|money }}</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="card" aria-labelledby="groups-{{ currency }}">
+                            <div class="card__header">
+                                <h3 id="groups-{{ currency }}" class="card__title">{{ 'report.by_group'|trans }}</h3>
+                            </div>
+                            {{ exp.breakdown(section) }}
+                        </section>
+
+                        {% if not selected and section.vehicles|length > 1 %}
+                            <section class="card" aria-labelledby="vehicles-{{ currency }}">
+                                <div class="card__header">
+                                    <h3 id="vehicles-{{ currency }}" class="card__title">{{ 'report.by_vehicle'|trans }}</h3>
+                                </div>
+                                <ul class="breakdown">
+                                    {% for row in section.vehicles %}
+                                        <li class="breakdown__row">
+                                            <span class="breakdown__label">
+                                                <a href="{{ url_for('reports.index', {}, filter_query|merge({vehicle: row.vehicle.id})) }}">{{ row.vehicle.name() }}</a>
+                                                {%- if row.vehicle.isArchived() %} <span class="muted">({{ 'vehicle.status.archived'|trans }})</span>{% endif -%}
+                                            </span>
+                                            <span class="breakdown__share">{{ row.costPerKm is not null ? row.costPerKm|per_distance(currency) : '' }}</span>
+                                            <span class="breakdown__amount tabular">{{ row.total|money }}</span>
+                                            <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ row.share|round(1) }}%"></span></span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </section>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </section>
+        {% endfor %}
+
+        {% if rows is not empty %}
+            <section class="card" aria-labelledby="costs-heading">
+                <div class="card__header">
+                    <h2 id="costs-heading" class="card__title">{{ 'report.costs'|trans }}</h2>
+                </div>
+                <ul class="list">
+                    {% for item in rows %}
+                        {{ exp.cost_row(item, not selected) }}
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'reports.index', {}, filter_query) }}
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

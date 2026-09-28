@@ -11,7 +11,13 @@ use Logbook\Action\Compliance\ComplianceListAction;
 use Logbook\Action\Compliance\CreateComplianceDocumentAction;
 use Logbook\Action\Compliance\DeleteComplianceDocumentAction;
 use Logbook\Action\Compliance\EditComplianceDocumentAction;
+use Logbook\Action\Dashboard\SaveDashboardLayoutAction;
 use Logbook\Action\DeepLinkCheckAction;
+use Logbook\Action\Expense\CreateExpenseAction;
+use Logbook\Action\Expense\DeleteExpenseAction;
+use Logbook\Action\Expense\EditExpenseAction;
+use Logbook\Action\Expense\VehicleExpensesAction;
+use Logbook\Action\Export\ExportModuleAction;
 use Logbook\Action\Fuel\CreateFuelEntryAction;
 use Logbook\Action\Fuel\DeleteFuelEntryAction;
 use Logbook\Action\Fuel\EditFuelEntryAction;
@@ -37,6 +43,8 @@ use Logbook\Action\Reminder\DeleteReminderAction;
 use Logbook\Action\Reminder\EditReminderAction;
 use Logbook\Action\Reminder\ReminderListAction;
 use Logbook\Action\Reminder\ReminderStatusAction;
+use Logbook\Action\Report\ReportAction;
+use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
@@ -83,6 +91,7 @@ return static function (App $app): void {
     $app->group('', function (Group $group): void {
         $group->get('/', HomeAction::class)->setName('home');
         $group->post('/logout', LogoutAction::class)->setName('logout');
+        $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
 
         $group->get('/garage', GarageAction::class)->setName('garage');
         $group->map(['GET', 'POST'], '/vehicles/new', CreateVehicleAction::class)->setName('vehicles.create');
@@ -132,6 +141,16 @@ return static function (App $app): void {
             $vehicle->map(['GET', 'POST'], '/documents/{document:[0-9]+}/delete', DeleteComplianceDocumentAction::class)
                 ->setName('compliance.delete');
 
+            $vehicle->get('/expenses', VehicleExpensesAction::class)->setName('expenses.index');
+            $vehicle->map(['GET', 'POST'], '/expenses/new', CreateExpenseAction::class)->setName('expenses.create');
+            $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/edit', EditExpenseAction::class)
+                ->setName('expenses.edit');
+            $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/delete', DeleteExpenseAction::class)
+                ->setName('expenses.delete');
+
+            $vehicle->get('/export/{module:fuel|odometer|maintenance|documents|expenses}.csv', ExportModuleAction::class)
+                ->setName('export.module');
+
             $vehicle->get('/attachments/{attachment:[0-9]+}', ShowAttachmentAction::class)->setName('attachments.show');
             $vehicle->map(['GET', 'POST'], '/attachments/{attachment:[0-9]+}/delete', DeleteAttachmentAction::class)
                 ->setName('attachments.delete');
@@ -144,6 +163,9 @@ return static function (App $app): void {
             ->setName('reminders.delete');
         $group->post('/reminders/{reminder:[0-9]+}/{action:done|dismiss|reopen}', ReminderStatusAction::class)
             ->setName('reminders.status');
+
+        $group->get('/reports', ReportAction::class)->setName('reports.index');
+        $group->get('/reports/export.csv', ReportExportAction::class)->setName('reports.export');
 
         $group->get('/settings', SettingsAction::class)->setName('settings');
         $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');

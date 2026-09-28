@@ -118,6 +118,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedMaintenance($now);
         $this->seedDocuments($now);
         $this->seedReminders($now);
+        $this->seedExpenses($now);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
@@ -341,6 +342,33 @@ final class DemoDataSeeder extends AbstractSeed
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
+        ])->saveData();
+    }
+
+    /**
+     * Ad-hoc expenses; fuel, maintenance and document costs roll up by themselves.
+     */
+    private function seedExpenses(string $now): void
+    {
+        $ids = $this->vehicleIds();
+        $expense = static fn (string $registration, string $date, string $category, string $amount, ?string $note): array => [
+            'vehicle_id' => $ids[$registration],
+            'spent_on' => $date,
+            'category' => $category,
+            'amount' => $amount,
+            'note' => $note,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $this->table('expense_entries')->insert([
+            $expense('LB19 KTR', '2026-08-14', 'parking', '18.500', 'Leeds station'),
+            $expense('LB19 KTR', '2026-07-02', 'cleaning', '12.000', 'Car wash'),
+            $expense('LB19 KTR', '2026-04-01', 'tax', '190.000', 'Vehicle excise duty'),
+            $expense('LB19 KTR', '2025-12-20', 'tolls', '2.500', 'Dartford Crossing'),
+            $expense('LB19 KTR', '2026-09-06', 'parking', '0.000', 'Free after 6pm'),
+            $expense('MT20 BKE', '2026-05-11', 'accessories', '64.990', 'Tank bag'),
+            $expense('EV23 KIA', '2026-06-18', 'tolls', '9.800', 'Péage A26'),
         ])->saveData();
     }
 

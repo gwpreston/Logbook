@@ -89,6 +89,56 @@
         };
     }
 
+    /*
+     * Bar charts (Support\View\BarChart): labelled bars, stacked series,
+     * already formatted labels.
+     */
+    function barConfig(spec) {
+        var numberFormat = spec.currency
+            ? new Intl.NumberFormat(spec.locale, { style: 'currency', currency: spec.currency, maximumFractionDigits: spec.decimals })
+            : new Intl.NumberFormat(spec.locale, { maximumFractionDigits: spec.decimals });
+        var muted = token('muted');
+
+        return {
+            type: 'bar',
+            data: {
+                labels: spec.labels,
+                datasets: spec.series.map(function (series) {
+                    return {
+                        label: series.label,
+                        data: series.values,
+                        backgroundColor: token(series.color) || token('accent'),
+                        borderRadius: 4,
+                        maxBarThickness: 40,
+                    };
+                }),
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { stacked: spec.stacked, ticks: { color: muted, maxRotation: 0, autoSkip: true }, grid: { display: false } },
+                    y: {
+                        stacked: spec.stacked,
+                        beginAtZero: true,
+                        ticks: { color: muted, callback: function (value) { return numberFormat.format(value); } },
+                        grid: { color: token('border') },
+                    },
+                },
+                plugins: {
+                    legend: { display: spec.series.length > 1, labels: { color: muted, boxWidth: 12 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function (item) { return item.dataset.label + ': ' + numberFormat.format(item.parsed.y); },
+                        },
+                    },
+                },
+            },
+        };
+    }
+
     function drawCharts() {
         charts.forEach(function (chart) { chart.destroy(); });
         charts = [];
@@ -102,7 +152,73 @@
             } catch (e) {
                 return;
             }
-            charts.push(new window.Chart(canvas, { type: 'line', data: chartData(spec), options: chartOptions(spec) }));
+            var config = spec.type === 'bar'
+                ? barConfig(spec)
+                : { type: 'line', data: chartData(spec), options: chartOptions(spec) };
+            charts.push(new window.Chart(canvas, config));
+        });
+    }
+
+    /*
+     * Dashboard, customise mode: drag widgets by their handle (SortableJS);
+     * the new order is saved straight away with the page's CSRF token. The
+     * move buttons (plain forms) keep working without this.
+     */
+    function enhanceDashboard(grid) {
+        var form = document.querySelector('form[data-dashboard-order]');
+        if (!form || typeof window.Sortable !== 'function') {
+            return;
+        }
+        grid.querySelectorAll('[data-drag-handle]').forEach(function (handle) {
+            handle.hidden = false;
+        });
+        window.Sortable.create(grid, {
+            handle: '[data-drag-handle]',
+            draggable: '[data-widget]',
+            ghostClass: 'widget--ghost',
+            animation: 150,
+            onEnd: function () {
+                var widgets = grid.querySelectorAll('[data-widget]');
+                var order = Array.prototype.map.call(widgets, function (widget, index) {
+                    var up = widget.querySelector('button[name="move"][value="up"]');
+                    var down = widget.querySelector('button[name="move"][value="down"]');
+                    if (up) { up.disabled = index === 0; }
+                    if (down) { down.disabled = index === widgets.length - 1; }
+                    return widget.getAttribute('data-widget');
+                });
+                form.querySelector('input[name="order"]').value = order.join(',');
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new URLSearchParams(new FormData(form)),
+                    headers: { 'X-Requested-With': 'fetch' },
+                    credentials: 'same-origin',
+                }).then(function (response) {
+                    if (!response.ok) {
+                        window.location.reload();
+                    }
+                });
+            },
+        });
+    }
+
+    /*
+     * Filter forms (reports): apply a choice as soon as it is made. Typing a
+     * date selects "custom" instead, and waits for the button or Enter.
+     */
+    function enhanceAutoSubmit(form) {
+        form.addEventListener('change', function (event) {
+            var target = event.target;
+            if (target.hasAttribute('data-custom-date')) {
+                var custom = form.querySelector('[data-custom-range]');
+                if (custom) {
+                    custom.checked = true;
+                }
+                return;
+            }
+            if (target.matches('select, input[type="radio"], input[type="checkbox"]')
+                && !(target.hasAttribute('data-custom-range'))) {
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            }
         });
     }
 
@@ -196,6 +312,8 @@
         });
 
         document.querySelectorAll('[data-fuel-amounts]').forEach(enhanceFuelAmounts);
+        document.querySelectorAll('[data-dashboard-sortable]').forEach(enhanceDashboard);
+        document.querySelectorAll('form[data-auto-submit]').forEach(enhanceAutoSubmit);
 
         drawCharts();
         // Redraw with the other theme's colours when the OS theme flips.

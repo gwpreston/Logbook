@@ -44,14 +44,20 @@ final class TestBrowser
      *
      * @param array<string, string|list<string>> $fields (a list for multi-value fields such as checkboxes[])
      * @param array<string, UploadedFileInterface> $files
+     * @param array<string, string> $headers e.g. the X-Requested-With a script sends
      */
-    public function post(string $path, array $fields = [], array $files = [], bool $withCsrf = true): ResponseInterface
-    {
+    public function post(
+        string $path,
+        array $fields = [],
+        array $files = [],
+        bool $withCsrf = true,
+        array $headers = [],
+    ): ResponseInterface {
         if ($withCsrf) {
             $fields += $this->csrfFields();
         }
 
-        return $this->request('POST', $path, $fields, $files);
+        return $this->request('POST', $path, $fields, $files, $headers);
     }
 
     /**

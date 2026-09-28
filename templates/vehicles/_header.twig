@@ -4,7 +4,7 @@
  # work without JS and survive a hard refresh.
  #
  # Expects: vehicle, active_tab ('overview' | 'odometer' | 'fuel' |
- # 'maintenance' | 'compliance').
+ # 'maintenance' | 'compliance' | 'expenses').
  #}
 {% import 'macros/ui.twig' as ui %}
 {% set data = vehicle.data %}
@@ -14,6 +14,7 @@
     {route: 'fuel.index', key: 'fuel', icon: data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station', label: 'vehicle.tab.fuel'},
     {route: 'maintenance.index', key: 'maintenance', icon: 'build', label: 'vehicle.tab.maintenance'},
     {route: 'compliance.index', key: 'compliance', icon: 'verified_user', label: 'vehicle.tab.compliance'},
+    {route: 'expenses.index', key: 'expenses', icon: 'payments', label: 'vehicle.tab.expenses'},
 ] %}
 
 <div class="toolbar">
