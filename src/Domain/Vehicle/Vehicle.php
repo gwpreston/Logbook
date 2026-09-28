@@ -31,12 +31,20 @@ final readonly class Vehicle
     }
 
     /**
-     * Secondary line: "2019 Volkswagen Golf" (or "Volkswagen Golf" without a
-     * year); includes the make and model even when a nickname is shown.
+     * The descriptive line: "2019 Ford Focus 1.5 EcoBoost ST-Line X", skipping
+     * the parts that are not set; includes the make and model even when a
+     * nickname is shown (spec.md §7.1).
      */
     public function description(): string
     {
-        return trim(($this->data->year !== null ? $this->data->year . ' ' : '') . $this->data->make . ' ' . $this->data->model);
+        $parts = [
+            $this->data->year === null ? '' : (string) $this->data->year,
+            $this->data->make,
+            $this->data->model,
+            $this->data->variant ?? '',
+        ];
+
+        return implode(' ', array_filter(array_map(trim(...), $parts), static fn (string $part): bool => $part !== ''));
     }
 
     public function isArchived(): bool

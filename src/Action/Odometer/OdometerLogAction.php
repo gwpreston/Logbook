@@ -6,10 +6,13 @@ namespace Logbook\Action\Odometer;
 
 use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\Pagination;
 use Logbook\Support\View\View;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -25,6 +28,7 @@ final readonly class OdometerLogAction
         private OdometerChart $chart,
         private OdometerWarningFlash $warnings,
         private View $view,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -52,6 +56,7 @@ final readonly class OdometerLogAction
             'deltas' => $history->deltas(),
             'warnings' => $warnings,
             'chart' => $this->chart->build($history, $user->preferences),
+            'age' => VehicleAge::of($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone())),
         ]);
     }
 }

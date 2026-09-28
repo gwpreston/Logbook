@@ -145,7 +145,14 @@
                     <div><dt>{{ 'vehicle.field.type'|trans }}</dt><dd>{{ ('vehicle.type.' ~ data.type.value)|trans }}</dd></div>
                     <div><dt>{{ 'vehicle.field.make'|trans }}</dt><dd>{{ data.make }}</dd></div>
                     <div><dt>{{ 'vehicle.field.model'|trans }}</dt><dd>{{ data.model }}</dd></div>
+                    {% if data.variant %}<div><dt>{{ 'vehicle.field.variant'|trans }}</dt><dd>{{ data.variant }}</dd></div>{% endif %}
                     <div><dt>{{ 'vehicle.field.year'|trans }}</dt><dd>{{ data.year ?? dash }}</dd></div>
+                    {% if data.firstRegisteredOn %}
+                        <div>
+                            <dt>{{ 'vehicle.field.first_registered_on'|trans }}</dt>
+                            <dd>{{ data.firstRegisteredOn|local_date }}{% if age %} <span class="muted">({{ 'vehicle.age.label'|trans({age: age.labelKey()|trans({years: age.years, months: age.months})}) }})</span>{% endif %}</dd>
+                        </div>
+                    {% endif %}
                     <div><dt>{{ 'vehicle.field.registration'|trans }}</dt><dd>{{ data.registration ?? dash }}</dd></div>
                     <div><dt>{{ 'vehicle.field.vin'|trans }}</dt><dd class="tabular">{{ data.vin ?? dash }}</dd></div>
                     <div><dt>{{ 'vehicle.field.fuel_type'|trans }}</dt><dd>{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</dd></div>

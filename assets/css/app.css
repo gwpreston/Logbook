@@ -1466,6 +1466,7 @@ a.list__item:hover {
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
+    min-width: 0;
     padding: var(--space-4);
 }
 
@@ -1490,6 +1491,25 @@ a.list__item:hover {
     margin: 2px 0 0;
     color: var(--muted);
     font-size: var(--fs-sm);
+}
+
+/* One line, cut with an ellipsis; the element carries the full text in a
+   title. Its flex / grid parent needs min-width: 0. */
+.truncate {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Edit vehicle: the current odometer, read-only, with "Add reading". */
+.current-reading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-3);
+    margin: 0;
 }
 
 /* Vehicle detail header. */
@@ -1926,6 +1946,11 @@ a.list__item:hover {
 .pick__name {
     font-weight: 700;
     font-size: var(--fs-md);
+}
+
+.pick__sub {
+    color: var(--muted);
+    font-size: var(--fs-sm);
 }
 
 .pick__meta {
@@ -2702,11 +2727,17 @@ a.list__title:hover {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
     padding: var(--space-3) 0.875rem;
 }
 
 .vehicle-tile__name {
     font-weight: 700;
+}
+
+.vehicle-tile__sub {
+    color: var(--muted);
+    font-size: var(--fs-sm);
 }
 
 .vehicle-tile__meta {
@@ -2816,7 +2847,15 @@ a.list__title:hover {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    min-width: 0;
     padding: var(--space-5);
+}
+
+.pinned__line {
+    display: flex;
+    min-width: 0;
+    margin: 0;
+    white-space: nowrap;
 }
 
 .pinned__name {

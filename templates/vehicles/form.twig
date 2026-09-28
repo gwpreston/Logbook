@@ -49,10 +49,17 @@
                     {{ ui.input('make', 'vehicle.field.make'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
                     {{ ui.input('model', 'vehicle.field.model'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
                 </div>
-                {{ ui.input('nickname', 'vehicle.field.nickname'|trans, values, errors, {optional: true, maxlength: 100, hint: 'vehicle.hint.nickname'|trans}) }}
                 <div class="form-row">
-                    {{ ui.input('year', 'vehicle.field.year'|trans, values, errors, {type: 'number', optional: true, inputmode: 'numeric', min: first_year, step: 1}) }}
+                    {{ ui.input('variant', 'vehicle.field.variant'|trans, values, errors, {optional: true, maxlength: 100, autocomplete: 'off', hint: 'vehicle.hint.variant'|trans}) }}
+                    {{ ui.input('nickname', 'vehicle.field.nickname'|trans, values, errors, {optional: true, maxlength: 100, hint: 'vehicle.hint.nickname'|trans}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('year', 'vehicle.field.year'|trans, values, errors, {type: 'number', optional: true, inputmode: 'numeric', min: first_year, step: 1, hint: 'vehicle.hint.year'|trans}) }}
+                    {{ ui.input('first_registered_on', 'vehicle.field.first_registered_on'|trans, values, errors, {type: 'date', optional: true, min: first_registration, max: last_registration, hint: 'vehicle.hint.first_registered_on'|trans}) }}
+                </div>
+                <div class="form-row">
                     {{ ui.input('registration', 'vehicle.field.registration'|trans, values, errors, {optional: true, maxlength: 20, autocomplete: 'off'}) }}
+                    {{ ui.input('vin', 'vehicle.field.vin'|trans, values, errors, {optional: true, maxlength: 40, autocomplete: 'off', hint: 'vehicle.hint.vin'|trans}) }}
                 </div>
 
                 {% set fuel_options = [] %}
@@ -97,7 +104,25 @@
                     <p class="field__hint" id="f-default_grade-hint">{{ 'vehicle.hint.default_grade'|trans }}</p>
                     {{ ui.field_error(errors, 'default_grade') }}
                 </div>
-                {{ ui.input('vin', 'vehicle.field.vin'|trans, values, errors, {optional: true, maxlength: 40, autocomplete: 'off', hint: 'vehicle.hint.vin'|trans}) }}
+                {% if editing %}
+                    {# The current odometer is the latest reading in the
+                       mileage log; it is changed there, never here. #}
+                    <div class="field">
+                        <span class="field__label" id="current-reading-label">{{ 'vehicle.field.current_odometer'|trans }}</span>
+                        <p class="current-reading" aria-labelledby="current-reading-label">
+                            {% if current_reading %}
+                                <span class="tabular">{{ current_reading.readingKm|distance }}</span>
+                                <span class="muted">{{ 'odometer.stat.as_of'|trans({date: current_reading.recordedAt|instant_date}) }}</span>
+                            {% else %}
+                                <span class="muted">{{ 'vehicle.no_readings'|trans }}</span>
+                            {% endif %}
+                            <a href="{{ url_for('odometer.create', {id: vehicle.id}) }}" data-modal>{{ 'odometer.add'|trans }}</a>
+                        </p>
+                        <p class="field__hint">{{ 'vehicle.hint.current_odometer_edit'|trans }}</p>
+                    </div>
+                {% else %}
+                    {{ ui.input('current_odometer', 'vehicle.field.current_odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: ('units.symbol.' ~ prefs().distanceUnit.value)|trans, hint: 'vehicle.hint.current_odometer'|trans}) }}
+                {% endif %}
             </section>
 
             <section class="card" aria-labelledby="photo-heading">

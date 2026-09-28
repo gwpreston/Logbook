@@ -8,12 +8,15 @@ use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Fuel\FuelPicker;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\View\FormOptions;
 use Logbook\Support\View\View;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -25,6 +28,8 @@ final readonly class VehicleFormPage
     public function __construct(
         private View $view,
         private AppSettings $settings,
+        private OdometerService $odometer,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -52,6 +57,10 @@ final readonly class VehicleFormPage
             'default_currency' => $user->preferences->currency,
             'max_upload_mb' => $this->settings->maxUploadMb,
             'first_year' => VehicleForm::FIRST_YEAR,
+            'first_registration' => VehicleForm::FIRST_REGISTRATION,
+            'last_registration' => LocalTime::today($this->clock, $user->preferences->timeZone())->format('Y-m-d'),
+            // Edit only: the current odometer, read-only (spec.md §7.1).
+            'current_reading' => $vehicle === null ? null : $this->odometer->history($vehicle)->latest(),
         ], $status);
     }
 }

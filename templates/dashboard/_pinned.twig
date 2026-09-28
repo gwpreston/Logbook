@@ -19,7 +19,7 @@
         </div>
         <div>
             <h2 class="pinned__name" id="pinned-title">{{ vehicle.name() }}</h2>
-            <p class="muted">{{ vehicle.description() }}{% if snapshot.latest %} · <span class="tabular">{{ snapshot.latest.readingKm|distance }}</span>{% endif %}</p>
+            <p class="muted pinned__line"><span class="truncate" title="{{ vehicle.description() }}">{{ vehicle.description() }}</span>{% if snapshot.latest %}<span aria-hidden="true"> · </span><span class="tabular">{{ snapshot.latest.readingKm|distance }}</span>{% endif %}</p>
         </div>
         <dl class="pinned__tiles">
             <div class="pinned__tile">

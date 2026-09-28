@@ -8,6 +8,7 @@ use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Reminder\ManualReminderData;
+use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attachment\AttachmentService;
@@ -251,6 +252,18 @@ final class BackupTest extends AppTestCase
         $golf = $this->vehicle($app);
         $photo = $this->upload($this->tempFile((string) base64_decode(self::PNG)), 'golf.png');
         $vehicles = $this->service($app, VehicleService::class);
+        // The vehicle details columns are backed up and restored like any other (Phase 9.1).
+        $registered = LocalTime::parseDate('2019-03-14');
+        assert($registered !== null);
+        $golf = $vehicles->update($owner, $golf, new VehicleData(
+            $golf->data->type,
+            $golf->data->make,
+            $golf->data->model,
+            $golf->data->fuelType,
+            registration: $golf->data->registration,
+            variant: '1.5 TSI Life',
+            firstRegisteredOn: $registered,
+        ));
         $vehicles->replacePhoto($owner, $golf, $photo, FileUpload::check($photo, 1024 * 1024, UploadKind::Image));
 
         $this->fillUp($app, $golf, '2026-09-01T08:00:00Z', '1000.5', '40.123', '60.18', true);

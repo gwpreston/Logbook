@@ -43,8 +43,8 @@ final readonly class EditVehicleAction
         }
 
         $input = RequestContext::form($request);
-        $currentYear = (int) LocalTime::today($this->clock, $preferences->timeZone())->format('Y');
-        $data = VehicleForm::parse($input, $preferences, $currentYear);
+        $today = LocalTime::today($this->clock, $preferences->timeZone());
+        $data = VehicleForm::parse($input, $preferences, $today);
         $photo = VehicleRoute::photo($request);
         $checked = $photo === null ? null : FileUpload::check($photo, $this->vehicles->maxPhotoBytes(), UploadKind::Image);
 
@@ -64,7 +64,9 @@ final readonly class EditVehicleAction
             $this->vehicles->removePhoto($user, $updated);
         }
 
-        RequestContext::session($request)->flash('success', 'vehicle.updated', ['name' => $updated->name()]);
+        $session = RequestContext::session($request);
+        $session->flash('success', 'vehicle.updated', ['name' => $updated->name()]);
+        VehicleRoute::flashModelYearWarning($session, $data);
 
         return $this->redirect->toRoute('vehicles.show', ['id' => (string) $vehicle->id]);
     }
