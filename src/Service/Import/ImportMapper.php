@@ -31,13 +31,16 @@ final class ImportMapper
     ): ImportOptions {
         $mapping = [];
         $taken = [];
+        // The export's own header for a field first, then any name it answers to.
         foreach ($fields as $field) {
             $mapping[$field->key] = null;
-            foreach ($csv->header as $index => $header) {
-                if (!isset($taken[$index]) && $vocabulary->headerMatches($field, $header)) {
-                    $mapping[$field->key] = $index;
-                    $taken[$index] = true;
-                    break;
+            foreach ([true, false] as $exportOnly) {
+                foreach ($csv->header as $index => $header) {
+                    if (!isset($taken[$index]) && $vocabulary->headerMatches($field, $header, $exportOnly)) {
+                        $mapping[$field->key] = $index;
+                        $taken[$index] = true;
+                        break 2;
+                    }
                 }
             }
         }

@@ -45,6 +45,7 @@ final readonly class FuelLogAction
         $rows = $history->newestFirst();
         $pagination = Pagination::fromQuery($request->getQueryParams(), count($rows));
 
+        $grades = $this->fuel->gradeBreakdowns($history);
         $primary = Fuel::defaultFor($vehicle->data->fuelType)->kind();
         $kinds = [$primary, ...array_filter(EnergyKind::cases(), static fn (EnergyKind $k): bool => $k !== $primary)];
         $sections = [];
@@ -57,6 +58,7 @@ final readonly class FuelLogAction
                 'kind' => $kind,
                 'electric' => $kind === EnergyKind::Electric,
                 'summary' => $summary,
+                'grades' => $grades[$kind->value] ?? null,
                 'economy_chart' => $this->charts->economy($history, $kind, $user->preferences),
                 'price_chart' => $this->charts->price($history, $kind, $user->preferences, $currency),
             ];

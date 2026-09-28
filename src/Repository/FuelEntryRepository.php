@@ -25,7 +25,7 @@ final readonly class FuelEntryRepository
     public const int PRICE_SCALE = 6;
     public const int MONEY_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private StoredGrade $grades)
     {
     }
 
@@ -97,6 +97,7 @@ final readonly class FuelEntryRepository
                 'filled_at',
                 'odometer_km',
                 'fuel',
+                'grade',
                 'volume',
                 'price_per_unit',
                 'total_cost',
@@ -119,6 +120,7 @@ final readonly class FuelEntryRepository
             'filled_at' => UtcDateTime::toDatabase($data->filledAt, $this->connection->getDatabasePlatform()),
             'odometer_km' => $data->odometerKm,
             'fuel' => $data->fuel->value,
+            'grade' => $data->grade?->value,
             'volume' => $data->volume,
             'price_per_unit' => $data->pricePerUnit,
             'total_cost' => $data->totalCost,
@@ -143,14 +145,16 @@ final readonly class FuelEntryRepository
     private function hydrate(array $row): FuelEntry
     {
         $platform = $this->connection->getDatabasePlatform();
+        $id = Row::int($row, 'id');
+        $fuel = Fuel::from(Row::string($row, 'fuel'));
 
         return new FuelEntry(
-            id: Row::int($row, 'id'),
+            id: $id,
             vehicleId: Row::int($row, 'vehicle_id'),
             data: new FuelEntryData(
                 filledAt: UtcDateTime::fromDatabase($row['filled_at'] ?? null, $platform),
                 odometerKm: Row::decimal($row, 'odometer_km', self::QUANTITY_SCALE),
-                fuel: Fuel::from(Row::string($row, 'fuel')),
+                fuel: $fuel,
                 volume: Row::decimal($row, 'volume', self::QUANTITY_SCALE),
                 pricePerUnit: Row::decimal($row, 'price_per_unit', self::PRICE_SCALE),
                 totalCost: Row::decimal($row, 'total_cost', self::MONEY_SCALE),
@@ -158,6 +162,7 @@ final readonly class FuelEntryRepository
                 isMissedPrevious: Row::bool($row, 'is_missed_previous'),
                 station: Row::nullableString($row, 'station'),
                 notes: Row::nullableString($row, 'notes'),
+                grade: $this->grades->read(Row::nullableString($row, 'grade'), $fuel, self::TABLE, $id),
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),

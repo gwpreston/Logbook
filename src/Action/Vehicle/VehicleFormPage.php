@@ -7,6 +7,7 @@ namespace Logbook\Action\Vehicle;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Service\Fuel\FuelPicker;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\RequestContext;
@@ -46,6 +47,7 @@ final readonly class VehicleFormPage
             'errors' => $errors?->all() ?? [],
             'types' => VehicleType::cases(),
             'fuel_types' => FuelType::cases(),
+            'grade_groups' => FuelPicker::defaultGradeGroups($user->preferences->locale),
             'currency_options' => FormOptions::currencies(RequestContext::locale($request)),
             'default_currency' => $user->preferences->currency,
             'max_upload_mb' => $this->settings->maxUploadMb,

@@ -6,6 +6,63 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-09-28
+
+Phase 8: fuel grades, and the first stable release. Everything in the
+roadmap's core phases is done.
+
+### Added — Phase 8: fuel grades
+- **Which fuel went in**: a fill-up can record the petrol grade (E10 or E5
+  and its octane, E85, ethanol-free E0), the diesel blend (B7, B7 premium,
+  B10, B20, B100, HVO / XTL) or, for electric vehicles, how it was charged
+  (at home, public AC, DC, rapid DC or ultra-rapid DC). It is optional: leave
+  it as "grade not recorded" whenever the receipt does not say.
+- **One fuel picker** on the fill-up form, grouped: *Used on this vehicle*
+  (your usual choices from the last 12 months, so it is one tap on a phone),
+  then the fuels that fit the vehicle, *Other fuels*, and *More grades*. US
+  pump grades (Regular 87, Mid 89, Premium 91+, E15) are listed with petrol
+  for owners whose language setting is for the US or Canada, E20 for India;
+  everyone else finds them under *More grades*. The last grade you bought is
+  preselected (for a plug-in hybrid, separately for petrol and charging). It
+  works without JavaScript, in the pop-up and offline.
+- **Default grade** per vehicle (add / edit vehicle), used until the vehicle
+  has a fill-up with a grade; *Home charging* is the usual choice for an EV.
+- **Badges** like the ones on pumps and chargers: a circle for petrol, a
+  square for diesel, a rhombus for LPG and a hexagon for charging, with the
+  short name ("E10 95", "B7", "Rapid"). They appear in the fuel list, the
+  vehicle overview, the dashboard's *Recent fuel* and *Recent activity*, and
+  the Expenses list.
+- **By grade** on the Fuel tab: fills, amount bought, average price and — once
+  there are two full-to-full stretches driven on one grade — an indicative
+  economy per grade. For electric vehicles it is **By charging type**: the
+  share of energy and cost per kWh of home, AC and rapid charging (free
+  charges count at 0), then the blended cost per kWh.
+- The **price trend** shows one line per grade, so E5 against E10, or home
+  against rapid charging, can be compared.
+- CSV: the fuel export has *Grade* and *Grade code* columns; import accepts
+  the code, the name or the short name ("E10", "B7", "Rapid", "Home") in your
+  language or English. Files without the column import as before.
+- German translations for everything new ("Super E10", "Laden zu Hause", …).
+
+### Changed
+- Existing fill-ups are unchanged and show "Not recorded"; average economy
+  and every other figure is exactly as before. Economy by grade is a view of
+  the same full-to-full stretches, credited to the fuel burned over each
+  (what went in at its start), never to the fill that closed it.
+- Import: when a file has several columns that could fill a field, the one
+  named like Logbook's own export wins.
+
+### Upgrade notes
+- New nullable columns `fuel_entries.grade` and `vehicles.default_grade`,
+  added by a reversible migration that runs automatically on start (Docker)
+  or with `vendor/bin/phinx migrate` (bare PHP). Nothing is backfilled.
+- Backups record the database schema, so a backup made with 0.7.0 cannot be
+  restored into 1.0.0. Restore it with 0.7.0 first, then upgrade.
+- No configuration changes.
+- Docker images are published as `1.0.0`, `1.0`, `1` and `latest`. From now
+  on `latest` is the newest release; the newest development build is
+  `master`.
+
 ## [0.7.0] — 2026-09-28
 
 Phase 7: design alignment and dashboard enhancements.
@@ -345,7 +402,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/gwpreston16/Logbook/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/gwpreston16/Logbook/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/gwpreston16/Logbook/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/gwpreston16/Logbook/compare/v0.4.0...v0.5.0

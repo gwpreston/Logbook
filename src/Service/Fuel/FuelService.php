@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Fuel;
 
 use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Odometer\OdometerSource;
@@ -36,7 +37,34 @@ final readonly class FuelService
 
     public function history(Vehicle $vehicle): FuelHistory
     {
-        return FuelEconomy::analyse($this->entries->listForVehicle($vehicle->id));
+        return FuelEconomy::analyse($this->entries($vehicle));
+    }
+
+    /**
+     * @return list<FuelEntry> oldest first
+     */
+    public function entries(Vehicle $vehicle): array
+    {
+        return $this->entries->listForVehicle($vehicle->id);
+    }
+
+    /**
+     * The *By grade* figures of each kind of energy with a graded fill-up
+     * (spec.md §7.3); empty when no fill-up has a grade.
+     *
+     * @return array<string, GradeBreakdown> keyed by EnergyKind value
+     */
+    public function gradeBreakdowns(FuelHistory $history): array
+    {
+        $breakdowns = [];
+        foreach (EnergyKind::cases() as $kind) {
+            $breakdown = GradeStatistics::breakdown($history, $kind);
+            if ($breakdown->hasGrades()) {
+                $breakdowns[$kind->value] = $breakdown;
+            }
+        }
+
+        return $breakdowns;
     }
 
     /**

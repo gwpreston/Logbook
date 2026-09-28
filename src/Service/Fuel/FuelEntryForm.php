@@ -6,8 +6,10 @@ namespace Logbook\Service\Fuel;
 
 use DateTimeImmutable;
 use Logbook\Domain\Fuel\Fuel;
+use Logbook\Domain\Fuel\FuelChoice;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Support\Date\LocalTime;
@@ -17,6 +19,7 @@ use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\Validation\Validator;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Log/edit fill-up form ↔ FuelEntryData.
@@ -52,7 +55,7 @@ final class FuelEntryForm
         return [
             'filled_at' => $filledAt->format(OdometerReadingForm::LOCAL_FORMAT),
             'odometer' => OdometerReadingForm::distanceForDisplay($data->odometerKm, $preferences),
-            'fuel' => $data->fuel->value,
+            'fuel' => (new FuelChoice($data->fuel, $data->grade))->value(),
             'volume' => Decimal::trim($unit->fromLitresDecimal($data->volume, FuelAmounts::VOLUME_SCALE)),
             'price' => Decimal::trim($unit->pricePerUnit($data->pricePerUnit, $priceScale)),
             'total' => Decimal::trim($data->totalCost),
@@ -64,13 +67,23 @@ final class FuelEntryForm
     }
 
     /**
+     * Defaults for a new fill-up: now, and the vehicle's usual fuel with the
+     * grade last bought (GradeStatistics::formDefault).
+     *
+     * @param list<FuelEntry> $entries the vehicle's fill-ups, oldest first
      * @return array<string, string>
      */
-    public static function defaults(Vehicle $vehicle, DateTimeImmutable $now, DisplayPreferences $preferences): array
-    {
+    public static function defaults(
+        Vehicle $vehicle,
+        DateTimeImmutable $now,
+        DisplayPreferences $preferences,
+        array $entries = [],
+    ): array {
+        $fuel = Fuel::defaultFor($vehicle->data->fuelType);
+
         return [
             'filled_at' => LocalTime::fromUtc($now, $preferences->timeZone())->format(OdometerReadingForm::LOCAL_FORMAT),
-            'fuel' => Fuel::defaultFor($vehicle->data->fuelType)->value,
+            'fuel' => (new FuelChoice($fuel, GradeStatistics::formDefault($entries, $vehicle, $fuel)))->value(),
         ];
     }
 
@@ -91,7 +104,7 @@ final class FuelEntryForm
             null,
             OdometerReadingForm::MAX_WHOLE_DIGITS,
         );
-        $fuel = $validator->enum('fuel', Fuel::class, true);
+        [$fuel, $grade] = self::fuelAndGrade($validator);
         $volume = $validator->decimal('volume', false, FuelAmounts::VOLUME_SCALE, '0', null, self::VOLUME_WHOLE_DIGITS);
         $price = $validator->decimal('price', false, FuelAmounts::PRICE_SCALE, '0', null, self::PRICE_WHOLE_DIGITS);
         $total = $validator->decimal('total', false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
@@ -137,7 +150,47 @@ final class FuelEntryForm
             isMissedPrevious: $validator->checkbox('missed_previous'),
             station: $station,
             notes: $notes,
+            grade: $grade,
         );
+    }
+
+    /**
+     * The picker's value (spec.md §7.3): `family` or `family:grade`. A plain
+     * family may come with a separate `grade` field (CSV import); a queued
+     * offline entry from before grades has neither, which is still valid.
+     *
+     * @return array{0: ?Fuel, 1: ?FuelGrade}
+     */
+    private static function fuelAndGrade(Validator $validator): array
+    {
+        $value = $validator->raw('fuel');
+        if ($value === '') {
+            $validator->addError('fuel', 'validation.required');
+
+            return [null, null];
+        }
+
+        $parts = explode(':', $value, 2);
+        $fuel = Fuel::tryFrom($parts[0]);
+        $gradeCode = $parts[1] ?? $validator->raw('grade');
+        $grade = $gradeCode === '' ? null : FuelGrade::tryFrom($gradeCode);
+        if ($fuel === null || ($gradeCode !== '' && $grade === null)) {
+            $validator->addError('fuel', 'validation.choice');
+
+            return [null, null];
+        }
+
+        if ($grade !== null && $grade->family() !== $fuel) {
+            $validator->addError('fuel', 'fuel.grade_mismatch', [
+                'grade' => new TranslatableMessage($grade->shortLabelKey()),
+                'family' => $grade->family()->value,
+                'fuel' => $fuel->value,
+            ]);
+
+            return [null, null];
+        }
+
+        return [$fuel, $grade];
     }
 
     /**

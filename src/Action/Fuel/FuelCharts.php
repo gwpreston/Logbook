@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
+use DateTimeImmutable;
 use Logbook\Domain\Fuel\EnergyKind;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Service\Fuel\FuelHistory;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\ElectricEfficiencyUnit;
@@ -16,6 +18,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class FuelCharts
 {
+    /** Chart tokens (app.css) for grade series, in turn. */
+    private const array SERIES_COLOURS = ['accent', 'c-maint', 'c-tax', 'c-ins', 'red', 'green', 'amber'];
+
     public function __construct(private TranslatorInterface $translator)
     {
     }
@@ -58,23 +63,43 @@ final readonly class FuelCharts
     }
 
     /**
-     * Price per litre (per the user's volume unit) or per kWh, per fill-up.
+     * Price per litre (per the user's volume unit) or per kWh, per fill-up:
+     * one series per grade used (spec.md §7.3) plus "Not recorded", or a
+     * single series while no fill-up has a grade.
      */
     public function price(FuelHistory $history, EnergyKind $kind, DisplayPreferences $preferences, string $currency): LineChart
     {
         $electric = $kind === EnergyKind::Electric;
         $unit = $preferences->volumeUnit;
-        $points = [];
+        /** @var array<string, list<array{0: DateTimeImmutable, 1: float}>> $series by grade code ('' = none) */
+        $series = [];
         foreach ($history->ofKind($kind) as $fill) {
-            $perLitre = (float) $fill->entry->data->pricePerUnit;
-            $points[] = [$fill->entry->data->filledAt, $electric ? $perLitre : $perLitre * $unit->litresPerUnit()];
+            $data = $fill->entry->data;
+            $perLitre = (float) $data->pricePerUnit;
+            $series[$data->grade->value ?? ''][] = [$data->filledAt, $electric ? $perLitre : $perLitre * $unit->litresPerUnit()];
         }
 
         $label = $this->translator->trans('fuel.chart.price_axis', [
             'unit' => $this->translator->trans('units.symbol.' . ($electric ? 'kwh' : $unit->value)),
         ]);
+        $chart = new LineChart($preferences, $label, 3, $currency);
 
-        return (new LineChart($preferences, $label, 3, $currency))
-            ->addSeries($this->translator->trans('fuel.chart.price'), $points);
+        if (array_keys($series) === [''] || $series === []) {
+            return $chart->addSeries($this->translator->trans('fuel.chart.price'), $series[''] ?? []);
+        }
+
+        // Grades in the enum's order, "not recorded" last.
+        $colour = 0;
+        foreach (FuelGrade::cases() as $grade) {
+            if (isset($series[$grade->value])) {
+                $name = $this->translator->trans($grade->shortLabelKey());
+                $chart->addSeries($name, $series[$grade->value], self::SERIES_COLOURS[$colour++ % count(self::SERIES_COLOURS)]);
+            }
+        }
+        if (isset($series[''])) {
+            $chart->addSeries($this->translator->trans('fuel.grade_not_recorded'), $series[''], 'muted');
+        }
+
+        return $chart;
     }
 }

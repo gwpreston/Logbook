@@ -66,6 +66,7 @@ final readonly class ImportField
                 ),
                 new self('odometer', FieldKind::Distance, 'export.column.odometer', true, ['mileage', 'odo', 'km', 'miles']),
                 new self('fuel', FieldKind::Choice, 'export.column.fuel', false, ['fuel type'], Fuel::class, 'fuel.fuel.'),
+                new self('grade', FieldKind::Grade, 'export.column.grade_code', false, ['fuel grade', 'grade code']),
                 new self(
                     'volume',
                     FieldKind::Volume,

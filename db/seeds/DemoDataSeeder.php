@@ -66,6 +66,7 @@ final class DemoDataSeeder extends AbstractSeed
             'make' => '',
             'model' => '',
             'fuel_type' => 'petrol',
+            'default_grade' => null,
             'nickname' => null,
             'year' => null,
             'registration' => null,
@@ -88,7 +89,8 @@ final class DemoDataSeeder extends AbstractSeed
             $vehicle([
                 'type' => 'car', 'make' => 'Volkswagen', 'model' => 'Golf 1.5 TSI Life', 'year' => 2019,
                 'registration' => 'LB19 KTR', 'vin' => 'WVWZZZCDZKW123456', 'fuel_type' => 'petrol',
-                'capacity' => '50.000', 'purchase_date' => '2021-03-14', 'purchase_price' => '14250.000',
+                'default_grade' => 'e10_95', 'capacity' => '50.000',
+                'purchase_date' => '2021-03-14', 'purchase_price' => '14250.000',
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Toyota', 'model' => 'Corolla 1.8 Hybrid', 'year' => 2022,
@@ -102,7 +104,8 @@ final class DemoDataSeeder extends AbstractSeed
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Kia', 'model' => 'EV6 GT-Line', 'year' => 2023,
-                'registration' => 'EV23 KIA', 'fuel_type' => 'ev', 'capacity' => '77.400', 'currency' => 'EUR',
+                'registration' => 'EV23 KIA', 'fuel_type' => 'ev', 'default_grade' => 'home',
+                'capacity' => '77.400', 'currency' => 'EUR',
                 'purchase_date' => '2024-02-10', 'purchase_price' => '0.000',
             ]),
             $vehicle([
@@ -144,10 +147,41 @@ final class DemoDataSeeder extends AbstractSeed
 
         $entries = [
             // Golf: ~45 mpg (UK), fill every ~12 days; partial every 6th; one fill-up never logged.
-            ...$this->fillUps($ids['LB19 KTR'], '2025-09-20', 30, 61155.0, 540.0, 15.9, 1.479, 'petrol', 6, 17, $now),
-            ...$this->fillUps($ids['MT20 BKE'], '2026-03-15', 12, 18500.0, 230.0, 19.5, 1.529, 'petrol', 0, null, $now),
-            // EV6: charges in kWh, ~5.6 km/kWh, most of them partial.
-            ...$this->fillUps($ids['EV23 KIA'], '2026-01-05', 24, 21000.0, 260.0, 5.6, 0.285, 'ev', -3, null, $now),
+            // Grades from the 9th fill on (older ones predate grades): mostly E10, E5 97 now and then.
+            ...$this->fillUps(
+                $ids['LB19 KTR'],
+                '2025-09-20',
+                30,
+                61155.0,
+                540.0,
+                15.9,
+                1.479,
+                'petrol',
+                6,
+                17,
+                $now,
+                ['e10_95', 'e10_95', 'e10_95', 'e5_97', 'e5_97'],
+                8,
+            ),
+            // The bike always takes super unleaded.
+            ...$this->fillUps($ids['MT20 BKE'], '2026-03-15', 12, 18500.0, 230.0, 19.5, 1.529, 'petrol', 0, null, $now, grades: [
+                'e5_98',
+            ]),
+            // EV6: charges in kWh, ~5.6 km/kWh, most of them partial; mostly at home, some rapid, one free.
+            ...$this->fillUps(
+                $ids['EV23 KIA'],
+                '2026-01-05',
+                24,
+                21000.0,
+                260.0,
+                5.6,
+                0.285,
+                'ev',
+                -3,
+                null,
+                $now,
+                ['home', 'home', 'home', 'dc_rapid', 'home', 'home', 'ac', 'home'],
+            ),
         ];
         $this->table('fuel_entries')->insert($entries)->saveData();
 
@@ -393,6 +427,8 @@ final class DemoDataSeeder extends AbstractSeed
      *
      * @param int $partialEvery every Nth fill is partial (0: none; negative: all but every Nth)
      * @param int|null $missed index of a fill-up that happens but is never logged
+     * @param list<string> $grades grade codes, in turn (empty: none recorded)
+     * @param int $ungraded how many of the first fill-ups have no grade (logged before grades existed)
      * @return list<array<string, mixed>>
      */
     private function fillUps(
@@ -407,6 +443,8 @@ final class DemoDataSeeder extends AbstractSeed
         int $partialEvery,
         ?int $missed,
         string $now,
+        array $grades = [],
+        int $ungraded = 0,
     ): array {
         $rows = [];
         $deficit = 0.0;
@@ -431,17 +469,32 @@ final class DemoDataSeeder extends AbstractSeed
             }
 
             $unitPrice = round($price * (1 + 0.04 * sin($i / 5)) + mt_rand(-10, 10) / 1000, 3);
+            $grade = $grades === [] || $i < $ungraded ? null : $grades[$i % count($grades)];
+            // Super costs more at the pump; rapid charging far more than home; the hotel's AC was free.
+            $unitPrice = match ($grade) {
+                'e5_97' => $unitPrice + 0.12,
+                'dc_rapid' => 0.69,
+                'ac' => 0.0,
+                default => $unitPrice,
+            };
+            $station = match ($grade) {
+                'home' => 'Home',
+                'dc_rapid' => 'Ionity',
+                'ac' => 'Hotel car park',
+                default => $fuel === 'ev' ? 'Home' : ($i % 3 === 0 ? 'Tesco Extra' : 'Shell'),
+            };
             $rows[] = [
                 'vehicle_id' => $vehicleId,
                 'filled_at' => gmdate('Y-m-d H:i:s', $time),
                 'odometer_km' => number_format($km, 3, '.', ''),
                 'fuel' => $fuel,
+                'grade' => $grade,
                 'volume' => number_format($volume, 3, '.', ''),
                 'price_per_unit' => number_format($unitPrice, 6, '.', ''),
                 'total_cost' => number_format(round($volume * $unitPrice, 2), 3, '.', ''),
                 'is_partial' => $partial,
                 'is_missed_previous' => $afterGap,
-                'station' => $fuel === 'ev' ? 'Home' : ($i % 3 === 0 ? 'Tesco Extra' : 'Shell'),
+                'station' => $station,
                 'notes' => null,
                 'created_at' => $now,
                 'updated_at' => $now,

@@ -39,6 +39,7 @@ use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
 use LogicException;
+use Symfony\Contracts\Translation\TranslatableInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -170,7 +171,9 @@ final readonly class CsvImporter
      * @param list<ImportField> $fields
      * @param array<string, string> $values
      * @param array<string, string> $defaults form values for fields the file leaves blank
-     * @return object|list<array{field: string, key: string, params: array<string, int|string>}>|ImportRowStatus
+     * @return object|ImportRowStatus|list<array{
+     *     field: string, key: string, params: array<string, int|string|TranslatableInterface>
+     * }>
      */
     private function readRow(
         ExportModule $module,
@@ -261,6 +264,14 @@ final readonly class CsvImporter
                     $input[$field->key] = $number === null || $electric
                         ? $value
                         : $volumeUnit->pricePerLitre($number, self::SI_SCALE + 3);
+                    break;
+                case FieldKind::Grade:
+                    // The form checks that it belongs to the row's fuel.
+                    $grade = $vocabulary->grade($value);
+                    if ($grade === null) {
+                        $errors[] = ['field' => $field->key, 'key' => 'import.error.grade', 'params' => ['grade' => $value]];
+                    }
+                    $input[$field->key] = $grade->value ?? '';
                     break;
                 case FieldKind::VolumeUnit:
                     break;

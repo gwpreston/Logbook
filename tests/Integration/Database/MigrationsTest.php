@@ -64,9 +64,17 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 7 accent column, the Phase 5, 4 and 3
-        // tables, then the column Phase 3 added to odometer_readings, then
-        // Phase 2 and Phase 1 tables.
+        // Newest first: the Phase 8 grade columns, the Phase 7 accent
+        // column, the Phase 5, 4 and 3 tables, then the column Phase 3 added
+        // to odometer_readings, then Phase 2 and Phase 1 tables.
+        self::assertTrue($this->hasColumn('fuel_entries', 'grade'));
+        self::assertTrue($this->hasColumn('vehicles', 'default_grade'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('fuel_entries', 'grade'), 'rollback must drop the grade column');
+        self::assertFalse($this->hasColumn('vehicles', 'default_grade'), 'and the default grade column');
+        self::assertTrue($this->hasColumn('fuel_entries', 'fuel'), 'and keep the rest of the fill-ups table');
+        self::assertTrue($this->hasColumn('vehicles', 'fuel_type'), 'and of the vehicles table');
+
         self::assertTrue($this->hasColumn('users', 'accent'));
         Migrator::run('rollback');
         self::assertFalse($this->hasColumn('users', 'accent'), 'rollback must drop the accent column');
@@ -232,6 +240,8 @@ final class MigrationsTest extends AppTestCase
         }
         self::assertFalse($columns['station']->getNotnull());
         self::assertFalse($columns['notes']->getNotnull());
+        self::assertFalse($columns['grade']->getNotnull(), 'a grade is optional: null means not recorded');
+        self::assertSame(20, $columns['grade']->getLength());
     }
 
     public function testOdometerReadingColumns(): void
@@ -293,6 +303,7 @@ final class MigrationsTest extends AppTestCase
         self::assertInstanceOf(DateType::class, $columns['purchase_date']->getType());
         self::assertInstanceOf(DateType::class, $columns['sale_date']->getType());
         self::assertInstanceOf(DateTimeType::class, $columns['archived_at']->getType());
+        self::assertFalse($columns['default_grade']->getNotnull());
 
         foreach (['user_id', 'type', 'make', 'model', 'fuel_type', 'status', 'created_at', 'updated_at'] as $required) {
             self::assertTrue($columns[$required]->getNotnull(), sprintf('vehicles.%s must be NOT NULL', $required));

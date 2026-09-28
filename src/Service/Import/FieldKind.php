@@ -34,4 +34,6 @@ enum FieldKind
     case VolumeUnit;
     /** An odometer reading's source: readings from fill-ups and services are implied. */
     case Source;
+    /** A fill-up's fuel grade: code, label, short label or alias (ImportVocabulary::grade). */
+    case Grade;
 }

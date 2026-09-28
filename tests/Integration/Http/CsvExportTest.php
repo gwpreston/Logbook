@@ -7,6 +7,7 @@ namespace Logbook\Tests\Integration\Http;
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseCategory;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
@@ -53,7 +54,16 @@ final class CsvExportTest extends AppTestCase
             new DateTimeImmutable(self::NOW),
         );
         // 00:30 BST on 1 April: the local time is exported, with the zone in the header.
-        $this->fillUp($app, $golf, '2026-03-31T23:30:00Z', '48280.320', '45.678', '66.64', pricePerLitre: '1.459000');
+        $this->fillUp(
+            $app,
+            $golf,
+            '2026-03-31T23:30:00Z',
+            '48280.320',
+            '45.678',
+            '66.64',
+            pricePerLitre: '1.459000',
+            grade: FuelGrade::E5_97,
+        );
         $this->fillUp($app, $golf, '2026-04-20T17:05:00Z', '48885.123', '40.001', '0', partial: true, pricePerLitre: '0.000000');
 
         $response = $browser->get('/vehicles/' . $golf->id . '/export/fuel.csv');
@@ -67,24 +77,29 @@ final class CsvExportTest extends AppTestCase
 
         $rows = self::rows(self::body($response));
         self::assertSame([
-            'Date and time (Europe/London)', 'Odometer (Miles)', 'Fuel', 'Volume', 'Unit', 'Price per unit', 'Total',
-            'Currency', 'Partial', 'Missed previous', 'Station', 'Notes',
+            'Date and time (Europe/London)', 'Odometer (Miles)', 'Fuel', 'Grade', 'Grade code', 'Volume', 'Unit',
+            'Price per unit', 'Total', 'Currency', 'Partial', 'Missed previous', 'Station', 'Notes',
         ], $rows[0]);
         self::assertSame(
-            ['2026-04-01 00:30', '30000', 'Petrol', '10.047755', 'UK gallons', '6.63274531', '66.64', 'GBP', 'no', 'no', '', ''],
+            [
+                '2026-04-01 00:30', '30000', 'Petrol', 'E5 super unleaded, 97 RON', 'e5_97', '10.047755', 'UK gallons',
+                '6.63274531', '66.64', 'GBP', 'no', 'no', '', '',
+            ],
             $rows[1],
         );
         self::assertSame('2026-04-20 18:05', $rows[2][0]);
-        self::assertSame('0.00', $rows[2][6], 'a free fill-up exports as 0');
-        self::assertSame('yes', $rows[2][8]);
+        self::assertSame(['', ''], [$rows[2][3], $rows[2][4]], 'no grade recorded: both grade cells empty');
+        self::assertSame('0.00', $rows[2][8], 'a free fill-up exports as 0');
+        self::assertSame('yes', $rows[2][10]);
 
         // Converting the exported figures back gives exactly what is stored.
         foreach ($this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id) as $i => $entry) {
             $row = $rows[$i + 1];
             self::assertSame($entry->data->odometerKm, DistanceUnit::Mile->toKmDecimal($row[1], 3));
-            self::assertSame($entry->data->volume, VolumeUnit::UkGallon->toLitresDecimal($row[3], 3));
-            self::assertSame($entry->data->pricePerUnit, VolumeUnit::UkGallon->pricePerLitre($row[5], 6));
-            self::assertSame($entry->data->totalCost, number_format((float) $row[6], 3, '.', ''));
+            self::assertSame($entry->data->grade->value ?? '', $row[4]);
+            self::assertSame($entry->data->volume, VolumeUnit::UkGallon->toLitresDecimal($row[5], 3));
+            self::assertSame($entry->data->pricePerUnit, VolumeUnit::UkGallon->pricePerLitre($row[7], 6));
+            self::assertSame($entry->data->totalCost, number_format((float) $row[8], 3, '.', ''));
         }
     }
 

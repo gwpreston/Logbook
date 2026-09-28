@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Import;
 
 use BackedEnum;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Support\I18n\AvailableLocales;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
@@ -51,16 +52,18 @@ final class ImportVocabulary
     }
 
     /**
-     * Whether a CSV header names this field.
+     * Whether a CSV header names this field. With $exportOnly, only the
+     * export's own header for it counts (so the fuel export's "Grade code"
+     * column wins over its "Grade" label column).
      */
-    public function headerMatches(ImportField $field, string $header): bool
+    public function headerMatches(ImportField $field, string $header, bool $exportOnly = false): bool
     {
         $name = self::normalise($header);
         if ($name === '') {
             return false;
         }
 
-        $candidates = [
+        $candidates = $exportOnly ? [] : [
             self::normalise(str_replace('_', ' ', $field->key)),
             ...array_map(self::normalise(...), $field->aliases),
         ];
@@ -68,10 +71,45 @@ final class ImportVocabulary
             // The export's headers carry a unit or zone in brackets; normalising drops it.
             $export = $this->translator->trans($field->exportKey, ['zone' => '', 'unit' => ''], null, $locale);
             $candidates[] = self::normalise($export);
-            $candidates[] = $this->word($field->labelKey(), $locale);
+            if (!$exportOnly) {
+                $candidates[] = $this->word($field->labelKey(), $locale);
+            }
         }
 
         return in_array($name, $candidates, true);
+    }
+
+    /**
+     * A fuel grade column's value (spec.md §7.13): the code, the label or
+     * the short label in the owner's language or English, or a known alias
+     * ("E10", "HVO"); null when it names no grade. Words that could mean
+     * several grades ("Unleaded", "Super", "Diesel", "Premium") are none.
+     */
+    public function grade(string $value): ?FuelGrade
+    {
+        $lookup = $this->lookup('grade', function (): array {
+            $words = [];
+            foreach (FuelGrade::cases() as $grade) {
+                $words[self::normalise($grade->value)] = $grade->value;
+            }
+            foreach (FuelGrade::cases() as $grade) {
+                foreach ($this->locales() as $locale) {
+                    $words[$this->word($grade->labelKey(), $locale)] ??= $grade->value;
+                    $words[$this->word($grade->shortLabelKey(), $locale)] ??= $grade->value;
+                }
+            }
+            foreach (FuelGrade::cases() as $grade) {
+                foreach ($grade->importAliases() as $alias) {
+                    $words[self::normalise($alias)] ??= $grade->value;
+                }
+            }
+
+            return $words;
+        });
+
+        $code = $lookup[self::normalise($value)] ?? null;
+
+        return $code === null ? null : FuelGrade::from($code);
     }
 
     /**

@@ -29,6 +29,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [5](phase-5.md) | Expenses + Reports + Dashboard | ✅ |
 | [6](phase-6.md) | Feature toggles + Import/backup + polish | ✅ |
 | [7](phase-7.md) | Design alignment + dashboard enhancements | ✅ |
+| [8](phase-8.md) | Fuel grades + v1.0 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -142,9 +143,24 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 
 → [`phase-7.md`](phase-7.md)
 
+## Phase 8 — Fuel grades + v1.0 release
+*Record which fuel went in, compare what it costs, and cut 1.0.*
+
+- An optional grade on each fill-up: petrol grade (E10 / E5 and octane, E85,
+  E0, US AKI grades), diesel blend (B7 to B100, HVO / XTL) or, for EVs, how it
+  was charged (home, public AC, DC, rapid, ultra-rapid); a default grade per
+  vehicle.
+- One grouped fuel picker (usual choices first, regional grades only where
+  they are sold), pump-style badges, and price and — with enough data —
+  economy by grade; cost per kWh and share of energy by charging type.
+- Grade in CSV export / import and backups; English and German.
+- Release **v1.0.0**.
+
+→ [`phase-8.md`](phase-8.md)
+
 ---
 
-## Beyond the core phases
+## After 1.0
 
 Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 §12):

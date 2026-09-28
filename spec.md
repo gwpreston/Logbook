@@ -158,7 +158,10 @@ MySQL only.
   model, year (optional), registration (optional: a vehicle may not be
   registered yet), VIN (optional, up to 17 characters), fuel type
   (`petrol`|`diesel`|`ev`|`hybrid`|`lpg`|`other`), tank/battery capacity
-  (optional; litres, or kWh for `ev`), currency override (optional), photo
+  (optional; litres, or kWh for `ev`), default_grade (optional fuel grade
+  code, §7.3, that must belong to the vehicle's fuel type — a petrol grade
+  for `hybrid`, a charging type for `ev`, none for `lpg` / `other`; changing
+  the fuel type clears one that no longer fits), currency override (optional), photo
   (optional: stored path + MIME type), purchase date/price (optional), sale
   date/price (optional), status (`active` | `archived`), archived_at,
   created/updated (UTC). Deleting a vehicle deletes its history and photo;
@@ -180,7 +183,10 @@ MySQL only.
 **FuelEntry**
 - id, vehicle_id, filled_at (UTC instant, typed in the user's time zone),
   odometer_km, fuel (`petrol`|`diesel`|`lpg`|`ev`|`other`; defaults to the
-  vehicle's fuel type, petrol for a hybrid), volume (litres, or kWh when fuel
+  vehicle's fuel type, petrol for a hybrid), grade (optional code refining
+  `fuel`, §7.3: `e10_95`, `b7`, `dc_rapid`, …; must belong to the entry's
+  fuel; null = not recorded, always valid; an unknown stored code reads as
+  null and is logged), volume (litres, or kWh when fuel
   is `ev`; always > 0), price_per_unit (per litre or kWh, `decimal(14,6)` so a
   price typed per gallon converts back exactly), total_cost
   (`decimal(14,3)`; 0 is valid), is_partial (bool), is_missed_previous (bool,
@@ -369,6 +375,62 @@ math stays correct across gaps. Show per-fill and rolling consumption
 - Saving shows the fill's economy when it closes a segment, and any odometer
   plausibility warning.
 
+**Fuel grades** (Phase 8). A grade refines `fuel`; it never replaces it:
+`fuel` stays the energy family and alone drives units, series and the
+full-to-full maths above. Grades live in one PHP enum (`Domain\Fuel\FuelGrade`,
+with `family()`), so adding one needs no migration; the stored **codes never
+change once released** (they are in CSV files and backups), labels may be
+reworded.
+
+| Family | Codes (short label) | Shown in the family's group |
+|---|---|---|
+| petrol | `e10_95` (E10 95), `e5_95` (E5 95), `e5_97` (E5 97), `e5_98` (E5 98), `e10_98` (E10 98), `e5_99` (E5 99+), `e0` (E0), `e85` (E85) | always (*main*) |
+| petrol | `e15` (E15, US), `e20` (E20, IN), `aki_87` / `aki_89` / `aki_91` (Regular 87 / Mid 89 / Premium 91+; US, CA) | only when the owner's locale region matches (*regional*) |
+| diesel | `b7`, `b7_premium`, `b10`, `b20`, `b100`, `xtl` (HVO / XTL) | always |
+| ev | `home`, `ac` (public AC, up to 22 kW), `dc` (speed not recorded), `dc_rapid` (25–99 kW), `dc_ultra` (100 kW+) | always |
+
+`lpg` and `other` have no grades. A blank grade means *not recorded* and is
+always valid; existing fill-ups are never guessed (they read "Not recorded").
+
+- **Picker:** the fill-up form has one grouped *Fuel* select whose values are
+  `family` or `family:grade` (`petrol:e10_95`), parsed server-side into both
+  fields (works without JS). Groups, in order: *Used on this vehicle* (up to
+  four grades from its fill-ups of the last 12 months, most used first);
+  then the families that fit the vehicle (petrol; petrol and electricity for
+  a hybrid; electricity for an EV; diesel; LPG), each starting with
+  "*Family* — grade not recorded"; then *Other fuels* (every other family);
+  then *More grades* (regional grades for other regions). The owner's
+  region is the region of their locale (`en_US` → US); a locale with no
+  region sees every regional grade under *More grades*. A grade from another
+  family is refused ("B7 is a diesel grade; this fill-up is petrol").
+- **Form default:** the grade of the vehicle's most recent graded fill-up
+  *of the family being logged* (a hybrid's charge never takes the petrol
+  grade; fill-ups logged before grades existed are skipped, not "none"),
+  else the vehicle's `default_grade` when it is of that family, else none.
+  Editing keeps the stored grade. The offline queue sends whatever the form
+  held; a queued entry from before grades existed (plain `fuel`) still sends.
+- **By grade** (Fuel tab, beside the summary in the `.split` grid; hidden when
+  no fill-up of the vehicle has a grade): per grade used, the number of
+  fills, volume and average price (total cost ÷ volume, in the owner's volume
+  unit, per kWh for charging; free charges at cost 0 count), plus *Not
+  recorded* for the rest. For electricity the card leads with **cost per kWh
+  and share of energy** per charging type and closes with the blended cost
+  per kWh. A vehicle has one currency, so each card is in it.
+- **Economy by grade** is attributed to the fuel that was burned: in a
+  full-to-full segment A → B the vehicle ran on what went in at A plus any
+  partials inside it, not on B. A segment counts towards a grade only when
+  the opening full fill and every partial in it have that grade; mixed or
+  unrecorded segments count in the family average only. A grade's economy is
+  shown once it has at least two such segments ("Not enough fills yet"
+  otherwise) and is labelled as an indication. The family series and its
+  averages are unchanged by grades.
+- **Price trend:** one series per grade used (plus *Not recorded*), colours
+  from the chart tokens, the legend naming each grade.
+- **Badges:** see §8. Shown with the short label on the Fuel tab list, the
+  dashboard's *Recent fuel* and *Recent activity*, the vehicle overview's
+  latest fill-ups and the Expenses ledger line of a fill-up. "Not recorded"
+  shows no badge. With the `fuel` module off nothing about grades appears.
+
 ### 7.4 Maintenance
 Full service history per vehicle, categorised. **Recurring schedules**
 ("every 10,000 km or 12 months") that compute the next due point and raise
@@ -505,6 +567,9 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   keep the currency's minor unit (more places only when stored with them)
   next to an ISO 4217 currency column. Dates are ISO (`2026-09-27`); instants
   are local `2026-09-27 14:30` with the time zone in the header.
+  The fuel export carries the grade twice: *Grade* (the translated label,
+  empty when not recorded) and *Grade code* (the stored code), so a file
+  re-imports exactly and stays readable.
 
 ### 7.8 Dashboard
 At-a-glance fleet overview built from rearrangeable widgets (drag via SortableJS,
@@ -705,7 +770,13 @@ vehicles; a disabled module cannot be imported).
   accept the code (`petrol`), the label in the owner's language or in
   English; yes/no columns accept yes/no/true/false/1/0/y/n and the
   translated yes/no. A fill-up row's own unit column ("UK gallons", "kWh")
-  overrides the file's volume unit. A currency column that differs from the
+  overrides the file's volume unit. The fill-up *grade* column is optional
+  (files without it import as before, grade not recorded) and accepts the
+  code, the label or the short label ("E10", "B7", "Rapid", "Home") in the
+  owner's language or in English; ambiguous words ("Unleaded", "Super",
+  "Diesel", "Premium") are not grades and make the row invalid, as does a
+  grade of another family. The grade is not part of the duplicate key.
+  A currency column that differs from the
   vehicle's currency makes the row invalid (amounts are never converted).
 - **Row outcomes:** *import*; *invalid* (errors listed, never silently
   dropped; importing the valid rows then needs an explicit "skip the invalid
@@ -803,6 +874,12 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   Status colours (red overdue, amber due soon, green OK) and the yellow
   number plate never change with the accent. Charts read the tokens when
   they draw.
+- **Fuel grade badges** (§7.3) follow the pump and charger labels: the
+  EN 16942 circle for petrol grades (AKI grades too), a square for diesel, a
+  rhombus for LPG (which has no grades but still gets its badge) and the
+  EN 17186 hexagon for charging types. Each is a small outlined shape plus
+  the short label in text (the full label as its accessible name), drawn in
+  the text colour: never colour alone, and never the accent.
 - **Sidebar:** the *Reminders* link carries a red badge with the number of
   open reminders that are *overdue* or *due* (hidden at zero). Below the
   navigation a *Vehicles* list shows every active vehicle with its car /
@@ -822,7 +899,7 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   icon).
 - **Version:** the release number lives in the `VERSION` file (updated with
   each release and copied into the Docker image). It is shown in the sidebar
-  footer and on the Settings page ("Logbook v0.7.0") and returned by
+  footer and on the Settings page ("Logbook v1.0.0") and returned by
   `/health`; backups record it too.
 - **Appearance:** light and dark themes from one token set (`assets/css/app.css`).
   The OS preference applies by default and without JS. Signed out (setup,
@@ -959,6 +1036,10 @@ task breakdowns live in the per-phase files; this is the map.
   dashboard vehicle filter with a pinned vehicle card, Mileage and Recent
   activity widgets, garage card badges and stats, consistent vehicle tabs,
   two-column layouts, accent colour, visible app version.
+- **Phase 8 — Fuel grades + v1.0.** Grade on each fill-up (petrol grade,
+  diesel blend, charging type) and a vehicle default grade, one grouped fuel
+  picker, badges, price and economy by grade, cost per kWh by charging
+  type, grade in CSV and backups; release v1.0.0.
 
 ---
 

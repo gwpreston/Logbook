@@ -24,7 +24,16 @@
 
         <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('vehicles.edit', {id: vehicle.id}) : url_for('vehicles.create') }}"
-              x-data="{ fuel: '{{ (values.fuel_type ?? 'petrol')|e('js') }}' }">
+              x-data="{
+                  fuel: '{{ (values.fuel_type ?? 'petrol')|e('js') }}',
+                  grade: '{{ (values.default_grade ?? '')|e('js') }}',
+                  gradeFamily() { return { petrol: 'petrol', hybrid: 'petrol', diesel: 'diesel', ev: 'ev' }[this.fuel] ?? null; },
+                  init() { this.$watch('fuel', this.dropUnfittingGrade.bind(this)); },
+                  dropUnfittingGrade() {
+                      var group = this.grade === '' ? null : this.$refs.grades.querySelector('option[value=&quot;' + this.grade + '&quot;]').parentElement;
+                      if (group !== null &amp;&amp; group.dataset.family !== this.gradeFamily()) { this.grade = ''; }
+                  },
+              }">
             {{ ui.csrf(csrf) }}
 
             <section class="card" aria-labelledby="basics-heading">
@@ -69,6 +78,24 @@
                         <p class="field__hint" id="f-capacity-hint">{{ 'vehicle.hint.capacity'|trans({unit: volume_symbol}) }}</p>
                         {{ ui.field_error(errors, 'capacity') }}
                     </div>
+                </div>
+                {# Default grade: every family's grades without JS (the server
+                   drops one that does not fit the fuel type); with JS only the
+                   fitting family, and none for LPG / other. #}
+                <div class="field" x-show="gradeFamily() !== null">
+                    <label class="field__label" for="f-default_grade">{{ 'vehicle.field.default_grade'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <select class="select" id="f-default_grade" name="default_grade" x-model="grade" x-ref="grades"{{ ui.described_by('default_grade', errors, true) }}>
+                        <option value="">{{ 'vehicle.default_grade.none'|trans }}</option>
+                        {% for family, grades in grade_groups %}
+                            <optgroup label="{{ ('fuel.fuel.' ~ family)|trans }}" data-family="{{ family }}" :disabled="gradeFamily() !== '{{ family }}'" :hidden="gradeFamily() !== '{{ family }}'">
+                                {% for grade in grades %}
+                                    <option value="{{ grade.value }}"{% if grade.value == (values.default_grade ?? '') %} selected{% endif %}>{{ grade.labelKey()|trans }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                    <p class="field__hint" id="f-default_grade-hint">{{ 'vehicle.hint.default_grade'|trans }}</p>
+                    {{ ui.field_error(errors, 'default_grade') }}
                 </div>
                 {{ ui.input('vin', 'vehicle.field.vin'|trans, values, errors, {optional: true, maxlength: 40, autocomplete: 'off', hint: 'vehicle.hint.vin'|trans}) }}
             </section>

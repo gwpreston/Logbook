@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Fuel;
 
 use DateTimeImmutable;
+use Logbook\Domain\Fuel\FuelGrade;
 
 /**
  * The stretch between two full fills: everything bought after the first one
@@ -24,6 +25,13 @@ final readonly class EconomySegment
         public int $fills,
         /** When the closing fill happened. */
         public DateTimeImmutable $endedAt,
+        /**
+         * The grade that was burned over it (spec.md §7.3): the opening full
+         * fill's, when it and every partial inside share it; null for a
+         * mixed or unrecorded segment. The closing fill's grade never counts
+         * (that fuel is burned in the next segment).
+         */
+        public ?FuelGrade $grade = null,
     ) {
     }
 }

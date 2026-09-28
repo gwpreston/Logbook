@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -18,6 +19,7 @@ use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\UnitPreset;
 use Logbook\Support\Validation\ValidationErrors;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Translation\TranslatableMessage;
 
 final class FuelEntryFormTest extends TestCase
 {
@@ -131,6 +133,85 @@ final class FuelEntryFormTest extends TestCase
         self::assertSame('validation.required', $errors->all()['odometer']['key']);
         self::assertSame('validation.choice', $errors->all()['fuel']['key']);
         self::assertSame('validation.min', $errors->all()['total']['key']);
+    }
+
+    public function testTheGroupedPickerValueCarriesTheGrade(): void
+    {
+        $metric = self::preferences(UnitPreset::Metric, 'en_GB', 'Europe/London');
+
+        $data = FuelEntryForm::parse(['fuel' => 'petrol:e5_97'] + self::US_FILL, $metric, 'GBP');
+        self::assertInstanceOf(FuelEntryData::class, $data);
+        self::assertSame(Fuel::Petrol, $data->fuel);
+        self::assertSame(FuelGrade::E5_97, $data->grade);
+        self::assertSame('petrol:e5_97', FuelEntryForm::values(self::entry($data), $metric)['fuel'], 'editing keeps it');
+
+        $data = FuelEntryForm::parse(['fuel' => 'ev:dc_rapid'] + self::US_FILL, $metric, 'GBP');
+        self::assertInstanceOf(FuelEntryData::class, $data);
+        self::assertSame(Fuel::Electricity, $data->fuel);
+        self::assertSame(FuelGrade::DcRapid, $data->grade);
+
+        // A queued offline entry from before grades: the family alone.
+        $data = FuelEntryForm::parse(['fuel' => 'petrol'] + self::US_FILL, $metric, 'GBP');
+        self::assertInstanceOf(FuelEntryData::class, $data);
+        self::assertNull($data->grade, 'not recorded is always valid');
+        self::assertSame('petrol', FuelEntryForm::values(self::entry($data), $metric)['fuel']);
+
+        // A CSV import passes the grade separately.
+        $data = FuelEntryForm::parse(['fuel' => 'diesel', 'grade' => 'b10'] + self::US_FILL, $metric, 'GBP');
+        self::assertInstanceOf(FuelEntryData::class, $data);
+        self::assertSame(FuelGrade::B10, $data->grade);
+    }
+
+    public function testAGradeOfAnotherFamilyIsRefusedClearly(): void
+    {
+        $metric = self::preferences(UnitPreset::Metric, 'en_GB', 'Europe/London');
+
+        $errors = FuelEntryForm::parse(['fuel' => 'petrol', 'grade' => 'b7'] + self::US_FILL, $metric, 'GBP');
+        self::assertInstanceOf(ValidationErrors::class, $errors);
+        $error = $errors->all()['fuel'];
+        self::assertSame('fuel.grade_mismatch', $error['key']);
+        self::assertSame(['family' => 'diesel', 'fuel' => 'petrol'], array_diff_key($error['params'], ['grade' => true]));
+        self::assertInstanceOf(TranslatableMessage::class, $error['params']['grade']);
+        self::assertSame('fuel.grade_short.b7', $error['params']['grade']->getMessage());
+
+        $errors = FuelEntryForm::parse(['fuel' => 'petrol:b7'] + self::US_FILL, $metric, 'GBP');
+        self::assertInstanceOf(ValidationErrors::class, $errors);
+        self::assertSame('fuel.grade_mismatch', $errors->all()['fuel']['key']);
+
+        foreach (['petrol:super', 'unleaded:e10_95', 'lpg:e10_95:x'] as $garbage) {
+            $errors = FuelEntryForm::parse(['fuel' => $garbage] + self::US_FILL, $metric, 'GBP');
+            self::assertInstanceOf(ValidationErrors::class, $errors, $garbage);
+            self::assertContains($errors->all()['fuel']['key'], ['validation.choice', 'fuel.grade_mismatch'], $garbage);
+        }
+    }
+
+    public function testDefaultsTakeTheLastGradeOfTheFamilyBeingLogged(): void
+    {
+        $prefs = self::preferences(UnitPreset::Uk, 'en_GB', 'Europe/London');
+        $now = new DateTimeImmutable('2026-09-27 12:30:00 UTC');
+        $vehicle = new Vehicle(
+            1,
+            1,
+            new VehicleData(VehicleType::Car, 'Toyota', 'Prius', FuelType::Hybrid, defaultGrade: FuelGrade::E5_97),
+            VehicleStatus::Active,
+            null,
+            null,
+            null,
+            $now,
+            $now,
+        );
+
+        self::assertSame('petrol:e5_97', FuelEntryForm::defaults($vehicle, $now, $prefs)['fuel'], 'the vehicle default');
+
+        $charge = new FuelEntryData($now, '100', Fuel::Electricity, '10', '0.3', '3', grade: FuelGrade::Home);
+        self::assertSame(
+            'petrol:e5_97',
+            FuelEntryForm::defaults($vehicle, $now, $prefs, [self::entry($charge)])['fuel'],
+            'a hybrid logs petrol; the home charge does not lend it its grade',
+        );
+
+        $fill = new FuelEntryData($now, '100', Fuel::Petrol, '10', '1.5', '15', grade: FuelGrade::E10_95);
+        self::assertSame('petrol:e10_95', FuelEntryForm::defaults($vehicle, $now, $prefs, [self::entry($fill)])['fuel']);
     }
 
     public function testDefaultsUseTheVehiclesFuelAndTheUsersClock(): void

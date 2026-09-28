@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Domain\Fuel;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 
 /**
  * A fill-up (or charge) as entered, validated and converted to storage units.
@@ -31,6 +32,11 @@ final readonly class FuelEntryData
         public bool $isMissedPrevious = false,
         public ?string $station = null,
         public ?string $notes = null,
+        /** Which grade of $fuel went in; null = not recorded (always valid). */
+        public ?FuelGrade $grade = null,
     ) {
+        if ($grade !== null && $grade->family() !== $fuel) {
+            throw new InvalidArgumentException(sprintf('Grade %s is not a %s grade.', $grade->value, $fuel->value));
+        }
     }
 }

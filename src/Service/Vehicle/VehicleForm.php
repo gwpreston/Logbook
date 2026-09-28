@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Vehicle;
 
+use BackedEnum;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -45,6 +47,7 @@ final class VehicleForm
             'registration' => $data->registration ?? '',
             'vin' => $data->vin ?? '',
             'fuel_type' => $data->fuelType->value,
+            'default_grade' => $data->defaultGrade->value ?? '',
             'capacity' => self::capacityForDisplay($data->capacity, $data->fuelType, $preferences->volumeUnit),
             'currency' => $data->currency ?? '',
             'purchase_date' => $data->purchaseDate?->format('Y-m-d') ?? '',
@@ -79,6 +82,7 @@ final class VehicleForm
         $registration = $validator->string('registration', false, 20);
         $vin = self::vin($validator);
         $fuelType = $validator->enum('fuel_type', FuelType::class, true);
+        $defaultGrade = $validator->enum('default_grade', FuelGrade::class);
         $capacity = $validator->decimal('capacity', false, self::QUANTITY_SCALE, '0', null, 9);
         $currency = $validator->choice('currency', Currency::SUPPORTED);
         $purchaseDate = $validator->date('purchase_date');
@@ -109,7 +113,18 @@ final class VehicleForm
             purchasePrice: $purchasePrice,
             saleDate: $saleDate,
             salePrice: $salePrice,
+            defaultGrade: self::fittingGrade($defaultGrade, $fuelType),
         );
+    }
+
+    /**
+     * The default grade when it fits the fuel type; a default left over
+     * from another fuel type (the type was changed, possibly without JS to
+     * clear it) is dropped rather than refused.
+     */
+    private static function fittingGrade(?BackedEnum $grade, FuelType $fuelType): ?FuelGrade
+    {
+        return $grade instanceof FuelGrade && $grade->family() === FuelGrade::defaultFamilyFor($fuelType) ? $grade : null;
     }
 
     private static function vin(Validator $validator): ?string

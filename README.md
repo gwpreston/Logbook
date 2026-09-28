@@ -4,10 +4,11 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: all six core phases complete.** First-run setup, secure sign-in, vehicles with photos and archiving, per-user units, currency,
+> **Status: v1.0.0 — every roadmap phase complete.** First-run setup, secure sign-in, vehicles with photos and archiving, per-user units, currency,
 > language and time zone; a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
-> kWh/100 km, mi/kWh), prices and running costs; a categorised service
+> kWh/100 km, mi/kWh), prices and running costs, and the grade bought (E10 /
+> E5, diesel blends, home or rapid charging) compared by price and economy; a categorised service
 > history with recurring schedules ("every 10,000 mi or 12 months") that work
 > out when each job is next due; insurance, pollution certificates,
 > registration and inspections with their expiry; and receipts, invoices and

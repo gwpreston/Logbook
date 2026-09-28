@@ -1,5 +1,6 @@
 {# Recent activity: the latest entries of every kind, newest first (spec.md §7.8). #}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/fuel.twig' as fuel_ui %}
 {% if dashboard.activity is empty %}
     <p class="muted">{{ 'dashboard.activity.empty'|trans }}</p>
 {% else %}
@@ -10,7 +11,7 @@
                 <a class="list__item" href="{{ url_for(route[0], {id: item.vehicle.id, (route[1]): item.entryId}) }}" data-modal>
                     <span class="list__icon" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
                     <span class="list__body">
-                        <span class="list__title">{{ item.label != '' ? item.label : item.labelKey|trans }}</span>
+                        <span class="list__title">{{ item.label != '' ? item.label : item.labelKey|trans }}{% if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif %}</span>
                         <span class="list__meta">{{ item.vehicle.name() }} · {{ item.date|local_date }}</span>
                     </span>
                     <span class="list__end">

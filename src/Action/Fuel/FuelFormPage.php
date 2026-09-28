@@ -6,12 +6,15 @@ namespace Logbook\Action\Fuel;
 
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
-use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Fuel\FuelPicker;
+use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\View\View;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -23,7 +26,9 @@ final readonly class FuelFormPage
     public function __construct(
         private View $view,
         private OdometerService $odometer,
+        private FuelService $fuel,
         private AttachmentUpload $upload,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -40,13 +45,21 @@ final readonly class FuelFormPage
         ?ValidationErrors $errors = null,
         int $status = 200,
     ): ResponseInterface {
+        $picker = FuelPicker::groups(
+            $vehicle,
+            $this->fuel->entries($vehicle),
+            RequestContext::requireUser($request)->preferences->locale,
+            $this->clock->now(),
+            $values['fuel'] ?? '',
+        );
+
         return $this->view->render($request, $response, 'fuel/form.twig', [
             'vehicle' => $vehicle,
             'entry' => $entry,
             'currency' => $currency,
             'values' => $values,
             'errors' => $errors?->all() ?? [],
-            'fuels' => Fuel::cases(),
+            'fuel_groups' => $picker,
             'latest' => $this->odometer->history($vehicle)->latest(),
         ] + $this->upload->formContext($vehicle, AttachmentOwner::Fuel, $entry?->id), $status);
     }

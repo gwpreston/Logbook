@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Validation;
 
+use Symfony\Contracts\Translation\TranslatableInterface;
+
 /**
  * Validation failures keyed by form field. Messages are translation keys
  * plus ICU parameters, translated when the form is rendered.
  */
 final class ValidationErrors
 {
-    /** @var array<string, array{key: string, params: array<string, int|string>}> */
+    /** @var array<string, array{key: string, params: array<string, int|string|TranslatableInterface>}> */
     private array $errors = [];
 
     /**
      * Record an error; only the first error per field is kept.
      *
-     * @param array<string, int|string> $params
+     * @param array<string, int|string|TranslatableInterface> $params
      */
     public function add(string $field, string $key, array $params = []): void
     {
@@ -34,7 +36,7 @@ final class ValidationErrors
     }
 
     /**
-     * @return array<string, array{key: string, params: array<string, int|string>}>
+     * @return array<string, array{key: string, params: array<string, int|string|TranslatableInterface>}>
      */
     public function all(): array
     {
