@@ -42,7 +42,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
 - [x] §7.8 — vehicle filter, pinned vehicle card, *Mileage* and *Recent
       activity* widgets, restyled *Your vehicles* (7.3, 7.4).
 - [x] §8 — accent colours, sidebar badge and vehicles list, version display.
-- [ ] `ROADMAP.md` gains a Phase 7 row; `CHANGELOG.md` gets the release entry.
+- [x] `ROADMAP.md` gains a Phase 7 row; `CHANGELOG.md` gets the release entry.
 
 ### 7.1 Desktop modals for entry forms (progressive enhancement)
 - [x] Forms that open in a modal on desktop: add / edit vehicle, add / edit

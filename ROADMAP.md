@@ -28,7 +28,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [4](phase-4.md) | Reminders + Notifications | ✅ |
 | [5](phase-5.md) | Expenses + Reports + Dashboard | ✅ |
 | [6](phase-6.md) | Feature toggles + Import/backup + polish | ✅ |
-| [7](phase-7.md) | Design alignment + dashboard enhancements | 🚧 |
+| [7](phase-7.md) | Design alignment + dashboard enhancements | ✅ |
 
 *Update the status column as each phase lands.*
 
