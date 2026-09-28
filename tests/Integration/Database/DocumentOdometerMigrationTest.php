@@ -46,6 +46,16 @@ final class DocumentOdometerMigrationTest extends AppTestCase
             odometerKm: '48280.320',
         ), new DateTimeZone('Europe/London'));
 
+        $this->connection($app)->insert('attachments', [
+            'vehicle_id' => $golf->id,
+            'owner_type' => 'expense',
+            'owner_id' => 1,
+            'filename' => 'a.pdf',
+            'mime' => 'application/pdf',
+            'size' => 1,
+            'stored_path' => 'attachments/a.pdf',
+            'uploaded_at' => '2026-09-01 10:00:00',
+        ]);
         $readings = $this->service($app, OdometerReadingRepository::class);
         $sources = static fn (): array => array_map(
             static fn ($r): string => $r->source->value . ' ' . $r->readingKm,
@@ -62,6 +72,8 @@ final class DocumentOdometerMigrationTest extends AppTestCase
         self::assertSame('manual', $rows[1]['source'], 'the document reading became a manual one');
         self::assertSame('48280.320', Row::decimal($rows[1], 'reading_km', 3));
         self::assertStringStartsWith('2026-09-01 11:00', Row::string($rows[1], 'recorded_at'));
+        $owners = $this->connection($app)->fetchFirstColumn('SELECT owner_type FROM attachments');
+        self::assertSame([], $owners, 'owner types 1.1.0 cannot read are unlinked');
 
         Migrator::run('migrate');
         self::assertSame(['manual 40000.000', 'manual 48280.320'], $sources(), 'stable after migrating again');

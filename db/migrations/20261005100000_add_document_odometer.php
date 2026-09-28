@@ -15,7 +15,9 @@ use Phinx\Migration\AbstractMigration;
  * and `odometer` need no widening.
  *
  * Explicit up/down rather than change(): rolling back first turns every
- * `document` reading into a `manual` one so no mileage is lost, and SQLite
+ * `document` reading into a `manual` one so no mileage is lost, and removes
+ * the rows of files attached to expenses and readings (owner types an older
+ * version cannot read; the files themselves stay under UPLOAD_PATH). SQLite
  * has no named foreign keys, so the foreign key is dropped by column (as in
  * 20260928100200).
  */
@@ -45,6 +47,8 @@ final class AddDocumentOdometer extends AbstractMigration
             'UPDATE odometer_readings SET source = ?, compliance_document_id = NULL WHERE source = ?',
             ['manual', 'document'],
         );
+
+        $this->execute('DELETE FROM attachments WHERE owner_type IN (?, ?)', ['expense', 'odometer']);
 
         $readings = $this->table('odometer_readings');
         $readings->dropForeignKey('compliance_document_id')->update();

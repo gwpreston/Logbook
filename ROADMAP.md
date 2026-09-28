@@ -32,7 +32,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [8](phase-8.md) | Fuel grades + v1.0 release | ✅ |
 | [9.1](phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | ✅ |
 | [9.2](phase-9.2.md) | Plug-in hybrids + v1.1 release | ✅ |
-| [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | 🚧 |
+| [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
 
 *Update the status column as each phase lands.*
 
