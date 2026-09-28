@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -41,6 +42,35 @@ final readonly class FuelEntryRepository
             ->addOrderBy('odometer_km')
             ->addOrderBy('id')
             ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * The fill-ups of several vehicles between two instants (the History
+     * pages bound a year by its local start and end in UTC; spec.md §7.16).
+     *
+     * @param list<int> $vehicleIds
+     * @param DateTimeImmutable|null $from inclusive (UTC); null = from the start
+     * @param DateTimeImmutable|null $until exclusive (UTC); null = to the end
+     * @return list<FuelEntry> in the order they happened
+     */
+    public function listForVehiclesBetween(array $vehicleIds, ?DateTimeImmutable $from, ?DateTimeImmutable $until): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $platform = $this->connection->getDatabasePlatform();
+        $query = $this->select()
+            ->where('vehicle_id IN (:vehicles)')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER);
+        if ($from !== null) {
+            $query->andWhere('filled_at >= :from')->setParameter('from', UtcDateTime::toDatabase($from, $platform));
+        }
+        if ($until !== null) {
+            $query->andWhere('filled_at < :until')->setParameter('until', UtcDateTime::toDatabase($until, $platform));
+        }
+        $rows = $query->orderBy('filled_at')->addOrderBy('odometer_km')->addOrderBy('id')->fetchAllAssociative();
 
         return array_values(array_map($this->hydrate(...), $rows));
     }

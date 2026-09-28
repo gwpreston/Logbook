@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -40,6 +41,35 @@ final readonly class OdometerReadingRepository
             ->addOrderBy('reading_km')
             ->addOrderBy('id')
             ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * The manual readings of several vehicles between two instants.
+     *
+     * @param list<int> $vehicleIds
+     * @param DateTimeImmutable|null $from inclusive (UTC); null = from the start
+     * @param DateTimeImmutable|null $until exclusive (UTC); null = to the end
+     * @return list<OdometerReading> oldest first
+     */
+    public function listManualForVehiclesBetween(array $vehicleIds, ?DateTimeImmutable $from, ?DateTimeImmutable $until): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $platform = $this->connection->getDatabasePlatform();
+        $query = $this->select()
+            ->where('vehicle_id IN (:vehicles)', 'source = :manual')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
+            ->setParameter('manual', OdometerSource::Manual->value);
+        if ($from !== null) {
+            $query->andWhere('recorded_at >= :from')->setParameter('from', UtcDateTime::toDatabase($from, $platform));
+        }
+        if ($until !== null) {
+            $query->andWhere('recorded_at < :until')->setParameter('until', UtcDateTime::toDatabase($until, $platform));
+        }
+        $rows = $query->orderBy('recorded_at')->addOrderBy('reading_km')->addOrderBy('id')->fetchAllAssociative();
 
         return array_values(array_map($this->hydrate(...), $rows));
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -39,6 +40,33 @@ final readonly class ExpenseEntryRepository
             ->orderBy('spent_on')
             ->addOrderBy('id')
             ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * The expenses of several vehicles between two calendar dates.
+     *
+     * @param list<int> $vehicleIds
+     * @param DateTimeImmutable|null $from inclusive; null = from the start
+     * @param DateTimeImmutable|null $until exclusive; null = to the end
+     * @return list<ExpenseEntry> by date, then in the order logged
+     */
+    public function listForVehiclesBetween(array $vehicleIds, ?DateTimeImmutable $from, ?DateTimeImmutable $until): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $query = $this->select()
+            ->where('vehicle_id IN (:vehicles)')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER);
+        if ($from !== null) {
+            $query->andWhere('spent_on >= :from')->setParameter('from', $from->format('Y-m-d'));
+        }
+        if ($until !== null) {
+            $query->andWhere('spent_on < :until')->setParameter('until', $until->format('Y-m-d'));
+        }
+        $rows = $query->orderBy('spent_on')->addOrderBy('id')->fetchAllAssociative();
 
         return array_values(array_map($this->hydrate(...), $rows));
     }

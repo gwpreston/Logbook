@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Dashboard;
 
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\History\ActivityItem;
 use Logbook\Service\Reminder\ReminderOverview;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Vehicle\VehicleSnapshot;

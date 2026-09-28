@@ -1,5 +1,5 @@
 {
-    "css/app.css": "25dc05b0ce3b",
+    "css/app.css": "3707aa7b25ca",
     "images/apple-touch-icon.png": "5d20e32cd66d",
     "images/icon-192.png": "4655ae88d21d",
     "images/icon-512.png": "c9e6d3a34934",
@@ -15,6 +15,6 @@
     "vendor/fonts/outfit-latin-wght-normal.woff2": "6c18d579fd87",
     "vendor/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2": "38e3b8fd8045",
     "vendor/fonts/plus-jakarta-sans-latin-wght-normal.woff2": "153fc85b7029",
-    "vendor/icons.svg": "1841aa8ce44f",
+    "vendor/icons.svg": "83651bc69689",
     "vendor/sortable.min.js": "bf4241bc73fe"
 }

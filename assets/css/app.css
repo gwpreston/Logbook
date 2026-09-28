@@ -3088,3 +3088,206 @@ a.list__title:hover {
     font-size: var(--fs-sm);
     font-weight: 600;
 }
+
+/* Vehicle history (spec.md §7.16): a year per page, month subheadings,
+   fill-up runs folded into a <details> row. */
+.history {
+    gap: var(--space-3);
+}
+
+.history-years {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+}
+
+.history-years__year {
+    margin: 0;
+    font-size: var(--fs-2xl);
+}
+
+.history-years__nav {
+    margin-left: auto;
+}
+
+.history-month {
+    margin: var(--space-4) 0 var(--space-1);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+}
+
+.history-month:first-of-type {
+    margin-top: var(--space-2);
+}
+
+.history-list > li,
+.history-run__fills > li {
+    list-style: none;
+}
+
+.history-row--milestone .list__title {
+    font-style: italic;
+}
+
+.history-run__summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.history-run__summary::-webkit-details-marker {
+    display: none;
+}
+
+.history-run__summary:hover {
+    background: var(--surface-2);
+}
+
+.history-run__toggle {
+    display: inline-flex;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+}
+
+.history-run[open] .history-run__toggle {
+    transform: rotate(90deg);
+}
+
+.history-run__fills {
+    margin: 0 0 var(--space-2) var(--space-6);
+    border-left: 2px solid var(--border);
+}
+
+.history__nothing {
+    margin: var(--space-2) 0 0;
+}
+
+/* The print view's sheet on screen. */
+.history-print__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.history-print__eyebrow {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+}
+
+.history-print__name {
+    margin: 0;
+}
+
+.history-print__list > li {
+    list-style: none;
+}
+
+.history-print__files {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-2) calc(2.375rem + var(--space-5));
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.history-print__options .chip-row {
+    flex-wrap: wrap;
+}
+
+/*
+ * Printing (the History print view, or any page): no app shell, black on
+ * white whatever the theme or accent, rows kept whole. Custom properties set
+ * with !important win over the dark-theme and accent rules.
+ */
+@media print {
+    :root {
+        --bg: #fff !important;
+        --surface: #fff !important;
+        --surface-2: #fff !important;
+        --stripe: #fff !important;
+        --text: #000 !important;
+        --muted: #333 !important;
+        --border: #999 !important;
+        --accent: #000 !important;
+        --accent-soft: #fff !important;
+        --on-accent: #fff !important;
+        --tone: #000 !important;
+        --c-fuel: #000 !important;
+        --c-maint: #000 !important;
+        --c-ins: #000 !important;
+        --c-other: #000 !important;
+        --c-tax: #000 !important;
+        --shadow: none !important;
+
+        color-scheme: light;
+    }
+
+    @page {
+        margin: 15mm 12mm;
+    }
+
+    body {
+        background: #fff;
+        color: #000;
+    }
+
+    .skip-link,
+    .sidebar,
+    .topbar,
+    .bottom-nav,
+    .app-footer,
+    .flashes,
+    .outbox,
+    .modal,
+    .no-print {
+        display: none !important;
+    }
+
+    .app__main,
+    .page {
+        padding: 0;
+        margin: 0;
+        max-width: none;
+    }
+
+    .card {
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .list__icon {
+        background: none;
+        border: 1px solid #999;
+        color: #000;
+    }
+
+    .history-print__item,
+    .history-print__details > div {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .history-print__list {
+        gap: 0;
+    }
+
+    .history-print__item {
+        border-top: 1px solid #ccc;
+    }
+}

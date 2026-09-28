@@ -1,6 +1,8 @@
-{# Recent activity: the latest entries of every kind, newest first (spec.md §7.8). #}
+{# Recent activity: the latest entries of every kind, newest first, from the
+   shared activity feed (spec.md §7.8, §7.16). #}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/fuel.twig' as fuel_ui %}
+{% import 'macros/attachments.twig' as paperclip %}
 {% if dashboard.activity is empty %}
     <p class="muted">{{ 'dashboard.activity.empty'|trans }}</p>
 {% else %}
@@ -15,9 +17,10 @@
                         <span class="list__meta">{{ item.vehicle.name() }} · {{ item.date|local_date }}</span>
                     </span>
                     <span class="list__end">
+                        {{ paperclip.count(item.files) }}
                         <span class="list__amount tabular">
-                            {%- if item.readingKm is not null -%}
-                                {{ item.readingKm|distance }}
+                            {%- if item.kind.value == 'odometer' -%}
+                                {{ item.odometerKm|distance }}
                             {%- elseif item.amount is not null -%}
                                 {{ item.amount|money(item.currency) }}
                             {%- endif -%}

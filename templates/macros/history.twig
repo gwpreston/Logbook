@@ -1,0 +1,116 @@
+{#
+ # Vehicle history fragments (spec.md §7.16). Import with:
+ # {% import 'macros/history.twig' as history %}
+ #}
+
+{# What an activity feed line was: its title and its one-line summary
+   (a Service\History\ActivityItem). `costs` off also hides milestone prices. #}
+{% macro title(item, costs = true) -%}
+    {%- if item.milestone -%}
+        {{- (item.price is not null and costs
+            ? ('history.milestone.' ~ item.milestone.value ~ '_for')|trans({price: item.price|money(item.currency)})
+            : item.labelKey|trans) -}}
+    {%- elseif item.kind.value == 'document' -%}
+        {{- item.label != '' ? item.label : item.labelKey|trans -}}
+    {%- elseif item.kind.value == 'maintenance' -%}
+        {{- item.label -}}
+    {%- else -%}
+        {{- item.labelKey|trans -}}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro summary(item) -%}
+    {%- set parts = [] -%}
+    {%- if item.kind.value == 'fuel' and item.volume is not null -%}
+        {%- set parts = parts|merge([item.volume|quantity(item.isElectric())]) -%}
+    {%- elseif item.kind.value == 'maintenance' -%}
+        {%- set parts = parts|merge([item.labelKey|trans]|merge(item.vendor ? [item.vendor] : [])) -%}
+    {%- elseif item.kind.value == 'document' -%}
+        {%- if item.label != '' %}{% set parts = parts|merge([item.labelKey|trans]) %}{% endif -%}
+        {%- if item.expiresOn %}{% set parts = parts|merge(['history.expires'|trans({date: item.expiresOn|local_date})]) %}{% endif -%}
+    {%- elseif item.note -%}
+        {%- set parts = parts|merge([item.note|length > 80 ? item.note|slice(0, 79) ~ '…' : item.note]) -%}
+    {%- endif -%}
+    {{- parts|join(' · ') -}}
+{%- endmacro %}
+
+{# The edit page of a line: a milestone opens the vehicle's. `return_to`
+   brings the owner back to this page after saving (spec.md §5). #}
+{% macro edit_url(item, return_to = null) -%}
+    {%- set route = item.kind.editRoute() -%}
+    {%- set params = route[1] ? {id: item.vehicle.id, (route[1]): item.entryId} : {id: item.vehicle.id} -%}
+    {{- url_for(route[0], params, return_to ? {return: return_to} : {}) -}}
+{%- endmacro %}
+
+{# One line. Options: show_vehicle (the fleet page), return_to, costs
+   (default on), link (default on; off for the print view). #}
+{% macro row(item, opts = {}) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/fuel.twig' as fuel_ui %}
+    {% import 'macros/attachments.twig' as paperclip %}
+    {% import _self as history %}
+    {% set costs = opts.costs ?? true %}
+    {% set summary = history.summary(item) %}
+    {% set tag = (opts.link ?? true) ? 'a' : 'div' %}
+    <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}" data-modal{% endif %}>
+        <span class="list__icon" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
+        <span class="list__body">
+            <span class="list__title">{{ history.title(item, costs) }}{% if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif %}</span>
+            <span class="list__meta">
+                {{- '' -}}<time datetime="{{ item.date|date('Y-m-d', 'UTC') }}">{{ item.date|local_date }}</time>
+                {%- if opts.show_vehicle ?? false %} · {{ item.vehicle.name() }}{% endif %}
+                {%- if summary != '' %} · {{ summary }}{% endif -%}
+            </span>
+        </span>
+        <span class="list__end">
+            {% if item.odometerKm is not null %}<span class="list__delta tabular">{{ item.odometerKm|distance }}</span>{% endif %}
+            {{ paperclip.count(item.files) }}
+            {% if costs and item.amount is not null %}<span class="list__amount tabular">{{ item.amount|money(item.currency) }}</span>{% endif %}
+        </span>
+    </{{ tag }}>
+{%- endmacro %}
+
+{# Back-to-back fill-ups as one row that expands to them (works without JS):
+   "4 fill-ups · 2 Sep – 17 Sep · £284.10". #}
+{% macro run(run, opts = {}) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attachments.twig' as paperclip %}
+    {% import _self as history %}
+    {% set counts = [] %}
+    {% if run.fillUps() > 0 %}{% set counts = counts|merge(['history.run.fill_ups'|trans({count: run.fillUps()})]) %}{% endif %}
+    {% if run.charges() > 0 %}{% set counts = counts|merge(['history.run.charges'|trans({count: run.charges()})]) %}{% endif %}
+    {% set volume = run.volume() %}
+    <details class="history-run">
+        <summary class="list__item history-run__summary">
+            <span class="list__icon" style="--tone: var(--c-fuel)">{{ ui.icon(run.isElectric() ? 'ev_station' : 'local_gas_station') }}</span>
+            <span class="list__body">
+                <span class="list__title">{{ counts|join(' · ') }}</span>
+                <span class="list__meta">
+                    {{- '' -}}<time datetime="{{ run.oldest()|date('Y-m-d', 'UTC') }}">{{ run.oldest()|local_date }}</time> – <time datetime="{{ run.newest()|date('Y-m-d', 'UTC') }}">{{ run.newest()|local_date }}</time>
+                    {%- if opts.show_vehicle ?? false %} · {{ run.vehicle().name() }}{% endif %}
+                    {%- if volume is not null %} · {{ volume|quantity(run.isElectric()) }}{% endif -%}
+                </span>
+            </span>
+            <span class="list__end">
+                {{ paperclip.count(run.files()) }}
+                <span class="list__amount tabular">{{ run.total()|money(run.currency()) }}</span>
+                <span class="history-run__toggle" aria-hidden="true">{{ ui.icon('chevron_right') }}</span>
+            </span>
+        </summary>
+        <ol class="list history-run__fills">
+            {% for fill in run.fills %}
+                <li>{{ history.row(fill, opts) }}</li>
+            {% endfor %}
+        </ol>
+    </details>
+{%- endmacro %}
+
+{# The kind chips: plain links, one chosen at a time (spec.md §7.16). #}
+{% macro chips(chips, chosen, route, params, query = {}) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <nav class="chip-row history-chips" aria-label="{{ 'history.chips_label'|trans }}">
+        {% for chip in chips %}
+            <a class="chip" href="{{ url_for(route, params, query|merge(chip.value == 'all' ? {} : {kind: chip.value})) }}"{% if chip == chosen %} aria-current="page"{% endif %}>{{ ui.icon(chip.icon()) }}<span>{{ ('history.chip.' ~ chip.value)|trans }}</span></a>
+        {% endfor %}
+    </nav>
+{%- endmacro %}

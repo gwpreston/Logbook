@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -36,6 +37,26 @@ final readonly class ComplianceDocumentRepository
         $rows = $this->select()
             ->where('vehicle_id = :vehicle')
             ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * Every document of several vehicles (a vehicle has few).
+     *
+     * @param list<int> $vehicleIds
+     * @return list<ComplianceDocument> in creation order
+     */
+    public function listForVehicles(array $vehicleIds): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $rows = $this->select()
+            ->where('vehicle_id IN (:vehicles)')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
             ->orderBy('id')
             ->fetchAllAssociative();
 
