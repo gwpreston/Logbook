@@ -3283,8 +3283,10 @@ a.list__title:hover {
         page-break-inside: avoid;
     }
 
+    /* Lists bleed into the card's padding on screen; paper has none. */
     .history-print__list {
         gap: 0;
+        margin: 0;
     }
 
     .history-print__item {
