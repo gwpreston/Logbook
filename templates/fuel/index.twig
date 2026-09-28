@@ -21,6 +21,7 @@
             <section class="page__stack" aria-labelledby="summary-{{ section.kind.value }}">
                 <h2 id="summary-{{ section.kind.value }}" class="{{ sections|length > 1 ? 'section-title section-title--sm' : 'visually-hidden' }}">{{ ('fuel.kind.' ~ section.kind.value)|trans }}</h2>
 
+                {% set overview %}
                 <dl class="stats">
                     {{ ui.stat((electric ? 'fuel.stat.average_ev' : 'fuel.stat.average')|trans,
                         summary.hasEconomy() ? summary.measuredDistanceKm|economy(summary.measuredVolume, electric) : dash,
@@ -46,6 +47,17 @@
                         {% endfor %}
                     </p>
                 {% endif %}
+                {% endset %}
+
+                {# By grade sits beside the summary on wide screens (spec.md §7.3). #}
+                {% if section.grades %}
+                    <div class="split">
+                        <div class="page__stack">{{ overview }}</div>
+                        {{ fuel_ui.grade_card(section.grades, currency, electric) }}
+                    </div>
+                {% else %}
+                    {{ overview }}
+                {% endif %}
 
                 <div class="split">
                     <section class="card" aria-labelledby="economy-{{ section.kind.value }}">
@@ -59,7 +71,7 @@
                     </section>
                     <section class="card" aria-labelledby="price-{{ section.kind.value }}">
                         <h3 id="price-{{ section.kind.value }}" class="card__title">{{ 'fuel.chart.price_title'|trans }}</h3>
-                        {% if section.price_chart.hasData() %}
+                        {% if section.price_chart.pointCount() >= 2 %}
                             {{ ui.chart(section.price_chart, 'fuel.chart.price_title'|trans) }}
                         {% else %}
                             <p class="muted">{{ 'fuel.chart.need_two'|trans }}</p>

@@ -39,6 +39,22 @@ enum Fuel: string
     }
 
     /**
+     * The pump / charger label shape (spec.md §8): EN 16942 circle for
+     * petrol, square for diesel, rhombus for LPG, EN 17186 hexagon for
+     * charging; none for other fuels.
+     */
+    public function badgeShape(): ?string
+    {
+        return match ($this) {
+            self::Petrol => 'circle',
+            self::Diesel => 'square',
+            self::Lpg => 'rhombus',
+            self::Electricity => 'hexagon',
+            self::Other => null,
+        };
+    }
+
+    /**
      * Economy is only ever computed between entries of the same kind:
      * litres and kWh cannot be added up.
      */

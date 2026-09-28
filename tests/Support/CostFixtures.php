@@ -15,6 +15,7 @@ use Logbook\Domain\Expense\ExpenseEntryData;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Maintenance\MaintenanceEntryData;
@@ -91,13 +92,15 @@ trait CostFixtures
         string $total,
         bool $partial = false,
         ?string $pricePerLitre = null,
+        ?FuelGrade $grade = null,
     ): FuelEntry {
         $at = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
         $price = $pricePerLitre ?? Decimal::divide($total, $litres, 6);
+        $fuel = $grade?->family() ?? Fuel::defaultFor($vehicle->data->fuelType);
 
         return $this->service($app, FuelService::class)->create(
             $vehicle,
-            new FuelEntryData($at, $odometerKm, Fuel::defaultFor($vehicle->data->fuelType), $litres, $price, $total, $partial),
+            new FuelEntryData($at, $odometerKm, $fuel, $litres, $price, $total, $partial, grade: $grade),
         );
     }
 

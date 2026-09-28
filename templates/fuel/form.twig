@@ -5,7 +5,8 @@
 {% set active_nav = 'garage' %}
 {% set editing = entry is not null %}
 {% set heading = (editing ? 'fuel.edit_title' : 'fuel.add_title')|trans %}
-{% set fuel = values.fuel ?? 'petrol' %}
+{% set fuel_choice = values.fuel ?? 'petrol' %}
+{% set fuel = fuel_choice|split(':')|first %}
 {% set volume_symbol = ('units.symbol.' ~ prefs().volumeUnit.value)|trans %}
 {% set energy_symbol = 'units.symbol.kwh'|trans %}
 {% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
@@ -33,7 +34,7 @@
 
         <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('fuel.edit', {id: vehicle.id, entry: entry.id}) : url_for('fuel.create', {id: vehicle.id}) }}"
-              x-data="{ fuel: '{{ fuel|e('js') }}' }"
+              x-data="{ choice: '{{ fuel_choice|e('js') }}', get fuel() { return this.choice.split(':')[0]; } }"
               {%- if not editing %} data-offline-queue data-offline-label="{{ vehicle.name() }}" data-zone="{{ prefs().timezone }}"{% if errors is empty %} data-now-field="filled_at"{% endif %}{% endif %}>
             {{ ui.csrf(csrf) }}
 
@@ -47,9 +48,13 @@
                 </div>
                 <div class="field">
                     <label class="field__label" for="f-fuel">{{ 'fuel.field.fuel'|trans }}</label>
-                    <select class="select" id="f-fuel" name="fuel" required x-model="fuel"{{ ui.described_by('fuel', errors, false) }}>
-                        {% for option in fuels %}
-                            <option value="{{ option.value }}"{% if option.value == fuel %} selected{% endif %}>{{ ('fuel.fuel.' ~ option.value)|trans }}</option>
+                    <select class="select" id="f-fuel" name="fuel" required @change="choice = $event.target.value"{{ ui.described_by('fuel', errors, false) }}>
+                        {% for group in fuel_groups %}
+                            <optgroup label="{{ group.labelKey|trans }}">
+                                {% for option in group.options %}
+                                    <option value="{{ option.value() }}"{% if option.selected %} selected{% endif %}>{{ option.labelKey|trans }}</option>
+                                {% endfor %}
+                            </optgroup>
                         {% endfor %}
                     </select>
                     {{ ui.field_error(errors, 'fuel') }}

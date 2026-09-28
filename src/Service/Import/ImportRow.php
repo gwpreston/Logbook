@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Import;
 
+use Symfony\Contracts\Translation\TranslatableInterface;
+
 /**
  * One CSV row of an import and what happens to it (spec.md §7.13).
  */
@@ -12,7 +14,7 @@ final readonly class ImportRow
     /**
      * @param int $line the row number a spreadsheet shows for it (the header is row 1)
      * @param array<string, string> $values field key → the text read for it
-     * @param list<array{field: string, key: string, params: array<string, int|string>}> $errors
+     * @param list<array{field: string, key: string, params: array<string, int|string|TranslatableInterface>}> $errors
      *        field key → translation key of the problem, for invalid rows
      * @param object|null $data what will be saved (the module's *Data object), for importable rows
      */

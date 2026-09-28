@@ -2,12 +2,107 @@
  # Fuel fragments. Import with: {% import 'macros/fuel.twig' as fuel_ui %}
  #}
 
+{# The pump / charger style badge of a fill-up's grade (spec.md §8): a
+   shape per family plus the short label; the full label is its accessible
+   name. LPG has no grades but still gets its rhombus; no grade recorded (or
+   another fuel) shows nothing. #}
+{% macro badge(fuel, grade) -%}
+    {% set shape = fuel.badgeShape() %}
+    {% if shape and (grade or fuel.value == 'lpg') %}
+        {% set short = grade ? grade.shortLabelKey()|trans : ('fuel.fuel.' ~ fuel.value)|trans %}
+        {% set long = grade ? grade.labelKey()|trans : ('fuel.fuel.' ~ fuel.value)|trans %}
+        <span class="grade-badge grade-badge--{{ shape }}" title="{{ long }}">
+            <span class="grade-badge__shape" aria-hidden="true"></span>
+            <span class="grade-badge__text" aria-hidden="true">{{ short }}</span>
+            <span class="visually-hidden">{{ long }}</span>
+        </span>
+    {%- endif %}
+{%- endmacro %}
+
+{# The Fuel tab's *By grade* card (a Service\Fuel\GradeBreakdown, spec.md
+   §7.3). Liquid fuel: fills, volume, average price and — with at least two
+   segments burned on one grade — an indicative economy. Electricity: share
+   of energy and cost per kWh per charging type, then the blended cost. #}
+{% macro grade_card(breakdown, currency, electric) -%}
+    {% import _self as fuel_ui %}
+    {% set dash = '—' %}
+    {% set title = (electric ? 'fuel.grades.title_ev' : 'fuel.grades.title')|trans %}
+    <section class="card" aria-labelledby="grades-{{ breakdown.kind.value }}">
+        <h3 id="grades-{{ breakdown.kind.value }}" class="card__title">{{ title }}</h3>
+        <div class="table-wrap">
+            <table class="table">
+                <caption class="visually-hidden">{{ title }}</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">{{ (electric ? 'fuel.grades.column.type' : 'fuel.grades.column.grade')|trans }}</th>
+                        {% if electric %}
+                            <th scope="col" class="table__num">{{ 'fuel.grades.column.share'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'fuel.grades.column.cost_per_kwh'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'fuel.grades.column.energy'|trans }}</th>
+                        {% else %}
+                            <th scope="col" class="table__num">{{ 'fuel.grades.column.fills'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'fuel.grades.column.volume'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'fuel.grades.column.price'|trans }}</th>
+                        {% endif %}
+                        <th scope="col" class="table__num">{{ (electric ? 'fuel.grades.column.efficiency' : 'fuel.grades.column.economy')|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in breakdown.rows %}
+                        {% set price = row.averagePricePerUnit() %}
+                        <tr>
+                            <th scope="row">
+                                {%- if row.grade -%}
+                                    {{ fuel_ui.badge(row.grade.family(), row.grade) }}
+                                {%- else -%}
+                                    <span class="muted">{{ 'fuel.grade_not_recorded'|trans }}</span>
+                                {%- endif -%}
+                            </th>
+                            {% if electric %}
+                                <td class="table__num tabular">{{ 'fuel.grades.share'|trans({share: row.share()}) }}</td>
+                                <td class="table__num tabular">{{ price is null ? dash : price|unit_price(currency, true) }}</td>
+                                <td class="table__num tabular">{{ row.volume|quantity(true, 0) }}</td>
+                            {% else %}
+                                <td class="table__num tabular">{{ row.fills|number }}</td>
+                                <td class="table__num tabular">{{ row.volume|quantity(false, 0) }}</td>
+                                <td class="table__num tabular">{{ price is null ? dash : price|unit_price(currency, false) }}</td>
+                            {% endif %}
+                            <td class="table__num table__note tabular">
+                                {%- if row.hasEconomy() -%}
+                                    {{ row.measuredDistanceKm|economy(row.measuredVolume, electric) }}
+                                {%- elseif row.grade -%}
+                                    <span class="muted">{{ 'fuel.grades.not_enough'|trans }}</span>
+                                {%- else -%}
+                                    {{ dash }}
+                                {%- endif -%}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                {% if electric and breakdown.blendedPricePerUnit() is not null %}
+                    <tfoot>
+                        <tr>
+                            <th scope="row">{{ 'fuel.grades.blended'|trans }}</th>
+                            <td class="table__num tabular">{{ 'fuel.grades.share'|trans({share: 1}) }}</td>
+                            <td class="table__num tabular"><strong>{{ breakdown.blendedPricePerUnit()|unit_price(currency, true) }}</strong></td>
+                            <td class="table__num tabular">{{ breakdown.totalVolume|quantity(true, 0) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                {% endif %}
+            </table>
+        </div>
+        <p class="field__hint">{{ 'fuel.grades.hint'|trans }}</p>
+    </section>
+{%- endmacro %}
+
 {# One fill-up (a Service\Fuel\FillEconomy) as a list row linking to its edit
    page: when, odometer · volume · price, total, and the economy of the
    full-to-full segment it closes (or why there is none). #}
 {% macro row(fill, vehicle, currency, attachments = []) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import 'macros/attachments.twig' as files %}
+    {% import _self as fuel_ui %}
     {% set data = fill.entry.data %}
     {% set electric = data.fuel.isElectric() %}
     {% set status = fill.status.value %}
@@ -15,7 +110,7 @@
         <a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}" data-modal>
             <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
             <span class="list__body">
-                <span class="list__title">{{ data.filledAt|local_datetime }}</span>
+                <span class="list__title">{{ data.filledAt|local_datetime }} {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
                 <span class="list__meta tabular">
                     {{- data.odometerKm|distance }} · {{ data.volume|quantity(electric) }} · {{ data.pricePerUnit|unit_price(currency, electric) -}}
                     {%- if data.station %} · {{ data.station }}{% endif -%}

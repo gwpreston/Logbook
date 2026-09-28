@@ -10,7 +10,9 @@ use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Expense\CostSource;
 use Logbook\Domain\Expense\ExpenseEntry;
+use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Support\Date\LocalTime;
@@ -38,6 +40,9 @@ final readonly class CostItem
         /** Litres or kWh bought (fuel only), canonical decimal. */
         public ?string $quantity = null,
         public bool $electric = false,
+        /** For a fill-up: its fuel and grade, for the grade badge. */
+        public ?Fuel $fuel = null,
+        public ?FuelGrade $grade = null,
     ) {
     }
 
@@ -61,6 +66,8 @@ final readonly class CostItem
             title: $data->station,
             quantity: $data->volume,
             electric: $electric,
+            fuel: $data->fuel,
+            grade: $data->grade,
         );
     }
 

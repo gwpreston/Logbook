@@ -44,7 +44,8 @@ final readonly class CreateFuelEntryAction
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 
         if ($request->getMethod() !== 'POST') {
-            $defaults = FuelEntryForm::defaults($vehicle, $this->clock->now(), $user->preferences);
+            $entries = $this->fuel->entries($vehicle);
+            $defaults = FuelEntryForm::defaults($vehicle, $this->clock->now(), $user->preferences, $entries);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }

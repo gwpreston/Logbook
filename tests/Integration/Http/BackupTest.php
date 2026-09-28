@@ -6,6 +6,7 @@ namespace Logbook\Tests\Integration\Http;
 
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Repository\VehicleRepository;
@@ -253,6 +254,8 @@ final class BackupTest extends AppTestCase
         $vehicles->replacePhoto($owner, $golf, $photo, FileUpload::check($photo, 1024 * 1024, UploadKind::Image));
 
         $this->fillUp($app, $golf, '2026-09-01T08:00:00Z', '1000.5', '40.123', '60.18', true);
+        // The grade column is backed up and restored like any other (Phase 8).
+        $this->fillUp($app, $golf, '2026-09-08T08:00:00Z', '1400', '38.5', '57.75', grade: FuelGrade::E5_97);
         $service = $this->maintenance($app, $golf, '2026-09-14', 'Annual service', '189.5', '1609.344');
         $pdf = $this->upload($this->tempFile(self::PDF), 'invoice.pdf');
         $this->service($app, AttachmentService::class)->attach(

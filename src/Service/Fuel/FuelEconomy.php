@@ -25,6 +25,9 @@ use Logbook\Support\Number\Decimal;
  *  - A full fill whose odometer is not beyond the segment start cannot be
  *    measured; measuring restarts from it.
  *  - Liquid fuel (litres) and electricity (kWh) are separate series.
+ *  - Grades never split a series. Each segment only records the grade that
+ *    was burned over it: the opening full fill's, when every partial inside
+ *    shares it (EconomySegment::$grade); GradeStatistics reads that.
  *
  * Pure: no I/O, so every rule is unit-tested with worked examples.
  */
@@ -71,6 +74,7 @@ final class FuelEconomy
         $volume = '0';        // bought since the anchor
         $cost = '0';
         $fills = 0;
+        $burned = null;       // the grade burned since the anchor, while one grade throughout
         $previous = null;
 
         foreach ($entries as $entry) {
@@ -93,11 +97,15 @@ final class FuelEconomy
 
                 if (!$entry->isFull()) {
                     $status = EconomyStatus::Partial;
+                    // A partial of another (or no recorded) grade mixes the segment.
+                    if ($data->grade !== $burned) {
+                        $burned = null;
+                    }
                 } else {
                     $distance = Decimal::subtract($data->odometerKm, $anchor->data->odometerKm);
                     if (Decimal::compare($distance, '0') > 0) {
                         $status = EconomyStatus::Measured;
-                        $segment = new EconomySegment($distance, $volume, $cost, $fills, $data->filledAt);
+                        $segment = new EconomySegment($distance, $volume, $cost, $fills, $data->filledAt, $burned);
                     } else {
                         $status = EconomyStatus::Invalid;
                     }
@@ -110,6 +118,7 @@ final class FuelEconomy
                 $volume = '0';
                 $cost = '0';
                 $fills = 0;
+                $burned = $data->grade;
             }
 
             $results[] = new FillEconomy($entry, $status, $sincePrevious, $segment);

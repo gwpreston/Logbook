@@ -10,6 +10,7 @@ use DateTimeZone;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Number\DecimalParser;
+use Symfony\Contracts\Translation\TranslatableInterface;
 
 /**
  * Reads and validates submitted form fields into typed values, collecting
@@ -38,7 +39,7 @@ final class Validator
     }
 
     /**
-     * @param array<string, int|string> $params
+     * @param array<string, int|string|TranslatableInterface> $params
      */
     public function addError(string $field, string $key, array $params = []): void
     {

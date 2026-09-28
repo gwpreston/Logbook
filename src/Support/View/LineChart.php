@@ -65,6 +65,15 @@ final class LineChart implements JsonSerializable
     }
 
     /**
+     * Points across every series (a price chart split by grade is worth
+     * drawing from two fills on, even when each grade has one).
+     */
+    public function pointCount(): int
+    {
+        return array_sum(array_map(static fn (array $series): int => count($series['points']), $this->series));
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function jsonSerialize(): array

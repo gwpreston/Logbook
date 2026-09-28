@@ -50,6 +50,16 @@ same category, amount and note.
   Logbook's code (`petrol`), or the label in your language or English
   (`Petrol`, `Benzin`). A missing category means *Other*; a missing fuel means
   the vehicle's usual fuel.
+- **Grade** (fuel, optional) accepts Logbook's code (`e10_95`, `b7`,
+  `dc_rapid`, …: see the *Grade code* column of a fuel export), the grade's
+  name (`E10 unleaded, 95 RON`, `Super E10, 95 ROZ`) or its short name
+  (`E10 95`, `B7`, `Rapid`, `Home`) in your language or English, plus a few
+  common shorthands (`E10`, `E5`, `HVO`). Words that could mean several
+  grades — `Unleaded`, `Super`, `Diesel`, `Premium` — are not grades and the
+  row is refused, as is a grade of another fuel (a `B7` on a petrol row).
+  An empty cell, or no Grade column at all, means *not recorded*. The grade
+  does not count towards "the same entry". A fuel export has both *Grade*
+  (the name) and *Grade code*; the code column is matched first.
 - **Yes/no** columns accept yes/no, true/false, 1/0, y/n, x (and your
   language's yes/no).
 - A fill-up row's **Unit** column (`UK gallons`, `L`, `kWh`, …) overrides the
@@ -59,7 +69,7 @@ same category, amount and note.
 
 | List | Fields (required in bold) |
 |---|---|
-| Fuel | **Date and time**, **Odometer**, Fuel, Volume, Unit, Price per unit, Total, Currency, Partial, Missed previous, Station, Notes — any two of volume, price and total |
+| Fuel | **Date and time**, **Odometer**, Fuel, Grade, Volume, Unit, Price per unit, Total, Currency, Partial, Missed previous, Station, Notes — any two of volume, price and total |
 | Mileage | **Date and time**, **Odometer**, Source, Note |
 | Maintenance | **Date**, Category, **Title**, Odometer, Cost, Currency, Garage, Details |
 | Documents | **Type**, Title (required for *Other*), Provider, Reference, Start, Expiry, Cost, Currency, Notes |

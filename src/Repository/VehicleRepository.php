@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -26,7 +27,7 @@ final readonly class VehicleRepository
     private const int CAPACITY_SCALE = 3;
     private const int MONEY_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private StoredGrade $grades)
     {
     }
 
@@ -139,6 +140,7 @@ final readonly class VehicleRepository
                 'registration',
                 'vin',
                 'fuel_type',
+                'default_grade',
                 'capacity',
                 'currency',
                 'photo_path',
@@ -169,6 +171,7 @@ final readonly class VehicleRepository
             'registration' => $data->registration,
             'vin' => $data->vin,
             'fuel_type' => $data->fuelType->value,
+            'default_grade' => $data->defaultGrade?->value,
             'capacity' => $data->capacity,
             'currency' => $data->currency,
             'purchase_date' => $data->purchaseDate?->format('Y-m-d'),
@@ -190,15 +193,17 @@ final readonly class VehicleRepository
     {
         $platform = $this->connection->getDatabasePlatform();
         $archivedAt = Row::nullableString($row, 'archived_at');
+        $id = Row::int($row, 'id');
+        $fuelType = FuelType::from(Row::string($row, 'fuel_type'));
 
         return new Vehicle(
-            id: Row::int($row, 'id'),
+            id: $id,
             userId: Row::int($row, 'user_id'),
             data: new VehicleData(
                 type: VehicleType::from(Row::string($row, 'type')),
                 make: Row::string($row, 'make'),
                 model: Row::string($row, 'model'),
-                fuelType: FuelType::from(Row::string($row, 'fuel_type')),
+                fuelType: $fuelType,
                 nickname: Row::nullableString($row, 'nickname'),
                 year: Row::nullableInt($row, 'year'),
                 registration: Row::nullableString($row, 'registration'),
@@ -209,6 +214,12 @@ final readonly class VehicleRepository
                 purchasePrice: Row::nullableDecimal($row, 'purchase_price', self::MONEY_SCALE),
                 saleDate: Row::nullableDate($row, 'sale_date'),
                 salePrice: Row::nullableDecimal($row, 'sale_price', self::MONEY_SCALE),
+                defaultGrade: $this->grades->read(
+                    Row::nullableString($row, 'default_grade'),
+                    FuelGrade::defaultFamilyFor($fuelType),
+                    self::TABLE,
+                    $id,
+                ),
             ),
             status: VehicleStatus::from(Row::string($row, 'status')),
             photoPath: Row::nullableString($row, 'photo_path'),

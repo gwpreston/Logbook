@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Repository\ComplianceDocumentRepository;
 use Logbook\Repository\ExpenseEntryRepository;
@@ -54,7 +55,16 @@ final class ImportTest extends AppTestCase
         $browser = $this->signedIn($app);
         // The owner uses miles and UK gallons, so every quantity is converted both ways.
         $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
-        $this->fillUp($app, $golf, '2026-03-31T23:30:00Z', '48280.320', '45.678', '66.64', pricePerLitre: '1.459000');
+        $this->fillUp(
+            $app,
+            $golf,
+            '2026-03-31T23:30:00Z',
+            '48280.320',
+            '45.678',
+            '66.64',
+            pricePerLitre: '1.459000',
+            grade: FuelGrade::E10_95,
+        );
         $this->fillUp($app, $golf, '2026-04-20T17:05:00Z', '48885.123', '40.001', '0', partial: true, pricePerLitre: '0.000000');
         $this->service($app, FuelService::class)->create($golf, new FuelEntryData(
             new DateTimeImmutable('2026-05-02T08:15:00Z', new DateTimeZone('UTC')),
@@ -74,12 +84,13 @@ final class ImportTest extends AppTestCase
         $map = $this->upload($browser, $polo->id, 'fuel', $csv, 'golf-fuel.csv');
         $mapping = self::body($browser->get($map));
         self::assertStringContainsString('golf-fuel.csv: 3 rows', $mapping);
-        // Matched by the export's own headers, with the file's units read from them.
+        // Matched by the export's own headers, with the file's units read
+        // from them; the grade from its code column (4), not its label (3).
         $guess = Html::formValues(Html::element(Html::document($mapping), 'form[method="get"]'));
         self::assertSame(
-            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'],
-            [$guess['map_filled_at'], $guess['map_odometer'], $guess['map_fuel'], $guess['map_volume'], $guess['map_unit'],
-                $guess['map_price'], $guess['map_total'], $guess['map_currency'], $guess['map_partial'],
+            ['0', '1', '2', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'],
+            [$guess['map_filled_at'], $guess['map_odometer'], $guess['map_fuel'], $guess['map_grade'], $guess['map_volume'],
+                $guess['map_unit'], $guess['map_price'], $guess['map_total'], $guess['map_currency'], $guess['map_partial'],
                 $guess['map_missed_previous'], $guess['map_station'], $guess['map_notes']],
         );
         self::assertSame('mi', $guess['distance_unit']);
@@ -113,6 +124,47 @@ final class ImportTest extends AppTestCase
         self::assertSame(422, $response->getStatusCode());
         self::assertStringContainsString('None of the rows can be imported.', self::body($response));
         self::assertCount(3, $this->service($app, FuelEntryRepository::class)->listForVehicle($polo->id));
+    }
+
+    public function testTheGradeColumnTakesCodesLabelsAndShortLabels(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $csv = implode("\n", [
+            'Date,Odometer,Fuel,Grade,Litres,Price,Total',
+            '2026-06-01 09:00,1000,Petrol,e5_97,40,1.60,',
+            '2026-06-08 09:00,1300,Petrol,E10 unleaded 95 RON,30,1.45,',
+            '2026-06-15 09:00,1600,Petrol,E10,30,1.45,',
+            '2026-06-22 09:00,1900,Petrol,,30,1.45,',
+            '2026-06-29 09:00,2200,,E85,30,1.10,',
+            '2026-07-06 09:00,2500,Petrol,B7,30,1.45,',
+            '2026-07-13 09:00,2800,Petrol,Unleaded,30,1.45,',
+            '2026-07-20 09:00,3100,Petrol,Super,30,1.45,',
+        ]) . "\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $preview = $this->preview($browser, $map);
+        self::assertStringContainsString('Import 5 rows', $preview);
+        self::assertStringContainsString('B7 is a diesel grade; this fill-up is petrol.', $preview);
+        self::assertStringContainsString('“Unleaded” is not a fuel grade Logbook knows', $preview, 'too vague to be a grade');
+        self::assertStringContainsString('“Super” is not a fuel grade Logbook knows', $preview);
+
+        $this->commit($browser, $map, $preview, ['skip_invalid' => '1']);
+        $grades = array_map(
+            static fn ($e): ?string => $e->data->grade?->value,
+            $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id),
+        );
+        self::assertSame(['e5_97', 'e10_95', 'e10_95', null, 'e85'], $grades, 'code, label, short label, blank, no fuel column');
+
+        // A file without a grade column imports as before: not recorded.
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $map = $this->upload($browser, $polo->id, 'fuel', "Date,Odometer,Litres,Price\n2026-06-01 09:00,1000,40,1.60\n");
+        $this->commit($browser, $map, $this->preview($browser, $map));
+        $imported = $this->service($app, FuelEntryRepository::class)->listForVehicle($polo->id);
+        self::assertCount(1, $imported);
+        self::assertNull($imported[0]->data->grade);
     }
 
     public function testOdometerReadingsFromFillUpsAndServicesAreNeverImportedTwice(): void

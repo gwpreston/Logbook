@@ -1952,6 +1952,60 @@ a.list__title:hover {
     color: var(--accent);
 }
 
+.list__title > a {
+    color: inherit;
+}
+
+.list__title > a:hover {
+    color: var(--accent);
+}
+
+/* Fuel grade badges (spec.md §8): the pump / charger label shape — EN 16942
+   circle (petrol), square (diesel), rhombus (LPG), EN 17186 hexagon
+   (charging) — plus the short label. Drawn in the text colour, so they never
+   rely on colour and never follow the accent. */
+.grade-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    margin-inline-start: var(--space-1);
+    padding: 0 0.45em 0 0.3em;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    line-height: 1.6;
+    vertical-align: 0.1em;
+    white-space: nowrap;
+}
+
+.grade-badge__shape {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    border: 1.5px solid currentColor;
+    flex: none;
+}
+
+.grade-badge--circle .grade-badge__shape {
+    border-radius: 50%;
+}
+
+.grade-badge--rhombus .grade-badge__shape {
+    width: 0.65em;
+    height: 0.65em;
+    transform: rotate(45deg);
+}
+
+.grade-badge--hexagon .grade-badge__shape {
+    border: 0;
+    background: currentColor;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+    width: 0.9em;
+}
+
 .list__end .btn--soft {
     margin-top: var(--space-1);
 }
@@ -2223,6 +2277,13 @@ a.list__title:hover {
 
 .table .table__num {
     text-align: right;
+}
+
+/* A note in a figures column ("Not enough fills yet") wraps rather than
+   widening the table (the Fuel tab's By grade card sits in half a row). */
+.table .table__note {
+    white-space: normal;
+    min-width: 6.5em;
 }
 
 .report-filter .checkbox {

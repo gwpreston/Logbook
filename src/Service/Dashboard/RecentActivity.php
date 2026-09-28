@@ -78,6 +78,8 @@ final readonly class RecentActivity
                     icon: $entry->data->fuel->isElectric() ? 'ev_station' : 'local_gas_station',
                     amount: $entry->data->totalCost,
                     currency: $currency,
+                    fuel: $entry->data->fuel,
+                    grade: $entry->data->grade,
                 );
             }
         }

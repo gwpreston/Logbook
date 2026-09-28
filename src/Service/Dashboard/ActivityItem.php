@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Service\Dashboard;
 
 use DateTimeImmutable;
+use Logbook\Domain\Fuel\Fuel;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\Vehicle;
 
 /**
@@ -31,6 +33,9 @@ final readonly class ActivityItem
         public ?string $currency = null,
         /** For a reading: the odometer, in km. */
         public ?string $readingKm = null,
+        /** For a fill-up: its fuel and grade, for the grade badge. */
+        public ?Fuel $fuel = null,
+        public ?FuelGrade $grade = null,
     ) {
     }
 
