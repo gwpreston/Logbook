@@ -30,6 +30,24 @@ final class ComplianceTest extends TestCase
         'notes' => '',
     ];
 
+    public function testTheOdometerIsInTheOwnersUnitAndNeedsAStartDate(): void
+    {
+        $data = ComplianceDocumentForm::parse(['type' => 'inspection', 'odometer' => '30000'] + self::POLICY, self::uk());
+        self::assertInstanceOf(ComplianceDocumentData::class, $data);
+        self::assertSame('48280.320', $data->odometerKm, '30,000 mi in km');
+        self::assertSame('30000', ComplianceDocumentForm::values(self::document(1, $data), self::uk())['odometer']);
+
+        $blank = ComplianceDocumentForm::parse(['odometer' => ''] + self::POLICY, self::uk());
+        self::assertInstanceOf(ComplianceDocumentData::class, $blank);
+        self::assertNull($blank->odometerKm);
+
+        $undated = ComplianceDocumentForm::parse(['odometer' => '30000', 'start_on' => ''] + self::POLICY, self::uk());
+        self::assertInstanceOf(ValidationErrors::class, $undated);
+        self::assertSame('compliance.odometer_needs_start', $undated->all()['odometer']['key'] ?? null);
+
+        self::assertArrayNotHasKey('odometer', ComplianceDocumentForm::defaults(ComplianceType::Inspection), 'never renewed');
+    }
+
     public function testParsesAndRoundTripsADocument(): void
     {
         $data = ComplianceDocumentForm::parse(['cost' => '412.5'] + self::POLICY, self::uk());

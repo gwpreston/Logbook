@@ -175,6 +175,11 @@ final class MigrationsTest extends AppTestCase
         foreach (['vehicle_id', 'type', 'cost', 'created_at', 'updated_at'] as $required) {
             self::assertTrue($documents[$required]->getNotnull(), sprintf('compliance_documents.%s must be NOT NULL', $required));
         }
+        self::assertInstanceOf(DecimalType::class, $documents['odometer_km']->getType());
+        self::assertSame(12, $documents['odometer_km']->getPrecision());
+        self::assertSame(3, $documents['odometer_km']->getScale());
+        self::assertFalse($documents['odometer_km']->getNotnull(), 'a document may show no odometer');
+        self::assertFalse($this->columns('odometer_readings')['compliance_document_id']->getNotnull());
 
         $attachments = $this->columns('attachments');
         self::assertInstanceOf(BigIntType::class, $attachments['size']->getType());
