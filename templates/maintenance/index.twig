@@ -78,7 +78,7 @@
                 {% else %}
                     <ul class="list">
                         {% for entry in rows %}
-                            {{ maint.entry_row(entry, vehicle, currency, attachments.of('maintenance', entry.id)) }}
+                            {{ maint.entry_row(entry, vehicle, currency, attachment_counts.of('maintenance', entry.id)) }}
                         {% endfor %}
                     </ul>
                     {{ ui.pagination(pagination, 'maintenance.index', {id: vehicle.id}, filter_params) }}

@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
 
 {% set active_nav = 'garage' %}
 {% set editing = reading is not null %}
@@ -25,8 +26,9 @@
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
-        <form class="form" method="post" action="{{ editing ? url_for('odometer.edit', {id: vehicle.id, reading: reading.id}) : url_for('odometer.create', {id: vehicle.id}) }}">
+        <form class="form" method="post" enctype="multipart/form-data" action="{{ editing ? url_for('odometer.edit', {id: vehicle.id, reading: reading.id}) : url_for('odometer.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
 
             <section class="card">
                 {% set latest_hint = latest and (not editing or latest.id != reading.id)
@@ -38,9 +40,12 @@
                 <p class="field__hint">{{ 'odometer.hint.warn_not_block'|trans }}</p>
             </section>
 
+            {# Only manual readings take files: a derived reading is edited through its entry. #}
+            {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
+
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'odometer.add_submit')|trans }}</button>
-                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('odometer.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (url_for('odometer.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
                 {% if editing %}
                     <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('odometer.delete', {id: vehicle.id, reading: reading.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}

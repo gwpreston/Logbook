@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Odometer;
 
+use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
@@ -25,6 +26,7 @@ final readonly class CreateOdometerReadingAction
         private VehicleService $vehicles,
         private OdometerService $odometer,
         private OdometerFormPage $page,
+        private AttachmentUpload $upload,
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
         private ClockInterface $clock,
@@ -46,15 +48,19 @@ final readonly class CreateOdometerReadingAction
         }
 
         $data = OdometerReadingForm::parse(RequestContext::form($request), $preferences);
-        if ($data instanceof ValidationErrors) {
-            return $this->page->render($request, $response, $vehicle, RequestContext::formValues($request), null, $data, 422);
+        $files = $this->upload->fromRequest($request);
+        $errors = $this->upload->errors($data, $files);
+        if ($errors !== null || $data instanceof ValidationErrors) {
+            $values = RequestContext::formValues($request);
+
+            return $this->page->render($request, $response, $vehicle, $values, null, $errors, 422);
         }
 
-        $reading = $this->odometer->create($vehicle, $data);
+        $reading = $this->odometer->create($vehicle, $data, $files);
         $session = RequestContext::session($request);
         $session->flash('success', 'odometer.created');
         $this->warnings->queue($session, $this->odometer->warningFor($vehicle, $reading->id));
 
-        return $this->redirect->toRoute('odometer.index', ['id' => (string) $vehicle->id]);
+        return $this->redirect->backOr($request, 'odometer.index', ['id' => (string) $vehicle->id]);
     }
 }

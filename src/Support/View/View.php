@@ -6,7 +6,9 @@ namespace Logbook\Support\View;
 
 use Logbook\Middleware\CsrfMiddleware;
 use Logbook\Middleware\SessionMiddleware;
+use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\RequestContext;
+use Logbook\Support\Http\ReturnTarget;
 use Logbook\Support\Session\Session;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,15 +19,16 @@ use Twig\Environment;
  *
  * Every page also receives the request-derived variables the layout needs:
  * `user` (null when signed out), `csrf` (hidden-field names and values; see
- * the ui.csrf() macro), `flashes` (one-off messages, consumed here) and
- * `current_path` (for "return to this page" forms).
+ * the ui.csrf() macro), `flashes` (one-off messages, consumed here),
+ * `current_path` (for "return to this page" forms) and `return_to` (the
+ * validated `return` a form keeps in a hidden field; spec.md §5).
  */
 final readonly class View
 {
     /** Sent by js/app.js when it loads a page into the modal dialog (spec.md §5). */
     public const string MODAL_HEADER = 'X-Logbook-Modal';
 
-    public function __construct(private Environment $twig)
+    public function __construct(private Environment $twig, private AppSettings $settings)
     {
     }
 
@@ -89,6 +92,7 @@ final readonly class View
             'current_path' => $request->getMethod() === 'GET'
                 ? $uri->getPath() . ($uri->getQuery() !== '' ? '?' . $uri->getQuery() : '')
                 : '',
+            'return_to' => ReturnTarget::of($request, $this->settings->basePath),
         ];
     }
 
@@ -97,6 +101,6 @@ final readonly class View
      */
     private static function emptyRequestContext(): array
     {
-        return ['modal' => false, 'user' => null, 'csrf' => null, 'flashes' => [], 'current_path' => ''];
+        return ['modal' => false, 'user' => null, 'csrf' => null, 'flashes' => [], 'current_path' => '', 'return_to' => null];
     }
 }

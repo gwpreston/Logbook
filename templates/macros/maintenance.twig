@@ -87,9 +87,9 @@
 {%- endmacro %}
 
 {# One maintenance entry as a list row linking to its edit page. #}
-{% macro entry_row(entry, vehicle, currency, attachments) -%}
+{% macro entry_row(entry, vehicle, currency, files = 0) -%}
     {% import 'macros/ui.twig' as ui %}
-    {% import 'macros/attachments.twig' as files %}
+    {% import 'macros/attachments.twig' as paperclip %}
     {% set data = entry.data %}
     <li>
         <a class="list__item" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>
@@ -104,7 +104,7 @@
             </span>
             <span class="list__end">
                 <span class="list__amount tabular">{{ data.cost|money(currency) }}</span>
-                {{ files.count(attachments) }}
+                {{ paperclip.count(files) }}
             </span>
         </a>
     </li>

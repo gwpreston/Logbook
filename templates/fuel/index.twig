@@ -94,7 +94,7 @@
             {% else %}
                 <ul class="list">
                     {% for fill in rows %}
-                        {{ fuel_ui.row(fill, vehicle, currency, attachments.of('fuel', fill.entry.id)) }}
+                        {{ fuel_ui.row(fill, vehicle, currency, attachment_counts.of('fuel', fill.entry.id)) }}
                     {% endfor %}
                 </ul>
                 {{ ui.pagination(pagination, 'fuel.index', {id: vehicle.id}) }}

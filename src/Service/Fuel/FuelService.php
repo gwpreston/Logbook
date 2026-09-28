@@ -12,14 +12,16 @@ use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Support\Database\Transaction;
 use Psr\Clock\ClockInterface;
 
 /**
- * Fill-ups (spec.md §7.3). Saving one also writes its odometer reading in the
- * same transaction, so mileage stays a single series; the derived figures
+ * Fill-ups (spec.md §7.3). Saving one also writes its odometer reading and
+ * its attachments in the same transaction, so mileage stays a single series
+ * and a failed save leaves no files behind; the derived figures
  * are recomputed from the full history on every read (FuelEconomy).
  *
  * Callers pass a Vehicle already resolved for the signed-in owner.
@@ -76,11 +78,12 @@ final readonly class FuelService
             ?? throw new FuelEntryNotFound(sprintf('Fuel entry %d not found.', $id));
     }
 
-    public function create(Vehicle $vehicle, FuelEntryData $data): FuelEntry
+    public function create(Vehicle $vehicle, FuelEntryData $data, PendingUploads $files = new PendingUploads()): FuelEntry
     {
-        $id = $this->transaction->run(function () use ($vehicle, $data): int {
+        $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now());
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $id, $data->odometerKm, $data->filledAt);
+            $this->attachments->record($vehicle, AttachmentOwner::Fuel, $id, $stored);
 
             return $id;
         });
@@ -88,11 +91,16 @@ final readonly class FuelService
         return $this->get($vehicle, $id);
     }
 
-    public function update(Vehicle $vehicle, FuelEntry $entry, FuelEntryData $data): FuelEntry
-    {
-        $this->transaction->run(function () use ($vehicle, $entry, $data): void {
+    public function update(
+        Vehicle $vehicle,
+        FuelEntry $entry,
+        FuelEntryData $data,
+        PendingUploads $files = new PendingUploads(),
+    ): FuelEntry {
+        $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $entry, $data): void {
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $entry->id, $data->odometerKm, $data->filledAt);
+            $this->attachments->record($vehicle, AttachmentOwner::Fuel, $entry->id, $stored);
         });
 
         return $this->get($vehicle, $entry->id);

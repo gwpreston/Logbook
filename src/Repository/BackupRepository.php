@@ -31,8 +31,9 @@ final readonly class BackupRepository
         'fuel_entries',
         'maintenance_schedules',
         'maintenance_entries',
-        'odometer_readings',
+        // Before the readings: a document's odometer reading refers to it.
         'compliance_documents',
+        'odometer_readings',
         'attachments',
         'reminders',
         'expense_entries',

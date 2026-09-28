@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Http;
 
+use Logbook\Support\Config\AppSettings;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Slim\Interfaces\RouteParserInterface;
 
 /**
@@ -17,7 +19,21 @@ final readonly class Redirector
     public function __construct(
         private RouteParserInterface $routes,
         private ResponseFactoryInterface $responses,
+        private AppSettings $settings,
     ) {
+    }
+
+    /**
+     * After a save: back to the page the form was opened from (its
+     * validated `return`, see ReturnTarget), else to the named route.
+     *
+     * @param array<string, string> $data route placeholders
+     */
+    public function backOr(ServerRequestInterface $request, string $name, array $data = []): ResponseInterface
+    {
+        $back = ReturnTarget::of($request, $this->settings->basePath);
+
+        return $back !== null ? $this->to($back) : $this->toRoute($name, $data);
     }
 
     /**

@@ -4,16 +4,25 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
-use Logbook\Domain\Attachment\AttachmentOwner;
+use DateTimeImmutable;
+use DateTimeZone;
+use Logbook\Domain\Compliance\ComplianceDocumentData;
+use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Repository\VehicleRepository;
-use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\PendingUpload;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Backup\BackupService;
+use Logbook\Service\Compliance\ComplianceService;
+use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Maintenance\MaintenanceService;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -79,7 +88,11 @@ final class BackupTest extends AppTestCase
         $browser = $this->signedIn($app);
         $this->populate($app);
         $before = $this->snapshot($app);
-        self::assertCount(2, $before['files']);
+        self::assertCount(6, $before['files'], 'the photo and five attachments');
+        $owners = array_column($before['tables']['attachments'], 'owner_type');
+        sort($owners);
+        self::assertSame(['compliance', 'expense', 'maintenance', 'maintenance', 'odometer'], $owners);
+        self::assertContains('document', array_column($before['tables']['odometer_readings'], 'source'));
 
         $response = $browser->get('/settings/backup/download');
         self::assertSame(200, $response->getStatusCode());
@@ -96,7 +109,7 @@ final class BackupTest extends AppTestCase
         $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
         self::assertSame('logbook-backup', $manifest['format']);
         self::assertSame(1, $manifest['tables']['vehicles']);
-        self::assertSame(2, $manifest['files']);
+        self::assertSame(6, $manifest['files']);
         self::assertFalse($zip->getFromName('database/sessions.json'), 'sessions are never backed up');
         $zip->close();
 
@@ -166,7 +179,7 @@ final class BackupTest extends AppTestCase
         $file = $this->backupDir . '/nightly.zip';
         mkdir($this->backupDir);
         $manifest = $backups->create($file);
-        self::assertSame(2, $manifest->files);
+        self::assertSame(6, $manifest->files);
 
         $this->resetDatabase($app);
         foreach ($this->service($app, FileStorage::class)->all() as $relative) {
@@ -270,19 +283,45 @@ final class BackupTest extends AppTestCase
         // The grade column is backed up and restored like any other (Phase 8).
         $this->fillUp($app, $golf, '2026-09-08T08:00:00Z', '1400', '38.5', '57.75', grade: FuelGrade::E5_97);
         $service = $this->maintenance($app, $golf, '2026-09-14', 'Annual service', '189.5', '1609.344');
-        $pdf = $this->upload($this->tempFile(self::PDF), 'invoice.pdf');
-        $this->service($app, AttachmentService::class)->attach(
+        $zone = new DateTimeZone('Europe/London');
+        // Several files per save, on every owner type (Phase 10).
+        $this->service($app, MaintenanceService::class)->update($golf, $service, $service->data, $zone, $this->files([
+            [self::PDF, 'invoice.pdf'],
+            [(string) base64_decode(self::PNG), 'odometer.png'],
+        ]));
+        $expense = $this->expense($app, $golf, '2026-09-20', '0', note: 'Free, “for once”');
+        $this->service($app, ExpenseService::class)
+            ->update($golf, $expense, $expense->data, $this->files([[self::PDF, 'parking.pdf']]));
+        $reading = $this->service($app, OdometerService::class)->create(
             $golf,
-            AttachmentOwner::Maintenance,
-            $service->id,
-            $pdf,
-            FileUpload::check($pdf, 1024 * 1024, UploadKind::Document),
+            new OdometerReadingData('1700', new DateTimeImmutable('2026-09-21T08:00:00Z')),
+            $this->files([[(string) base64_decode(self::PNG), 'dashboard.png']]),
         );
-        $this->expense($app, $golf, '2026-09-20', '0', note: 'Free, “for once”');
+        self::assertTrue($reading->isManual());
+        // The document odometer and its `document` reading (Phase 10).
+        $this->service($app, ComplianceService::class)->create($golf, new ComplianceDocumentData(
+            ComplianceType::Inspection,
+            startOn: LocalTime::parseDate('2026-09-02'),
+            odometerKm: '1650.000',
+        ), $zone, $this->files([[self::PDF, 'mot.pdf']]));
         $due = LocalTime::parseDate('2026-10-01');
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));
         $this->service($app, FeatureToggles::class)->save([Feature::Fuel, Feature::Maintenance, Feature::Reminders]);
+    }
+
+    /**
+     * @param list<array{string, string}> $files contents and name
+     */
+    private function files(array $files): PendingUploads
+    {
+        $pending = [];
+        foreach ($files as [$contents, $name]) {
+            $file = $this->upload($this->tempFile($contents), $name);
+            $pending[] = new PendingUpload($file, FileUpload::check($file, 1024 * 1024, UploadKind::Document));
+        }
+
+        return new PendingUploads($pending);
     }
 
     /**

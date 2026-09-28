@@ -6,7 +6,6 @@ namespace Logbook\Action\Fuel;
 
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Vehicle\VehicleRoute;
-use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -50,18 +49,17 @@ final readonly class EditFuelEntryAction
         }
 
         $data = FuelEntryForm::parse(RequestContext::form($request), $user->preferences, $currency);
-        $file = $this->upload->fromRequest($request);
-        $errors = $this->upload->errors($data, $file);
+        $files = $this->upload->fromRequest($request);
+        $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
             return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422);
         }
 
-        $updated = $this->fuel->update($vehicle, $entry, $data);
-        $this->upload->store($vehicle, AttachmentOwner::Fuel, $entry->id, $file);
+        $updated = $this->fuel->update($vehicle, $entry, $data, $files);
         $this->flash->queue(RequestContext::session($request), $vehicle, $updated, 'fuel.updated');
 
-        return $this->redirect->toRoute('fuel.index', ['id' => (string) $vehicle->id]);
+        return $this->redirect->backOr($request, 'fuel.index', ['id' => (string) $vehicle->id]);
     }
 }

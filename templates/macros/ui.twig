@@ -48,6 +48,12 @@
     {% endif %}
 {%- endmacro %}
 
+{# Keeps the page a form was opened from (a validated `return`, spec.md §5),
+   so saving goes back there. #}
+{% macro return_field(return_to) -%}
+    {% if return_to %}<input type="hidden" name="return" value="{{ return_to }}">{% endif %}
+{%- endmacro %}
+
 {# Error message for a field, from the `errors` map a form Action passes in. #}
 {% macro field_error(errors, name) -%}
     {% set error = errors[name] ?? null %}

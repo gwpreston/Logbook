@@ -2,10 +2,12 @@
  # Attachment fragments. Import with: {% import 'macros/attachments.twig' as files %}
  #}
 
-{# The attachments card of an entry's form: the files already attached (open,
-   delete) and an input to add one. The form must be multipart. The file is
-   checked with the rest of the form and saved with it. #}
-{% macro card(vehicle, attachments, errors, max_mb) -%}
+{# The attachments card of an entry's form (spec.md §7.12): the files already
+   attached (open, delete) and one input that takes several files at once.
+   The form must be multipart. The files are checked with the rest of the
+   form and saved with it, all or nothing; with JS, choosing more than
+   `max_files` is refused before submitting (js/app.js). #}
+{% macro card(vehicle, attachments, errors, max_mb, max_files) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import _self as files %}
     <section class="card" aria-labelledby="attachments-heading">
@@ -18,10 +20,10 @@
             </ul>
         {% endif %}
         <div class="field">
-            <label class="field__label" for="f-attachment">{{ (attachments is empty ? 'attachment.field.add' : 'attachment.field.add_another')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-            <input class="input input--file" id="f-attachment" name="attachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"{{ ui.described_by('attachment', errors, true) }}>
-            <p class="field__hint" id="f-attachment-hint">{{ 'attachment.hint'|trans({max: max_mb}) }}</p>
-            {{ ui.field_error(errors, 'attachment') }}
+            <label class="field__label" for="f-attachments">{{ (attachments is empty ? 'attachment.field.add' : 'attachment.field.add_another')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+            <input class="input input--file" id="f-attachments" name="attachments[]" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-max-files="{{ max_files }}" data-max-files-message="{{ 'upload.too_many'|trans({max: max_files}) }}"{{ ui.described_by('attachments', errors, true) }}>
+            <p class="field__hint" id="f-attachments-hint">{{ 'attachment.hint'|trans({files: max_files, max: max_mb}) }}</p>
+            {{ ui.field_error(errors, 'attachments') }}
         </div>
     </section>
 {%- endmacro %}
@@ -43,12 +45,14 @@
     </li>
 {%- endmacro %}
 
-{# A paperclip with the number of files, for list rows. #}
-{% macro count(attachments) -%}
+{# A paperclip with the number of files, for list rows: an icon with the
+   count and a text alternative ("2 files"); nothing at zero. #}
+{% macro count(files) -%}
     {% import 'macros/ui.twig' as ui %}
-    {% if attachments is not empty %}
-        <span class="attachment-count" title="{{ 'attachment.count'|trans({count: attachments|length}) }}">
-            {{- ui.icon('attach_file') }}<span aria-hidden="true">{{ attachments|length }}</span><span class="visually-hidden">{{ 'attachment.count'|trans({count: attachments|length}) }}</span>
+    {% set n = files is iterable ? files|length : files %}
+    {% if n > 0 %}
+        <span class="attachment-count" title="{{ 'attachment.count'|trans({count: n}) }}">
+            {{- ui.icon('attach_file') }}<span aria-hidden="true">{{ n }}</span><span class="visually-hidden">{{ 'attachment.count'|trans({count: n}) }}</span>
         </span>
     {% endif %}
 {%- endmacro %}

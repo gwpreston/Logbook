@@ -13,6 +13,7 @@ use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ComplianceDocumentRepository;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Support\Database\Transaction;
@@ -76,11 +77,16 @@ final readonly class ComplianceService
      * @param DateTimeZone $zone the owner's zone: the document's odometer
      *                           reading is recorded at noon on its start date there
      */
-    public function create(Vehicle $vehicle, ComplianceDocumentData $data, DateTimeZone $zone): ComplianceDocument
-    {
-        $id = $this->transaction->run(function () use ($vehicle, $data, $zone): int {
+    public function create(
+        Vehicle $vehicle,
+        ComplianceDocumentData $data,
+        DateTimeZone $zone,
+        PendingUploads $files = new PendingUploads(),
+    ): ComplianceDocument {
+        $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone): int {
             $id = $this->documents->insert($vehicle->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $id, $data, $zone);
+            $this->attachments->record($vehicle, AttachmentOwner::Compliance, $id, $stored);
 
             return $id;
         });
@@ -93,10 +99,12 @@ final readonly class ComplianceService
         ComplianceDocument $document,
         ComplianceDocumentData $data,
         DateTimeZone $zone,
+        PendingUploads $files = new PendingUploads(),
     ): ComplianceDocument {
-        $this->transaction->run(function () use ($vehicle, $document, $data, $zone): void {
+        $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $document, $data, $zone): void {
             $this->documents->update($vehicle->id, $document->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $document->id, $data, $zone);
+            $this->attachments->record($vehicle, AttachmentOwner::Compliance, $document->id, $stored);
         });
 
         return $this->get($vehicle, $document->id);

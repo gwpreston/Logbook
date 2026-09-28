@@ -6,18 +6,21 @@ namespace Logbook\Service\Odometer;
 
 use DateTimeImmutable;
 use LogicException;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\PendingUploads;
 use Psr\Clock\ClockInterface;
 
 /**
  * A vehicle's mileage as one coherent series (spec.md §7.2): manual readings
- * are managed here directly; fill-ups and maintenance entries record theirs
- * through recordForEntry(), so every source lands in the same table and the
- * same history.
+ * (and their attachments) are managed here directly; fill-ups, maintenance
+ * entries and documents record theirs through recordForEntry(), so every
+ * source lands in the same table and the same history.
  *
  * Callers pass a Vehicle already resolved for the signed-in owner.
  */
@@ -25,6 +28,7 @@ final readonly class OdometerService
 {
     public function __construct(
         private OdometerReadingRepository $readings,
+        private AttachmentService $attachments,
         private ClockInterface $clock,
     ) {
     }
@@ -43,25 +47,44 @@ final readonly class OdometerService
             ?? throw new OdometerReadingNotFound(sprintf('Odometer reading %d not found.', $id));
     }
 
-    public function create(Vehicle $vehicle, OdometerReadingData $data): OdometerReading
-    {
-        $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $this->clock->now());
+    public function create(
+        Vehicle $vehicle,
+        OdometerReadingData $data,
+        PendingUploads $files = new PendingUploads(),
+    ): OdometerReading {
+        $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
+            $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $this->clock->now());
+            $this->attachments->record($vehicle, AttachmentOwner::Odometer, $id, $stored);
+
+            return $id;
+        });
 
         return $this->get($vehicle, $id);
     }
 
-    public function update(Vehicle $vehicle, OdometerReading $reading, OdometerReadingData $data): OdometerReading
-    {
+    public function update(
+        Vehicle $vehicle,
+        OdometerReading $reading,
+        OdometerReadingData $data,
+        PendingUploads $files = new PendingUploads(),
+    ): OdometerReading {
         self::assertManual($reading);
-        $this->readings->update($vehicle->id, $reading->id, $data, $this->clock->now());
+        $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $reading, $data): void {
+            $this->readings->update($vehicle->id, $reading->id, $data, $this->clock->now());
+            $this->attachments->record($vehicle, AttachmentOwner::Odometer, $reading->id, $stored);
+        });
 
         return $this->get($vehicle, $reading->id);
     }
 
+    /**
+     * Delete a manual reading with its attachments.
+     */
     public function delete(Vehicle $vehicle, OdometerReading $reading): void
     {
         self::assertManual($reading);
         $this->readings->delete($vehicle->id, $reading->id);
+        $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Odometer, $reading->id);
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Http;
 
 use Logbook\Domain\Attachment\Attachment;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -12,13 +13,23 @@ use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Kernel;
 use Logbook\Repository\AttachmentRepository;
 use Logbook\Repository\ComplianceDocumentRepository;
+use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
+use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\PendingUpload;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Storage\FileStorage;
+use Logbook\Support\Storage\FileUpload;
+use Logbook\Support\Storage\UploadKind;
+use Logbook\Support\View\View;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
+use RuntimeException;
 use Slim\App;
 use Slim\Psr7\UploadedFile;
 
@@ -60,6 +71,19 @@ final class AttachmentTest extends AppTestCase
         'schedule' => '',
     ];
 
+    private const array FILL = [
+        'filled_at' => '2026-07-01T09:15',
+        'odometer' => '10000',
+        'fuel' => 'petrol',
+        'volume' => '40',
+        'price' => '1.5',
+        'total' => '',
+    ];
+
+    private const array PARKING = ['category' => 'parking', 'spent_on' => '2026-09-02', 'amount' => '4.5', 'note' => ''];
+
+    private const array READING = ['recorded_at' => '2026-09-03T08:00', 'reading' => '11000', 'note' => ''];
+
     /** @var list<string> */
     private array $tempFiles = [];
 
@@ -79,7 +103,7 @@ final class AttachmentTest extends AppTestCase
         $created = $browser->post(
             '/vehicles/' . $golf->id . '/documents/new',
             self::POLICY,
-            ['attachment' => $this->upload(self::PDF, '../../Policy schedule "2026".pdf', 'application/octet-stream')],
+            ['attachments' => [$this->upload(self::PDF, '../../Policy schedule "2026".pdf', 'application/octet-stream')]],
         );
         self::assertSame(303, $created->getStatusCode());
 
@@ -125,11 +149,11 @@ final class AttachmentTest extends AppTestCase
         $golf = $this->vehicle($app);
         $base = '/vehicles/' . $golf->id . '/maintenance';
 
-        $browser->post($base . '/new', self::SERVICE, ['attachment' => $this->upload(self::PDF, 'invoice.pdf')]);
+        $browser->post($base . '/new', self::SERVICE, ['attachments' => [$this->upload(self::PDF, 'invoice.pdf')]]);
         $entry = $this->service($app, MaintenanceEntryRepository::class)->listForVehicle($golf->id)[0];
 
         $photo = $this->upload(base64_decode(self::PNG), 'odometer.png');
-        $browser->post($base . '/' . $entry->id . '/edit', self::SERVICE, ['attachment' => $photo]);
+        $browser->post($base . '/' . $entry->id . '/edit', self::SERVICE, ['attachments' => [$photo]]);
         $attachments = $this->attachments($app, $golf);
         self::assertCount(2, $attachments);
         self::assertSame('image/png', $attachments[1]->mime);
@@ -137,7 +161,7 @@ final class AttachmentTest extends AppTestCase
         $edit = self::body($browser->get($base . '/' . $entry->id . '/edit'));
         self::assertStringContainsString('invoice.pdf', $edit);
         self::assertStringContainsString('odometer.png', $edit);
-        self::assertStringContainsString('Attach another file', $edit);
+        self::assertStringContainsString('Attach more files', $edit);
 
         $image = $browser->get('/vehicles/' . $golf->id . '/attachments/' . $attachments[1]->id);
         self::assertSame('image/png', $image->getHeaderLine('Content-Type'));
@@ -148,7 +172,7 @@ final class AttachmentTest extends AppTestCase
         ]);
         self::assertSame(304, $cached->getStatusCode());
 
-        self::assertStringContainsString('2 attachments', self::body($browser->get($base)), 'the history row shows a paperclip');
+        self::assertStringContainsString('2 files', self::body($browser->get($base)), 'the history row shows a paperclip');
     }
 
     public function testFillUpsTakeAReceipt(): void
@@ -160,7 +184,7 @@ final class AttachmentTest extends AppTestCase
         $base = '/vehicles/' . $golf->id . '/fuel';
         $fill = ['filled_at' => '2026-07-01T09:15', 'odometer' => '10000', 'fuel' => 'petrol', 'volume' => '40'];
         $receipt = $this->upload(base64_decode(self::PNG), 'receipt.png');
-        $created = $browser->post($base . '/new', $fill + ['price' => '1.5', 'total' => ''], ['attachment' => $receipt]);
+        $created = $browser->post($base . '/new', $fill + ['price' => '1.5', 'total' => ''], ['attachments' => [$receipt]]);
         self::assertSame(303, $created->getStatusCode());
 
         $entry = $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id)[0];
@@ -181,10 +205,10 @@ final class AttachmentTest extends AppTestCase
         $golf = $this->vehicle($app);
 
         $script = $this->upload('<?php echo "hi";', 'policy.pdf', 'application/pdf');
-        $response = $browser->post('/vehicles/' . $golf->id . '/documents/new', self::POLICY, ['attachment' => $script]);
+        $response = $browser->post('/vehicles/' . $golf->id . '/documents/new', self::POLICY, ['attachments' => [$script]]);
 
         self::assertSame(422, $response->getStatusCode());
-        self::assertStringContainsString('Choose a PDF, or a JPEG, PNG or WebP image.', self::body($response));
+        self::assertStringContainsString('policy.pdf: not a PDF, JPEG, PNG or WebP file', self::body($response));
         self::assertStringContainsString('value="Acme Insurance"', self::body($response), 'the rest of the form is kept');
         $documents = $this->service($app, ComplianceDocumentRepository::class)->listForVehicle($golf->id);
         self::assertSame([], $documents, 'nothing is saved');
@@ -200,10 +224,10 @@ final class AttachmentTest extends AppTestCase
 
         $big = self::PDF . str_repeat('%', 1024 * 1024);
         $file = $this->upload($big, 'big.pdf');
-        $response = $browser->post('/vehicles/' . $golf->id . '/maintenance/new', self::SERVICE, ['attachment' => $file]);
+        $response = $browser->post('/vehicles/' . $golf->id . '/maintenance/new', self::SERVICE, ['attachments' => [$file]]);
 
         self::assertSame(422, $response->getStatusCode());
-        self::assertStringContainsString('The file is too large (maximum 1 MB).', self::body($response));
+        self::assertStringContainsString('big.pdf: larger than 1 MB', self::body($response));
         self::assertSame([], $this->service($app, MaintenanceEntryRepository::class)->listForVehicle($golf->id));
     }
 
@@ -214,10 +238,10 @@ final class AttachmentTest extends AppTestCase
         $golf = $this->vehicle($app);
         $documents = '/vehicles/' . $golf->id . '/documents';
 
-        $browser->post($documents . '/new', self::POLICY, ['attachment' => $this->upload(self::PDF, 'a.pdf')]);
+        $browser->post($documents . '/new', self::POLICY, ['attachments' => [$this->upload(self::PDF, 'a.pdf')]]);
         $document = $this->service($app, ComplianceDocumentRepository::class)->listForVehicle($golf->id)[0];
         $editPath = $documents . '/' . $document->id . '/edit';
-        $browser->post($editPath, self::POLICY, ['attachment' => $this->upload(self::PDF, 'b.pdf')]);
+        $browser->post($editPath, self::POLICY, ['attachments' => [$this->upload(self::PDF, 'b.pdf')]]);
         [$first, $second] = $this->attachments($app, $golf);
 
         // One attachment, with confirmation; back to the document.
@@ -240,10 +264,201 @@ final class AttachmentTest extends AppTestCase
 
         // The vehicle, with every file on it.
         $invoice = $this->upload(self::PDF, 'c.pdf');
-        $browser->post('/vehicles/' . $golf->id . '/maintenance/new', self::SERVICE, ['attachment' => $invoice]);
+        $browser->post('/vehicles/' . $golf->id . '/maintenance/new', self::SERVICE, ['attachments' => [$invoice]]);
         $third = $this->onlyAttachment($app, $golf);
         $browser->post('/vehicles/' . $golf->id . '/delete');
         self::assertFileDoesNotExist($this->uploadDir() . '/' . $third->storedPath);
+    }
+
+    public function testEveryEntryTakesSeveralFilesAtOnceAsAPageAndInTheModal(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $base = '/vehicles/' . $golf->id;
+        $forms = [
+            'fuel' => ['/fuel/new', self::FILL],
+            'maintenance' => ['/maintenance/new', ['odometer' => '10500'] + self::SERVICE],
+            'compliance' => ['/documents/new', self::POLICY],
+            'expense' => ['/expenses/new', self::PARKING],
+            'odometer' => ['/odometer/new', self::READING],
+        ];
+
+        foreach ($forms as $owner => [$path, $fields]) {
+            $form = self::body($browser->get($base . $path));
+            self::assertStringContainsString('enctype="multipart/form-data"', $form, $owner);
+            self::assertStringContainsString('name="attachments[]" type="file" multiple', $form, $owner);
+            self::assertStringContainsString('Up to 10 files, each up to 10 MB.', $form, $owner);
+
+            // As a page, then again from the modal (fetch with FormData).
+            foreach ([[], [View::MODAL_HEADER => '1']] as $headers) {
+                $response = $browser->post($base . $path, $fields, ['attachments' => $this->three()], headers: $headers);
+                $expected = $headers === [] ? 303 : 204;
+                self::assertSame($expected, $response->getStatusCode(), $owner . ': ' . self::body($response));
+            }
+        }
+
+        $byOwner = [];
+        foreach ($this->attachments($app, $golf) as $attachment) {
+            $byOwner[$attachment->ownerType->value][$attachment->ownerId][] = $attachment->filename;
+        }
+        self::assertSame(['fuel', 'maintenance', 'compliance', 'expense', 'odometer'], array_keys($byOwner));
+        foreach ($byOwner as $owner => $entries) {
+            self::assertCount(2, $entries, $owner . ': two saves');
+            foreach ($entries as $names) {
+                self::assertSame(['receipt.pdf', 'photo.png', 'invoice.pdf'], $names, $owner);
+            }
+        }
+
+        // Each list shows its rows' paperclips.
+        foreach (['/fuel', '/maintenance', '/expenses', '/odometer'] as $list) {
+            self::assertStringContainsString('3 files', self::body($browser->get($base . $list)), $list);
+        }
+        $mileage = self::body($browser->get($base . '/odometer'));
+        // Two manual readings, plus the fill-up and service readings showing their entries' files.
+        self::assertSame(6, substr_count($mileage, 'title="3 files"'));
+    }
+
+    public function testElevenFilesAreRefusedAndOneBadFileStoresNothing(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $path = '/vehicles/' . $golf->id . '/maintenance/new';
+
+        $eleven = [];
+        for ($i = 1; $i <= 11; $i++) {
+            $eleven[] = $this->upload(self::PDF, 'page-' . $i . '.pdf');
+        }
+        $refused = $browser->post($path, self::SERVICE, ['attachments' => $eleven]);
+        self::assertSame(422, $refused->getStatusCode());
+        self::assertStringContainsString('Choose up to 10 files at a time.', self::body($refused));
+        self::assertStringContainsString('value="Annual service"', self::body($refused), 'the typed values are kept');
+
+        $ten = array_slice($eleven, 0, 10);
+        self::assertSame(303, $browser->post($path, self::SERVICE, ['attachments' => $ten])->getStatusCode(), 'ten are fine');
+        self::assertCount(10, $this->attachments($app, $golf));
+
+        $bad = [
+            $this->upload(self::PDF, 'a.pdf'),
+            $this->upload('not really a picture', 'receipt.heic', 'image/heic'),
+            $this->upload(base64_decode(self::PNG), 'c.png'),
+        ];
+        $response = $browser->post('/vehicles/' . $golf->id . '/expenses/new', ['note' => 'Car park'] + self::PARKING, [
+            'attachments' => $bad,
+        ]);
+        self::assertSame(422, $response->getStatusCode());
+        self::assertStringContainsString('receipt.heic: not a PDF, JPEG, PNG or WebP file', self::body($response));
+        self::assertStringContainsString('value="Car park"', self::body($response));
+        self::assertCount(10, $this->attachments($app, $golf), 'no rows');
+        self::assertSame([], $this->service($app, ExpenseEntryRepository::class)->listForVehicle($golf->id), 'no expense');
+        self::assertCount(10, FileStorage::storedFilesIn($this->uploadDir()), 'no files on disk');
+    }
+
+    public function testAFailedSaveDeletesTheFilesItWrote(): void
+    {
+        $app = $this->createApp();
+        $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $check = static fn (UploadedFile $file): FileUpload => FileUpload::check($file, 1024 * 1024, UploadKind::Document);
+        $files = new PendingUploads(array_map(
+            static fn (UploadedFile $file): PendingUpload => new PendingUpload($file, $check($file)),
+            $this->three(),
+        ));
+
+        $caught = null;
+        try {
+            $this->service($app, AttachmentService::class)->saveWithFiles($files, static function (array $stored): int {
+                self::assertCount(3, $stored, 'written first');
+                throw new RuntimeException('the entry could not be saved');
+            });
+        } catch (RuntimeException $e) {
+            $caught = $e;
+        }
+        self::assertInstanceOf(RuntimeException::class, $caught, 'the failure reaches the caller');
+        self::assertSame('the entry could not be saved', $caught->getMessage());
+        self::assertSame([], FileStorage::storedFilesIn($this->uploadDir()), 'orphans are deleted');
+        self::assertSame([], $this->attachments($app, $golf));
+    }
+
+    public function testExpenseAndReadingFilesAreTheOwnersOnlyAndGoWithTheirEntry(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $base = '/vehicles/' . $golf->id;
+
+        $fine = ['category' => 'fines', 'amount' => '60'] + self::PARKING;
+        $browser->post($base . '/expenses/new', $fine, ['attachments' => [$this->upload(self::PDF, 'penalty.pdf')]]);
+        $browser->post($base . '/odometer/new', self::READING, [
+            'attachments' => [$this->upload(base64_decode(self::PNG), 'dashboard.png')],
+        ]);
+        [$penalty, $dashboard] = $this->attachments($app, $golf);
+        self::assertSame(AttachmentOwner::Expense, $penalty->ownerType);
+        self::assertSame(AttachmentOwner::Odometer, $dashboard->ownerType);
+
+        $expense = $this->service($app, ExpenseEntryRepository::class)->listForVehicle($golf->id)[0];
+        $reading = $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id)[0];
+        self::assertStringContainsString('penalty.pdf', self::body($browser->get($base . '/expenses/' . $expense->id . '/edit')));
+        $readingForm = self::body($browser->get($base . '/odometer/' . $reading->id . '/edit'));
+        self::assertStringContainsString('dashboard.png', $readingForm);
+
+        foreach ([$penalty, $dashboard] as $attachment) {
+            $url = $base . '/attachments/' . $attachment->id;
+            self::assertSame(200, $browser->get($url)->getStatusCode());
+            self::assertStringStartsWith('/login', (new TestBrowser($app))->get($url)->getHeaderLine('Location'));
+        }
+        $bike = $this->vehicle($app);
+        $elsewhere = '/vehicles/' . $bike->id . '/attachments/' . $penalty->id;
+        self::assertSame(404, $browser->get($elsewhere)->getStatusCode());
+
+        // Deleting one from the edit form returns to that entry.
+        $deleted = $browser->post($base . '/attachments/' . $penalty->id . '/delete');
+        self::assertSame($base . '/expenses/' . $expense->id . '/edit', $deleted->getHeaderLine('Location'));
+
+        $browser->post($base . '/expenses/' . $expense->id . '/edit', $fine, [
+            'attachments' => [$this->upload(self::PDF, 'appeal.pdf')],
+        ]);
+        $appeal = $this->attachments($app, $golf)[1];
+        $browser->post($base . '/expenses/' . $expense->id . '/delete');
+        $browser->post($base . '/odometer/' . $reading->id . '/delete');
+        self::assertSame([], $this->attachments($app, $golf));
+        self::assertFileDoesNotExist($this->uploadDir() . '/' . $appeal->storedPath);
+        self::assertFileDoesNotExist($this->uploadDir() . '/' . $dashboard->storedPath);
+    }
+
+    public function testDerivedReadingsHaveNoAttachmentInput(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $base = '/vehicles/' . $golf->id;
+        $browser->post($base . '/fuel/new', self::FILL);
+        $reading = $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id)[0];
+
+        $edit = $browser->get($base . '/odometer/' . $reading->id . '/edit');
+        self::assertSame(303, $edit->getStatusCode(), 'a fill-up\'s reading is edited on the fill-up, with its files');
+        self::assertStringContainsString('/fuel/', $edit->getHeaderLine('Location'));
+    }
+
+    public function testTheFileLimitNeverExceedsPhpsMaxFileUploads(): void
+    {
+        self::assertSame(10, AttachmentService::fileLimit(20));
+        self::assertSame(10, AttachmentService::fileLimit(10));
+        self::assertSame(4, AttachmentService::fileLimit(4), 'PHP would drop the fifth silently');
+        self::assertSame(0, AttachmentService::fileLimit(0));
+    }
+
+    /**
+     * @return list<UploadedFile> a PDF, a PNG and another PDF
+     */
+    private function three(): array
+    {
+        return [
+            $this->upload(self::PDF, 'receipt.pdf'),
+            $this->upload(base64_decode(self::PNG), 'photo.png'),
+            $this->upload(self::PDF, 'invoice.pdf'),
+        ];
     }
 
     private function upload(string $contents, string $name, string $type = 'application/pdf'): UploadedFile

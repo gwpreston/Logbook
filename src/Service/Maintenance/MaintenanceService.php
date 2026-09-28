@@ -13,6 +13,7 @@ use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Support\Database\Transaction;
@@ -22,8 +23,8 @@ use Psr\Clock\ClockInterface;
 /**
  * Service history (spec.md §7.4). Saving an entry, in one transaction:
  * writes its odometer reading (when it has an odometer) into the mileage
- * series, and recomputes the schedule it completes — both the old and the
- * new one when an edit moves it.
+ * series, records its new attachments, and recomputes the schedule it
+ * completes — both the old and the new one when an edit moves it.
  *
  * Callers pass a Vehicle already resolved for the signed-in owner.
  */
@@ -60,12 +61,17 @@ final readonly class MaintenanceService
      * @param DateTimeZone $zone the owner's zone: the entry's odometer
      *                           reading is recorded at noon on its date there
      */
-    public function create(Vehicle $vehicle, MaintenanceEntryData $data, DateTimeZone $zone): MaintenanceEntry
-    {
-        $id = $this->transaction->run(function () use ($vehicle, $data, $zone): int {
+    public function create(
+        Vehicle $vehicle,
+        MaintenanceEntryData $data,
+        DateTimeZone $zone,
+        PendingUploads $files = new PendingUploads(),
+    ): MaintenanceEntry {
+        $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone): int {
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $id, $data, $zone);
             $this->recomputeSchedules($vehicle, $data->scheduleId);
+            $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $id, $stored);
 
             return $id;
         });
@@ -78,11 +84,13 @@ final readonly class MaintenanceService
         MaintenanceEntry $entry,
         MaintenanceEntryData $data,
         DateTimeZone $zone,
+        PendingUploads $files = new PendingUploads(),
     ): MaintenanceEntry {
-        $this->transaction->run(function () use ($vehicle, $entry, $data, $zone): void {
+        $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $entry, $data, $zone): void {
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $entry->id, $data, $zone);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId, $data->scheduleId);
+            $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $entry->id, $stored);
         });
 
         return $this->get($vehicle, $entry->id);

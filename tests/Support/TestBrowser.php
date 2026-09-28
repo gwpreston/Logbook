@@ -43,7 +43,7 @@ final class TestBrowser
      * (fetching a page first if none has been seen yet).
      *
      * @param array<string, string|list<string>> $fields (a list for multi-value fields such as checkboxes[])
-     * @param array<string, UploadedFileInterface> $files
+     * @param array<string, UploadedFileInterface|list<UploadedFileInterface>> $files (a list for attachments[])
      * @param array<string, string> $headers e.g. the X-Requested-With a script sends
      */
     public function post(
@@ -114,7 +114,7 @@ final class TestBrowser
 
     /**
      * @param array<string, string|list<string>> $fields (a list for multi-value fields such as checkboxes[])
-     * @param array<string, UploadedFileInterface> $files
+     * @param array<string, UploadedFileInterface|list<UploadedFileInterface>> $files (a list for attachments[])
      * @param array<string, string> $headers
      */
     private function request(string $method, string $path, array $fields, array $files, array $headers = []): ResponseInterface

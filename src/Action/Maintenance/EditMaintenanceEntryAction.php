@@ -7,7 +7,6 @@ namespace Logbook\Action\Maintenance;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Action\Vehicle\VehicleRoute;
-use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -52,20 +51,19 @@ final readonly class EditMaintenanceEntryAction
 
         $input = RequestContext::form($request);
         $data = MaintenanceEntryForm::parse($input, $user->preferences, $this->page->scheduleIds($vehicle));
-        $file = $this->upload->fromRequest($request);
-        $errors = $this->upload->errors($data, $file);
+        $files = $this->upload->fromRequest($request);
+        $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
             return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422);
         }
 
-        $updated = $this->maintenance->update($vehicle, $entry, $data, $user->preferences->timeZone());
-        $this->upload->store($vehicle, AttachmentOwner::Maintenance, $entry->id, $file);
+        $updated = $this->maintenance->update($vehicle, $entry, $data, $user->preferences->timeZone(), $files);
         $session = RequestContext::session($request);
         $session->flash('success', 'maintenance.updated', ['title' => $updated->data->title]);
         $this->warnings->queue($session, $this->maintenance->odometerWarning($vehicle, $updated));
 
-        return $this->redirect->toRoute('maintenance.index', ['id' => (string) $vehicle->id]);
+        return $this->redirect->backOr($request, 'maintenance.index', ['id' => (string) $vehicle->id]);
     }
 }

@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
 {% import 'macros/expenses.twig' as exp %}
 
 {% set active_nav = 'garage' %}
@@ -72,6 +73,8 @@
                                     {% if delta is not null %}
                                         <span class="list__delta tabular">{{ (delta starts with '-' ? '−' ~ delta|slice(1)|distance : '+' ~ delta|distance) }}</span>
                                     {% endif %}
+                                    {% set owner = reading.filesOwner() %}
+                                    {{ paperclip.count(attachment_counts.of(owner[0], owner[1])) }}
                                     <span class="pill">{{ ('odometer.source.' ~ reading.source.value)|trans }}</span>
                                 </span>
                             </a>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Odometer;
 
 use Logbook\Action\Vehicle\VehicleRoute;
+use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
@@ -25,6 +26,7 @@ final readonly class OdometerLogAction
     public function __construct(
         private VehicleService $vehicles,
         private OdometerService $odometer,
+        private AttachmentService $attachments,
         private OdometerChart $chart,
         private OdometerWarningFlash $warnings,
         private View $view,
@@ -55,6 +57,7 @@ final readonly class OdometerLogAction
             'pagination' => $pagination,
             'deltas' => $history->deltas(),
             'warnings' => $warnings,
+            'attachment_counts' => $this->attachments->counts($vehicle),
             'chart' => $this->chart->build($history, $user->preferences),
             'age' => VehicleAge::of($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone())),
         ]);
