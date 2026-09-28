@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace Logbook\Action\Dashboard;
 
 use Logbook\Domain\Fuel\EnergyKind;
+use Logbook\Service\Dashboard\MileageSummary;
+use Logbook\Service\Dashboard\MonthDistance;
 use Logbook\Service\Dashboard\VehicleEfficiency;
 use Logbook\Support\Display\DisplayContext;
+use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Units\ElectricEfficiencyUnit;
+use Logbook\Support\View\BarChart;
 use Logbook\Support\View\LineChart;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * The efficiency trend widget's chart: each vehicle's per-fill economy over
- * the window, one line per vehicle, for liquid fuel (or electricity when no
- * vehicle has liquid fuel figures). One unit per chart, so kinds never mix.
+ * The dashboard's charts. Efficiency trend: each vehicle's per-fill economy
+ * over the window, one line per vehicle, for liquid fuel (or electricity
+ * when no vehicle has liquid fuel figures); one unit per chart, so kinds
+ * never mix. Mileage: distance per month over the last 12 months.
  */
 final readonly class DashboardCharts
 {
@@ -22,8 +27,32 @@ final readonly class DashboardCharts
 
     public function __construct(
         private DisplayContext $display,
+        private DisplayFormatter $formatter,
         private TranslatorInterface $translator,
     ) {
+    }
+
+    /**
+     * Distance per month in the owner's unit; null when nothing was driven.
+     */
+    public function mileage(?MileageSummary $summary): ?BarChart
+    {
+        if ($summary === null || !$summary->hasMonths()) {
+            return null;
+        }
+        $unit = $this->display->preferences()->distanceUnit;
+
+        return (new BarChart(
+            $this->display->preferences(),
+            array_map(fn (MonthDistance $m): string => $this->formatter->month($m->month), $summary->months),
+            0,
+            null,
+            false,
+        ))->addSeries(
+            $this->translator->trans('units.name.' . $unit->value),
+            array_map(static fn (MonthDistance $m): float => $unit->fromKm((float) ($m->km ?? '0')), $summary->months),
+            'accent',
+        );
     }
 
     /**

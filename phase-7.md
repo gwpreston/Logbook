@@ -35,70 +35,70 @@ tab chrome, 50/50 layouts, accent colour setting, and the app version display.
 
 ### 7.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §5 — the progressive-enhancement modal pattern (7.1).
-- [ ] §6 User — `accent` preference (7.9).
-- [ ] §7.1 — garage card due badge and stats footer (7.5).
-- [ ] §7.2 — shared vehicle header actions and list toolbar (7.6).
-- [ ] §7.8 — vehicle filter, pinned vehicle card, *Mileage* and *Recent
+- [x] §5 — the progressive-enhancement modal pattern (7.1).
+- [x] §6 User — `accent` preference (7.9).
+- [x] §7.1 — garage card due badge and stats footer (7.5).
+- [x] §7.2 — shared vehicle header actions and list toolbar (7.6).
+- [x] §7.8 — vehicle filter, pinned vehicle card, *Mileage* and *Recent
       activity* widgets, restyled *Your vehicles* (7.3, 7.4).
-- [ ] §8 — accent colours, sidebar badge and vehicles list, version display.
+- [x] §8 — accent colours, sidebar badge and vehicles list, version display.
 - [ ] `ROADMAP.md` gains a Phase 7 row; `CHANGELOG.md` gets the release entry.
 
 ### 7.1 Desktop modals for entry forms (progressive enhancement)
-- [ ] Forms that open in a modal on desktop: add / edit vehicle, add / edit
+- [x] Forms that open in a modal on desktop: add / edit vehicle, add / edit
       expense, add / edit fill-up, add / edit document, the *Log entry* chooser,
       and the forms reached from it (odometer reading, service record, service
       interval). See `add-vechicle-model.png`, `log-entry-model.png`.
-- [ ] Every form keeps its own URL and full page. With JS **and** a desktop
+- [x] Every form keeps its own URL and full page. With JS **and** a desktop
       viewport (≥ 960px, the same breakpoint as the sidebar), links to those
       URLs are intercepted and the server-rendered form is loaded into a native
       `<dialog>`; below 960px or without JS, the normal page opens.
-- [ ] The server renders the form body alone for modal requests (e.g. a
+- [x] The server renders the form body alone for modal requests (e.g. a
       `partial` flag or request header) using the same template and parser as
       the full page — one form, two wrappers.
-- [ ] Validation errors re-render inside the modal; success closes it and
+- [x] Validation errors re-render inside the modal; success closes it and
       follows the normal redirect (with its flash message).
-- [ ] File inputs (vehicle photo, attachments) work in the modal (multipart
+- [x] File inputs (vehicle photo, attachments) work in the modal (multipart
       submit via `FormData`, falling back to a full-page submit on failure).
-- [ ] Accessible: labelled dialog title, focus moves in and returns to the
+- [x] Accessible: labelled dialog title, focus moves in and returns to the
       trigger on close, Esc and the ✕ button close, background inert.
-- [ ] Modal fetch URLs come from `url_for()` so subpath installs work; CSRF uses
+- [x] Modal fetch URLs come from `url_for()` so subpath installs work; CSRF uses
       the page's existing token.
 
 ### 7.2 Sidebar
-- [ ] **Reminders badge:** the *Reminders* link shows the count of open
+- [x] **Reminders badge:** the *Reminders* link shows the count of open
       reminders that are *overdue* + *due*, in red (`reminder-nav-link.png`);
       hidden when zero. Archived vehicles and disabled `reminders` module
       contribute nothing.
-- [ ] **"+ Log fill-up" → "+ Log entry":** opens the *Log something* chooser
+- [x] **"+ Log fill-up" → "+ Log entry":** opens the *Log something* chooser
       (Fill-up, Odometer reading, Service record, Expense, Document, Service
       interval) as a page (`/log/new`) or a modal on desktop. Choices for a
       disabled module are hidden. With several active vehicles, the chosen form
       asks for the vehicle (as `/fuel/new` does today); with one, it is
       preselected. The mobile tab bar "+" opens the same chooser.
-- [ ] **Vehicles section** below *Settings* (`sidebar-vechicles.png`): every
+- [x] **Vehicles section** below *Settings* (`sidebar-vechicles.png`): every
       active (non-archived) vehicle with a car / motorbike icon, its name, and a
       status dot — **red** any overdue reminder, **orange** any due soon,
       **green** none. Each links to the vehicle overview.
-- [ ] The dot is not colour-only: give it a text alternative ("2 overdue",
+- [x] The dot is not colour-only: give it a text alternative ("2 overdue",
       "1 due soon", "All up to date") for screen readers and a tooltip.
 
 ### 7.3 Dashboard — vehicle filter and pinned vehicle card
-- [ ] A row of toggle chips under the greeting (`dashboard-toggle.png`):
+- [x] A row of toggle chips under the greeting (`dashboard-toggle.png`):
       *All vehicles* plus one chip per active vehicle with its type icon,
       styled like the type chips on the *Add vehicle* form. Shown when there
       are two or more active vehicles.
-- [ ] The selection is a GET parameter (`/?vehicle={id}`): the chips are links,
+- [x] The selection is a GET parameter (`/?vehicle={id}`): the chips are links,
       so it works without JS, survives refresh and is bookmarkable. The active
       chip has `aria-current`. An unknown or archived id falls back to *All*.
-- [ ] **All vehicles:** every widget uses the fleet (active vehicles), as now.
-- [ ] **One vehicle selected:**
+- [x] **All vehicles:** every widget uses the fleet (active vehicles), as now.
+- [x] **One vehicle selected:**
   - every widget's data is filtered to that vehicle;
   - *Your vehicles* is hidden;
   - a **pinned vehicle card** appears directly below the chips
     (`dashboard-toggle-selected-vechicle.png`) and is not part of the saved
     layout: it cannot be dragged, moved or hidden in customise mode.
-- [ ] Pinned card contents: photo (or placeholder), plate, fuel chip, name,
+- [x] Pinned card contents: photo (or placeholder), plate, fuel chip, name,
       "year make model · current odometer", and four tiles —
       *Economy* (12-month average, in the user's consumption unit),
       *Running cost* (all costs ÷ distance, last 12 months, per the user's
@@ -106,93 +106,116 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
       reminder: "in 4 days" / "3 days overdue" plus its title, coloured by
       status). Actions: *Log fill-up*, *Add reading*, *Open vehicle →*.
       Tiles stack 2×2 on mobile.
-- [ ] Reuse the existing report / fuel / reminder services for every figure;
+- [x] Reuse the existing report / fuel / reminder services for every figure;
       no new calculations in templates or Actions.
 
 ### 7.4 Dashboard — new and restyled widgets
-- [ ] **Mileage widget** (new, id `mileage`): three figures under the title —
+- [x] **Mileage widget** (new, id `mileage`): three figures under the title —
       *This month*, *This year*, *Monthly avg* — in the user's distance unit.
   - This month / this year: calendar month / year to date in the owner's time
     zone, computed as the reports' *distance driven* (§7.7).
   - Monthly avg: the same figure the vehicle's Mileage tab shows (§7.2).
   - Fleet figures are computed per vehicle and summed.
   - A figure with no history shows "—", not 0.
-- [ ] **Recent activity widget** (new, id `recent_activity`): the latest eight
+- [x] **Recent activity widget** (new, id `recent_activity`): the latest eight
       items across fill-ups, manual odometer readings, service records,
       documents and expenses — newest first, each with an icon, what it was,
       the vehicle, the date and its amount or value, linking to its source.
       Derived odometer readings are left out (the fill-up or service already
       appears). Respects the vehicle filter, feature toggles and archived
       exclusion.
-- [ ] Both new widgets join the layout registry, so saved layouts gain them at
+- [x] Both new widgets join the layout registry, so saved layouts gain them at
       the end (existing behaviour for new widgets).
-- [ ] **Your vehicles** restyled as photo tiles (`dashboard-your-vechicles.png`):
+- [x] **Your vehicles** restyled as photo tiles (`dashboard-your-vechicles.png`):
       photo or placeholder with the plate over its lower-left corner, name,
       current odometer, and "N due" (red when any are overdue, amber when only
       due soon; hidden when zero). The card title links to the garage.
 
 ### 7.5 Garage cards
-- [ ] Due badge on the photo's top-right corner (`garage-vechicle.png`):
+- [x] Due badge on the photo's top-right corner (`garage-vechicle.png`):
       "N due" = open reminders that are overdue + due; red when any are overdue,
       amber otherwise; hidden when zero.
-- [ ] A footer below a hairline divider with small icons: current odometer
+- [x] A footer below a hairline divider with small icons: current odometer
       (user's distance unit) and average economy (user's consumption unit — mpg
       for UK/US users, L/100 km etc. for others; kWh efficiency for EVs; "—"
       when there is no full-to-full segment yet).
 
 ### 7.6 Vehicle pages — consistent chrome
-- [ ] *Edit*, *Archive* and *Delete* live in one shared vehicle-header partial
+- [x] *Edit*, *Archive* and *Delete* live in one shared vehicle-header partial
       and sit in the same place on Overview, Mileage, Fuel, Maintenance,
       Documents and Expenses.
-- [ ] One shared list-toolbar partial for the tab lists: *Export CSV* and
+- [x] One shared list-toolbar partial for the tab lists: *Export CSV* and
       *Import CSV* right-aligned on every tab, matching the Fuel tab today
       (fixes the Mileage tab).
 
 ### 7.7 Two-column layouts
-- [ ] A shared two-column grid utility (50/50 on wide screens, stacked on
+- [x] A shared two-column grid utility (50/50 on wide screens, stacked on
       narrow ones), used for:
   - Fuel tab: *Economy trend* | *Price trend*;
   - Reports: *By category* | *By vehicle*.
-- [ ] Reports *By vehicle*: remove the link on the vehicle name and show the
+- [x] Reports *By vehicle*: remove the link on the vehicle name and show the
       car / motorbike icon before it.
 
 ### 7.8 App version
-- [ ] One source of truth for the version (e.g. a `VERSION` file updated with
+- [x] One source of truth for the version (e.g. a `VERSION` file updated with
       each release, stamped into the Docker image at build time).
-- [ ] Shown in the sidebar footer and on the Settings page ("Logbook v0.7.0"),
+- [x] Shown in the sidebar footer and on the Settings page ("Logbook v0.7.0"),
       and included in the `/health` JSON.
 
 ### 7.9 Accent colour setting
-- [ ] Settings → Appearance: *Accent colour* chips — **Blue** (default),
+- [x] Settings → Appearance: *Accent colour* chips — **Blue** (default),
       **Teal**, **Indigo**, **Purple** — next to the existing theme setting.
-- [ ] Stored per user (`users.accent`, string, default `blue`) via a reversible
+- [x] Stored per user (`users.accent`, string, default `blue`) via a reversible
       migration on every engine; signed-out pages use the default.
-- [ ] Rendered server-side as `data-accent` on `<html>` (no flash), switching a
+- [x] Rendered server-side as `data-accent` on `<html>` (no flash), switching a
       small set of accent tokens (primary, hover, pressed, subtle background,
       focus ring, chart series) with light and dark variants of each.
-- [ ] Status colours (red overdue, amber due soon, green OK) and the yellow
+- [x] Status colours (red overdue, amber due soon, green OK) and the yellow
       plate stay fixed in every accent, so status never depends on the accent.
-- [ ] Every accent passes WCAG AA for button text and focus rings in both
+- [x] Every accent passes WCAG AA for button text and focus rings in both
       themes. Charts read the accent tokens when they render.
 
 ### 7.10 i18n
-- [ ] All new strings translatable (English plus the second locale from
+- [x] All new strings translatable (English plus the second locale from
       Phase 6); relative due text ("in 4 days", "3 days overdue") uses ICU
       plurals.
 
 ### 7.11 Tests
-- [ ] Unit: mileage figures (month and year boundaries in the owner's time
+- [x] Unit: mileage figures (month and year boundaries in the owner's time
       zone, a DST change, units, fleet summing, no history → "—"); due counts
       and dot colour; recent activity ordering and exclusion of derived
       readings; accent resolution.
-- [ ] Integration: dashboard with and without `?vehicle=` (pinned card shown,
+- [x] Integration: dashboard with and without `?vehicle=` (pinned card shown,
       *Your vehicles* hidden, other widgets filtered, invalid id falls back);
       pinned card absent from saved layout and customise mode; sidebar badge and
       vehicles list (archived excluded); modal partial vs full-page render of
       each form, including a validation error and an upload; *Log entry*
       chooser honours feature toggles; accent migration and persistence;
       version in sidebar, settings and `/health`.
-- [ ] Pass on **both** MySQL and Postgres.
+- [x] Pass on **both** MySQL and Postgres.
+
+### 7.12 Review follow-ups (after the first review of the branch)
+- [x] **Mileage chart:** the *Mileage* widget shows a bar chart below its three
+      figures: distance driven per calendar month over the last 12 months
+      (this month and the 11 before), in the owner's distance unit, summed per
+      vehicle for the fleet. Without JS the same figures are a table.
+- [x] **Default widget order:** *Upcoming reminders*, *Spend this month* and
+      *Recent fuel* come before *Your vehicles* (then efficiency, documents,
+      mileage, recent activity). A layout the owner has saved is unchanged.
+- [x] **Dev port:** `bin/dev`, `docker-compose.dev.yml` and `composer start`
+      default to port **8090** instead of 8080 (production defaults stay
+      8080; `APP_PORT` still overrides).
+- [x] **Expenses tab — Last 12 months:** a bar chart card of spend per month
+      (stacked by group) beside *By category*, 50/50 on wide screens. It always
+      covers the last 12 months: the *This month* / *3 months* / *12 months* /
+      *All time* chips do not change it.
+- [x] **CSS tweak** from the review (`assets/css/app.css`): the pinned card's
+      photo is clipped to its column and fills it side by side.
+- [x] **Desktop modals working:** the forms render their `modal_body` for
+      modal requests and `assets/js/app.js` opens, submits and closes the
+      dialog (the first push had the markup and server side only).
+- [ ] Check every modal, chart and layout in a browser, light and dark, in
+      each accent, at desktop and phone widths.
 
 ---
 

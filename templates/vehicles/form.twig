@@ -17,6 +17,7 @@
             <h1 class="page-header__title">{{ heading }}</h1>
         </header>
 
+        {% block modal_body %}
         {% if errors is not empty %}
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
@@ -109,8 +110,9 @@
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'vehicle.add_submit')|trans }}</button>
-                <a class="btn btn--lg" href="{{ editing ? url_for('vehicles.show', {id: vehicle.id}) : url_for('garage') }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ editing ? url_for('vehicles.show', {id: vehicle.id}) : url_for('garage') }}">{{ 'form.cancel'|trans }}</a>
             </div>
         </form>
+        {% endblock %}
     </div>
 {% endblock %}

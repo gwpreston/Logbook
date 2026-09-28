@@ -464,7 +464,9 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   zero included, since the owner logged it deliberately). Sums are exact
   (integer micro-units, never floats).
 - **Expenses tab** (`/vehicles/{id}/expenses`): the vehicle's total and
-  breakdown by group for the chosen period, and every ledger line newest
+  breakdown by group for the chosen period, beside (50/50 on wide screens) a
+  *Last 12 months* bar chart of spend per month stacked by group — always the
+  last 12 months, whichever period is chosen — and every ledger line newest
   first (25 per page) linking to its source. Ad-hoc expenses (date, category,
   amount, note) are added, edited and deleted there.
 - **Reports** (`/reports`): the fleet, or one vehicle (`?vehicle=`), over a
@@ -527,7 +529,9 @@ toggles.
   driven* (§7.7); monthly average is the Mileage tab's figure (§7.2). For
   the fleet each figure is computed per vehicle and summed (readings of
   different vehicles are never subtracted from each other). A figure with no
-  history shows "—", not 0.
+  history shows "—", not 0. Below the figures, a bar chart of the distance
+  driven in each of the last 12 calendar months (this month and the 11
+  before), measured the same way; without JS the same figures are a table.
 - **Recent activity** (id `recent_activity`): the latest eight entries across
   fill-ups, manual odometer readings, service records, documents and ad-hoc
   expenses — newest first by the owner's local date, then by when they were
@@ -556,7 +560,9 @@ toggles.
   JSON in `settings` (scope user, key `dashboard.layout`). Unknown widget
   ids are dropped and widgets added in later releases are appended, so an old
   saved layout never breaks. Without a saved layout (and without JS) the
-  default order above applies.
+  default order applies: upcoming reminders, spend this month, recent fuel,
+  your vehicles, efficiency trend, compliance status, mileage, recent
+  activity.
 - **Customise** (`/?customise=1`, also a button): each widget gets move up /
   move down / hide-show buttons — plain forms, so arranging works without JS
   and from the keyboard — plus "reset layout". With JS, widgets can also be

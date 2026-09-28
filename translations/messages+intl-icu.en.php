@@ -795,6 +795,9 @@ return [
     ],
     'expense' => [
         'title' => 'Expenses',
+        'last_twelve_months' => 'Last 12 months',
+        'monthly_chart_label' => 'Spend per month over the last 12 months',
+        'none_last_twelve_months' => 'Nothing spent in the last 12 months.',
         'add' => 'Add expense',
         'add_title' => 'Add an expense',
         'add_submit' => 'Save expense',
@@ -1126,6 +1129,7 @@ return [
             'this_month' => 'This month',
             'this_year' => 'This year',
             'monthly_average' => 'Monthly avg',
+            'chart_label' => 'Distance driven per month over the last 12 months',
         ],
         'activity' => [
             'empty' => 'Nothing logged yet.',

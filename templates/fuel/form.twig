@@ -25,6 +25,8 @@
             </div>
         </header>
 
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
         {% if errors is not empty %}
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
@@ -122,11 +124,12 @@
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'fuel.add_submit')|trans }}</button>
-                <a class="btn btn--lg" href="{{ url_for('fuel.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('fuel.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
                 {% if editing %}
                     <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('fuel.delete', {id: vehicle.id, entry: entry.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}
             </div>
         </form>
+        {% endblock %}
     </div>
 {% endblock %}

@@ -2741,8 +2741,13 @@ a.list__title:hover {
     padding: 0;
 }
 
+ /* Clip the media column so the photo can never paint over the body. */
+ .pinned__media {
+     min-width: 0;
+     overflow: hidden;
+ }
+
 .pinned__media .vehicle-photo {
-    height: 100%;
     min-height: 10rem;
 }
 
@@ -2812,6 +2817,14 @@ a.list__title:hover {
     .pinned {
         grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     }
+
+    /* Side by side the photo fills its column; sizing it from the 16:9
+        ratio here would derive its width from the body's height. */
+     .pinned__media .vehicle-photo {
+         width: 100%;
+         height: 100%;
+         aspect-ratio: auto;
+     }
 
     .pinned__tiles {
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2943,4 +2956,25 @@ a.list__title:hover {
         opacity: 0;
         transform: translateY(0.5rem);
     }
+}
+
+/* A chart's figures as a table: shown without JS, kept for screen readers with it. */
+.js .chart-table {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Which vehicle a form in the modal is for (the page shows it in its header). */
+.modal-fragment__context {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
 }

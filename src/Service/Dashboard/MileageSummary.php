@@ -24,11 +24,29 @@ use Logbook\Support\Number\Decimal;
  */
 final readonly class MileageSummary
 {
+    /** Bars of the chart: this month and the 11 before it. */
+    public const int CHART_MONTHS = 12;
+
+    /**
+     * @param list<MonthDistance> $months the last 12 calendar months, oldest first
+     */
     public function __construct(
         public ?string $thisMonthKm,
         public ?string $thisYearKm,
         public ?float $monthlyAverageKm,
+        public array $months = [],
     ) {
+    }
+
+    public function hasMonths(): bool
+    {
+        foreach ($this->months as $month) {
+            if ($month->km !== null && Decimal::compare($month->km, '0') > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -40,9 +58,18 @@ final readonly class MileageSummary
         $month = ReportPeriod::preset(ReportRange::ThisMonth, $today);
         $year = ReportPeriod::preset(ReportRange::ThisYear, $today);
 
+        $firstOfMonth = $month->from ?? $today;
+        $chart = [];
+        for ($back = self::CHART_MONTHS - 1; $back >= 0; $back--) {
+            $first = LocalTime::addMonths($firstOfMonth, -$back);
+            $last = LocalTime::addMonths($first, 1)->modify('-1 day');
+            $chart[] = new ReportPeriod(ReportRange::Custom, $first, $last < $today ? $last : $today);
+        }
+
         $thisMonth = null;
         $thisYear = null;
         $average = null;
+        $months = array_fill(0, count($chart), null);
         foreach ($readings as $vehicleReadings) {
             $thisMonth = self::add($thisMonth, self::driven($vehicleReadings, $month, $zone));
             $thisYear = self::add($thisYear, self::driven($vehicleReadings, $year, $zone));
@@ -50,9 +77,21 @@ final readonly class MileageSummary
             if ($perMonth !== null) {
                 $average = ($average ?? 0.0) + $perMonth;
             }
+            foreach ($chart as $i => $period) {
+                $months[$i] = self::add($months[$i], self::driven($vehicleReadings, $period, $zone));
+            }
         }
 
-        return new self($thisMonth, $thisYear, $average);
+        return new self(
+            $thisMonth,
+            $thisYear,
+            $average,
+            array_map(
+                static fn (ReportPeriod $p, ?string $km): MonthDistance => new MonthDistance($p->from ?? $p->to, $km),
+                $chart,
+                $months,
+            ),
+        );
     }
 
     /**

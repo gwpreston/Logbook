@@ -13,6 +13,7 @@ return [
     'app' => [
         'name' => 'Logbook',
         'tagline' => 'Deine Garage, auf deinem eigenen Server.',
+        'version' => 'Logbook v{version}',
     ],
     // Two-tone wordmark next to the logo; normally left untranslated.
     'brand' => [
@@ -27,7 +28,39 @@ return [
         'reports' => 'Berichte',
         'settings' => 'Einstellungen',
         'log_fill_up' => 'Tanken erfassen',
+        'log_entry' => 'Eintrag erfassen',
         'skip_to_content' => 'Zum Inhalt springen',
+        'vehicles' => 'Fahrzeuge',
+        'needs_attention' => '{count, plural, one {# Erinnerung braucht Aufmerksamkeit} other {# Erinnerungen brauchen Aufmerksamkeit}}',
+        'status' => [
+            'overdue' => '{count, plural, other {# überfällig}}',
+            'due' => '{count, plural, other {# bald fällig}}',
+            'ok' => 'Alles erledigt',
+        ],
+    ],
+    'modal' => [
+        'close' => 'Schließen',
+    ],
+    'log' => [
+        'title' => 'Etwas erfassen',
+        'lead' => 'Was möchtest du festhalten?',
+        'pick_lead' => 'Für welches Fahrzeug?',
+        'no_vehicles' => 'Lege zuerst ein Fahrzeug an; dann kannst du Einträge dafür erfassen.',
+        'kind' => [
+            'fuel' => 'Tankfüllung',
+            'odometer' => 'Kilometerstand',
+            'maintenance' => 'Wartung',
+            'expense' => 'Ausgabe',
+            'document' => 'Dokument',
+            'schedule' => 'Wartungsintervall',
+        ],
+        'pick_title' => [
+            'odometer' => 'Kilometerstand hinzufügen',
+            'maintenance' => 'Wartung erfassen',
+            'expense' => 'Ausgabe hinzufügen',
+            'document' => 'Dokument hinzufügen',
+            'schedule' => 'Wartungsintervall hinzufügen',
+        ],
     ],
     'theme' => [
         'to_dark' => 'Dunkles Design',
@@ -36,6 +69,12 @@ return [
             'system' => 'System',
             'light' => 'Hell',
             'dark' => 'Dunkel',
+        ],
+        'accent' => [
+            'blue' => 'Blau',
+            'teal' => 'Petrol',
+            'indigo' => 'Indigo',
+            'purple' => 'Lila',
         ],
     ],
     'form' => [
@@ -122,6 +161,8 @@ return [
     'prefs' => [
         'display_name' => 'Anzeigename',
         'theme' => 'Design',
+        'accent' => 'Akzentfarbe',
+        'accent_hint' => 'Schaltflächen, Links, Hervorhebungen und Diagramme. Statusfarben bleiben rot, gelb und grün.',
         'units' => 'Einheiten',
         'distance_unit' => 'Strecke',
         'volume_unit' => 'Kraftstoffmenge',
@@ -218,6 +259,11 @@ return [
         'empty_body' => 'Füge ein Auto oder Motorrad hinzu, um Kilometerstand, Kosten und Fristen im Blick zu behalten.',
         'show_archived' => 'Archivierte zeigen ({count})',
         'hide_archived' => 'Archivierte ausblenden',
+        'due_count' => '{count, plural, other {# fällig}}',
+        'stat' => [
+            'odometer' => 'Kilometerstand',
+            'economy' => 'Durchschnittsverbrauch',
+        ],
     ],
     'vehicle' => [
         'add_title' => 'Fahrzeug hinzufügen',
@@ -676,6 +722,10 @@ return [
             'dismiss' => 'Die Erinnerung wurde verworfen. Sie kommt beim nächsten Fälligkeitstermin wieder.',
             'reopen' => 'Die Erinnerung wurde wieder geöffnet.',
         ],
+        'relative' => [
+            'in' => '{days, plural, =0 {heute} one {morgen} other {in # Tagen}}',
+            'overdue' => '{days, plural, one {# Tag überfällig} other {# Tage überfällig}}',
+        ],
         'when' => [
             'due_in' => '{days, plural, =0 {Heute fällig} one {Morgen fällig} other {In # Tagen fällig}}',
             'expires_in' => '{days, plural, =0 {Läuft heute ab} one {Läuft morgen ab} other {Läuft in # Tagen ab}}',
@@ -745,6 +795,9 @@ return [
     ],
     'expense' => [
         'title' => 'Ausgaben',
+        'last_twelve_months' => 'Letzte 12 Monate',
+        'monthly_chart_label' => 'Ausgaben pro Monat in den letzten 12 Monaten',
+        'none_last_twelve_months' => 'In den letzten 12 Monaten nichts ausgegeben.',
         'add' => 'Ausgabe hinzufügen',
         'add_title' => 'Ausgabe hinzufügen',
         'add_submit' => 'Ausgabe speichern',
@@ -1023,6 +1076,8 @@ return [
             'recent_fuel' => 'Letzte Tankfüllungen',
             'efficiency' => 'Verbrauchsverlauf',
             'compliance' => 'Dokumente',
+            'mileage' => 'Fahrleistung',
+            'recent_activity' => 'Letzte Aktivität',
         ],
         'link' => [
             'garage' => 'Garage',
@@ -1054,6 +1109,32 @@ return [
             'expiry' => 'läuft ab am {date}',
             'expired' => '{days, plural, one {Vor # Tag abgelaufen} other {Vor # Tagen abgelaufen}}',
             'expires' => '{days, plural, =0 {Läuft heute ab} one {Läuft morgen ab} other {Läuft in # Tagen ab}}',
+        ],
+        'filter' => [
+            'label' => 'Fahrzeuge anzeigen',
+            'all' => 'Alle Fahrzeuge',
+        ],
+        'pinned' => [
+            'economy' => 'Verbrauch',
+            'twelve_month_average' => '12-Monats-Durchschnitt',
+            'running_cost' => 'Betriebskosten',
+            'spent' => 'Ausgegeben',
+            'last_twelve_months' => 'letzte 12 Monate',
+            'next_due' => 'Als Nächstes fällig',
+            'nothing_due' => 'Nichts fällig',
+            'add_reading' => 'Stand erfassen',
+            'open_vehicle' => 'Fahrzeug öffnen',
+        ],
+        'mileage' => [
+            'this_month' => 'Diesen Monat',
+            'this_year' => 'Dieses Jahr',
+            'monthly_average' => 'Ø pro Monat',
+            'chart_label' => 'Gefahrene Strecke pro Monat in den letzten 12 Monaten',
+        ],
+        'activity' => [
+            'empty' => 'Noch nichts erfasst.',
+            'fill_up' => 'Tankfüllung',
+            'reading' => 'Kilometerstand',
         ],
     ],
     'notifications' => [
@@ -1200,6 +1281,7 @@ return [
         'change_password' => 'Passwort ändern',
         'password_changed' => 'Dein Passwort wurde geändert. Andere Geräte wurden abgemeldet.',
         'installation' => 'Installation',
+        'version' => 'Version',
     ],
     'diagnostics' => [
         'deep_link' => [

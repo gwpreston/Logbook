@@ -24,16 +24,41 @@
             {{ ui.stat('expense.stat.per_month'|trans, section.averagePerMonth|money, 'report.months'|trans({count: report.monthCount()})) }}
         </dl>
 
-        <section class="card" aria-labelledby="breakdown-heading">
-            <div class="card__header">
-                <h2 id="breakdown-heading" class="card__title">{{ 'report.by_group'|trans }}</h2>
-            </div>
-            {% if section.isEmpty() %}
-                <p class="muted">{{ 'expense.none_in_period'|trans }}</p>
-            {% else %}
-                {{ exp.breakdown(section) }}
-            {% endif %}
-        </section>
+        <div class="split">
+            <section class="card" aria-labelledby="breakdown-heading">
+                <div class="card__header">
+                    <h2 id="breakdown-heading" class="card__title">{{ 'report.by_group'|trans }}</h2>
+                </div>
+                {% if section.isEmpty() %}
+                    <p class="muted">{{ 'expense.none_in_period'|trans }}</p>
+                {% else %}
+                    {{ exp.breakdown(section) }}
+                {% endif %}
+            </section>
+
+            {# Always the last 12 months: the range chips above do not change it. #}
+            <section class="card" aria-labelledby="monthly-heading" data-expenses-monthly>
+                <div class="card__header">
+                    <h2 id="monthly-heading" class="card__title">{{ 'expense.last_twelve_months'|trans }}</h2>
+                </div>
+                {% if monthly_chart.hasData() %}
+                    {{ ui.chart(monthly_chart, 'expense.monthly_chart_label'|trans) }}
+                    <table class="table chart-table">
+                        <caption class="visually-hidden">{{ 'expense.monthly_chart_label'|trans }}</caption>
+                        <tbody>
+                            {% for month in last_twelve.months|reverse %}
+                                <tr>
+                                    <th scope="row">{{ month.month|local_month }}</th>
+                                    <td class="table__num tabular">{{ month.total.isZero() ? dash : month.total|money }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="muted">{{ 'expense.none_last_twelve_months'|trans }}</p>
+                {% endif %}
+            </section>
+        </div>
 
         <section class="card" aria-labelledby="costs-heading">
             <div class="card__header">

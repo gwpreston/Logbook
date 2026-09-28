@@ -29,7 +29,7 @@ engines="pgsql mysql mariadb sqlite"
 # --- Remembered settings ----------------------------------------------------
 port_override="${APP_PORT:-}"
 DEV_ENGINE=pgsql
-APP_PORT=8080
+APP_PORT=8090
 if [ -f "$state" ]; then
     # shellcheck disable=SC1090
     . "./$state"

@@ -12,10 +12,10 @@ use Logbook\Domain\Feature\Feature;
  */
 enum DashboardWidget: string
 {
-    case Fleet = 'fleet';
     case Reminders = 'reminders';
     case Spend = 'spend';
     case RecentFuel = 'recent_fuel';
+    case Fleet = 'fleet';
     case Efficiency = 'efficiency';
     case Compliance = 'compliance';
     case Mileage = 'mileage';

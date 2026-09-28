@@ -102,7 +102,11 @@ final class ColourContrastTest extends TestCase
         }
         // The focus ring (the accent itself) against the page: 3:1 for non-text.
         foreach (['bg', 'surface'] as $page) {
-            $ratio = self::contrast(self::over(self::colour($tokens['accent']), [1.0, 1.0, 1.0]), self::over(self::colour($tokens[$page]), [1.0, 1.0, 1.0]));
+            $white = [1.0, 1.0, 1.0];
+            $ratio = self::contrast(
+                self::over(self::colour($tokens['accent']), $white),
+                self::over(self::colour($tokens[$page]), $white),
+            );
             if ($ratio < 3.0) {
                 $failures[] = sprintf('focus ring on %s: %.2f:1', $page, $ratio);
             }
@@ -110,7 +114,8 @@ final class ColourContrastTest extends TestCase
 
         self::assertSame([], $failures);
         if ($accent !== Accent::DEFAULT->value) {
-            self::assertSame(['accent', 'accent-soft'], array_keys(self::accentTokens($accent, $theme)), 'only accent tokens change');
+            $changed = array_keys(self::accentTokens($accent, $theme));
+            self::assertSame(['accent', 'accent-soft'], $changed, 'only accent tokens change');
         }
     }
 
@@ -121,7 +126,8 @@ final class ColourContrastTest extends TestCase
             if ($accent === Accent::DEFAULT) {
                 continue;
             }
-            $media = preg_match('/:root\[data-accent="' . $accent->value . '"\]:not\(\[data-theme="light"\]\) \{(.*?)\}/s', $css, $m) === 1 ? $m[1] : '';
+            $pattern = '/:root\[data-accent="' . $accent->value . '"\]:not\(\[data-theme="light"\]\) \{(.*?)\}/s';
+            $media = preg_match($pattern, $css, $m) === 1 ? $m[1] : '';
             $explicit = self::accentTokens($accent->value, 'dark');
             self::assertNotSame([], $explicit, $accent->value);
             self::assertSame(self::declarations($media), $explicit, $accent->value);

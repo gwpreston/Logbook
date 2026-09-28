@@ -81,7 +81,7 @@ build) before contributing.
 
 ```bash
 composer install
-composer start               # http://localhost:8080 (PHP built-in server, SQLite by default)
+composer start               # http://localhost:8090 (PHP built-in server, SQLite by default)
 composer test                # PHPUnit (TEST_DB_*; SQLite by default)
 composer lint                # phpcs, PSR-12
 composer analyse             # PHPStan, level max
@@ -101,7 +101,7 @@ Requires Docker with Compose v2; on Windows run it from **Git Bash** (or as
 `sh bin/dev …`).
 
 ```bash
-bin/dev up                  # start on PostgreSQL → http://localhost:8080
+bin/dev up                  # start on PostgreSQL → http://localhost:8090
 bin/dev seed                # add sample data, then sign in as demo / logbook-demo
 bin/dev down                # stop (your data is kept)
 ```
@@ -117,7 +117,7 @@ bin/dev down                # stop (your data is kept)
 | `bin/dev down [--volumes]` | Stop everything. `--volumes` also deletes all dev databases, uploads and the `vendor/` volume. |
 
 Migrations are applied automatically whenever the app starts. The chosen
-engine and port are remembered in `var/dev.env` (git-ignored). If port 8080 is
+engine and port are remembered in `var/dev.env` (git-ignored). If port 8090 is
 taken, pick another once: `APP_PORT=8081 bin/dev up`.
 
 The sample data comes from a Phinx seed

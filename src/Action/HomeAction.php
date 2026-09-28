@@ -47,6 +47,7 @@ final readonly class HomeAction
             'today' => LocalTime::today($this->clock, $user->preferences->timeZone()),
             'wording' => $this->wording,
             'efficiency_chart' => $this->charts->efficiency($dashboard->efficiency),
+            'mileage_chart' => $this->charts->mileage($dashboard->mileage),
         ]);
     }
 }
