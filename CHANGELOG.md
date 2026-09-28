@@ -6,6 +6,9 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 10: vehicle history, multiple attachments and the document odometer
+(to be released as 1.2.0).
+
 ## [1.1.0] — 2026-09-28
 
 Phase 9.1 (vehicle details) and Phase 9.2 (plug-in hybrids).
