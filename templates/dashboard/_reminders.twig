@@ -1,0 +1,23 @@
+{# Upcoming reminders: the most urgent open ones. #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/reminders.twig' as rem %}
+{% set overview = dashboard.reminders %}
+{% set top = overview ? overview.top(5) : [] %}
+{% if top is empty %}
+    <p class="widget__ok">{{ ui.icon('check_circle') }}{{ 'dashboard.reminders_none'|trans }}</p>
+{% else %}
+    <p class="muted">{{ 'reminders.attention'|trans({count: overview.attentionCount()}) }}</p>
+    <ul class="list">
+        {% for entry in top %}
+            {% set reminder = entry.reminder %}
+            <li class="list__item">
+                <span class="list__icon">{{ ui.icon(reminder.icon()) }}</span>
+                <span class="list__body">
+                    <a class="list__title" href="{{ rem.source_url(reminder) }}">{{ wording.name(reminder) }}</a>
+                    <span class="list__meta">{{ entry.vehicle.name() }}</span>
+                </span>
+                <span class="list__end">{{ rem.pill(reminder, wording, overview.today) }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

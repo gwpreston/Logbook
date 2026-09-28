@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action;
 
-use Logbook\Service\Reminder\ReminderService;
+use Logbook\Action\Dashboard\DashboardCharts;
+use Logbook\Service\Dashboard\DashboardService;
 use Logbook\Service\Reminder\ReminderWording;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
@@ -15,17 +15,16 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * GET / — the dashboard: the garage and the most urgent reminders at a
- * glance; the widget dashboard arrives in Phase 5.
+ * GET / — the dashboard (spec.md §7.8): the owner's widgets in their saved
+ * order. `?customise=1` shows the move / hide controls (plain forms, so the
+ * layout can be arranged without JS).
  */
 final readonly class HomeAction
 {
-    private const int REMINDERS_SHOWN = 5;
-
     public function __construct(
         private View $view,
-        private VehicleService $vehicles,
-        private ReminderService $reminders,
+        private DashboardService $dashboards,
+        private DashboardCharts $charts,
         private ReminderWording $wording,
         private ClockInterface $clock,
     ) {
@@ -34,16 +33,15 @@ final readonly class HomeAction
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $user = RequestContext::requireUser($request);
-
-        $reminders = $this->reminders->overview($user);
+        $customise = ($request->getQueryParams()['customise'] ?? null) === '1';
+        $dashboard = $this->dashboards->build($user);
 
         return $this->view->render($request, $response, 'home.twig', [
-            'vehicles' => $this->vehicles->listFleet($user),
-            'counts' => $this->vehicles->counts($user),
+            'dashboard' => $dashboard,
+            'customise' => $customise,
             'today' => LocalTime::today($this->clock, $user->preferences->timeZone()),
-            'reminders' => $reminders,
-            'top_reminders' => $reminders->top(self::REMINDERS_SHOWN),
             'wording' => $this->wording,
+            'efficiency_chart' => $this->charts->efficiency($dashboard->efficiency),
         ]);
     }
 }

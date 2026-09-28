@@ -211,8 +211,16 @@ MySQL only.
   reminder per schedule or document, for its current occurrence. Indexes on
   status and due_on.
 
-**ExpenseEntry** (fuel and maintenance costs roll up here; plus ad-hoc)
-- id, vehicle_id, date, category, amount, note, source ref.
+**ExpenseEntry** (ad-hoc costs: parking, tolls, road tax, …)
+- id, vehicle_id (`ON DELETE CASCADE`), spent_on (calendar date), category
+  (`tax`|`parking`|`tolls`|`cleaning`|`accessories`|`fines`|`other` —
+  stored as a code, like maintenance categories), amount (`decimal(14,3)`,
+  **0 allowed**; blank means 0), note (optional, up to 500 characters),
+  created/updated (UTC). Index `(vehicle_id, spent_on)`.
+- Only ad-hoc costs are stored here. Fuel, maintenance and compliance costs
+  **roll up through a service-layer ledger** that reads them from their own
+  tables on every request (§7.7): nothing is copied, so an edited fill-up can
+  never leave a stale expense behind and nothing is counted twice.
 
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
@@ -269,7 +277,9 @@ jumps, going backwards) without blocking.
 - The vehicle page has tabs, each its own URL (works without JS, survives a
   hard refresh): Overview (`/vehicles/{id}`), Mileage
   (`/vehicles/{id}/odometer`), Fuel (`/vehicles/{id}/fuel`), Maintenance
-  (`/vehicles/{id}/maintenance`) and Documents (`/vehicles/{id}/documents`).
+  (`/vehicles/{id}/maintenance`), Documents (`/vehicles/{id}/documents`) and
+  Expenses (`/vehicles/{id}/expenses`, §7.7). Each list tab has an
+  "Export CSV" link (§7.7).
   The overview also shows the three most urgent schedules and where each
   current document stands.
 - Mileage tab: current reading, monthly average (once there is a week of
@@ -401,11 +411,80 @@ Per-vehicle and fleet cost breakdowns over time (fuel vs maintenance vs
 compliance vs other). Cost/distance and cost/month. Date-range filter. Simple,
 readable reports; export to CSV/PDF (PDF may be a later phase).
 
+- **Cost ledger.** Every cost is one line with a vehicle, a calendar date, a
+  group and an amount in the vehicle's currency: each fill-up (group *fuel*,
+  dated on the day it happened in the owner's time zone — a fill at 00:30
+  BST on 1 April counts in April), each maintenance entry and document with
+  a cost above 0 (*maintenance*, *documents*; a document is dated by its
+  start date, else the day it was added), and each ad-hoc expense (*other*,
+  zero included, since the owner logged it deliberately). Sums are exact
+  (integer micro-units, never floats).
+- **Expenses tab** (`/vehicles/{id}/expenses`): the vehicle's total and
+  breakdown by group for the chosen period, and every ledger line newest
+  first (25 per page) linking to its source. Ad-hoc expenses (date, category,
+  amount, note) are added, edited and deleted there.
+- **Reports** (`/reports`): the fleet, or one vehicle (`?vehicle=`), over a
+  period — this month, last 3 months, last 12 months (default), this year,
+  all time, or a custom from/to (`?range=custom&from=&to=`, both calendar
+  dates, inclusive). Shows total spend, number of costs, cost per distance,
+  distance driven, average per month, the breakdown by group, spend per
+  month (table plus stacked bar chart) and, for the fleet, spend per vehicle
+  with its own cost per distance. All filters are a plain GET form, so a
+  report is a bookmarkable URL and works without JS.
+- **Months** are calendar months in the owner's time zone; every month in the
+  period is listed, including months with nothing spent. Average per month
+  divides by the number of months in the period (the current month counts);
+  for *all time* the period starts at the earliest cost.
+- **Distance driven** comes from the mileage log: the last reading in the
+  period minus the last reading before it (or the first reading in it when
+  there is none before). Only vehicles with costs in the period count
+  towards the fleet's distance (miles from a vehicle whose costs were never
+  logged would make the fleet look cheaper to run than any of its vehicles).
+  Cost per distance = spend ÷ distance, shown only when some distance was
+  driven.
+- **Archived vehicles** are left out of fleet reports unless
+  `include_archived=1` is ticked; picking one explicitly always includes it.
+- **Currencies:** amounts are never converted. When the vehicles in a report
+  use more than one currency, each currency gets its own totals, chart and
+  table, with its own cost per distance (distance of its vehicles only).
+- **CSV export** (UTF-8 with a byte-order mark so spreadsheets detect it;
+  RFC 4180 quoting; text cells starting with `=`, `+`, `-`, `@` are prefixed
+  with `'` against formula injection). Per vehicle and module
+  (`/vehicles/{id}/export/{fuel|odometer|maintenance|documents|expenses}.csv`,
+  archived vehicles included — it is their data) and for a report
+  (`/reports/export.csv` with the report's filters: one row per ledger line).
+  Numbers are plain machine-readable decimals (`1234.5`, no grouping) in the
+  owner's units, with the unit in the column header; converted quantities
+  carry 6 places so they convert back to the stored value exactly; amounts
+  keep the currency's minor unit (more places only when stored with them)
+  next to an ISO 4217 currency column. Dates are ISO (`2026-09-27`); instants
+  are local `2026-09-27 14:30` with the time zone in the header.
+
 ### 7.8 Dashboard
 At-a-glance fleet overview built from rearrangeable widgets (drag via SortableJS,
 layout persisted per user): fleet summary, upcoming reminders, recent fuel,
 spend this month, efficiency trend, compliance status. Widgets respect feature
 toggles.
+
+- **Widgets** (`/`): *fleet summary* (active vehicles with photo, plate,
+  current odometer and their most urgent reminder; count of archived ones),
+  *upcoming reminders* (the five most urgent open reminders), *recent fuel*
+  (the last five fill-ups across active vehicles with their economy),
+  *spend this month* (per currency, by group, with last month for
+  comparison), *efficiency trend* (each active vehicle's average economy
+  over the last 12 months and a chart of per-fill economy), *compliance
+  status* (current documents that are expired or expiring, else "all in
+  order", per active vehicle). Archived vehicles never appear.
+- **Layout** is an ordered list of widgets plus the hidden ones, stored as
+  JSON in `settings` (scope user, key `dashboard.layout`). Unknown widget
+  ids are dropped and widgets added in later releases are appended, so an old
+  saved layout never breaks. Without a saved layout (and without JS) the
+  default order above applies.
+- **Customise** (`/?customise=1`, also a button): each widget gets move up /
+  move down / hide-show buttons — plain forms, so arranging works without JS
+  and from the keyboard — plus "reset layout". With JS, widgets can also be
+  dragged (SortableJS); the new order is saved at once with the same CSRF
+  token (`POST /dashboard/layout`).
 
 ### 7.9 Authentication and sessions
 Username/password login, Argon2id, secure sessions, logout, change password.
@@ -433,6 +512,14 @@ First-run setup creates the initial account. CSRF on all forms.
 ### 7.10 Feature toggles
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
 Disabled modules are removed from nav, routes, and dashboard.
+
+- Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`. A
+  module is enabled unless the global setting `features` (a JSON object of
+  module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
+  (default true). Phase 5: the dashboard hides the widgets of a disabled
+  module, and reports leave out its costs (`reports` off hides the spend
+  widget and the Reports navigation entry). Phase 6 adds the settings UI and
+  removes disabled modules' routes and navigation everywhere.
 
 ### 7.11 Notifications (reminder delivery)
 In-app always; plus at least one outbound channel — email (SMTP) and/or a
@@ -555,7 +642,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   (topic URL), `NTFY_TOKEN`; `GOTIFY_URL` (server URL), `GOTIFY_TOKEN`
   (application token), `GOTIFY_PRIORITY` (0–10, default 5; overdue
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
-- `FEATURES_*` defaults (optional)
+- `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
+  `FEATURES_REMINDERS`, `FEATURES_REPORTS` (default true; see §7.10)
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
   `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
   task inside the container; default `true`), `SCHEDULER_INTERVAL` (seconds

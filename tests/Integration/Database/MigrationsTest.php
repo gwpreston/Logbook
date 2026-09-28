@@ -35,6 +35,7 @@ final class MigrationsTest extends AppTestCase
         'compliance_documents',
         'attachments',
         'reminders',
+        'expense_entries',
     ];
 
     protected function tearDown(): void
@@ -63,9 +64,10 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 4 and Phase 3 tables, then the column Phase 3
+        // Newest first: the Phase 5, 4 and 3 tables, then the column Phase 3
         // added to odometer_readings, then Phase 2 and Phase 1 tables.
         $expected = [
+            ['expense_entries', ['reminders', 'vehicles']],
             ['reminders', ['attachments', 'vehicles', 'settings']],
             ['attachments', ['compliance_documents', 'vehicles']],
             ['compliance_documents', ['maintenance_entries', 'vehicles']],
@@ -166,6 +168,21 @@ final class MigrationsTest extends AppTestCase
         foreach ($optionals as $optional) {
             self::assertFalse($reminders[$optional]->getNotnull(), sprintf('reminders.%s is optional', $optional));
         }
+    }
+
+    public function testExpenseColumns(): void
+    {
+        $expenses = $this->columnsOrSkip('expense_entries');
+
+        self::assertInstanceOf(DateType::class, $expenses['spent_on']->getType(), 'a calendar date');
+        self::assertInstanceOf(DecimalType::class, $expenses['amount']->getType());
+        self::assertSame(14, $expenses['amount']->getPrecision());
+        self::assertSame(3, $expenses['amount']->getScale());
+        foreach (['vehicle_id', 'spent_on', 'category', 'amount', 'created_at', 'updated_at'] as $required) {
+            self::assertTrue($expenses[$required]->getNotnull(), sprintf('expense_entries.%s must be NOT NULL', $required));
+        }
+        self::assertFalse($expenses['note']->getNotnull());
+        self::assertInstanceOf(DateTimeType::class, $expenses['created_at']->getType());
     }
 
     /**

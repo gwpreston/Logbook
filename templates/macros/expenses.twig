@@ -1,0 +1,76 @@
+{#
+ # Cost ledger fragments (spec.md §7.7). Import with:
+ # {% import 'macros/expenses.twig' as exp %}
+ #}
+
+{# Where a ledger line was logged (its edit page). #}
+{% macro source_url(item) -%}
+    {%- set id = item.vehicle.id -%}
+    {%- if item.source.value == 'fuel' -%}
+        {{ url_for('fuel.edit', {id: id, entry: item.sourceId}) }}
+    {%- elseif item.source.value == 'maintenance' -%}
+        {{ url_for('maintenance.edit', {id: id, entry: item.sourceId}) }}
+    {%- elseif item.source.value == 'compliance' -%}
+        {{ url_for('compliance.edit', {id: id, document: item.sourceId}) }}
+    {%- else -%}
+        {{ url_for('expenses.edit', {id: id, entry: item.sourceId}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# One ledger line (a Service\Expense\CostItem). #}
+{% macro cost_row(item, show_vehicle = false) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as exp %}
+    {% set kind = item.kindKey|trans %}
+    {% set title = item.title ?: (item.source.value == 'fuel' ? 'expense.fill_up'|trans : kind) %}
+    <li class="list__item">
+        <span class="list__icon swatch-icon" style="--swatch: var(--{{ item.group().color() }})">{{ ui.icon(item.icon) }}</span>
+        <span class="list__body">
+            <a class="list__title" href="{{ exp.source_url(item) }}">{{ title }}</a>
+            <span class="list__meta">
+                {{- item.date|local_date }}
+                {%- if show_vehicle %} · {{ item.vehicle.name() }}{% endif %}
+                {%- if title != kind %} · {{ kind }}{% endif %}
+                {%- if item.quantity %} · {{ item.quantity|quantity(item.electric) }}{% endif -%}
+            </span>
+        </span>
+        <span class="list__end"><span class="list__amount tabular">{{ item.amount|money }}</span></span>
+    </li>
+{%- endmacro %}
+
+{# Colour swatch of a cost group, for legends. #}
+{% macro swatch(group) -%}
+    <span class="swatch" style="--swatch: var(--{{ group.color() }})" aria-hidden="true"></span>
+{%- endmacro %}
+
+{# Spend by group (a Service\Report\CurrencyReport) with proportional bars. #}
+{% macro breakdown(section) -%}
+    {% import _self as exp %}
+    <ul class="breakdown">
+        {% for total in section.groups %}
+            {% if not total.amount.isZero() %}
+                <li class="breakdown__row">
+                    <span class="breakdown__label">{{ exp.swatch(total.group) }}{{ ('expense.group.' ~ total.group.value)|trans }}</span>
+                    <span class="breakdown__share">{{ 'report.share'|trans({share: total.share / 100}) }}</span>
+                    <span class="breakdown__amount tabular">{{ total.amount|money }}</span>
+                    <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ total.share|round(1) }}%; --swatch: var(--{{ total.group.color() }})"></span></span>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+{%- endmacro %}
+
+{# Period presets as links (`?range=`), keeping `query` (other filters). #}
+{% macro range_chips(ranges, period, route, params, query = {}) -%}
+    <nav class="chip-row" aria-label="{{ 'report.period_label'|trans }}">
+        {% for range in ranges %}
+            <a class="chip" href="{{ url_for(route, params, query|merge(range.value == '12m' ? {} : {range: range.value})) }}"{% if period.range == range %} aria-current="true"{% endif %}>{{ ('report.range.' ~ range.value)|trans }}</a>
+        {% endfor %}
+    </nav>
+{%- endmacro %}
+
+{# "Export CSV" link for one of a vehicle's lists. #}
+{% macro export_link(vehicle, module) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: module}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+{%- endmacro %}

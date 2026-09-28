@@ -6,6 +6,7 @@ namespace Logbook\Support\Display;
 
 use DateTimeInterface;
 use IntlDateFormatter;
+use IntlDatePatternGenerator;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Money\Money;
@@ -266,6 +267,30 @@ final readonly class DisplayFormatter
         }
 
         return $this->formatDate($date, $style, IntlDateFormatter::NONE, 'UTC');
+    }
+
+    /**
+     * A calendar month in the user's language: "Sep 2026" (short) or
+     * "September 2026", with the order and spelling the locale uses.
+     */
+    public function month(?DateTimeInterface $date, bool $short = true): string
+    {
+        if ($date === null) {
+            return '';
+        }
+
+        $pattern = IntlDatePatternGenerator::create($this->locale())?->getBestPattern($short ? 'MMMy' : 'MMMMy');
+        $formatter = new IntlDateFormatter(
+            $this->locale(),
+            IntlDateFormatter::NONE,
+            IntlDateFormatter::NONE,
+            'UTC',
+            null,
+            is_string($pattern) && $pattern !== '' ? $pattern : 'MMM y',
+        );
+        $formatted = $formatter->format($date);
+
+        return is_string($formatted) ? $formatted : $date->format('Y-m');
     }
 
     /**

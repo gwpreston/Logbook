@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/fuel.twig' as fuel_ui %}
+{% import 'macros/expenses.twig' as exp %}
 
 {% set active_nav = 'garage' %}
 {% set dash = '—' %}
@@ -13,9 +14,12 @@
 
         <div class="toolbar">
             <h1 class="section-title">{{ 'fuel.title'|trans }}</h1>
-            {% if not vehicle.isArchived() %}
-                <a class="btn btn--primary" href="{{ url_for('fuel.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'fuel.add'|trans }}</a>
-            {% endif %}
+            <div class="btn-row">
+                {{ exp.export_link(vehicle, 'fuel') }}
+                {% if not vehicle.isArchived() %}
+                    <a class="btn btn--primary" href="{{ url_for('fuel.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'fuel.add'|trans }}</a>
+                {% endif %}
+            </div>
         </div>
 
         {% for section in sections %}

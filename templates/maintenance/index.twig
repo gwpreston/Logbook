@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/maintenance.twig' as maint %}
+{% import 'macros/expenses.twig' as exp %}
 
 {% set active_nav = 'garage' %}
 {% set dash = '—' %}
@@ -16,9 +17,12 @@
 
         <div class="toolbar">
             <h1 class="section-title">{{ 'maintenance.title'|trans }}</h1>
-            {% if not vehicle.isArchived() %}
-                <a class="btn btn--primary" href="{{ url_for('maintenance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'maintenance.add'|trans }}</a>
-            {% endif %}
+            <div class="btn-row">
+                {{ exp.export_link(vehicle, 'maintenance') }}
+                {% if not vehicle.isArchived() %}
+                    <a class="btn btn--primary" href="{{ url_for('maintenance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'maintenance.add'|trans }}</a>
+                {% endif %}
+            </div>
         </div>
 
         <dl class="stats">

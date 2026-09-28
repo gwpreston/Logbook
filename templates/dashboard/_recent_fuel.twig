@@ -1,0 +1,26 @@
+{# Recent fuel: the last fill-ups across active vehicles, with their economy. #}
+{% import 'macros/ui.twig' as ui %}
+{% if dashboard.recentFuel is empty %}
+    <p class="muted">{{ 'dashboard.fuel.empty'|trans }}</p>
+    <a class="btn btn--soft" href="{{ url_for('fuel.quick') }}">{{ ui.icon('add') }}{{ 'nav.log_fill_up'|trans }}</a>
+{% else %}
+    <ul class="list">
+        {% for row in dashboard.recentFuel %}
+            {% set fill = row.fill %}
+            {% set data = fill.entry.data %}
+            {% set electric = data.fuel.isElectric() %}
+            {% set segment = fill.segment %}
+            <li class="list__item">
+                <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
+                <span class="list__body">
+                    <a class="list__title" href="{{ url_for('fuel.edit', {id: row.vehicle.id, entry: fill.entry.id}) }}">{{ row.vehicle.name() }}</a>
+                    <span class="list__meta">
+                        {{- data.filledAt|instant_date }} · {{ data.volume|quantity(electric) -}}
+                        {%- if segment %} · {{ segment.distanceKm|economy(segment.volume, electric) }}{% endif -%}
+                    </span>
+                </span>
+                <span class="list__end"><span class="list__amount tabular">{{ data.totalCost|money(row.currency) }}</span></span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

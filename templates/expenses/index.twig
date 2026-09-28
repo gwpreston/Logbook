@@ -1,0 +1,67 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/expenses.twig' as exp %}
+
+{% set active_nav = 'garage' %}
+{% set dash = '—' %}
+{% set period_query = report.filter.period.toQuery() %}
+
+{% block title %}{{ 'expense.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'expenses'} %}
+
+        <div class="toolbar">
+            <h1 class="section-title">{{ 'expense.title'|trans }}</h1>
+            <div class="btn-row">
+                {{ exp.export_link(vehicle, 'expenses') }}
+                {% if not vehicle.isArchived() %}
+                    <a class="btn btn--primary" href="{{ url_for('expenses.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'expense.add'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {{ exp.range_chips(ranges, report.filter.period, 'expenses.index', {id: vehicle.id}) }}
+
+        <dl class="stats">
+            {{ ui.stat('expense.stat.total'|trans, section.total|money, 'report.period'|trans({from: report.period.from|local_date, to: report.period.to|local_date})) }}
+            {{ ui.stat('expense.stat.per_distance'|trans,
+                section.costPerKm is not null ? section.costPerKm|per_distance(currency) : dash,
+                section.distanceKm is not null ? 'report.over_distance'|trans({distance: section.distanceKm|distance}) : 'report.no_distance'|trans) }}
+            {{ ui.stat('expense.stat.per_month'|trans, section.averagePerMonth|money, 'report.months'|trans({count: report.monthCount()})) }}
+        </dl>
+
+        <section class="card" aria-labelledby="breakdown-heading">
+            <div class="card__header">
+                <h2 id="breakdown-heading" class="card__title">{{ 'report.by_group'|trans }}</h2>
+            </div>
+            {% if section.isEmpty() %}
+                <p class="muted">{{ 'expense.none_in_period'|trans }}</p>
+            {% else %}
+                {{ exp.breakdown(section) }}
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="costs-heading">
+            <div class="card__header">
+                <h2 id="costs-heading" class="card__title">{{ 'expense.costs'|trans }}</h2>
+            </div>
+            {% if rows is empty %}
+                <div class="empty">
+                    {{ ui.icon('payments') }}
+                    <p class="empty__title">{{ 'expense.empty_title'|trans }}</p>
+                    <p>{{ 'expense.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for item in rows %}
+                        {{ exp.cost_row(item) }}
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'expenses.index', {id: vehicle.id}, period_query) }}
+            {% endif %}
+            <p class="field__hint">{{ 'expense.rollup_note'|trans }}</p>
+        </section>
+    </div>
+{% endblock %}

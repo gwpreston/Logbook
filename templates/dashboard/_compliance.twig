@@ -1,0 +1,42 @@
+{# Compliance status: expired or expiring current documents, per active vehicle. #}
+{% import 'macros/ui.twig' as ui %}
+{% set attention = [] %}
+{% for row in dashboard.compliance %}
+    {% for state in row.attention() %}
+        {% set attention = attention|merge([{vehicle: row.vehicle, state: state}]) %}
+    {% endfor %}
+{% endfor %}
+{% set documented = dashboard.compliance|filter(row => not row.isEmpty())|length %}
+{% if attention is empty %}
+    {% if documented > 0 %}
+        <p class="widget__ok">{{ ui.icon('check_circle') }}{{ 'dashboard.compliance.all_ok'|trans({count: documented}) }}</p>
+    {% else %}
+        <p class="muted">{{ 'dashboard.compliance.none'|trans }}</p>
+    {% endif %}
+{% else %}
+    <ul class="list">
+        {% for item in attention %}
+            {% set document = item.state.document %}
+            {% set type = ('compliance.type.' ~ document.data.type.value)|trans %}
+            <li class="list__item">
+                <span class="list__icon">{{ ui.icon(document.data.type.icon()) }}</span>
+                <span class="list__body">
+                    <a class="list__title" href="{{ url_for('compliance.index', {id: item.vehicle.id}) }}">{{ document.data.title ?: type }}</a>
+                    <span class="list__meta">{{ item.vehicle.name() }}{% if document.data.expiryOn %} · {{ 'dashboard.compliance.expiry'|trans({date: document.data.expiryOn|local_date}) }}{% endif %}</span>
+                </span>
+                <span class="list__end">
+                    <span class="pill pill--{{ item.state.status.tone() }}">
+                        {%- if item.state.status.value == 'expired' -%}
+                            {{ 'dashboard.compliance.expired'|trans({days: -item.state.daysLeft}) }}
+                        {%- else -%}
+                            {{ 'dashboard.compliance.expires'|trans({days: item.state.daysLeft}) }}
+                        {%- endif -%}
+                    </span>
+                </span>
+            </li>
+        {% endfor %}
+    </ul>
+    {% if documented > attention|length %}
+        <p class="widget__foot muted">{{ 'dashboard.compliance.others_ok'|trans }}</p>
+    {% endif %}
+{% endif %}

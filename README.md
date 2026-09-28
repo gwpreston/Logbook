@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: Phase 4 (reminders and notifications).** First-run setup, secure
+> **Status: Phase 5 (expenses, reports and dashboard).** First-run setup, secure
 > sign-in, vehicles with photos and archiving, per-user units, currency,
 > language and time zone; a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
@@ -14,9 +14,11 @@ your own server.
 > registration and inspections with their expiry; and receipts, invoices and
 > certificates attached to any of them; and reminders for all of it, with
 > lead times you choose, sent by email, ntfy, Gotify or a webhook when they
-> come due, plus an optional monthly digest and a calendar feed. Expenses,
-> reports and the dashboard arrive in Phase 5. See [`spec.md`](spec.md) §13
-> for the roadmap.
+> come due, plus an optional monthly digest and a calendar feed; every cost
+> rolled up into per-vehicle and fleet reports (by category, per month, per
+> mile or km, any date range) with CSV export; and a dashboard of widgets you
+> can rearrange. Feature toggles, import and backup arrive in Phase 6. See
+> [`ROADMAP.md`](ROADMAP.md) for the plan.
 
 ## Quick start
 
