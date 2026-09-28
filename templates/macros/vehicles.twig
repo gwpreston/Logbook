@@ -24,7 +24,7 @@
             </div>
             <div>
                 <h2 class="vehicle-card__name">{{ vehicle.name() }}</h2>
-                <p class="vehicle-card__sub">{{ vehicle.description() }}</p>
+                <p class="vehicle-card__sub truncate" title="{{ vehicle.description() }}">{{ vehicle.description() }}</p>
             </div>
             <dl class="vehicle-card__stats">
                 <div>
@@ -43,7 +43,7 @@
 {%- endmacro %}
 
 {# Dashboard "Your vehicles" tile (spec.md §7.8): photo with the plate over
-   its lower-left corner, name, odometer and "N due". #}
+   its lower-left corner, name, descriptive line, odometer and "N due". #}
 {% macro tile(snapshot) -%}
     {% import 'macros/ui.twig' as ui %}
     {% set vehicle = snapshot.vehicle %}
@@ -54,6 +54,7 @@
         </span>
         <span class="vehicle-tile__body">
             <span class="vehicle-tile__name">{{ vehicle.name() }}</span>
+            <span class="vehicle-tile__sub truncate" title="{{ vehicle.description() }}">{{ vehicle.description() }}</span>
             <span class="vehicle-tile__meta">
                 <span class="tabular">{{ snapshot.latest ? snapshot.latest.readingKm|distance : 'dashboard.fleet.no_odometer'|trans }}</span>
                 {{ ui.due_badge(snapshot.due, 'due-badge--text') }}
@@ -73,6 +74,7 @@
                     {{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}
                     <span class="pick__body">
                         <span class="pick__name">{{ vehicle.name() }}</span>
+                        <span class="pick__sub truncate" title="{{ vehicle.description() }}">{{ vehicle.description() }}</span>
                         <span class="pick__meta">
                             {% if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span>{% endif %}
                             <span>{{ ('vehicle.fuel.' ~ vehicle.data.fuelType.value)|trans }}</span>

@@ -13,6 +13,7 @@ use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
@@ -76,6 +77,7 @@ final readonly class ShowVehicleAction
                 self::SCHEDULES_SHOWN,
             ),
             'documents' => array_values($documents),
+            'age' => VehicleAge::of($vehicle, $today),
         ]);
     }
 }

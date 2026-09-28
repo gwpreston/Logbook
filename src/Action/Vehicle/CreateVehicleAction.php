@@ -17,7 +17,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * GET|POST /vehicles/new — add a vehicle, optionally with a photo.
+ * GET|POST /vehicles/new — add a vehicle, optionally with a photo and its
+ * current odometer (written as its first reading).
  */
 final readonly class CreateVehicleAction
 {
@@ -37,14 +38,14 @@ final readonly class CreateVehicleAction
 
         $user = RequestContext::requireUser($request);
         $preferences = $user->preferences;
-        $currentYear = (int) LocalTime::today($this->clock, $preferences->timeZone())->format('Y');
+        $today = LocalTime::today($this->clock, $preferences->timeZone());
 
-        $data = VehicleForm::parse(RequestContext::form($request), $preferences, $currentYear);
+        $new = VehicleForm::parseNew(RequestContext::form($request), $preferences, $today);
         $photo = VehicleRoute::photo($request);
         $checked = $photo === null ? null : FileUpload::check($photo, $this->vehicles->maxPhotoBytes(), UploadKind::Image);
 
-        if ($data instanceof ValidationErrors || ($checked !== null && !$checked->isValid())) {
-            $errors = $data instanceof ValidationErrors ? $data : new ValidationErrors();
+        if ($new instanceof ValidationErrors || ($checked !== null && !$checked->isValid())) {
+            $errors = $new instanceof ValidationErrors ? $new : new ValidationErrors();
             if ($checked !== null && $checked->error !== null) {
                 $errors->add('photo', $checked->error, ['max' => $this->vehicles->maxPhotoMegabytes()]);
             }
@@ -52,12 +53,14 @@ final readonly class CreateVehicleAction
             return $this->page->render($request, $response, RequestContext::formValues($request), null, $errors, 422);
         }
 
-        $vehicle = $this->vehicles->create($user, $data);
+        $vehicle = $this->vehicles->create($user, $new->data, $new->startingOdometerKm);
         if ($photo !== null && $checked !== null) {
             $this->vehicles->replacePhoto($user, $vehicle, $photo, $checked);
         }
 
-        RequestContext::session($request)->flash('success', 'vehicle.created', ['name' => $vehicle->name()]);
+        $session = RequestContext::session($request);
+        $session->flash('success', 'vehicle.created', ['name' => $vehicle->name()]);
+        VehicleRoute::flashModelYearWarning($session, $new->data);
 
         return $this->redirect->toRoute('vehicles.show', ['id' => (string) $vehicle->id]);
     }

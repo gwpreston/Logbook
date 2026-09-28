@@ -6,13 +6,16 @@ namespace Logbook\Service\Vehicle;
 
 use Collator;
 use InvalidArgumentException;
+use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Database\Transaction;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
@@ -36,6 +39,8 @@ final readonly class VehicleService
         private AttachmentService $attachments,
         private ClockInterface $clock,
         private AppSettings $settings,
+        private OdometerService $odometer,
+        private Transaction $transaction,
     ) {
     }
 
@@ -75,11 +80,23 @@ final readonly class VehicleService
         return $this->vehicles->find($user->id, $id) ?? throw new VehicleNotFound(sprintf('Vehicle %d not found.', $id));
     }
 
-    public function create(User $user, VehicleData $data): Vehicle
+    /**
+     * Add a vehicle; with a starting odometer (km), also its first manual
+     * reading, at now, through the odometer service like any other reading.
+     * Both are written in one transaction, so a failed reading leaves no
+     * vehicle behind.
+     */
+    public function create(User $user, VehicleData $data, ?string $startingOdometerKm = null): Vehicle
     {
-        $id = $this->vehicles->insert($user->id, $data, $this->clock->now());
+        return $this->transaction->run(function () use ($user, $data, $startingOdometerKm): Vehicle {
+            $now = $this->clock->now();
+            $vehicle = $this->get($user, $this->vehicles->insert($user->id, $data, $now));
+            if ($startingOdometerKm !== null) {
+                $this->odometer->create($vehicle, new OdometerReadingData($startingOdometerKm, $now));
+            }
 
-        return $this->get($user, $id);
+            return $vehicle;
+        });
     }
 
     public function update(User $user, Vehicle $vehicle, VehicleData $data): Vehicle

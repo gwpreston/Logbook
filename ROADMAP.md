@@ -30,6 +30,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [6](phase-6.md) | Feature toggles + Import/backup + polish | ✅ |
 | [7](phase-7.md) | Design alignment + dashboard enhancements | ✅ |
 | [8](phase-8.md) | Fuel grades + v1.0 release | ✅ |
+| [9.1](phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -157,6 +158,18 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Release **v1.0.0**.
 
 → [`phase-8.md`](phase-8.md)
+
+## Phase 9.1 — Vehicle details
+*Describe a vehicle precisely and give it a mileage figure from day one.*
+
+- Optional variant / trim and first registration date on each vehicle, shown
+  wherever the vehicle is described.
+- An optional current odometer on the add form that writes the vehicle's
+  first (manual) reading in the same transaction.
+- Vehicle age and average mileage per year since first registration.
+- No release of its own: ships with Phase 9.2 as **v1.1.0**.
+
+→ [`phase-9.1.md`](phase-9.1.md)
 
 ---
 

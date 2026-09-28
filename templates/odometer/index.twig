@@ -7,6 +7,7 @@
 {% set latest = history.latest() %}
 {% set per_month = history.averageKmPerMonth() %}
 {% set total = history.totalDistanceKm() %}
+{% set per_year = age ? age.averageKmPerYear(latest) : null %}
 
 {% block title %}{{ 'odometer.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
@@ -23,6 +24,9 @@
             {{ ui.stat('odometer.stat.per_month'|trans,
                 per_month is null ? dash : per_month|distance,
                 per_month is null ? 'odometer.stat.per_month_need'|trans : 'odometer.stat.per_month_hint'|trans) }}
+            {% if per_year is not null %}
+                {{ ui.stat('odometer.stat.per_year'|trans, per_year|distance, 'odometer.stat.per_year_hint'|trans) }}
+            {% endif %}
             {{ ui.stat('odometer.stat.logged'|trans,
                 total is null ? dash : total|distance,
                 history.first() and total is not null ? 'odometer.stat.since'|trans({date: history.first().recordedAt|instant_date}) : '') }}

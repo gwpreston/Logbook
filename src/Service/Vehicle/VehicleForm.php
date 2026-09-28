@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Logbook\Service\Vehicle;
 
 use BackedEnum;
+use DateTimeImmutable;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Service\Odometer\OdometerReadingForm;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Number\Decimal;
@@ -22,10 +25,13 @@ use Logbook\Support\Validation\Validator;
  *
  * Tank capacity is typed in the user's volume unit and stored in litres
  * (battery capacity is kWh either way). Prices are in the vehicle's currency.
+ * The add form also takes an optional current odometer (parseNew()), typed in
+ * the user's distance unit; the edit form never does.
  */
 final class VehicleForm
 {
     public const int FIRST_YEAR = 1885;
+    public const string FIRST_REGISTRATION = '1885-01-01';
     private const int QUANTITY_SCALE = 3;
     private const int MONEY_SCALE = 3;
 
@@ -43,7 +49,9 @@ final class VehicleForm
             'nickname' => $data->nickname ?? '',
             'make' => $data->make,
             'model' => $data->model,
+            'variant' => $data->variant ?? '',
             'year' => $data->year === null ? '' : (string) $data->year,
+            'first_registered_on' => $data->firstRegisteredOn?->format('Y-m-d') ?? '',
             'registration' => $data->registration ?? '',
             'vin' => $data->vin ?? '',
             'fuel_type' => $data->fuelType->value,
@@ -68,17 +76,86 @@ final class VehicleForm
     }
 
     /**
+     * The edit form. $today is today's date in the owner's time zone
+     * (LocalTime::today()).
+     *
      * @param array<array-key, mixed> $input
      */
-    public static function parse(array $input, DisplayPreferences $preferences, int $currentYear): VehicleData|ValidationErrors
-    {
+    public static function parse(
+        array $input,
+        DisplayPreferences $preferences,
+        DateTimeImmutable $today,
+    ): VehicleData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
+        $data = self::parseWith($validator, $preferences, $today);
+
+        return $data ?? $validator->errors();
+    }
+
+    /**
+     * The add form: the vehicle plus its optional current odometer, converted
+     * to km. Blank means no starting reading; 0 is a valid one.
+     *
+     * @param array<array-key, mixed> $input
+     */
+    public static function parseNew(
+        array $input,
+        DisplayPreferences $preferences,
+        DateTimeImmutable $today,
+    ): NewVehicle|ValidationErrors {
+        $validator = new Validator($input, $preferences->locale);
+        $data = self::parseWith($validator, $preferences, $today);
+        $odometer = $validator->decimal(
+            'current_odometer',
+            false,
+            OdometerReadingForm::KM_SCALE,
+            '0',
+            null,
+            OdometerReadingForm::MAX_WHOLE_DIGITS,
+        );
+
+        if ($data === null || !$validator->errors()->isEmpty()) {
+            return $validator->errors();
+        }
+
+        return new NewVehicle(
+            $data,
+            $odometer === null ? null : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
+        );
+    }
+
+    /**
+     * The model year and registration year when the model year is more than
+     * one year after first registration, which cannot be right (a model year
+     * well before it is normal: imports, late registration). Saved anyway,
+     * with a warning.
+     *
+     * @return array{year: string, registered: string}|null
+     */
+    public static function modelYearWarning(VehicleData $data): ?array
+    {
+        if ($data->year === null || $data->firstRegisteredOn === null) {
+            return null;
+        }
+        $registered = (int) $data->firstRegisteredOn->format('Y');
+
+        return $data->year > $registered + 1 ? ['year' => (string) $data->year, 'registered' => (string) $registered] : null;
+    }
+
+    private static function parseWith(
+        Validator $validator,
+        DisplayPreferences $preferences,
+        DateTimeImmutable $today,
+    ): ?VehicleData {
+        $currentYear = (int) $today->format('Y');
 
         $type = $validator->enum('type', VehicleType::class, true);
         $nickname = $validator->string('nickname', false, 100);
         $make = $validator->string('make', true, 100);
         $model = $validator->string('model', true, 100);
+        $variant = $validator->string('variant', false, 100);
         $year = $validator->integer('year', false, self::FIRST_YEAR, $currentYear + 1);
+        $firstRegistered = self::firstRegistered($validator, $today);
         $registration = $validator->string('registration', false, 20);
         $vin = self::vin($validator);
         $fuelType = $validator->enum('fuel_type', FuelType::class, true);
@@ -95,7 +172,7 @@ final class VehicleForm
         }
 
         if (!$validator->errors()->isEmpty() || $type === null || $make === null || $model === null || $fuelType === null) {
-            return $validator->errors();
+            return null;
         }
 
         return new VehicleData(
@@ -114,7 +191,33 @@ final class VehicleForm
             saleDate: $saleDate,
             salePrice: $salePrice,
             defaultGrade: self::fittingGrade($defaultGrade, $fuelType),
+            variant: $variant,
+            firstRegisteredOn: $firstRegistered,
         );
+    }
+
+    /**
+     * First registration: a calendar date, not after today (owner's time
+     * zone) and not before the first registered cars.
+     */
+    private static function firstRegistered(Validator $validator, DateTimeImmutable $today): ?DateTimeImmutable
+    {
+        $date = $validator->date('first_registered_on');
+        if ($date === null) {
+            return null;
+        }
+        if ($date > $today) {
+            $validator->addError('first_registered_on', 'vehicle.registered_in_future');
+
+            return null;
+        }
+        if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
+            $validator->addError('first_registered_on', 'vehicle.registered_too_early');
+
+            return null;
+        }
+
+        return $date;
     }
 
     /**

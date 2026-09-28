@@ -32,6 +32,10 @@ final readonly class VehicleData
         public ?string $salePrice = null,
         /** Preselected on the fill-up form when the vehicle has no graded fill of that family yet. */
         public ?FuelGrade $defaultGrade = null,
+        /** Trim / version, e.g. "1.5 EcoBoost ST-Line X". */
+        public ?string $variant = null,
+        /** Calendar date of first registration (not the model year, not the purchase date). */
+        public ?DateTimeImmutable $firstRegisteredOn = null,
     ) {
         if ($defaultGrade !== null && $defaultGrade->family() !== FuelGrade::defaultFamilyFor($fuelType)) {
             throw new InvalidArgumentException(
