@@ -235,125 +235,126 @@ Attachment, §7.2, §7.5, §7.7, §7.8, §7.10, §7.12, §7.13) and `CLAUDE.md`
 
 ### 10.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §5 — the `return` parameter for forms opened from History.
-- [ ] §6 OdometerReading — source `document`, `compliance_document_id`.
+- [x] §5 — the `return` parameter for forms opened from History.
+- [x] §6 OdometerReading — source `document`, `compliance_document_id`.
       ComplianceDocument — `odometer_km`. Attachment — owner types
       `expense` and `odometer`; several per save.
-- [ ] §7.2 — document readings in the series; paperclip on manual readings.
-- [ ] §7.5 — the document odometer field, its hint and the start-date rule.
-- [ ] §7.7 — expense attachments; paperclip on ledger lines.
-- [ ] §7.8 — *Recent activity* reads the shared feed; *View all* link.
-- [ ] §7.12 — several files per save, the limit, all-or-nothing, the new
+- [x] §7.2 — document readings in the series; paperclip on manual readings.
+- [x] §7.5 — the document odometer field, its hint and the start-date rule.
+- [x] §7.7 — expense attachments; paperclip on ledger lines.
+- [x] §7.8 — *Recent activity* reads the shared feed; *View all* link.
+- [x] §7.12 — several files per save, the limit, all-or-nothing, the new
       owner types.
-- [ ] §7.13 — document odometer in CSV; backup schema note.
-- [ ] New §7.15 Vehicle history — everything under *History* above.
-- [ ] §13 and `ROADMAP.md` gain a Phase 10 row; `CHANGELOG.md`
+- [x] §7.13 — document odometer in CSV; backup schema note.
+- [x] New §7.15 Vehicle history — everything under *History* above (added as
+      §7.16: §7.15 is the installable app, cited from several files).
+- [x] §13 and `ROADMAP.md` gain a Phase 10 row; `CHANGELOG.md`
       `[Unreleased]` entry.
 
 ### 10.1 Activity feed
-- [ ] Extract the *Recent activity* query into `ActivityFeed`:
+- [x] Extract the *Recent activity* query into `ActivityFeed`:
   - input: a typed query (vehicle ids, local date range, kinds, limit);
   - output: typed items (kind, local date, added at, vehicle, summary
     parts, amount, odometer, attachment count, source link).
-- [ ] Per-source queries bounded by the range, using their existing
+- [x] Per-source queries bounded by the range, using their existing
       indexes. Documents are loaded per vehicle and filtered in PHP: the
       "else the day added" rule needs the owner's time zone, and a vehicle
       has few documents.
-- [ ] Milestones built from the vehicle row, placed as above.
-- [ ] Attachment counts in one grouped query on
+- [x] Milestones built from the vehicle row, placed as above.
+- [x] Attachment counts in one grouped query on
       `(vehicle_id, owner_type, owner_id)` for the page's items.
-- [ ] Newer / older year with items: per source, the earliest item after /
+- [x] Newer / older year with items: per source, the earliest item after /
       latest item before the page's range (indexed), converted to the
       owner's local year.
-- [ ] *Recent activity* switched to the feed: the same items in the same
+- [x] *Recent activity* switched to the feed: the same items in the same
       order (its existing tests still pass), plus the paperclip.
 
 ### 10.2 History tab
-- [ ] Route, Action and template; shared vehicle header and list toolbar;
+- [x] Route, Action and template; shared vehicle header and list toolbar;
       second tab on every vehicle page.
-- [ ] Year heading, month subheadings, and each month's rows as an ordered
+- [x] Year heading, month subheadings, and each month's rows as an ordered
       list with `<time datetime>`.
-- [ ] Kind chips and year navigation. States for "Nothing logged in
+- [x] Kind chips and year navigation. States for "Nothing logged in
       {year}" and "Nothing logged yet" (with *Log entry*).
-- [ ] Fill-up runs as `<details>`, with a summary that reads sensibly to a
+- [x] Fill-up runs as `<details>`, with a summary that reads sensibly to a
       screen reader.
-- [ ] Rows link to their edit pages with `data-modal` and `return`;
+- [x] Rows link to their edit pages with `data-modal` and `return`;
       milestones link to the vehicle's edit page.
-- [ ] Works for archived vehicles, at a subpath (deep-link refresh
+- [x] Works for archived vehicles, at a subpath (deep-link refresh
       included) and without JS.
 
 ### 10.3 Fleet history, overview and dashboard
-- [ ] `/history` with vehicle and kind chips; rows name their vehicle; runs
+- [x] `/history` with vehicle and kind chips; rows name their vehicle; runs
       fold per vehicle.
-- [ ] *Recent activity* widget: the title links to `/history`, keeping
+- [x] *Recent activity* widget: the title links to `/history`, keeping
       `?vehicle=`.
-- [ ] Overview *Recent history* card (latest five, *Full history →*).
+- [x] Overview *Recent history* card (latest five, *Full history →*).
 
 ### 10.4 Print view
-- [ ] Route, Action and GET options form (kinds, show costs).
-- [ ] Header block, every row, and attachment file names.
-- [ ] Print stylesheet: no shell, black on white in both themes and every
+- [x] Route, Action and GET options form (kinds, show costs).
+- [x] Header block, every row, and attachment file names.
+- [x] Print stylesheet: no shell, black on white in both themes and every
       accent, rows kept whole, sensible page margins.
-- [ ] *Print* button (JS only; hidden without it).
+- [x] *Print* button (JS only; hidden without it).
 
 ### 10.5 Document odometer: domain + migration
-- [ ] Check how `odometer_readings.source` and `attachments.owner_type` are
+- [x] Check how `odometer_readings.source` and `attachments.owner_type` are
       stored. If either has a length limit, check constraint or native
       enum on any engine, widen it in this migration (as 9.2 checked
       `vehicles.fuel_type`).
-- [ ] Migration: `compliance_documents.odometer_km` and
+- [x] Migration: `compliance_documents.odometer_km` and
       `odometer_readings.compliance_document_id` (foreign key, cascade).
       `down()` first turns `document` readings into `manual` ones, then
       drops both columns. Reversible on SQLite, PostgreSQL, MySQL and
       MariaDB.
-- [ ] `ComplianceDocument` entity, repository and `Row` mapping; the
+- [x] `ComplianceDocument` entity, repository and `Row` mapping; the
       odometer source enum gains `Document`.
-- [ ] The document service writes, moves and removes the reading in the
+- [x] The document service writes, moves and removes the reading in the
       document's transaction through the odometer service (the same path
       maintenance uses).
-- [ ] Form field, validation and hint; the documents list shows the
+- [x] Form field, validation and hint; the documents list shows the
       odometer.
-- [ ] If renewing a document pre-fills the form from the previous one, the
+- [x] If renewing a document pre-fills the form from the previous one, the
       odometer is not copied.
 
 ### 10.6 Multiple attachments
-- [ ] Audit today's three attachment inputs (fill-up, service record,
+- [x] Audit today's three attachment inputs (fill-up, service record,
       document): field name, `multiple`, and how the Action reads them.
       Whichever does it best becomes the shared partial and the one parser
       for `attachments[]`; no second upload path (§7.12).
-- [ ] Validate every file, then store. Clean up on failure; the error
+- [x] Validate every file, then store. Clean up on failure; the error
       names the file; typed values are kept.
-- [ ] Effective limit = min(10, `max_file_uploads`), shown in the hint and
+- [x] Effective limit = min(10, `max_file_uploads`), shown in the hint and
       checked with JS before submitting.
-- [ ] Modal: `FormData` carries every file; the full-page fallback is
+- [x] Modal: `FormData` carries every file; the full-page fallback is
       unchanged.
-- [ ] Offline: the cached `/fuel/new` form is rebuilt with the new partial.
+- [x] Offline: the cached `/fuel/new` form is rebuilt with the new partial.
       Check the queue: if it keeps files today, it keeps several; if not,
       it still doesn't (what works offline does not change).
-- [ ] Docker `php.ini`: `max_file_uploads` at least 20, and `post_max_size`
+- [x] Docker `php.ini`: `max_file_uploads` at least 20, and `post_max_size`
       large enough for 10 × `MAX_UPLOAD_MB`. `docs/deployment.md` tells
       bare-PHP owners the same.
 
 ### 10.7 Attachments on expenses and readings
-- [ ] Owner types `expense` and `odometer`.
-- [ ] Attachment partial on the expense add / edit form and the manual
+- [x] Owner types `expense` and `odometer`.
+- [x] Attachment partial on the expense add / edit form and the manual
       reading add / edit form; readings owned by another entry have none.
-- [ ] Deleting an expense or reading deletes its files through its service.
-- [ ] Paperclip counts on every list named above.
+- [x] Deleting an expense or reading deletes its files through its service.
+- [x] Paperclip counts on every list named above.
 
 ### 10.8 CSV + backup
-- [ ] Documents export gains *Odometer* (owner's distance unit, unit in the
+- [x] Documents export gains *Odometer* (owner's distance unit, unit in the
       header). Import accepts it as optional and writes readings as the
       form does; files without the column import as before. Readings are
       never doubled (the existing duplicate rule covers them).
       `docs/import.md` updated.
-- [ ] Backups: the new columns, the `document` readings and the new owner
+- [x] Backups: the new columns, the `document` readings and the new owner
       types round-trip. The schema version moves, so the upgrade note
       repeats the rule (restore an older backup with its own version
       first, then upgrade).
 
 ### 10.9 i18n
-- [ ] English and German for every new label, hint, message and count:
+- [x] English and German for every new label, hint, message and count:
   - *History* / *Verlauf*; *Vehicle history* / *Fahrzeughistorie*;
     *Bought* / *Gekauft*; *Sold* / *Verkauft* (*Erstzulassung* already
     exists);
@@ -365,51 +366,51 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - the document odometer hint and rule.
 
 ### 10.10 Release v1.2.0
-- [ ] `VERSION` → `1.2.0`; the sidebar, Settings and `/health` show it.
-- [ ] `CHANGELOG.md` `[1.2.0]`, with upgrade notes:
+- [x] `VERSION` → `1.2.0`; the sidebar, Settings and `/health` show it.
+- [x] `CHANGELOG.md` `[1.2.0]`, with upgrade notes:
   - two nullable columns;
   - a new reading source;
   - several files per save (bare PHP: check `max_file_uploads` and
     `post_max_size`);
   - the backup schema rule;
   - no configuration changes.
-- [ ] `ROADMAP.md`: Phase 10 row ✅.
-- [ ] Tag `v1.2.0`; image published as `1.2.0`, `1.2`, `1` and `latest`.
+- [x] `ROADMAP.md`: Phase 10 row ✅.
+- [ ] Tag `v1.2.0`; image published as `1.2.0`, `1.2`, `1` and `latest` (after merge).
 
 ### 10.11 Tests
-- [ ] **Unit (feed):**
+- [x] **Unit (feed):**
   - Ordering by local date, then by when added.
   - Year edges: a fill-up at 00:30 on 1 January in `Europe/Berlin`
     (23:30 UTC on 31 December) is on the new year's page.
   - Documents without a start date are placed on the day added.
   - Derived readings are left out; switched-off modules are left out.
-- [ ] **Unit (milestones):** each is shown only with its date. On a shared
+- [x] **Unit (milestones):** each is shown only with its date. On a shared
       day, *First registered* and *Bought* sit below the day's entries and
       *Sold* above. Prices appear in the summary, never in the amount
       column.
-- [ ] **Unit (folding):**
+- [x] **Unit (folding):**
   - One fill-up is not folded; two or more are.
   - A run is broken by a service, a reading or a milestone.
   - Runs fold per vehicle in the fleet view.
   - A plug-in hybrid run counts fill-ups and charges apart.
   - Nothing folds under the *Fuel* chip, and a run never crosses a year.
-- [ ] **Unit (navigation and chips):**
+- [x] **Unit (navigation and chips):**
   - Newer / older skip empty years; the default is the newest item's year.
   - An empty year in range shows its empty state; an out-of-range year
     falls back.
   - Chips are hidden for switched-off modules; an unknown kind falls back.
-- [ ] **Unit (uploads and documents):**
+- [x] **Unit (uploads and documents):**
   - Effective upload limit against a lower `max_file_uploads`.
   - A document odometer without a start date is refused; its reading
     lands at local noon on the start date.
-- [ ] **Integration (history):**
+- [x] **Integration (history):**
   - History tab and print view (options respected, costs hidden when
     unticked).
   - Fleet history with both chips.
   - *Recent activity* returns the same items as before.
   - `return` accepts local paths only.
   - Archived vehicles' history and print.
-- [ ] **Integration (attachments):**
+- [x] **Integration (attachments):**
   - Upload three files at once to a fill-up, service record, document,
     expense and manual reading, as a page and in the modal.
   - Eleven files are refused.
@@ -417,14 +418,14 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - Files on expenses and readings are served only to the owner, and are
     deleted with their entry.
   - Derived readings show no attachment input.
-- [ ] **Integration (document odometer):**
+- [x] **Integration (document odometer):**
   - The reading is created, moved and removed with its document, and
     deleted with it; plausibility warns without blocking.
   - CSV round-trip with and without the column.
   - Migration up / down, with `document` readings surviving rollback as
     `manual`; migrate → rollback → migrate is stable.
   - Backup and restore with several attachments and the new owner types.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -438,25 +439,25 @@ Documents such as an MOT record the mileage they show. Released as
 Logbook v1.2.0.
 
 ## Acceptance criteria
-- [ ] Every vehicle has a History tab listing fill-ups, service records,
+- [x] Every vehicle has a History tab listing fill-ups, service records,
       documents, expenses and manual readings in date order, with
       milestones where their dates are set.
-- [ ] Back-to-back fill-ups fold into one expandable row that works
+- [x] Back-to-back fill-ups fold into one expandable row that works
       without JS; nothing else is ever hidden.
-- [ ] Kind chips, year pages and the fleet page work without JS, respect
+- [x] Kind chips, year pages and the fleet page work without JS, respect
       switched-off modules, and survive a hard refresh at a subpath.
-- [ ] The print view produces a clean service history in either theme,
+- [x] The print view produces a clean service history in either theme,
       with or without costs.
-- [ ] Every attachment input takes up to 10 files at once; one bad file
+- [x] Every attachment input takes up to 10 files at once; one bad file
       saves nothing; expenses and manual readings take files; the vehicle
       keeps one photo.
-- [ ] A document's odometer joins the mileage series and is removed with
+- [x] A document's odometer joins the mileage series and is removed with
       it; rollback keeps the mileage.
-- [ ] *Recent activity* shows the same items as before; every existing
+- [x] *Recent activity* shows the same items as before; every existing
       figure is unchanged.
-- [ ] `/health`, sidebar and Settings show v1.2.0; changelog and roadmap
+- [x] `/health`, sidebar and Settings show v1.2.0; changelog and roadmap
       updated.
-- [ ] Suite green on both DBs; translatable (en + de); Docker and bare-PHP
+- [x] Suite green on both DBs; translatable (en + de); Docker and bare-PHP
       paths both work.
 
 ## Gotchas

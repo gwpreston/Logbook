@@ -65,6 +65,7 @@
             </span>
             <span class="list__end">
                 {{ docs.status_pill(state) }}
+                {{ files.count(attachments) }}
                 {% if data.cost != '0.000' %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
             </span>
         </div>
