@@ -68,6 +68,11 @@ Phase 9.1 (vehicle details) and Phase 9.2 (plug-in hybrids).
 - Backups record the database schema, so a backup made with 1.0.0 cannot be
   restored into this version. Restore it with 1.0.0 first, then upgrade; the
   upgrade then sorts its hybrids as above.
+- **Going back to 1.0.0** needs the rollback first, while still on 1.1.0:
+  1.0.0 does not know plug-in hybrids and fails on any page that lists one.
+  Run `vendor/bin/phinx rollback -e production -t 20261002100000` (Docker:
+  `docker compose exec app vendor/bin/phinx rollback -e production -t
+  20261002100000`), then switch to the 1.0.0 image or code.
 - No configuration changes.
 
 ## [1.0.0] — 2026-09-28
