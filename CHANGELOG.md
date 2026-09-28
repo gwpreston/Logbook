@@ -6,6 +6,10 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-28
+
+Phase 5: expenses, reports and dashboard.
+
 ### Added — Phase 5: expenses, reports and dashboard
 - **Expenses**: every fill-up, and every maintenance job and document with a
   cost, now counts as an expense automatically — nothing to enter twice and
@@ -218,7 +222,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/gwpreston16/Logbook/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/gwpreston16/Logbook/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/gwpreston16/Logbook/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/gwpreston16/Logbook/compare/v0.1.0...v0.2.0
