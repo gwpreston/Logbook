@@ -155,8 +155,12 @@ MySQL only.
 
 **Vehicle**
 - id, user_id (owner), name/nickname (optional), type (`car` | `bike`), make,
-  model, year (optional), registration (optional: a vehicle may not be
-  registered yet), VIN (optional, up to 17 characters), fuel type
+  model, variant (optional free text up to 100 characters: the trim or
+  version, e.g. "1.5 EcoBoost ST-Line X"; trimmed, blank = null), year
+  (optional model year), first_registered_on (optional calendar date, as on
+  the registration document; not the model year, not the purchase date;
+  never converted through a time zone), registration (optional: a vehicle
+  may not be registered yet), VIN (optional, up to 17 characters), fuel type
   (`petrol`|`diesel`|`ev`|`hybrid`|`lpg`|`other`), tank/battery capacity
   (optional; litres, or kWh for `ev`), default_grade (optional fuel grade
   code, §7.3, that must belong to the vehicle's fuel type — a petrol grade
@@ -166,6 +170,10 @@ MySQL only.
   date/price (optional), status (`active` | `archived`), archived_at,
   created/updated (UTC). Deleting a vehicle deletes its history and photo;
   archiving keeps everything.
+- There is no stored "current mileage": the current odometer is always the
+  latest reading in the vehicle's one mileage series (OdometerReading).
+  Vehicle age and the lifetime average are derived from
+  first_registered_on on every read (§7.2).
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
@@ -286,7 +294,7 @@ Add/edit/delete vehicles; upload a photo; set per-vehicle fuel type and currency
 from fleet totals unless "include archived" is toggled.
 
 - **Garage cards** (`/garage`): photo (or a striped placeholder with the
-  car / motorbike icon), plate, fuel type, name and "year make model". A due
+  car / motorbike icon), plate, fuel type, name and the descriptive line. A due
   badge on the photo's top-right corner reads "N due" — the vehicle's open
   reminders that are *overdue* or *due* (§7.6) — red when any is overdue,
   amber otherwise, hidden at zero (and while the reminders module is off).
@@ -295,9 +303,33 @@ from fleet totals unless "include archived" is toggled.
   (owner's consumption unit; kWh efficiency for an EV; "—" until a
   segment is measured). Archived cards show neither badge nor footer figures
   beyond the odometer.
+- **Descriptive line**: "year make model variant" (e.g. "2019 Ford Focus
+  1.5 EcoBoost ST-Line X"), skipping the parts that are not set; built in one
+  place (`Vehicle::description()`). It is shown under the name on the garage
+  cards, the dashboard's *your vehicles* tiles and pinned vehicle card
+  (§7.8), the vehicle header, the delete confirmation page and the one-tap
+  vehicle pickers (*Log entry*, quick fill-up). Where space is tight (cards,
+  tiles, pinned card, pickers) it truncates with an ellipsis and carries the
+  full text in a `title`; the vehicle header shows it in full. The sidebar
+  vehicles list shows the name only.
 - Required: type, make, model, fuel type. Everything else is optional; zero
   prices are valid. Year must be between 1885 and next year; a sale date
-  cannot precede the purchase date.
+  cannot precede the purchase date. Variant is at most 100 characters.
+  *First registered* (a native date input; hint "As on the registration
+  document (V5C / logbook)") cannot be after today in the owner's time zone
+  or before 1 January 1885. A model year more than one year *after* the
+  registration year is saved with a warning notice ("check both"); an older
+  model year is normal (imports, late registration) and is not flagged.
+- **Current odometer** (add form only, optional, in the owner's distance unit,
+  parsed like a reading; 0 is valid for a new vehicle): when filled, saving
+  writes an ordinary `manual` odometer reading at the moment of saving, in the
+  same transaction as the vehicle (a failure saves neither). Blank writes
+  nothing. The edit form has no such field: it shows the current reading
+  read-only (or "No readings yet") with an *Add reading* link; a wrong
+  starting figure is corrected on the Mileage tab like any other reading.
+- The overview's *Details* card lists variant and first registered (owner's
+  date format, with the vehicle's age) next to the other details, archived
+  vehicles included.
 - Deleting asks for confirmation on its own page (works without JS) and
   removes the vehicle, its history and its photo. Archive/restore is one click.
 - Currency resolves as: vehicle override → the owner's default currency →
@@ -327,8 +359,25 @@ jumps, going backwards) without blocking.
   The overview also shows the three most urgent schedules and where each
   current document stands.
 - Mileage tab: current reading, monthly average (once there is a week of
-  history), distance logged; odometer-over-time chart; readings newest first
-  (25 per page) with the distance since the one before and their source.
+  history), *average per year since first registered* (below), distance
+  logged; odometer-over-time chart; readings newest first (25 per page) with
+  the distance since the one before and their source.
+- **Age** (derived, never stored): whole years and months from
+  first_registered_on to today in the owner's time zone ("7 yrs 6 mo";
+  "4 mo" under a year; "under 1 mo" under a month). A month is complete on
+  the same day of a later month, clamped to a shorter month's last day (as
+  maintenance intervals are), so a vehicle first registered on 29 February
+  turns one on 28 February of a non-leap year.
+- **Average per year since first registered** = current reading ÷ age in
+  years (days ÷ 365.2425). It assumes the odometer read about 0 at first
+  registration (true for new vehicles; the label says so) and is shown only
+  once the vehicle is at least 90 days old and has a reading. Without a
+  registration date neither age nor this average is shown (no fallback to
+  the model year).
+- The reading written by *Add vehicle*'s current odometer (§7.1) is an
+  ordinary `manual` reading: it is edited, deleted and checked for
+  plausibility like any other, and a later fill-up or imported history dated
+  before it sits in order in the series.
 - Plausibility: each reading is compared with the previous one in time.
   **Backwards** = lower than it; **jump** = more than 2,000 km per day since
   it (counting at least one day). The reading is always saved; the user gets
@@ -579,7 +628,7 @@ toggles.
 
 - **Widgets** (`/`): *your vehicles* (id `fleet`: a tile per active vehicle —
   photo or placeholder with the plate over its lower-left corner, name,
-  current odometer and "N due" as on the garage cards (§7.1); the title
+  the descriptive line (§7.1), current odometer and "N due" as on the garage cards (§7.1); the title
   links to the garage; count of archived ones), *upcoming reminders* (the
   five most urgent open reminders), *recent fuel* (the last five fill-ups
   across active vehicles with their economy), *spend this month* (per
@@ -611,7 +660,8 @@ toggles.
   can be bookmarked. An unknown or archived id falls back to *All vehicles*.
   With one vehicle selected every widget shows that vehicle only, *your
   vehicles* is hidden, and a **pinned vehicle card** appears under the chips:
-  photo, plate, fuel type, name, "year make model · current odometer", and
+  photo, plate, fuel type, name, "descriptive line (§7.1) · current
+  odometer", and
   four tiles — *Economy* (average over the full-to-full segments that ended
   in the last 12 months, in the owner's unit), *Running cost* (all costs ÷
   distance driven over the last 12 months, per the owner's distance unit),
@@ -817,6 +867,8 @@ vehicles; a disabled module cannot be imported).
   the restored account's password).
 - A backup from another app version with a different schema is refused with
   a clear message: restore it with the matching version, then upgrade.
+  (Every release that adds a column moves the schema version, e.g. Phase
+  9.1's vehicle variant and first registration date.)
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -1040,6 +1092,10 @@ task breakdowns live in the per-phase files; this is the map.
   diesel blend, charging type) and a vehicle default grade, one grouped fuel
   picker, badges, price and economy by grade, cost per kWh by charging
   type, grade in CSV and backups; release v1.0.0.
+- **Phase 9.1 — Vehicle details.** Variant / trim and first registration
+  date on each vehicle, a current odometer on the add form that writes the
+  first reading, vehicle age and lifetime average mileage. Ships with
+  Phase 9.2 as v1.1.0.
 
 ---
 

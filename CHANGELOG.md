@@ -6,6 +6,35 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added — Phase 9.1: vehicle details
+- **Variant / trim** on each vehicle ("1.5 EcoBoost ST-Line X", "xDrive30d M
+  Sport"): free text, shown after year, make and model on the garage cards,
+  the vehicle header, the dashboard's vehicle tiles and pinned vehicle card,
+  the delete page and the vehicle pickers. Long variants are cut short with
+  "…" where space is tight; hover or long-press shows the whole line.
+- **First registered**: the date on the registration document (V5C /
+  logbook). The vehicle's overview shows it with the vehicle's age
+  ("7 yrs 6 mo"), and the Mileage tab adds the *average per year since
+  first registered*. A model year more than a year after the registration
+  year is saved with a warning to check both.
+- **Current odometer** when adding a vehicle: fill it in and the vehicle
+  starts with a mileage reading, so the garage card, the dashboard and the
+  Mileage tab have a figure straight away instead of "—" until the first
+  fill-up. It is an ordinary reading on the Mileage tab, edited there if it
+  was wrong. The edit form shows the current reading with an *Add reading*
+  link.
+- German translations for everything new (*Variante / Ausstattung*,
+  *Erstzulassung*, *Aktueller Kilometerstand*, …).
+
+### Upgrade notes
+- New nullable columns `vehicles.variant` and `vehicles.first_registered_on`,
+  added by a reversible migration that runs automatically on start (Docker)
+  or with `vendor/bin/phinx migrate` (bare PHP). Existing vehicles are
+  unchanged and every existing figure stays the same.
+- Backups record the database schema, so a backup made with 1.0.0 cannot be
+  restored into this version. Restore it with 1.0.0 first, then upgrade.
+- No configuration changes.
+
 ## [1.0.0] — 2026-09-28
 
 Phase 8: fuel grades, and the first stable release. Everything in the
