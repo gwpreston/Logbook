@@ -6,6 +6,7 @@ namespace Logbook\Tests\Unit\Service;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -83,6 +84,19 @@ final class VehicleFormTest extends TestCase
 
         self::assertSame(FuelType::Electric, $data->fuelType);
         self::assertSame('77.400', $data->capacity);
+    }
+
+    public function testBothKindsOfHybridTakeAPetrolDefaultGradeButNeverACharge(): void
+    {
+        foreach (['hybrid' => FuelType::Hybrid, 'phev' => FuelType::Phev] as $code => $type) {
+            $car = ['type' => 'car', 'make' => 'Toyota', 'model' => 'Prius', 'fuel_type' => $code];
+
+            $data = $this->parse($car + ['default_grade' => 'e10_95']);
+            self::assertSame($type, $data->fuelType);
+            self::assertSame(FuelGrade::E10_95, $data->defaultGrade, $code . ' takes a petrol grade');
+
+            self::assertNull($this->parse($car + ['default_grade' => 'home'])->defaultGrade, $code . ' drops a charging type');
+        }
     }
 
     public function testNormalisesRegistrationAndVin(): void

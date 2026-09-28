@@ -8,8 +8,8 @@ use Logbook\Domain\Vehicle\FuelType;
 
 /**
  * What went into the vehicle at one fill-up. Codes match the vehicle fuel
- * types, except that there is no "hybrid" fuel: a hybrid fills with petrol
- * (or, if it plugs in, is charged with electricity).
+ * types, except that there is no "hybrid" or "phev" fuel: a hybrid fills
+ * with petrol, and a plug-in hybrid also charges with electricity.
  *
  * Electricity is measured in kWh instead of litres; everything else about an
  * entry has the same shape.
@@ -23,14 +23,12 @@ enum Fuel: string
     case Other = 'other';
 
     /**
-     * The usual fuel for a vehicle: its own fuel type, petrol for a hybrid.
+     * The usual fuel for a vehicle: the first family that fits it (petrol
+     * for either kind of hybrid).
      */
     public static function defaultFor(FuelType $type): self
     {
-        return match ($type) {
-            FuelType::Hybrid => self::Petrol,
-            default => self::from($type->value),
-        };
+        return $type->fittingFamilies()[0];
     }
 
     public function isElectric(): bool

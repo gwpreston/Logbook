@@ -192,7 +192,7 @@ final class FuelEntryFormTest extends TestCase
         $vehicle = new Vehicle(
             1,
             1,
-            new VehicleData(VehicleType::Car, 'Toyota', 'Prius', FuelType::Hybrid, defaultGrade: FuelGrade::E5_97),
+            new VehicleData(VehicleType::Car, 'Toyota', 'Prius Plug-in', FuelType::Phev, defaultGrade: FuelGrade::E5_97),
             VehicleStatus::Active,
             null,
             null,
@@ -207,7 +207,7 @@ final class FuelEntryFormTest extends TestCase
         self::assertSame(
             'petrol:e5_97',
             FuelEntryForm::defaults($vehicle, $now, $prefs, [self::entry($charge)])['fuel'],
-            'a hybrid logs petrol; the home charge does not lend it its grade',
+            'a plug-in hybrid logs petrol first; the home charge does not lend it its grade',
         );
 
         $fill = new FuelEntryData($now, '100', Fuel::Petrol, '10', '1.5', '15', grade: FuelGrade::E10_95);

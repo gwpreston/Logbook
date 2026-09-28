@@ -218,14 +218,15 @@ final class GradeStatisticsTest extends TestCase
 
     public function testFormDefaultIsTheLastGradeOfThatFamilyThenTheVehicleDefault(): void
     {
-        $hybrid = self::vehicle(FuelType::Hybrid, FuelGrade::E5_97);
+        $hybrid = self::vehicle(FuelType::Phev, FuelGrade::E5_97);
         $entries = [
             $this->fill('1000', '40', '60', FuelGrade::E10_95),
             $this->fill('1100', '30', '9', FuelGrade::Home, Fuel::Electricity),
             $this->fill('1500', '35', '52.5'),
         ];
 
-        // The last graded petrol fill; for a charge, the last charge's type, never the petrol grade.
+        // A plug-in hybrid, per family: the last graded petrol fill; for a charge, the last
+        // charge's type, never the petrol grade.
         self::assertSame(FuelGrade::E10_95, GradeStatistics::formDefault($entries, $hybrid, Fuel::Petrol));
         self::assertSame(FuelGrade::Home, GradeStatistics::formDefault($entries, $hybrid, Fuel::Electricity));
         self::assertSame(FuelGrade::E5_97, GradeStatistics::formDefault([], $hybrid, Fuel::Petrol), 'the vehicle default');

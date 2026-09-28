@@ -122,8 +122,8 @@ final class GradeStatistics
     /**
      * The grade preselected when logging $family (spec.md §7.3): that of the
      * vehicle's most recent fill-up of the same family, else the vehicle's
-     * default grade when it is of that family, else none. A hybrid's charge
-     * never takes its petrol grade.
+     * default grade when it is of that family, else none. A plug-in hybrid's
+     * charge never takes its petrol grade.
      *
      * @param list<FuelEntry> $entries oldest first
      */

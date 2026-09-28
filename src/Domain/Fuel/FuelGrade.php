@@ -119,7 +119,7 @@ enum FuelGrade: string
 
     /**
      * The family a vehicle's default grade comes from: its own fuel type,
-     * petrol for a hybrid, none for LPG and other (they have no grades).
+     * petrol for either kind of hybrid, none for LPG and other (they have no grades).
      */
     public static function defaultFamilyFor(FuelType $type): ?Fuel
     {

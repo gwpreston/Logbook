@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v1.0.0 — every roadmap phase complete.** First-run setup, secure sign-in, vehicles with photos, variant, first registration date (and age) and archiving, per-user units, currency,
+> **Status: v1.1.0 — every roadmap phase complete.** First-run setup, secure sign-in, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age) and archiving, per-user units, currency,
 > language and time zone; a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
 > kWh/100 km, mi/kWh), prices and running costs, and the grade bought (E10 /
@@ -115,7 +115,7 @@ start if something else already holds the app port. On Windows run it from
 
 | Option | What it does |
 |---|---|
-| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and five vehicles — four active (petrol, hybrid, electric, a motorbike) and one sold and archived — with a year of fill-ups (including partial fills, a missed fill-up and EV charges) and monthly odometer readings. Skipped if an account already exists. |
+| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived — with a year of fill-ups (including partial fills, a missed fill-up and EV charges) and monthly odometer readings. Skipped if an account already exists. |
 | `--postgres`, `--mysql`, `--mariadb`, `--sqlite` | Which database engine to run. PostgreSQL is the default. Each engine keeps its own data and photos, so you can switch back and forth. |
 | `--reset` | Empty the chosen engine's database (full rollback + migrate) and delete its uploads. With `--stop`, delete every dev database, the uploads and the `vendor/` volume instead. Asks first unless `--yes`. |
 | `--stop`, `--down` | Stop the containers instead of starting them. |

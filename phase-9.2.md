@@ -68,26 +68,26 @@ other fuel type. A second tank or energy source per vehicle is not modelled.
 
 ### 9.2.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6 Vehicle — fuel type gains `phev`; `hybrid` redefined as
+- [x] §6 Vehicle — fuel type gains `phev`; `hybrid` redefined as
       self-charging / mild; `default_grade` and capacity rules for both.
-- [ ] §7.1 — fuel type labels and hints on the vehicle form and cards.
-- [ ] §7.3 — families that fit the vehicle: petrol for `hybrid`, petrol
+- [x] §7.1 — fuel type labels and hints on the vehicle form and cards.
+- [x] §7.3 — families that fit the vehicle: petrol for `hybrid`, petrol
       and electricity for `phev`; form default wording ("a plug-in hybrid's
       charge never takes the petrol grade").
-- [ ] `ROADMAP.md` gains a Phase 9.2 row; `CHANGELOG.md` `[1.1.0]` entry.
+- [x] `ROADMAP.md` gains a Phase 9.2 row; `CHANGELOG.md` `[1.1.0]` entry.
 
 ### 9.2.1 Domain + migration
-- [ ] `VehicleFuelType` (or the existing enum) gains `Phev`, with
+- [x] `VehicleFuelType` (or the existing enum) gains `Phev`, with
       `fittingFamilies(): list<Fuel>` so the picker, the form default and
       any other caller ask the enum instead of repeating the rule.
-- [ ] Find every `hybrid` check in the code (picker, form default, default
+- [x] Find every `hybrid` check in the code (picker, form default, default
       grade filter, capacity label, seed, tests) and route it through the
       enum. Search for the string as well as the enum case.
-- [ ] Check how `vehicles.fuel_type` is stored. If it is a plain string
+- [x] Check how `vehicles.fuel_type` is stored. If it is a plain string
       column, no schema change is needed. If there is a length limit, check
       constraint or native enum on any engine, widen it in the same
       migration.
-- [ ] Data migration: `UPDATE vehicles SET fuel_type = 'phev' WHERE
+- [x] Data migration: `UPDATE vehicles SET fuel_type = 'phev' WHERE
       fuel_type = 'hybrid' AND EXISTS (SELECT 1 FROM fuel_entries WHERE
       fuel_entries.vehicle_id = vehicles.id AND fuel = 'ev')`, via DBAL with
       bound values; `down()` sets `phev` back to `hybrid`. Applies and rolls
@@ -96,65 +96,68 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
       ids first and update by id.)
 
 ### 9.2.2 Vehicle form
-- [ ] Fuel type select: *Hybrid* and *Plug-in hybrid* next to each other,
+- [x] Fuel type select: *Hybrid* and *Plug-in hybrid* next to each other,
       each with its hint (visible text or `aria-describedby`, not only a
       `title`).
-- [ ] *Default grade* offers petrol grades for both; capacity label as above.
-- [ ] Works in the desktop modal and as its own page, without JS.
+- [x] *Default grade* offers petrol grades for both; capacity label as above.
+- [x] Works in the desktop modal and as its own page, without JS.
 
 ### 9.2.3 Fill-up form
-- [ ] `hybrid`: the fitting group is petrol only; electricity moves to
+- [x] `hybrid`: the fitting group is petrol only; electricity moves to
       *Other fuels*. *Used on this vehicle* still comes first, so a hybrid
       that has been charged before still shows its charging type there.
-- [ ] `phev`: unchanged from today's hybrid (petrol and electricity).
-- [ ] Offline: the cached `/fuel/new` forms are rebuilt with the new groups.
+- [x] `phev`: unchanged from today's hybrid (petrol and electricity).
+- [x] Offline: the cached `/fuel/new` forms are rebuilt with the new groups.
       Queued entries need no change because they carry a fuel family, never
       a vehicle type.
 
 ### 9.2.4 Display
-- [ ] Fuel type label reads *Plug-in hybrid* on garage cards, the vehicle
+- [x] Fuel type label reads *Plug-in hybrid* on garage cards, the vehicle
       header, the *Your vehicles* tiles and the pinned vehicle card.
-- [ ] Figures shown for a `phev` on cards and tiles are unchanged from
+- [x] Figures shown for a `phev` on cards and tiles are unchanged from
       today's hybrid; a `hybrid` shows its petrol figures only (it has no
       electricity series unless something was logged under *Other fuels*).
 
 ### 9.2.5 Demo seed + backup
-- [ ] `bin/dev seed`: the seeded hybrid, which has EV charges, becomes
+- [x] `bin/dev seed`: the seeded hybrid, which has EV charges, becomes
       `phev`; add or relabel so the seed still shows one of each where
       cheap, otherwise just the `phev`. README's seed description follows.
-- [ ] Backups: no new columns, but the data migration changes values, so
+      *(The seeded Corolla turned out to have no fill-ups at all, so it
+      stays a self-charging `hybrid`; a plug-in Outlander with charges and
+      petrol fills was added as the sixth vehicle.)*
+- [x] Backups: no new columns, but the data migration changes values, so
       the existing rule applies (restore an older backup with its own version
       first, then upgrade; the migration then sorts its hybrids).
 
 ### 9.2.6 i18n
-- [ ] English and German: *Hybrid* / *Hybrid (Voll- oder Mildhybrid)*,
+- [x] English and German: *Hybrid* / *Hybrid (Voll- oder Mildhybrid)*,
       *Plug-in hybrid* / *Plug-in-Hybrid*, both hints, and *Tank capacity*
       / *Tankinhalt*.
 
 ### 9.2.7 Release v1.1.0
-- [ ] `VERSION` → `1.1.0`; sidebar, Settings and `/health` show it.
-- [ ] `CHANGELOG.md` `[1.1.0]` gathers Phase 9.1 and 9.2 with upgrade notes:
+- [x] `VERSION` → `1.1.0`; sidebar, Settings and `/health` show it.
+- [x] `CHANGELOG.md` `[1.1.0]` gathers Phase 9.1 and 9.2 with upgrade notes:
       two nullable vehicle columns (9.1); hybrids with charges become
       plug-in hybrids (9.2, check yours); backup schema rule; no config
       changes.
-- [ ] `ROADMAP.md`: Phase 9.1 and 9.2 rows ✅.
+- [x] `ROADMAP.md`: Phase 9.1 and 9.2 rows ✅.
 - [ ] Tag `v1.1.0`; image published as `1.1.0`, `1.1`, `1` and `latest`.
 
 ### 9.2.8 Tests
-- [ ] Unit: `fittingFamilies()` for every fuel type; picker groups for a
+- [x] Unit: `fittingFamilies()` for every fuel type; picker groups for a
       `hybrid` (petrol fits, electricity under *Other fuels*) and a `phev`
       (both fit); a `hybrid` with a past charge shows it under *Used on this
       vehicle*; form default per family for a `phev`.
-- [ ] Unit: default grade accepts a petrol grade for both, rejects a
+- [x] Unit: default grade accepts a petrol grade for both, rejects a
       charging type for `hybrid`; capacity label by type.
-- [ ] Integration (migration): a hybrid with one `ev` fill-up → `phev`; a
+- [x] Integration (migration): a hybrid with one `ev` fill-up → `phev`; a
       hybrid with none → `hybrid`; an archived hybrid with charges → `phev`;
       petrol, diesel and EV vehicles untouched; rollback restores `hybrid`
       for all of them; migrate → rollback → migrate is stable.
-- [ ] Integration: add / edit vehicles of both types (page and modal); log
+- [x] Integration: add / edit vehicles of both types (page and modal); log
       a fill-up and a charge on each; economy figures for an existing plug-in
       hybrid identical before and after the upgrade.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -165,18 +168,18 @@ offers charging where it makes sense, existing vehicles sorted automatically
 from their history; released together with Phase 9.1 as Logbook v1.1.0.
 
 ## Acceptance criteria
-- [ ] A vehicle can be *Hybrid* or *Plug-in hybrid*; each is labelled
+- [x] A vehicle can be *Hybrid* or *Plug-in hybrid*; each is labelled
       clearly with its hint.
-- [ ] After upgrading, every hybrid that had ever been charged is a plug-in
+- [x] After upgrading, every hybrid that had ever been charged is a plug-in
       hybrid and the rest are hybrids; nothing else changes.
-- [ ] A hybrid's fill-up form leads with petrol only; a plug-in hybrid's
+- [x] A hybrid's fill-up form leads with petrol only; a plug-in hybrid's
       with petrol and electricity; either can still log anything under
       *Other fuels*.
-- [ ] Every economy, cost and grade figure is identical before and after
+- [x] Every economy, cost and grade figure is identical before and after
       the upgrade.
-- [ ] `/health`, sidebar and Settings show v1.1.0; changelog and roadmap
+- [x] `/health`, sidebar and Settings show v1.1.0; changelog and roadmap
       updated.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas

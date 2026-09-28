@@ -7,6 +7,7 @@ namespace Logbook\Tests\Unit\Domain\Fuel;
 use DateTimeImmutable;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelChoice;
+use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
@@ -60,6 +61,7 @@ final class FuelGradeTest extends TestCase
         );
         self::assertNull(FuelGrade::defaultFamilyFor(FuelType::Lpg));
         self::assertSame(Fuel::Petrol, FuelGrade::defaultFamilyFor(FuelType::Hybrid));
+        self::assertSame(Fuel::Petrol, FuelGrade::defaultFamilyFor(FuelType::Phev), 'never a charging type');
         self::assertSame(Fuel::Electricity, FuelGrade::defaultFamilyFor(FuelType::Electric));
     }
 
@@ -129,24 +131,88 @@ final class FuelGradeTest extends TestCase
 
     public function testFamiliesThatFitTheVehicleComeFirst(): void
     {
-        $hybrid = self::picker(self::vehicle(FuelType::Hybrid), 'en_GB');
+        $phev = self::picker(self::vehicle(FuelType::Phev), 'en_GB');
         self::assertSame(
             ['fuel.fuel.petrol', 'fuel.fuel.ev', 'fuel.picker.other_fuels', 'fuel.picker.more_grades'],
-            array_map(static fn (FuelPickerGroup $g): string => $g->labelKey, $hybrid),
+            array_map(static fn (FuelPickerGroup $g): string => $g->labelKey, $phev),
         );
         self::assertSame(
             ['ev', 'ev:home', 'ev:ac', 'ev:dc', 'ev:dc_rapid', 'ev:dc_ultra'],
-            self::values(self::group($hybrid, 'fuel.fuel.ev')),
+            self::values(self::group($phev, 'fuel.fuel.ev')),
         );
-        $others = self::values(self::group($hybrid, 'fuel.picker.other_fuels'));
+        $others = self::values(self::group($phev, 'fuel.picker.other_fuels'));
         self::assertContains('diesel:b7', $others);
         self::assertContains('lpg', $others);
         self::assertContains('other', $others);
         self::assertNotContains('petrol', $others);
+        self::assertNotContains('ev', $others);
 
         $ev = self::picker(self::vehicle(FuelType::Electric), 'en_GB');
         self::assertSame('fuel.fuel.ev', $ev[0]->labelKey, 'an EV starts with charging');
         self::assertContains('petrol', self::values(self::group($ev, 'fuel.picker.other_fuels')));
+    }
+
+    public function testASelfChargingHybridLeadsWithPetrolAndKeepsChargingUnderOtherFuels(): void
+    {
+        $hybrid = self::picker(self::vehicle(FuelType::Hybrid), 'en_GB');
+        self::assertSame(
+            ['fuel.fuel.petrol', 'fuel.picker.other_fuels', 'fuel.picker.more_grades'],
+            array_map(static fn (FuelPickerGroup $g): string => $g->labelKey, $hybrid),
+        );
+        $others = self::values(self::group($hybrid, 'fuel.picker.other_fuels'));
+        self::assertContains('ev', $others, 'demoted, never hidden');
+        self::assertContains('ev:home', $others);
+        self::assertNotContains('petrol', $others);
+    }
+
+    public function testAHybridThatWasChargedShowsItUnderUsedOnThisVehicle(): void
+    {
+        $at = new DateTimeImmutable('2026-06-01 18:00 UTC');
+        $data = new FuelEntryData($at, '1000', Fuel::Electricity, '8', '0.3', '2.4', grade: FuelGrade::Home);
+        $charge = new FuelEntry(1, 1, $data, $at, $at);
+        $now = new DateTimeImmutable('2026-09-28');
+        $groups = FuelPicker::groups(self::vehicle(FuelType::Hybrid), [$charge], 'en_GB', $now, 'petrol');
+
+        self::assertSame('fuel.picker.used', $groups[0]->labelKey);
+        self::assertSame(['ev:home'], self::values($groups[0]));
+        self::assertSame('fuel.fuel.petrol', $groups[1]->labelKey, 'petrol still leads the families');
+    }
+
+    /**
+     * @return iterable<string, array{FuelType, list<Fuel>}>
+     */
+    public static function fittingFamilies(): iterable
+    {
+        yield 'petrol' => [FuelType::Petrol, [Fuel::Petrol]];
+        yield 'diesel' => [FuelType::Diesel, [Fuel::Diesel]];
+        yield 'electric' => [FuelType::Electric, [Fuel::Electricity]];
+        yield 'hybrid' => [FuelType::Hybrid, [Fuel::Petrol]];
+        yield 'plug-in hybrid' => [FuelType::Phev, [Fuel::Petrol, Fuel::Electricity]];
+        yield 'lpg' => [FuelType::Lpg, [Fuel::Lpg]];
+        yield 'other' => [FuelType::Other, [Fuel::Other]];
+    }
+
+    /**
+     * @param list<Fuel> $families
+     */
+    #[DataProvider('fittingFamilies')]
+    public function testFittingFamiliesPerFuelType(FuelType $type, array $families): void
+    {
+        self::assertSame($families, $type->fittingFamilies());
+        self::assertSame($families[0], Fuel::defaultFor($type), 'the usual fuel is the first that fits');
+    }
+
+    public function testEveryFuelTypeHasFittingFamilies(): void
+    {
+        self::assertCount(count(FuelType::cases()), iterator_to_array(self::fittingFamilies()));
+    }
+
+    public function testCapacityLabelByFuelType(): void
+    {
+        self::assertSame('vehicle.field.capacity_battery', FuelType::Electric->capacityLabelKey());
+        foreach ([FuelType::Petrol, FuelType::Hybrid, FuelType::Phev, FuelType::Diesel] as $type) {
+            self::assertSame('vehicle.field.capacity_tank', $type->capacityLabelKey(), $type->value);
+        }
     }
 
     public function testTheCurrentValueIsSelectedOnce(): void

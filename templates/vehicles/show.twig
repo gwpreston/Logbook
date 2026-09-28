@@ -157,7 +157,7 @@
                     <div><dt>{{ 'vehicle.field.vin'|trans }}</dt><dd class="tabular">{{ data.vin ?? dash }}</dd></div>
                     <div><dt>{{ 'vehicle.field.fuel_type'|trans }}</dt><dd>{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</dd></div>
                     <div>
-                        <dt>{{ 'vehicle.field.capacity'|trans }}</dt>
+                        <dt>{{ data.fuelType.capacityLabelKey()|trans }}</dt>
                         <dd class="tabular">{{ data.capacity is null ? dash : (data.fuelType.isElectric() ? data.capacity|energy : data.capacity|volume) }}</dd>
                     </div>
                 </dl>
