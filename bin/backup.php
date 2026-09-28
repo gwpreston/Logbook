@@ -27,8 +27,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 $usage = "Usage: php bin/backup.php create [file] | restore <file> --yes | check <file>\n";
-$command = $argv[1] ?? '';
-$file = $argv[2] ?? null;
+// The command line, as strings (the $argv global is not guaranteed to be set).
+$args = array_values(array_filter((array) ($_SERVER['argv'] ?? []), 'is_string'));
+$command = $args[1] ?? '';
+$file = $args[2] ?? null;
 
 $settings = Kernel::settings();
 $container = Kernel::createContainer($settings);
@@ -78,7 +80,7 @@ try {
             exit(0);
 
         case 'restore':
-            if ($file === null || !in_array('--yes', $argv, true)) {
+            if ($file === null || !in_array('--yes', $args, true)) {
                 fwrite(STDERR, "Restoring replaces ALL data with the backup's. Add --yes to confirm.\n" . $usage);
                 exit(2);
             }

@@ -16,7 +16,9 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $source = $root . '/assets';
 $target = $root . '/public/assets';
-$check = in_array('--check', $argv, true);
+// The command line, as strings (the $argv global is not guaranteed to be set).
+$args = array_values(array_filter((array) ($_SERVER['argv'] ?? []), 'is_string'));
+$check = in_array('--check', $args, true);
 
 $files = [];
 $iterator = new RecursiveIteratorIterator(
