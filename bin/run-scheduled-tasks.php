@@ -54,8 +54,11 @@ try {
     fclose($lock);
 }
 
+// The command line, as strings (the $argv global is not guaranteed to be set).
+$args = array_values(array_filter((array) ($_SERVER['argv'] ?? []), 'is_string'));
+
 // Quiet by default (cron mails any output); the summary is always logged.
-if (in_array('-v', $argv, true) || in_array('--verbose', $argv, true)) {
+if (in_array('-v', $args, true) || in_array('--verbose', $args, true)) {
     fwrite(STDOUT, ucfirst($summary->describe()) . ".\n");
 }
 
