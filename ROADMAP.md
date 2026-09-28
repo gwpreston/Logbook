@@ -30,7 +30,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [6](phase-6.md) | Feature toggles + Import/backup + polish | ✅ |
 | [7](phase-7.md) | Design alignment + dashboard enhancements | ✅ |
 | [8](phase-8.md) | Fuel grades + v1.0 release | ✅ |
-| [9.1](phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | 🚧 |
+| [9.1](phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | ✅ |
 
 *Update the status column as each phase lands.*
 
