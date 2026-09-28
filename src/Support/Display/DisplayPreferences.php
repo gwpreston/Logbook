@@ -24,6 +24,7 @@ final readonly class DisplayPreferences
         public ConsumptionUnit $consumptionUnit,
         public string $currency,
         public Theme $theme = Theme::System,
+        public Accent $accent = Accent::Blue,
     ) {
     }
 
@@ -56,6 +57,7 @@ final readonly class DisplayPreferences
             $this->consumptionUnit,
             $this->currency,
             $this->theme,
+            $this->accent,
         );
     }
 

@@ -502,6 +502,167 @@
         });
     }
 
+    /*
+     * Desktop modal forms (spec.md §5). A link marked data-modal opens its
+     * page in the <dialog> when the viewport is wide (the sidebar
+     * breakpoint): the page is fetched with X-Logbook-Modal, and the server
+     * answers with the form alone. A submit goes by fetch (FormData, so files
+     * upload too): a validation error comes back as the form again; a
+     * redirect comes back as 204 + X-Logbook-Location and is followed as a
+     * normal page load, so its flash message shows. Anything unexpected falls
+     * back to the plain page or a normal submit: the modal is never the only
+     * way in.
+     */
+    var modal = (function () {
+        var dialog = null;
+        var body = null;
+        var title = null;
+        var trigger = null;
+        var wide = window.matchMedia ? window.matchMedia('(min-width: 60rem)') : null;
+
+        function available() {
+            return dialog !== null && typeof dialog.showModal === 'function' && wide !== null && wide.matches
+                && typeof window.fetch === 'function' && typeof window.DOMParser === 'function';
+        }
+
+        function send(url, init) {
+            init = init || {};
+            init.credentials = 'same-origin';
+            init.headers = { 'X-Logbook-Modal': '1' };
+            return fetch(url, init);
+        }
+
+        function busy(on) {
+            if (on) {
+                dialog.setAttribute('aria-busy', 'true');
+            } else {
+                dialog.removeAttribute('aria-busy');
+            }
+        }
+
+        // Put a server-rendered form into the dialog; a page without one opens as a page.
+        function show(html, url) {
+            var fragment = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-modal-fragment]');
+            if (!fragment) {
+                window.location.assign(url);
+                return;
+            }
+            title.textContent = fragment.getAttribute('data-modal-title') || '';
+            body.innerHTML = fragment.innerHTML;
+            body.querySelectorAll('[data-fuel-amounts]').forEach(enhanceFuelAmounts);
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+            body.scrollTop = 0;
+            var first = body.querySelector('[aria-invalid="true"]')
+                || body.querySelector('input:not([type="hidden"]), select, textarea, a[href], button');
+            if (first) {
+                first.focus();
+            }
+        }
+
+        function load(url) {
+            busy(true);
+            return send(url)
+                .then(function (response) {
+                    var location = response.headers.get('X-Logbook-Location');
+                    if (response.status === 204 && location) {
+                        // e.g. the vehicle picker with one vehicle: straight to its form.
+                        return load(location);
+                    }
+                    if (!response.ok) {
+                        throw new Error('status ' + response.status);
+                    }
+                    return response.text().then(function (html) { show(html, url); });
+                })
+                .catch(function () { window.location.assign(url); })
+                .then(function () { busy(false); });
+        }
+
+        function submit(form) {
+            busy(true);
+            send(form.action, { method: 'POST', body: new FormData(form) })
+                .then(function (response) {
+                    var location = response.headers.get('X-Logbook-Location');
+                    if (response.status === 204 && location) {
+                        dialog.close();
+                        window.location.assign(location);
+                        return;
+                    }
+                    if (response.status !== 422 && !response.ok) {
+                        throw new Error('status ' + response.status);
+                    }
+                    return response.text().then(function (html) { show(html, form.action); });
+                })
+                .catch(function () {
+                    // Let the browser post it the ordinary way (and show whatever the server says).
+                    HTMLFormElement.prototype.submit.call(form);
+                })
+                .then(function () { busy(false); });
+        }
+
+        function init() {
+            dialog = document.querySelector('[data-modal-dialog]');
+            if (!dialog) {
+                return;
+            }
+            body = dialog.querySelector('[data-modal-body]');
+            title = dialog.querySelector('[data-modal-title]');
+
+            document.addEventListener('click', function (event) {
+                if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+                var link = event.target.closest('a[data-modal]');
+                if (link && available()) {
+                    event.preventDefault();
+                    if (!dialog.open) {
+                        trigger = link;
+                    }
+                    load(link.href);
+                    return;
+                }
+                if (dialog.open && event.target.closest('[data-modal-cancel], [data-modal-close]')) {
+                    event.preventDefault();
+                    dialog.close();
+                }
+            });
+
+            // A click on the backdrop (the dialog itself, outside its content) closes it.
+            dialog.addEventListener('click', function (event) {
+                if (event.target === dialog) {
+                    dialog.close();
+                }
+            });
+
+            dialog.addEventListener('submit', function (event) {
+                var form = event.target;
+                if (form.method.toLowerCase() !== 'post') {
+                    return;
+                }
+                event.preventDefault();
+                if (navigator.onLine === false) {
+                    // Offline: the form's own page (kept by the service worker for
+                    // fill-ups) can queue it; the dialog cannot.
+                    window.location.assign(form.action);
+                    return;
+                }
+                submit(form);
+            });
+
+            dialog.addEventListener('close', function () {
+                body.textContent = '';
+                title.textContent = '';
+                if (trigger && document.body.contains(trigger)) {
+                    trigger.focus();
+                }
+                trigger = null;
+            });
+        }
+
+        return { init: init };
+    })();
+
     function registerServiceWorker() {
         if (!('serviceWorker' in navigator) || !window.isSecureContext) {
             return;
@@ -512,6 +673,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         registerServiceWorker();
+        modal.init();
         outboxBox = document.querySelector('[data-offline-outbox]');
         document.querySelectorAll('form[data-offline-queue]').forEach(enhanceOfflineForm);
         cacheOfflineForms(Array.prototype.slice.call(document.querySelectorAll('a[data-offline-cache]')));

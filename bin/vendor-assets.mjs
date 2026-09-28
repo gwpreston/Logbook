@@ -34,6 +34,7 @@ const iconPkg = '@material-symbols/svg-400';
 const icons = [
   'account_balance',
   'add',
+  'apps',
   'archive',
   'arrow_downward',
   'arrow_forward',

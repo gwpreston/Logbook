@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Logbook\Service\Dashboard;
 
 use DateTimeImmutable;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelHistory;
 use Logbook\Service\Fuel\FuelService;
-use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Reminder\DueCounter;
+use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderOverview;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
@@ -24,12 +27,16 @@ use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Service\Vehicle\VehicleSnapshot;
+use Logbook\Service\Vehicle\VehicleSnapshots;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
 
 /**
  * Assembles the dashboard (spec.md §7.8) for the owner's layout, computing
- * only what the visible widgets show. Archived vehicles never appear.
+ * only what the visible widgets show. Archived vehicles never appear. With
+ * a vehicle selected (the filter chips) every widget covers that vehicle
+ * only and the pinned vehicle card replaces "your vehicles".
  */
 final readonly class DashboardService
 {
@@ -40,20 +47,25 @@ final readonly class DashboardService
         private DashboardLayoutStore $layouts,
         private FeatureToggles $features,
         private VehicleService $vehicles,
-        private OdometerService $odometer,
+        private VehicleSnapshots $snapshots,
+        private OdometerReadingRepository $readings,
         private ReminderService $reminders,
         private ReminderSettingsStore $reminderSettings,
+        private DueCounter $dueCounter,
         private ReportService $reports,
         private FuelService $fuel,
         private ComplianceService $compliance,
+        private RecentActivity $activity,
         private ClockInterface $clock,
     ) {
     }
 
     /**
      * Hidden widgets get no data: customise mode shows them folded up.
+     *
+     * @param int|null $vehicleId the selected vehicle; unknown or archived means the fleet
      */
-    public function build(User $user): Dashboard
+    public function build(User $user, ?int $vehicleId = null): Dashboard
     {
         $layout = $this->layouts->load($user->id);
         $enabled = $this->features->all();
@@ -61,63 +73,136 @@ final readonly class DashboardService
             $layout->order,
             static fn (DashboardWidget $w): bool => $w->feature() === null || $enabled[$w->feature()->value],
         ));
-        $show = static fn (DashboardWidget $w): bool => in_array($w, $available, true) && !$layout->isHidden($w);
 
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $active = $this->vehicles->listFleet($user);
-        $counts = $this->vehicles->counts($user);
+        $selected = self::find($active, $vehicleId);
+        $scope = $selected !== null ? [$selected] : $active;
+        $show = static fn (DashboardWidget $w): bool => in_array($w, $available, true)
+            && !$layout->isHidden($w)
+            && !($selected !== null && $w === DashboardWidget::Fleet);
 
-        $overview = $show(DashboardWidget::Reminders) || ($show(DashboardWidget::Fleet) && $enabled['reminders'])
-            ? $this->reminders->overview($user)
+        // Read (and so sync) the reminders before counting what is due.
+        $overview = $enabled['reminders'] && ($show(DashboardWidget::Reminders) || $selected !== null)
+            ? self::only($this->reminders->overview($user), $selected)
             : null;
 
-        [$thisMonth, $lastMonth] = $show(DashboardWidget::Spend) && $active !== []
-            ? $this->spend($user, $active, $today)
+        [$thisMonth, $lastMonth] = $show(DashboardWidget::Spend) && $scope !== []
+            ? $this->spend($user, $scope, $today)
             : [null, null];
 
-        $fuel = $show(DashboardWidget::RecentFuel) || $show(DashboardWidget::Efficiency)
-            ? $this->fuelHistories($active)
+        $fuel = $show(DashboardWidget::RecentFuel) || $show(DashboardWidget::Efficiency) || $selected !== null
+            ? $this->fuelHistories($scope)
             : [];
+        $efficiency = $fuel !== [] ? $this->efficiency($fuel, $today) : [];
+
+        $needsCounts = $show(DashboardWidget::Fleet) || $selected !== null;
+        $counts = $needsCounts ? $this->dueCounter->counts($user) : null;
 
         return new Dashboard(
             layout: $layout,
             available: $available,
-            archivedCount: $counts['archived'],
-            fleet: $this->fleet($active, $overview),
+            archivedCount: $this->vehicles->counts($user)['archived'],
+            vehicles: $active,
+            selected: $selected,
+            pinned: $selected !== null && $counts !== null
+                ? $this->pinned($user, $selected, $this->snapshots->of([$selected], $counts)[0], $efficiency, $overview, $today)
+                : null,
+            fleet: $show(DashboardWidget::Fleet) && $counts !== null ? $this->snapshots->of($active, $counts) : [],
             reminders: $show(DashboardWidget::Reminders) ? $overview : null,
             spendThisMonth: $thisMonth,
             spendLastMonth: $lastMonth,
             recentFuel: $show(DashboardWidget::RecentFuel) ? $this->recentFuel($user, $fuel) : [],
-            efficiency: $show(DashboardWidget::Efficiency) ? $this->efficiency($fuel, $today) : [],
-            compliance: $show(DashboardWidget::Compliance) ? $this->compliance($user, $active, $today) : [],
+            efficiency: $show(DashboardWidget::Efficiency) ? $efficiency : [],
+            compliance: $show(DashboardWidget::Compliance) ? $this->compliance($user, $scope, $today) : [],
+            mileage: $show(DashboardWidget::Mileage) ? $this->mileage($user, $scope, $today) : null,
+            activity: $show(DashboardWidget::RecentActivity) ? $this->activity->latest($user, $scope) : [],
         );
     }
 
     /**
      * @param list<Vehicle> $active
-     * @return list<FleetVehicle>
      */
-    private function fleet(array $active, ?ReminderOverview $overview): array
+    private static function find(array $active, ?int $vehicleId): ?Vehicle
     {
-        $next = [];
-        foreach ($overview === null ? [] : $overview->open as $entry) {
-            $next[$entry->vehicle->id] ??= $entry;
+        foreach ($active as $vehicle) {
+            if ($vehicle->id === $vehicleId) {
+                return $vehicle;
+            }
         }
 
-        return array_map(fn (Vehicle $v): FleetVehicle => new FleetVehicle(
-            $v,
-            $this->odometer->history($v)->latest(),
-            $next[$v->id] ?? null,
-        ), $active);
+        return null;
     }
 
     /**
-     * This month so far and the whole of last month, over the active fleet.
+     * The overview narrowed to one vehicle (unchanged for the fleet).
+     */
+    private static function only(ReminderOverview $overview, ?Vehicle $vehicle): ReminderOverview
+    {
+        if ($vehicle === null) {
+            return $overview;
+        }
+        $mine = static fn (ReminderEntry $e): bool => $e->vehicle->id === $vehicle->id;
+
+        return new ReminderOverview(
+            array_values(array_filter($overview->open, $mine)),
+            array_values(array_filter($overview->closed, $mine)),
+            $overview->today,
+        );
+    }
+
+    /**
+     * @param list<VehicleEfficiency> $efficiency the vehicle's rows (12 months)
+     */
+    private function pinned(
+        User $user,
+        Vehicle $vehicle,
+        VehicleSnapshot $snapshot,
+        array $efficiency,
+        ?ReminderOverview $overview,
+        DateTimeImmutable $today,
+    ): PinnedVehicle {
+        $kind = $vehicle->data->fuelType->isElectric() ? EnergyKind::Electric : EnergyKind::Liquid;
+        $economy = null;
+        foreach ($efficiency as $row) {
+            if ($row->vehicle->id === $vehicle->id && ($economy === null || $row->kind === $kind)) {
+                $economy = $row;
+            }
+        }
+
+        $report = $this->reports->forVehicles(
+            $user,
+            new ReportFilter(ReportPeriod::preset(ReportRange::TwelveMonths, $today), $vehicle->id),
+            [$vehicle],
+        );
+
+        return new PinnedVehicle(
+            $snapshot,
+            $economy,
+            $report->currencies[0] ?? null,
+            $overview?->open[0] ?? null,
+        );
+    }
+
+    /**
+     * @param list<Vehicle> $vehicles
+     */
+    private function mileage(User $user, array $vehicles, DateTimeImmutable $today): MileageSummary
+    {
+        return MileageSummary::of(
+            array_map(fn (Vehicle $v): array => $this->readings->listForVehicle($v->id), $vehicles),
+            $today,
+            $user->preferences->timeZone(),
+        );
+    }
+
+    /**
+     * This month so far and the whole of last month.
      *
-     * @param list<Vehicle> $active
+     * @param list<Vehicle> $vehicles
      * @return array{0: Report, 1: Report}
      */
-    private function spend(User $user, array $active, DateTimeImmutable $today): array
+    private function spend(User $user, array $vehicles, DateTimeImmutable $today): array
     {
         $thisMonth = ReportPeriod::preset(ReportRange::ThisMonth, $today);
         $firstOfThis = $thisMonth->from ?? $today;
@@ -127,7 +212,7 @@ final readonly class DashboardService
             $firstOfThis->modify('-1 day'),
         );
 
-        [$current, $previous] = $this->reports->compare($user, $active, [
+        [$current, $previous] = $this->reports->compare($user, $vehicles, [
             new ReportFilter($thisMonth),
             new ReportFilter($lastMonth),
         ]);
@@ -136,12 +221,16 @@ final readonly class DashboardService
     }
 
     /**
-     * @param list<Vehicle> $active
+     * @param list<Vehicle> $vehicles
      * @return list<array{vehicle: Vehicle, history: FuelHistory}>
      */
-    private function fuelHistories(array $active): array
+    private function fuelHistories(array $vehicles): array
     {
-        return array_map(fn (Vehicle $v): array => ['vehicle' => $v, 'history' => $this->fuel->history($v)], $active);
+        if (!$this->features->isEnabled(Feature::Fuel)) {
+            return [];
+        }
+
+        return array_map(fn (Vehicle $v): array => ['vehicle' => $v, 'history' => $this->fuel->history($v)], $vehicles);
     }
 
     /**
@@ -192,10 +281,10 @@ final readonly class DashboardService
     }
 
     /**
-     * @param list<Vehicle> $active
+     * @param list<Vehicle> $vehicles
      * @return list<VehicleCompliance>
      */
-    private function compliance(User $user, array $active, DateTimeImmutable $today): array
+    private function compliance(User $user, array $vehicles, DateTimeImmutable $today): array
     {
         $lead = $this->reminderSettings->reminderPreferences($user->id)->documentDays;
 
@@ -205,6 +294,6 @@ final readonly class DashboardService
                 $this->compliance->states($v, $today, $lead),
                 static fn (DocumentState $s): bool => $s->status->isCurrent(),
             )),
-        ), $active);
+        ), $vehicles);
     }
 }

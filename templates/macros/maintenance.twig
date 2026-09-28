@@ -72,7 +72,7 @@
     <li class="list__item schedule">
         <span class="list__icon">{{ ui.icon(schedule.data.category.icon()) }}</span>
         <span class="list__body">
-            <a class="list__title" href="{{ url_for('maintenance.schedules.edit', {id: vehicle.id, schedule: schedule.id}) }}">{{ schedule.data.title }}</a>
+            <a class="list__title" href="{{ url_for('maintenance.schedules.edit', {id: vehicle.id, schedule: schedule.id}) }}" data-modal>{{ schedule.data.title }}</a>
             <span class="list__meta">{{ maint.interval(schedule) }}</span>
             <span class="list__meta">{{ maint.next_due(schedule) }}</span>
             <span class="list__meta">{{ maint.last_done(schedule) }}</span>
@@ -80,7 +80,7 @@
         <span class="list__end">
             {{ maint.due_pill(state.due) }}
             {% if not vehicle.isArchived() %}
-                <a class="btn btn--soft" href="{{ url_for('maintenance.create', {id: vehicle.id}, {schedule: schedule.id}) }}">{{ ui.icon('check_circle') }}{{ 'maintenance.schedule.log_it'|trans }}<span class="visually-hidden">: {{ schedule.data.title }}</span></a>
+                <a class="btn btn--soft" href="{{ url_for('maintenance.create', {id: vehicle.id}, {schedule: schedule.id}) }}" data-modal>{{ ui.icon('check_circle') }}{{ 'maintenance.schedule.log_it'|trans }}<span class="visually-hidden">: {{ schedule.data.title }}</span></a>
             {% endif %}
         </span>
     </li>
@@ -92,7 +92,7 @@
     {% import 'macros/attachments.twig' as files %}
     {% set data = entry.data %}
     <li>
-        <a class="list__item" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) }}">
+        <a class="list__item" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>
             <span class="list__icon">{{ ui.icon(data.category.icon()) }}</span>
             <span class="list__body">
                 <span class="list__title">{{ data.title }}</span>

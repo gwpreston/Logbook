@@ -50,6 +50,20 @@
             <section class="card" aria-labelledby="appearance-heading">
                 <h3 id="appearance-heading" class="card__title">{{ 'settings.appearance'|trans }}</h3>
                 {{ ui.chips('theme', 'prefs.theme'|trans, values, errors, theme_options, {required: true}) }}
+                <fieldset class="field fieldset"{% if errors.accent ?? null %} aria-describedby="f-accent-error"{% endif %}>
+                    <legend class="field__label">{{ 'prefs.accent'|trans }}</legend>
+                    <div class="chip-row">
+                        {% for accent in accents %}
+                            <label class="chip">
+                                <input type="radio" name="accent" value="{{ accent.value }}"{% if accent.value == (values.accent ?? 'blue') %} checked{% endif %}>
+                                <span class="accent-swatch" style="--swatch: {{ accent.swatch() }}" aria-hidden="true"></span>
+                                <span>{{ ('theme.accent.' ~ accent.value)|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <p class="field__hint">{{ 'prefs.accent_hint'|trans }}</p>
+                    {{ ui.field_error(errors, 'accent') }}
+                </fieldset>
             </section>
 
             <section class="card" aria-labelledby="units-heading">
@@ -161,6 +175,9 @@
 
         <section class="card" aria-labelledby="installation-heading">
             <h2 id="installation-heading" class="card__title">{{ 'settings.installation'|trans }}</h2>
+            <dl class="details">
+                <div><dt>{{ 'settings.version'|trans }}</dt><dd data-app-version>{{ 'app.version'|trans({version: app_version()}) }}</dd></div>
+            </dl>
             <ul class="list">
                 <li>
                     <a class="list__item" href="{{ url_for('health') }}">

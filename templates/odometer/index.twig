@@ -14,10 +14,7 @@
     <div class="page__stack">
         {% include 'vehicles/_header.twig' with {active_tab: 'odometer'} %}
 
-        <div class="toolbar">
-            <h1 class="section-title">{{ 'odometer.title'|trans }}</h1>
-            {{ exp.export_link(vehicle, 'odometer') }}
-        </div>
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'odometer.title'|trans, module: 'odometer', add: {route: 'odometer.create', label: 'odometer.add'|trans}} %}
 
         <dl class="stats">
             {{ ui.stat('odometer.stat.current'|trans,
@@ -34,9 +31,6 @@
         <section class="card" aria-labelledby="trend-heading">
             <div class="card__header">
                 <h2 id="trend-heading" class="card__title">{{ 'odometer.chart.title'|trans }}</h2>
-                {% if not vehicle.isArchived() %}
-                    <a class="btn btn--soft" href="{{ url_for('odometer.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'odometer.add'|trans }}</a>
-                {% endif %}
             </div>
             {% if chart.hasData() %}
                 {{ ui.chart(chart, 'odometer.chart.title'|trans) }}
@@ -61,7 +55,7 @@
                         {% set warning = warnings[reading.id] ?? null %}
                         {% set delta = deltas[reading.id] ?? null %}
                         <li>
-                            <a class="list__item" href="{{ url_for('odometer.edit', {id: vehicle.id, reading: reading.id}) }}">
+                            <a class="list__item" href="{{ url_for('odometer.edit', {id: vehicle.id, reading: reading.id}) }}" data-modal>
                                 <span class="list__icon{{ warning ? ' list__icon--warning' }}">{{ ui.icon(warning ? 'warning' : reading.source.icon()) }}</span>
                                 <span class="list__body">
                                     <span class="list__title tabular">{{ reading.readingKm|distance }}</span>

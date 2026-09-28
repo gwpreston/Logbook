@@ -6,18 +6,28 @@
  #
  # Primary navigation entries: route name, translation key, icon, and the
  # `active_nav` value that marks it current. Reminders and Reports are left
- # out when their module is switched off, and the "Log fill-up" buttons with
- # Fuel (spec.md §7.10). The bottom bar shows the first four entries with the
- # "Log" button (the fast fill-up path) in the middle, as in the design;
- # Settings is then reached from the top bar.
+ # out when their module is switched off (spec.md §7.10). The bottom bar
+ # shows the first four entries with the "+" (the Log entry chooser) in the
+ # middle, as in the design; Settings is then reached from the top bar.
+ #
+ # Modal requests (View sets `modal`; spec.md §5) get only the page's
+ # `modal_body` block, titled by its `heading`. A page without one is
+ # rendered in full, and the script then opens it as a page.
  #}
 {% set signed_in = user is not null %}
+{% if modal|default(false) and block('modal_body') is defined %}
+<div class="modal-fragment" data-modal-fragment data-modal-title="{{ heading|default(block('title')) }}">
+    {{ block('modal_body') }}
+</div>
+{% else %}
+{% set sidebar = signed_in ? sidebar(user) : null %}
+{% set due_total = sidebar and sidebar.counts.enabled ? sidebar.counts.total() : 0 %}
 {% set nav_items = [
     {route: 'home', label: 'nav.dashboard', icon: 'space_dashboard', key: 'home'},
     {route: 'garage', label: 'nav.garage', icon: 'garage', key: 'garage'},
 ] %}
 {% if signed_in and feature_enabled('reminders') %}
-    {% set nav_items = nav_items|merge([{route: 'reminders.index', label: 'nav.reminders', icon: 'notifications', key: 'reminders'}]) %}
+    {% set nav_items = nav_items|merge([{route: 'reminders.index', label: 'nav.reminders', icon: 'notifications', key: 'reminders', badge: due_total}]) %}
 {% endif %}
 {% if signed_in and feature_enabled('reports') %}
     {% set nav_items = nav_items|merge([{route: 'reports.index', label: 'nav.reports', icon: 'bar_chart', key: 'reports'}]) %}
@@ -25,10 +35,12 @@
 {% set nav_items = nav_items|merge([{route: 'settings', label: 'nav.settings', icon: 'settings', key: 'settings'}]) %}
 {% set bottom_items = nav_items|slice(0, 4) %}
 {% set current_nav = active_nav|default('') %}
-{% set can_log = signed_in and feature_enabled('fuel') %}
+{# The vehicle whose pages are open, highlighted in the sidebar list. #}
+{% set current_vehicle_id = current_nav == 'garage' ? (vehicle.id ?? null) : null %}
 {% set theme = signed_in ? user.preferences.theme.value : null %}
+{% set accent = signed_in ? user.preferences.accent.value : 'blue' %}
 <!doctype html>
-<html lang="{{ html_lang() }}" data-base="{{ base_path() }}"{% if theme %} data-theme-pref="{{ theme }}"{% endif %}{% if theme and theme != 'system' %} data-theme="{{ theme }}"{% endif %}>
+<html lang="{{ html_lang() }}" data-base="{{ base_path() }}" data-accent="{{ accent }}"{% if theme %} data-theme-pref="{{ theme }}"{% endif %}{% if theme and theme != 'system' %} data-theme="{{ theme }}"{% endif %}>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -61,9 +73,7 @@
                 {{ ui.brand() }}
 
                 {% block primary_action %}
-                    {% if can_log %}
-                        <a class="btn btn--primary btn--block" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>{{ ui.icon('add') }}{{ 'nav.log_fill_up'|trans }}</a>
-                    {% endif %}
+                    <a class="btn btn--primary btn--block" href="{{ url_for('log.chooser') }}" data-modal{% if current_nav == 'log' %} aria-current="page"{% endif %}>{{ ui.icon('add') }}{{ 'nav.log_entry'|trans }}</a>
                 {% endblock %}
 
                 <nav aria-label="{{ 'nav.label'|trans }}">
@@ -73,11 +83,32 @@
                                 <a class="nav-link" href="{{ url_for(item.route) }}"{% if current_nav == item.key %} aria-current="page"{% endif %}>
                                     {{ ui.icon(item.icon) }}
                                     <span class="nav-link__label">{{ item.label|trans }}</span>
+                                    {% if item.badge|default(0) > 0 %}
+                                        <span class="nav-link__badge" aria-hidden="true">{{ item.badge }}</span>
+                                        <span class="visually-hidden">{{ 'nav.needs_attention'|trans({count: item.badge}) }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                         {% endfor %}
                     </ul>
                 </nav>
+
+                {% if sidebar.vehicles is not empty %}
+                    <nav class="sidebar__section" aria-labelledby="sidebar-vehicles">
+                        <h2 class="section-label" id="sidebar-vehicles">{{ 'nav.vehicles'|trans }}</h2>
+                        <ul class="nav-list">
+                            {% for listed in sidebar.vehicles %}
+                                <li>
+                                    <a class="nav-link nav-link--vehicle" href="{{ url_for('vehicles.show', {id: listed.id}) }}"{% if current_vehicle_id == listed.id %} aria-current="true"{% endif %}>
+                                        {{ ui.icon(listed.data.type.icon()) }}
+                                        <span class="nav-link__label">{{ listed.name() }}</span>
+                                        {% if sidebar.counts.enabled %}{{ ui.status_dot(sidebar.counts.forVehicle(listed.id)) }}{% endif %}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </nav>
+                {% endif %}
 
                 {% block sidebar %}{% endblock %}
 
@@ -90,6 +121,7 @@
                             <button type="submit" class="btn btn--ghost sidebar__logout">{{ ui.icon('logout') }}{{ 'auth.sign_out'|trans }}</button>
                         </form>
                     </div>
+                    <p class="sidebar__version" data-app-version>{{ 'app.version'|trans({version: app_version()}) }}</p>
                 </div>
             </aside>
         {% endif %}
@@ -109,7 +141,7 @@
                 {% if flashes is not empty %}
                     <div class="flashes">{{ ui.flashes(flashes) }}</div>
                 {% endif %}
-                {% if can_log %}
+                {% if signed_in and feature_enabled('fuel') %}
                     {# Fill-ups saved offline, waiting to be sent (js/app.js; spec.md §7.15). #}
                     <section class="card outbox" data-offline-outbox hidden aria-labelledby="outbox-heading"
                              data-text-queued="{{ 'pwa.queued'|trans }}" data-text-waiting="{{ 'pwa.waiting'|trans }}"
@@ -135,11 +167,11 @@
         <nav class="bottom-nav" aria-label="{{ 'nav.label'|trans }}">
             <ul class="bottom-nav__list">
                 {% for item in bottom_items %}
-                    {% if loop.index == 3 and can_log %}
+                    {% if loop.index == 3 %}
                         <li>
-                            <a class="bottom-nav__link bottom-nav__link--fab" href="{{ url_for('fuel.quick') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>
+                            <a class="bottom-nav__link bottom-nav__link--fab" href="{{ url_for('log.chooser') }}"{% if current_nav == 'log' %} aria-current="page"{% endif %}>
                                 <span class="bottom-nav__icon">{{ ui.icon('add') }}</span>
-                                <span class="visually-hidden">{{ 'nav.log_fill_up'|trans }}</span>
+                                <span class="visually-hidden">{{ 'nav.log_entry'|trans }}</span>
                             </a>
                         </li>
                     {% endif %}
@@ -147,11 +179,25 @@
                         <a class="bottom-nav__link" href="{{ url_for(item.route) }}"{% if current_nav == item.key %} aria-current="page"{% endif %}>
                             <span class="bottom-nav__icon">{{ ui.icon(item.icon) }}</span>
                             <span>{{ item.label|trans }}</span>
+                            {% if item.badge|default(0) > 0 %}
+                                <span class="bottom-nav__badge" aria-hidden="true">{{ item.badge }}</span>
+                                <span class="visually-hidden">{{ 'nav.needs_attention'|trans({count: item.badge}) }}</span>
+                            {% endif %}
                         </a>
                     </li>
                 {% endfor %}
             </ul>
         </nav>
+
+        {# Desktop entry forms open here (js/app.js; spec.md §5). #}
+        <dialog class="modal" data-modal-dialog aria-labelledby="modal-title">
+            <div class="modal__header">
+                <h2 class="modal__title" id="modal-title" data-modal-title></h2>
+                <button type="button" class="icon-btn modal__close" data-modal-close>{{ ui.icon('close') }}<span class="visually-hidden">{{ 'modal.close'|trans }}</span></button>
+            </div>
+            <div class="modal__body" data-modal-body></div>
+        </dialog>
     {% endif %}
 </body>
 </html>
+{% endif %}

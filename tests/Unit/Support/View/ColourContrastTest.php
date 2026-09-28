@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Unit\Support\View;
 
 use Logbook\Kernel;
+use Logbook\Support\Display\Accent;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -64,6 +65,85 @@ final class ColourContrastTest extends TestCase
         }
 
         self::assertSame([], $failures);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function accents(): iterable
+    {
+        foreach (Accent::cases() as $accent) {
+            yield $accent->value . ' light' => [$accent->value, 'light'];
+            yield $accent->value . ' dark' => [$accent->value, 'dark'];
+        }
+    }
+
+    /**
+     * Every accent keeps button text, links and the focus ring readable,
+     * and never touches the status colours or the plate.
+     */
+    #[DataProvider('accents')]
+    public function testAccentContrast(string $accent, string $theme): void
+    {
+        $tokens = self::accentTokens($accent, $theme) + self::tokens($theme);
+        $failures = [];
+        foreach (self::PAIRS as [$foreground, $layers]) {
+            if (!str_contains($foreground . implode(' ', $layers), 'accent')) {
+                continue;
+            }
+            $background = [1.0, 1.0, 1.0];
+            foreach ($layers as $layer) {
+                $background = self::over(self::colour($tokens[$layer]), $background);
+            }
+            $ratio = self::contrast(self::over(self::colour($tokens[$foreground]), $background), $background);
+            if ($ratio < self::AA_TEXT) {
+                $failures[] = sprintf('%s on %s: %.2f:1', $foreground, implode('+', $layers), $ratio);
+            }
+        }
+        // The focus ring (the accent itself) against the page: 3:1 for non-text.
+        foreach (['bg', 'surface'] as $page) {
+            $white = [1.0, 1.0, 1.0];
+            $ratio = self::contrast(
+                self::over(self::colour($tokens['accent']), $white),
+                self::over(self::colour($tokens[$page]), $white),
+            );
+            if ($ratio < 3.0) {
+                $failures[] = sprintf('focus ring on %s: %.2f:1', $page, $ratio);
+            }
+        }
+
+        self::assertSame([], $failures);
+        if ($accent !== Accent::DEFAULT->value) {
+            $changed = array_keys(self::accentTokens($accent, $theme));
+            self::assertSame(['accent', 'accent-soft'], $changed, 'only accent tokens change');
+        }
+    }
+
+    public function testBothDarkAccentBlocksMatch(): void
+    {
+        $css = self::css();
+        foreach (Accent::cases() as $accent) {
+            if ($accent === Accent::DEFAULT) {
+                continue;
+            }
+            $pattern = '/:root\[data-accent="' . $accent->value . '"\]:not\(\[data-theme="light"\]\) \{(.*?)\}/s';
+            $media = preg_match($pattern, $css, $m) === 1 ? $m[1] : '';
+            $explicit = self::accentTokens($accent->value, 'dark');
+            self::assertNotSame([], $explicit, $accent->value);
+            self::assertSame(self::declarations($media), $explicit, $accent->value);
+        }
+    }
+
+    /**
+     * @return array<string, string> the tokens an accent overrides in a theme
+     */
+    private static function accentTokens(string $accent, string $theme): array
+    {
+        $pattern = $theme === 'light'
+            ? '/:root\[data-accent="' . $accent . '"\] \{(.*?)\}/s'
+            : '/:root\[data-accent="' . $accent . '"\]\[data-theme="dark"\] \{(.*?)\}/s';
+
+        return preg_match($pattern, self::css(), $m) === 1 ? self::declarations($m[1]) : [];
     }
 
     public function testBothDarkThemeBlocksMatch(): void

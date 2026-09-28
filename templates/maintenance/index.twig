@@ -15,15 +15,7 @@
     <div class="page__stack">
         {% include 'vehicles/_header.twig' with {active_tab: 'maintenance'} %}
 
-        <div class="toolbar">
-            <h1 class="section-title">{{ 'maintenance.title'|trans }}</h1>
-            <div class="btn-row">
-                {{ exp.export_link(vehicle, 'maintenance') }}
-                {% if not vehicle.isArchived() %}
-                    <a class="btn btn--primary" href="{{ url_for('maintenance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'maintenance.add'|trans }}</a>
-                {% endif %}
-            </div>
-        </div>
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'maintenance.title'|trans, module: 'maintenance', add: {route: 'maintenance.create', label: 'maintenance.add'|trans}} %}
 
         <dl class="stats">
             {{ ui.stat('maintenance.stat.next'|trans,
@@ -41,7 +33,7 @@
             <div class="card__header">
                 <h2 id="schedules-heading" class="card__title">{{ 'maintenance.schedule.title'|trans }}</h2>
                 {% if not vehicle.isArchived() %}
-                    <a class="btn btn--soft" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}">{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>
+                    <a class="btn btn--soft" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>
                 {% endif %}
             </div>
             {% if schedules is empty %}

@@ -1,0 +1,59 @@
+{#
+ # The selected vehicle, pinned under the filter (spec.md §7.8). Not a
+ # widget: it is not in the layout and customise mode never shows it.
+ # Expects: pinned (Service\Dashboard\PinnedVehicle), wording, today.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% set snapshot = pinned.snapshot %}
+{% set vehicle = snapshot.vehicle %}
+{% set economy = pinned.economy %}
+{% set costs = pinned.lastTwelveMonths %}
+{% set next = pinned.next ? pinned.next.reminder : null %}
+{% set dash = '—' %}
+<section class="card pinned" aria-labelledby="pinned-title" data-pinned-vehicle>
+    <div class="pinned__media">{{ ui.vehicle_photo(vehicle) }}</div>
+    <div class="pinned__body">
+        <div class="vehicle-card__tags">
+            {% if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span>{% endif %}
+            <span class="pill">{{ ('vehicle.fuel.' ~ vehicle.data.fuelType.value)|trans }}</span>
+        </div>
+        <div>
+            <h2 class="pinned__name" id="pinned-title">{{ vehicle.name() }}</h2>
+            <p class="muted">{{ vehicle.description() }}{% if snapshot.latest %} · <span class="tabular">{{ snapshot.latest.readingKm|distance }}</span>{% endif %}</p>
+        </div>
+        <dl class="pinned__tiles">
+            <div class="pinned__tile">
+                <dt>{{ 'dashboard.pinned.economy'|trans }}</dt>
+                <dd class="pinned__value tabular">{{ economy and economy.hasEconomy() ? economy.distanceKm()|economy(economy.volume(), economy.isElectric()) : dash }}</dd>
+                <dd class="pinned__sub">{{ 'dashboard.pinned.twelve_month_average'|trans }}</dd>
+            </div>
+            <div class="pinned__tile">
+                <dt>{{ 'dashboard.pinned.running_cost'|trans }}</dt>
+                <dd class="pinned__value tabular">{{ costs and costs.costPerKm is not null ? costs.costPerKm|per_distance(costs.currency) : dash }}</dd>
+                <dd class="pinned__sub">{{ 'dashboard.pinned.last_twelve_months'|trans }}</dd>
+            </div>
+            <div class="pinned__tile">
+                <dt>{{ 'dashboard.pinned.spent'|trans }}</dt>
+                <dd class="pinned__value tabular">{{ costs ? costs.total|money : dash }}</dd>
+                <dd class="pinned__sub">{{ 'dashboard.pinned.last_twelve_months'|trans }}</dd>
+            </div>
+            <div class="pinned__tile">
+                <dt>{{ 'dashboard.pinned.next_due'|trans }}</dt>
+                {% if next %}
+                    <dd class="pinned__value{{ next.status.tone() ? ' pinned__value--' ~ next.status.tone() }}">{{ wording.relative(next, today) }}</dd>
+                    <dd class="pinned__sub">{{ wording.name(next) }}</dd>
+                {% else %}
+                    <dd class="pinned__value">{{ dash }}</dd>
+                    <dd class="pinned__sub">{{ 'dashboard.pinned.nothing_due'|trans }}</dd>
+                {% endif %}
+            </div>
+        </dl>
+        <div class="btn-row">
+            {% if feature_enabled('fuel') %}
+                <a class="btn btn--primary" href="{{ url_for('fuel.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon(vehicle.data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station') }}{{ 'nav.log_fill_up'|trans }}</a>
+            {% endif %}
+            <a class="btn" href="{{ url_for('odometer.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('speed') }}{{ 'dashboard.pinned.add_reading'|trans }}</a>
+            <a class="btn btn--ghost pinned__open" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'dashboard.pinned.open_vehicle'|trans }}{{ ui.icon('arrow_forward') }}</a>
+        </div>
+    </div>
+</section>

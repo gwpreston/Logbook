@@ -52,7 +52,7 @@
         <div class="list__item">
             <span class="list__icon">{{ ui.icon(data.type.icon()) }}</span>
             <span class="list__body">
-                <a class="list__title" href="{{ url_for('compliance.edit', {id: vehicle.id, document: document.id}) }}">{{ docs.name(document) }}</a>
+                <a class="list__title" href="{{ url_for('compliance.edit', {id: vehicle.id, document: document.id}) }}" data-modal>{{ docs.name(document) }}</a>
                 {% if data.title %}<span class="list__meta">{{ ('compliance.type.' ~ data.type.value)|trans }}</span>{% endif %}
                 {% if data.provider or data.reference %}
                     <span class="list__meta">
@@ -75,9 +75,9 @@
         {% endif %}
         {% if not vehicle.isArchived() %}
             <div class="btn-row document__actions">
-                <a class="btn btn--soft" href="{{ url_for('compliance.edit', {id: vehicle.id, document: document.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}<span class="visually-hidden">: {{ docs.name(document) }}</span></a>
+                <a class="btn btn--soft" href="{{ url_for('compliance.edit', {id: vehicle.id, document: document.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}<span class="visually-hidden">: {{ docs.name(document) }}</span></a>
                 {% if data.type.isSuperseded() and state.status.value in ['expired', 'expiring', 'valid'] %}
-                    <a class="btn btn--soft" href="{{ url_for('compliance.create', {id: vehicle.id}, {type: data.type.value}) }}">{{ ui.icon('event_repeat') }}{{ 'compliance.renew'|trans }}<span class="visually-hidden">: {{ docs.name(document) }}</span></a>
+                    <a class="btn btn--soft" href="{{ url_for('compliance.create', {id: vehicle.id}, {type: data.type.value}) }}" data-modal>{{ ui.icon('event_repeat') }}{{ 'compliance.renew'|trans }}<span class="visually-hidden">: {{ docs.name(document) }}</span></a>
                 {% endif %}
             </div>
         {% endif %}

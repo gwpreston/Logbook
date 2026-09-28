@@ -16,8 +16,21 @@ use Slim\App;
  */
 final class Kernel
 {
-    /** The release, as recorded in CHANGELOG.md (and in backups; spec.md §7.13). */
-    public const string VERSION = '0.6.0';
+    private static ?string $version = null;
+
+    /**
+     * The release (the VERSION file, as recorded in CHANGELOG.md): shown in
+     * the app, returned by /health and written into backups (spec.md §8).
+     */
+    public static function version(): string
+    {
+        if (self::$version === null) {
+            $file = @file_get_contents(self::rootDir() . '/VERSION');
+            self::$version = $file === false || trim($file) === '' ? 'dev' : trim($file);
+        }
+
+        return self::$version;
+    }
 
     public static function rootDir(): string
     {

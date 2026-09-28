@@ -1,0 +1,29 @@
+{# Recent activity: the latest entries of every kind, newest first (spec.md §7.8). #}
+{% import 'macros/ui.twig' as ui %}
+{% if dashboard.activity is empty %}
+    <p class="muted">{{ 'dashboard.activity.empty'|trans }}</p>
+{% else %}
+    <ul class="list">
+        {% for item in dashboard.activity %}
+            {% set route = item.kind.editRoute() %}
+            <li>
+                <a class="list__item" href="{{ url_for(route[0], {id: item.vehicle.id, (route[1]): item.entryId}) }}" data-modal>
+                    <span class="list__icon" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
+                    <span class="list__body">
+                        <span class="list__title">{{ item.label != '' ? item.label : item.labelKey|trans }}</span>
+                        <span class="list__meta">{{ item.vehicle.name() }} · {{ item.date|local_date }}</span>
+                    </span>
+                    <span class="list__end">
+                        <span class="list__amount tabular">
+                            {%- if item.readingKm is not null -%}
+                                {{ item.readingKm|distance }}
+                            {%- elseif item.amount is not null -%}
+                                {{ item.amount|money(item.currency) }}
+                            {%- endif -%}
+                        </span>
+                    </span>
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

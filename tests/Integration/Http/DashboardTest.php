@@ -26,7 +26,9 @@ final class DashboardTest extends AppTestCase
     use CostFixtures;
 
     private const string NOW = '2026-09-27T10:00:00Z';
-    private const array DEFAULT_ORDER = ['fleet', 'reminders', 'spend', 'recent_fuel', 'efficiency', 'compliance'];
+    private const array DEFAULT_ORDER = [
+        'reminders', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity',
+    ];
 
     public function testWidgetsShowTheActiveFleetInTheDefaultOrder(): void
     {
@@ -81,20 +83,20 @@ final class DashboardTest extends AppTestCase
         $moved = $browser->post('/dashboard/layout', ['widget' => 'spend', 'move' => 'up']);
         self::assertSame(303, $moved->getStatusCode());
         self::assertSame('/?customise=1#widget-spend', $moved->getHeaderLine('Location'));
-        $browser->post('/dashboard/layout', ['widget' => 'spend', 'move' => 'up']);
         $browser->post('/dashboard/layout', ['widget' => 'spend', 'move' => 'up']); // already first: no change
+        $browser->post('/dashboard/layout', ['widget' => 'fleet', 'move' => 'up']);
         $browser->post('/dashboard/layout', ['widget' => 'efficiency', 'toggle' => '1']);
 
         $settings = $this->service($app, SettingRepository::class);
         $stored = $settings->find(DashboardLayoutStore::SETTING, SettingScope::User, $owner->id);
         self::assertNotNull($stored, 'kept as a user-scoped settings row');
         self::assertSame([
-            'order' => ['spend', 'fleet', 'reminders', 'recent_fuel', 'efficiency', 'compliance'],
+            'order' => ['spend', 'reminders', 'fleet', 'recent_fuel', 'efficiency', 'compliance', 'mileage', 'recent_activity'],
             'hidden' => ['efficiency'],
         ], $stored->value);
 
         $html = self::body($browser->get('/'));
-        $arranged = ['spend', 'fleet', 'reminders', 'recent_fuel', 'compliance'];
+        $arranged = ['spend', 'reminders', 'fleet', 'recent_fuel', 'compliance', 'mileage', 'recent_activity'];
         self::assertSame($arranged, self::widgetOrder($html), 'hidden: not shown');
         // Customise mode still lists it, folded, so it can be shown again.
         self::assertContains('efficiency', self::widgetOrder(self::body($browser->get('/?customise=1'))));
@@ -125,7 +127,7 @@ final class DashboardTest extends AppTestCase
         self::assertSame(303, $response->getStatusCode(), 'a plain post is redirected');
 
         self::assertSame(
-            ['compliance', 'efficiency', 'fleet', 'reminders', 'spend', 'recent_fuel'],
+            ['compliance', 'efficiency', 'fleet', 'reminders', 'spend', 'recent_fuel', 'mileage', 'recent_activity'],
             self::widgetOrder(self::body($browser->get('/'))),
             'unknown ids dropped, the rest appended',
         );
@@ -153,7 +155,10 @@ final class DashboardTest extends AppTestCase
         $this->vehicle($app);
 
         $html = self::body($browser->get('/'));
-        self::assertSame(['fleet', 'reminders', 'spend', 'recent_fuel', 'efficiency'], self::widgetOrder($html));
+        self::assertSame(
+            ['reminders', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'mileage', 'recent_activity'],
+            self::widgetOrder($html),
+        );
 
         $this->service($app, SettingRepository::class)->save(
             FeatureToggles::SETTING,
@@ -161,7 +166,11 @@ final class DashboardTest extends AppTestCase
             SettingScope::Global,
         );
         $html = self::body($browser->get('/?customise=1'));
-        self::assertSame(['fleet', 'reminders', 'compliance'], self::widgetOrder($html), 'the stored setting wins');
+        self::assertSame(
+            ['reminders', 'fleet', 'compliance', 'mileage', 'recent_activity'],
+            self::widgetOrder($html),
+            'the stored setting wins',
+        );
     }
 
     public function testWithoutVehiclesTheDashboardInvitesYouToAddOne(): void

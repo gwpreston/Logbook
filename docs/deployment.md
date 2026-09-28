@@ -246,7 +246,7 @@ only once per status, so running it more often is harmless.
 ### Trying it locally without a web server
 
 ```bash
-composer start                    # PHP built-in server on http://localhost:8080
+composer start                    # PHP built-in server on http://localhost:8090
 ```
 
 For development only; it honours `APP_BASE_PATH` too.

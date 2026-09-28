@@ -29,7 +29,7 @@ engines="pgsql mysql mariadb sqlite"
 # --- Remembered settings ----------------------------------------------------
 port_override="${APP_PORT:-}"
 DEV_ENGINE=pgsql
-APP_PORT=8080
+APP_PORT=8090
 if [ -f "$state" ]; then
     # shellcheck disable=SC1090
     . "./$state"
@@ -98,8 +98,10 @@ up() {
             $compose stop "$service"
         fi
     done
-    # Recreates the app container when the engine changed.
-    $compose up -d app
+    
+    # Recreates the app container when the engine changed; --build picks up
+    # Dockerfile changes (e.g. new PHP extensions) and is cached otherwise.
+    $compose up -d --build app
     wait_for_app
 
     echo "Logbook is running at $(url) (database: $DEV_ENGINE)"

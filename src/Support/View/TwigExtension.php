@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Support\View;
 
+use Logbook\Kernel;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Display\DisplayPreferences;
@@ -46,6 +47,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFunction('url_for', $this->urlFor(...)),
             new TwigFunction('asset', $this->assets->url(...)),
             new TwigFunction('base_path', fn (): string => $this->basePath),
+            new TwigFunction('app_version', Kernel::version(...)),
             new TwigFunction('current_locale', $this->translator->getLocale(...)),
             new TwigFunction('html_lang', fn (): string => str_replace('_', '-', $this->translator->getLocale())),
             new TwigFunction('trans', $this->trans(...)),

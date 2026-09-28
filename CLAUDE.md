@@ -78,7 +78,7 @@ assets. Nothing else should be web-reachable.
 
 ```bash
 composer install                 # deps
-composer start                   # local dev server (php -S) on :8080
+composer start                   # local dev server (php -S) on :8090
 composer test                    # PHPUnit
 composer lint                    # phpcs (PSR-12)
 composer analyse                 # phpstan

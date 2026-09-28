@@ -93,6 +93,19 @@ final class LocalTime
     }
 
     /**
+     * The calendar date an instant falls on for someone in $zone, as a
+     * calendar date (midnight UTC; comparable with parseDate()'s): a fill-up
+     * at 00:30 BST on 1 April is on 1 April.
+     */
+    public static function dateOf(DateTimeInterface $instant, DateTimeZone $zone): DateTimeImmutable
+    {
+        $date = self::parseDate(self::fromUtc($instant, $zone)->format('Y-m-d'));
+        assert($date instanceof DateTimeImmutable);
+
+        return $date;
+    }
+
+    /**
      * A calendar date plus whole months, clamped to the end of a shorter
      * month: 31 Jan + 1 month is 28 (or 29) Feb, not 3 Mar as PHP's
      * "+1 month" would give.

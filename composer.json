@@ -55,7 +55,7 @@
     "scripts": {
         "start": [
             "Composer\\Config::disableProcessTimeout",
-            "php -S 0.0.0.0:8080 -t public bin/dev-router.php"
+            "php -S 0.0.0.0:8090 -t public bin/dev-router.php"
         ],
         "test": "phpunit",
         "test:unit": "phpunit --testsuite unit",
@@ -74,7 +74,7 @@
         "build-assets": "php bin/build-assets.php"
     },
     "scripts-descriptions": {
-        "start": "Run the PHP built-in dev server on http://localhost:8080",
+        "start": "Run the PHP built-in dev server on http://localhost:8090",
         "test": "Run the PHPUnit suite (TEST_DB_* selects the database; default SQLite)",
         "lint": "Check coding style (PSR-12)",
         "cs-fix": "Fix coding style automatically",

@@ -168,6 +168,31 @@
     </div>
 {%- endmacro %}
 
+{# What a vehicle's due count means, in words: "2 overdue, 1 due soon" or
+   "All up to date". `count` is a Service\Reminder\VehicleDueCount. #}
+{% macro due_text(count) -%}
+    {%- set parts = [] -%}
+    {%- if count.overdue > 0 %}{% set parts = parts|merge(['nav.status.overdue'|trans({count: count.overdue})]) %}{% endif -%}
+    {%- if count.due > 0 %}{% set parts = parts|merge(['nav.status.due'|trans({count: count.due})]) %}{% endif -%}
+    {{- parts is empty ? 'nav.status.ok'|trans : parts|join(', ') -}}
+{%- endmacro %}
+
+{# Status dot (red / amber / green) with its meaning as a tooltip and for
+   screen readers: never colour alone (spec.md §8). #}
+{% macro status_dot(count) -%}
+    {% import _self as ui %}
+    {% set text = ui.due_text(count) %}
+    <span class="status-dot status-dot--{{ count.tone() }}" title="{{ text }}" aria-hidden="true"></span><span class="visually-hidden">{{ text }}</span>
+{%- endmacro %}
+
+{# "N due" badge (overdue + due soon; red when any is overdue); nothing at zero. #}
+{% macro due_badge(count, class = '') -%}
+    {% import _self as ui %}
+    {% if count.total() > 0 %}
+        <span class="due-badge due-badge--{{ count.tone() }}{{ class ? ' ' ~ class }}" title="{{ ui.due_text(count) }}">{{ 'garage.due_count'|trans({count: count.total()}) }}</span>
+    {% endif %}
+{%- endmacro %}
+
 {# Figure tile: label, big value, optional caption. `tone`: '', 'good'. #}
 {% macro stat(label, value, sub = '', tone = '') -%}
     <div class="stat{{ tone ? ' stat--' ~ tone }}">

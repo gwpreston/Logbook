@@ -209,8 +209,8 @@ final class FuelTest extends AppTestCase
         self::assertStringContainsString('href="/vehicles/' . $bike->id . '/fuel/new"', $html);
         self::assertStringNotContainsString('Mondeo', $html, 'archived vehicles are not offered');
 
-        // The Log button is in the navigation of every signed-in page.
-        self::assertStringContainsString('bottom-nav__link--fab" href="/fuel/new"', self::body($browser->get('/garage')));
+        // The Log entry button ("+", opening the chooser) is in the navigation of every signed-in page.
+        self::assertStringContainsString('bottom-nav__link--fab" href="/log/new"', self::body($browser->get('/garage')));
     }
 
     public function testFillUpsOfOtherVehiclesAndUsersAreUnreachable(): void
@@ -308,7 +308,7 @@ final class FuelTest extends AppTestCase
         self::assertSame(200, $page->getStatusCode());
         self::assertStringContainsString('href="/logbook/vehicles/' . $golf->id . '/odometer"', $html);
         self::assertStringContainsString('href="/logbook/vehicles/' . $golf->id . '/fuel/', $html);
-        self::assertStringContainsString('href="/logbook/fuel/new"', $html);
+        self::assertStringContainsString('href="/logbook/log/new"', $html);
     }
 
     /**

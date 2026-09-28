@@ -99,7 +99,7 @@ final readonly class BackupService
         }
 
         $manifest = new BackupManifest(
-            Kernel::VERSION,
+            Kernel::version(),
             $this->repository->schemaVersion(),
             $this->clock->now(),
             $this->settings->database->driver->value,
@@ -195,7 +195,7 @@ final readonly class BackupService
         if ($manifest->schemaVersion !== $current) {
             throw new InvalidBackup('backup.error.schema', [
                 'version' => $manifest->appVersion,
-                'current' => Kernel::VERSION,
+                'current' => Kernel::version(),
             ]);
         }
 

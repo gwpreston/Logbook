@@ -13,6 +13,7 @@ return [
     'app' => [
         'name' => 'Logbook',
         'tagline' => 'Your garage, on your own server.',
+        'version' => 'Logbook v{version}',
     ],
     // Two-tone wordmark next to the logo; normally left untranslated.
     'brand' => [
@@ -27,7 +28,39 @@ return [
         'reports' => 'Reports',
         'settings' => 'Settings',
         'log_fill_up' => 'Log fill-up',
+        'log_entry' => 'Log entry',
         'skip_to_content' => 'Skip to main content',
+        'vehicles' => 'Vehicles',
+        'needs_attention' => '{count, plural, one {# reminder needs attention} other {# reminders need attention}}',
+        'status' => [
+            'overdue' => '{count, plural, other {# overdue}}',
+            'due' => '{count, plural, other {# due soon}}',
+            'ok' => 'All up to date',
+        ],
+    ],
+    'modal' => [
+        'close' => 'Close',
+    ],
+    'log' => [
+        'title' => 'Log something',
+        'lead' => 'What would you like to record?',
+        'pick_lead' => 'Which vehicle is it for?',
+        'no_vehicles' => 'Add a vehicle first; then you can log entries for it.',
+        'kind' => [
+            'fuel' => 'Fill-up',
+            'odometer' => 'Odometer reading',
+            'maintenance' => 'Service record',
+            'expense' => 'Expense',
+            'document' => 'Document',
+            'schedule' => 'Service interval',
+        ],
+        'pick_title' => [
+            'odometer' => 'Add an odometer reading',
+            'maintenance' => 'Log a service',
+            'expense' => 'Add an expense',
+            'document' => 'Add a document',
+            'schedule' => 'Add a service interval',
+        ],
     ],
     'theme' => [
         'to_dark' => 'Dark mode',
@@ -36,6 +69,12 @@ return [
             'system' => 'System',
             'light' => 'Light',
             'dark' => 'Dark',
+        ],
+        'accent' => [
+            'blue' => 'Blue',
+            'teal' => 'Teal',
+            'indigo' => 'Indigo',
+            'purple' => 'Purple',
         ],
     ],
     'form' => [
@@ -122,6 +161,8 @@ return [
     'prefs' => [
         'display_name' => 'Display name',
         'theme' => 'Theme',
+        'accent' => 'Accent colour',
+        'accent_hint' => 'Buttons, links, highlights and charts. Status colours stay red, amber and green.',
         'units' => 'Units',
         'distance_unit' => 'Distance',
         'volume_unit' => 'Fuel volume',
@@ -218,6 +259,11 @@ return [
         'empty_body' => 'Add a car or bike to start tracking its mileage, costs and renewals.',
         'show_archived' => 'Show archived ({count})',
         'hide_archived' => 'Hide archived',
+        'due_count' => '{count, plural, other {# due}}',
+        'stat' => [
+            'odometer' => 'Odometer',
+            'economy' => 'Average economy',
+        ],
     ],
     'vehicle' => [
         'add_title' => 'Add a vehicle',
@@ -676,6 +722,10 @@ return [
             'dismiss' => 'The reminder was dismissed. It comes back when it is next due.',
             'reopen' => 'The reminder was reopened.',
         ],
+        'relative' => [
+            'in' => '{days, plural, =0 {today} one {tomorrow} other {in # days}}',
+            'overdue' => '{days, plural, one {# day overdue} other {# days overdue}}',
+        ],
         'when' => [
             'due_in' => '{days, plural, =0 {Due today} one {Due tomorrow} other {Due in # days}}',
             'expires_in' => '{days, plural, =0 {Expires today} one {Expires tomorrow} other {Expires in # days}}',
@@ -745,6 +795,9 @@ return [
     ],
     'expense' => [
         'title' => 'Expenses',
+        'last_twelve_months' => 'Last 12 months',
+        'monthly_chart_label' => 'Spend per month over the last 12 months',
+        'none_last_twelve_months' => 'Nothing spent in the last 12 months.',
         'add' => 'Add expense',
         'add_title' => 'Add an expense',
         'add_submit' => 'Save expense',
@@ -1023,6 +1076,8 @@ return [
             'recent_fuel' => 'Recent fuel',
             'efficiency' => 'Efficiency trend',
             'compliance' => 'Documents',
+            'mileage' => 'Mileage',
+            'recent_activity' => 'Recent activity',
         ],
         'link' => [
             'garage' => 'Garage',
@@ -1054,6 +1109,32 @@ return [
             'expiry' => 'expires {date}',
             'expired' => '{days, plural, one {Expired # day ago} other {Expired # days ago}}',
             'expires' => '{days, plural, =0 {Expires today} one {Expires tomorrow} other {Expires in # days}}',
+        ],
+        'filter' => [
+            'label' => 'Show vehicles',
+            'all' => 'All vehicles',
+        ],
+        'pinned' => [
+            'economy' => 'Economy',
+            'twelve_month_average' => '12-month average',
+            'running_cost' => 'Running cost',
+            'spent' => 'Spent',
+            'last_twelve_months' => 'last 12 months',
+            'next_due' => 'Next due',
+            'nothing_due' => 'Nothing due',
+            'add_reading' => 'Add reading',
+            'open_vehicle' => 'Open vehicle',
+        ],
+        'mileage' => [
+            'this_month' => 'This month',
+            'this_year' => 'This year',
+            'monthly_average' => 'Monthly avg',
+            'chart_label' => 'Distance driven per month over the last 12 months',
+        ],
+        'activity' => [
+            'empty' => 'Nothing logged yet.',
+            'fill_up' => 'Fill-up',
+            'reading' => 'Odometer reading',
         ],
     ],
     'notifications' => [
@@ -1200,6 +1281,7 @@ return [
         'change_password' => 'Change password',
         'password_changed' => 'Your password was changed. Other devices have been signed out.',
         'installation' => 'Installation',
+        'version' => 'Version',
     ],
     'diagnostics' => [
         'deep_link' => [

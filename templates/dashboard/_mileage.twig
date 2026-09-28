@@ -1,0 +1,33 @@
+{# Mileage: this month, this year and the monthly average, in the owner's distance unit (spec.md §7.8). #}
+{% import 'macros/ui.twig' as ui %}
+{% set mileage = dashboard.mileage %}
+{% set dash = '—' %}
+<dl class="figures">
+    <div class="figures__item">
+        <dt>{{ 'dashboard.mileage.this_month'|trans }}</dt>
+        <dd class="figures__value tabular">{{ mileage and mileage.thisMonthKm is not null ? mileage.thisMonthKm|distance : dash }}</dd>
+    </div>
+    <div class="figures__item">
+        <dt>{{ 'dashboard.mileage.this_year'|trans }}</dt>
+        <dd class="figures__value tabular">{{ mileage and mileage.thisYearKm is not null ? mileage.thisYearKm|distance : dash }}</dd>
+    </div>
+    <div class="figures__item">
+        <dt>{{ 'dashboard.mileage.monthly_average'|trans }}</dt>
+        <dd class="figures__value tabular">{{ mileage and mileage.monthlyAverageKm is not null ? mileage.monthlyAverageKm|distance : dash }}</dd>
+    </div>
+</dl>
+{% if mileage_chart %}
+    {# The last 12 months: a bar chart with JS, the same figures as a table without. #}
+    {{ ui.chart(mileage_chart, 'dashboard.mileage.chart_label'|trans) }}
+    <table class="table chart-table">
+        <caption class="visually-hidden">{{ 'dashboard.mileage.chart_label'|trans }}</caption>
+        <tbody>
+            {% for month in mileage.months|reverse %}
+                <tr>
+                    <th scope="row">{{ month.month|local_month }}</th>
+                    <td class="table__num tabular">{{ month.km is not null ? month.km|distance : dash }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}

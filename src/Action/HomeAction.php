@@ -16,8 +16,10 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET / — the dashboard (spec.md §7.8): the owner's widgets in their saved
- * order. `?customise=1` shows the move / hide controls (plain forms, so the
- * layout can be arranged without JS).
+ * order. `?vehicle={id}` narrows every widget to one active vehicle and pins
+ * its card (an unknown or archived id shows the fleet). `?customise=1`
+ * shows the move / hide controls (plain forms, so the layout can be
+ * arranged without JS), always over the whole fleet.
  */
 final readonly class HomeAction
 {
@@ -33,8 +35,11 @@ final readonly class HomeAction
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $user = RequestContext::requireUser($request);
-        $customise = ($request->getQueryParams()['customise'] ?? null) === '1';
-        $dashboard = $this->dashboards->build($user);
+        $query = $request->getQueryParams();
+        $customise = ($query['customise'] ?? null) === '1';
+        $vehicle = $query['vehicle'] ?? null;
+        $vehicleId = !$customise && is_string($vehicle) && ctype_digit($vehicle) ? (int) $vehicle : null;
+        $dashboard = $this->dashboards->build($user, $vehicleId);
 
         return $this->view->render($request, $response, 'home.twig', [
             'dashboard' => $dashboard,
@@ -42,6 +47,7 @@ final readonly class HomeAction
             'today' => LocalTime::today($this->clock, $user->preferences->timeZone()),
             'wording' => $this->wording,
             'efficiency_chart' => $this->charts->efficiency($dashboard->efficiency),
+            'mileage_chart' => $this->charts->mileage($dashboard->mileage),
         ]);
     }
 }

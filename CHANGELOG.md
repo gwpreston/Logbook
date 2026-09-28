@@ -6,6 +6,72 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-28
+
+Phase 7: design alignment and dashboard enhancements.
+
+### Added — Phase 7: design alignment and dashboard enhancements
+- **Forms in a pop-up on desktop**: on a wide screen, adding or editing a
+  vehicle, fill-up, odometer reading, service record, service interval,
+  document or expense opens in a window over the page. Mistakes are shown
+  right there; saving closes it and shows the usual confirmation. On phones,
+  without JavaScript, or if anything goes wrong, the form opens as its own
+  page as before, and every form still has its own address.
+- **"+ Log entry"** (sidebar, and the "+" in the phone tab bar) replaces
+  "Log fill-up": choose fill-up, odometer reading, service record, expense,
+  document or service interval, then the vehicle (skipped when you have one).
+  Choices for switched-off modules are left out. It works offline for
+  fill-ups, like the fill-up form.
+- **Sidebar**: the *Reminders* link shows how many reminders are overdue or
+  due soon, and a *Vehicles* list shows each active vehicle with a red, amber
+  or green dot. The dot's meaning ("1 overdue, 1 due soon", "All up to date")
+  is shown as a tooltip and read out by screen readers.
+- **Dashboard vehicle filter**: with two or more vehicles, chips under the
+  greeting show one vehicle at a time. Every widget then covers that vehicle
+  only, and a card is pinned at the top with its economy (last 12 months),
+  running cost per mile or km, spend over the last 12 months and what is due
+  next, plus *Log fill-up*, *Add reading* and *Open vehicle*. The choice is
+  part of the address, so it can be bookmarked.
+- **New dashboard widgets**: *Mileage* (this month, this year and monthly
+  average, with a bar chart of the last 12 months) and *Recent activity* (the
+  last eight things logged, of every kind). Saved layouts gain them at the end.
+- **Expenses tab**: a *Last 12 months* chart beside *By category*. It always
+  covers the last 12 months, whichever period is picked above.
+- **Garage cards** show an "N due" badge on the photo, the current odometer
+  and the average economy, in your units. *Your vehicles* on the dashboard is
+  now a row of photo tiles with the same badge.
+- **Accent colour** (Settings → Appearance): Blue, Teal, Indigo or Purple for
+  buttons, links, highlights and charts, in light and dark themes. Overdue,
+  due soon and OK keep their red, amber and green, and number plates stay
+  yellow.
+- **Version**: shown in the sidebar and on Settings ("Logbook v0.7.0"), and
+  returned by `/health` (`"version"`).
+- German translations for everything new.
+
+### Changed
+- The dashboard's default order now starts with *Upcoming reminders*, *Spend
+  this month* and *Recent fuel*, then *Your vehicles*. A layout you have
+  already arranged is kept.
+- Every vehicle tab has *Edit*, *Archive* and *Delete* in the same place, and
+  *Export CSV* / *Import CSV* next to the add button on the right (the
+  *Mileage* tab now matches the others).
+- Fuel trend charts, and Reports' *By category* and *By vehicle*, sit side
+  by side on wide screens. *By vehicle* names are no longer links; each has a
+  car or motorbike icon.
+- Development: `bin/dev`, `docker-compose.dev.yml` and `composer start` now
+  default to port **8090** (was 8080). `APP_PORT` still overrides, and a port
+  already remembered in `var/dev.env` is kept. Production defaults are
+  unchanged.
+
+### Upgrade notes
+- New column `users.accent` (default `blue`), added by a reversible
+  migration that runs automatically on start (Docker) or with
+  `vendor/bin/phinx migrate` (bare PHP).
+- Backups record the database schema, so a backup made with 0.6.0 cannot be
+  restored into 0.7.0. Restore it with 0.6.0 first, then upgrade.
+- The release number now comes from the `VERSION` file in the app's root; keep
+  it when copying the app to a bare-PHP server.
+
 ## [0.6.0] — 2026-09-28
 
 Phase 6: feature toggles, import, backup and polish.
@@ -279,7 +345,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/gwpreston16/Logbook/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/gwpreston16/Logbook/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/gwpreston16/Logbook/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/gwpreston16/Logbook/compare/v0.3.0...v0.4.0
