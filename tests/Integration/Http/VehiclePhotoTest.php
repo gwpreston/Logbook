@@ -9,6 +9,7 @@ use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\Html;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -140,6 +141,19 @@ final class VehiclePhotoTest extends AppTestCase
 
         self::assertSame(303, $response->getStatusCode());
         self::assertNull($this->onlyVehicle($app)->photoPath);
+    }
+
+    /** The CSS that crops a tall photo on the pinned card relies on this nesting (spec.md §7.1). */
+    public function testThePinnedCardKeepsThePhotoInsideItsFrame(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $browser->post('/vehicles/new', self::BIKE, ['photo' => $this->upload(base64_decode(self::PNG), 'bike.png')]);
+        $vehicle = $this->onlyVehicle($app);
+
+        $dashboard = Html::document(self::body($browser->get('/?vehicle=' . $vehicle->id)));
+        $img = Html::element($dashboard, '[data-pinned-vehicle] > .pinned__media > .vehicle-photo > img');
+        self::assertStringStartsWith('/vehicles/' . $vehicle->id . '/photo', (string) $img->getAttribute('src'));
     }
 
     private function upload(string $contents, string $name, string $type = 'image/png'): UploadedFile

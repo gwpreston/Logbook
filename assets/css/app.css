@@ -2837,11 +2837,11 @@ a.list__title:hover {
     padding: 0;
 }
 
- /* Clip the media column so the photo can never paint over the body. */
- .pinned__media {
-     min-width: 0;
-     overflow: hidden;
- }
+/* Clip the media column so the photo can never paint over the body. */
+.pinned__media {
+    min-width: 0;
+    overflow: hidden;
+}
 
 .pinned__media .vehicle-photo {
     min-height: 10rem;
@@ -2929,12 +2929,19 @@ a.list__title:hover {
     }
 
     /* Side by side the photo fills its column; sizing it from the 16:9
-        ratio here would derive its width from the body's height. */
-     .pinned__media .vehicle-photo {
-         width: 100%;
-         height: 100%;
-         aspect-ratio: auto;
-     }
+       ratio here would derive its width from the body's height. */
+    .pinned__media .vehicle-photo {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: auto;
+    }
+
+    /* Out of flow, so the body alone sets the row height: a tall photo is
+       cropped to the column instead of stretching the card (spec.md §7.1). */
+    .pinned__media .vehicle-photo img {
+        position: absolute;
+        inset: 0;
+    }
 
     .pinned__tiles {
         grid-template-columns: repeat(4, minmax(0, 1fr));

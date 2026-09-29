@@ -33,6 +33,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [9.1](phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | ✅ |
 | [9.2](phase-9.2.md) | Plug-in hybrids + v1.1 release | ✅ |
 | [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
+| [10.2](phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -202,6 +203,16 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Release **v1.2.0**.
 
 → [`phase-10.md`](phase-10.md)
+
+## Phase 10.2 — Tall vehicle photos + v1.2.1
+*A portrait photo shouldn't stretch the card.*
+
+- The dashboard's pinned vehicle card is as tall as its content, whatever
+  the photo's shape; the photo is cropped to fit.
+- Every other photo frame checked with tall and very wide photos.
+- Release **v1.2.1**.
+
+→ [`phase-10.2.md`](phase-10.2.md)
 
 ---
 
