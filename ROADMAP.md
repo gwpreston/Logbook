@@ -34,7 +34,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [9.2](phase-9.2.md) | Plug-in hybrids + v1.1 release | ✅ |
 | [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
 | [10.2](phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
-| [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | 🚧 |
+| [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
 
 *Update the status column as each phase lands.*
 

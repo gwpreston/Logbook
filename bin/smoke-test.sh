@@ -58,6 +58,8 @@ case "$variant" in
         expect "$base/history" 200 'Nothing logged yet'
         # The fast fill-up path (no vehicle yet: offers to add one).
         expect "$base/fuel/new" 303
+        # Tyre change from Log entry (Phase 11.1): the same, at the subpath.
+        expect "$base/log/new/tyre" 303
         # Installable app at the subpath.
         expect "$base/manifest.webmanifest" 200 '"start_url": "/logbook/"'
         expect "$base/sw.js" 200 '"base":"/logbook"'

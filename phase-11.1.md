@@ -267,30 +267,30 @@ use the same list:
 
 ### 11.1.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6: new **Tyre**, **TyreSet**, **TyreChange** and **TyreChangeLine**
+- [x] §6: new **Tyre**, **TyreSet**, **TyreChange** and **TyreChangeLine**
       entries. OdometerReading gains the `tyre` source and `tyre_change_id`.
-- [ ] New §7.17 *Tyres*: everything under the design decisions above.
-- [ ] §7.1: the vehicle type change refused while tyres are fitted at
+- [x] New §7.17 *Tyres*: everything under the design decisions above.
+- [x] §7.1: the vehicle type change refused while tyres are fitted at
       positions the new type lacks.
-- [ ] §7.2: the `tyre` reading source and label.
-- [ ] §7.7: tyre costs are maintenance costs (no new ledger line).
-- [ ] §7.8: the chooser entry; *Recent activity* lists tyre changes.
-- [ ] §7.10: the `tyres` module.
-- [ ] §7.13: tyres in CSV export and backups.
-- [ ] §7.16: the *Tyres* kind, the linked-change rule and the print header.
-- [ ] §9: `FEATURES_TYRES`.
-- [ ] §12: remove "Tyre-life tracking". §13: a Phase 11.1 entry.
-- [ ] `ROADMAP.md` gains a Phase 11.1 row and section.
-- [ ] `CHANGELOG.md` `[Unreleased]` gets an entry, with the upgrade note:
+- [x] §7.2: the `tyre` reading source and label.
+- [x] §7.7: tyre costs are maintenance costs (no new ledger line).
+- [x] §7.8: the chooser entry; *Recent activity* lists tyre changes.
+- [x] §7.10: the `tyres` module.
+- [x] §7.13: tyres in CSV export and backups.
+- [x] §7.16: the *Tyres* kind, the linked-change rule and the print header.
+- [x] §9: `FEATURES_TYRES`.
+- [x] §12: remove "Tyre-life tracking". §13: a Phase 11.1 entry.
+- [x] `ROADMAP.md` gains a Phase 11.1 row and section.
+- [x] `CHANGELOG.md` `[Unreleased]` gets an entry, with the upgrade note:
       new tables, a new reading source, new `FEATURES_TYRES` (default on),
       and the backup schema rule.
 
 ### 11.1.1 Domain + migration
-- [ ] Migration: `tyre_sets`
+- [x] Migration: `tyre_sets`
   - columns: id, vehicle_id FK cascade, name (100), storage_location
     (200, nullable), notes (500, nullable), created/updated (UTC);
   - index `(vehicle_id)`.
-- [ ] Migration: `tyres`
+- [x] Migration: `tyres`
   - columns: id, vehicle_id FK cascade, set_id FK nullable
     `ON DELETE SET NULL`, brand (60), model (60), size (30), season,
     dot_code (4), manufactured_on (`date`), status, position,
@@ -298,105 +298,105 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - brand, model, size, season, dot_code, manufactured_on, position,
     retired_reason and notes are all nullable;
   - index `(vehicle_id, status)`.
-- [ ] Migration: `tyre_changes`
+- [x] Migration: `tyre_changes`
   - columns: id, vehicle_id FK cascade, kind, done_on (`date`),
     odometer_km (`decimal(12,3)`, nullable), maintenance_entry_id FK
     nullable `ON DELETE SET NULL`, note (500, nullable), created/updated;
   - index `(vehicle_id, done_on)`.
-- [ ] Migration: `tyre_change_lines`
+- [x] Migration: `tyre_change_lines`
   - columns: id, change_id FK cascade, tyre_id FK cascade, action,
     position (nullable);
   - unique `(change_id, tyre_id)`.
-- [ ] Migration: `odometer_readings.tyre_change_id` (nullable FK,
+- [x] Migration: `odometer_readings.tyre_change_id` (nullable FK,
       `ON DELETE CASCADE`), plus the `tyre` source.
-- [ ] Codes are plain strings, as maintenance categories are. Check how
+- [x] Codes are plain strings, as maintenance categories are. Check how
       `source` is constrained today on every engine, and widen it in the
       same migration if needed.
-- [ ] All reversible. They apply and roll back on SQLite, PostgreSQL, MySQL
+- [x] All reversible. They apply and roll back on SQLite, PostgreSQL, MySQL
       and MariaDB.
-- [ ] Enums: `TyreSeason`, `TyrePosition`, `TyreStatus`, `TyreChangeKind`,
+- [x] Enums: `TyreSeason`, `TyrePosition`, `TyreStatus`, `TyreChangeKind`,
       `TyreLineAction` and `TyreRetireReason`.
-- [ ] `VehicleType::tyrePositions()` returns the ordered positions for each
+- [x] `VehicleType::tyrePositions()` returns the ordered positions for each
       type.
-- [ ] `DotCode` value object: parse, validate, and convert to
+- [x] `DotCode` value object: parse, validate, and convert to
       `manufactured_on`.
-- [ ] Entities and `Row` mapping. Dates are `DateTimeImmutable` at
+- [x] Entities and `Row` mapping. Dates are `DateTimeImmutable` at
       midnight, with no time-zone conversion.
 
 ### 11.1.2 Services
-- [ ] `TyreRepository` (DBAL only, bound parameters), covering tyres, sets,
+- [x] `TyreRepository` (DBAL only, bound parameters), covering tyres, sets,
       changes and lines.
-- [ ] `TyreChangeService`: one method per kind. Each validates, writes the
+- [x] `TyreChangeService`: one method per kind. Each validates, writes the
       change, lines, readings and any service record, then replays and
       stores tyre state, all in one transaction.
-- [ ] Edit and delete of a change go through the same replay. A refusal
+- [x] Edit and delete of a change go through the same replay. A refusal
       rolls back everything and returns a typed error for the form.
-- [ ] `TyreReplay`: a pure function from ordered changes to states and
+- [x] `TyreReplay`: a pure function from ordered changes to states and
       segments, unit-testable without a DB.
-- [ ] `TyreDistance`: segments to distance per tyre, and cost per distance
+- [x] `TyreDistance`: segments to distance per tyre, and cost per distance
       for retired tyres. Returns typed results; no maths in templates or
       Actions.
-- [ ] `MaintenanceService` edit and delete keep linked changes in step
+- [x] `MaintenanceService` edit and delete keep linked changes in step
       (date, odometer, reading ownership) in the same transaction.
-- [ ] `VehicleService::update()` refuses a type change that would strand
+- [x] `VehicleService::update()` refuses a type change that would strand
       fitted tyres.
-- [ ] `ActivityFeed` gains the *Tyres* kind and the linked-change rule.
+- [x] `ActivityFeed` gains the *Tyres* kind and the linked-change rule.
 
 ### 11.1.3 Forms
-- [ ] *Tyres already on the vehicle*, *Fit tyres*, *Swap set*, *Rotate*,
+- [x] *Tyres already on the vehicle*, *Fit tyres*, *Swap set*, *Rotate*,
       *Repair* and *Remove*. Each is its own page and a desktop modal
       (`data-modal`, with `return` honoured, §5).
-- [ ] All work without JS. Errors keep the typed values. Hints are visible
+- [x] All work without JS. Errors keep the typed values. Hints are visible
       text or use `aria-describedby`.
-- [ ] Date defaults to today in the owner's time zone. Odometer is in the
+- [x] Date defaults to today in the owner's time zone. Odometer is in the
       owner's distance unit, prefilled with the latest reading, and uses
       the existing odometer parser.
-- [ ] Cost and garage, or *Link a service record*, only when the
+- [x] Cost and garage, or *Link a service record*, only when the
       `maintenance` module is on.
-- [ ] Sets: create one inline on *Swap set* and *Remove* (name and storage
+- [x] Sets: create one inline on *Swap set* and *Remove* (name and storage
       location). A small edit page renames a set or updates its storage.
       A set can only be deleted while it is empty.
-- [ ] Tyre edit page: brand, model, size, season, DOT and notes (never
+- [x] Tyre edit page: brand, model, size, season, DOT and notes (never
       state or position, which only change through a change). Deleting a
       tyre removes its lines. A change left with no lines is deleted with
       its reading, but any linked service record is kept. Then the replay
       runs.
 
 ### 11.1.4 Display
-- [ ] Tyres tab (sections as above), overview card and chooser entry.
-- [ ] History: kind chip, rows, the service-row second line, print kind
+- [x] Tyres tab (sections as above), overview card and chooser entry.
+- [x] History: kind chip, rows, the service-row second line, print kind
       and header block. *Recent activity*.
-- [ ] Mileage tab: the *Tyres* source label. A tyre reading's edit link
+- [x] Mileage tab: the *Tyres* source label. A tyre reading's edit link
       opens its change.
-- [ ] Archived vehicles show their tyres read-only, like their other
+- [x] Archived vehicles show their tyres read-only, like their other
       history. Changes are still editable, as for other entries.
-- [ ] Feature toggle: everything listed under *Module toggle* is gated.
+- [x] Feature toggle: everything listed under *Module toggle* is gated.
       Routes sit behind the existing route-group middleware.
 
 ### 11.1.5 CSV export + backup
-- [ ] *Export CSV* on the Tyres tab offers two files.
+- [x] *Export CSV* on the Tyres tab offers two files.
   - Tyres: brand, model, size, season, DOT, manufactured on, status,
     position, set, storage location, distance (owner's unit), retired
     reason.
   - Changes: date, kind, odometer (owner's unit), tyres, positions, linked
     service record, cost.
   - Both UTF-8 and formatted per §7.7.
-- [ ] Backups include the four new tables and the new column automatically.
+- [x] Backups include the four new tables and the new column automatically.
       The schema version moves, so the upgrade note repeats the rule:
       restore an older backup with its own version first, then upgrade.
 
 ### 11.1.6 Demo seed
-- [ ] `DemoDataSeeder`: one petrol car starts with `existing` tyres a year
+- [x] `DemoDataSeeder`: one petrol car starts with `existing` tyres a year
       ago. Its front pair is replaced mid-year with a linked, costed
       service record, so there are retired fronts with a lifetime distance
       and cost per distance. It has a stored *Winter wheels* set with a
       storage location, swapped on in November and off in March, and one
       rotation.
-- [ ] The motorbike has front and rear, with the rear replaced once.
-- [ ] README's seed description follows.
+- [x] The motorbike has front and rear, with the rear replaced once.
+- [x] README's seed description follows.
 
 ### 11.1.7 i18n
-- [ ] English and German for every label, hint, kind, action, position,
+- [x] English and German for every label, hint, kind, action, position,
       reason, error and summary line:
   - *Reifen*, *Reifenwechsel*, *Reifensatz*, *Lagerort*;
   - *Sommerreifen*, *Winterreifen*, *Ganzjahresreifen*;
@@ -404,19 +404,19 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
     *Reserverad*, and for bikes *Vorderrad* / *Hinterrad*;
   - *Positionen tauschen*, *Reparatur*, *Ausgemustert*;
   - *DOT-Nummer*, *Herstellungsdatum*.
-- [ ] Summaries use ICU plurals ("{count, plural, one {# Reifen} other
+- [x] Summaries use ICU plurals ("{count, plural, one {# Reifen} other
       {# Reifen}} montiert").
 
 ### 11.1.8 Tests
-- [ ] **Unit:** `DotCode`
+- [x] **Unit:** `DotCode`
   - `2323` → Monday of ISO week 23, 2023;
   - week 00 and 54 rejected;
   - a code in the owner's future rejected;
   - three digits (pre-2000) rejected;
   - `manufactured_on` never shifted by the time zone.
-- [ ] **Unit:** positions by vehicle type; size normalised; season blank →
+- [x] **Unit:** positions by vehicle type; size normalised; season blank →
       null.
-- [ ] **Unit (replay):**
+- [x] **Unit (replay):**
   - fit, then swap, then swap back leaves the state as before;
   - rotate as a permutation, and refused when not one;
   - fitting to an occupied position without dealing with the tyre there
@@ -424,7 +424,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - deleting a middle change that the later ones depend on is refused
     with a message;
   - a retired tyre can't be fitted.
-- [ ] **Unit (distance):**
+- [x] **Unit (distance):**
   - segments across fit, rotate to spare and back, and swap;
   - an open segment runs to the current reading;
   - spare time not counted;
@@ -432,7 +432,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - `existing` shows "since";
   - cost per distance splits a two-tyre record in half, with none for a
     fitted tyre.
-- [ ] **Integration:**
+- [x] **Integration:**
   - each change kind through its form (page and modal), with and without
     JS;
   - *Fit tyres* with a cost writes exactly one service record and one
@@ -442,7 +442,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - deleting the record leaves the change with its own reading;
   - a forced failure writing the reading leaves no change, lines or
     record behind.
-- [ ] **Integration:**
+- [x] **Integration:**
   - the vehicle type change is refused while rear tyres are fitted;
   - the `tyres` module off gives 404 routes, with the tab, chip, card and
     chooser gone and readings kept; on restores everything;
@@ -452,7 +452,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - CSV output;
   - backup → restore round-trip;
   - migration up and down.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -464,21 +464,21 @@ flow through the service records that already exist. Released with
 Phase 11.2 as Logbook v1.3.0.
 
 ## Acceptance criteria
-- [ ] An owner can record the tyres already on a vehicle, fit new ones,
+- [x] An owner can record the tyres already on a vehicle, fit new ones,
       swap sets, rotate, repair and retire, on a car and on a motorbike.
-- [ ] Each tyre's distance matches the mileage series, excluding time as a
+- [x] Each tyre's distance matches the mileage series, excluding time as a
       spare or in storage. A retired tyre shows its lifetime distance and,
       when costed, its cost per distance.
-- [ ] A tyre cost appears once, under maintenance, in every report and in
+- [x] A tyre cost appears once, under maintenance, in every report and in
       history.
-- [ ] Every change with an odometer produces exactly one reading, owned by
+- [x] Every change with an odometer produces exactly one reading, owned by
       the change or by its service record, never both.
-- [ ] An edit that would break the sequence is refused with a clear
+- [x] An edit that would break the sequence is refused with a clear
       message; nothing is re-sequenced silently.
-- [ ] Switching `tyres` off removes it everywhere and loses nothing.
-- [ ] A DOT date is never shifted by the owner's time zone.
-- [ ] Existing data untouched; every existing figure unchanged.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Switching `tyres` off removes it everywhere and loses nothing.
+- [x] A DOT date is never shifted by the owner's time zone.
+- [x] Existing data untouched; every existing figure unchanged.
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas
