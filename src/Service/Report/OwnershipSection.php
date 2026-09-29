@@ -26,8 +26,8 @@ final readonly class OwnershipSection
         /** Kilometres owned, summed over the rows that have a distance; null for none. */
         public ?string $distanceKm,
         public Money $running,
-        /** Summed over the rows that have one. */
-        public Money $depreciation,
+        /** Summed over the rows that have one; null when none has. */
+        public ?Money $depreciation,
         /** Summed over the complete rows; null when none is. */
         public ?Money $total,
         /** How many rows the total covers. */
@@ -45,7 +45,7 @@ final readonly class OwnershipSection
         $zero = Money::zero($currency);
         $distance = '0';
         $running = $zero;
-        $depreciation = $zero;
+        $depreciation = null;
         $total = null;
         $complete = 0;
         $bothTotal = $zero;
@@ -57,7 +57,7 @@ final readonly class OwnershipSection
                 $distance = Decimal::add($distance, $row->distanceKm);
             }
             if ($row->depreciationCost !== null) {
-                $depreciation = $depreciation->add($row->depreciationCost);
+                $depreciation = ($depreciation ?? $zero)->add($row->depreciationCost);
             }
             if ($row->total !== null) {
                 $total = ($total ?? $zero)->add($row->total);

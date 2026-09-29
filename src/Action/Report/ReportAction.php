@@ -51,6 +51,7 @@ final readonly class ReportAction
             'all_vehicles' => $this->vehicles->listFleet($user, true),
             'charts' => array_map($this->charts->monthly(...), $report->currencies),
             'filter_query' => $filter->toQuery(),
+            'ownership_query' => OwnershipReportAction::query($filter),
         ]);
     }
 }

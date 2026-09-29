@@ -219,6 +219,20 @@ final class OwnershipCostTest extends TestCase
         self::assertSame('2100.000', $cost->total?->toDecimal(3));
     }
 
+    public function testWithoutAnyCostThereAreNoRates(): void
+    {
+        $car = self::vehicle(purchased: '2024-01-01', price: '10000.000');
+        $readings = [self::reading(1, '0', '2024-01-01T12:00:00Z'), self::reading(2, '10000', '2025-01-01T12:00:00Z')];
+
+        $cost = self::of($car, [], $readings, [self::valuation('2025-01-01', '8000.000')], '2026-01-01');
+
+        self::assertNotNull($cost);
+        self::assertSame(0, $cost->count);
+        self::assertNull($cost->perKm, 'nothing logged is not £0 a mile');
+        self::assertNull($cost->perMonth);
+        self::assertSame('2000.000', $cost->total?->toDecimal(3));
+    }
+
     public function testUnderNinetyDaysThereAreNoRatesButTheTotalsShow(): void
     {
         $car = self::vehicle(purchased: '2026-01-01', price: '10000.000');
@@ -264,24 +278,36 @@ final class OwnershipCostTest extends TestCase
         self::assertTrue($cost->perMonthIsPartial);
     }
 
-    public function testALossWithoutMileageBackToThePurchaseIsNotAddedPerDistance(): void
+    public function testWithoutMileageBackToTheStartThereIsNoDistanceOwned(): void
     {
+        // A leased EV logged for years, its mileage only from 2026: €14,000 over 5,000 km would read €2.80/km.
         $car = self::vehicle(purchased: '2023-03-01', price: '15000.000');
-        // The first reading is after the purchase: depreciation per distance is unknown.
-        $readings = [self::reading(1, '20000', '2024-01-01T12:00:00Z'), self::reading(2, '40000', '2026-03-01T12:00:00Z')];
+        $readings = [self::reading(1, '20000', '2026-01-15T12:00:00Z'), self::reading(2, '25000', '2026-06-01T12:00:00Z')];
 
         $cost = self::of(
             $car,
             [self::expense($car, '2024-06-01', '2000')],
             $readings,
             [self::valuation('2026-03-01', '9800.000')],
-            '2026-03-01',
+            '2026-09-01',
         );
 
         self::assertNotNull($cost);
-        self::assertSame('0.100000', $cost->perKm, 'running only: £2,000 ÷ 20,000 km');
-        self::assertTrue($cost->perKmIsPartial);
+        self::assertNull($cost->distanceKm);
+        self::assertNull($cost->perKm, 'neither part: the running part would be divided by part of the distance');
+        self::assertSame('2026-01-15', $cost->mileageStartsOn()?->format('Y-m-d'), 'for the hint');
+        self::assertNotNull($cost->perMonth);
         self::assertFalse($cost->perMonthIsPartial, 'per year is still known');
+
+        // First logged: a cost before the first reading leaves the start uncovered too…
+        $lease = self::vehicle(purchased: null, price: null);
+        $early = self::of($lease, [self::finance($lease, '2025-01-05', '400')], $readings, [], '2026-09-01');
+        self::assertNull($early?->distanceKm);
+        // …but when the first reading starts the period, the log covers it.
+        $late = self::of($lease, [self::finance($lease, '2026-02-05', '400')], $readings, [], '2026-09-01');
+        self::assertNotNull($late);
+        self::assertSame('5000', $late->distanceKm);
+        self::assertNull($late->mileageStartsOn());
     }
 
     public function testTheFleetRowSumsAndDividesOnlyWhatIsComplete(): void
@@ -312,7 +338,7 @@ final class OwnershipCostTest extends TestCase
         $section = OwnershipSection::of('GBP', array_values(array_filter($rows)));
 
         self::assertSame('1700.000', $section->running->toDecimal(3));
-        self::assertSame('1500.000', $section->depreciation->toDecimal(3));
+        self::assertSame('1500.000', $section->depreciation?->toDecimal(3));
         self::assertSame('2800.000', $section->total?->toDecimal(3), '£2,000 + £800; the lease has no total');
         self::assertSame(2, $section->completeCount);
         self::assertTrue($section->isTotalPartial(), '"2 of 3 vehicles"');

@@ -91,6 +91,9 @@ esac
 expect "$base/reminders" 200 'Nothing coming up'
 # Reports (Phase 5).
 expect "$base/reports" 200 'Expenses &amp; reports'
+# Cost of ownership (Phase 14.2): a deep link at the subpath, and its CSV.
+expect "$base/reports/ownership" 200 'Cost of ownership'
+expect "$base/reports/ownership.csv" 200 'Owned from'
 i=0
 until $compose logs app 2>&1 | grep -q 'Scheduled tasks: '; do
     i=$((i + 1)); [ "$i" -lt 30 ] || fail "the scheduled task never ran"; sleep 1

@@ -1061,13 +1061,23 @@ currency and never converted.
     total; per distance and per month are the running part alone, labelled
     "running costs only". A leased car has no purchase price: its running
     costs, lease payments included, are what it cost.
+  - **The mileage log must reach back to the start** (a reading on or
+    before the first day of the period, e.g. the dated starting mileage,
+    §7.2): otherwise there is no *distance owned* and no per-distance figure
+    at all, since the whole period's costs would be divided by part of its
+    distance. The card says why: "Your mileage log starts on 15 Jan 2026;
+    add a reading dated on the day the ownership began …". For a purchase
+    start this is §7.1's own condition, so depreciation per distance never
+    appears without its running part.
   - No distance driven in the period: no per-distance figure.
+  - No cost logged in the period: no per-distance or per-month figure
+    (nothing logged is not nothing spent, and a rate of £0 would be made
+    up); the totals still show.
   - Under 90 days owned: no per-distance or per-month figure (too short to
     mean anything); the totals still show.
   - Depreciation per distance unknown (no price or value, a gain, no
-    purchase date, the value under 90 days after the purchase, or a mileage
-    log that does not reach back to the purchase, §7.1): per distance is the
-    running part alone,
+    purchase date, or the value under 90 days after the purchase, §7.1):
+    per distance is the running part alone,
     labelled "running costs only". Likewise per month when depreciation per
     year is unknown (a gain, no purchase date, under 90 days).
 - **Finance and leases.** The expense category `finance` (*Finance and

@@ -65,6 +65,8 @@ final readonly class OwnershipCost
         public ?Money $depreciationPerMonth,
         public ?Money $perMonth,
         public bool $perMonthIsPartial,
+        /** The owner's local day of the first reading, or null without one. */
+        private ?DateTimeImmutable $mileageStart,
     ) {
     }
 
@@ -119,8 +121,11 @@ final readonly class OwnershipCost
             : null;
         $total = $depreciationCost === null ? null : $running->add($depreciationCost);
 
-        $km = PeriodDistance::km($readings, $period, $zone);
-        $longEnough = LocalTime::daysBetween($from, $to) >= self::MIN_DAYS;
+        // Only when the mileage log reaches back to the start: otherwise the
+        // whole period's costs would be divided by part of its distance.
+        $km = PeriodDistance::reachesBack($readings, $from, $zone) ? PeriodDistance::km($readings, $period, $zone) : null;
+        // Nothing logged is not "nothing spent": a rate of £0 would be made up.
+        $hasRates = $count > 0 && LocalTime::daysBetween($from, $to) >= self::MIN_DAYS;
         $months = count($period->months());
 
         $runningPerKm = null;
@@ -129,7 +134,7 @@ final readonly class OwnershipCost
         $runningPerMonth = null;
         $depreciationPerMonth = null;
         $perMonth = null;
-        if ($longEnough) {
+        if ($hasRates) {
             if ($km !== null) {
                 $runningPerKm = Decimal::divide($running->toDecimal(Money::SCALE), $km, self::SCALE);
                 $depreciationPerKm = $depreciationCost === null ? null : $depreciation->perKm;
@@ -167,6 +172,7 @@ final readonly class OwnershipCost
             depreciationPerMonth: $depreciationPerMonth,
             perMonth: $perMonth,
             perMonthIsPartial: $perMonth !== null && $depreciationPerMonth === null,
+            mileageStart: $readings === [] ? null : LocalTime::dateOf($readings[0]->recordedAt, $zone),
         );
     }
 
@@ -202,6 +208,16 @@ final readonly class OwnershipCost
     public function valuedOn(): ?DateTimeImmutable
     {
         return $this->isComplete() ? $this->depreciation->current?->date : null;
+    }
+
+    /**
+     * The owner's local day of the first reading when the mileage log
+     * starts after the period does (so there is no distance owned), for the
+     * hint; null otherwise.
+     */
+    public function mileageStartsOn(): ?DateTimeImmutable
+    {
+        return $this->mileageStart !== null && $this->mileageStart > $this->period->from ? $this->mileageStart : null;
     }
 
     /**

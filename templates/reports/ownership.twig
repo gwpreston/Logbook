@@ -1,0 +1,136 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ownership.twig' as own %}
+
+{% set active_nav = 'reports' %}
+{% set dash = '—' %}
+
+{% block title %}{{ 'ownership.report_title'|trans }} · {{ 'report.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('reports.index') }}">{{ ui.icon('chevron_left') }}{{ 'report.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'ownership.report_title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'ownership.report_lead'|trans }}</p>
+            </div>
+            <a class="btn" href="{{ url_for('reports.ownership.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+        </header>
+
+        <form class="card report-filter" method="get" action="{{ url_for('reports.ownership') }}" data-auto-submit>
+            <div class="form-row">
+                <div class="field">
+                    <label class="field__label" for="f-vehicle">{{ 'report.field.vehicle'|trans }}</label>
+                    <select class="select" id="f-vehicle" name="vehicle">
+                        <option value="">{{ 'report.fleet'|trans }}</option>
+                        {% for vehicle in all_vehicles %}
+                            <option value="{{ vehicle.id }}"{% if filter.vehicleId == vehicle.id %} selected{% endif %}>
+                                {{- vehicle.name() }}{% if vehicle.isArchived() %} ({{ 'vehicle.status.archived'|trans }}){% endif -%}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <label class="checkbox report-filter__archived">
+                    <input type="checkbox" name="include_archived" value="1"{% if filter.includeArchived %} checked{% endif %}>
+                    <span>{{ 'report.field.include_archived'|trans }}</span>
+                </label>
+            </div>
+            <p class="field__hint">{{ 'ownership.hint.archived'|trans }}</p>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary">{{ ui.icon('check') }}{{ 'report.apply'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url_for('reports.ownership') }}">{{ 'report.reset'|trans }}</a>
+            </div>
+        </form>
+
+        {% if report.isEmpty() %}
+            <div class="card empty">
+                {{ ui.icon('garage') }}
+                <p class="empty__title">{{ 'ownership.empty_title'|trans }}</p>
+                <p>{{ 'ownership.empty_body'|trans }}</p>
+            </div>
+        {% endif %}
+
+        {% for section in report.sections %}
+            {% set currency = section.currency %}
+            <section class="card" aria-labelledby="ownership-{{ currency }}-heading">
+                <div class="card__header">
+                    <h2 id="ownership-{{ currency }}-heading" class="card__title">
+                        {{- report.hasSeveralCurrencies() ? 'report.in_currency'|trans({currency: currency_name(currency)}) : 'ownership.by_vehicle'|trans -}}
+                    </h2>
+                </div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <caption class="visually-hidden">{{ 'ownership.report_title'|trans }} · {{ currency }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ 'ownership.column.vehicle'|trans }}</th>
+                                <th scope="col">{{ 'ownership.column.owned'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'ownership.row.distance'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'ownership.row.running'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'ownership.row.depreciation'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'ownership.row.total'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'ownership.row.per_distance'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'ownership.row.per_month'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cost in section.rows %}
+                                <tr>
+                                    <th scope="row">
+                                        <a href="{{ url_for('vehicles.show', {id: cost.vehicle.id}) }}">{{ cost.vehicle.name() }}</a>
+                                        {%- if cost.vehicle.isArchived() %} <span class="muted">({{ 'vehicle.status.archived'|trans }})</span>{% endif -%}
+                                    </th>
+                                    <td>
+                                        {{ cost.period.from|local_date }} – {{ cost.period.to|local_date }}
+                                        {%- if cost.isLifetime() %}<br><span class="muted">{{ own.total_label(cost) }}</span>
+                                        {%- elseif cost.start.value == 'first_logged' %}<br><span class="muted">{{ 'ownership.start.first_logged'|trans }}</span>{% endif -%}
+                                    </td>
+                                    <td class="table__num tabular">{{ cost.distanceKm is not null ? cost.distanceKm|distance : dash }}</td>
+                                    <td class="table__num tabular">{{ cost.running|money }}</td>
+                                    <td class="table__num tabular">{{ own.depreciation(cost) }}</td>
+                                    <td class="table__num tabular">
+                                        {%- if cost.total is not null -%}
+                                            <strong>{{ cost.total|money }}</strong>
+                                            {%- if not cost.isLifetime() %}<br><span class="muted">{{ own.total_label(cost) }}</span>{% endif -%}
+                                        {%- else -%}{{ dash }}{%- endif -%}
+                                    </td>
+                                    <td class="table__num tabular">
+                                        {%- if cost.perKm is not null -%}
+                                            {{ cost.perKm|per_distance(currency) }}{% if cost.perKmIsPartial %}<br><span class="muted">{{ 'ownership.running_only'|trans }}</span>{% endif %}
+                                        {%- else -%}{{ dash }}{%- endif -%}
+                                    </td>
+                                    <td class="table__num tabular">
+                                        {%- if cost.perMonth is not null -%}
+                                            {{ cost.perMonth|money }}{% if cost.perMonthIsPartial %}<br><span class="muted">{{ 'ownership.running_only'|trans }}</span>{% endif %}
+                                        {%- else -%}{{ dash }}{%- endif -%}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if section.rows|length > 1 %}
+                            <tfoot>
+                                <tr>
+                                    <th scope="row">{{ 'ownership.fleet'|trans }}</th>
+                                    <td></td>
+                                    <td class="table__num tabular">{{ section.distanceKm is not null ? section.distanceKm|distance : dash }}</td>
+                                    <td class="table__num tabular">{{ section.running|money }}</td>
+                                    <td class="table__num tabular">{{ section.depreciation is not null ? section.depreciation|money : dash }}</td>
+                                    <td class="table__num tabular">
+                                        {%- if section.total is not null -%}
+                                            <strong>{{ section.total|money }}</strong>
+                                            {%- if section.isTotalPartial() %}<br><span class="muted">{{ 'ownership.of_vehicles'|trans({count: section.completeCount, total: section.rows|length}) }}</span>{% endif -%}
+                                        {%- else -%}{{ dash }}{%- endif -%}
+                                    </td>
+                                    <td class="table__num tabular">{{ section.perKm is not null ? section.perKm|per_distance(currency) : dash }}</td>
+                                    <td class="table__num tabular">{{ dash }}</td>
+                                </tr>
+                            </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -98,7 +98,7 @@ final readonly class Depreciation
             $loss = ltrim($changeDecimal, '-');
             $months = self::monthsBetween($purchased, $current->date);
             $perYear = Decimal::divide(Decimal::multiply($loss, '12', 6), $months, self::MONEY_SCALE);
-            $km = self::coversPurchase($readings, $purchased, $zone)
+            $km = PeriodDistance::reachesBack($readings, $purchased, $zone)
                 ? PeriodDistance::km($readings, new ReportPeriod(ReportRange::Custom, $purchased, $current->date), $zone)
                 : null;
             $perKm = $km === null ? null : Decimal::divide($loss, $km, 6);
@@ -178,17 +178,6 @@ final readonly class Depreciation
         }
 
         return $latest;
-    }
-
-    /**
-     * Whether the mileage series starts on or before the purchase date (the
-     * owner's local day of its first reading).
-     *
-     * @param list<OdometerReading> $readings oldest first
-     */
-    private static function coversPurchase(array $readings, DateTimeImmutable $purchased, DateTimeZone $zone): bool
-    {
-        return $readings !== [] && LocalTime::dateOf($readings[0]->recordedAt, $zone) <= $purchased;
     }
 
     /**

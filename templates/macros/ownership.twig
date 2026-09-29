@@ -1,0 +1,51 @@
+{# Cost of ownership (spec.md §7.7): shared by the overview card and the ownership report. #}
+
+{# How long it has been owned and from when: "3 yrs 2 mo, since 1 Mar 2023". #}
+{% macro owned_for(cost) -%}
+    {%- set age = cost.ownedFor.labelKey()|trans({years: cost.ownedFor.years, months: cost.ownedFor.months}) -%}
+    {%- set from = cost.period.from|local_date -%}
+    {%- if cost.vehicle.data.saleDate -%}
+        {{ 'ownership.owned_until'|trans({age: age, from: from, to: cost.period.to|local_date}) }}
+    {%- elseif cost.start.value == 'first_logged' -%}
+        {{ 'ownership.owned_since_logged'|trans({age: age, from: from}) }}
+    {%- else -%}
+        {{ 'ownership.owned_since'|trans({age: age, from: from}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# The depreciation as a cost; a gain is money back. #}
+{% macro depreciation(cost) -%}
+    {%- if cost.depreciationCost is null -%}
+        —
+    {%- elseif cost.depreciation.isGain() -%}
+        {{ 'ownership.gain'|trans({amount: cost.depreciation.change|money(cost.currency)}) }}
+    {%- else -%}
+        {{ cost.depreciationCost|money }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# What the total covers: "Lifetime, sold 12 Mar 2026" or "depreciation to 1 Mar 2026". #}
+{% macro total_label(cost) -%}
+    {%- if cost.isLifetime() -%}
+        {{ 'ownership.lifetime'|trans({date: cost.valuedOn()|local_date}) }}
+    {%- elseif cost.valuedOn() -%}
+        {{ 'ownership.depreciation_to'|trans({date: cost.valuedOn()|local_date}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# The two parts of a rate, or "running costs only". #}
+{% macro per_distance_parts(cost) -%}
+    {%- if cost.perKmIsPartial -%}
+        {{ 'ownership.running_only'|trans }}
+    {%- else -%}
+        {{ 'ownership.parts'|trans({running: cost.runningPerKm|per_distance(cost.currency), depreciation: cost.depreciationPerKm|per_distance(cost.currency)}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro per_month_parts(cost) -%}
+    {%- if cost.perMonthIsPartial -%}
+        {{ 'ownership.running_only'|trans }}
+    {%- else -%}
+        {{ 'ownership.parts'|trans({running: cost.runningPerMonth|money, depreciation: cost.depreciationPerMonth|money}) }}
+    {%- endif -%}
+{%- endmacro %}
