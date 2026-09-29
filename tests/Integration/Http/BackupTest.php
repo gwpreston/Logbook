@@ -34,6 +34,7 @@ use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreCost;
 use Logbook\Service\Tyre\TyreSettingsStore;
 use Logbook\Service\Tyre\TyreThresholds;
+use Logbook\Service\Vehicle\OwnershipFiles;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
@@ -99,10 +100,10 @@ final class BackupTest extends AppTestCase
         $browser = $this->signedIn($app);
         $this->populate($app);
         $before = $this->snapshot($app);
-        self::assertCount(6, $before['files'], 'the photo and five attachments');
+        self::assertCount(8, $before['files'], 'the photo and seven attachments');
         $owners = array_column($before['tables']['attachments'], 'owner_type');
         sort($owners);
-        self::assertSame(['compliance', 'expense', 'maintenance', 'maintenance', 'odometer'], $owners);
+        self::assertSame(['compliance', 'expense', 'maintenance', 'maintenance', 'odometer', 'purchase', 'sale'], $owners);
         self::assertContains('document', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertContains('tyre', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertCount(1, $before['tables']['tyre_sets']);
@@ -133,7 +134,7 @@ final class BackupTest extends AppTestCase
         $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
         self::assertSame('logbook-backup', $manifest['format']);
         self::assertSame(1, $manifest['tables']['vehicles']);
-        self::assertSame(6, $manifest['files']);
+        self::assertSame(8, $manifest['files']);
         self::assertFalse($zip->getFromName('database/sessions.json'), 'sessions are never backed up');
         $zip->close();
 
@@ -203,7 +204,7 @@ final class BackupTest extends AppTestCase
         $file = $this->backupDir . '/nightly.zip';
         mkdir($this->backupDir);
         $manifest = $backups->create($file);
-        self::assertSame(6, $manifest->files);
+        self::assertSame(8, $manifest->files);
 
         $this->resetDatabase($app);
         foreach ($this->service($app, FileStorage::class)->all() as $relative) {
@@ -300,6 +301,12 @@ final class BackupTest extends AppTestCase
             registration: $golf->data->registration,
             variant: '1.5 TSI Life',
             firstRegisteredOn: $registered,
+            purchaseDate: LocalTime::parseDate('2021-05-01'),
+            saleDate: LocalTime::parseDate('2026-09-25'),
+        ), new OwnershipFiles(
+            // Purchase and sale paperwork (Phase 12) are rows and files like any other.
+            $this->files([[self::PDF, 'purchase-invoice.pdf']]),
+            $this->files([[self::PDF, 'sale-receipt.pdf']]),
         ));
         $vehicles->replacePhoto($owner, $golf, $photo, FileUpload::check($photo, 1024 * 1024, UploadKind::Image));
 

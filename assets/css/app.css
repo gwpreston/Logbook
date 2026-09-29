@@ -2116,6 +2116,18 @@ a.list__title:hover {
     height: 1rem;
 }
 
+/* The purchase / sale paperwork beside its date on the overview (a link to the edit form). */
+.ownership-files {
+    margin-left: var(--space-1);
+    text-decoration: none;
+    vertical-align: middle;
+}
+
+.ownership-files:hover .attachment-count,
+.ownership-files:focus-visible .attachment-count {
+    color: var(--accent);
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

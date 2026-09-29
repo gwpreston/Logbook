@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\History;
 
 use DateTimeImmutable;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -67,6 +68,15 @@ final readonly class ActivityItem
     public function isRun(): bool
     {
         return false;
+    }
+
+    /**
+     * Whose files belong to this line (with $entryId as the owner id), or
+     * null when it takes none.
+     */
+    public function filesOwner(): ?AttachmentOwner
+    {
+        return $this->milestone !== null ? $this->milestone->filesOwner() : $this->kind->filesOwner();
     }
 
     public function isElectric(): bool

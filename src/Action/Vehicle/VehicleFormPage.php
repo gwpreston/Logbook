@@ -31,6 +31,7 @@ final readonly class VehicleFormPage
         private AppSettings $settings,
         private OdometerService $odometer,
         private ClockInterface $clock,
+        private VehiclePaperwork $paperwork,
     ) {
     }
 
@@ -46,8 +47,9 @@ final readonly class VehicleFormPage
         int $status = 200,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
+        $today = LocalTime::today($this->clock, $user->preferences->timeZone())->format('Y-m-d');
 
-        return $this->view->render($request, $response, 'vehicles/form.twig', [
+        return $this->view->render($request, $response, 'vehicles/form.twig', $this->paperwork->formContext($vehicle) + [
             'vehicle' => $vehicle,
             'values' => $values,
             'errors' => $errors?->all() ?? [],
@@ -68,7 +70,7 @@ final readonly class VehicleFormPage
             'max_upload_mb' => $this->settings->maxUploadMb,
             'first_year' => VehicleForm::FIRST_YEAR,
             'first_registration' => VehicleForm::FIRST_REGISTRATION,
-            'last_registration' => LocalTime::today($this->clock, $user->preferences->timeZone())->format('Y-m-d'),
+            'last_registration' => $today,
             // Edit only: the current odometer, read-only (spec.md §7.1).
             'current_reading' => $vehicle === null ? null : $this->odometer->history($vehicle)->latest(),
         ], $status);

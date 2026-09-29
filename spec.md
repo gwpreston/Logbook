@@ -219,6 +219,10 @@ MySQL only.
   `tyre` reading into a `manual` one first, as for `document`.
 - Only `manual` readings take attachments (owner type `odometer`); a derived
   reading's receipt belongs to the entry that owns it.
+- The reading written by *Add vehicle*'s *Current odometer* (§7.1) is a
+  `manual` reading at the moment of saving when its *As of* date is today,
+  and at local noon on that date when it is earlier (Phase 12), like the
+  other date-only readings.
 
 **FuelEntry**
 - id, vehicle_id, filled_at (UTC instant, typed in the user's time zone),
@@ -344,14 +348,28 @@ MySQL only.
 
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
-  (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`; `odometer` for
-  manual readings only), owner_id, filename (the uploaded name,
+  (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`|`purchase`|
+  `sale`; `odometer` for manual readings only; `purchase` and `sale` for the
+  vehicle's purchase and sale, Phase 12, with owner_id = the vehicle's id),
+  owner_id, filename (the uploaded name,
   sanitised, for display and downloads only), mime (detected from the
   content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
   uploaded_at (UTC). Index `(vehicle_id, owner_type, owner_id)`. Deleting the
   entry, or the vehicle, deletes its files. An entry takes several files per
   save (§7.12). Service intervals and reminders take none (they are plans,
   not events), and a vehicle keeps a single photo (not an attachment).
+- **Purchase and sale paperwork** (Phase 12): the purchase invoice and the
+  sale receipt belong to the purchase and the sale, events in the vehicle's
+  life, not to the vehicle; there is no `vehicle` owner type. Files show
+  only on the *Bought* and *Sold* milestones, which exist only while their
+  date is set, so a purchase or sale file needs its date: files without it
+  are refused, and clearing the date while files are attached is refused.
+  Archiving keeps them; deleting the vehicle deletes them.
+- Upgrading to 1.4.0 runs a migration that changes no column but moves the
+  schema version, so a 1.4.0 backup (which may hold `purchase` and `sale`
+  rows that 1.3.x cannot read) is never restored into 1.3.x. Rolling it
+  back removes the rows of purchase and sale files (the files stay under
+  `UPLOAD_PATH`), as the Phase 10 rollback did for its owner types.
 
 **User**
 - id, username (stored lower-case, so sign-in is case-insensitive on every
@@ -422,9 +440,17 @@ from fleet totals unless "include archived" is toggled.
   model year is normal (imports, late registration) and is not flagged.
 - **Current odometer** (add form only, optional, in the owner's distance unit,
   parsed like a reading; 0 is valid for a new vehicle): when filled, saving
-  writes an ordinary `manual` odometer reading at the moment of saving, in the
-  same transaction as the vehicle (a failure saves neither). Blank writes
-  nothing. The edit form has no such field: it shows the current reading
+  writes an ordinary `manual` odometer reading in the same transaction as
+  the vehicle (a failure saves neither). Blank writes nothing.
+- **As of** (Phase 12; add form only, beside *Current odometer*): a native
+  date input, default today in the owner's time zone, hint "When the figure
+  was read, for example on the MOT certificate or at the sale." Today (or
+  blank) writes the reading at the moment of saving; an earlier date at
+  local noon on that date, like service records, documents and tyre
+  changes (§7.2). A date after today or before 1 January 1885 is refused;
+  one before *First registered* is saved with a warning notice (delivery
+  mileage before registration exists). Ignored when *Current odometer* is
+  blank; kept on a validation error. The edit form has no such field: it shows the current reading
   read-only (or "No readings yet") with an *Add reading* link; a wrong
   starting figure is corrected on the Mileage tab like any other reading.
 - The overview's *Details* card lists variant and first registered (owner's
@@ -434,8 +460,21 @@ from fleet totals unless "include archived" is toggled.
   refused while a tyre is fitted at a position the new type lacks (§7.17):
   "Remove the tyres first: a motorbike has no front left wheel." The form
   shows it as an error on the type and keeps the typed values.
+- **Purchase and sale paperwork** (Phase 12): under the purchase fields and
+  under the sale fields of the form (page and modal, add and edit), the
+  shared attachment input (§7.12) with the files already attached and their
+  delete links. The two inputs share one limit per save (PHP counts every
+  file in the request), and the hint says so. Sale files without a sale
+  date are refused ("Add the sale date to attach the sale paperwork"),
+  likewise for the purchase; clearing a date while its files are attached
+  is refused ("Remove the sale paperwork first, or keep the sale date"),
+  the same shape as the tyre type-change refusal. All or nothing: nothing
+  is written and the typed values are kept. The overview's *Ownership*
+  card shows a paperclip with the count beside each date that has files,
+  linking to the edit form.
 - Deleting asks for confirmation on its own page (works without JS) and
-  removes the vehicle, its history and its photo. Archive/restore is one click.
+  removes the vehicle, its history, its photo and every file attached to it
+  or its purchase and sale. Archive/restore is one click.
 - Currency resolves as: vehicle override → the owner's default currency →
   `APP_CURRENCY`.
 - Photo: JPEG, PNG or WebP (checked by content, not by file name), up to
@@ -493,10 +532,14 @@ jumps, going backwards) without blocking.
   the same day of a later month, clamped to a shorter month's last day (as
   maintenance intervals are), so a vehicle first registered on 29 February
   turns one on 28 February of a non-leap year.
-- **Average per year since first registered** = current reading ÷ age in
-  years (days ÷ 365.2425). It assumes the odometer read about 0 at first
-  registration (true for new vehicles; the label says so) and is shown only
-  once the vehicle is at least 90 days old and has a reading. Without a
+- **Average per year since first registered** = current reading ÷ the
+  vehicle's age in years (days ÷ 365.2425) **on the date of that reading**
+  (its `recorded_at` as a local date; Phase 12), not today, so a starting
+  reading dated months back, or a vehicle not driven for a while, is not
+  understated. It assumes the odometer read about 0 at first registration
+  (true for new vehicles; the label says so) and is shown only once the
+  vehicle was at least 90 days old at that reading. *Age* itself is
+  measured to today. Without a
   registration date neither age nor this average is shown (no fallback to
   the model year).
 - The reading written by *Add vehicle*'s current odometer (§7.1) is an
@@ -604,8 +647,8 @@ always valid; existing fill-ups are never guessed (they read "Not recorded").
 - **Price trend:** one series per grade used (plus *Not recorded*), colours
   from the chart tokens, the legend naming each grade.
 - **Badges:** see §8. Shown with the short label on the Fuel tab list, the
-  dashboard's *Recent fuel* and *Recent activity*, the vehicle overview's
-  latest fill-ups and the Expenses ledger line of a fill-up. "Not recorded"
+  dashboard's *Recent fuel* and *Recent activity*, and the Expenses ledger
+  line of a fill-up. "Not recorded"
   shows no badge. With the `fuel` module off nothing about grades appears.
 
 ### 7.4 Maintenance
@@ -970,7 +1013,8 @@ Extensible channel interface so more can be added.
 
 ### 7.12 Attachments
 Upload receipts, invoices, insurance/cert PDFs and images against fill-ups,
-service records, documents, expenses and manual odometer readings. Stored
+service records, documents, expenses, manual odometer readings and a
+vehicle's purchase and sale. Stored
 outside web root, served via an authenticated handler; type/size validated.
 
 - One path for every upload (vehicle photos included): content-checked
@@ -983,7 +1027,9 @@ outside web root, served via an authenticated handler; type/size validated.
   name="attachments[]" multiple>` accepting the four types — and lists the
   files already attached, each with a delete link (confirmation page, works
   without JS). The form is multipart; one parser reads `attachments[]` for
-  every form, and there is no second upload path.
+  every form, and there is no second upload path. The vehicle form has two
+  inputs (`purchase_attachments[]`, `sale_attachments[]`, Phase 12): the
+  parser takes the field name, and the limit below counts both together.
   - **Limit:** up to 10 files per save, or PHP's `max_file_uploads` if that
     is lower (PHP drops files past it silently, so the app's limit never
     sits above it); each file within `MAX_UPLOAD_MB`. The hint states both
@@ -998,9 +1044,12 @@ outside web root, served via an authenticated handler; type/size validated.
 - A paperclip with the number of files (an icon with the count and a text
   alternative, "2 files") shows wherever an entry is listed: History, the
   Fuel, Maintenance, Documents, Mileage and Expenses lists and *Recent
-  activity*. Counts come from one grouped query per page, never one per row.
-- Service intervals and reminders take no files; the vehicle keeps a single
-  photo (§7.1), deliberately: paperwork belongs to the entry it proves.
+  activity*; and on the *Bought* and *Sold* milestones (History, fleet
+  history) and the overview's *Ownership* card for purchase and sale files. Counts come from one grouped query per page, never one per row.
+- Service intervals and reminders take no files. Paperwork belongs to the
+  entry or event it proves: the purchase invoice to the purchase, the sale
+  receipt to the sale (owner types `purchase` and `sale`, §6), never to the
+  vehicle itself, which keeps a single photo (§7.1) and has no gallery.
 - Served by `/vehicles/{id}/attachments/{attachment}` to the signed-in owner
   only (the same responder as photos: `nosniff`, sandboxing CSP, private
   caching). Images open inline; PDFs download under their original name
@@ -1175,7 +1224,9 @@ with a printable service history to hand to a buyer.
   own.
 - **Milestones**, derived from the vehicle on every read and never stored
   (like its age): *First registered* (`first_registered_on`), *Bought*
-  (purchase date) and *Sold* (sale date), each only when its date is set. On
+  (purchase date) and *Sold* (sale date), each only when its date is set.
+  *Bought* and *Sold* carry a paperclip with the number of purchase or sale
+  files (Phase 12), counted in the page's one grouped query. On
   their day *First registered* and *Bought* sort below everything else (they
   happened first) and *Sold* above everything. A price goes in the summary
   ("Bought for £12,500"), never in the amount column, which is for costs
@@ -1232,14 +1283,19 @@ with a printable service history to hand to a buyer.
   - **Options** (a plain GET form): the kinds to include, defaulting to
     everything except fuel (a buyer wants the services, not 400 receipts;
     *Tyres* is included by default),
-    and *Show costs* (default on; off also hides the purchase and sale
-    prices). Milestones are always included.
+    and *Show costs*: **unticked by default** (Phase 12), the copy that can
+    be handed to a buyer; hint "Leave off for a copy you give to a buyer.
+    Purchase and sale prices are hidden too." Only `costs=1` shows costs;
+    anything else, absent included, hides them and the purchase and sale
+    prices, so no link from 1.3.0 shows costs it used to hide (1.3.0 showed
+    them when the form had not been sent). Milestones are always included.
   - **Header block:** name, descriptive line, registration, VIN, first
     registered with age, current odometer, and the date printed (owner's
     date format); with `tyres` on and any tyre fitted, *Tyres fitted*: each
     fitted tyre's position, brand, model, size and age.
   - **Rows:** every row, no folding and no year pages, each entry's
-    attachment file names under it.
+    attachment file names under it (the purchase and sale files under
+    *Bought* and *Sold*).
   - **Print CSS:** hides the app shell and the options, keeps rows from
     splitting across pages, and prints black on white whatever the theme or
     accent (its own colours, never the dark tokens).
@@ -1717,6 +1773,12 @@ task breakdowns live in the per-phase files; this is the map.
   date left), replace-at, legal-minimum and age-limit settings, and one
   tyre reminder per vehicle through the existing engine; release v1.3.0
   with Phase 11.1.
+- **Phase 12 — Buyer-first print, ownership paperwork, dated starting
+  mileage + v1.4.0.** The print view hides costs unless asked; purchase and
+  sale paperwork on the *Bought* and *Sold* milestones; an *As of* date for
+  the add form's starting odometer and the lifetime average measured to the
+  reading's date; the overview's latest fill-ups list removed; release
+  v1.4.0.
 
 ---
 

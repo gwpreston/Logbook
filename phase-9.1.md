@@ -216,7 +216,8 @@ Phase 9.2 as Logbook v1.1.0.
 - **Date the starting reading?** A car bought months ago might have its
   mileage from the MOT certificate or the sale. An optional "as of" date
   (default today) on the add form would cover it; left out for now to keep
-  the form short.
+  the form short. *Answered in Phase 12:* an optional *As of* beside
+  *Current odometer*, stored at local noon on that date.
 - **MOT due from first registration?** A natural follow-up: the first MOT
   is due at 3 years in Great Britain but 4 years for cars and motorcycles
   in Northern Ireland, and other countries differ again, so it needs a

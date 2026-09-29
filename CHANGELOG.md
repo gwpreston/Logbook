@@ -6,6 +6,61 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-29
+
+Phase 12: buyer-first print, ownership paperwork and a dated starting
+mileage.
+
+### Added
+- **Purchase and sale paperwork.** The vehicle form (add and edit, page and
+  modal) takes files under the purchase fields and under the sale fields:
+  the purchase invoice, the sale receipt, a V5C slip. They show as a
+  paperclip on the *Bought* and *Sold* rows in History and the fleet
+  history, beside the dates on the overview's *Ownership* card, and as file
+  names under those rows in the print view. Up to 10 files per save for
+  both together, all or nothing, as on every other form. The files need
+  their date: adding sale paperwork without a sale date is refused, and so
+  is clearing a date while files are attached. Archiving keeps them;
+  deleting the vehicle deletes them.
+- **As of** beside *Current odometer* when adding a vehicle, defaulting to
+  today: the date the figure was read (on the MOT certificate, at the
+  sale). An earlier date writes the reading at local noon on that day, so it
+  sits in order with fill-ups logged before and after it. A date before the
+  first registration is saved with a warning.
+- German translations for all of the above.
+
+### Changed
+- **The print view hides costs by default.** *Show costs* starts unticked,
+  so the printout is the copy you can hand to a buyer; purchase and sale
+  prices are hidden with the costs. Tick it for your own copy. An old link
+  never shows costs it used to hide.
+- **Average per year since first registered** is now measured to the date
+  of the latest reading, not to today, so a starting reading dated months
+  back, or a vehicle that has not been driven for a while, is no longer
+  understated. The figure changes for vehicles whose latest reading is not
+  recent. *Age* is still measured to today.
+- The overview no longer lists the latest fill-ups: *Recent history* lists
+  them with everything else, the Fuel tab lists them all, and the economy,
+  cost per distance and spend figures stay at the top of the overview. Its
+  *Add fill-up* and *Add reading* buttons went with the card; *Log entry*
+  covers both.
+- The demo data's sold Fiesta has a sale receipt.
+
+### Upgrade notes
+- One migration, which changes no column: attachments gain the owner types
+  `purchase` and `sale` (the column already takes any short code). It
+  exists to move the schema version, because 1.3.x cannot read those owner
+  types. It runs automatically on start (Docker) or with
+  `vendor/bin/phinx migrate` (bare PHP). Nothing in existing data changes.
+- No configuration changes.
+- Backups record the database schema, so a backup made with 1.3.x cannot
+  be restored into this version (restore it with its own version first,
+  then upgrade), and a 1.4.0 backup cannot be restored into 1.3.x.
+- **Going back to 1.3.0:** roll back first, while still on this version,
+  with `vendor/bin/phinx rollback -e production -t 20261007100000`. The
+  purchase and sale files are unlinked (their files stay under
+  `UPLOAD_PATH`); everything else is unchanged.
+
 ## [1.3.0] — 2026-09-29
 
 Phases 11.1 and 11.2: tyres, then tread depth, wear and tyre reminders.

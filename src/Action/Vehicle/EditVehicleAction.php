@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Service\Vehicle\PaperworkNeedsDate;
 use Logbook\Service\Vehicle\TyresBlockTypeChange;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Service\Vehicle\VehicleService;
@@ -19,7 +20,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Component\Translation\TranslatableMessage;
 
 /**
- * GET|POST /vehicles/{id}/edit — edit details; upload, replace or remove the photo.
+ * GET|POST /vehicles/{id}/edit — edit details; upload, replace or remove the
+ * photo; add purchase and sale paperwork.
  */
 final readonly class EditVehicleAction
 {
@@ -28,6 +30,7 @@ final readonly class EditVehicleAction
         private VehicleFormPage $page,
         private Redirector $redirect,
         private ClockInterface $clock,
+        private VehiclePaperwork $paperwork,
     ) {
     }
 
@@ -47,11 +50,13 @@ final readonly class EditVehicleAction
         $input = RequestContext::form($request);
         $today = LocalTime::today($this->clock, $preferences->timeZone());
         $data = VehicleForm::parse($input, $preferences, $today);
+        $files = $this->paperwork->fromRequest($request);
         $photo = VehicleRoute::photo($request);
         $checked = $photo === null ? null : FileUpload::check($photo, $this->vehicles->maxPhotoBytes(), UploadKind::Image);
+        $errors = $this->paperwork->errors($data, $files);
 
-        if ($data instanceof ValidationErrors || ($checked !== null && !$checked->isValid())) {
-            $errors = $data instanceof ValidationErrors ? $data : new ValidationErrors();
+        if ($errors !== null || $data instanceof ValidationErrors || ($checked !== null && !$checked->isValid())) {
+            $errors ??= new ValidationErrors();
             if ($checked !== null && $checked->error !== null) {
                 $errors->add('photo', $checked->error, ['max' => $this->vehicles->maxPhotoMegabytes()]);
             }
@@ -60,13 +65,17 @@ final readonly class EditVehicleAction
         }
 
         try {
-            $updated = $this->vehicles->update($user, $vehicle, $data);
+            $updated = $this->vehicles->update($user, $vehicle, $data, $files);
         } catch (TyresBlockTypeChange $refused) {
             $errors = new ValidationErrors();
             $errors->add('type', 'vehicle.error.type_tyres', [
                 'type' => $refused->type->value,
                 'position' => new TranslatableMessage('tyre.wheel.' . $refused->position->value),
             ]);
+
+            return $this->page->render($request, $response, RequestContext::formValues($request), $vehicle, $errors, 422);
+        } catch (PaperworkNeedsDate $refused) {
+            $errors = VehiclePaperwork::refusal($refused);
 
             return $this->page->render($request, $response, RequestContext::formValues($request), $vehicle, $errors, 422);
         }

@@ -55,6 +55,9 @@ case "$variant" in
         setup_flow "$base" "/logbook/"
         # Hard refresh of a deep, signed-in link.
         expect "$base/vehicles/new" 200 'action="/logbook/vehicles/new"'
+        # Purchase and sale paperwork and the dated starting reading (Phase 12).
+        expect "$base/vehicles/new" 200 'name="sale_attachments'
+        expect "$base/vehicles/new" 200 'name="current_odometer_on"'
         expect "$base/history" 200 'Nothing logged yet'
         # The fast fill-up path (no vehicle yet: offers to add one).
         expect "$base/fuel/new" 303

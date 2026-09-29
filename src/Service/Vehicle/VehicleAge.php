@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Vehicle;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Support\Date\LocalTime;
@@ -72,8 +73,27 @@ final readonly class VehicleAge
     }
 
     /**
-     * Kilometres per year since first registration, assuming the odometer
-     * read about 0 then (true for a new vehicle). Null until the vehicle is
+     * The lifetime average (spec.md §7.2): kilometres per year from first
+     * registration to the date of $latest (its recorded_at as a local date
+     * in $zone), not to today, so a reading dated months back, or a vehicle
+     * not driven for a while, is not understated. Null without a
+     * registration date or a reading, for a reading dated before first
+     * registration, and until the vehicle was MIN_DAYS_FOR_AVERAGE days old
+     * at that reading.
+     */
+    public static function lifetimeAverageKmPerYear(Vehicle $vehicle, ?OdometerReading $latest, DateTimeZone $zone): ?float
+    {
+        if ($latest === null) {
+            return null;
+        }
+
+        return self::of($vehicle, LocalTime::dateOf($latest->recordedAt, $zone))?->averageKmPerYear($latest);
+    }
+
+    /**
+     * Kilometres per year over this age, assuming the odometer read about 0
+     * at first registration (true for a new vehicle). This age must be the
+     * one at $latest (lifetimeAverageKmPerYear()). Null until the vehicle is
      * MIN_DAYS_FOR_AVERAGE days old or without a reading.
      */
     public function averageKmPerYear(?OdometerReading $latest): ?float

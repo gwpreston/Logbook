@@ -1,6 +1,5 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
-{% import 'macros/fuel.twig' as fuel_ui %}
 {% import 'macros/maintenance.twig' as maint %}
 {% import 'macros/compliance.twig' as docs %}
 {% import 'macros/history.twig' as history %}
@@ -56,34 +55,6 @@
                     </ul>
                 {% endif %}
             </section>
-
-            {% if feature_enabled('fuel') %}
-            <section class="card" aria-labelledby="fills-heading">
-                <div class="card__header">
-                    <h2 id="fills-heading" class="card__title">{{ 'fuel.recent'|trans }}</h2>
-                    {% if not fuel.isEmpty() %}<a class="card__link" href="{{ url_for('fuel.index', {id: vehicle.id}) }}">{{ 'fuel.view_all'|trans }}</a>{% endif %}
-                </div>
-                {% if recent_fills is empty %}
-                    <div class="empty">
-                        {{ ui.icon(data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station') }}
-                        <p class="empty__title">{{ 'fuel.empty_title'|trans }}</p>
-                        <p>{{ 'fuel.empty_body'|trans }}</p>
-                    </div>
-                {% else %}
-                    <ul class="list">
-                        {% for fill in recent_fills %}
-                            {{ fuel_ui.row(fill, vehicle, currency) }}
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-                {% if not vehicle.isArchived() %}
-                    <div class="btn-row">
-                        <a class="btn btn--primary" href="{{ url_for('fuel.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'fuel.add'|trans }}</a>
-                        <a class="btn" href="{{ url_for('odometer.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('speed') }}{{ 'odometer.add'|trans }}</a>
-                    </div>
-                {% endif %}
-            </section>
-            {% endif %}
 
             {% if feature_enabled('maintenance') %}
             <section class="card" aria-labelledby="maintenance-heading">
@@ -219,9 +190,9 @@
                 <h2 id="ownership-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>
                 <dl class="details">
                     <div><dt>{{ 'vehicle.field.currency'|trans }}</dt><dd>{{ currency }} — {{ currency_name(currency) }}{% if data.currency is null %} <span class="muted">({{ 'vehicle.currency_inherited'|trans }})</span>{% endif %}</dd></div>
-                    <div><dt>{{ 'vehicle.field.purchase_date'|trans }}</dt><dd>{{ data.purchaseDate ? data.purchaseDate|local_date : dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.purchase_date'|trans }}</dt><dd>{{ data.purchaseDate ? data.purchaseDate|local_date : dash }}{{ _self.paperwork(vehicle, 'purchase', paperwork) }}</dd></div>
                     <div><dt>{{ 'vehicle.field.purchase_price'|trans }}</dt><dd class="tabular">{{ data.purchasePrice is null ? dash : data.purchasePrice|money(currency) }}</dd></div>
-                    <div><dt>{{ 'vehicle.field.sale_date'|trans }}</dt><dd>{{ data.saleDate ? data.saleDate|local_date : dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.sale_date'|trans }}</dt><dd>{{ data.saleDate ? data.saleDate|local_date : dash }}{{ _self.paperwork(vehicle, 'sale', paperwork) }}</dd></div>
                     <div><dt>{{ 'vehicle.field.sale_price'|trans }}</dt><dd class="tabular">{{ data.salePrice is null ? dash : data.salePrice|money(currency) }}</dd></div>
                     <div><dt>{{ 'vehicle.added'|trans }}</dt><dd>{{ vehicle.createdAt|local_datetime }}</dd></div>
                 </dl>
@@ -230,3 +201,13 @@
         </div>
     </div>
 {% endblock %}
+
+{# The purchase or sale paperwork beside its date: a paperclip with the count,
+   opening the edit form where the files are listed (spec.md §7.1). #}
+{% macro paperwork(vehicle, side, counts) -%}
+    {%- import 'macros/attachments.twig' as paperclip -%}
+    {%- set n = counts.of(side, vehicle.id) -%}
+    {%- if n > 0 -%}
+        {{ ' ' }}<a class="ownership-files" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal title="{{ ('vehicle.paperwork_files.' ~ side)|trans({count: n}) }}">{{ paperclip.count(n) }}</a>
+    {%- endif -%}
+{%- endmacro %}

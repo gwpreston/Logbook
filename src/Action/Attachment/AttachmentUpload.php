@@ -18,10 +18,12 @@ use Psr\Http\Message\UploadedFileInterface;
 /**
  * The one parser for the shared attachment input (`attachments[]`,
  * templates/macros/attachments.twig) of the fill-up, service record,
- * document, expense and manual reading forms (spec.md §7.12). Every chosen
- * file is checked with the rest of the form: too many files, or one
- * rejected file, fails the whole submission and nothing is saved. The
- * entry's service stores them with the entry.
+ * document, expense and manual reading forms, and of the vehicle form's
+ * purchase and sale paperwork (`purchase_attachments[]`,
+ * `sale_attachments[]`; spec.md §7.12). Every chosen file is checked with
+ * the rest of the form: too many files, or one rejected file, fails the
+ * whole submission and nothing is saved. The entry's service stores them
+ * with the entry.
  */
 final readonly class AttachmentUpload
 {
@@ -32,11 +34,12 @@ final readonly class AttachmentUpload
     }
 
     /**
-     * The chosen files, each checked; empty when the input was left empty.
+     * The files chosen in the input named $field, each checked; empty when
+     * the input was left empty.
      */
-    public function fromRequest(ServerRequestInterface $request): PendingUploads
+    public function fromRequest(ServerRequestInterface $request, string $field = self::FIELD): PendingUploads
     {
-        $given = $request->getUploadedFiles()[self::FIELD] ?? [];
+        $given = $request->getUploadedFiles()[$field] ?? [];
         $pending = [];
         foreach (is_array($given) ? $given : [$given] as $file) {
             if ($file instanceof UploadedFileInterface && FileUpload::wasProvided($file)) {
@@ -51,21 +54,38 @@ final readonly class AttachmentUpload
      * The form's errors plus the files', or null when both are fine. The
      * message names the rejected file.
      */
-    public function errors(object $parsed, PendingUploads $uploads): ?ValidationErrors
+    public function errors(object $parsed, PendingUploads $uploads, string $field = self::FIELD): ?ValidationErrors
+    {
+        return $this->errorsFor($parsed, [$field => $uploads]);
+    }
+
+    /**
+     * The same for a form with several inputs, keyed by field name. They
+     * share one limit: PHP's max_file_uploads counts every file in the
+     * request, whichever input it came from.
+     *
+     * @param array<string, PendingUploads> $inputs
+     */
+    public function errorsFor(object $parsed, array $inputs): ?ValidationErrors
     {
         $errors = $parsed instanceof ValidationErrors ? $parsed : null;
         $max = $this->attachments->maxFiles();
-        $rejected = $uploads->firstRejected();
+        $total = array_sum(array_map(count(...), $inputs));
 
-        if (count($uploads) > $max) {
-            $errors ??= new ValidationErrors();
-            $errors->add(self::FIELD, 'upload.too_many', ['max' => $max]);
-        } elseif ($rejected !== null && $rejected->check->error !== null) {
-            $errors ??= new ValidationErrors();
-            $errors->add(self::FIELD, 'upload.file.' . substr($rejected->check->error, strlen('upload.')), [
-                'name' => $rejected->name(),
-                'max' => $this->attachments->maxMegabytes(),
-            ]);
+        foreach ($inputs as $field => $uploads) {
+            $rejected = $uploads->firstRejected();
+            if ($total > $max) {
+                if (!$uploads->isEmpty()) {
+                    $errors ??= new ValidationErrors();
+                    $errors->add($field, 'upload.too_many', ['max' => $max]);
+                }
+            } elseif ($rejected !== null && $rejected->check->error !== null) {
+                $errors ??= new ValidationErrors();
+                $errors->add($field, 'upload.file.' . substr($rejected->check->error, strlen('upload.')), [
+                    'name' => $rejected->name(),
+                    'max' => $this->attachments->maxMegabytes(),
+                ]);
+            }
         }
 
         return $errors;

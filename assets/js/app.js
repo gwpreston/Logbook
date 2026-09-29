@@ -674,17 +674,33 @@
     /*
      * Attachment inputs (spec.md §7.12) take up to data-max-files files per
      * save. Choosing more marks the input invalid, so the browser refuses
-     * the submit (page or modal) before anything is sent. Delegated, so it
-     * also covers forms loaded into the modal.
+     * the submit (page or modal) before anything is sent. Inputs of one form
+     * with the same data-max-files-group (the vehicle form's purchase and
+     * sale paperwork) share the limit, as PHP counts every file in the
+     * request: their files are counted together, and every input of the
+     * group is marked, so removing files from one clears the other.
+     * Delegated, so it also covers forms loaded into the modal.
      */
     document.addEventListener('change', function (event) {
         var input = event.target;
         if (!(input instanceof HTMLInputElement) || input.type !== 'file' || !input.hasAttribute('data-max-files')) {
             return;
         }
+        var group = input.getAttribute('data-max-files-group');
+        var inputs = [input];
+        if (group !== null && input.form !== null) {
+            inputs = Array.prototype.filter.call(input.form.elements, function (el) {
+                return el instanceof HTMLInputElement && el.type === 'file' && el.getAttribute('data-max-files-group') === group;
+            });
+        }
+        var chosen = inputs.reduce(function (sum, el) {
+            return sum + (el.files === null ? 0 : el.files.length);
+        }, 0);
         var max = parseInt(input.getAttribute('data-max-files'), 10);
-        var tooMany = input.files !== null && !isNaN(max) && input.files.length > max;
-        input.setCustomValidity(tooMany ? (input.getAttribute('data-max-files-message') || '') : '');
+        var tooMany = !isNaN(max) && chosen > max;
+        inputs.forEach(function (el) {
+            el.setCustomValidity(tooMany ? (el.getAttribute('data-max-files-message') || '') : '');
+        });
         if (tooMany) {
             input.reportValidity();
         }

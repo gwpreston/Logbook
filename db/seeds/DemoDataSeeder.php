@@ -138,6 +138,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedReminders($now);
         $this->seedExpenses($now);
         $this->seedTyres($now);
+        $this->seedPaperwork($now);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
@@ -420,6 +421,38 @@ final class DemoDataSeeder extends AbstractSeed
             $expense('LB19 KTR', '2026-09-06', 'parking', '0.000', 'Free after 6pm'),
             $expense('MT20 BKE', '2026-05-11', 'accessories', '64.990', 'Tank bag'),
             $expense('EV23 KIA', '2026-06-18', 'tolls', '9.800', 'Péage A26'),
+        ])->saveData();
+    }
+
+    /**
+     * The sold Fiesta's sale receipt (spec.md §7.12): a one-page PDF written
+     * under UPLOAD_PATH, shown on its *Sold* milestone.
+     */
+    private function seedPaperwork(string $now): void
+    {
+        $pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            . "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+            . "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\n"
+            . "trailer<</Root 1 0 R>>\n%%EOF\n";
+        $directory = Kernel::settings()->uploadPath . '/attachments';
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample paperwork skipped.</comment>');
+
+            return;
+        }
+        $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.pdf';
+        file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $pdf);
+
+        $fiesta = $this->vehicleIds()['WR14 FNE'];
+        $this->table('attachments')->insert([
+            'vehicle_id' => $fiesta,
+            'owner_type' => 'sale',
+            'owner_id' => $fiesta,
+            'filename' => 'Sale receipt WR14 FNE.pdf',
+            'mime' => 'application/pdf',
+            'size' => strlen($pdf),
+            'stored_path' => $stored,
+            'uploaded_at' => $now,
         ])->saveData();
     }
 

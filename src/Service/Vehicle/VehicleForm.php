@@ -26,7 +26,8 @@ use Logbook\Support\Validation\Validator;
  * Tank capacity is typed in the user's volume unit and stored in litres
  * (battery capacity is kWh either way). Prices are in the vehicle's currency.
  * The add form also takes an optional current odometer (parseNew()), typed in
- * the user's distance unit; the edit form never does.
+ * the user's distance unit, with the date it was read (*As of*, default
+ * today); the edit form never does.
  */
 final class VehicleForm
 {
@@ -66,13 +67,19 @@ final class VehicleForm
     }
 
     /**
-     * Defaults for a new vehicle.
+     * Defaults for a new vehicle. $today is today's date in the owner's time
+     * zone, the current odometer's *As of*.
      *
      * @return array<string, string>
      */
-    public static function defaults(): array
+    public static function defaults(DateTimeImmutable $today): array
     {
-        return ['type' => VehicleType::Car->value, 'fuel_type' => FuelType::Petrol->value, 'currency' => ''];
+        return [
+            'type' => VehicleType::Car->value,
+            'fuel_type' => FuelType::Petrol->value,
+            'currency' => '',
+            'current_odometer_on' => $today->format('Y-m-d'),
+        ];
     }
 
     /**
@@ -94,7 +101,8 @@ final class VehicleForm
 
     /**
      * The add form: the vehicle plus its optional current odometer, converted
-     * to km. Blank means no starting reading; 0 is a valid one.
+     * to km, and the date it was read. Blank means no starting reading (and
+     * the date is ignored); 0 is a valid one. A blank date means today.
      *
      * @param array<array-key, mixed> $input
      */
@@ -114,14 +122,31 @@ final class VehicleForm
             OdometerReadingForm::MAX_WHOLE_DIGITS,
         );
 
+        $readOn = $odometer === null ? null : self::readOn($validator, $today);
+
         if ($data === null || !$validator->errors()->isEmpty()) {
             return $validator->errors();
         }
 
         return new NewVehicle(
             $data,
-            $odometer === null ? null : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
+            $odometer === null ? null : new StartingReading(
+                $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
+                $readOn,
+            ),
         );
+    }
+
+    /**
+     * True when the starting reading is dated before first registration:
+     * saved (delivery mileage exists before registration), with a warning.
+     */
+    public static function startingReadingWarning(NewVehicle $new): bool
+    {
+        $on = $new->startingReading?->on;
+        $registered = $new->data->firstRegisteredOn;
+
+        return $on !== null && $registered !== null && $on < $registered;
     }
 
     /**
@@ -213,6 +238,30 @@ final class VehicleForm
         }
         if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
             $validator->addError('first_registered_on', 'vehicle.registered_too_early');
+
+            return null;
+        }
+
+        return $date;
+    }
+
+    /**
+     * The current odometer's *As of*: a calendar date, not after today
+     * (owner's time zone) and not before 1885. Blank is today.
+     */
+    private static function readOn(Validator $validator, DateTimeImmutable $today): ?DateTimeImmutable
+    {
+        $date = $validator->date('current_odometer_on');
+        if ($date === null) {
+            return null;
+        }
+        if ($date > $today) {
+            $validator->addError('current_odometer_on', 'vehicle.reading_in_future');
+
+            return null;
+        }
+        if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
+            $validator->addError('current_odometer_on', 'vehicle.reading_too_early');
 
             return null;
         }

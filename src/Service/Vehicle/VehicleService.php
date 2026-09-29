@@ -6,6 +6,7 @@ namespace Logbook\Service\Vehicle;
 
 use Collator;
 use InvalidArgumentException;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -14,9 +15,9 @@ use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Repository\TyreRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\StoredFile;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Support\Config\AppSettings;
-use Logbook\Support\Database\Transaction;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
@@ -24,8 +25,8 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
- * The garage: vehicles of one owner, their photos and archive state
- * (spec.md §7.1).
+ * The garage: vehicles of one owner, their photos, purchase and sale
+ * paperwork and archive state (spec.md §7.1).
  *
  * "Fleet scope" for later phases' totals is listFleet(): active vehicles
  * only, unless archived ones are explicitly included.
@@ -41,7 +42,6 @@ final readonly class VehicleService
         private ClockInterface $clock,
         private AppSettings $settings,
         private OdometerService $odometer,
-        private Transaction $transaction,
         private TyreRepository $tyres,
     ) {
     }
@@ -83,28 +83,53 @@ final readonly class VehicleService
     }
 
     /**
-     * Add a vehicle; with a starting odometer (km), also its first manual
-     * reading, at now, through the odometer service like any other reading.
-     * Both are written in one transaction, so a failed reading leaves no
-     * vehicle behind.
+     * Add a vehicle; with a starting reading, also its first manual reading
+     * (at now when it was read today, else at local noon on its date,
+     * StartingReading), through the odometer service like any other
+     * reading; with purchase or sale paperwork, those files. The files are
+     * written first, then the vehicle, the reading and the files' rows in
+     * one transaction, so a failure leaves nothing behind (spec.md §7.1,
+     * §7.12).
+     *
+     * @throws PaperworkNeedsDate when paperwork is given without its date
      */
-    public function create(User $user, VehicleData $data, ?string $startingOdometerKm = null): Vehicle
-    {
-        return $this->transaction->run(function () use ($user, $data, $startingOdometerKm): Vehicle {
+    public function create(
+        User $user,
+        VehicleData $data,
+        ?StartingReading $starting = null,
+        OwnershipFiles $files = new OwnershipFiles(),
+    ): Vehicle {
+        $refusal = PaperworkNeedsDate::check($data, 0, count($files->purchase), 0, count($files->sale));
+        if ($refusal !== null) {
+            throw $refusal;
+        }
+
+        return $this->attachments->saveWithFiles($files->all(), function (array $stored) use (
+            $user,
+            $data,
+            $starting,
+            $files,
+        ): Vehicle {
             $now = $this->clock->now();
             $vehicle = $this->get($user, $this->vehicles->insert($user->id, $data, $now));
-            if ($startingOdometerKm !== null) {
-                $this->odometer->create($vehicle, new OdometerReadingData($startingOdometerKm, $now));
+            if ($starting !== null) {
+                $at = $starting->recordedAt($now, $user->preferences->timeZone());
+                $this->odometer->create($vehicle, new OdometerReadingData($starting->km, $at));
             }
+            $this->recordPaperwork($vehicle, $files, $stored);
 
             return $vehicle;
         });
     }
 
     /**
+     * Save the vehicle's details with any new purchase or sale paperwork,
+     * all or nothing, as create() does.
+     *
      * @throws TyresBlockTypeChange when the new type lacks a position a tyre is fitted at
+     * @throws PaperworkNeedsDate when paperwork would be left without its date
      */
-    public function update(User $user, Vehicle $vehicle, VehicleData $data): Vehicle
+    public function update(User $user, Vehicle $vehicle, VehicleData $data, OwnershipFiles $files = new OwnershipFiles()): Vehicle
     {
         if ($data->type !== $vehicle->data->type) {
             $positions = $data->type->tyrePositions();
@@ -114,7 +139,21 @@ final readonly class VehicleService
                 }
             }
         }
-        $this->vehicles->update($user->id, $vehicle->id, $data, $this->clock->now());
+        $refusal = PaperworkNeedsDate::check(
+            $data,
+            count($this->attachments->forOwner($vehicle, AttachmentOwner::Purchase, $vehicle->id)),
+            count($files->purchase),
+            count($this->attachments->forOwner($vehicle, AttachmentOwner::Sale, $vehicle->id)),
+            count($files->sale),
+        );
+        if ($refusal !== null) {
+            throw $refusal;
+        }
+
+        $this->attachments->saveWithFiles($files->all(), function (array $stored) use ($user, $vehicle, $data, $files): void {
+            $this->vehicles->update($user->id, $vehicle->id, $data, $this->clock->now());
+            $this->recordPaperwork($vehicle, $files, $stored);
+        });
 
         return $this->get($user, $vehicle->id);
     }
@@ -170,6 +209,19 @@ final readonly class VehicleService
         }
 
         return $this->files->absolutePath($vehicle->photoPath);
+    }
+
+    /**
+     * Insert the rows of the paperwork saveWithFiles() wrote: the purchase
+     * files first, in the order OwnershipFiles::all() gave them.
+     *
+     * @param list<StoredFile> $stored
+     */
+    private function recordPaperwork(Vehicle $vehicle, OwnershipFiles $files, array $stored): void
+    {
+        $purchase = count($files->purchase);
+        $this->attachments->record($vehicle, AttachmentOwner::Purchase, $vehicle->id, array_slice($stored, 0, $purchase));
+        $this->attachments->record($vehicle, AttachmentOwner::Sale, $vehicle->id, array_slice($stored, $purchase));
     }
 
     /**

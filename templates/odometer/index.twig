@@ -8,7 +8,6 @@
 {% set latest = history.latest() %}
 {% set per_month = history.averageKmPerMonth() %}
 {% set total = history.totalDistanceKm() %}
-{% set per_year = age ? age.averageKmPerYear(latest) : null %}
 
 {% block title %}{{ 'odometer.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
