@@ -111,5 +111,4 @@ final readonly class TyreReminderTitle
 
         return new ListMessage($parts);
     }
-
 }
