@@ -77,6 +77,10 @@ use Logbook\Action\Tyre\EditTyreChangeAction;
 use Logbook\Action\Tyre\EditTyreSetAction;
 use Logbook\Action\Tyre\TyreChangeFormAction;
 use Logbook\Action\Tyre\TyreListAction;
+use Logbook\Action\Valuation\CreateValuationAction;
+use Logbook\Action\Valuation\DeleteValuationAction;
+use Logbook\Action\Valuation\EditValuationAction;
+use Logbook\Action\Valuation\VehicleValuationsAction;
 use Logbook\Action\Vehicle\ArchiveVehicleAction;
 use Logbook\Action\Vehicle\CreateVehicleAction;
 use Logbook\Action\Vehicle\DeleteVehicleAction;
@@ -227,8 +231,16 @@ return static function (App $app): void {
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/delete', DeleteExpenseAction::class)
                 ->setName('expenses.delete');
 
+            // Valuations (Phase 14.1) are core: no module toggle.
+            $vehicle->get('/valuations', VehicleValuationsAction::class)->setName('valuations.index');
+            $vehicle->map(['GET', 'POST'], '/valuations/new', CreateValuationAction::class)->setName('valuations.create');
+            $vehicle->map(['GET', 'POST'], '/valuations/{entry:[0-9]+}/edit', EditValuationAction::class)
+                ->setName('valuations.edit');
+            $vehicle->map(['GET', 'POST'], '/valuations/{entry:[0-9]+}/delete', DeleteValuationAction::class)
+                ->setName('valuations.delete');
+
             // Export and import check the module's toggle themselves (one route, several modules).
-            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes}';
+            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module');
             $csvModule = '{module:fuel|odometer|maintenance|documents|expenses}';

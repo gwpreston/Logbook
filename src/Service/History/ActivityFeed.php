@@ -21,6 +21,7 @@ use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\TyreRepository;
+use Logbook\Repository\ValuationRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Tyre\TyreService;
@@ -47,7 +48,8 @@ use Symfony\Component\Translation\TranslatableMessage;
  *   its local start and end, services and expenses by date. Documents are
  *   few, and "dated by its start, else the day it was added" needs the
  *   owner's time zone, so they are read per vehicle and placed in PHP.
- *   Milestones come from the vehicle rows.
+ *   Milestones come from the vehicle rows. Valuations are dated by
+ *   `valued_on` and carry their amount as a price, never as a cost.
  * - Attachment counts come from one grouped query for the items read.
  *
  * Callers pass vehicles already resolved for the signed-in owner.
@@ -68,6 +70,7 @@ final readonly class ActivityFeed
         private VehicleService $vehicles,
         private FeatureToggles $features,
         private TyreRepository $tyres,
+        private ValuationRepository $valuations,
     ) {
     }
 
@@ -198,6 +201,9 @@ final readonly class ActivityFeed
             $documents,
             static fn (ComplianceDocument $d): bool => $query->covers(self::documentDate($d, $zone)),
         ));
+        $valuations = $query->includes(ActivityKind::Valuation)
+            ? $this->valuations->listForVehiclesBetween($ids, $query->from, $query->until)
+            : [];
 
         $milestones = [];
         if ($query->includes(ActivityKind::Milestone)) {
@@ -220,6 +226,7 @@ final readonly class ActivityFeed
             AttachmentOwner::Maintenance->value => array_map(static fn ($e): int => $e->id, $services),
             AttachmentOwner::Compliance->value => array_map(static fn ($d): int => $d->id, $documents),
             AttachmentOwner::Expense->value => array_map(static fn ($e): int => $e->id, $expenses),
+            AttachmentOwner::Valuation->value => array_map(static fn ($v): int => $v->id, $valuations),
             AttachmentOwner::Purchase->value => $paperwork(AttachmentOwner::Purchase),
             AttachmentOwner::Sale->value => $paperwork(AttachmentOwner::Sale),
         ]));
@@ -335,6 +342,23 @@ final readonly class ActivityFeed
                 currency: $currencies[$expense->vehicleId],
                 note: $data->note,
                 files: $counts->of(AttachmentOwner::Expense, $expense->id),
+            );
+        }
+        foreach ($valuations as $valuation) {
+            $data = $valuation->data;
+            // A value, not a cost: the amount is its price, never in the amount column.
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Valuation,
+                vehicle: $vehicles[$valuation->vehicleId],
+                entryId: $valuation->id,
+                date: $data->valuedOn,
+                createdAt: $valuation->createdAt,
+                label: $data->source ?? '',
+                labelKey: 'history.kind.valuation',
+                icon: 'price_check',
+                currency: $currencies[$valuation->vehicleId],
+                price: $data->amount,
+                files: $counts->of(AttachmentOwner::Valuation, $valuation->id),
             );
         }
         foreach ($milestones as [$vehicle, $milestone, $date, $price]) {

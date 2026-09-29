@@ -28,6 +28,11 @@ final class LineChart implements JsonSerializable
         private readonly int $decimals,
         /** Currency code when values are money (formatted as currency). */
         private readonly ?string $currency = null,
+        /**
+         * Points are calendar dates (midnight UTC), not instants: shown in UTC
+         * so no time zone moves them to the day before.
+         */
+        private readonly bool $calendarDates = false,
     ) {
     }
 
@@ -80,7 +85,7 @@ final class LineChart implements JsonSerializable
     {
         return [
             'locale' => str_replace('_', '-', $this->preferences->locale),
-            'timeZone' => $this->preferences->timezone,
+            'timeZone' => $this->calendarDates ? 'UTC' : $this->preferences->timezone,
             'unit' => $this->unitLabel,
             'decimals' => $this->decimals,
             'currency' => $this->currency,

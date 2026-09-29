@@ -169,6 +169,9 @@
                    Both inputs share one limit per save. #}
                 {% set paperwork_hint = 'vehicle.hint.paperwork'|trans({files: max_upload_files, max: max_upload_mb}) %}
                 {{ files.input(vehicle, purchase_files, errors, max_upload_mb, max_upload_files, {field: 'purchase_attachments', label: 'vehicle.field.purchase_paperwork'|trans, hint: paperwork_hint, group: 'paperwork'}) }}
+                {% if editing %}
+                    <p class="field__hint">{{ 'valuation.form_link_hint'|trans }} <a href="{{ url_for('valuations.index', {id: vehicle.id}) }}">{{ 'valuation.link'|trans }}</a></p>
+                {% endif %}
                 <div class="form-row">
                     {{ ui.input('sale_date', 'vehicle.field.sale_date'|trans, values, errors, {type: 'date', optional: true}) }}
                     {{ ui.input('sale_price', 'vehicle.field.sale_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal'}) }}

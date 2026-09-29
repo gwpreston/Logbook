@@ -47,7 +47,7 @@ final readonly class ActivityItem
         public ?string $note = null,
         /** When a document expires. */
         public ?DateTimeImmutable $expiresOn = null,
-        /** For a milestone: which one, and the purchase or sale price (never a cost). */
+        /** For a milestone: which one, and the purchase or sale price (never a cost); a valuation's amount. */
         public ?Milestone $milestone = null,
         public ?string $price = null,
         /** Number of files attached to the entry. */

@@ -17,6 +17,7 @@ use Logbook\Domain\Tyre\TyreChangeData;
 use Logbook\Domain\Tyre\TyreData;
 use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\Tyre\TyreSetData;
+use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Repository\VehicleRepository;
@@ -35,6 +36,7 @@ use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreCost;
 use Logbook\Service\Tyre\TyreSettingsStore;
 use Logbook\Service\Tyre\TyreThresholds;
+use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\OwnershipFiles;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -101,10 +103,14 @@ final class BackupTest extends AppTestCase
         $browser = $this->signedIn($app);
         $this->populate($app);
         $before = $this->snapshot($app);
-        self::assertCount(8, $before['files'], 'the photo and seven attachments');
+        self::assertCount(9, $before['files'], 'the photo and eight attachments');
         $owners = array_column($before['tables']['attachments'], 'owner_type');
         sort($owners);
-        self::assertSame(['compliance', 'expense', 'maintenance', 'maintenance', 'odometer', 'purchase', 'sale'], $owners);
+        self::assertSame(
+            ['compliance', 'expense', 'maintenance', 'maintenance', 'odometer', 'purchase', 'sale', 'valuation'],
+            $owners,
+        );
+        self::assertCount(1, $before['tables']['vehicle_valuations'], 'valuations travel too');
         self::assertContains('document', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertContains('tyre', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertCount(1, $before['tables']['tyre_sets']);
@@ -139,7 +145,7 @@ final class BackupTest extends AppTestCase
         $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
         self::assertSame('logbook-backup', $manifest['format']);
         self::assertSame(1, $manifest['tables']['vehicles']);
-        self::assertSame(8, $manifest['files']);
+        self::assertSame(9, $manifest['files']);
         self::assertFalse($zip->getFromName('database/sessions.json'), 'sessions are never backed up');
         $zip->close();
 
@@ -209,7 +215,7 @@ final class BackupTest extends AppTestCase
         $file = $this->backupDir . '/nightly.zip';
         mkdir($this->backupDir);
         $manifest = $backups->create($file);
-        self::assertSame(8, $manifest->files);
+        self::assertSame(9, $manifest->files);
 
         $this->resetDatabase($app);
         foreach ($this->service($app, FileStorage::class)->all() as $relative) {
@@ -330,6 +336,12 @@ final class BackupTest extends AppTestCase
         $expense = $this->expense($app, $golf, '2026-09-20', '0', note: 'Free, “for once”');
         $this->service($app, ExpenseService::class)
             ->update($golf, $expense, $expense->data, $this->files([[self::PDF, 'parking.pdf']]));
+        // A valuation and its screenshot (Phase 14.1).
+        $this->service($app, ValuationService::class)->create(
+            $golf,
+            new VehicleValuationData(new DateTimeImmutable('2026-09-10'), '9800.500', 'Auto Trader', 'Online'),
+            $this->files([[(string) base64_decode(self::PNG), 'quote.png']]),
+        );
         $reading = $this->service($app, OdometerService::class)->create(
             $golf,
             new OdometerReadingData('1700', new DateTimeImmutable('2026-09-21T08:00:00Z')),

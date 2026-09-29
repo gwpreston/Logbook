@@ -177,7 +177,7 @@ final readonly class ImportField
                 new self('note', FieldKind::Text, 'export.column.note', false, ['notes', 'description', 'comment']),
             ],
             // Export only (spec.md §7.17).
-            ExportModule::Tyres, ExportModule::TyreChanges => [],
+            ExportModule::Tyres, ExportModule::TyreChanges, ExportModule::Valuations => [],
         };
     }
 }

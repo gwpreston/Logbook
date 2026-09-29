@@ -15,6 +15,7 @@ use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Repository\ValuationRepository;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Tyre\TyreService;
@@ -44,6 +45,7 @@ final readonly class CsvExporter
         private TranslatorInterface $translator,
         private ClockInterface $clock,
         private TyreService $tyres,
+        private ValuationRepository $valuations,
     ) {
     }
 
@@ -57,6 +59,7 @@ final readonly class CsvExporter
             ExportModule::Expenses => $this->expensesTable($user, $vehicle),
             ExportModule::Tyres => $this->tyresTable($user, $vehicle),
             ExportModule::TyreChanges => $this->tyreChangesTable($user, $vehicle),
+            ExportModule::Valuations => $this->valuationsTable($user, $vehicle),
         };
 
         return new CsvTable(
@@ -402,6 +405,35 @@ final readonly class CsvExporter
             'export.column.amount',
             'export.column.currency',
             'export.column.note',
+        ]), $rows];
+    }
+
+    /**
+     * Valuations oldest first (spec.md §7.7): values, not costs.
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function valuationsTable(User $user, Vehicle $vehicle): array
+    {
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $rows = [];
+        foreach ($this->valuations->listForVehicle($vehicle->id) as $valuation) {
+            $data = $valuation->data;
+            $rows[] = [
+                $data->valuedOn->format('Y-m-d'),
+                CsvNumber::money($data->amount, $currency),
+                $currency,
+                $data->source,
+                $data->notes,
+            ];
+        }
+
+        return [$this->headers([
+            'export.column.date',
+            'export.column.amount',
+            'export.column.currency',
+            'export.column.source',
+            'export.column.notes',
         ]), $rows];
     }
 

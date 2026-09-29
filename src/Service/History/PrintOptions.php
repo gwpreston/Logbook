@@ -46,6 +46,8 @@ final readonly class PrintOptions
 
     /**
      * The feed kinds to list: milestones always, then the chosen chips'.
+     * Never valuations (spec.md §7.16): a service history handed to a buyer
+     * must not carry the seller's own valuations.
      *
      * @return list<ActivityKind>
      */
@@ -56,6 +58,6 @@ final readonly class PrintOptions
             array_push($kinds, ...$chip->kinds());
         }
 
-        return $kinds;
+        return array_values(array_filter($kinds, static fn (ActivityKind $kind): bool => $kind !== ActivityKind::Valuation));
     }
 }

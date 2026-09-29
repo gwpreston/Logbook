@@ -140,6 +140,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedExpenses($now);
         $this->seedTyres($now);
         $this->seedPaperwork($now);
+        $this->seedValuations($now);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
@@ -461,6 +462,72 @@ final class DemoDataSeeder extends AbstractSeed
             'filename' => 'Sale receipt WR14 FNE.pdf',
             'mime' => 'application/pdf',
             'size' => strlen($pdf),
+            'stored_path' => $stored,
+            'uploaded_at' => $now,
+        ])->saveData();
+    }
+
+    /**
+     * Valuations (spec.md §7.1): the Golf has a part-exchange offer and an
+     * online valuation a year apart (the latest with a screenshot), so its
+     * *Ownership* card shows depreciation and a value chart; the sold Fiesta
+     * has one valuation before its sale, which its sale price overrides.
+     */
+    private function seedValuations(string $now): void
+    {
+        $ids = $this->vehicleIds();
+        $golf = $ids['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
+        $fiesta = $ids['WR14 FNE'] ?? throw new RuntimeException('The demo Fiesta is missing.');
+        $valuation = static fn (int $vehicle, string $on, string $amount, string $source, ?string $notes = null): array => [
+            'vehicle_id' => $vehicle,
+            'valued_on' => $on,
+            'amount' => $amount,
+            'source' => $source,
+            'notes' => $notes,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $this->table('vehicle_valuations')->insert([
+            $valuation($golf, '2025-03-08', '11200.000', 'Part-exchange offer, Arnold Clark'),
+            $valuation($golf, '2026-03-14', '9800.000', 'Auto Trader valuation', 'Online, private sale, good condition'),
+            $valuation($fiesta, '2025-10-02', '2300.000', 'We Buy Any Car online valuation'),
+        ])->saveData();
+
+        $latest = null;
+        foreach ($this->fetchAll('SELECT id, vehicle_id, valued_on FROM vehicle_valuations') as $row) {
+            if (
+                is_array($row)
+                && self::intValue($row['vehicle_id'] ?? null) === $golf
+                && is_string($row['valued_on'] ?? null)
+                && str_starts_with($row['valued_on'], '2026-03-14')
+            ) {
+                $latest = self::intValue($row['id'] ?? null);
+            }
+        }
+        if ($latest === null) {
+            throw new RuntimeException('The demo Golf valuation was not created.');
+        }
+
+        // A 1×1 PNG stands in for the screenshot of the quote.
+        $png = (string) base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        );
+        $directory = Kernel::settings()->uploadPath . '/attachments';
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample valuation screenshot skipped.</comment>');
+
+            return;
+        }
+        $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.png';
+        file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $png);
+        $this->table('attachments')->insert([
+            'vehicle_id' => $golf,
+            'owner_type' => 'valuation',
+            'owner_id' => $latest,
+            'filename' => 'Auto Trader valuation.png',
+            'mime' => 'image/png',
+            'size' => strlen($png),
             'stored_path' => $stored,
             'uploaded_at' => $now,
         ])->saveData();

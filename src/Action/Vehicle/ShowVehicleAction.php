@@ -19,6 +19,8 @@ use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Tyre\TyreService;
+use Logbook\Service\Valuation\ValuationService;
+use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -32,7 +34,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * GET /vehicles/{id} — vehicle overview: current odometer and fuel figures,
  * the latest history, what maintenance is due next, where each document
  * stands, the tyres fitted, and the vehicle's details and ownership (with
- * paperclips for the purchase and sale paperwork).
+ * paperclips for the purchase and sale paperwork, the latest value, the
+ * depreciation and the value over time).
  * Each area has its own tab.
  */
 final readonly class ShowVehicleAction
@@ -54,6 +57,8 @@ final readonly class ShowVehicleAction
         private TyreService $tyres,
         private FeatureToggles $features,
         private AttachmentService $attachments,
+        private ValuationService $valuations,
+        private ValueChart $valueChart,
     ) {
     }
 
@@ -73,10 +78,14 @@ final readonly class ShowVehicleAction
             $this->compliance->states($vehicle, $today, $lead->documentDays),
             static fn (DocumentState $s): bool => $s->status->isCurrent(),
         );
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $valuations = $this->valuations->forVehicle($vehicle);
+        $zone = $user->preferences->timeZone();
+        $depreciation = Depreciation::of($vehicle, $valuations, $odometer->readings, $today, $zone, $currency);
 
         return $this->view->render($request, $response, 'vehicles/show.twig', [
             'vehicle' => $vehicle,
-            'currency' => $this->vehicles->currencyFor($user, $vehicle),
+            'currency' => $currency,
             'odometer' => $odometer,
             'fuel' => $fuel,
             'fuel_summary' => $fuel->summary($kind),
@@ -93,6 +102,9 @@ final readonly class ShowVehicleAction
                 AttachmentOwner::Purchase->value => [$vehicle->id],
                 AttachmentOwner::Sale->value => [$vehicle->id],
             ]),
+            'depreciation' => $depreciation,
+            'value_chart' => $this->valueChart->build($depreciation, $user->preferences),
+            'has_valuations' => $valuations !== [],
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
             'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)

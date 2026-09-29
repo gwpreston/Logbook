@@ -353,11 +353,27 @@ MySQL only.
   visit, and the change is that visit. There is no measurements table and
   no depth on the tyre row.
 
+**VehicleValuation** (Phase 14.1)
+- id, vehicle_id (`ON DELETE CASCADE`), valued_on (calendar date, never
+  converted through a time zone), amount (`decimal(14,3)` in the vehicle's
+  currency; 0 is valid: a write-off or scrap value), source (optional free
+  text up to 100 characters: "Part-exchange offer, Arnold Clark", "Auto
+  Trader valuation"; no picklist, since valuation services differ by
+  country and change their names), notes (optional, up to 500),
+  created/updated (UTC). Index `(vehicle_id, valued_on)`.
+- A value someone quoted: a dealer's offer, an online valuation, an
+  insurer's figure. It has no odometer (the mileage typed into a valuation
+  website is not a reading) and is not a cost. Depreciation is derived from
+  it on every read and never stored (§7.1).
+- Upgrading to 1.6.0 creates the table; rolling it back drops it and the
+  `valuation` attachment rows (the files stay under `UPLOAD_PATH`).
+
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
   (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`|`purchase`|
-  `sale`; `odometer` for manual readings only; `purchase` and `sale` for the
-  vehicle's purchase and sale, Phase 12, with owner_id = the vehicle's id),
+  `sale`|`valuation`; `odometer` for manual readings only; `purchase` and
+  `sale` for the vehicle's purchase and sale, Phase 12, with owner_id = the
+  vehicle's id; `valuation` for a valuation, Phase 14.1),
   owner_id, filename (the uploaded name,
   sanitised, for display and downloads only), mime (detected from the
   content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
@@ -462,7 +478,7 @@ from fleet totals unless "include archived" is toggled.
   starting figure is corrected on the Mileage tab like any other reading.
 - The overview's *Details* card lists variant and first registered (owner's
   date format, with the vehicle's age) next to the other details, archived
-  vehicles included.
+  vehicles included, then the currency and when the vehicle was added.
 - **Type change and tyres** (Phase 11.1): changing a vehicle's type is
   refused while a tyre is fitted at a position the new type lacks (§7.17):
   "Remove the tyres first: a motorbike has no front left wheel." The form
@@ -479,6 +495,73 @@ from fleet totals unless "include archived" is toggled.
   is written and the typed values are kept. The overview's *Ownership*
   card shows a paperclip with the count beside each date that has files,
   linking to the edit form.
+- **Valuations** (Phase 14.1, core: no module toggle; it adds nothing to a
+  vehicle until the owner enters something). `/vehicles/{id}/valuations`
+  lists a vehicle's valuations (§6) newest first with their paperclips,
+  *Add valuation* and *Export CSV*; each row links to its edit form, which
+  has *Delete*. Add, edit and delete open as a modal on desktop and are
+  their own pages without JS (the delete confirmation included). Linked from
+  the overview's *Ownership* card and, on the edit form, from the purchase
+  section. Not a tab and not in the *Log entry* chooser: it is a
+  once-or-twice-a-year action. Archived vehicles can still take one (a
+  scrapped car's scrap value). Several files per save (§7.12): a screenshot
+  of a quote is the usual receipt.
+  - **Validation:** a date and an amount are required; the amount is ≥ 0
+    (0 is valid) with up to 3 decimals; the date cannot be after today in
+    the owner's time zone, before the purchase date when one is set ("A
+    valuation cannot be before the purchase date") or after the sale date
+    when one is set ("This vehicle was sold on 12 Mar 2026; its sale price
+    is its final value"). Source is at most 100 characters, notes 500. A
+    refusal keeps the typed values.
+- **The value series** (derived, never stored): *Bought* (purchase date and
+  price, both needed), every valuation, and *Sold* (sale date and price,
+  both needed), in date order. On one day *Bought* comes first and *Sold*
+  last; valuations on one day keep the order they were added. The
+  **current value** is the sale price when sold (a sale date and price),
+  else the latest valuation, else there is none.
+- **Depreciation** (`Service\Vehicle\Depreciation`, computed on every read
+  like the vehicle's age, never stored; in the vehicle's currency, never
+  converted):
+  - It needs a purchase price and a current value. Without a price the card
+    says "Add what you paid to see depreciation"; with a price but no value,
+    "Add a valuation to see what it has lost".
+  - **Change** = current value − purchase price, as an amount and a
+    percentage of the purchase price: "Down £6,200 (−37%)" for a loss, "Up
+    £1,100 (+9%)" for a gain (classics, used-car price spikes). A purchase
+    price of 0 shows the amount without a percentage.
+  - **Per year** = the loss ÷ the years from the purchase date to the
+    **value's date** (not today: that is when the value was true), counted
+    in calendar years, months and days. **Per distance** = the loss ÷ the
+    distance driven between the same two dates, measured as a report's
+    *distance driven* (§7.7), in the owner's distance unit ("£0.14/mi").
+    Both need the purchase date and are shown only when the two dates are at
+    least 90 days apart; per distance also needs some distance driven and a
+    mileage series that reaches back to the purchase (a reading on or before
+    the purchase date). Without one, a report's rule would start from the
+    first reading and divide the whole loss by part of the distance, so the
+    figure is left out. For a gain neither is shown (a per-mile appreciation
+    means nothing).
+  - **Stale value:** when the vehicle is not sold and its latest valuation
+    is more than 12 months old: "Valued 14 months ago; add a new valuation
+    for an up-to-date figure." The figures still show.
+  - **Nothing is extrapolated or fetched.** There is no depreciation curve
+    ("about 15% a year"): a value is something someone quoted, never
+    something Logbook invents, and a made-up figure next to real ones would
+    read as just as trustworthy. There is no online valuation either: no
+    free, reliable valuation API exists, the commercial ones need contracts
+    and keys, and every lookup would send the owner's registration to a
+    third party.
+  - Values are not costs: they are never in the cost ledger, the amount
+    column of History or any report total.
+- **Overview *Ownership* card** (Phase 14.1): *Bought* (date with its
+  paperwork paperclip, price), *Latest value* (date, amount, source) or
+  *Sold* (date with its paperclip, price), *Change*, *Per year*, *Per
+  distance*, the stale-value hint or the state hint, and *Valuations →* /
+  *Add valuation*. Rows that are not set are left out; the card is hidden
+  when there is no purchase date, purchase price, sale date, sale price or
+  valuation. *Currency* and *Added* moved to the *Details* card. With two or
+  more points in the value series, a small line chart of it (dated x-axis,
+  the vehicle's currency); without JS the same points are a table.
 - Deleting asks for confirmation on its own page (works without JS) and
   removes the vehicle, its history, its photo and every file attached to it
   or its purchase and sale. Archive/restore is one click.
@@ -904,7 +987,7 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
 - **CSV export** (UTF-8 with a byte-order mark so spreadsheets detect it;
   RFC 4180 quoting; text cells starting with `=`, `+`, `-`, `@` are prefixed
   with `'` against formula injection). Per vehicle and module
-  (`/vehicles/{id}/export/{fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes}.csv`,
+  (`/vehicles/{id}/export/{fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations}.csv`,
   archived vehicles included — it is their data) and for a report
   (`/reports/export.csv` with the report's filters: one row per ledger line).
   Numbers are plain machine-readable decimals (`1234.5`, no grouping) in the
@@ -917,6 +1000,9 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   empty when not recorded) and *Grade code* (the stored code), so a file
   re-imports exactly and stays readable. The documents export carries
   *Odometer* (owner's distance unit, unit in the header; empty when none).
+  The valuations export (Phase 14.1, linked from the valuations page) has
+  Date, Amount, Currency, Source and Notes, oldest first; valuations have no
+  CSV import (a handful of rows a year).
 
 ### 7.8 Dashboard
 At-a-glance fleet overview built from rearrangeable widgets (drag via SortableJS,
@@ -1092,8 +1178,8 @@ Extensible channel interface so more can be added.
 
 ### 7.12 Attachments
 Upload receipts, invoices, insurance/cert PDFs and images against fill-ups,
-service records, documents, expenses, manual odometer readings and a
-vehicle's purchase and sale. Stored
+service records, documents, expenses, manual odometer readings, a
+vehicle's purchase and sale, and valuations (Phase 14.1). Stored
 outside web root, served via an authenticated handler; type/size validated.
 
 - One path for every upload (vehicle photos included): content-checked
@@ -1102,7 +1188,7 @@ outside web root, served via an authenticated handler; type/size validated.
   limited to `MAX_UPLOAD_MB`; stored under `UPLOAD_PATH` with a random name.
 - **Several files per save** (Phase 10). The add/edit form of each entry
   that takes files (fill-up, service record, document, expense, manual
-  reading) has one shared input partial — `<input type="file"
+  reading, valuation) has one shared input partial — `<input type="file"
   name="attachments[]" multiple>` accepting the four types — and lists the
   files already attached, each with a delete link (confirmation page, works
   without JS). The form is multipart; one parser reads `attachments[]` for
@@ -1122,12 +1208,13 @@ outside web root, served via an authenticated handler; type/size validated.
     the files just written are deleted.
 - A paperclip with the number of files (an icon with the count and a text
   alternative, "2 files") shows wherever an entry is listed: History, the
-  Fuel, Maintenance, Documents, Mileage and Expenses lists and *Recent
-  activity*; and on the *Bought* and *Sold* milestones (History, fleet
+  Fuel, Maintenance, Documents, Mileage, Expenses and valuations lists and
+  *Recent activity*; and on the *Bought* and *Sold* milestones (History, fleet
   history) and the overview's *Ownership* card for purchase and sale files. Counts come from one grouped query per page, never one per row.
 - Service intervals and reminders take no files. Paperwork belongs to the
   entry or event it proves: the purchase invoice to the purchase, the sale
-  receipt to the sale (owner types `purchase` and `sale`, §6), never to the
+  receipt to the sale (owner types `purchase` and `sale`, §6), a quote's
+  screenshot to its valuation (owner type `valuation`), never to the
   vehicle itself, which keeps a single photo (§7.1) and has no gallery.
 - Served by `/vehicles/{id}/attachments/{attachment}` to the signed-in owner
   only (the same responder as photos: `nosniff`, sandboxing CSP, private
@@ -1223,9 +1310,11 @@ vehicles; a disabled module cannot be imported).
   (Every release that adds a column moves the schema version, e.g. Phase
   9.1's vehicle variant and first registration date, Phase 10's document
   odometer, Phase 11.1's tyre tables, Phase 11.2's tread depth and depth
-  unit and Phase 13's `fuel_entries.economy_confirmed`. Backups carry the new columns, `document` and `tyre` readings, the
+  unit, Phase 13's `fuel_entries.economy_confirmed` and Phase 14.1's
+  `vehicle_valuations` table. Backups carry the new columns, `document` and `tyre` readings, the
   `expense` / `odometer` attachments and the four tyre tables — `tyre_sets`,
-  `tyres`, `tyre_changes`, `tyre_change_lines` — like any other rows; the
+  `tyres`, `tyre_changes`, `tyre_change_lines` — and the valuations with
+  their `valuation` attachments like any other rows; the
   `tyres.thresholds` setting travels in `settings`.)
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
@@ -1290,6 +1379,7 @@ with a printable service history to hand to a buyer.
   | Expense | `spent_on` | category, note (truncated) |
   | Odometer reading | `recorded_at`, as a local date (manual readings only) | note |
   | Tyres (Phase 11.1) | `done_on` | "Fitted 2 × Michelin Primacy 4 (front)", "Swapped to Winter wheels", "Rotated 4 tyres", "Repaired front left", "Removed 2 tyres" |
+| Valuation (Phase 14.1) | `valued_on` | "Valued at £9,800 · Auto Trader valuation" |
 
   **A tyre change linked to a service record is never listed on its own**
   (§7.17): the service record's row carries the change's summary as a second
@@ -1300,6 +1390,13 @@ with a printable service history to hand to a buyer.
   come from one grouped query, like its paperclips. Readings written by a
   tyre change are left out, like other owned readings, and a tyre row breaks
   a fill-up run like any other entry.
+
+  **A valuation is not a cost.** Like the milestones' prices, its amount
+  goes in the summary, never in the amount column. Valuations are listed
+  under *Everything* only (no chip of their own), in *Recent activity* and
+  the overview's *Recent history*, link to their edit form and carry their
+  paperclip. **They are never printed** (below): a service history handed to
+  a buyer must not carry the seller's own valuations.
 
   Not listed: service intervals and reminders (the work appears once it is
   logged), readings owned by another entry, and attachments as rows of their
@@ -1370,7 +1467,8 @@ with a printable service history to hand to a buyer.
     Purchase and sale prices are hidden too." Only `costs=1` shows costs;
     anything else, absent included, hides them and the purchase and sale
     prices, so no link from 1.3.0 shows costs it used to hide (1.3.0 showed
-    them when the form had not been sent). Milestones are always included.
+    them when the form had not been sent). Milestones are always included;
+    valuations never are (Phase 14.1), whatever the options.
   - **Header block:** name, descriptive line, registration, VIN, first
     registered with age, current odometer, and the date printed (owner's
     date format); with `tyres` on and any tyre fitted, *Tyres fitted*: each
@@ -1868,6 +1966,14 @@ task breakdowns live in the per-phase files; this is the map.
   *Looks right* confirming a figure until it changes; on the Fuel tab, save
   notice, edit page, *Recent fuel* and the import result; no notifications
   and no figure changed; release v1.5.0.
+- **Phase 14.1 — Valuations and depreciation.** A valuation log per vehicle
+  (date, amount, source, notes, attachments) on its own page; depreciation
+  derived from the purchase price to the latest value (the sale price once
+  sold) as an amount, a percentage, per year and per distance, measured to
+  the value's own date and never extrapolated; a value-over-time chart on the
+  overview's *Ownership* card; valuations in History and *Recent activity*,
+  never printed and never a cost; valuations CSV export. Ships with Phase
+  14.2 as v1.6.0.
 
 ---
 
