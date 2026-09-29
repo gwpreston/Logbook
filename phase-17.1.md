@@ -184,6 +184,13 @@ with invoices merged)".
   "£3,240 of servicing" helps a sale; "bought for £12,500" does not.
 - **Due next is on by default.** Buyers ask anyway, and a pack that hides a
   due cambelt is found out on the test drive. The seller can switch it off.
+- **Changed while building it** (spec.md §7.19 is the current text):
+  the ZIP is a small pure-PHP stored archive streamed from the uploads, so
+  it needs no zip extension and makes no temporary copy; *Prepare for sale*
+  is a header button, as the header has no menu; the options form carries
+  `options=1` as the print view's does, and a bare `timeline=1` link still
+  works; `other` documents are never offered either; ZIP names use the
+  vendor, else the title.
 - **No insurance, registration or `other` documents in the history.** They
   are about the owner, and the registration scan is a fraud risk.
 

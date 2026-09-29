@@ -863,6 +863,12 @@
         document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
 
         drawCharts();
+        // The sheet is narrower on paper (and the sale pack's chart shorter): fit the charts to it and back.
+        ['beforeprint', 'afterprint'].forEach(function (event) {
+            window.addEventListener(event, function () {
+                charts.forEach(function (chart) { chart.resize(); });
+            });
+        });
         // Redraw with the other theme's colours when the OS theme flips.
         if (window.matchMedia) {
             var scheme = window.matchMedia('(prefers-color-scheme: dark)');

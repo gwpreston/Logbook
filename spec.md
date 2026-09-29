@@ -2102,7 +2102,7 @@ available for active and archived vehicles.
     carry paperwork.
   - *Inspection:* for each current `inspection` or `pollution` document
     with an expiry, "MOT valid until 14 Jun 2027" (the label is the
-    document's title, else its type's). For an owner whose locale region is
+    document type's). For an owner whose locale region is
     GB and a vehicle with a registration, the line "Check the full MOT
     history at gov.uk/check-mot-history" follows. The URL is plain printed
     text, a constant on the service, checked at release. Nothing is fetched.
