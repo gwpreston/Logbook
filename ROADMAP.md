@@ -41,7 +41,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [14.1](phase-14.1.md) | Valuations and depreciation | ✅ |
 | [14.2](phase-14.2.md) | Total cost of ownership + v1.6 release | ✅ |
 | [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | ✅ |
-| [16](phase-16.md) | Fuel insights + v1.8 release | 🚧 |
+| [16](phase-16.md) | Fuel insights + v1.8 release | ✅ |
 
 *Update the status column as each phase lands.*
 

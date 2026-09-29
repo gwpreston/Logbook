@@ -6,6 +6,48 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-09-29
+
+Phase 16: fuel insights. Is the dearer fuel worth it, what does a mile
+really cost, and how much does winter take?
+
+### Added
+- **Grade verdict** on the *By grade* card: for each petrol or diesel grade
+  with enough data, how much more or less it costs per mile or km than the
+  grade you use most (by volume over the last 12 months), for example
+  "E5 98 costs about 10% more per mile than E10 95 — 7% more per litre,
+  3% more fuel used". The price difference comes only from fill-ups of the
+  two grades bought within 30 days of each other (the median of those
+  pairs, at least three), never from all-time averages, which mostly
+  measure fuel prices changing. The economy part is the existing
+  *Economy by grade*. The card says what the verdict rests on, and says
+  exactly what is missing when there is not enough data.
+- **Cost per mile or km for each charging type** in the charging card:
+  each type's cost per kWh × the car's average consumption.
+- **Cost per distance trend:** the *Economy trend* card switches between
+  *Economy* and *Cost per mile/km* (the fuel used in each tank, costed at
+  the price of that fuel, plus a running average). The switch is plain
+  links (`?trend=cost`) that work without JavaScript, survive a refresh
+  and respect `APP_BASE_PATH`; without JavaScript the points are a table.
+- **Economy by month:** a table of months by year (the last five) with an
+  average weighted across every year, and a chart of the average with this
+  year and last as lines. Each full-to-full stretch is shared between the
+  months it spans by time, in your time zone; months with under 200 km of
+  driving show "—", and stretches over 92 days are left out. A plug-in
+  hybrid gets one card for fuel and one for charging.
+- The demo data's Golf now alternates E10 and E5 97 and uses a little more
+  fuel in winter, so it shows a verdict and a seasonal dip.
+
+### Changed
+- Nothing that was already shown changes value: average economy, the
+  headline fuel cost per distance, the economy trend, economy checks,
+  reports and *Coming up* are all as before.
+
+### Upgrade notes
+- No migrations and no configuration changes. Nothing new is stored and the
+  backup format is unchanged; a 1.7.0 backup restores into 1.8.0 (and the
+  other way round).
+
 ## [1.7.0] — 2026-09-29
 
 Phase 15: *Coming up*, the next 12 months of maintenance, renewals and
@@ -840,7 +882,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/gwpreston16/Logbook/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/gwpreston16/Logbook/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/gwpreston16/Logbook/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/gwpreston16/Logbook/compare/v1.4.0...v1.5.0

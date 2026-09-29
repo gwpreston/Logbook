@@ -3,7 +3,7 @@
 *Is the dearer fuel worth it, what does a mile really cost, and how much does
 winter take?*
 
-Status: 🚧 in progress
+Status: ✅ complete
 
 Logbook already records every figure this phase needs: full-to-full
 segments, grades, prices and costs. Owners still have to do the sums
@@ -171,113 +171,116 @@ distance by charging type, cost per distance trend and economy by month
 ## Tasks
 
 ### Spec and docs first
-- [ ] Add the spec text above to `spec.md` §7.3 and the Phase 16 line to §13.
-- [ ] Add the Phase 16 row and section to `ROADMAP.md` (📋, then ✅).
+- [x] Add the spec text above to `spec.md` §7.3 and the Phase 16 line to §13.
+- [x] Add the Phase 16 row and section to `ROADMAP.md` (📋, then ✅).
 
 ### Domain / Support
-- [ ] `Domain\Fuel\SegmentCost`: a value object holding a segment reference,
+- [x] `Domain\Fuel\SegmentCost`: a value object holding a segment reference,
       cost (money, DECIMAL-backed), distance (canonical km) and cost per km
       (a decimal with at least 6 places, rounded only for display).
-- [ ] `Domain\Fuel\GradeVerdict`: grade, reference grade, price premium,
+- [x] `Domain\Fuel\GradeVerdict`: grade, reference grade, price premium,
       economy ratio, cost ratio, segment counts, pair count and a status
       enum (`ok`, `not_enough_economy`, `not_enough_price_pairs`,
       `single_grade`).
-- [ ] `Domain\Fuel\MonthlyEconomy`: rows of (year, month, volume, distance),
+- [x] `Domain\Fuel\MonthlyEconomy`: rows of (year, month, volume, distance),
       plus a per-month average and a figure-or-null rule (200 km).
-- [ ] Percent-difference helper in `Support` (ratio → rounded whole
+- [x] Percent-difference helper in `Support` (ratio → rounded whole
       percentage and direction; under 1% → same). It is shared with the
       economy-check wording if that helper does not already exist.
+      (`Support\Number\PercentDifference`. The economy-check wording is
+      left as it is: it words a flag band, not a rounded ratio.)
 
 ### Services (unit-tested without a DB)
-- [ ] `Service\Fuel\SegmentCostCalculator`: from the existing segments,
+- [x] `Service\Fuel\SegmentCostCalculator`: from the existing segments,
       computes each segment's burned unit price, cost and cost per
       distance (every fill-up has a price, so every segment has a cost).
       Keeps series separate.
-- [ ] `Service\Fuel\GradeComparison`: works out the reference grade, the
+- [x] `Service\Fuel\GradeComparison`: works out the reference grade, the
       economy ratio (reusing the existing *Economy by grade* numbers and not
       recomputing them), the price-pair premium and the cost ratio. It also
       returns the basis counts. Constants live on the class.
-- [ ] Charging-type cost per distance: extend the existing charging
+- [x] Charging-type cost per distance: extend the existing charging
       breakdown with cost per kWh × average kWh per km.
-- [ ] `Service\Fuel\SeasonalEconomy`: time-proportional month split in the
+- [x] `Service\Fuel\SeasonalEconomy`: time-proportional month split in the
       owner's time zone, excludes segments over 92 days, and returns the last
       five years plus the weighted average.
-- [ ] Wire everything into PHP-DI, constructor-injected. No `new` on
+- [x] Wire everything into PHP-DI, constructor-injected. No `new` on
       collaborators.
 
 ### Repository
-- [ ] No new queries if the segment builder already loads fill-up prices
+- [x] No new queries if the segment builder already loads fill-up prices
       and grades. If it does not, extend the existing fuel repository query.
       DBAL query builder only, bound parameters, no engine-specific SQL.
 
 ### Actions and templates
-- [ ] Fuel tab Action: read `trend` (`economy` default, `cost`), validate it
+- [x] Fuel tab Action: read `trend` (`economy` default, `cost`), validate it
       against an enum, and pass the insights view models. The Action stays
       thin.
-- [ ] *By grade* card: verdict lines, basis and not-enough states. For
+- [x] *By grade* card: verdict lines, basis and not-enough states. For
       electricity, add the *per mile/km* column.
-- [ ] *Economy trend* card: the switch as links (`aria-current` on the
+- [x] *Economy trend* card: the switch as links (`aria-current` on the
       active one), cost-mode dataset and a table fallback.
-- [ ] New *Economy by month* card: table always rendered; chart
+- [x] New *Economy by month* card: table always rendered; chart
       progressively enhanced; one card per series for plug-in hybrids.
-- [ ] Charts read colours from the chart tokens (light and dark). No colour
+- [x] Charts read colours from the chart tokens (light and dark). No colour
       alone carries meaning, and a legend names each series.
-- [ ] All new strings go through `|trans`, with no literal UI text in
+- [x] All new strings go through `|trans`, with no literal UI text in
       templates.
 
 ### Translations
-- [ ] English and German keys with ICU `select` for direction
+- [x] English and German keys with ICU `select` for direction
       (more / less / same) and `plural` for tank and fill-up counts. Month
       names come from ICU, not the catalogue.
-- [ ] Unit words in the verdict ("per mile", "per litre", "per gallon",
+- [x] Unit words in the verdict ("per mile", "per litre", "per gallon",
       "per kWh") follow the owner's distance and volume units.
 
 ### Tests
-- [ ] **Worked example:** E10 at 42.1 mpg (UK) against E5 at 40.8 mpg, with
+- [x] **Worked example:** E10 at 42.1 mpg (UK) against E5 at 40.8 mpg, with
       E5 paired at +7% per litre, gives "about 10% more per mile", "7% more
       per litre, 3% more fuel used". The same data viewed with L/100 km and
       mpg US preferences gives identical percentages.
-- [ ] A cheaper grade that is thirstier, a pricier grade that is more
+- [x] A cheaper grade that is thirstier, a pricier grade that is more
       economical and breaks even ("about the same"), and a pricier grade
       that is more economical and still costs more.
-- [ ] Price pairing: nearest fill within 30 days; a fill 31 days away is
+- [x] Price pairing: nearest fill within 30 days; a fill 31 days away is
       unpaired; fewer than 3 pairs → `not_enough_price_pairs`; a single
       outlier pair does not move the median.
-- [ ] Time bias guard: a history where E5 was bought only during a price
+- [x] Time bias guard: a history where E5 was bought only during a price
       spike and E10 only after it. The verdict uses paired fills only, and
       an all-time average would disagree.
-- [ ] Segment cost: a partial fill inside a segment changes the burned
+- [x] Segment cost: a partial fill inside a segment changes the burned
       price; a free charge at cost 0 counts; the headline figures and each
       segment's volume and cost are unchanged. (There is no unknown-price
       case: price and total are NOT NULL and the form derives all three.)
-- [ ] Plug-in hybrid: petrol and electricity series never mix in any
+- [x] Plug-in hybrid: petrol and electricity series never mix in any
       insight.
-- [ ] Month split: a segment from 20 January to 10 February is split in
+- [x] Month split: a segment from 20 January to 10 February is split in
       proportion to elapsed time; a segment over 92 days is excluded; a fill
       at 23:30 UTC on 31 January lands in February for an owner in
       Europe/Berlin; DST weeks split correctly.
-- [ ] A month under 200 km shows "—"; the average is weighted, not a mean
+- [x] A month under 200 km shows "—"; the average is weighted, not a mean
       of mpg values.
-- [ ] The fuel module off: no insights markup at all.
-- [ ] Rendering without JS: switch links, trend table and month table all
+- [x] The fuel module off: no insights markup at all.
+- [x] Rendering without JS: switch links, trend table and month table all
       render; `?trend=cost` survives a hard refresh under `APP_BASE_PATH`.
-- [ ] Translation suite: keys, placeholders and templates pass for en and de.
-- [ ] Integration suite green on SQLite, PostgreSQL 17, MySQL 8.4 and
+- [x] Translation suite: keys, placeholders and templates pass for en and de.
+- [x] Integration suite green on SQLite, PostgreSQL 17, MySQL 8.4 and
       MariaDB 11.4 (`bin/test-all-dbs.sh`).
 
 ### Sample data
-- [ ] Extend `DemoDataSeeder` so the Golf alternates E10 and E5 over part
+- [x] Extend `DemoDataSeeder` so the Golf alternates E10 and E5 over part
       of the year, with at least three pairs of fills within 30 days. The
       demo should then show a verdict, a winter dip in *Economy by month*
       and a cost trend. The EV's home and rapid charges should show
       distinct costs per mile.
 
 ### Release
-- [ ] `CHANGELOG.md` entry for **1.8.0** with upgrade notes: no migrations,
+- [x] `CHANGELOG.md` entry for **1.8.0** with upgrade notes: no migrations,
       no configuration, backup format unchanged, and 1.7.0 backups restore.
-- [ ] Bump `VERSION`; rebuild assets (`composer build-assets`) and commit
+- [x] Bump `VERSION`; rebuild assets (`composer build-assets`) and commit
       the output.
-- [ ] Update the README status paragraph.
+- [x] Update the README status paragraph.
+- [ ] Tag `v1.8.0`; image published as `1.8.0`, `1.8`, `1` and `latest`.
 
 ---
 
@@ -304,6 +307,9 @@ distance by charging type, cost per distance trend and economy by month
 ---
 
 ## Open questions
+
+Shipped as drafted in 1.8.0 (most used by volume; one rule for petrol and
+diesel; no minimum number of months); revisit if owners ask.
 
 - **Reference grade:** should it be the most used by volume, as drafted, or
   the vehicle's `default_grade` when one is set? Most-used matches what the
