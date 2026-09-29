@@ -176,6 +176,27 @@ final class ForecastCalculatorTest extends TestCase
         self::assertSame($forecast->overdue, $forecast->next(5));
     }
 
+    public function testPastItsDistanceLimitItIsOverdueAtThatOdometer(): void
+    {
+        // Every 12 months or 5,000 mi; done a month ago and 5,200 mi since.
+        $forecast = self::forecast(self::sources(
+            schedules: [self::schedule(
+                months: 12,
+                miles: 5000,
+                doneOn: '2026-09-01',
+                doneKm: self::miles(40000),
+                currentKm: self::miles(45200),
+            )],
+            currentKm: self::miles(45200),
+        ));
+
+        self::assertCount(1, $forecast->items(), 'no repeats');
+        $item = $forecast->overdue[0];
+        self::assertNull($item->dueOn, 'not a projected day in the past');
+        self::assertSame(Decimal::add(self::miles(40000), self::miles(5000)), $item->dueKm);
+        self::assertFalse($item->projected);
+    }
+
     public function testUnderAWeekOfHistoryADistanceLimitHasNoDateYet(): void
     {
         $forecast = self::forecast(self::sources(

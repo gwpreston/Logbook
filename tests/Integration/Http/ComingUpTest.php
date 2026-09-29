@@ -17,9 +17,11 @@ use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Setting\SettingScope;
+use Logbook\Domain\Tyre\DotCode;
 use Logbook\Domain\Tyre\TyreChangeData;
 use Logbook\Domain\Tyre\TyreData;
 use Logbook\Domain\Tyre\TyrePosition;
+use Logbook\Domain\Tyre\TyreSetData;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -33,6 +35,7 @@ use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSync;
 use Logbook\Service\Tyre\NewTyre;
+use Logbook\Service\Tyre\SetChoice;
 use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreCost;
 use Logbook\Service\Vehicle\VehicleService;
@@ -163,6 +166,41 @@ final class ComingUpTest extends ReminderTestCase
         self::assertStringNotContainsString('Fit the roof bars', $archived);
         self::assertStringContainsString('Renew Inspection (MOT)', $archived);
         self::assertStringNotContainsString('class="vehicle-filter"', $archived, 'one active vehicle: no chips');
+    }
+
+    public function testASetAgeingIsOneItemNamedBySet(): void
+    {
+        $this->start();
+        $van = $this->car('Ford', 'Transit');
+        $zone = new DateTimeZone(self::LONDON);
+        $changes = $this->service($this->app, TyreChangeService::class);
+        $dot = static function (string $code): DotCode {
+            $parsed = DotCode::parse($code, self::date('2026-10-01'));
+            self::assertInstanceOf(DotCode::class, $parsed);
+
+            return $parsed;
+        };
+        $on = $changes->existing($van, new TyreChangeData(self::date('2026-03-01'), '30000.000'), [
+            new NewTyre(TyrePosition::FrontLeft, new TyreData('Continental', 'WinterContact', dot: $dot('4920'))),
+            new NewTyre(TyrePosition::FrontRight, new TyreData('Continental', 'WinterContact', dot: $dot('4920'))),
+            new NewTyre(TyrePosition::RearLeft, new TyreData('Continental', 'WinterContact', dot: $dot('4920'))),
+            new NewTyre(TyrePosition::RearRight, new TyreData('Continental', 'WinterContact', dot: $dot('0121'))),
+        ], $zone, 'en_GB');
+        $changes->remove(
+            $van,
+            new TyreChangeData(self::date('2026-03-20'), '31000.000'),
+            array_fill_keys($on->tyreIds(), null),
+            new SetChoice(newSet: new TyreSetData('Winter wheels')),
+            null,
+            $zone,
+            'en_GB',
+        );
+
+        $html = self::body($this->browser->get('/upcoming'));
+
+        self::assertSame(1, substr_count($html, 'Tyres: Winter wheels'), 'one item for the set, named by it');
+        self::assertStringContainsString('<time datetime="2026-11-30">30 Nov 2026</time>', $html, 'at its soonest limit');
+        self::assertStringNotContainsString('Continental WinterContact', $html);
     }
 
     public function testTheCsvHasOneRowPerItemThenFuel(): void

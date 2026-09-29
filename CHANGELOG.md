@@ -41,8 +41,9 @@ fuel.
   notification. A switched-off module's items leave it.
 
 ### Upgrade notes
-- No migrations and no configuration changes. Nothing is stored, and the
-  backup format is unchanged: backups move freely between 1.6.0 and 1.7.0.
+- No migrations and no configuration changes. Nothing new is stored and the
+  backup format is unchanged; the database schema is the same as 1.6.0's,
+  so a backup restores into either version.
 - The new dashboard widget is added to saved layouts at the end; move or
   hide it under *Customise*. Without a saved layout it comes second, after
   *Upcoming reminders*.
