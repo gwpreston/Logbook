@@ -122,67 +122,69 @@ either one short:
 
 ### 14.2.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6 ExpenseEntry: category `finance`.
-- [ ] §7.7: cost of ownership (period, what is counted, rates add, missing
+- [x] §6 ExpenseEntry: category `finance`.
+- [x] §7.7: cost of ownership (period, what is counted, rates add, missing
       parts), the *Ownership* report and its CSV.
-- [ ] §7.1: the *Cost of ownership* card.
-- [ ] §7.10: the ownership report under `reports`.
-- [ ] §13: a Phase 14.2 entry.
-- [ ] `ROADMAP.md` Phase 14.2 row 🚧; `CHANGELOG.md` `[1.6.0]` entry.
+- [x] §7.1: the *Cost of ownership* card.
+- [x] §7.10: the ownership report under `reports`.
+- [x] §13: a Phase 14.2 entry.
+- [x] `ROADMAP.md` Phase 14.2 row 🚧; `CHANGELOG.md` `[1.6.0]` entry.
 
 ### 14.2.1 Services
-- [ ] `Service\Report\OwnershipCost` returns a typed result per vehicle
+- [x] `Service\Report\OwnershipCost` returns a typed result per vehicle
       (period and how it started, distance, running costs by group,
       depreciation result, total, rates, what is missing), built on the
       ledger, the distance-driven calculation and `Depreciation`.
-- [ ] A fleet method that groups by currency, as the reports service does.
-- [ ] `ExpenseCategory::Finance` with its label and hint; CSV import
+- [x] A fleet method that groups by currency, as the reports service does.
+- [x] `ExpenseCategory::Finance` with its label and hint; CSV import
       accepts its code and labels.
 
 ### 14.2.2 Display
-- [ ] Overview *Cost of ownership* card.
-- [ ] `/reports/ownership` page and CSV; link from Reports.
-- [ ] Expense form: the category and its hint.
+- [x] Overview *Cost of ownership* card.
+- [x] `/reports/ownership` page and CSV; link from Reports.
+- [x] Expense form: the category and its hint.
 
 ### 14.2.3 Demo seed
-- [ ] The sold, archived vehicle shows exact lifetime figures; the Golf
+- [x] The sold, archived vehicle shows exact lifetime figures; the Golf
       shows a total with depreciation to its latest valuation; the EV gets
       monthly `finance` lease payments and no purchase price.
 
 ### 14.2.4 i18n
-- [ ] English and German: *Gesamtkosten*, *Betriebskosten*, *Besitzdauer*,
+- [x] English and German: *Gesamtkosten*, *Betriebskosten*, *Besitzdauer*,
       *Finanzierung und Leasing*, *pro Monat*, the labels and hints above.
 
 ### 14.2.5 Release v1.6.0
-- [ ] `VERSION` → `1.6.0`; sidebar, Settings and `/health` show it.
-- [ ] `CHANGELOG.md` `[1.6.0]` gathers Phases 14.1 and 14.2. Upgrade notes:
-      one new table and three attachment owner types (14.1); a new expense
+- [x] `VERSION` → `1.6.0`; sidebar, Settings and `/health` show it.
+- [x] `CHANGELOG.md` `[1.6.0]` gathers Phases 14.1 and 14.2. Upgrade notes:
+      one new table and one attachment owner type, `valuation` (14.1; the
+      purchase and sale owners are Phase 12's); a new expense
       category, no migration (14.2); the backup schema rule; no config
       changes; nothing in existing data or figures changes.
-- [ ] `ROADMAP.md`: Phase 14.1 and 14.2 rows ✅.
-- [ ] Tag `v1.6.0`; image published as `1.6.0`, `1.6`, `1` and `latest`.
+- [x] `ROADMAP.md`: Phase 14.1 and 14.2 rows ✅.
+- [ ] Tag `v1.6.0`; image published as `1.6.0`, `1.6`, `1` and `latest`
+      (after the merge; pushing the tag publishes the image).
 
 ### 14.2.6 Tests
-- [ ] **Unit (worked example):** bought £15,000 on 1 Mar 2023; valued
+- [x] **Unit (worked example):** bought £15,000 on 1 Mar 2023; valued
       £9,800 on 1 Mar 2026 (36,000 mi in between); £11,700 of running
       costs and 39,000 mi from purchase to 1 Sep 2026 → running £0.30 per
       mile + depreciation £0.144 per mile = £0.444 per mile; total £16,900
       labelled "depreciation to 1 Mar 2026".
-- [ ] **Unit (period):** starts at the purchase date; without one at the
+- [x] **Unit (period):** starts at the purchase date; without one at the
       first ledger line or reading, whichever is earlier; ends at the sale
       date; ledger lines before purchase excluded; the month count matches
       reports' across a DST change.
-- [ ] **Unit (missing parts):** no purchase price → running only; no
+- [x] **Unit (missing parts):** no purchase price → running only; no
       distance → no per-distance; 89 days → no rates; a gain reduces the
       total and hides per-distance depreciation.
-- [ ] **Unit (modules):** `fuel` off removes fill-up costs from running
+- [x] **Unit (modules):** `fuel` off removes fill-up costs from running
       costs; tyre costs counted once.
-- [ ] **Integration:** overview card; ownership report and CSV with
+- [x] **Integration:** overview card; ownership report and CSV with
       filters, archived excluded by default and included on request,
       several currencies kept apart; `reports` off → 404 and the card
       stays; the `finance` category through the form and CSV import; every
       existing report figure unchanged.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -194,16 +196,16 @@ finance and lease costs recordable. Released with Phase 14.1 as Logbook
 v1.6.0.
 
 ## Acceptance criteria
-- [ ] The total and rates appear only when both parts are known; otherwise
+- [x] The total and rates appear only when both parts are known; otherwise
       running costs are shown alone and titled as such.
-- [ ] Rates add each part over its own period; a sold vehicle's figures are
+- [x] Rates add each part over its own period; a sold vehicle's figures are
       exact to the sale date.
-- [ ] The ownership report groups by currency, excludes archived by
+- [x] The ownership report groups by currency, excludes archived by
       default, and exports to CSV.
-- [ ] Every existing report, tile and card figure is unchanged.
-- [ ] `/health`, sidebar and Settings show v1.6.0; changelog and roadmap
+- [x] Every existing report, tile and card figure is unchanged.
+- [x] `/health`, sidebar and Settings show v1.6.0; changelog and roadmap
       updated.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas
@@ -215,6 +217,29 @@ v1.6.0.
 - **Keep ownership separate from running cost.** The pinned card's 12-month
   running cost is a different, still useful, number. Don't replace it.
 - **Never convert currencies**, even for the fleet row.
+
+## As built
+
+Decided while building and recorded in `spec.md` §7.7:
+- **Distance owned needs the mileage log to reach back** to the start of
+  the period, the same rule as depreciation per distance (the check is
+  shared, `PeriodDistance::reachesBack()`). Without it, the demo's leased
+  EV read €4.10/mi: two years of payments over eight months of mileage.
+  The card says when the log starts and what to add.
+- **No rates before any cost is logged:** nothing logged is not nothing
+  spent.
+- **A rate without its depreciation part** (no price or value, a gain, no
+  purchase date, the value under 90 days after the purchase) is the running
+  part alone, marked "running costs only", including on the running-only
+  card of a leased car.
+- **A sale date without a price** ends the period there, but depreciation
+  runs to the latest valuation and the figures are not called "Lifetime".
+- **The fleet row** sums distance, running costs and depreciation; its
+  total covers only the vehicles that have one ("2 of 5 vehicles"), and its
+  per distance divides those vehicles' totals by their distance. No per
+  month.
+- The CSV's per-distance columns are in the owner's unit ("Total per
+  distance (per mi)"), and money per month keeps 3 places.
 
 ## Open questions
 - **Dashboard tile or widget** for cost of ownership. The pinned card has
