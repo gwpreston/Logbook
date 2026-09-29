@@ -46,7 +46,8 @@ final readonly class DeleteTyreChangeAction
         foreach ($this->tyres->tyres($vehicle) as $tyre) {
             $byId[$tyre->id] = $tyre;
         }
-        $summary = TyreSummary::line($change, $byId, TyreService::setsById($this->tyres->sets($vehicle)));
+        $unit = RequestContext::requireUser($request)->preferences->depthUnit;
+        $summary = TyreSummary::line($change, $byId, TyreService::setsById($this->tyres->sets($vehicle)), $unit);
         $params = ['summary' => $summary, 'date' => $this->formatter->date($change->data->doneOn)];
 
         $error = null;

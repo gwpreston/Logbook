@@ -11,11 +11,15 @@ use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Domain\Tyre\DotCode;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\Tyre\TyreChangeData;
 use Logbook\Domain\Tyre\TyreData;
 use Logbook\Domain\Tyre\TyrePosition;
+use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Domain\Vehicle\VehicleData;
+use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
@@ -125,6 +129,8 @@ final class TyreReminderTest extends ReminderTestCase
 
         $dashboard = self::body($this->browser->get('/'));
         self::assertStringContainsString(self::TITLE, $dashboard, 'Next due and Upcoming reminders');
+        self::assertStringContainsString('1 due soon', $dashboard, 'the sidebar status dot counts it');
+        self::assertStringContainsString('1 due', self::body($this->browser->get('/garage')), 'and the garage card');
     }
 
     public function testTheCalendarFeedCarriesItAsAnEvent(): void
@@ -203,6 +209,33 @@ final class TyreReminderTest extends ReminderTestCase
         $this->sync();
 
         self::assertNull($this->tyreReminder(), 'one measurement at 8 mm and no DOT date: nothing to judge');
+    }
+
+    public function testAnAgeLimitReachedOnALeapDayStillNamesTheLimit(): void
+    {
+        $bike = $this->service($this->app, VehicleService::class)->create(
+            $this->owner($this->app),
+            new VehicleData(
+                VehicleType::Bike,
+                'Triumph',
+                'Street Triple',
+                FuelType::Petrol,
+            ),
+        );
+        // Week 09 of 2016 starts on 29 Feb; six years on is 28 Feb 2022, just short of six by the calendar.
+        $dot = DotCode::parse('0916', self::date('2026-09-29'));
+        self::assertInstanceOf(DotCode::class, $dot);
+        $this->service($this->app, TyreChangeService::class)->existing(
+            $bike,
+            new TyreChangeData(self::date('2026-09-01'), '1000.000'),
+            [new NewTyre(TyrePosition::Rear, new TyreData('Michelin', 'Road 5', dot: $dot))],
+            new DateTimeZone('Europe/London'),
+            'en_GB',
+        );
+        $this->sync();
+
+        $titles = array_map(static fn (Reminder $r): string => $r->title, $this->reminders($this->app));
+        self::assertContains('Tyres: rear over 6 years old', $titles);
     }
 
     public function testArchivedVehiclesRaiseNone(): void

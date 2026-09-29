@@ -37,7 +37,7 @@ final class TyreSummary
         TyreChange $change,
         array $tyres,
         array $sets,
-        DepthUnit $unit = DepthUnit::Millimetre,
+        DepthUnit $unit,
     ): TranslatableMessage {
         $depths = self::depths($change, $unit);
         if ($change->kind === TyreChangeKind::Check) {

@@ -350,6 +350,16 @@ final class TyreTreadTest extends AppTestCase
         self::assertStringNotContainsString('mi left', $print);
     }
 
+    public function testTheDeleteConfirmationUsesTheOwnersDepthUnit(): void
+    {
+        $this->useThirtySeconds();
+        $this->fitFronts('10');
+
+        $page = self::body($this->browser->get($this->base . '/changes/' . $this->latest()->id . '/delete'));
+        self::assertStringContainsString('10/32″', $page);
+        self::assertStringNotContainsString('7.9 mm', $page);
+    }
+
     public function testCsvCarriesTheDepths(): void
     {
         $this->useThirtySeconds();

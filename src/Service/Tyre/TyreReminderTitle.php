@@ -28,14 +28,18 @@ final readonly class TyreReminderTitle
         private UserDisplayScope $scope,
         private TranslatorInterface $translator,
         private DisplayFormatter $formatter,
+        private TyreSettingsStore $settings,
     ) {
     }
 
     public function title(User $user, Vehicle $vehicle, TyreVerdict $verdict): string
     {
-        return $this->scope->run($user, function () use ($vehicle, $verdict): string {
+        // The owner's limit, not the dates' difference: 29 Feb + 6 years is 28 Feb, under 6 years.
+        $years = $this->settings->thresholds($user->id)->ageYears;
+
+        return $this->scope->run($user, function () use ($vehicle, $verdict, $years): string {
             $message = $verdict->reason === TyreStanding::AGE
-                ? $this->age($vehicle, $verdict)
+                ? $this->age($vehicle, $verdict, $years)
                 : $this->wear($verdict);
 
             return $message->trans($this->translator);
@@ -59,11 +63,11 @@ final readonly class TyreReminderTitle
             ]);
     }
 
-    private function age(Vehicle $vehicle, TyreVerdict $verdict): TranslatableMessage
+    private function age(Vehicle $vehicle, TyreVerdict $verdict, int $years): TranslatableMessage
     {
         $params = [
             'what' => $this->aged($vehicle, $verdict->named),
-            'years' => $this->yearsOf($verdict),
+            'years' => $years,
         ];
 
         return $verdict->status === DueStatus::Overdue
@@ -108,12 +112,4 @@ final readonly class TyreReminderTitle
         return new ListMessage($parts);
     }
 
-    private function yearsOf(TyreVerdict $verdict): int
-    {
-        $first = $verdict->named[0] ?? null;
-        $made = $first?->view->tyre->data->dot?->manufacturedOn;
-        $limit = $first?->view->ageLimitOn;
-
-        return $made === null || $limit === null ? 0 : (int) $made->diff($limit)->y;
-    }
 }
