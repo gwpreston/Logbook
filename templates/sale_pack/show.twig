@@ -1,0 +1,38 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # The sale pack (spec.md §7.19): a buyer's view of one vehicle for printing
+ # or the browser's *Save as PDF*, and the paperwork ZIP beside it. The
+ # options, the paperwork panel and every seller notice are for the screen
+ # only; print CSS prints the sheet black on white, the summary on a page of
+ # its own. Nothing here shows a price paid, fuel, expenses, valuations or
+ # ownership costs; work costs only with `costs=1`.
+ #}
+
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'sale_pack.title_for'|trans({name: vehicle.name()}) }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack history-print sale-pack">
+        <div class="toolbar no-print">
+            <a class="back-link" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+            <button type="button" class="btn btn--primary" data-print hidden>{{ ui.icon('print') }}{{ 'history.print'|trans }}</button>
+        </div>
+
+        <div class="no-print sale-pack__panels">
+            {% include 'sale_pack/_options.twig' %}
+            {% include 'sale_pack/_paperwork.twig' %}
+        </div>
+
+        {% if pack.hasMileageWarnings() %}
+            {% include 'sale_pack/_mileage_notice.twig' %}
+        {% endif %}
+
+        <article class="card history-print__sheet sale-pack__sheet">
+            {% include 'sale_pack/_summary.twig' %}
+            {% include 'sale_pack/_mileage.twig' %}
+            {% include 'sale_pack/_history.twig' %}
+        </article>
+    </div>
+{% endblock %}

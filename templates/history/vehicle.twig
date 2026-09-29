@@ -9,11 +9,12 @@
     <div class="page__stack">
         {% include 'vehicles/_header.twig' with {active_tab: 'history'} %}
 
-        {# Toolbar (spec.md §7.16): the title and Print; adding goes through "Log entry". #}
+        {# Toolbar (spec.md §7.16, §7.19): the title, Print and Sale pack; adding goes through "Log entry". #}
         <div class="toolbar list-toolbar">
             <h1 class="section-title">{{ 'history.title'|trans }}</h1>
             <div class="btn-row list-toolbar__actions">
                 <a class="btn btn--ghost" href="{{ url_for('history.print', {id: vehicle.id}) }}">{{ ui.icon('print') }}{{ 'history.print'|trans }}</a>
+                <a class="btn btn--ghost" href="{{ url_for('sale_pack.show', {id: vehicle.id}) }}">{{ ui.icon('sell') }}{{ 'sale_pack.title'|trans }}</a>
             </div>
         </div>
 

@@ -20,6 +20,7 @@ final class LineChart implements JsonSerializable
 {
     /** @var list<array{label: string, color: string, dashed: bool, points: list<array{0: int, 1: float}>}> */
     private array $series = [];
+    private bool $print = false;
 
     public function __construct(
         private readonly DisplayPreferences $preferences,
@@ -51,6 +52,18 @@ final class LineChart implements JsonSerializable
                 $points,
             ),
         ];
+
+        return $this;
+    }
+
+    /**
+     * Drawn in the print palette (black on white) whatever the theme: for
+     * a chart that is printed (the sale pack), since a canvas keeps the
+     * colours it was drawn with.
+     */
+    public function forPrint(): self
+    {
+        $this->print = true;
 
         return $this;
     }
@@ -90,6 +103,7 @@ final class LineChart implements JsonSerializable
             'decimals' => $this->decimals,
             'currency' => $this->currency,
             'series' => $this->series,
+            'print' => $this->print,
         ];
     }
 }

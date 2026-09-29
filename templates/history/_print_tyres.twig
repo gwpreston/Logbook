@@ -1,0 +1,15 @@
+{#
+ # *Tyres fitted* in a printed header's details list (spec.md §7.16, §7.19):
+ # the print view and the sale pack. Measured depths only: a buyer's copy
+ # shows what was measured, never an estimate. Expects `tyres` (TyreViews).
+ #}
+{% import 'macros/tyres.twig' as tyre_ui %}
+{% if tyres is not empty %}
+    <div class="history-print__tyres"><dt>{{ 'tyre.print_fitted'|trans }}</dt><dd>
+        <ul class="plain-list">
+            {% for view in tyres %}
+                <li>{{ ('tyre.position.' ~ view.tyre.position.value)|trans }}: {{ tyre_ui.name(view.tyre) }}{% if view.tyre.data.size %}, {{ view.tyre.data.size }}{% endif %} · {{ tyre_ui.age(view) }}{% if view.wear.latest %} · {{ tyre_ui.latest_depth(view) }}{% endif %}</li>
+            {% endfor %}
+        </ul>
+    </dd></div>
+{% endif %}

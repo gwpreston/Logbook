@@ -55,6 +55,7 @@ final class SalePackOptionsTest extends TestCase
         $options = SalePackOptions::fromQuery($query, PaperworkKind::cases());
         self::assertTrue($options->dueNext, 'not sent: the default');
         self::assertFalse($options->timeline);
+        self::assertTrue(SalePackOptions::fromQuery(['timeline' => '1'], [])->timeline, 'a link may turn a box on');
 
         $sent = SalePackOptions::fromQuery(['options' => '1', 'due' => 'yes', 'descriptions' => ['1']], PaperworkKind::cases());
         self::assertFalse($sent->dueNext, 'only 1 is on');

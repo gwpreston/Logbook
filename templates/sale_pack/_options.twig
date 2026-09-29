@@ -1,0 +1,45 @@
+{#
+ # The pack's options: a plain GET form (spec.md §7.19). `options=1` marks it
+ # sent, so an unticked box stays unticked; the files already unticked ride
+ # along as `exclude[]`.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% set options = pack.options %}
+<form class="card history-print__options sale-pack__options" method="get" action="{{ url_for('sale_pack.show', {id: vehicle.id}) }}" aria-labelledby="sale-pack-options">
+    <h2 id="sale-pack-options" class="card__title">{{ 'sale_pack.title'|trans }}</h2>
+    <p class="muted">{{ 'sale_pack.intro'|trans }}</p>
+    <input type="hidden" name="options" value="1">
+    {% for id in query.exclude ?? [] %}<input type="hidden" name="exclude[]" value="{{ id }}">{% endfor %}
+    <fieldset class="field">
+        <legend class="field__label">{{ 'sale_pack.options.legend'|trans }}</legend>
+        {% for option in [
+            {name: 'due', on: options.dueNext, key: 'due'},
+            {name: 'descriptions', on: options.descriptions, key: 'descriptions'},
+            {name: 'timeline', on: options.timeline, key: 'timeline'},
+            {name: 'costs', on: options.costs, key: 'costs'},
+        ] %}
+            <label class="toggle">
+                <input type="checkbox" name="{{ option.name }}" value="1"{% if option.on %} checked{% endif %}>
+                <span class="toggle__text">
+                    <span class="toggle__title">{{ ('sale_pack.options.' ~ option.key)|trans }}</span>
+                    <span class="toggle__hint">{{ ('sale_pack.options.' ~ option.key ~ '_hint')|trans }}</span>
+                </span>
+            </label>
+        {% endfor %}
+    </fieldset>
+    <fieldset class="field">
+        <legend class="field__label">{{ 'sale_pack.paperwork.kinds'|trans }}</legend>
+        <div class="chip-row">
+            {% for kind in pack.paperwork.offered %}
+                <label class="chip">
+                    <input type="checkbox" name="kinds[]" value="{{ kind.value }}"{% if pack.paperwork.isChosen(kind) %} checked{% endif %}>
+                    <span>{{ ('sale_pack.paperwork.kind.' ~ kind.value)|trans }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        <p class="field__hint">{{ 'sale_pack.paperwork.never'|trans }}</p>
+    </fieldset>
+    <div class="btn-row">
+        <button type="submit" class="btn">{{ ui.icon('check') }}{{ 'history.print_options.apply'|trans }}</button>
+    </div>
+</form>

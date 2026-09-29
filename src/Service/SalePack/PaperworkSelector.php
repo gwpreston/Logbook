@@ -140,7 +140,7 @@ final readonly class PaperworkSelector
                     self::extension($attachment),
                     $taken,
                 ),
-                included: !in_array($attachment->id, $options->exclude, true),
+                included: $options->keeps($attachment->id),
             );
         }
 

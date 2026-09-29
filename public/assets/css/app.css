@@ -3629,3 +3629,140 @@ a.list__title:hover {
     gap: var(--space-1);
     margin: var(--space-2) 0 0;
 }
+
+/* ---------------------------------------------------------------------------
+ * Phase 17.1: the sale pack (spec.md §7.19). The sheet is the print view's;
+ * the options and paperwork panels are screen only.
+ * ------------------------------------------------------------------------- */
+.sale-pack__panels {
+    display: grid;
+    gap: var(--space-4);
+}
+
+@media (min-width: 60rem) {
+    .sale-pack__panels {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+.sale-pack__options .toggle + .toggle {
+    margin-top: var(--space-2);
+}
+
+.sale-pack__files summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.sale-pack__file-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+}
+
+.sale-pack__file-list .checkbox {
+    align-items: flex-start;
+    font-weight: 400;
+}
+
+.sale-pack__file-list .checkbox > span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.sale-pack__file-name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: 600;
+}
+
+.sale-pack__notice .card__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.sale-pack__facts {
+    margin-bottom: var(--space-5);
+}
+
+.sale-pack__facts .plain-list,
+.sale-pack__due .plain-list {
+    margin: 0;
+}
+
+.sale-pack__section {
+    margin-top: var(--space-6);
+}
+
+.sale-pack__running {
+    margin: 0 0 var(--space-1);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.sale-pack__heading {
+    margin: 0 0 var(--space-2);
+}
+
+.sale-pack__group {
+    margin: var(--space-5) 0 var(--space-2);
+    font-size: var(--fs-md);
+}
+
+.sale-pack__description {
+    margin: 0 0 var(--space-2) calc(2.375rem + var(--space-5));
+    white-space: pre-line;
+    font-size: var(--fs-sm);
+}
+
+/* The mileage chart is drawn in the print palette, so it sits on paper white on screen too. */
+.sale-pack__chart {
+    margin: var(--space-3) 0;
+    padding: var(--space-2);
+    background: #fff;
+    border-radius: var(--radius-lg);
+}
+
+.sale-pack__table td .icon {
+    vertical-align: -0.2em;
+    margin-inline-end: var(--space-1);
+}
+
+@media print {
+    /* The summary is a page of its own; the rest follows. */
+    .sale-pack__summary {
+        break-after: page;
+        page-break-after: always;
+    }
+
+    .sale-pack__section:first-of-type {
+        margin-top: 0;
+    }
+
+    .sale-pack__heading,
+    .sale-pack__group {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    .sale-pack__table tr,
+    .sale-pack__facts > div {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .sale-pack__chart {
+        padding: 0;
+        border: 0;
+    }
+
+    .sale-pack__chart .chart {
+        height: 9rem;
+    }
+}
