@@ -88,6 +88,10 @@ final readonly class EditOdometerReadingAction
                 'id' => (string) $vehicle->id,
                 'document' => (string) $reading->complianceDocumentId,
             ]),
+            $reading->tyreChangeId !== null => $this->redirect->toRoute('tyres.changes.edit', [
+                'id' => (string) $vehicle->id,
+                'change' => (string) $reading->tyreChangeId,
+            ]),
             default => throw new HttpNotFoundException($request),
         };
     }

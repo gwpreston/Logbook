@@ -11,7 +11,7 @@ use Logbook\Domain\Attachment\AttachmentOwner;
  * One point in a vehicle's mileage series (spec.md §6 OdometerReading).
  * Manual readings are edited directly; others follow the entry that owns
  * them (fuelEntryId for fill-ups, maintenanceEntryId for maintenance,
- * complianceDocumentId for documents).
+ * complianceDocumentId for documents, tyreChangeId for tyre changes).
  */
 final readonly class OdometerReading
 {
@@ -29,6 +29,7 @@ final readonly class OdometerReading
         public DateTimeImmutable $updatedAt,
         public ?int $maintenanceEntryId = null,
         public ?int $complianceDocumentId = null,
+        public ?int $tyreChangeId = null,
     ) {
     }
 
@@ -39,7 +40,8 @@ final readonly class OdometerReading
 
     /**
      * Whose files this row shows: a manual reading's own, a derived
-     * reading's owning entry's (spec.md §7.2).
+     * reading's owning entry's (spec.md §7.2). A tyre change takes no files,
+     * so its reading counts its own (always none).
      *
      * @return array{0: AttachmentOwner, 1: int}
      */

@@ -467,6 +467,7 @@ return [
             'fuel' => 'Fill-up',
             'maintenance' => 'Service',
             'document' => 'Document',
+            'tyre' => 'Tyres',
         ],
         'stat' => [
             'current' => 'Odometer',
@@ -1387,6 +1388,10 @@ return [
             'reports' => [
                 'title' => 'Reports',
                 'hint' => 'Spending reports and the spend widget on the dashboard.',
+            ],
+            'tyres' => [
+                'title' => 'Tyres',
+                'hint' => 'Which tyres are fitted and stored, tyre changes and how far each tyre has gone.',
             ],
         ],
     ],

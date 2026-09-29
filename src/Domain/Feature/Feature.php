@@ -15,6 +15,7 @@ enum Feature: string
     case Compliance = 'compliance';
     case Reminders = 'reminders';
     case Reports = 'reports';
+    case Tyres = 'tyres';
 
     /**
      * The environment variable holding the default, e.g. FEATURES_FUEL.
@@ -32,6 +33,7 @@ enum Feature: string
             self::Compliance => 'verified_user',
             self::Reminders => 'notifications',
             self::Reports => 'bar_chart',
+            self::Tyres => 'tire_repair',
         };
     }
 }

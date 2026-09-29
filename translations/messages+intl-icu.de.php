@@ -467,6 +467,7 @@ return [
             'fuel' => 'Tankfüllung',
             'maintenance' => 'Wartung',
             'document' => 'Dokument',
+            'tyre' => 'Reifen',
         ],
         'stat' => [
             'current' => 'Kilometerstand',
@@ -1386,6 +1387,10 @@ return [
             'reports' => [
                 'title' => 'Berichte',
                 'hint' => 'Ausgabenberichte und das Ausgaben-Widget der Übersicht.',
+            ],
+            'tyres' => [
+                'title' => 'Reifen',
+                'hint' => 'Welche Reifen montiert und eingelagert sind, Reifenwechsel und wie weit jeder Reifen gefahren ist.',
             ],
         ],
     ],
