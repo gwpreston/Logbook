@@ -280,7 +280,7 @@ distance by charging type, cost per distance trend and economy by month
 - [x] Bump `VERSION`; rebuild assets (`composer build-assets`) and commit
       the output.
 - [x] Update the README status paragraph.
-- [ ] Tag `v1.8.0`; image published as `1.8.0`, `1.8`, `1` and `latest`.
+- [x] Tag `v1.8.0`; image published as `1.8.0`, `1.8`, `1` and `latest`.
 
 ---
 
