@@ -122,6 +122,18 @@ final class DisplayFormatterTest extends TestCase
         self::assertSame('', $this->formatter->unitPrice(null, 'USD', false));
     }
 
+    public function testChartValuesKeepTheChartsPrecision(): void
+    {
+        $this->prefs('en_GB', 'Europe/London');
+
+        self::assertSame('43.0', $this->formatter->chartValue(43.0, 1));
+        self::assertSame('7,214', $this->formatter->chartValue(7213.8, 0));
+        self::assertSame('£1.459', $this->formatter->chartValue(1.4594, 3, 'GBP'));
+        self::assertSame('£1.45', $this->formatter->chartValue(1.45, 3, 'GBP'), 'money keeps at least its own decimals');
+        self::assertSame('£12', $this->formatter->chartValue(12.4, 0, 'GBP'));
+        self::assertSame('', $this->formatter->chartValue(null, 1));
+    }
+
     public function testCostPerDistance(): void
     {
         $this->prefs('en_GB', 'Europe/London', DistanceUnit::Mile);

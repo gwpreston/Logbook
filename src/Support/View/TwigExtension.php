@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Logbook\Support\View;
 
+use DateTimeImmutable;
 use Logbook\Kernel;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Money\Currency;
+use Psr\Clock\ClockInterface;
 use Slim\Interfaces\RouteParserInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -37,6 +40,7 @@ final class TwigExtension extends AbstractExtension
         private readonly TranslatorInterface&LocaleAwareInterface $translator,
         private readonly DisplayFormatter $formatter,
         private readonly DisplayContext $display,
+        private readonly ClockInterface $clock,
         private readonly string $basePath,
     ) {
     }
@@ -52,6 +56,11 @@ final class TwigExtension extends AbstractExtension
             new TwigFunction('html_lang', fn (): string => str_replace('_', '-', $this->translator->getLocale())),
             new TwigFunction('trans', $this->trans(...)),
             new TwigFunction('prefs', fn (): DisplayPreferences => $this->display->preferences()),
+            // Today's calendar date in the user's time zone (the print header's "Printed …").
+            new TwigFunction('today', fn (): DateTimeImmutable => LocalTime::today(
+                $this->clock,
+                $this->display->preferences()->timeZone(),
+            )),
             new TwigFunction('currency_name', fn (string $code): string => Currency::name($code, $this->locale())),
             new TwigFunction('currency_symbol', fn (string $code): string => Currency::symbol($code, $this->locale())),
             new TwigFunction('currency_digits', Currency::fractionDigits(...)),
@@ -65,6 +74,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('number', $this->formatter->number(...)),
             new TwigFilter('percent', $this->formatter->percent(...)),
             new TwigFilter('money', $this->formatter->money(...)),
+            new TwigFilter('chart_value', $this->formatter->chartValue(...)),
             new TwigFilter('distance', $this->formatter->distance(...)),
             new TwigFilter('volume', $this->formatter->volume(...)),
             new TwigFilter('depth', $this->formatter->depth(...)),

@@ -137,8 +137,10 @@ return [
         assert($translator instanceof Translator);
         assert($formatter instanceof DisplayFormatter);
         assert($display instanceof DisplayContext);
+        $clock = $c->get(ClockInterface::class);
+        assert($clock instanceof ClockInterface);
 
-        return new TwigExtension($routeParser, $assets, $translator, $formatter, $display, $settingsOf($c)->basePath);
+        return new TwigExtension($routeParser, $assets, $translator, $formatter, $display, $clock, $settingsOf($c)->basePath);
     },
 
     Environment::class => static function (ContainerInterface $c) use ($settingsOf): Environment {
