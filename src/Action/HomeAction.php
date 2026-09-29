@@ -6,6 +6,7 @@ namespace Logbook\Action;
 
 use Logbook\Action\Dashboard\DashboardCharts;
 use Logbook\Service\Dashboard\DashboardService;
+use Logbook\Service\Forecast\ForecastWording;
 use Logbook\Service\Reminder\ReminderWording;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
@@ -29,6 +30,7 @@ final readonly class HomeAction
         private DashboardCharts $charts,
         private ReminderWording $wording,
         private ClockInterface $clock,
+        private ForecastWording $forecastWording,
     ) {
     }
 
@@ -46,6 +48,7 @@ final readonly class HomeAction
             'customise' => $customise,
             'today' => LocalTime::today($this->clock, $user->preferences->timeZone()),
             'wording' => $this->wording,
+            'forecast_wording' => $this->forecastWording,
             'efficiency_chart' => $this->charts->efficiency($dashboard->efficiency),
             'mileage_chart' => $this->charts->mileage($dashboard->mileage),
         ]);

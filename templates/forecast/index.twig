@@ -1,0 +1,199 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/forecast.twig' as forecast_ui %}
+
+{% set active_nav = 'home' %}
+{% set dash = '—' %}
+{% set vehicle_query = scope.query() %}
+{% set several = forecast.totals|length > 1 %}
+{% set unit = prefs().distanceUnit.value %}
+
+{% block title %}{{ 'coming_up.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('home', {}, vehicle_query) }}">{{ ui.icon('chevron_left') }}{{ 'nav.dashboard'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'coming_up.title'|trans }}</h1>
+                <p class="page-header__lead">
+                    {{- selected ? selected.name() ~ ' · ' -}}
+                    {{- 'coming_up.period'|trans({from: forecast.horizon.today|local_date, to: forecast.horizon.end|local_date}) -}}
+                </p>
+            </div>
+            {% if not forecast.isEmpty() %}
+                <div class="btn-row">
+                    <a class="btn" href="{{ url_for('upcoming.export', {}, vehicle_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+                </div>
+            {% endif %}
+        </header>
+
+        {# The dashboard's vehicle chips (spec.md §7.8): plain links. #}
+        {% if vehicles|length > 1 %}
+            <nav class="vehicle-filter" aria-label="{{ 'dashboard.filter.label'|trans }}">
+                <ul class="vehicle-filter__list">
+                    <li>
+                        <a class="chip vehicle-filter__chip" href="{{ url_for('upcoming') }}"{% if not selected %} aria-current="page"{% endif %}>{{ ui.icon('apps') }}<span>{{ 'dashboard.filter.all'|trans }}</span></a>
+                    </li>
+                    {% for vehicle in vehicles %}
+                        <li>
+                            <a class="chip vehicle-filter__chip" href="{{ url_for('upcoming', {}, {vehicle: vehicle.id}) }}"{% if selected and selected.id == vehicle.id %} aria-current="page"{% endif %}>{{ ui.icon(vehicle.data.type.icon()) }}<span>{{ vehicle.name() }}</span></a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
+
+        {% if forecast.isEmpty() %}
+            <div class="card empty">
+                {{ ui.icon('event_upcoming') }}
+                <p class="empty__title">{{ 'coming_up.empty_title'|trans }}</p>
+                <p>{{ 'coming_up.empty_body'|trans }}</p>
+            </div>
+        {% else %}
+            {# The 12-month summary, per currency (never converted). #}
+            {% for totals in forecast.totals %}
+                {% set currency = totals.currency %}
+                {% set chart = charts[loop.index0] %}
+                <section class="page__stack" aria-labelledby="summary-{{ currency }}-heading">
+                    <h2 id="summary-{{ currency }}-heading" class="section-title">
+                        {{- several ? 'coming_up.summary.title_in'|trans({currency: currency_name(currency)}) : 'coming_up.summary.title'|trans -}}
+                    </h2>
+                    <dl class="stats">
+                        {{ ui.stat('coming_up.summary.planned'|trans,
+                            forecast_ui.amount(totals.planned(), totals.isAtLeast()),
+                            totals.unknown() > 0 ? 'coming_up.unknown_count'|trans({count: totals.unknown()}) : 'coming_up.summary.planned_sub'|trans) }}
+                        {% if forecast.fuel is not empty %}
+                        {{ ui.stat('coming_up.summary.fuel'|trans,
+                            totals.hasFuel ? forecast_ui.amount(totals.fuel(), false) : dash,
+                            totals.hasFuel ? ('coming_up.fuel_basis.' ~ unit)|trans : 'coming_up.fuel_missing'|trans) }}
+                        {% endif %}
+                        {{ ui.stat('coming_up.summary.total'|trans,
+                            forecast_ui.amount(totals.total(), totals.isAtLeast()),
+                            'coming_up.summary.total_sub'|trans) }}
+                    </dl>
+
+                    <section class="card" aria-labelledby="months-{{ currency }}">
+                        <div class="card__header">
+                            <h3 id="months-{{ currency }}" class="card__title">{{ 'coming_up.by_month'|trans }}</h3>
+                        </div>
+                        {% if chart.hasData() %}
+                            {{ ui.chart(chart, 'coming_up.chart_label'|trans({currency: currency})) }}
+                        {% endif %}
+                        <div class="table-wrap">
+                            <table class="table">
+                                <caption class="visually-hidden">{{ 'coming_up.by_month'|trans }}</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{{ 'report.column.month'|trans }}</th>
+                                        <th scope="col" class="table__num">{{ 'coming_up.summary.planned'|trans }}</th>
+                                        {% if totals.hasFuel %}<th scope="col" class="table__num">{{ 'coming_up.summary.fuel'|trans }}</th>{% endif %}
+                                        <th scope="col" class="table__num">{{ 'coming_up.summary.total'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for month in totals.months %}
+                                        <tr>
+                                            <th scope="row">{{ month.month|local_month }}</th>
+                                            <td class="table__num tabular">{{ month.planned.isZero() ? dash : forecast_ui.amount(month.planned, month.unknown > 0) }}</td>
+                                            {% if totals.hasFuel %}<td class="table__num tabular">{{ forecast_ui.amount(month.fuel, false) }}</td>{% endif %}
+                                            <td class="table__num tabular"><strong>{{ forecast_ui.amount(month.total(), month.unknown > 0) }}</strong></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th scope="row">{{ 'coming_up.summary.total'|trans }}</th>
+                                        <td class="table__num tabular">{{ forecast_ui.amount(totals.planned(), totals.isAtLeast()) }}</td>
+                                        {% if totals.hasFuel %}<td class="table__num tabular">{{ forecast_ui.amount(totals.fuel(), false) }}</td>{% endif %}
+                                        <td class="table__num tabular"><strong>{{ forecast_ui.amount(totals.total(), totals.isAtLeast()) }}</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+            {% endfor %}
+
+            {# Fuel per vehicle: the estimate, or why there is none yet. #}
+            {% if forecast.fuel is not empty %}
+                <section class="card" aria-labelledby="fuel-heading">
+                    <h2 id="fuel-heading" class="card__title">{{ 'coming_up.fuel_title'|trans }}</h2>
+                    <ul class="list">
+                        {% for estimate in forecast.fuel %}
+                            <li class="list__item">
+                                <span class="list__icon">{{ ui.icon('local_gas_station') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ estimate.vehicle.name() }}</span>
+                                    <span class="list__meta">
+                                        {%- if estimate.isReady() -%}
+                                            {{ 'coming_up.fuel_rate'|trans({rate: estimate.perKm|per_distance(estimate.currency)}) }}
+                                        {%- else -%}
+                                            {{ ('coming_up.fuel_status.' ~ estimate.status.value)|trans }}
+                                        {%- endif -%}
+                                    </span>
+                                </span>
+                                <span class="list__end tabular">
+                                    {%- if estimate.isReady() -%}
+                                        {{ 'coming_up.fuel_about'|trans({amount: estimate.total()|money}) }}
+                                    {%- else -%}
+                                        <span aria-hidden="true">—</span>
+                                    {%- endif -%}
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+
+            {% if forecast.overdue is not empty %}
+                <section class="card forecast-section" aria-labelledby="overdue-heading">
+                    <h2 id="overdue-heading" class="card__title">{{ ui.icon('warning') }}{{ 'coming_up.overdue'|trans }}</h2>
+                    <p class="muted">{{ 'coming_up.overdue_note'|trans }}</p>
+                    <ul class="list">
+                        {% for item in forecast.overdue %}
+                            {{ forecast_ui.row(item, forecast_wording, not selected) }}
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+
+            {% for month in forecast.months %}
+                {% set month_index = loop.index0 %}
+                <section class="card forecast-section" aria-labelledby="month-{{ month.month.format('Y-m') }}">
+                    <h2 id="month-{{ month.month.format('Y-m') }}" class="card__title"><time datetime="{{ month.month.format('Y-m') }}">{{ month.month|local_month(false) }}</time></h2>
+                    {% if month.items is empty %}
+                        <p class="muted">{{ 'coming_up.nothing_planned'|trans }}</p>
+                    {% else %}
+                        <ul class="list">
+                            {% for item in month.items %}
+                                {{ forecast_ui.row(item, forecast_wording, not selected) }}
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% for totals in forecast.totals %}
+                        {% set row = totals.months[month_index] %}
+                        {% if totals.hasFuel %}
+                            <p class="muted forecast-section__fuel">{{ ui.icon('local_gas_station') }}{{ 'coming_up.fuel_about'|trans({amount: row.fuel|money}) }}</p>
+                        {% endif %}
+                    {% endfor %}
+                </section>
+            {% endfor %}
+
+            {% if forecast.undated is not empty %}
+                <section class="card forecast-section" aria-labelledby="undated-heading">
+                    <h2 id="undated-heading" class="card__title">{{ 'coming_up.undated'|trans }}</h2>
+                    <p class="muted">{{ 'coming_up.undated_note'|trans({count: forecast.undated|length}) }}</p>
+                    <ul class="list">
+                        {% for item in forecast.undated %}
+                            {{ forecast_ui.row(item, forecast_wording, not selected) }}
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+
+            <p class="muted">{{ ('coming_up.estimate_note.' ~ unit)|trans }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

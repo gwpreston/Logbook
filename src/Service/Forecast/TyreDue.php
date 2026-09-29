@@ -22,7 +22,7 @@ final readonly class TyreDue
         public ?string $dueKm,
         /** A wear-out date is projected from the average daily distance; an age limit is not. */
         public bool $projected,
-        /** The linked fitting record(s), each once, when above 0. */
+        /** The tyres' shares of the records that fitted them, when every one has one and above 0. */
         public ?Money $cost = null,
     ) {
     }

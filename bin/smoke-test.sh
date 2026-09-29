@@ -94,6 +94,9 @@ expect "$base/reports" 200 'Expenses &amp; reports'
 # Cost of ownership (Phase 14.2): a deep link at the subpath, and its CSV.
 expect "$base/reports/ownership" 200 'Cost of ownership'
 expect "$base/reports/ownership.csv" 200 'Owned from'
+# Coming up (Phase 15): a deep link, its CSV and the dashboard widget.
+expect "$base/upcoming" 200 'Nothing planned yet'
+expect "$base/upcoming.csv" 200 'Expected cost'
 i=0
 until $compose logs app 2>&1 | grep -q 'Scheduled tasks: '; do
     i=$((i + 1)); [ "$i" -lt 30 ] || fail "the scheduled task never ran"; sleep 1

@@ -1905,8 +1905,10 @@ nothing about reminders (§7.6). Derived on every read
   - **Tyres** (§7.17): the fitted road tyres' wear-out dates and the
     non-retired tyres' age-limit dates, grouped as the tyre reminder groups
     them (every tyre past a limit, per reason; otherwise tyres sharing the
-    reason and due point) and titled by the same helper ("Tyres: rear due in
-    about 800 mi"). No repeats: a new tyre's wear is unknown.
+    reason and due point; the age limits of one set together, at the
+    soonest) and titled by the same helper ("Tyres: rear due in about
+    800 mi", "Tyres: Winter wheels 6 years old on 7 Dec 2026"). No repeats:
+    a new tyre's wear is unknown.
   - **Manual reminder** (§7.6): each open one with a due date, titled with
     its title; no repeats. Only with the `reminders` module on.
 - **Groups:** **Overdue** first, once each and without repeats (the next
@@ -1916,14 +1918,19 @@ nothing about reminders (§7.6). Derived on every read
   calendar (under a week of mileage history) or a tyre wear-out with a
   distance but no date, shown with its odometer ("at about 48,000 mi").
   Within a month, by date. A date placed by the distance projection is
-  *projected* and shown as "around {month}", not as a day.
+  *projected* and shown as "around {month}", not as a day. A schedule past
+  its distance limit shows the odometer it was due at ("due at 48,590 mi").
+  A month's planned figure is "—" while nothing in it has a known cost.
 - **Expected cost: last time's price, from the owner's own records.** A
   schedule: the cost of its latest completing entry (the same entry that
   sets *last done*, §7.4), when above 0. A document: the current document's
-  cost, when above 0. Tyres: the cost of the service record(s) linked to
-  the tyre changes that fitted the tyres now due, each record once (needs
-  `maintenance` on, as tyre costs do in the ledger). Manual reminders:
-  none. Otherwise the cost is **not known**, shown as "—" and counted ("3
+  cost, when above 0. Tyres: each tyre's share of the service record linked
+  to the `fit` change that put it on (the record's cost split evenly across
+  the tyres it fitted, as a retired tyre's cost per distance is, §7.17), added
+  up for the tyres in the item and known only when every one has a share, so
+  a pair fitted together and wearing out a month apart never counts the
+  record twice (needs `maintenance` on, as tyre costs do in the ledger).
+  Manual reminders: none. Otherwise the cost is **not known**, shown as "—" and counted ("3
   items without a known cost"); never a guess, never an average. Always
   labelled "about £240 (last time)". Repeats carry the same cost.
 - **Fuel estimate** (needs `fuel` on), per vehicle and month:

@@ -18,6 +18,9 @@ use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\ValuationRepository;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Service\Expense\CostItem;
+use Logbook\Service\Forecast\Forecast;
+use Logbook\Service\Forecast\ForecastItem;
+use Logbook\Service\Forecast\ForecastWording;
 use Logbook\Service\Report\GroupTotal;
 use Logbook\Service\Report\OwnershipCost;
 use Logbook\Service\Report\OwnershipReport;
@@ -53,6 +56,7 @@ final readonly class CsvExporter
         private ClockInterface $clock,
         private TyreService $tyres,
         private ValuationRepository $valuations,
+        private ForecastWording $wording,
     ) {
     }
 
@@ -112,6 +116,61 @@ final readonly class CsvExporter
                 'export.column.description',
                 'export.column.amount',
                 'export.column.currency',
+            ]),
+            $rows,
+        );
+    }
+
+    /**
+     * *Coming up* (spec.md §7.18): one row per item (overdue first, then by
+     * date, then undated with a blank date), then one row per vehicle per
+     * month for fuel, dated the month's first day in the horizon.
+     */
+    public function comingUp(Forecast $forecast): CsvTable
+    {
+        $money = static fn (?Money $m): ?string => $m === null ? null : CsvNumber::money($m->toDecimal(3), $m->currency);
+
+        $rows = array_map(fn (ForecastItem $item): array => [
+            $item->dueOn?->format('Y-m-d'),
+            $item->vehicle->name(),
+            $item->vehicle->data->registration,
+            $this->wording->source($item->source),
+            $this->wording->title($item),
+            $money($item->cost),
+            $item->currency,
+            $this->yesNo($item->projected),
+            $this->yesNo($item->overdue),
+        ], $forecast->items());
+
+        $months = $forecast->horizon->months();
+        foreach ($forecast->fuel as $estimate) {
+            foreach ($estimate->months as $i => $amount) {
+                $rows[] = [
+                    max($months[$i], $forecast->today())->format('Y-m-d'),
+                    $estimate->vehicle->name(),
+                    $estimate->vehicle->data->registration,
+                    $this->t('coming_up.source.fuel'),
+                    $this->t('coming_up.csv.fuel_title', ['month' => $months[$i]->format('Y-m')]),
+                    $money($amount),
+                    $estimate->currency,
+                    $this->yesNo(true),
+                    $this->yesNo(false),
+                ];
+            }
+        }
+
+        return new CsvTable(
+            sprintf('logbook-coming-up-%s.csv', $forecast->today()->format('Y-m-d')),
+            $this->headers([
+                'export.column.date',
+                'export.column.vehicle',
+                'export.column.registration',
+                'export.column.source',
+                'export.column.title',
+                'export.column.expected_cost',
+                'export.column.currency',
+                'export.column.projected',
+                'export.column.overdue',
             ]),
             $rows,
         );

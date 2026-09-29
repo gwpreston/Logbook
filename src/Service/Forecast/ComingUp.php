@@ -151,8 +151,9 @@ final readonly class ComingUp
     /**
      * Every judged tyre, grouped as the tyre reminder groups the most urgent
      * ones (TyreJudgement): all tyres past a limit together per reason,
-     * otherwise tyres sharing the reason and due point. Each group is titled
-     * by the tyre reminder's own helper.
+     * otherwise tyres sharing the reason and due point, and the age limits of
+     * one set together at the soonest (so the title names the set). Each
+     * group is titled by the tyre reminder's own helper.
      *
      * @return list<TyreDue>
      */
@@ -164,9 +165,13 @@ final readonly class ComingUp
             if (!$standing->isKnown() || ($standing->dueOn === null && $standing->dueKm === null)) {
                 continue;
             }
-            $key = $standing->status === DueStatus::Overdue
-                ? 'overdue|' . $standing->reason
-                : implode('|', [$standing->reason, $standing->dueOn?->format('Y-m-d') ?? '', $standing->dueKm ?? '']);
+            $setId = $standing->view->tyre->setId;
+            $key = match (true) {
+                $standing->status === DueStatus::Overdue => 'overdue|' . $standing->reason,
+                // A set ages together: one item at its soonest limit, named by the set.
+                $standing->reason === TyreStanding::AGE && $setId !== null => 'age|set|' . $setId,
+                default => implode('|', [$standing->reason, $standing->dueOn?->format('Y-m-d') ?? '', $standing->dueKm ?? '']),
+            };
             $groups[$key][] = $standing;
         }
 
@@ -195,14 +200,21 @@ final readonly class ComingUp
     }
 
     /**
+     * The named tyres' shares of the records that fitted them; not known
+     * unless every one of them has a share.
+     *
      * @param list<TyreStanding> $named
      */
     private function fittingCost(Vehicle $vehicle, array $named, string $currency): ?Money
     {
         $ids = array_map(static fn (TyreStanding $s): int => $s->view->tyre->id, $named);
+        $shares = $this->tyres->fittingShares($vehicle, $ids);
+        if (count($shares) !== count($ids)) {
+            return null;
+        }
         $sum = Money::zero($currency);
-        foreach ($this->tyres->fittingRecords($vehicle, $ids) as $record) {
-            $sum = $sum->add(Money::of($record->data->cost, $currency));
+        foreach ($shares as $share) {
+            $sum = $sum->add(Money::of($share, $currency));
         }
 
         return ForecastCalculator::cost($sum->toDecimal(6), $currency);

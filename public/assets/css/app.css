@@ -3573,3 +3573,25 @@ a.list__title:hover {
     margin: 0 0 var(--space-2);
     font-weight: 600;
 }
+
+/* Coming up (spec.md §7.18): the 12-month total line, section headings with an icon. */
+.forecast-total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
+}
+
+.forecast-section .card__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.forecast-section__fuel {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
+}

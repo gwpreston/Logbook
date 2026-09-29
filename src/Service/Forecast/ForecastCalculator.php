@@ -10,6 +10,7 @@ use Logbook\Domain\Maintenance\DonePoint;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Service\Maintenance\DueState;
 use Logbook\Service\Maintenance\DueStatus;
+use Logbook\Service\Maintenance\DueTrigger;
 use Logbook\Service\Maintenance\ScheduleCalculator;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Currency;
@@ -94,8 +95,8 @@ final class ForecastCalculator
      * The schedule's due point as its reminder has it, then repeats: each
      * assumes the work is done on the day it falls due, at the odometer
      * projected for that day, and adds the interval as logging it would.
-     * Overdue: once, no repeats. Distance-only without a projection: once,
-     * undated.
+     * Overdue: once, no repeats (past its distance limit, at the odometer it
+     * was due at). Distance-only without a projection: once, undated.
      *
      * @return list<ForecastItem>
      */
@@ -124,7 +125,10 @@ final class ForecastCalculator
             return [];
         }
         if ($state->status === DueStatus::Overdue) {
-            return [$item($state->dueOn, $schedule->nextDue->km, $state->projected, true, 1)];
+            // Past its distance limit: the odometer it was due at, not a projected day.
+            $byDistance = $state->trigger === DueTrigger::Distance;
+
+            return [$item($byDistance ? null : $state->dueOn, $schedule->nextDue->km, false, true, 1)];
         }
         if ($state->dueOn === null) {
             return [$item(null, $schedule->nextDue->km, false, false, 1)];
