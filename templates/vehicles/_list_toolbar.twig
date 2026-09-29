@@ -4,13 +4,16 @@
  # on every tab. Add buttons open in the modal on desktop (spec.md §5).
  #
  # Expects: vehicle, title, module (CSV module name),
- #          add: {route, label, icon?} or null.
+ #          add: {route, label, icon?} or null,
+ #          print (optional, default false): a Print button (spec.md §8
+ #          *Printing reports*; the Fuel and Mileage tabs).
  #}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/expenses.twig' as exp %}
 <div class="toolbar list-toolbar">
     <h1 class="section-title">{{ title }}</h1>
     <div class="btn-row list-toolbar__actions">
+        {% if print|default(false) %}{{ ui.print_button() }}{% endif %}
         {{ exp.export_link(vehicle, module) }}
         {% if add|default(null) and not vehicle.isArchived() %}
             <a class="btn btn--primary" href="{{ url_for(add.route, {id: vehicle.id}) }}" data-modal>{{ ui.icon(add.icon ?? 'add') }}{{ add.label }}</a>

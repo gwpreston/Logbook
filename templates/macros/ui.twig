@@ -217,6 +217,44 @@
     </div>
 {%- endmacro %}
 
+{# A LineChart's figures as a table (spec.md §8 *Printing reports*): for a
+   chart whose page has no table of its own. Print-only: the screen keeps
+   the chart and the page's own list. #}
+{% macro chart_table(chart, label) -%}
+    <div class="table-wrap print-only">
+        <table class="table chart-print-table">
+            <caption class="chart-print-table__unit">{{ label }} · {{ chart.unitLabel() }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'print.chart_date'|trans }}</th>
+                    {% for series in chart.seriesLabels() %}
+                        <th scope="col" class="table__num">{{ series }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in chart.rows() %}
+                    <tr>
+                        <th scope="row">{{ chart.hasCalendarDates() ? row.at|local_date : row.at|instant_date }}</th>
+                        {% for value in row.values %}
+                            <td class="table__num tabular">{{ value is null ? '—' : value|chart_value(chart.decimals(), chart.currency()) }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{%- endmacro %}
+
+{# The Print button (History's print view, the sale pack, the report pages;
+   spec.md §8 *Printing reports*): js/app.js shows it and calls
+   window.print(); without JS it stays hidden and the browser's own Print
+   does the same. #}
+{% macro print_button() -%}
+    {% import _self as ui %}
+    <button type="button" class="btn btn--primary" data-print hidden>{{ ui.icon('print') }}{{ 'history.print'|trans }}</button>
+{%- endmacro %}
+
 {# Previous / next links for a Support\View\Pagination. `query` keeps other
    parameters (e.g. a filter) on the links. #}
 {% macro pagination(pagination, route, params, query = {}) -%}

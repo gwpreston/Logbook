@@ -427,6 +427,24 @@ final readonly class DisplayFormatter
         return is_string($formatted) ? $formatted : $value->format('Y-m-d H:i');
     }
 
+    /**
+     * A chart point for its table (spec.md §8 *Printing reports*): with the
+     * chart's own precision, as money when the chart is in a currency ("£1.459"),
+     * else as a plain number with fixed decimals ("54.0"). Empty for no point.
+     */
+    public function chartValue(?float $value, int $decimals, ?string $currency = null): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        if ($currency === null) {
+            return $this->number($value, $decimals, $decimals);
+        }
+        $digits = min(Currency::fractionDigits($currency), $decimals);
+
+        return $this->formatMoney($value, $currency, $digits, max($digits, $decimals));
+    }
+
     private function formatMoney(float $value, string $currency, int $minDigits, int $maxDigits): string
     {
         $formatter = new NumberFormatter($this->locale(), NumberFormatter::CURRENCY);

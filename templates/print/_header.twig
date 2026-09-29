@@ -1,0 +1,38 @@
+{#
+ # Print header (spec.md §8 *Printing reports*): what the page is, which
+ # vehicle or the fleet, the period, the owner's units and the date printed.
+ # Print-only; on screen the page header and the filters say the same.
+ #
+ # Expects: title; vehicle (a Vehicle, or null for the fleet);
+ #          fleet_note (optional, e.g. "archived vehicles included");
+ #          period (optional, already formatted).
+ #}
+{% set units = prefs() %}
+<header class="print-header print-only">
+    <p class="print-header__eyebrow">{{ 'app.name'|trans }}</p>
+    <p class="print-header__title">{{ title }}</p>
+    <dl class="print-header__facts">
+        <div>
+            <dt>{{ (vehicle ? 'print.vehicle' : 'print.vehicles')|trans }}</dt>
+            <dd>
+                {%- if vehicle -%}
+                    {{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}
+                {%- else -%}
+                    {{ 'report.fleet'|trans }}{% if fleet_note|default(null) %} · {{ fleet_note }}{% endif %}
+                {%- endif -%}
+            </dd>
+        </div>
+        {% if period|default(null) %}
+            <div><dt>{{ 'print.period'|trans }}</dt><dd>{{ period }}</dd></div>
+        {% endif %}
+        <div>
+            <dt>{{ 'print.units'|trans }}</dt>
+            <dd>{{ 'print.units_value'|trans({
+                distance: ('units.name.' ~ units.distanceUnit.value)|trans,
+                volume: ('units.name.' ~ units.volumeUnit.value)|trans,
+                consumption: ('units.name.' ~ units.consumptionUnit.value)|trans,
+            }) }}</dd>
+        </div>
+        <div><dt>{{ 'print.printed'|trans }}</dt><dd>{{ today()|local_date }}</dd></div>
+    </dl>
+</header>

@@ -8,7 +8,14 @@
 {% block title %}{{ 'ownership.report_title'|trans }} · {{ 'report.title'|trans }} · {{ parent() }}{% endblock %}
 
 {% block content %}
-    <div class="page__stack">
+    <div class="page__stack print-report">
+        {% include 'print/_header.twig' with {
+            title: 'ownership.report_title'|trans,
+            vehicle: filter.vehicleId ? (all_vehicles|filter(v => v.id == filter.vehicleId)|first ?: null) : null,
+            fleet_note: filter.includeArchived ? 'report.archived_included'|trans : null,
+            period: 'print.ownership_period'|trans,
+        } %}
+
         <a class="back-link" href="{{ url_for('reports.index') }}">{{ ui.icon('chevron_left') }}{{ 'report.title'|trans }}</a>
 
         <header class="page-header">
@@ -16,7 +23,10 @@
                 <h1 class="page-header__title">{{ 'ownership.report_title'|trans }}</h1>
                 <p class="page-header__lead">{{ 'ownership.report_lead'|trans }}</p>
             </div>
-            <a class="btn" href="{{ url_for('reports.ownership.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+            <div class="btn-row">
+                {{ ui.print_button() }}
+                <a class="btn" href="{{ url_for('reports.ownership.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+            </div>
         </header>
 
         <form class="card report-filter" method="get" action="{{ url_for('reports.ownership') }}" data-auto-submit>

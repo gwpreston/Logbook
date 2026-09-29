@@ -43,7 +43,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | ✅ |
 | [16](phase-16.md) | Fuel insights + v1.8 release | ✅ |
 | [17.1](phase-17.1.md) | Sale pack | ✅ |
-| [17.2](phase-17.2.md) | Printable reports + v1.9 release | 📋 |
+| [17.2](phase-17.2.md) | Printable reports + v1.9 release | ✅ |
 | [18.1](phase-18.1.md) | Access policy | 📋 |
 | [18.2](phase-18.2.md) | REST API v1 + v1.10 release | 📋 |
 | [19](phase-19.md) | Multiple users and vehicle sharing + v2.0 release | 📋 |

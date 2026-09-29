@@ -2,7 +2,7 @@
 
 *A clean paper or PDF copy of any report, without a PDF library.*
 
-Status: 📋 planned · releases **v1.9.0** together with Phase 17.1
+Status: ✅ complete · released as **v1.9.0** together with Phase 17.1
 
 The roadmap lists "PDF reports" as a later idea. Vehicle and service
 history already print (§7.16), and Phase 17.1 adds the sale pack. What
@@ -78,53 +78,54 @@ is a separate decision (ROADMAP *After 1.0*).
 ## Tasks
 
 ### Styles and partials
-- [ ] `assets/css/print.css` (or the print section of `app.css`): shared
+- [x] `assets/css/print.css` (or the print section of `app.css`): shared
       rules for hiding the shell, black on white, breaks, repeating table
       headers, and a `.print-only` / `.screen-only` utility.
-- [ ] `templates/print/_header.twig`, fed by each Action's existing
+- [x] `templates/print/_header.twig`, fed by each Action's existing
       filter state. There is no new query.
-- [ ] `ui.print_button()` macro, reused by History, the sale pack and the
+- [x] `ui.print_button()` macro, reused by History, the sale pack and the
       five pages here.
-- [ ] Move History's print-specific rules onto the shared ones where they
+- [x] Move History's print-specific rules onto the shared ones where they
       overlap, with no visual change to the History print view.
 
 ### Charts
-- [ ] `assets/js/print-charts.js`: registers every Chart.js instance on the
+- [x] `assets/js/print-charts.js`: registers every Chart.js instance on the
       page. On `beforeprint` it swaps datasets to the print palette
       (colours plus `borderDash` or pattern fills) and resizes; on
       `afterprint` it restores them. The chart tokens gain a print set.
-- [ ] Make sure each chart's fallback table exists in the markup (some are
+- [x] Make sure each chart's fallback table exists in the markup (some are
       JS-only today) and is `.print-only` where the screen hides it.
 
 ### Pages
-- [ ] Reports (vehicle and fleet), including the per-currency sections.
-- [ ] Ownership report.
-- [ ] *Coming up* (fleet page and vehicle card page).
-- [ ] Fuel tab: the summary, *By grade*, both trend charts and Phase 16's
+- [x] Reports (vehicle and fleet), including the per-currency sections.
+- [x] Ownership report.
+- [x] *Coming up* (fleet page and vehicle card page).
+- [x] Fuel tab: the summary, *By grade*, both trend charts and Phase 16's
       *Economy by month*; fill-up list, current page only.
-- [ ] Mileage tab: summary, chart, readings on the current page.
+- [x] Mileage tab: summary, chart, readings on the current page.
 
 ### Translations
-- [ ] Header strings, units summary and period formats in English and
+- [x] Header strings, units summary and period formats in English and
       German (ICU date ranges).
 
 ### Tests
-- [ ] Each page renders the print header with the right vehicle, period and
+- [x] Each page renders the print header with the right vehicle, period and
       units. Test this against the rendered HTML: the header exists and is
       `print-only`.
-- [ ] The *Print* button is present with JS markup and absent from the
+- [x] The *Print* button is present with JS markup and absent from the
       no-JS render path, as History's.
-- [ ] Every chart on these pages has a table in the markup.
-- [ ] Module toggles: a switched-off module's page answers 404 as before,
+- [x] Every chart on these pages has a table in the markup.
+- [x] Module toggles: a switched-off module's page answers 404 as before,
       and no print partial leaks its data elsewhere.
 - [ ] Manual check list in the PR: Chrome, Firefox and Safari print preview
       of each page in light and dark themes, portrait. Save as PDF on
-      Android and iOS.
+      Android and iOS. *(Chrome done, headless print to PDF in both themes;
+      Firefox, Safari, Android and iOS still to check.)*
 
 ### Release (with Phase 17.1)
-- [ ] `CHANGELOG.md` **1.9.0**: the sale pack and printable reports. Upgrade
+- [x] `CHANGELOG.md` **1.9.0**: the sale pack and printable reports. Upgrade
       notes: no migrations, no configuration, backup format unchanged.
-- [ ] Bump `VERSION`, rebuild assets, update the README status paragraph.
+- [x] Bump `VERSION`, rebuild assets, update the README status paragraph.
 
 ---
 
@@ -139,3 +140,40 @@ is a separate decision (ROADMAP *After 1.0*).
 4. The dark theme prints black on white.
 5. History's print view is unchanged. Definition of done (CLAUDE.md §11)
    holds.
+
+---
+
+## Changed while building it
+
+spec.md §8 *Printing reports* is the current text.
+
+- **No `print-charts.js`.** The print palette lives in `assets/js/app.js`
+  beside the chart code, whose chart list is private; a second file would
+  have meant another script tag, service-worker entry and manifest line for
+  a few functions.
+- **Bar textures are drawn, not patterned.** Chrome leaves a
+  `CanvasPattern` out of the printed page (with or without background
+  graphics), so a small Chart.js plugin strokes the stripes, dots and
+  hatching into each bar and legend box while printing.
+- **Scoped, not merged.** The new rules sit under `.print-report` instead
+  of being folded into History's; History's print view renders identically
+  to v1.8.0 (compared in print media). The utility is `.print-only`, and the
+  existing `.no-print` stays as the screen-only one.
+- **Periods** use the existing `{from} – {to}` wording with medium dates
+  ("1 Jan 2025 – 31 Dec 2025"), not an ICU interval format. *Coming up*'s
+  months start with this month ("Sep 2026 – Aug 2027" on 29 Sep 2026).
+  Fuel and Mileage show the first to the latest record, or "Nothing recorded
+  yet"; the Ownership report says each vehicle is from purchase to sale or
+  today.
+- **Chart tables:** the economy, price and mileage charts get a print-only
+  table of their own points (`ui.chart_table()`, from `LineChart::rows()`);
+  the others already had one. Totals (`tfoot`) print once at the end rather
+  than at the foot of every page, where they read as page totals.
+- **No landscape page.** Wide tables shrink their font instead.
+- The printed date comes from a `today()` Twig function (the app clock in
+  the owner's time zone), so no Action changed. The sale pack's mileage
+  chart is drawn at the printable width like the report charts (it kept
+  its screen size before, and printed squashed to 9rem). A chart redrawn
+  while printing (printing can flip the colour scheme, which redraws the
+  charts) keeps the print size, and Chart.js's own resizing is off while
+  printing, so every printout comes out the same size.

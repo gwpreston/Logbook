@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Support\View;
 
+use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use JsonSerializable;
 use Logbook\Support\Display\DisplayPreferences;
 
@@ -89,6 +91,66 @@ final class LineChart implements JsonSerializable
     public function pointCount(): int
     {
         return array_sum(array_map(static fn (array $series): int => count($series['points']), $this->series));
+    }
+
+    /** Axis title, e.g. "mpg (UK)": the table's caption. */
+    public function unitLabel(): string
+    {
+        return $this->unitLabel;
+    }
+
+    public function decimals(): int
+    {
+        return $this->decimals;
+    }
+
+    public function currency(): ?string
+    {
+        return $this->currency;
+    }
+
+    /** Points are calendar dates (shown as UTC dates), not instants. */
+    public function hasCalendarDates(): bool
+    {
+        return $this->calendarDates;
+    }
+
+    /**
+     * @return list<string> one per series, in the order of each row's values
+     */
+    public function seriesLabels(): array
+    {
+        return array_map(static fn (array $series): string => $series['label'], $this->series);
+    }
+
+    /**
+     * The chart's figures as table rows (spec.md §8 *Printing reports*): one
+     * per point in time, newest first, with each series' value at that time
+     * or null where a series has none.
+     *
+     * @return list<LineChartRow>
+     */
+    public function rows(): array
+    {
+        /** @var array<int, list<?float>> $byTime */
+        $byTime = [];
+        $empty = array_fill(0, count($this->series), null);
+        foreach ($this->series as $index => $series) {
+            foreach ($series['points'] as [$time, $value]) {
+                $byTime[$time] ??= $empty;
+                $byTime[$time][$index] = $value;
+            }
+        }
+        krsort($byTime);
+
+        $utc = new DateTimeZone('UTC');
+        $rows = [];
+        foreach ($byTime as $time => $values) {
+            $at = (new DateTimeImmutable('@' . intdiv($time, 1000)))->setTimezone($utc);
+            $rows[] = new LineChartRow($at, $values);
+        }
+
+        return $rows;
     }
 
     /**

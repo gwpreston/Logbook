@@ -12,7 +12,14 @@
 {% block title %}{{ 'report.title'|trans }} · {{ parent() }}{% endblock %}
 
 {% block content %}
-    <div class="page__stack">
+    <div class="page__stack print-report">
+        {% include 'print/_header.twig' with {
+            title: 'report.title'|trans,
+            vehicle: selected,
+            fleet_note: filter.includeArchived ? 'report.archived_included'|trans : null,
+            period: 'report.period'|trans({from: period.from|local_date, to: period.to|local_date}),
+        } %}
+
         <header class="page-header">
             <div>
                 <h1 class="page-header__title">{{ 'report.title'|trans }}</h1>
@@ -22,6 +29,7 @@
                 </p>
             </div>
             <div class="btn-row">
+                {{ ui.print_button() }}
                 <a class="btn" href="{{ url_for('reports.ownership', {}, ownership_query) }}">{{ ui.icon('sell') }}{{ 'ownership.report_title'|trans }}</a>
                 <a class="btn" href="{{ url_for('reports.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
             </div>

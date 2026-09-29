@@ -17,7 +17,7 @@
     <div class="page__stack history-print sale-pack">
         <div class="toolbar no-print">
             <a class="back-link" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
-            <button type="button" class="btn btn--primary" data-print hidden>{{ ui.icon('print') }}{{ 'history.print'|trans }}</button>
+            {{ ui.print_button() }}
         </div>
 
         <div class="no-print sale-pack__panels">

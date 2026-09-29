@@ -9,10 +9,19 @@
 {% block title %}{{ 'fuel.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
 {% block content %}
-    <div class="page__stack">
+    <div class="page__stack print-report">
+        {% include 'print/_header.twig' with {
+            title: 'fuel.title'|trans,
+            vehicle: vehicle,
+            period: history.isEmpty() ? 'print.no_records'|trans : 'report.period'|trans({
+                from: (history.fills|first).entry.data.filledAt|instant_date,
+                to: history.latest().entry.data.filledAt|instant_date,
+            }),
+        } %}
+
         {% include 'vehicles/_header.twig' with {active_tab: 'fuel'} %}
 
-        {% include 'vehicles/_list_toolbar.twig' with {title: 'fuel.title'|trans, module: 'fuel', add: {route: 'fuel.create', label: 'fuel.add'|trans}} %}
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'fuel.title'|trans, module: 'fuel', add: {route: 'fuel.create', label: 'fuel.add'|trans}, print: true} %}
 
         {% for section in sections %}
             {% set summary = section.summary %}
@@ -84,6 +93,7 @@
                         <div data-trend-panel="economy"{% if trend.value != 'economy' %} hidden{% endif %}>
                             {% if section.economy_chart.hasData() %}
                                 {{ ui.chart(section.economy_chart, trend_title) }}
+                                {{ ui.chart_table(section.economy_chart, trend_title) }}
                                 <p class="field__hint">{{ 'fuel.chart.economy_hint'|trans }}</p>
                             {% else %}
                                 <p class="muted">{{ 'fuel.chart.need_more'|trans }}</p>
@@ -91,6 +101,7 @@
                         </div>
                         <div data-trend-panel="cost"{% if trend.value != 'cost' %} hidden{% endif %}>
                             {% set cost_title = 'fuel.trend.cost_title'|trans({unit: prefs().distanceUnit.value}) %}
+                            <h4 class="card__title print-only">{{ cost_title }}</h4>
                             {% if section.cost_chart.hasData() %}
                                 {{ ui.chart(section.cost_chart, cost_title) }}
                             {% endif %}
@@ -128,6 +139,7 @@
                         <h3 id="price-{{ section.kind.value }}" class="card__title">{{ 'fuel.chart.price_title'|trans }}</h3>
                         {% if section.price_chart.pointCount() >= 2 %}
                             {{ ui.chart(section.price_chart, 'fuel.chart.price_title'|trans) }}
+                            {{ ui.chart_table(section.price_chart, 'fuel.chart.price_title'|trans) }}
                         {% else %}
                             <p class="muted">{{ 'fuel.chart.need_two'|trans }}</p>
                         {% endif %}

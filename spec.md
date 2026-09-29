@@ -1041,7 +1041,8 @@ iCal/webcal feed so items appear in the user's calendar.
 ### 7.7 Expenses and reports
 Per-vehicle and fleet cost breakdowns over time (fuel vs maintenance vs
 compliance vs other). Cost/distance and cost/month. Date-range filter. Simple,
-readable reports; export to CSV/PDF (PDF may be a later phase).
+readable reports; export to CSV, and print or *Save as PDF* through the
+browser (§8 *Printing reports*; server-side PDF is future work, §12).
 
 - **Cost ledger.** Every cost is one line with a vehicle, a calendar date, a
   group and an amount in the vehicle's currency: each fill-up (group *fuel*,
@@ -2225,6 +2226,44 @@ available for active and archived vehicles.
   tab's *Economy trend* | *Price trend* and Reports' *By category* | *By
   vehicle* (whose vehicle names are unlinked, each after its car / motorbike
   icon).
+- **Printing reports** (Phase 17.2): Reports (`/reports`, per vehicle and
+  fleet), the Ownership report, *Coming up* (`/upcoming`, with or without a
+  vehicle), the Fuel tab and the Mileage tab have a *Print* button in their
+  toolbar (`ui.print_button()`, shared with History's print view and the
+  sale pack). It calls `window.print()` with JS and is hidden without it;
+  the browser's own print gives the same result. Nothing is generated on
+  the server: *Save as PDF* in the print dialog makes the PDF.
+  - **Print header** (one partial, `templates/print/_header.twig`, fed by
+    each page's existing filter state, no new query): the page title; the
+    vehicle (name and registration) or "All vehicles" (plus "archived
+    vehicles included" when ticked); the period (Reports: the chosen range
+    "1 Jan 2025 – 31 Dec 2025"; *Coming up*: its months "Sep 2026 – Aug
+    2027"; Fuel and Mileage: the first to the latest record; Ownership:
+    "Each vehicle from purchase to sale or today"); the owner's units
+    ("Miles, UK gallons, mpg (UK)"); and "Printed 29 Sep 2026" (today in the
+    owner's time zone). It is print-only (`.print-only`) and hidden on
+    screen.
+  - **Filters:** the filter form, vehicle chips, the Fuel tab's *Economy |
+    Cost* switch and pagination are hidden on paper. The filter's current
+    values are already in the header. Both trend panels print.
+  - **Charts:** on `beforeprint`, every chart is drawn again in the print
+    palette (black, dark grey and grey; lines solid, dashed and dotted by
+    series with hollow points; bars in solid, striped, dotted and hatched
+    fills), so no chart depends on colour, sized to the printable width
+    (every chart, the sale pack's included), and restored on `afterprint`. The palette is a set of `--print-*`
+    tokens. Every chart has a table in the markup (a line chart's own
+    points, `ui.chart_table()`, where the page had none) and it prints with
+    the chart, even where the screen folds it away. Without JS, only the
+    tables exist.
+  - **Layout** (scoped to these pages by `.print-report`, so History's print
+    view is unchanged): black on white whatever the theme or accent; the app
+    shell, vehicle header and tabs, toolbars, chips and buttons are hidden;
+    `.split` cards stack; cards, stat tiles and table rows never split
+    across pages; table headers repeat on each page and totals print once,
+    at the end; tables never scroll or clip and print in a smaller font. Pages are A4 or Letter portrait by the
+    browser's default.
+  - Economy check flags (§7.3) print as their text ("More than usual"),
+    never as an icon alone; the *Looks right* and edit buttons do not print.
 - **Version:** the release number lives in the `VERSION` file (updated with
   each release and copied into the Docker image). It is shown in the sidebar
   footer and on the Settings page ("Logbook v1.0.0") and returned by
@@ -2446,6 +2485,13 @@ task breakdowns live in the per-phase files; this is the map.
   history grouped by type and the invoices and certificates as a ZIP
   (§7.19); no prices paid, fuel, valuations or ownership costs, ever; no
   migration. Ships with Phase 17.2 as v1.9.0.
+- **Phase 17.2 — Printable reports + v1.9.0.** A *Print* button and a print
+  layout for Reports, the Ownership report, *Coming up*, the Fuel tab and
+  the Mileage tab: one print header (what, which vehicle, period, units,
+  date printed), filters as that one line, charts redrawn in a black and
+  grey print palette with their tables, no app shell, black on white in
+  either theme (§8 *Printing reports*); no server-side PDF, no migration;
+  release v1.9.0 with Phase 17.1.
 
 ---
 
