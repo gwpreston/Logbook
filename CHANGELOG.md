@@ -6,6 +6,15 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 14.1: valuations and depreciation.
+
+### Added
+- **Valuations.** A small log of what each vehicle is worth (a dealer's
+  part-exchange offer, an online valuation, an insurer's figure) at
+  *Valuations* on the overview's *Ownership* card, with a screenshot or PDF
+  attached. Nothing is fetched from an online service: a value is always
+  one someone quoted.
+
 ## [1.5.0] — 2026-09-29
 
 Phase 13: economy checks.

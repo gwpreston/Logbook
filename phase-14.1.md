@@ -5,8 +5,8 @@ already records what the owner paid and, once sold, what it fetched. Add a
 small **valuation log** in between (a dealer's part-exchange offer, an
 online valuation, an insurer's figure), and derive **depreciation** from
 the purchase price to the latest value: the amount, the percentage, per
-year and per distance. Purchase and sale paperwork gets somewhere to live
-too.
+year and per distance. (Purchase and sale paperwork, first planned here,
+already shipped with Phase 12 as the `purchase` and `sale` owner types.)
 
 Read `spec.md` (§6 Vehicle, Attachment; §7.1, §7.7, §7.12, §7.13, §7.16;
 §8) and `CLAUDE.md` (§6, §8, §9, §11) before starting.
@@ -24,8 +24,6 @@ which cuts v1.6.0. This phase has no release of its own.
 **In:**
 - A `vehicle_valuations` table with add / edit / delete, and attachments
   on each valuation.
-- Attachments for the vehicle's purchase and sale (the invoice, the sale
-  receipt).
 - A derived depreciation figure and a value-over-time chart on the
   overview.
 - Valuations in History and *Recent activity*; CSV export; backups;
@@ -73,13 +71,12 @@ which cuts v1.6.0. This phase has no release of its own.
 
 ### Purchase and sale paperwork
 
-- Closes Phase 10's open question. New owner types `vehicle_purchase` and
-  `vehicle_sale` with `owner_id` = the vehicle's id. Files are added on the
-  vehicle form's purchase and sale sections (several per save).
-- The History *Bought* and *Sold* milestones show a paperclip with their
-  count. The vehicle photo stays a single photo, not an attachment.
-- Removing the purchase or sale date keeps the files; deleting the vehicle
-  deletes them, like every other attachment.
+- **Already delivered by Phase 12** (spec §6 Attachment, §7.1): owner types
+  `purchase` and `sale` with `owner_id` = the vehicle's id, the vehicle
+  form's two file inputs, and the paperclips on *Bought*, *Sold* and the
+  *Ownership* card. Phase 12 chose to refuse clearing a date while its files
+  are attached (rather than keep orphaned files); that stays. Nothing to
+  build here beyond keeping those paperclips on the extended card.
 
 ### The value series
 
@@ -124,7 +121,11 @@ typed result, like `VehicleAge`.
   *Valuations →* / *Add valuation*. Rows that are not set are left out; the
   card is hidden when neither a purchase date, a price, a sale nor a
   valuation exists (the vehicle form's purchase section then carries the
-  *Valuations* link).
+  *Valuations* link). *Currency* and *Added*, which were on this card, move
+  to the *Details* card so the hidden card takes nothing else with it.
+- A purchase price of **0** shows the change as an amount without a
+  percentage. The change needs only the price; per year and per distance
+  also need the purchase date.
 - **Value over time:** with two or more points, a small Chart.js line of
   the points (dated x-axis, the vehicle's currency). Without JS the same
   points are a table.
@@ -150,8 +151,8 @@ typed result, like `VehicleAge`.
 
 ### 14.1.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6: `VehicleValuation`; Attachment owner types `valuation`,
-      `vehicle_purchase`, `vehicle_sale`.
+- [ ] §6: `VehicleValuation`; Attachment owner type `valuation`
+      (`purchase` and `sale` exist since Phase 12).
 - [ ] §7.1: the *Ownership* card, valuations page, depreciation and its
       rules, and why nothing is extrapolated or fetched.
 - [ ] §7.12: the new owner types.
@@ -181,13 +182,14 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
 ### 14.1.3 Forms + pages
 - [ ] Valuations page with add / edit / delete (page and modal; CSRF;
       errors keep typed values; attachments input).
-- [ ] Vehicle form: purchase and sale sections gain file inputs and, on
-      edit, their existing files with remove.
+- [ ] Vehicle form: the purchase section links to *Valuations* on edit
+      (its file inputs exist since Phase 12).
 
 ### 14.1.4 Display
 - [ ] Overview *Ownership* card and value chart (table without JS).
 - [ ] History and *Recent activity*: the *Valuation* kind through
-      `ActivityFeed`; milestone paperclips; print view excludes valuations.
+      `ActivityFeed`; print view excludes valuations (milestone paperclips
+      exist since Phase 12).
 
 ### 14.1.5 CSV + backup
 - [ ] `/vehicles/{id}/export/valuations.csv`: Date, Amount, Currency,
@@ -205,8 +207,8 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
 
 ### 14.1.7 i18n
 - [ ] English and German: *Bewertung*, *Aktueller Wert*, *Wertverlust*,
-      *Wertzuwachs*, *pro Jahr*, *Quelle*, *Kaufunterlagen*,
-      *Verkaufsunterlagen*, the hints and messages above.
+      *Wertzuwachs*, *pro Jahr*, *Quelle*, the hints and messages above
+      (the purchase and sale paperwork strings exist since Phase 12).
 
 ### 14.1.8 Tests
 - [ ] **Unit (validation):** future date (owner's time zone, around
@@ -221,9 +223,9 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
       currency never converted.
 - [ ] **Unit (series order):** same-day purchase, valuation and sale.
 - [ ] **Integration:** valuations CRUD (page and modal, with and without
-      JS), attachments on valuations and on purchase / sale, authenticated
+      JS), attachments on valuations, authenticated
       serving; the overview card and chart; History rows and milestone
-      paperclips; print excludes valuations; CSV export; deleting the
+      paperclips still shown; print excludes valuations; CSV export; deleting the
       vehicle removes valuations and files; backup → restore round-trip;
       migration up and down; every existing figure unchanged.
 - [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
@@ -232,7 +234,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
 ---
 
 ## Deliverables
-A valuation log per vehicle, paperwork for the purchase and sale, and a
+A valuation log per vehicle and a
 depreciation figure (amount, percentage, per year, per distance) with a
 value-over-time chart. Released with Phase 14.2 as Logbook v1.6.0.
 

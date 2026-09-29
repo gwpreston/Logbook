@@ -38,7 +38,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [11.2](phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
 | [12](phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | ✅ |
 | [13](phase-13.md) | Economy checks + v1.5 release | ✅ |
-| [14.1](phase-14.1.md) | Valuations and depreciation | 📋 |
+| [14.1](phase-14.1.md) | Valuations and depreciation | 🚧 |
 | [14.2](phase-14.2.md) | Total cost of ownership + v1.6 release | 📋 |
 | [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | 📋 |
 
@@ -288,8 +288,8 @@ invoice with the purchase.*
 ## Phase 14.1 — Valuations and depreciation
 *What is it worth, and what has it lost?*
 
-- A valuation log per vehicle (date, amount, source, attachments), and
-  paperwork for the purchase and the sale.
+- A valuation log per vehicle (date, amount, source, attachments). The
+  purchase and sale paperwork already came with Phase 12.
 - Depreciation from the purchase price to the latest value or the sale
   price: amount, percentage, per year and per distance, measured to the
   value's own date. Nothing is fetched from third parties or extrapolated.
