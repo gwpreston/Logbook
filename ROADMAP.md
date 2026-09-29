@@ -37,7 +37,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
 | [11.2](phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
 | [12](phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | ✅ |
-| [13](phase-13.md) | Economy checks + v1.5 release | 🚧 |
+| [13](phase-13.md) | Economy checks + v1.5 release | ✅ |
 | [14.1](phase-14.1.md) | Valuations and depreciation | 📋 |
 | [14.2](phase-14.2.md) | Total cost of ownership + v1.6 release | 📋 |
 | [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | 📋 |

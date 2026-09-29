@@ -145,81 +145,81 @@ Read `spec.md` (§6 FuelEntry; §7.2, §7.3, §7.8, §7.13; §8) and `CLAUDE.md`
 
 ### 13.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6 FuelEntry: `economy_confirmed` and what it means.
-- [ ] §7.3: checkable segments, baseline, bands, wording, pairs,
+- [x] §6 FuelEntry: `economy_confirmed` and what it means.
+- [x] §7.3: checkable segments, baseline, bands, wording, pairs,
       confirmation, where flags show; averages unchanged.
-- [ ] §7.8: the icon on *Recent fuel*.
-- [ ] §7.13: the import result count; backup note.
-- [ ] §13: a Phase 13 entry.
-- [ ] `ROADMAP.md` Phase 13 row 🚧; `CHANGELOG.md` `[Unreleased]` entry.
+- [x] §7.8: the icon on *Recent fuel*.
+- [x] §7.13: the import result count; backup note.
+- [x] §13: a Phase 13 entry.
+- [x] `ROADMAP.md` Phase 13 row 🚧; `CHANGELOG.md` `[Unreleased]` entry.
 
 ### 13.1 Migration
-- [ ] `fuel_entries.economy_confirmed` (`decimal(14,6)`, nullable).
+- [x] `fuel_entries.economy_confirmed` (`decimal(14,6)`, nullable).
       Reversible; applies and rolls back on SQLite, PostgreSQL, MySQL and
       MariaDB.
-- [ ] Entity, repository and `Row` mapping carry it.
+- [x] Entity, repository and `Row` mapping carry it.
 
 ### 13.2 Service
-- [ ] `EconomyCheck` takes the vehicle's segments (from the existing fuel
+- [x] `EconomyCheck` takes the vehicle's segments (from the existing fuel
       economy service, not a second walk of its own) and returns, per
       closing fill-up: *not checked* | *normal* | *more* | *less* |
       *confirmed*, with ratio, baseline, the pair's shared fill-up and
       whether the pair is normal together.
-- [ ] Thresholds and minimums as constants on the service, one place.
-- [ ] `FuelService::confirmEconomy()` / `unconfirmEconomy()`; refused on a
+- [x] Thresholds and minimums as constants on the service, one place.
+- [x] `FuelService::confirmEconomy()` / `unconfirmEconomy()`; refused on a
       fill-up that closes no checkable segment.
 
 ### 13.3 Display
-- [ ] Fuel tab: row flags, summary count, `?check=1` filter, confirmed
+- [x] Fuel tab: row flags, summary count, `?check=1` filter, confirmed
       mark; *Looks right* / *Undo* forms.
-- [ ] Save notice and edit page.
-- [ ] Dashboard *Recent fuel* icon.
-- [ ] Import result count.
-- [ ] Accessible: icon plus text, `aria-describedby` from the economy
+- [x] Save notice and edit page.
+- [x] Dashboard *Recent fuel* icon.
+- [x] Import result count.
+- [x] Accessible: icon plus text, `aria-describedby` from the economy
       figure to its flag; forms reachable from the keyboard.
 
 ### 13.4 Demo seed
-- [ ] The seeded Golf gets one mistyped odometer (a pair: less then more)
+- [x] The seeded Golf gets one mistyped odometer (a pair: less then more)
       and one genuinely thirsty winter tank that is confirmed, so each
       state shows.
 
 ### 13.5 i18n
-- [ ] English and German for every label, flag, hint and notice: *Mehr
+- [x] English and German for every label, flag, hint and notice: *Mehr
       verbraucht als üblich*, *Weniger verbraucht als üblich*, *Sieht
       richtig aus*, *Zu prüfen*, *Wahrscheinlich die Tankung vom {date}*.
       Percentages and ratios through ICU number formatting.
 
 ### 13.6 Release v1.5.0
-- [ ] `VERSION` → `1.5.0`; sidebar, Settings and `/health` show it.
-- [ ] `CHANGELOG.md` `[1.5.0]`: *Added* — economy checks. Upgrade notes: one
+- [x] `VERSION` → `1.5.0`; sidebar, Settings and `/health` show it.
+- [x] `CHANGELOG.md` `[1.5.0]`: *Added* — economy checks. Upgrade notes: one
       nullable column; every existing figure is unchanged; the backup
       schema rule (restore an older backup with its own version first,
       then upgrade); no config changes.
-- [ ] `ROADMAP.md`: Phase 13 row ✅.
+- [x] `ROADMAP.md`: Phase 13 row ✅.
 - [ ] Tag `v1.5.0`; image published as `1.5.0`, `1.5`, `1` and `latest`.
 
 ### 13.7 Tests
-- [ ] **Unit (baseline):** median of the last 10 earlier checkable segments;
+- [x] **Unit (baseline):** median of the last 10 earlier checkable segments;
       fewer than 5 → not checked; a 90 km segment neither checked nor in a
       baseline; a newer fill-up never changes an older flag.
-- [ ] **Unit (bands):** liquid at r = 1.24 / 1.25 / 0.81 / 0.80; electricity
+- [x] **Unit (bands):** liquid at r = 1.24 / 1.25 / 0.81 / 0.80; electricity
       at 1.34 / 1.35 / 0.75 / 0.74; compared in L/100 km, so a figure shown
       in mpg UK and mpg US gets the same result.
-- [ ] **Unit (pairs):** an odometer typed 1,000 km too high at one fill-up
+- [x] **Unit (pairs):** an odometer typed 1,000 km too high at one fill-up
       flags *less* then *more*, both naming that fill-up, normal together;
       two genuinely bad tanks in a row are not a pair.
-- [ ] **Unit (series):** a plug-in hybrid's petrol and charging segments are
+- [x] **Unit (series):** a plug-in hybrid's petrol and charging segments are
       checked separately; a missed-previous fill-up starts a fresh segment
       and is handled as §7.3 says.
-- [ ] **Unit (confirmation):** confirmed hides the flag; editing the volume
+- [x] **Unit (confirmation):** confirmed hides the flag; editing the volume
       brings it back; adding a partial inside the segment brings it back;
       an unrelated fill-up leaves it confirmed.
-- [ ] **Integration:** Fuel tab flags and `?check=1`; *Looks right* and
+- [x] **Integration:** Fuel tab flags and `?check=1`; *Looks right* and
       *Undo* with CSRF, with and without JS; save notice; *Recent fuel*
       icon; import result count; `fuel` off hides everything; every
       average and cost figure identical before and after the migration;
       migration up and down; backup → restore round-trip.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -231,14 +231,14 @@ pinpointed, and a genuine odd tank can be confirmed. Released as Logbook
 v1.5.0.
 
 ## Acceptance criteria
-- [ ] A segment is checked only with at least 5 earlier checkable segments,
+- [x] A segment is checked only with at least 5 earlier checkable segments,
       against their median, in canonical consumption.
-- [ ] A single mistyped odometer is flagged as a pair naming that fill-up.
-- [ ] *Looks right* silences a segment until its figures change.
-- [ ] No notifications; no average, trend or cost figure changes.
-- [ ] `/health`, sidebar and Settings show v1.5.0; changelog and roadmap
+- [x] A single mistyped odometer is flagged as a pair naming that fill-up.
+- [x] *Looks right* silences a segment until its figures change.
+- [x] No notifications; no average, trend or cost figure changes.
+- [x] `/health`, sidebar and Settings show v1.5.0; changelog and roadmap
       updated.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas
