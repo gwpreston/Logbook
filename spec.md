@@ -573,8 +573,9 @@ from fleet totals unless "include archived" is toggled.
   1 Mar 2026", or "Lifetime, sold 12 Mar 2026"), *Per distance* and *Per
   month*, each with its two parts beneath. Without a purchase price or a
   value the card is titled *Running costs since …*, shows the running costs
-  alone with the Ownership card's prompt, and never a total or a rate; rows
-  that cannot be worked out are left out with the reason as a hint. Core:
+  alone with the Ownership card's prompt and never a total (its rates are
+  marked "running costs only"); rows that cannot be worked out are left out
+  with the reason as a hint. Core:
   shown whatever modules are on (like the Expenses tab), and hidden only
   when the ownership period has no start (no purchase date and nothing
   logged).
@@ -1056,15 +1057,17 @@ currency and never converted.
     depreciation still runs to the latest valuation and keeps that label.
 - **When a part is missing**, nothing is shown as if it were complete:
   - No purchase price, or no value: running costs only, titled *Running
-    costs since …*, with the §7.1 prompt ("Add what you paid …"). No total,
-    no rates. A leased car has no purchase price: its running costs, lease
-    payments included, are what it cost.
+    costs since …*, with the §7.1 prompt ("Add what you paid …"). No
+    total; per distance and per month are the running part alone, labelled
+    "running costs only". A leased car has no purchase price: its running
+    costs, lease payments included, are what it cost.
   - No distance driven in the period: no per-distance figure.
   - Under 90 days owned: no per-distance or per-month figure (too short to
     mean anything); the totals still show.
-  - Depreciation per distance unknown (a gain, no purchase date, the value
-    under 90 days after the purchase, or a mileage log that does not reach
-    back to the purchase, §7.1): per distance is the running part alone,
+  - Depreciation per distance unknown (no price or value, a gain, no
+    purchase date, the value under 90 days after the purchase, or a mileage
+    log that does not reach back to the purchase, §7.1): per distance is the
+    running part alone,
     labelled "running costs only". Likewise per month when depreciation per
     year is unknown (a gain, no purchase date, under 90 days).
 - **Finance and leases.** The expense category `finance` (*Finance and
@@ -1091,7 +1094,7 @@ currency and never converted.
     never converted. The **fleet row** sums distance, running costs and
     depreciation over all its vehicles; its total sums the vehicles that
     have one ("3 of 4 vehicles" when some do not), and its per distance is
-    that total ÷ the distance of the vehicles that have both a total and a
+    the total of the vehicles that have both a total and a distance ÷ their
     distance. It has no per month (the vehicles were owned over different
     months).
   - `/reports/ownership.csv` with the same filters: one row per vehicle,

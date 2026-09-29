@@ -20,6 +20,12 @@ enum ExpenseCategory: string
     /** Parts and gear that are not maintenance: a phone mount, a helmet. */
     case Accessories = 'accessories';
     case Fines = 'fines';
+    /**
+     * Loan interest, lease and PCP payments (Phase 14.2). With a purchase
+     * price, only the interest and fees: the payments that pay off the
+     * price would count the car twice.
+     */
+    case Finance = 'finance';
     case Other = 'other';
 
     /**
@@ -34,6 +40,7 @@ enum ExpenseCategory: string
             self::Cleaning => 'local_car_wash',
             self::Accessories => 'shopping_bag',
             self::Fines => 'gavel',
+            self::Finance => 'credit_card',
             self::Other => 'receipt_long',
         };
     }
