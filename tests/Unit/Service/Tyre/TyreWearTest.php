@@ -55,7 +55,9 @@ final class TyreWearTest extends TestCase
         ?string $currentKm = '40000.000',
         ?float $perDay = null,
     ): TyreWearEstimate {
-        return TyreWear::estimate($points, $distanceNow, $wearing, $replaceAt, $legal, $currentKm, $perDay, self::day('2026-09-29'));
+        $today = self::day('2026-09-29');
+
+        return TyreWear::estimate($points, $distanceNow, $wearing, $replaceAt, $legal, $currentKm, $perDay, $today);
     }
 
     public function testWorkedExample(): void
@@ -103,8 +105,9 @@ final class TyreWearTest extends TestCase
 
     public function testAFlatOrRisingSlopeIsNotKnownYet(): void
     {
-        self::assertFalse(self::estimate([self::point(1, '0.000', '6.000'), self::point(2, '8000.000', '6.000')], '8000.000')->isKnown());
-        self::assertFalse(self::estimate([self::point(1, '0.000', '6.000'), self::point(2, '8000.000', '6.400')], '8000.000')->isKnown());
+        $start = self::point(1, '0.000', '6.000');
+        self::assertFalse(self::estimate([$start, self::point(2, '8000.000', '6.000')], '8000.000')->isKnown(), 'flat');
+        self::assertFalse(self::estimate([$start, self::point(2, '8000.000', '6.400')], '8000.000')->isKnown(), 'rising');
     }
 
     public function testDepthNowAnchorsOnTheLatestMeasurement(): void
@@ -217,14 +220,22 @@ final class TyreWearTest extends TestCase
     /**
      * @param list<array{0: int, 1: A, 2?: P, 3?: string}> $lines tyre, action, position, depth
      */
-    private static function change(int $id, string $date, ?string $km, array $lines, TyreChangeKind $kind = TyreChangeKind::Fit): TyreChange
-    {
+    private static function change(
+        int $id,
+        string $date,
+        ?string $km,
+        array $lines,
+        TyreChangeKind $kind = TyreChangeKind::Fit,
+    ): TyreChange {
         return new TyreChange(
             $id,
             1,
             $kind,
             new TyreChangeData(self::day($date), $km),
-            array_map(static fn (array $l): TyreChangeLine => new TyreChangeLine($l[0], $l[1], $l[2] ?? null, $l[3] ?? null), $lines),
+            array_map(
+                static fn (array $l): TyreChangeLine => new TyreChangeLine($l[0], $l[1], $l[2] ?? null, $l[3] ?? null),
+                $lines,
+            ),
             new DateTimeImmutable('2026-01-01T00:00:00Z'),
             new DateTimeImmutable('2026-01-01T00:00:00Z'),
         );

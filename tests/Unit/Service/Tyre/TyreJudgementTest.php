@@ -104,7 +104,9 @@ final class TyreJudgementTest extends TestCase
             $tyre,
             new TyreDistanceFigure('10000.000'),
             wear: $wear ?? new TyreWearEstimate(),
-            ageLimitOn: $status === TyreStatus::Retired ? null : (new TyreThresholds(ageYears: $ageYears))->ageLimitOn($code?->manufacturedOn),
+            ageLimitOn: $status === TyreStatus::Retired
+                ? null
+                : (new TyreThresholds(ageYears: $ageYears))->ageLimitOn($code?->manufacturedOn),
         );
     }
 
@@ -128,7 +130,8 @@ final class TyreJudgementTest extends TestCase
         self::assertTrue($verdict->isWorn());
         self::assertSame([1, 2], array_map(static fn (TyreStanding $s): int => $s->view->tyre->id, $verdict->named));
 
-        $reminder = ReminderGenerator::fromTyres(7, $verdict, 42, 'Tyres: front left and front right worn', new ReminderPreferences());
+        $title = 'Tyres: front left and front right worn';
+        $reminder = ReminderGenerator::fromTyres(7, $verdict, 42, $title, new ReminderPreferences());
         self::assertNotNull($reminder);
         self::assertSame(ReminderSource::Tyre, $reminder->source);
         self::assertSame(7, $reminder->sourceId, 'the source id is the vehicle');

@@ -25,7 +25,9 @@ final readonly class ListMessage implements TranslatableInterface
     public function trans(TranslatorInterface $translator, ?string $locale = null): string
     {
         $words = array_map(
-            static fn (TranslatableInterface|string $part): string => is_string($part) ? $part : $part->trans($translator, $locale),
+            static fn (TranslatableInterface|string $part): string => is_string($part)
+                ? $part
+                : $part->trans($translator, $locale),
             $this->parts,
         );
         $last = array_pop($words);
