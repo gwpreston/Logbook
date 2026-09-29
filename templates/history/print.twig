@@ -17,7 +17,7 @@
     <div class="page__stack history-print">
         <div class="toolbar no-print">
             <a class="back-link" href="{{ url_for('history.vehicle', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'history.title'|trans }} · {{ vehicle.name() }}</a>
-            <button type="button" class="btn btn--primary" data-print hidden>{{ ui.icon('print') }}{{ 'history.print'|trans }}</button>
+            {{ ui.print_button() }}
         </div>
 
         <form class="card no-print history-print__options" method="get" action="{{ url_for('history.print', {id: vehicle.id}) }}">

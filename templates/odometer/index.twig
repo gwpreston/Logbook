@@ -12,10 +12,19 @@
 {% block title %}{{ 'odometer.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
 {% block content %}
-    <div class="page__stack">
+    <div class="page__stack print-report">
+        {% include 'print/_header.twig' with {
+            title: 'odometer.title'|trans,
+            vehicle: vehicle,
+            period: history.isEmpty() ? 'print.no_records'|trans : 'report.period'|trans({
+                from: history.first().recordedAt|instant_date,
+                to: latest.recordedAt|instant_date,
+            }),
+        } %}
+
         {% include 'vehicles/_header.twig' with {active_tab: 'odometer'} %}
 
-        {% include 'vehicles/_list_toolbar.twig' with {title: 'odometer.title'|trans, module: 'odometer', add: {route: 'odometer.create', label: 'odometer.add'|trans}} %}
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'odometer.title'|trans, module: 'odometer', add: {route: 'odometer.create', label: 'odometer.add'|trans}, print: true} %}
 
         <dl class="stats">
             {{ ui.stat('odometer.stat.current'|trans,
@@ -38,6 +47,7 @@
             </div>
             {% if chart.hasData() %}
                 {{ ui.chart(chart, 'odometer.chart.title'|trans) }}
+                {{ ui.chart_table(chart, 'odometer.chart.title'|trans) }}
             {% else %}
                 <p class="muted">{{ 'odometer.chart.need_two'|trans }}</p>
             {% endif %}

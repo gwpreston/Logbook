@@ -126,6 +126,16 @@
     --bottom-nav-h: 4.5rem;    /* 72px */
     --content-max: 71.25rem;   /* 1140px */
 
+    /* Print palette for charts (spec.md §8 *Printing reports*): the same in
+       both themes, since paper is white. js/app.js draws series in this
+       order, told apart by dashes and fills as well as by tone. */
+    --print-1: #000;
+    --print-2: #555;
+    --print-3: #888;
+    --print-4: #bbb;
+    --print-grid: #ccc;
+    --print-text: #333;
+
     color-scheme: light;
 }
 
@@ -3766,5 +3776,209 @@ a.list__title:hover {
 
     .sale-pack__chart .chart {
         height: 9rem;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Phase 17.2: printing reports (spec.md §8 *Printing reports*): Reports, the
+ * Ownership report, Coming up and the Fuel and Mileage tabs. Scoped to
+ * .print-report, so History's print view and the sale pack keep their own
+ * rules; the shared ones (no shell, black on white) are above.
+ * ------------------------------------------------------------------------- */
+.print-only {
+    display: none !important;
+}
+
+@media print {
+    .print-only {
+        display: block !important;
+    }
+
+    .print-report {
+        --green: #000 !important;
+        --green-soft: #fff !important;
+        --amber: #000 !important;
+        --amber-soft: #fff !important;
+        --red: #000 !important;
+        --red-soft: #fff !important;
+        --brand-blue: #000 !important;
+        --wordmark: #000 !important;
+
+        gap: 5mm;
+    }
+
+    /* The header says what the page, the filters and the tabs say on screen. */
+    .print-report > .page-header,
+    .print-report > .back-link,
+    .print-report > .toolbar,
+    .print-report .vehicle-hero,
+    .print-report .tabs,
+    .print-report .report-filter,
+    .print-report .vehicle-filter,
+    .print-report .segmented,
+    .print-report .pagination,
+    .print-report .economy-check__actions,
+    .print-report .economy-check__details:not([open]),
+    .print-report .swatch,
+    .print-report .btn {
+        display: none !important;
+    }
+
+    .print-header {
+        padding-bottom: 3mm;
+        border-bottom: 1px solid #000;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    .print-header__eyebrow {
+        margin: 0;
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: var(--tracking-caps);
+        text-transform: uppercase;
+    }
+
+    .print-header__title {
+        margin: 1mm 0 2mm;
+        font-size: 18pt;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .print-header__facts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1mm 6mm;
+        margin: 0;
+        font-size: 9pt;
+    }
+
+    .print-header__facts > div {
+        display: flex;
+        gap: 2mm;
+    }
+
+    .print-header__facts dt {
+        font-weight: 700;
+    }
+
+    .print-header__facts dd {
+        margin: 0;
+    }
+
+    /* Both Economy | Cost panels print, the cost one under its own title. */
+    .print-report [data-trend-panel][hidden] {
+        display: block !important;
+    }
+
+    .print-report [data-trend-panel] + [data-trend-panel] {
+        margin-top: 5mm;
+    }
+
+    .print-report .split {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5mm;
+    }
+
+    .print-report .stats,
+    .print-report .stat,
+    .print-report .chart,
+    .print-report .card:not(:has(.list, .table)),
+    .print-report .list > li,
+    .print-report .list__item,
+    .print-report .breakdown__row,
+    .print-report tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .print-report .card__header,
+    .print-report .card__title,
+    .print-report .section-title {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* Charts take the printable width; js/app.js draws them for it. */
+    .js .print-report .chart {
+        display: block;
+        height: auto !important;
+    }
+
+    .print-report .chart canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Bars print in grey even with the browser's background graphics off. */
+    .print-report .bar {
+        background: #ddd;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-report .bar__fill {
+        background: #555;
+    }
+
+    /* Tables never scroll or clip on paper: headers repeat, text shrinks. */
+    .print-report .table-wrap {
+        overflow: visible;
+        margin: 0;
+    }
+
+    .print-report .table {
+        font-size: 9pt;
+    }
+
+    .print-report .table:has(thead th:nth-child(7)) {
+        font-size: 7.5pt;
+    }
+
+    .print-report .table th,
+    .print-report .table td {
+        padding: 1.2mm 1.5mm;
+        border-bottom-color: #bbb;
+    }
+
+    .print-report .table thead th {
+        color: #000;
+        white-space: normal;
+    }
+
+    .print-report thead {
+        display: table-header-group;
+    }
+
+    /* A total prints once, at the end, not at the foot of every page. */
+    .print-report tfoot {
+        display: table-row-group;
+    }
+
+    /* A chart's table, folded away on screen, prints with it. */
+    .js .print-report .chart-table {
+        position: static;
+        width: 100%;
+        height: auto;
+        margin: 3mm 0 0;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+    }
+
+    .print-report .chart-table caption,
+    .chart-print-table__unit {
+        margin-bottom: 1mm;
+        caption-side: top;
+        text-align: left;
+        font-size: 8pt;
+        font-weight: 700;
+    }
+
+    .print-report .table-wrap.print-only {
+        margin-top: 3mm;
     }
 }

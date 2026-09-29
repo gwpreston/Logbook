@@ -1631,6 +1631,18 @@ return [
         ],
     ],
     // Demnächst (spec.md §7.18): die nächsten 12 Monate, alles Schätzungen.
+    // Berichte drucken (spec.md §8 *Printing reports*): Druckkopf und Diagrammtabellen.
+    'print' => [
+        'vehicle' => 'Fahrzeug',
+        'vehicles' => 'Fahrzeuge',
+        'period' => 'Zeitraum',
+        'units' => 'Einheiten',
+        'units_value' => '{distance}, {volume}, {consumption}',
+        'printed' => 'Gedruckt',
+        'ownership_period' => 'Jedes Fahrzeug vom Kauf bis zum Verkauf oder bis heute',
+        'no_records' => 'Noch nichts erfasst',
+        'chart_date' => 'Datum',
+    ],
     'coming_up' => [
         'title' => 'Demnächst',
         'period' => '{from} – {to}',

@@ -11,7 +11,13 @@
 {% block title %}{{ 'coming_up.title'|trans }} · {{ parent() }}{% endblock %}
 
 {% block content %}
-    <div class="page__stack">
+    <div class="page__stack print-report">
+        {% include 'print/_header.twig' with {
+            title: 'coming_up.title'|trans,
+            vehicle: selected,
+            period: 'coming_up.period'|trans({from: forecast.horizon.today|local_month, to: forecast.horizon.end|local_month}),
+        } %}
+
         <a class="back-link" href="{{ url_for('home', {}, vehicle_query) }}">{{ ui.icon('chevron_left') }}{{ 'nav.dashboard'|trans }}</a>
 
         <header class="page-header">
@@ -22,11 +28,12 @@
                     {{- 'coming_up.period'|trans({from: forecast.horizon.today|local_date, to: forecast.horizon.end|local_date}) -}}
                 </p>
             </div>
-            {% if not forecast.isEmpty() %}
-                <div class="btn-row">
+            <div class="btn-row">
+                {{ ui.print_button() }}
+                {% if not forecast.isEmpty() %}
                     <a class="btn" href="{{ url_for('upcoming.export', {}, vehicle_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
-                </div>
-            {% endif %}
+                {% endif %}
+            </div>
         </header>
 
         {# The dashboard's vehicle chips (spec.md §7.8): plain links. #}

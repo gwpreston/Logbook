@@ -28,12 +28,110 @@
     // the theme: a canvas keeps the colours it was drawn with.
     var PRINT_PALETTE = { muted: '#333', border: '#bbb' };
 
+    /*
+     * Printing (spec.md §8 *Printing reports*): while the page prints, every
+     * chart is drawn again in the print palette (the --print-* tokens), its
+     * series told apart by dashes, point shapes and fill patterns as well as
+     * by tone, so no chart depends on colour.
+     */
+    var printing = false;
+    var PRINT_DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3]];
+    var PRINT_POINTS = ['circle', 'rect', 'triangle', 'rectRot'];
+    var PRINT_FILLS = ['solid', 'stripes', 'dots', 'hatch', 'light'];
+
     function chartToken(spec, name) {
-        if (spec.print) {
+        if (spec.print || printing) {
             return PRINT_PALETTE[name] || '#000';
         }
         return token(name);
     }
+
+    function printColour(index) {
+        return token('print-' + (index % 4 + 1)) || '#000';
+    }
+
+    // A bar's fill on paper: grey, or white under the stripes, dots or
+    // cross-hatching the printTexture plugin draws.
+    function printFill(kind) {
+        if (kind === 'solid') {
+            return token('print-2') || '#555';
+        }
+        if (kind === 'light') {
+            return token('print-4') || '#bbb';
+        }
+        return '#fff';
+    }
+
+    // Stripes, dots or hatching inside a rectangle, as plain strokes: Chrome
+    // leaves a CanvasPattern out of the printed page.
+    function drawTexture(context, kind, left, top, width, height) {
+        if (kind !== 'stripes' && kind !== 'dots' && kind !== 'hatch') {
+            return;
+        }
+        var step = 6;
+        context.save();
+        context.beginPath();
+        context.rect(left, top, width, height);
+        context.clip();
+        context.fillStyle = printColour(0);
+        context.strokeStyle = printColour(0);
+        context.lineWidth = 1;
+        if (kind === 'dots') {
+            for (var y = top + step / 2; y < top + height; y += step) {
+                for (var x = left + step / 2; x < left + width; x += step) {
+                    context.fillRect(x - 1, y - 1, 2, 2);
+                }
+            }
+        } else {
+            context.beginPath();
+            for (var d = -height; d < width; d += step) {
+                context.moveTo(left + d, top + height);
+                context.lineTo(left + d + height, top);
+                if (kind === 'hatch') {
+                    context.moveTo(left + d, top);
+                    context.lineTo(left + d + height, top + height);
+                }
+            }
+            context.stroke();
+        }
+        context.restore();
+    }
+
+    var printTexture = {
+        id: 'printTexture',
+        afterDatasetsDraw: function (chart) {
+            chart.data.datasets.forEach(function (dataset, index) {
+                var meta = chart.getDatasetMeta(index);
+                if (!dataset.printTexture || meta.hidden) {
+                    return;
+                }
+                meta.data.forEach(function (bar) {
+                    var props = bar.getProps(['x', 'y', 'base', 'width'], true);
+                    var top = Math.min(props.y, props.base);
+                    var height = Math.abs(props.base - props.y);
+                    if (height >= 1) {
+                        drawTexture(chart.ctx, dataset.printTexture, props.x - props.width / 2, top, props.width, height);
+                    }
+                });
+            });
+        },
+        afterDraw: function (chart) {
+            var legend = chart.legend;
+            if (!legend || !legend.options.display || !legend.legendHitBoxes) {
+                return;
+            }
+            var labels = legend.options.labels;
+            legend.legendItems.forEach(function (item, index) {
+                var dataset = chart.data.datasets[item.datasetIndex];
+                var hit = legend.legendHitBoxes[index];
+                if (!dataset || !dataset.printTexture || !hit) {
+                    return;
+                }
+                var boxHeight = Math.min(labels.boxHeight || 12, hit.height);
+                drawTexture(chart.ctx, dataset.printTexture, hit.left, hit.top + (hit.height - boxHeight) / 2, labels.boxWidth, boxHeight);
+            });
+        },
+    };
 
     function chartOptions(spec) {
         var dateFormat = new Intl.DateTimeFormat(spec.locale, { day: 'numeric', month: 'short', year: '2-digit', timeZone: spec.timeZone });
@@ -52,6 +150,7 @@
             responsive: true,
             maintainAspectRatio: false,
             animation: false,
+            devicePixelRatio: printing ? 2 : undefined,
             interaction: { mode: 'nearest', intersect: false },
             scales: {
                 x: {
@@ -84,7 +183,22 @@
 
     function chartData(spec) {
         return {
-            datasets: spec.series.map(function (series) {
+            datasets: spec.series.map(function (series, index) {
+                if (printing) {
+                    // Series 0 is solid black with filled points (as the sale pack draws it);
+                    // the rest are grey, dashed or dotted, with hollow points of their own shape.
+                    return {
+                        label: series.label,
+                        data: series.points.map(function (point) { return { x: point[0], y: point[1] }; }),
+                        borderColor: printColour(index),
+                        backgroundColor: index === 0 ? printColour(0) : '#fff',
+                        borderDash: series.dashed && index === 0 ? PRINT_DASHES[1] : PRINT_DASHES[index % PRINT_DASHES.length],
+                        borderWidth: 2,
+                        pointStyle: PRINT_POINTS[index % PRINT_POINTS.length],
+                        pointRadius: series.dashed ? 0 : 3,
+                        tension: 0.25,
+                    };
+                }
                 var colour = chartToken(spec, series.color) || chartToken(spec, 'accent');
                 return {
                     label: series.label,
@@ -108,7 +222,9 @@
         var numberFormat = spec.currency
             ? new Intl.NumberFormat(spec.locale, { style: 'currency', currency: spec.currency, maximumFractionDigits: spec.decimals })
             : new Intl.NumberFormat(spec.locale, { maximumFractionDigits: spec.decimals });
-        var muted = token('muted');
+        var muted = chartToken(spec, 'muted');
+        var bars = 0;
+        var lines = 0;
 
         return {
             type: 'bar',
@@ -116,6 +232,36 @@
                 labels: spec.labels,
                 datasets: spec.series.map(function (series) {
                     var colour = token(series.color) || token('accent');
+                    if (printing && series.type === 'line') {
+                        var line = lines++;
+                        return {
+                            type: 'line',
+                            label: series.label,
+                            data: series.values,
+                            borderColor: printColour(line === 0 ? 0 : 1),
+                            backgroundColor: '#fff',
+                            borderDash: PRINT_DASHES[(line + 1) % PRINT_DASHES.length],
+                            borderWidth: 2,
+                            pointStyle: PRINT_POINTS[(line + 1) % PRINT_POINTS.length],
+                            pointRadius: 3,
+                            tension: 0.25,
+                            stack: series.label,
+                            order: 0,
+                        };
+                    }
+                    if (printing) {
+                        var kind = PRINT_FILLS[bars++ % PRINT_FILLS.length];
+                        return {
+                            label: series.label,
+                            data: series.values,
+                            backgroundColor: printFill(kind),
+                            printTexture: kind,
+                            borderColor: printColour(0),
+                            borderWidth: 1,
+                            maxBarThickness: 40,
+                            order: 1,
+                        };
+                    }
                     if (series.type === 'line') {
                         // A line over the bars (e.g. one year against the average); null leaves a gap.
                         return {
@@ -145,6 +291,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
+                devicePixelRatio: printing ? 2 : undefined,
                 interaction: { mode: 'index', intersect: false },
                 scales: {
                     x: { stacked: spec.stacked, ticks: { color: muted, maxRotation: 0, autoSkip: true }, grid: { display: false } },
@@ -153,7 +300,7 @@
                         beginAtZero: true,
                         title: { display: !!spec.unit, text: spec.unit || '', color: muted },
                         ticks: { color: muted, callback: function (value) { return numberFormat.format(value); } },
-                        grid: { color: token('border') },
+                        grid: { color: chartToken(spec, 'border') },
                     },
                 },
                 plugins: {
@@ -187,8 +334,45 @@
             var config = spec.type === 'bar'
                 ? barConfig(spec)
                 : { type: 'line', data: chartData(spec), options: chartOptions(spec) };
+            if (printing && spec.type === 'bar') {
+                config.plugins = [printTexture];
+            }
             charts.push(new window.Chart(canvas, config));
         });
+    }
+
+    // The report pages' charts are drawn at the printable width (A4 or Letter
+    // less the margins) and scaled to fit by print CSS; others, such as the
+    // sale pack's, fit their own box.
+    var PRINT_SIZE = { width: 680, height: 260 };
+    var shownForPrint = [];
+
+    function beforePrint() {
+        if (printing) {
+            return;
+        }
+        printing = true;
+        // Both Economy | Cost panels print (a chart drawn while hidden has no size).
+        shownForPrint = Array.prototype.slice.call(document.querySelectorAll('.print-report [data-trend-panel][hidden]'));
+        shownForPrint.forEach(function (panel) { panel.hidden = false; });
+        drawCharts();
+        charts.forEach(function (chart) {
+            if (chart.canvas.closest('.print-report')) {
+                chart.resize(PRINT_SIZE.width, PRINT_SIZE.height);
+            } else {
+                chart.resize();
+            }
+        });
+    }
+
+    function afterPrint() {
+        if (!printing) {
+            return;
+        }
+        printing = false;
+        shownForPrint.forEach(function (panel) { panel.hidden = true; });
+        shownForPrint = [];
+        drawCharts();
     }
 
     /*
@@ -863,12 +1047,20 @@
         document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
 
         drawCharts();
-        // The sheet is narrower on paper (and the sale pack's chart shorter): fit the charts to it and back.
-        ['beforeprint', 'afterprint'].forEach(function (event) {
-            window.addEventListener(event, function () {
-                charts.forEach(function (chart) { chart.resize(); });
-            });
-        });
+        window.addEventListener('beforeprint', beforePrint);
+        window.addEventListener('afterprint', afterPrint);
+        if (window.matchMedia) {
+            var print = window.matchMedia('print');
+            if (print.addEventListener) {
+                print.addEventListener('change', function (event) {
+                    if (event.matches) {
+                        beforePrint();
+                    } else {
+                        afterPrint();
+                    }
+                });
+            }
+        }
         // Redraw with the other theme's colours when the OS theme flips.
         if (window.matchMedia) {
             var scheme = window.matchMedia('(prefers-color-scheme: dark)');

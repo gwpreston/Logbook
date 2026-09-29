@@ -1632,6 +1632,18 @@ return [
         ],
     ],
     // Coming up (spec.md §7.18): the next 12 months, all estimates.
+    // Printing reports (spec.md §8 *Printing reports*): the print header and chart tables.
+    'print' => [
+        'vehicle' => 'Vehicle',
+        'vehicles' => 'Vehicles',
+        'period' => 'Period',
+        'units' => 'Units',
+        'units_value' => '{distance}, {volume}, {consumption}',
+        'printed' => 'Printed',
+        'ownership_period' => 'Each vehicle from purchase to sale or today',
+        'no_records' => 'Nothing recorded yet',
+        'chart_date' => 'Date',
+    ],
     'coming_up' => [
         'title' => 'Coming up',
         'period' => '{from} – {to}',
