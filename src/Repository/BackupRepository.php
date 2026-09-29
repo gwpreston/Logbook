@@ -43,6 +43,7 @@ final readonly class BackupRepository
         'attachments',
         'reminders',
         'expense_entries',
+        'vehicle_valuations',
     ];
 
     /** Tables that are deliberately not backed up. */
