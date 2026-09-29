@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Expense;
 
+use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Expense\ExpenseEntryForm;
 use Logbook\Service\Expense\ExpenseService;
@@ -26,6 +27,7 @@ final readonly class CreateExpenseAction
         private VehicleService $vehicles,
         private ExpenseService $expenses,
         private ExpenseFormPage $page,
+        private AttachmentUpload $upload,
         private Redirector $redirect,
         private ClockInterface $clock,
     ) {
@@ -47,15 +49,17 @@ final readonly class CreateExpenseAction
         }
 
         $data = ExpenseEntryForm::parse(RequestContext::form($request), $user->preferences);
-        if ($data instanceof ValidationErrors) {
+        $files = $this->upload->fromRequest($request);
+        $errors = $this->upload->errors($data, $files);
+        if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $values, null, $data, 422);
+            return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
         }
 
-        $this->expenses->create($vehicle, $data);
+        $this->expenses->create($vehicle, $data, $files);
         RequestContext::session($request)->flash('success', 'expense.created');
 
-        return $this->redirect->toRoute('expenses.index', ['id' => (string) $vehicle->id]);
+        return $this->redirect->backOr($request, 'expenses.index', ['id' => (string) $vehicle->id]);
     }
 }

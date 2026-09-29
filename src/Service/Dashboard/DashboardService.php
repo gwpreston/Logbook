@@ -16,6 +16,7 @@ use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelHistory;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\History\ActivityFeed;
 use Logbook\Service\Reminder\DueCounter;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderOverview;
@@ -55,7 +56,7 @@ final readonly class DashboardService
         private ReportService $reports,
         private FuelService $fuel,
         private ComplianceService $compliance,
-        private RecentActivity $activity,
+        private ActivityFeed $activity,
         private ClockInterface $clock,
     ) {
     }

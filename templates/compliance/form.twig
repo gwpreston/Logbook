@@ -9,6 +9,7 @@
 {% set active_nav = 'garage' %}
 {% set editing = document is not null %}
 {% set heading = (editing ? 'compliance.edit_title' : 'compliance.add_title')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
 
 {% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
@@ -32,6 +33,7 @@
         <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('compliance.edit', {id: vehicle.id, document: document.id}) : url_for('compliance.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
 
             <section class="card">
                 {{ ui.chips('type', 'compliance.field.type'|trans, values, errors,
@@ -45,7 +47,10 @@
                     {{ ui.input('start_on', 'compliance.field.start_on'|trans, values, errors, {type: 'date', optional: true}) }}
                     {{ ui.input('expiry_on', 'compliance.field.expiry_on'|trans, values, errors, {type: 'date', optional: true, hint: 'compliance.hint.expiry_on'|trans}) }}
                 </div>
-                {{ ui.input('cost', 'compliance.field.cost'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'compliance.hint.cost'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input('cost', 'compliance.field.cost'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'compliance.hint.cost'|trans}) }}
+                    {{ ui.input('odometer', 'compliance.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, hint: 'compliance.hint.odometer'|trans}) }}
+                </div>
                 <div class="field">
                     <label class="field__label" for="f-notes">{{ 'compliance.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
                     <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
@@ -53,11 +58,11 @@
                 </div>
             </section>
 
-            {{ files.card(vehicle, attachments, errors, max_upload_mb) }}
+            {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'compliance.add_submit')|trans }}</button>
-                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('compliance.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (url_for('compliance.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
                 {% if editing %}
                     <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('compliance.delete', {id: vehicle.id, document: document.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}

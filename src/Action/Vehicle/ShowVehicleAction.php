@@ -9,6 +9,7 @@ use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\History\ActivityFeed;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
@@ -24,12 +25,14 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET /vehicles/{id} — vehicle overview: current odometer and fuel figures,
- * what maintenance is due next, where each document stands, the latest
- * fill-ups, and the vehicle's details. Each area has its own tab.
+ * the latest history, what maintenance is due next, where each document
+ * stands, the latest fill-ups, and the vehicle's details. Each area has its
+ * own tab.
  */
 final readonly class ShowVehicleAction
 {
     private const int RECENT_FILLS = 3;
+    private const int RECENT_HISTORY = 5;
     private const int SCHEDULES_SHOWN = 3;
 
     public function __construct(
@@ -42,6 +45,7 @@ final readonly class ShowVehicleAction
         private View $view,
         private ClockInterface $clock,
         private ReminderSettingsStore $reminderSettings,
+        private ActivityFeed $feed,
     ) {
     }
 
@@ -78,6 +82,7 @@ final readonly class ShowVehicleAction
             ),
             'documents' => array_values($documents),
             'age' => VehicleAge::of($vehicle, $today),
+            'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
         ]);
     }
 }

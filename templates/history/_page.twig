@@ -1,0 +1,54 @@
+{#
+ # The body of a History page (spec.md §7.16), shared by the History tab and
+ # the fleet history: kind chips, the year with Newer / Older links, and the
+ # year's months, each an ordered list of rows (fill-up runs folded).
+ #
+ # Expects: page (FeedYear), months, chip, chips, route + params (this
+ # page), query (what every link keeps, e.g. the fleet's vehicle),
+ # show_vehicle, archived (no "Log entry" button).
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/history.twig' as history %}
+{% set kind_query = chip.value == 'all' ? query : query|merge({kind: chip.value}) %}
+{% set opts = {show_vehicle: show_vehicle, return_to: current_path} %}
+
+{{ history.chips(chips, chip, route, params, query) }}
+
+{% if page.isEmpty() %}
+    <section class="card">
+        <div class="empty">
+            {{ ui.icon('history') }}
+            <p class="empty__title">{{ 'history.empty_title'|trans }}</p>
+            <p>{{ 'history.empty_body'|trans }}</p>
+            {% if not archived %}
+                <a class="btn btn--primary" href="{{ url_for('log.chooser') }}" data-modal>{{ ui.icon('add') }}{{ 'nav.log_entry'|trans }}</a>
+            {% endif %}
+        </div>
+    </section>
+{% else %}
+    <section class="card history" aria-labelledby="history-year">
+        <div class="history-years">
+            <h2 class="history-years__year" id="history-year">{{ page.year }}</h2>
+            <nav class="btn-row history-years__nav" aria-label="{{ 'history.years_label'|trans }}">
+                {% if page.newer %}
+                    <a class="btn btn--ghost" href="{{ url_for(route, params, kind_query|merge({year: page.newer})) }}" rel="prev">{{ ui.icon('chevron_left') }}{{ 'history.newer'|trans({year: page.newer}) }}</a>
+                {% endif %}
+                {% if page.older %}
+                    <a class="btn btn--ghost" href="{{ url_for(route, params, kind_query|merge({year: page.older})) }}" rel="next">{{ 'history.older'|trans({year: page.older}) }}{{ ui.icon('chevron_right') }}</a>
+                {% endif %}
+            </nav>
+        </div>
+
+        {% if months is empty %}
+            <p class="muted history__nothing">{{ 'history.nothing_in_year'|trans({year: page.year}) }}</p>
+        {% endif %}
+        {% for month in months %}
+            <h3 class="history-month">{{ month.month|local_month(false) }}</h3>
+            <ol class="list history-list">
+                {% for row in month.rows %}
+                    <li>{{ row.isRun() ? history.run(row, opts) : history.row(row, opts) }}</li>
+                {% endfor %}
+            </ol>
+        {% endfor %}
+    </section>
+{% endif %}

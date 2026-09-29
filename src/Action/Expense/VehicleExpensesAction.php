@@ -6,6 +6,7 @@ namespace Logbook\Action\Expense;
 
 use Logbook\Action\Report\ReportCharts;
 use Logbook\Action\Vehicle\VehicleRoute;
+use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
@@ -31,6 +32,7 @@ final readonly class VehicleExpensesAction
         private VehicleService $vehicles,
         private ReportService $reports,
         private ReportCharts $charts,
+        private AttachmentService $attachments,
         private View $view,
         private ClockInterface $clock,
     ) {
@@ -63,6 +65,7 @@ final readonly class VehicleExpensesAction
             'ranges' => ReportRange::presets(),
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,
+            'attachment_counts' => $this->attachments->counts($vehicle),
         ]);
     }
 }

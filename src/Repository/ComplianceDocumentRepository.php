@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -22,6 +23,7 @@ final readonly class ComplianceDocumentRepository
 {
     private const string TABLE = 'compliance_documents';
     private const int MONEY_SCALE = 3;
+    private const int KM_SCALE = 3;
 
     public function __construct(private Connection $connection)
     {
@@ -35,6 +37,26 @@ final readonly class ComplianceDocumentRepository
         $rows = $this->select()
             ->where('vehicle_id = :vehicle')
             ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * Every document of several vehicles (a vehicle has few).
+     *
+     * @param list<int> $vehicleIds
+     * @return list<ComplianceDocument> in creation order
+     */
+    public function listForVehicles(array $vehicleIds): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $rows = $this->select()
+            ->where('vehicle_id IN (:vehicles)')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
             ->orderBy('id')
             ->fetchAllAssociative();
 
@@ -92,7 +114,7 @@ final readonly class ComplianceDocumentRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'type', 'title', 'provider', 'reference', 'start_on', 'expiry_on')
-            ->addSelect('cost', 'notes', 'created_at', 'updated_at')
+            ->addSelect('cost', 'odometer_km', 'notes', 'created_at', 'updated_at')
             ->from(self::TABLE);
     }
 
@@ -109,6 +131,7 @@ final readonly class ComplianceDocumentRepository
             'start_on' => $data->startOn?->format('Y-m-d'),
             'expiry_on' => $data->expiryOn?->format('Y-m-d'),
             'cost' => $data->cost,
+            'odometer_km' => $data->odometerKm,
             'notes' => $data->notes,
         ];
     }
@@ -132,6 +155,7 @@ final readonly class ComplianceDocumentRepository
                 expiryOn: Row::nullableDate($row, 'expiry_on'),
                 cost: Row::decimal($row, 'cost', self::MONEY_SCALE),
                 notes: Row::nullableString($row, 'notes'),
+                odometerKm: Row::nullableDecimal($row, 'odometer_km', self::KM_SCALE),
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),

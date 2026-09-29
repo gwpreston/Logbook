@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Logbook\Domain\Odometer;
 
 use DateTimeImmutable;
+use Logbook\Domain\Attachment\AttachmentOwner;
 
 /**
  * One point in a vehicle's mileage series (spec.md §6 OdometerReading).
  * Manual readings are edited directly; others follow the entry that owns
- * them (fuelEntryId for fill-ups, maintenanceEntryId for maintenance).
+ * them (fuelEntryId for fill-ups, maintenanceEntryId for maintenance,
+ * complianceDocumentId for documents).
  */
 final readonly class OdometerReading
 {
@@ -26,11 +28,28 @@ final readonly class OdometerReading
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
         public ?int $maintenanceEntryId = null,
+        public ?int $complianceDocumentId = null,
     ) {
     }
 
     public function isManual(): bool
     {
         return $this->source === OdometerSource::Manual;
+    }
+
+    /**
+     * Whose files this row shows: a manual reading's own, a derived
+     * reading's owning entry's (spec.md §7.2).
+     *
+     * @return array{0: AttachmentOwner, 1: int}
+     */
+    public function filesOwner(): array
+    {
+        return match (true) {
+            $this->fuelEntryId !== null => [AttachmentOwner::Fuel, $this->fuelEntryId],
+            $this->maintenanceEntryId !== null => [AttachmentOwner::Maintenance, $this->maintenanceEntryId],
+            $this->complianceDocumentId !== null => [AttachmentOwner::Compliance, $this->complianceDocumentId],
+            default => [AttachmentOwner::Odometer, $this->id],
+        };
     }
 }

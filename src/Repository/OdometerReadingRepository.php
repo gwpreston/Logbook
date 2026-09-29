@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -44,6 +45,35 @@ final readonly class OdometerReadingRepository
         return array_values(array_map($this->hydrate(...), $rows));
     }
 
+    /**
+     * The manual readings of several vehicles between two instants.
+     *
+     * @param list<int> $vehicleIds
+     * @param DateTimeImmutable|null $from inclusive (UTC); null = from the start
+     * @param DateTimeImmutable|null $until exclusive (UTC); null = to the end
+     * @return list<OdometerReading> oldest first
+     */
+    public function listManualForVehiclesBetween(array $vehicleIds, ?DateTimeImmutable $from, ?DateTimeImmutable $until): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $platform = $this->connection->getDatabasePlatform();
+        $query = $this->select()
+            ->where('vehicle_id IN (:vehicles)', 'source = :manual')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
+            ->setParameter('manual', OdometerSource::Manual->value);
+        if ($from !== null) {
+            $query->andWhere('recorded_at >= :from')->setParameter('from', UtcDateTime::toDatabase($from, $platform));
+        }
+        if ($until !== null) {
+            $query->andWhere('recorded_at < :until')->setParameter('until', UtcDateTime::toDatabase($until, $platform));
+        }
+        $rows = $query->orderBy('recorded_at')->addOrderBy('reading_km')->addOrderBy('id')->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
     public function find(int $vehicleId, int $id): ?OdometerReading
     {
         $row = $this->select()
@@ -66,7 +96,7 @@ final readonly class OdometerReadingRepository
     }
 
     /**
-     * The reading owned by a fill-up or maintenance entry.
+     * The reading owned by a fill-up, maintenance entry or document.
      */
     public function findByEntry(int $vehicleId, OdometerSource $source, int $entryId): ?OdometerReading
     {
@@ -80,7 +110,7 @@ final readonly class OdometerReadingRepository
     }
 
     /**
-     * @param int|null $entryId the owning fill-up or maintenance entry (per $source); null for manual readings
+     * @param int|null $entryId the owning fill-up, maintenance entry or document (per $source); null for manual readings
      */
     public function insert(
         int $vehicleId,
@@ -101,6 +131,7 @@ final readonly class OdometerReadingRepository
             'vehicle_id' => ParameterType::INTEGER,
             'fuel_entry_id' => ParameterType::INTEGER,
             'maintenance_entry_id' => ParameterType::INTEGER,
+            'compliance_document_id' => ParameterType::INTEGER,
         ]);
 
         return (int) $this->connection->lastInsertId();
@@ -129,7 +160,7 @@ final readonly class OdometerReadingRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'reading_km', 'recorded_at', 'source', 'note', 'fuel_entry_id')
-            ->addSelect('maintenance_entry_id', 'created_at', 'updated_at')
+            ->addSelect('maintenance_entry_id', 'compliance_document_id', 'created_at', 'updated_at')
             ->from(self::TABLE);
     }
 
@@ -138,6 +169,7 @@ final readonly class OdometerReadingRepository
         return match ($source) {
             OdometerSource::Fuel => 'fuel_entry_id',
             OdometerSource::Maintenance => 'maintenance_entry_id',
+            OdometerSource::Document => 'compliance_document_id',
             OdometerSource::Manual => throw new LogicException('Manual readings have no owning entry.'),
         };
     }
@@ -172,6 +204,7 @@ final readonly class OdometerReadingRepository
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
             maintenanceEntryId: Row::nullableInt($row, 'maintenance_entry_id'),
+            complianceDocumentId: Row::nullableInt($row, 'compliance_document_id'),
         );
     }
 }

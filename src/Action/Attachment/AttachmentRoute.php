@@ -49,6 +49,8 @@ final class AttachmentRoute
             AttachmentOwner::Fuel => ['fuel.edit', ['id' => $vehicle, 'entry' => $owner]],
             AttachmentOwner::Maintenance => ['maintenance.edit', ['id' => $vehicle, 'entry' => $owner]],
             AttachmentOwner::Compliance => ['compliance.edit', ['id' => $vehicle, 'document' => $owner]],
+            AttachmentOwner::Expense => ['expenses.edit', ['id' => $vehicle, 'entry' => $owner]],
+            AttachmentOwner::Odometer => ['odometer.edit', ['id' => $vehicle, 'reading' => $owner]],
         };
     }
 }

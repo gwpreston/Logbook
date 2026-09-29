@@ -68,6 +68,6 @@ final readonly class EditVehicleAction
         $session->flash('success', 'vehicle.updated', ['name' => $updated->name()]);
         VehicleRoute::flashModelYearWarning($session, $data);
 
-        return $this->redirect->toRoute('vehicles.show', ['id' => (string) $vehicle->id]);
+        return $this->redirect->backOr($request, 'vehicles.show', ['id' => (string) $vehicle->id]);
     }
 }

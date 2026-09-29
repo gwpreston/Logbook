@@ -123,6 +123,14 @@ disagree):
   and back to the trigger, closes with Esc or ✕, and makes the page behind
   it inert. Fetch URLs are the links' own `url_for()` URLs (subpath-safe)
   and the form carries the page's CSRF token.
+- **Returning to where the form was opened (`return`).** An edit link from
+  a History page (§7.16) carries `?return=<that page's URL>`. The edit form
+  (fill-up, reading, service record, document, expense, vehicle) keeps it
+  in a hidden field, through a validation error too, and saving redirects
+  there instead of the form's usual page. It is checked exactly like the
+  sign-in redirect (§7.9: a local path under `APP_BASE_PATH` only, so no open
+  redirects); anything else is ignored and the form redirects as it always
+  did. In a modal the redirect arrives as `X-Logbook-Location`, as usual.
 
 ---
 
@@ -188,16 +196,24 @@ MySQL only.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`), note (optional), fuel_entry_id
-  (optional; set for `fuel` readings, removed with the fill-up by
-  `ON DELETE CASCADE`), created/updated (UTC). Index `(vehicle_id, recorded_at)`.
+  source (`manual`|`fuel`|`maintenance`|`document`), note (optional),
+  fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
+  by `ON DELETE CASCADE`), maintenance_entry_id and compliance_document_id
+  (likewise, for `maintenance` and `document` readings), created/updated
+  (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
   coherent series (see #230-style requirement). A fill-up writes its reading in
   the same transaction and moves it when edited; only `manual` readings are
   edited or deleted directly (the others through the entry that owns them).
   A maintenance entry does the same through maintenance_entry_id (optional,
   `ON DELETE CASCADE`), only when it has an odometer; its reading is placed at
-  local noon on the entry's date.
+  local noon on the entry's date. A compliance document with an odometer
+  (§7.5) does the same through compliance_document_id, placed at local noon
+  on its start date (Phase 10). Rolling that migration back turns every
+  `document` reading into a `manual` one (link cleared) before the columns
+  are dropped, so no mileage is lost.
+- Only `manual` readings take attachments (owner type `odometer`); a derived
+  reading's receipt belongs to the entry that owns it.
 
 **FuelEntry**
 - id, vehicle_id, filled_at (UTC instant, typed in the user's time zone),
@@ -239,7 +255,9 @@ MySQL only.
   `inspection`|`other`), title (optional; required for `other`), provider,
   reference (policy/certificate number), start_on, expiry_on (calendar dates,
   all optional; expiry not before start), cost (`decimal(14,3)`, 0 allowed,
-  blank = 0), notes, created/updated (UTC), plus attachments.
+  blank = 0), odometer_km (optional `decimal(12,3)`: the reading shown on
+  the document, e.g. an MOT certificate; needs start_on, §7.5), notes,
+  created/updated (UTC), plus attachments.
   Editing an existing document must work (guards against the known
   "can't update compliance entry" bug): create and edit share one form and
   one parser, and an edit updates the row in place (same id, attachments kept).
@@ -263,7 +281,8 @@ MySQL only.
   (`tax`|`parking`|`tolls`|`cleaning`|`accessories`|`fines`|`other` —
   stored as a code, like maintenance categories), amount (`decimal(14,3)`,
   **0 allowed**; blank means 0), note (optional, up to 500 characters),
-  created/updated (UTC). Index `(vehicle_id, spent_on)`.
+  created/updated (UTC), plus attachments (Phase 10). Index
+  `(vehicle_id, spent_on)`.
 - Only ad-hoc costs are stored here. Fuel, maintenance and compliance costs
   **roll up through a service-layer ledger** that reads them from their own
   tables on every request (§7.7): nothing is copied, so an edited fill-up can
@@ -271,11 +290,14 @@ MySQL only.
 
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
-  (`fuel`|`maintenance`|`compliance`), owner_id, filename (the uploaded name,
+  (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`; `odometer` for
+  manual readings only), owner_id, filename (the uploaded name,
   sanitised, for display and downloads only), mime (detected from the
   content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
   uploaded_at (UTC). Index `(vehicle_id, owner_type, owner_id)`. Deleting the
-  entry, or the vehicle, deletes its files.
+  entry, or the vehicle, deletes its files. An entry takes several files per
+  save (§7.12). Service intervals and reminders take none (they are plans,
+  not events), and a vehicle keeps a single photo (not an attachment).
 
 **User**
 - id, username (stored lower-case, so sign-in is case-insensitive on every
@@ -366,7 +388,8 @@ maintenance. History table + trend chart. Warn on implausible readings (large
 jumps, going backwards) without blocking.
 
 - The vehicle page has tabs, each its own URL (works without JS, survives a
-  hard refresh): Overview (`/vehicles/{id}`), Mileage
+  hard refresh): Overview (`/vehicles/{id}`), History
+  (`/vehicles/{id}/history`, §7.16), Mileage
   (`/vehicles/{id}/odometer`), Fuel (`/vehicles/{id}/fuel`), Maintenance
   (`/vehicles/{id}/maintenance`), Documents (`/vehicles/{id}/documents`) and
   Expenses (`/vehicles/{id}/expenses`, §7.7). Each list tab has an
@@ -382,7 +405,18 @@ jumps, going backwards) without blocking.
 - Mileage tab: current reading, monthly average (once there is a week of
   history), *average per year since first registered* (below), distance
   logged; odometer-over-time chart; readings newest first (25 per page) with
-  the distance since the one before and their source.
+  the distance since the one before and their source (*Manual*, *Fill-up*,
+  *Service*, *Document*). Each row shows a paperclip with its number of
+  files: a manual reading's own, a derived reading's owning entry's.
+- Manual readings take attachments (a photo of the dashboard) through the
+  shared attachment input (§7.12) on their add and edit forms; deleting the
+  reading deletes its files. A derived reading has no attachment input: its
+  edit link opens the entry that owns it.
+- A compliance document's odometer (§7.5) joins the series as a `document`
+  reading at local noon on its start date, exactly as a service record's
+  does: written in the document's transaction, moved or removed when the
+  document is edited, deleted with it, and checked for plausibility with the
+  usual warning (never blocked).
 - **Age** (derived, never stored): whole years and months from
   first_registered_on to today in the owner's time zone ("7 yrs 6 mo";
   "4 mo" under a year; "under 1 mo" under a month). A month is complete on
@@ -539,7 +573,14 @@ documents. Create **and edit** must both work. Expiries feed reminders.
 - Of several documents of one type, the one that runs latest is current and
   the rest are *replaced*, so a renewed policy never nags. `other` documents
   are unrelated and never replace each other. A *Renew* button opens a new
-  document of the same type.
+  document of the same type (only the type is carried over; the odometer
+  never is).
+- **Odometer** (optional, Phase 10): the reading shown on the document, in
+  the owner's distance unit and parsed like a reading. Hint: "The reading on
+  the certificate, if it shows one (an MOT certificate does)." It needs a
+  start date; without one it is refused with "Add the date it was issued to
+  record the odometer." When set it joins the mileage series (§7.2) and the
+  documents list shows it.
 
 ### 7.6 Reminders
 Surface everything upcoming/due/overdue with configurable lead time. In-app list
@@ -601,8 +642,10 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   breakdown by group for the chosen period, beside (50/50 on wide screens) a
   *Last 12 months* bar chart of spend per month stacked by group — always the
   last 12 months, whichever period is chosen — and every ledger line newest
-  first (25 per page) linking to its source. Ad-hoc expenses (date, category,
-  amount, note) are added, edited and deleted there.
+  first (25 per page) linking to its source, each with a paperclip counting
+  its source's files. Ad-hoc expenses (date, category, amount, note, and
+  attachments such as a parking receipt or a penalty notice, §7.12) are
+  added, edited and deleted there; deleting one deletes its files.
 - **Reports** (`/reports`): the fleet, or one vehicle (`?vehicle=`), over a
   period — this month, last 3 months, last 12 months (default), this year,
   all time, or a custom from/to (`?range=custom&from=&to=`, both calendar
@@ -641,7 +684,8 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   are local `2026-09-27 14:30` with the time zone in the header.
   The fuel export carries the grade twice: *Grade* (the translated label,
   empty when not recorded) and *Grade code* (the stored code), so a file
-  re-imports exactly and stays readable.
+  re-imports exactly and stays readable. The documents export carries
+  *Odometer* (owner's distance unit, unit in the header; empty when none).
 
 ### 7.8 Dashboard
 At-a-glance fleet overview built from rearrangeable widgets (drag via SortableJS,
@@ -672,10 +716,14 @@ toggles.
 - **Recent activity** (id `recent_activity`): the latest eight entries across
   fill-ups, manual odometer readings, service records, documents and ad-hoc
   expenses — newest first by the owner's local date, then by when they were
-  added — each with an icon, what it was, the vehicle, the date and its
-  amount (or reading), linking to its edit page. Readings written by a
-  fill-up or service are left out (the entry itself is listed). Entries of
-  a switched-off module are left out.
+  added — each with an icon, what it was, the vehicle, the date, its
+  amount (or reading) and a paperclip with its number of files, linking to
+  its edit page. Readings written by a fill-up, service or document are
+  left out (the entry itself is listed). Entries of a switched-off module
+  are left out. The list is read from the shared activity feed (§7.16), the
+  same one the History pages use, with no milestones and no folding. The
+  widget's title row links to the fleet history (*View all* →
+  `/history`, keeping the dashboard's `?vehicle=`).
 - **Vehicle filter:** with two or more active vehicles, a row of chips under
   the greeting — *All vehicles* and one per active vehicle with its type
   icon. Each chip is a link (`/?vehicle={id}`; the current one has
@@ -737,8 +785,9 @@ Disabled modules are removed from nav, routes, and dashboard.
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`. A
   module is enabled unless the global setting `features` (a JSON object of
   module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
-  (default true). The garage, mileage log and expenses are core and cannot
-  be switched off.
+  (default true). The garage, mileage log, expenses and history (§7.16) are
+  core and cannot be switched off; a switched-off module's entries simply
+  leave the history.
 - **Settings → Modules** (`/settings/modules`): one switch per module with
   what it covers; saving writes the whole `features` object (a plain form,
   works without JS). Switching a module off never deletes its data:
@@ -797,18 +846,38 @@ Extensible channel interface so more can be added.
   channels.
 
 ### 7.12 Attachments
-Upload receipts, invoices, insurance/cert PDFs and images against fuel,
-maintenance, and compliance entries. Stored outside web root, served via an
-authenticated handler; type/size validated.
+Upload receipts, invoices, insurance/cert PDFs and images against fill-ups,
+service records, documents, expenses and manual odometer readings. Stored
+outside web root, served via an authenticated handler; type/size validated.
 
 - One path for every upload (vehicle photos included): content-checked
   (`finfo`, never the name or browser type) — PDF, JPEG, PNG or WebP for
   attachments; images must decode, PDFs must start with a PDF header — and
   limited to `MAX_UPLOAD_MB`; stored under `UPLOAD_PATH` with a random name.
-- The add/edit form of each entry has an "attach a file" input (the form is
-  multipart; a rejected file fails the whole submission and nothing is
-  saved) and lists the files already attached, each with a delete link
-  (confirmation page, works without JS).
+- **Several files per save** (Phase 10). The add/edit form of each entry
+  that takes files (fill-up, service record, document, expense, manual
+  reading) has one shared input partial — `<input type="file"
+  name="attachments[]" multiple>` accepting the four types — and lists the
+  files already attached, each with a delete link (confirmation page, works
+  without JS). The form is multipart; one parser reads `attachments[]` for
+  every form, and there is no second upload path.
+  - **Limit:** up to 10 files per save, or PHP's `max_file_uploads` if that
+    is lower (PHP drops files past it silently, so the app's limit never
+    sits above it); each file within `MAX_UPLOAD_MB`. The hint states both
+    ("Up to 10 files, each up to 10 MB"). With JS, choosing more than the
+    limit is refused before submitting. No new configuration.
+  - **All or nothing.** Every file is checked before any is stored; one
+    rejected file fails the whole save with a message naming it
+    ("receipt.heic: not a PDF, JPEG, PNG or WebP file"), nothing is written
+    and the typed values are kept. Files are written first, then their rows
+    are inserted in the entry's own transaction; if the transaction fails,
+    the files just written are deleted.
+- A paperclip with the number of files (an icon with the count and a text
+  alternative, "2 files") shows wherever an entry is listed: History, the
+  Fuel, Maintenance, Documents, Mileage and Expenses lists and *Recent
+  activity*. Counts come from one grouped query per page, never one per row.
+- Service intervals and reminders take no files; the vehicle keeps a single
+  photo (§7.1), deliberately: paperwork belongs to the entry it proves.
 - Served by `/vehicles/{id}/attachments/{attachment}` to the signed-in owner
   only (the same responder as photos: `nosniff`, sandboxing CSP, private
   caching). Images open inline; PDFs download under their original name
@@ -858,9 +927,13 @@ vehicles; a disabled module cannot be imported).
   and odometer, whatever its source; maintenance: same date, category, title
   and cost; document: same type, reference, start and expiry; expense: same
   date, category, amount and note), so importing a file twice changes
-  nothing; *implied* (odometer rows whose source is a fill-up or service:
-  imported fill-ups and maintenance create those readings themselves, so
-  importing both files never doubles them).
+  nothing; *implied* (odometer rows whose source is a fill-up, service or
+  document: imported fill-ups, maintenance and documents create those
+  readings themselves, so importing both files never doubles them).
+- The documents *Odometer* column is optional (files without it import as
+  before) and is read like the form's field: a row with an odometer writes
+  its reading at local noon on its start date, and an odometer without a
+  start date makes the row invalid.
 - Imports go through the same services as the forms: a fill-up writes its
   odometer reading, a maintenance entry with an odometer writes its reading
   at local noon; schedules and reminders follow as usual. Maintenance rows
@@ -891,7 +964,9 @@ vehicles; a disabled module cannot be imported).
 - A backup from another app version with a different schema is refused with
   a clear message: restore it with the matching version, then upgrade.
   (Every release that adds a column moves the schema version, e.g. Phase
-  9.1's vehicle variant and first registration date.)
+  9.1's vehicle variant and first registration date, and Phase 10's
+  document odometer. Backups carry the new columns, `document` readings and
+  the `expense` / `odometer` attachments like any other row.)
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -927,6 +1002,106 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   removed from the queue; one the server rejects (validation) stays queued,
   and the fill-up page lists it with a link to review. Attachments cannot be
   queued. Nothing else works offline.
+
+### 7.16 Vehicle history
+"What has happened to this car?" on one page (Phase 10): everything logged
+against a vehicle, newest first, bookended by the vehicle's own milestones,
+with a printable service history to hand to a buyer.
+
+- **One feed, three views.** A single service (`ActivityFeed`) lists entries
+  across modules. It takes the vehicles, a local date range (or a limit)
+  and the kinds, and returns typed items. It is read by the dashboard's
+  *Recent activity* (the latest eight, §7.8), the History tab and the fleet
+  history page; nothing else lists entries across modules. Its rules:
+  - newest first by the owner's local date, then by when the entry was added;
+  - readings written by a fill-up, service or document are left out (the
+    entry itself is listed);
+  - a switched-off module's entries are left out.
+- **What is listed.** Each row has an icon, the kind, a one-line summary,
+  the amount (in the vehicle's currency, as the Expenses list shows it), the
+  odometer when the entry has its own, a paperclip with its number of files,
+  and links to its edit page.
+
+  | Kind | Dated by | Summary |
+  |---|---|---|
+  | Fill-up | `filled_at`, as a local date | grade badge, volume (owner's unit; kWh for a charge) |
+  | Service record | `performed_on` | category, title, vendor |
+  | Document | `start_on`, else the day added (as the cost ledger does) | title, else the type label; "expires {date}" |
+  | Expense | `spent_on` | category, note (truncated) |
+  | Odometer reading | `recorded_at`, as a local date (manual readings only) | note |
+
+  Not listed: service intervals and reminders (the work appears once it is
+  logged), readings owned by another entry, and attachments as rows of their
+  own.
+- **Milestones**, derived from the vehicle on every read and never stored
+  (like its age): *First registered* (`first_registered_on`), *Bought*
+  (purchase date) and *Sold* (sale date), each only when its date is set. On
+  their day *First registered* and *Bought* sort below everything else (they
+  happened first) and *Sold* above everything. A price goes in the summary
+  ("Bought for £12,500"), never in the amount column, which is for costs
+  only (purchase and sale prices are not in the cost ledger). Milestones have
+  no odometer and link to the vehicle's edit page.
+- **Fill-up runs fold.** Two or more fill-ups of the same vehicle with
+  nothing else between them show as one row that expands to the fill-ups
+  themselves: "4 fill-ups · 2 Sep – 17 Sep · £284.10", adding the volume
+  when they share a unit ("168.4 L") and counting fill-ups and charges apart
+  for a plug-in hybrid ("3 fill-ups · 2 charges"). The run is a `<details>`
+  element (works without JS) and sits under the month of its newest
+  fill-up; it may span months but never a year. Any other entry or a
+  milestone breaks a run. A single fill-up is not folded, nothing folds
+  under the *Fuel* chip, and only the History pages fold (the widget and the
+  print view list plainly).
+- **Kind chips** under the toolbar: *Everything* (default), *Service*,
+  *Fuel*, *Documents*, *Expenses*, *Mileage*. Each is a link (`?kind=service`
+  / `fuel` / `documents` / `expenses` / `mileage`), one chosen at a time,
+  with `aria-current` on the chosen one; a switched-off module's chip is
+  hidden, and an unknown (or switched-off) value falls back to *Everything*.
+  Milestones show under *Everything* only.
+- **One calendar year per page** in the owner's time zone (`?year=`), with a
+  year heading, month subheadings (each month's rows an ordered list with
+  `<time datetime>`), and *Newer* / *Older* links to the nearest year that
+  has anything for the chosen kind, skipping empty years. The default page
+  is the year of the newest item; a year between the first and the newest
+  item's years with nothing in it shows "Nothing logged in {year}"; a
+  `?year=` outside that range falls back to the default. With nothing at all
+  the page says "Nothing logged yet" with *Log entry*. A year bounds every
+  query — fill-ups and readings by the UTC instants of the local year's
+  start and end, everything else by date — so a page costs the same after
+  ten years as after one.
+- **History tab** (`/vehicles/{id}/history`): the second tab, after
+  Overview, with the shared vehicle header. Its toolbar shows the title and
+  *Print*; no import, export or add button (*Log entry* covers adding). It
+  is core (cannot be switched off) and works for archived vehicles.
+- **Overview** gains a *Recent history* card: the latest five items (as the
+  widget lists them, no milestones) and *Full history →*.
+- **Fleet history** (`/history`): the same page across every active vehicle,
+  each row naming its vehicle. With two or more active vehicles the
+  dashboard's vehicle chips (`?vehicle=`; an unknown or archived id falls
+  back to all) sit beside the kind chips. Runs fold per vehicle (another
+  vehicle's fill-up breaks a run) and every total is in its own vehicle's
+  currency. It is reached from the *Recent activity* widget's *View all*
+  (keeping the dashboard's `?vehicle=`), not from the navigation. An
+  archived vehicle's history is on its own History tab.
+- **Returning after an edit.** Row links open the edit form (a modal on
+  desktop, `data-modal`) with `return` set to the current History page and
+  year (§5), so saving comes back to it.
+- **Print view** (`/vehicles/{id}/history/print`): the vehicle's whole
+  history on one page, for printing or the browser's *Save as PDF* (no
+  server-side PDF). Archived vehicles can print theirs.
+  - **Options** (a plain GET form): the kinds to include, defaulting to
+    everything except fuel (a buyer wants the services, not 400 receipts),
+    and *Show costs* (default on; off also hides the purchase and sale
+    prices). Milestones are always included.
+  - **Header block:** name, descriptive line, registration, VIN, first
+    registered with age, current odometer, and the date printed (owner's
+    date format).
+  - **Rows:** every row, no folding and no year pages, each entry's
+    attachment file names under it.
+  - **Print CSS:** hides the app shell and the options, keeps rows from
+    splitting across pages, and prints black on white whatever the theme or
+    accent (its own colours, never the dark tokens).
+  - **Print button:** calls `window.print()` with JS and is hidden without
+    it (the browser's own print does the same).
 
 ---
 
@@ -1123,6 +1298,12 @@ task breakdowns live in the per-phase files; this is the map.
   into self-charging / mild `hybrid` (fills with petrol) and plug-in `phev`
   (petrol and electricity); existing hybrids sorted from their own charges;
   release v1.1.0 with Phase 9.1.
+- **Phase 10 — Vehicle history + multiple attachments + v1.2.0.** A History
+  tab and fleet history on one shared activity feed (milestones, folded
+  fill-up runs, kind chips, year pages, print view); several files per save
+  on every attachment input, attachments on expenses and manual readings;
+  an optional odometer on documents that joins the mileage series; release
+  v1.2.0.
 
 ---
 

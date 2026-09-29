@@ -6,6 +6,66 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-09-28
+
+Phase 10: vehicle history, multiple attachments and the document odometer.
+
+### Added
+- **History tab** on every vehicle, second after Overview: fill-ups,
+  service records, documents, expenses and odometer readings in one list,
+  newest first, one year per page with month headings and *Newer* /
+  *Older* links. The vehicle's own milestones — *First registered*,
+  *Bought* and *Sold* — bookend it. Back-to-back fill-ups fold into one row
+  ("4 fill-ups · 2 Sep – 17 Sep · £284.10") that opens to show them. Chips
+  narrow it to *Service*, *Fuel*, *Documents*, *Expenses* or *Mileage*.
+  Every row opens its entry, and saving brings you back to the same page.
+- **Fleet history** (`/history`), reached from *View all* on the
+  dashboard's *Recent activity*: the same list across every active vehicle,
+  with the dashboard's vehicle chips.
+- **Print view** of a vehicle's history, for printing or *Save as PDF*: a
+  service history to hand to a buyer, with the vehicle's details, every
+  entry and the names of its files. Choose what to include (everything but
+  fuel by default) and whether to show costs. It prints black on white in
+  either theme.
+- *Recent history* on the vehicle overview (the latest five, *Full
+  history →*).
+- **Several files at once** on every attachment input (up to 10 per save,
+  each up to `MAX_UPLOAD_MB`). One bad file saves nothing and the message
+  names it.
+- **Attachments on expenses and manual odometer readings** (a parking
+  receipt, a penalty notice, a photo of the dashboard).
+- A **paperclip with the number of files** on the Fuel, Maintenance,
+  Mileage and Expenses lists, *Recent activity* and History.
+- **Odometer on documents**: the reading an MOT certificate shows. It joins
+  the mileage log (source *Document*, at noon on the document's start date,
+  which it needs), moves and goes with the document, and is in the
+  documents CSV export and import.
+- German translations for everything new (*Verlauf*, *Fahrzeughistorie*,
+  *Gekauft*, *Verkauft*, *# Tankvorgänge*, *# Ladevorgänge*, …).
+
+### Changed
+- *Recent activity* reads the same feed as History: the same entries in
+  the same order, plus paperclips; an EV charge is named *Charge*.
+- Paperclip counts read "2 files" rather than "2 attachments".
+
+### Upgrade notes
+- Two new nullable columns, `compliance_documents.odometer_km` and
+  `odometer_readings.compliance_document_id`, and a new reading source
+  `document`. The migration runs automatically on start (Docker) or with
+  `vendor/bin/phinx migrate` (bare PHP). Existing data and every existing
+  figure are unchanged.
+- **Bare PHP:** a save now sends up to 10 files. Check `max_file_uploads`
+  (at least 10; PHP's default is 20) and that `post_max_size` allows
+  10 × `MAX_UPLOAD_MB` (100 MB by default). The Docker image sets both.
+- Backups record the database schema, so a backup made with 1.1.0 cannot be
+  restored into this version: restore it with 1.1.0 first, then upgrade.
+- **Going back to 1.1.0:** roll back first, while still on 1.2.0, with
+  `vendor/bin/phinx rollback -e production -t 20261004100000`. Document
+  readings become ordinary manual readings, so no mileage is lost. Files
+  attached to expenses and readings are unlinked (1.1.0 cannot show them;
+  the files stay under `UPLOAD_PATH`): download any you need first.
+- No configuration changes.
+
 ## [1.1.0] — 2026-09-28
 
 Phase 9.1 (vehicle details) and Phase 9.2 (plug-in hybrids).
@@ -471,7 +531,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/gwpreston16/Logbook/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/gwpreston16/Logbook/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/gwpreston16/Logbook/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/gwpreston16/Logbook/compare/v0.6.0...v0.7.0

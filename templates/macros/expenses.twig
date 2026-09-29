@@ -17,9 +17,11 @@
     {%- endif -%}
 {%- endmacro %}
 
-{# One ledger line (a Service\Expense\CostItem). #}
-{% macro cost_row(item, show_vehicle = false) -%}
+{# One ledger line (a Service\Expense\CostItem); `files` is its source's
+   number of attachments (the source kinds are the attachment owner types). #}
+{% macro cost_row(item, show_vehicle = false, files = 0) -%}
     {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attachments.twig' as paperclip %}
     {% import _self as exp %}
     {% import 'macros/fuel.twig' as fuel_ui %}
     {% set kind = item.kindKey|trans %}
@@ -35,7 +37,7 @@
                 {%- if item.quantity %} · {{ item.quantity|quantity(item.electric) }}{% endif -%}
             </span>
         </span>
-        <span class="list__end"><span class="list__amount tabular">{{ item.amount|money }}</span></span>
+        <span class="list__end">{{ paperclip.count(files) }}<span class="list__amount tabular">{{ item.amount|money }}</span></span>
     </li>
 {%- endmacro %}
 

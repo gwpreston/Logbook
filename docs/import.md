@@ -28,7 +28,7 @@ spreadsheet, another app, or another Logbook.
 | **Import** | Valid and new. |
 | **Problem** | Something the form would also refuse: a missing date, a negative number, an unknown category, an amount in another currency. The reason is shown per field. Rows with problems are only skipped if you tick *Skip the rows with problems*. |
 | **Already there** | The same entry is already logged for the vehicle, or appears earlier in the file. Importing the same file twice therefore changes nothing. |
-| **Comes from an entry** | (Mileage only.) A reading whose source is a fill-up or service. Fill-ups and maintenance with an odometer create their own readings, so import the fuel and maintenance files instead — readings are never doubled. |
+| **Comes from an entry** | (Mileage only.) A reading whose source is a fill-up, service or document. Fill-ups, maintenance and documents with an odometer create their own readings, so import the fuel, maintenance and documents files instead — readings are never doubled. |
 
 What counts as "the same entry": a fill-up with the same time and odometer; a
 reading with the same time and odometer (whatever created it); maintenance on
@@ -62,6 +62,10 @@ same category, amount and note.
   (the name) and *Grade code*; the code column is matched first.
 - **Yes/no** columns accept yes/no, true/false, 1/0, y/n, x (and your
   language's yes/no).
+- A document's **Odometer** (optional; files without the column import as
+  before) is the reading shown on it, such as an MOT certificate's. It adds
+  a reading to the mileage log at noon on the start date, just as the form
+  does, so it needs a start date.
 - A fill-up row's **Unit** column (`UK gallons`, `L`, `kWh`, …) overrides the
   file's volume unit for that row. Charging is always in kWh.
 
@@ -72,7 +76,7 @@ same category, amount and note.
 | Fuel | **Date and time**, **Odometer**, Fuel, Grade, Volume, Unit, Price per unit, Total, Currency, Partial, Missed previous, Station, Notes — any two of volume, price and total |
 | Mileage | **Date and time**, **Odometer**, Source, Note |
 | Maintenance | **Date**, Category, **Title**, Odometer, Cost, Currency, Garage, Details |
-| Documents | **Type**, Title (required for *Other*), Provider, Reference, Start, Expiry, Cost, Currency, Notes |
+| Documents | **Type**, Title (required for *Other*), Provider, Reference, Start, Expiry, Odometer (needs a start date), Cost, Currency, Notes |
 | Expenses | **Date**, Category, Amount, Currency, Note |
 
 Not imported: attachments, links between maintenance and schedules, and

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -55,6 +56,49 @@ final readonly class AttachmentRepository
             ->fetchAllAssociative();
 
         return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * Number of files per entry of the vehicles, in one grouped query on
+     * the (vehicle_id, owner_type, owner_id) index. With $owners, only those
+     * entries are counted.
+     *
+     * @param list<int> $vehicleIds
+     * @param array<string, list<int>>|null $owners owner type → entry ids
+     * @return array<string, int> keyed "type:id"
+     */
+    public function countByOwner(array $vehicleIds, ?array $owners = null): array
+    {
+        if ($vehicleIds === [] || $owners === []) {
+            return [];
+        }
+
+        $query = $this->connection->createQueryBuilder()
+            ->select('owner_type', 'owner_id', 'COUNT(*) AS files')
+            ->from(self::TABLE)
+            ->where('vehicle_id IN (:vehicles)')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
+            ->groupBy('vehicle_id', 'owner_type', 'owner_id');
+
+        if ($owners !== null) {
+            $any = [];
+            foreach (array_keys($owners) as $i => $type) {
+                $any[] = $query->expr()->and(
+                    'owner_type = :type' . $i,
+                    'owner_id IN (:ids' . $i . ')',
+                );
+                $query->setParameter('type' . $i, $type)
+                    ->setParameter('ids' . $i, $owners[$type], ArrayParameterType::INTEGER);
+            }
+            $query->andWhere($query->expr()->or(...$any));
+        }
+
+        $counts = [];
+        foreach ($query->fetchAllAssociative() as $row) {
+            $counts[Row::string($row, 'owner_type') . ':' . Row::int($row, 'owner_id')] = Row::int($row, 'files');
+        }
+
+        return $counts;
     }
 
     public function find(int $vehicleId, int $id): ?Attachment

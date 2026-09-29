@@ -1,0 +1,28 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'history.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'history'} %}
+
+        {# Toolbar (spec.md §7.16): the title and Print; adding goes through "Log entry". #}
+        <div class="toolbar list-toolbar">
+            <h1 class="section-title">{{ 'history.title'|trans }}</h1>
+            <div class="btn-row list-toolbar__actions">
+                <a class="btn btn--ghost" href="{{ url_for('history.print', {id: vehicle.id}) }}">{{ ui.icon('print') }}{{ 'history.print'|trans }}</a>
+            </div>
+        </div>
+
+        {% include 'history/_page.twig' with {
+            route: 'history.vehicle',
+            params: {id: vehicle.id},
+            query: {},
+            show_vehicle: false,
+            archived: vehicle.isArchived(),
+        } %}
+    </div>
+{% endblock %}

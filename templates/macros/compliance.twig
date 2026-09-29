@@ -59,10 +59,13 @@
                         {{- data.provider ?? '' }}{% if data.provider and data.reference %} · {% endif %}{% if data.reference %}<span class="tabular">{{ data.reference }}</span>{% endif -%}
                     </span>
                 {% endif %}
-                <span class="list__meta">{{ docs.period(document) }}</span>
+                <span class="list__meta">{{ docs.period(document) }}
+                    {%- if data.odometerKm is not null %} · <span class="tabular">{{ 'compliance.odometer_shown'|trans({reading: data.odometerKm|distance}) }}</span>{% endif -%}
+                </span>
             </span>
             <span class="list__end">
                 {{ docs.status_pill(state) }}
+                {{ files.count(attachments) }}
                 {% if data.cost != '0.000' %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
             </span>
         </div>

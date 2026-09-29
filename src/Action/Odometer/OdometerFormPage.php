@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Odometer;
 
+use Logbook\Action\Attachment\AttachmentUpload;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Odometer\OdometerService;
@@ -20,6 +22,7 @@ final readonly class OdometerFormPage
     public function __construct(
         private View $view,
         private OdometerService $odometer,
+        private AttachmentUpload $upload,
     ) {
     }
 
@@ -41,6 +44,6 @@ final readonly class OdometerFormPage
             'values' => $values,
             'errors' => $errors?->all() ?? [],
             'latest' => $this->odometer->history($vehicle)->latest(),
-        ], $status);
+        ] + $this->upload->formContext($vehicle, AttachmentOwner::Odometer, $reading?->id), $status);
     }
 }

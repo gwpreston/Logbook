@@ -72,7 +72,7 @@ final readonly class FuelLogAction
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,
             'consumption_units' => ConsumptionUnit::cases(),
-            'attachments' => $this->attachments->index($vehicle),
+            'attachment_counts' => $this->attachments->counts($vehicle),
         ]);
     }
 }

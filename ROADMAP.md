@@ -32,6 +32,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [8](phase-8.md) | Fuel grades + v1.0 release | ✅ |
 | [9.1](phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | ✅ |
 | [9.2](phase-9.2.md) | Plug-in hybrids + v1.1 release | ✅ |
+| [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -184,6 +185,23 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Release **v1.1.0** (Phases 9.1 and 9.2).
 
 → [`phase-9.2.md`](phase-9.2.md)
+
+## Phase 10 — Vehicle history + multiple attachments + v1.2 release
+*What has happened to this car?*
+
+- A **History** tab per vehicle and a fleet history page: fill-ups, service
+  records, documents, expenses and readings in one list, bookended by the
+  vehicle's milestones (first registered, bought, sold). Back-to-back
+  fill-ups fold into one row; kind chips and one page per year.
+- A **print view** that turns the history into a service history to hand to
+  a buyer (with or without costs).
+- **Several files per save** on every attachment input; expenses and manual
+  odometer readings take files too.
+- An optional **odometer on documents** (an MOT certificate shows one) that
+  joins the mileage series.
+- Release **v1.2.0**.
+
+→ [`phase-10.md`](phase-10.md)
 
 ---
 

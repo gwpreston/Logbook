@@ -64,11 +64,19 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 9.2 plug-in hybrid data migration (no
-        // schema change), the Phase 9.1 vehicle details, the Phase 8 grade
+        // Newest first: the Phase 10 document odometer, the Phase 9.2
+        // plug-in hybrid data migration (no schema change), the Phase 9.1
+        // vehicle details, the Phase 8 grade
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($this->hasColumn('compliance_documents', 'odometer_km'));
+        self::assertTrue($this->hasColumn('odometer_readings', 'compliance_document_id'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('compliance_documents', 'odometer_km'), 'rollback must drop the document odometer');
+        self::assertFalse($this->hasColumn('odometer_readings', 'compliance_document_id'), 'and the reading link');
+        self::assertTrue($this->hasColumn('odometer_readings', 'maintenance_entry_id'), 'and keep the other links');
+
         Migrator::run('rollback');
         self::assertTrue($this->hasColumn('vehicles', 'fuel_type'), 'the plug-in hybrid split changes data only');
 
@@ -167,6 +175,11 @@ final class MigrationsTest extends AppTestCase
         foreach (['vehicle_id', 'type', 'cost', 'created_at', 'updated_at'] as $required) {
             self::assertTrue($documents[$required]->getNotnull(), sprintf('compliance_documents.%s must be NOT NULL', $required));
         }
+        self::assertInstanceOf(DecimalType::class, $documents['odometer_km']->getType());
+        self::assertSame(12, $documents['odometer_km']->getPrecision());
+        self::assertSame(3, $documents['odometer_km']->getScale());
+        self::assertFalse($documents['odometer_km']->getNotnull(), 'a document may show no odometer');
+        self::assertFalse($this->columns('odometer_readings')['compliance_document_id']->getNotnull());
 
         $attachments = $this->columns('attachments');
         self::assertInstanceOf(BigIntType::class, $attachments['size']->getType());

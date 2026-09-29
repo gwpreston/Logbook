@@ -284,6 +284,46 @@ final class ImportTest extends AppTestCase
         self::assertSame(['insurance', 'pollution'], array_map(static fn ($d): string => $d->data->type->value, $documents));
     }
 
+    public function testTheDocumentOdometerRoundTripsAndWritesItsReading(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $browser->post('/vehicles/' . $golf->id . '/documents/new', [
+            'type' => 'inspection', 'title' => '', 'provider' => 'Main Street Motors', 'reference' => 'MOT-1',
+            'start_on' => '2026-09-01', 'expiry_on' => '2027-08-31', 'cost' => '54.85', 'odometer' => '30000', 'notes' => '',
+        ]);
+        $csv = self::body($browser->get('/vehicles/' . $golf->id . '/export/documents.csv'));
+        $odometerCsv = self::body($browser->get('/vehicles/' . $golf->id . '/export/odometer.csv'));
+
+        // Into another vehicle: the document and its reading, never doubled
+        // by the mileage file (its row comes from the document).
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $map = $this->upload($browser, $polo->id, 'documents', $csv);
+        $this->commit($browser, $map, $this->preview($browser, $map));
+        $document = $this->service($app, ComplianceDocumentRepository::class)->listForVehicle($polo->id)[0];
+        self::assertSame('48280.320', $document->data->odometerKm, 'exactly the exported value');
+        $readings = $this->service($app, OdometerReadingRepository::class);
+        $reading = $readings->listForVehicle($polo->id)[0];
+        self::assertSame(OdometerSource::Document, $reading->source);
+        self::assertSame('2026-09-01 11:00', $reading->recordedAt->format('Y-m-d H:i'), 'local noon on the start date');
+
+        $map = $this->upload($browser, $polo->id, 'odometer', $odometerCsv);
+        self::assertStringContainsString('Comes from an entry', $this->preview($browser, $map));
+        $this->commit($browser, $map, $this->preview($browser, $map));
+        self::assertCount(1, $readings->listForVehicle($polo->id));
+
+        // Files without the column import as before; an odometer needs a start.
+        $map = $this->upload($browser, $polo->id, 'documents', "Type,Reference,Start\ninsurance,POL-1,2026-09-01\n");
+        $this->commit($browser, $map, $this->preview($browser, $map));
+        self::assertCount(2, $this->service($app, ComplianceDocumentRepository::class)->listForVehicle($polo->id));
+        self::assertCount(1, $readings->listForVehicle($polo->id));
+
+        $map = $this->upload($browser, $polo->id, 'documents', "Type,Reference,Odometer (Miles)\ninspection,MOT-2,31000\n");
+        self::assertStringContainsString('Add the date it was issued to record the odometer.', $this->preview($browser, $map));
+    }
+
     public function testGuards(): void
     {
         $app = $this->createApp();

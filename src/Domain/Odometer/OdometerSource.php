@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace Logbook\Domain\Odometer;
 
 /**
- * Where an odometer reading came from. Readings from fill-ups and
- * maintenance entries are owned by that entry and change with it.
+ * Where an odometer reading came from. Readings from fill-ups, maintenance
+ * entries and compliance documents are owned by that entry and change with it.
  */
 enum OdometerSource: string
 {
     case Manual = 'manual';
     case Fuel = 'fuel';
     case Maintenance = 'maintenance';
+    case Document = 'document';
 
     /**
      * Icon name in the vendored sprite (assets/vendor/icons.svg).
@@ -23,6 +24,7 @@ enum OdometerSource: string
             self::Manual => 'speed',
             self::Fuel => 'local_gas_station',
             self::Maintenance => 'build',
+            self::Document => 'verified_user',
         };
     }
 }

@@ -132,7 +132,11 @@ final class CsvExportTest extends AppTestCase
         self::assertSame($entry->data->odometerKm, DistanceUnit::Mile->toKmDecimal($maintenance[1][3], 3));
 
         $documents = self::rows(self::body($browser->get($base . 'documents.csv')));
-        self::assertSame(['Insurance', '', 'Admiral', '', '2026-09-01', '2027-08-31', '420.00', 'GBP', ''], $documents[1]);
+        self::assertSame(
+            ['Type', 'Title', 'Provider', 'Reference', 'Start', 'Expiry', 'Odometer (Miles)', 'Cost', 'Currency', 'Notes'],
+            $documents[0],
+        );
+        self::assertSame(['Insurance', '', 'Admiral', '', '2026-09-01', '2027-08-31', '', '420.00', 'GBP', ''], $documents[1]);
 
         $expenses = self::rows(self::body($browser->get($base . 'expenses.csv')));
         self::assertSame(['Date', 'Category', 'Amount', 'Currency', 'Note'], $expenses[0]);

@@ -3,6 +3,7 @@
 {% import 'macros/fuel.twig' as fuel_ui %}
 {% import 'macros/maintenance.twig' as maint %}
 {% import 'macros/compliance.twig' as docs %}
+{% import 'macros/history.twig' as history %}
 
 {% set active_nav = 'garage' %}
 {% set data = vehicle.data %}
@@ -36,6 +37,26 @@
         </dl>
 
         <div class="card-grid">
+            {# The latest five of the History tab (spec.md §7.16). #}
+            <section class="card" aria-labelledby="history-heading">
+                <div class="card__header">
+                    <h2 id="history-heading" class="card__title">{{ 'history.recent'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('history.vehicle', {id: vehicle.id}) }}">{{ 'history.full'|trans }}</a>
+                </div>
+                {% if recent_history is empty %}
+                    <div class="empty">
+                        {{ ui.icon('history') }}
+                        <p class="empty__title">{{ 'history.empty_title'|trans }}</p>
+                    </div>
+                {% else %}
+                    <ul class="list">
+                        {% for item in recent_history %}
+                            <li>{{ history.row(item, {return_to: current_path}) }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+
             {% if feature_enabled('fuel') %}
             <section class="card" aria-labelledby="fills-heading">
                 <div class="card__header">

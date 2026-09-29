@@ -69,7 +69,7 @@ final readonly class MaintenanceLogAction
                 $lead->scheduleDays,
                 $lead->scheduleKm,
             ),
-            'attachments' => $this->attachments->index($vehicle),
+            'attachment_counts' => $this->attachments->counts($vehicle),
         ]);
     }
 }

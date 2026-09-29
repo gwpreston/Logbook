@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Expense;
 
+use Logbook\Action\Attachment\AttachmentUpload;
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Expense\ExpenseEntry;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -17,8 +19,10 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final readonly class ExpenseFormPage
 {
-    public function __construct(private View $view)
-    {
+    public function __construct(
+        private View $view,
+        private AttachmentUpload $upload,
+    ) {
     }
 
     /**
@@ -41,6 +45,6 @@ final readonly class ExpenseFormPage
             'values' => $values,
             'errors' => $errors?->all() ?? [],
             'categories' => ExpenseCategory::cases(),
-        ], $status);
+        ] + $this->upload->formContext($vehicle, AttachmentOwner::Expense, $entry?->id), $status);
     }
 }

@@ -138,10 +138,15 @@ writable by the web server user, e.g. `chown -R www-data: var`. Keep
 `UPLOAD_PATH` and `BACKUP_PATH` **outside** `public/`: vehicle photos and
 attachments (receipts, invoices, certificates) are served only through the app
 to the signed-in owner, and a backup contains everything. PHP's
-`upload_max_filesize` and `post_max_size` must be at least `MAX_UPLOAD_MB`
-(default 10 MB) for attachments and CSV imports, and at least `MAX_RESTORE_MB`
-(default 256 MB) to restore a backup through the browser (larger ones restore
-with `bin/backup.php`); the Docker image sets 256M/260M.
+`upload_max_filesize` must be at least `MAX_UPLOAD_MB` (default 10 MB) for
+attachments and CSV imports, and at least `MAX_RESTORE_MB` (default 256 MB) to
+restore a backup through the browser (larger ones restore with
+`bin/backup.php`). A save takes up to 10 attachments at once, so
+`post_max_size` must also allow 10 × `MAX_UPLOAD_MB` (100 MB by default), and
+`max_file_uploads` should be at least 10 (PHP's default is 20): PHP drops files
+past it without an error, so Logbook takes at most that many per save. The
+Docker image sets `upload_max_filesize = 256M`, `post_max_size = 260M` and
+`max_file_uploads = 20`.
 
 PHP must support **Argon2id** password hashing (`PASSWORD_ARGON2ID`), which
 distribution and official Docker builds of PHP 8.4 include; check with

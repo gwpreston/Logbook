@@ -30,6 +30,24 @@ final class ComplianceTest extends TestCase
         'notes' => '',
     ];
 
+    public function testTheOdometerIsInTheOwnersUnitAndNeedsAStartDate(): void
+    {
+        $data = ComplianceDocumentForm::parse(['type' => 'inspection', 'odometer' => '30000'] + self::POLICY, self::uk());
+        self::assertInstanceOf(ComplianceDocumentData::class, $data);
+        self::assertSame('48280.320', $data->odometerKm, '30,000 mi in km');
+        self::assertSame('30000', ComplianceDocumentForm::values(self::document(1, $data), self::uk())['odometer']);
+
+        $blank = ComplianceDocumentForm::parse(['odometer' => ''] + self::POLICY, self::uk());
+        self::assertInstanceOf(ComplianceDocumentData::class, $blank);
+        self::assertNull($blank->odometerKm);
+
+        $undated = ComplianceDocumentForm::parse(['odometer' => '30000', 'start_on' => ''] + self::POLICY, self::uk());
+        self::assertInstanceOf(ValidationErrors::class, $undated);
+        self::assertSame('compliance.odometer_needs_start', $undated->all()['odometer']['key'] ?? null);
+
+        self::assertArrayNotHasKey('odometer', ComplianceDocumentForm::defaults(ComplianceType::Inspection), 'never renewed');
+    }
+
     public function testParsesAndRoundTripsADocument(): void
     {
         $data = ComplianceDocumentForm::parse(['cost' => '412.5'] + self::POLICY, self::uk());
@@ -40,7 +58,7 @@ final class ComplianceTest extends TestCase
         self::assertSame('2027-02-28', $data->expiryOn?->format('Y-m-d'));
         self::assertSame('412.500', $data->cost);
 
-        $values = ComplianceDocumentForm::values(self::document(1, $data));
+        $values = ComplianceDocumentForm::values(self::document(1, $data), self::uk());
         self::assertSame('insurance', $values['type']);
         self::assertSame('2026-03-01', $values['start_on']);
         self::assertSame('2027-02-28', $values['expiry_on']);

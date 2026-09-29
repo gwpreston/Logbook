@@ -1,0 +1,85 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/history.twig' as history %}
+{#
+ # The print view (spec.md §7.16): the vehicle's whole history on one page, a
+ # service history to hand to a buyer or a garage. The options form and the
+ # app shell are for the screen only; print CSS prints black on white.
+ #}
+
+{% set active_nav = 'garage' %}
+{% set data = vehicle.data %}
+{% set dash = '—' %}
+
+{% block title %}{{ 'history.print_title'|trans({name: vehicle.name()}) }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack history-print">
+        <div class="toolbar no-print">
+            <a class="back-link" href="{{ url_for('history.vehicle', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'history.title'|trans }} · {{ vehicle.name() }}</a>
+            <button type="button" class="btn btn--primary" data-print hidden>{{ ui.icon('print') }}{{ 'history.print'|trans }}</button>
+        </div>
+
+        <form class="card no-print history-print__options" method="get" action="{{ url_for('history.print', {id: vehicle.id}) }}">
+            <input type="hidden" name="options" value="1">
+            <fieldset class="field">
+                <legend class="field__label">{{ 'history.print_options.kinds'|trans }}</legend>
+                <div class="chip-row">
+                    {% for chip in available %}
+                        <label class="chip">
+                            <input type="checkbox" name="kinds[]" value="{{ chip.value }}"{% if chip in chosen %} checked{% endif %}>
+                            {{ ui.icon(chip.icon()) }}<span>{{ ('history.chip.' ~ chip.value)|trans }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                <p class="field__hint">{{ 'history.print_options.kinds_hint'|trans }}</p>
+            </fieldset>
+            <label class="toggle">
+                <input type="checkbox" name="costs" value="1"{% if costs %} checked{% endif %}>
+                <span class="toggle__text">
+                    <span class="toggle__title">{{ 'history.print_options.costs'|trans }}</span>
+                    <span class="toggle__hint">{{ 'history.print_options.costs_hint'|trans }}</span>
+                </span>
+            </label>
+            <div class="btn-row">
+                <button type="submit" class="btn">{{ ui.icon('check') }}{{ 'history.print_options.apply'|trans }}</button>
+            </div>
+        </form>
+
+        <article class="card history-print__sheet">
+            <header class="history-print__header">
+                <p class="history-print__eyebrow">{{ 'history.print_eyebrow'|trans }}</p>
+                <h1 class="history-print__name">{{ vehicle.name() }}</h1>
+                {% if vehicle.description() %}<p class="muted">{{ vehicle.description() }}</p>{% endif %}
+                <dl class="details history-print__details">
+                    <div><dt>{{ 'vehicle.field.registration'|trans }}</dt><dd>{{ data.registration ?: dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.vin'|trans }}</dt><dd class="tabular">{{ data.vin ?: dash }}</dd></div>
+                    <div><dt>{{ 'vehicle.field.first_registered_on'|trans }}</dt><dd>
+                        {%- if data.firstRegisteredOn -%}
+                            {{ data.firstRegisteredOn|local_date }}{% if age %} ({{ 'vehicle.age.label'|trans({age: age.labelKey()|trans({years: age.years, months: age.months})}) }}){% endif %}
+                        {%- else -%}{{ dash }}{%- endif -%}
+                    </dd></div>
+                    <div><dt>{{ 'odometer.stat.current'|trans }}</dt><dd class="tabular">{{ latest ? latest.readingKm|distance : dash }}</dd></div>
+                    <div><dt>{{ 'history.printed_on'|trans }}</dt><dd>{{ today|local_date }}</dd></div>
+                </dl>
+            </header>
+
+            {% if items is empty %}
+                <p class="muted">{{ 'history.empty_title'|trans }}</p>
+            {% else %}
+                <ol class="list history-print__list">
+                    {% for item in items %}
+                        <li class="history-print__item">
+                            {{ history.row(item, {link: false, costs: costs}) }}
+                            {% set owner = item.kind.filesOwner() %}
+                            {% set files = owner ? attachments.of(owner, item.entryId) : [] %}
+                            {% if files is not empty %}
+                                <p class="history-print__files">{{ ui.icon('attach_file') }}{{ files|map(f => f.filename)|join(', ') }}</p>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </article>
+    </div>
+{% endblock %}

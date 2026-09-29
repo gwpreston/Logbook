@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
 
 {% set active_nav = 'garage' %}
 {% set editing = entry is not null %}
@@ -25,9 +26,10 @@
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
-        <form class="form" method="post"
+        <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('expenses.edit', {id: vehicle.id, entry: entry.id}) : url_for('expenses.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
 
             <section class="card">
                 {{ ui.select('category', 'expense.field.category'|trans, values, errors,
@@ -39,9 +41,11 @@
                 {{ ui.input('note', 'expense.field.note'|trans, values, errors, {optional: true, maxlength: 500, hint: 'expense.hint.note'|trans}) }}
             </section>
 
+            {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
+
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'expense.add_submit')|trans }}</button>
-                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('expenses.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (url_for('expenses.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
                 {% if editing %}
                     <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('expenses.delete', {id: vehicle.id, entry: entry.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}

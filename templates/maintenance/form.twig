@@ -29,6 +29,7 @@
         <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) : url_for('maintenance.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
 
             <section class="card">
                 {{ ui.input('title', 'maintenance.field.title'|trans, values, errors, {required: true, maxlength: 150, hint: 'maintenance.hint.title'|trans}) }}
@@ -57,11 +58,11 @@
                 </div>
             </section>
 
-            {{ files.card(vehicle, attachments, errors, max_upload_mb) }}
+            {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'maintenance.add_submit')|trans }}</button>
-                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('maintenance.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (url_for('maintenance.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
                 {% if editing %}
                     <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('maintenance.delete', {id: vehicle.id, entry: entry.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}

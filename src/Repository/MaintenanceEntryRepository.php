@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -39,6 +40,32 @@ final readonly class MaintenanceEntryRepository
             ->fetchAllAssociative();
 
         return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * The entries of several vehicles between two calendar dates.
+     *
+     * @param list<int> $vehicleIds
+     * @param DateTimeImmutable|null $from inclusive; null = from the start
+     * @param DateTimeImmutable|null $until exclusive; null = to the end
+     * @return list<MaintenanceEntry> in the order the work was done
+     */
+    public function listForVehiclesBetween(array $vehicleIds, ?DateTimeImmutable $from, ?DateTimeImmutable $until): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $query = $this->select()
+            ->where('vehicle_id IN (:vehicles)')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER);
+        if ($from !== null) {
+            $query->andWhere('performed_on >= :from')->setParameter('from', $from->format('Y-m-d'));
+        }
+        if ($until !== null) {
+            $query->andWhere('performed_on < :until')->setParameter('until', $until->format('Y-m-d'));
+        }
+
+        return array_values(array_map($this->hydrate(...), $this->ordered($query)->fetchAllAssociative()));
     }
 
     /**

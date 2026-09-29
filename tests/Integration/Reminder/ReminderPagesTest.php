@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Reminder;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Reminder\Reminder;
@@ -116,7 +117,7 @@ final class ReminderPagesTest extends ReminderTestCase
         $this->service($app, ComplianceService::class)->update($golf, $policy, new ComplianceDocumentData(
             type: ComplianceType::Insurance,
             expiryOn: self::date('2026-10-20'),
-        ));
+        ), new DateTimeZone('Europe/London'));
         $browser->get('/reminders');
         $moved = $this->onlyReminder($app);
         self::assertSame(ReminderStatus::Due, $moved->status);

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Feature\FeatureTwigExtension;
 use Logbook\Service\Navigation\SidebarTwigExtension;
 use Logbook\Service\Notification\Channel\EmailChannel;
@@ -176,6 +177,13 @@ return [
         get(WebhookChannel::class),
     ],
     ChannelRegistry::class => autowire()->constructorParameter('channels', get('notification.channels')),
+
+    // PHP drops files past max_file_uploads silently, so the attachment limit
+    // is kept at or under it (spec.md §7.12). A system-level ini setting.
+    AttachmentService::class => autowire()->constructorParameter(
+        'phpMaxFileUploads',
+        (int) (ini_get('max_file_uploads') === false ? 20 : ini_get('max_file_uploads')),
+    ),
 
     HttpClientInterface::class => static fn (): HttpClientInterface => HttpClient::create([
         'timeout' => 15,

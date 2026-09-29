@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Action\Compliance;
 
 use Logbook\Action\Attachment\AttachmentUpload;
+use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Action\Vehicle\VehicleRoute;
-use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Service\Compliance\ComplianceDocumentForm;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -29,6 +29,7 @@ final readonly class EditComplianceDocumentAction
         private ComplianceService $compliance,
         private ComplianceFormPage $page,
         private AttachmentUpload $upload,
+        private OdometerWarningFlash $warnings,
         private Redirector $redirect,
     ) {
     }
@@ -44,24 +45,25 @@ final readonly class EditComplianceDocumentAction
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 
         if ($request->getMethod() !== 'POST') {
-            $values = ComplianceDocumentForm::values($document);
+            $values = ComplianceDocumentForm::values($document, $user->preferences);
 
             return $this->page->render($request, $response, $vehicle, $currency, $values, $document);
         }
 
         $data = ComplianceDocumentForm::parse(RequestContext::form($request), $user->preferences);
-        $file = $this->upload->fromRequest($request);
-        $errors = $this->upload->errors($data, $file);
+        $files = $this->upload->fromRequest($request);
+        $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
             return $this->page->render($request, $response, $vehicle, $currency, $values, $document, $errors, 422);
         }
 
-        $this->compliance->update($vehicle, $document, $data);
-        $this->upload->store($vehicle, AttachmentOwner::Compliance, $document->id, $file);
-        RequestContext::session($request)->flash('success', 'compliance.updated');
+        $updated = $this->compliance->update($vehicle, $document, $data, $user->preferences->timeZone(), $files);
+        $session = RequestContext::session($request);
+        $session->flash('success', 'compliance.updated');
+        $this->warnings->queue($session, $this->compliance->odometerWarning($vehicle, $updated));
 
-        return $this->redirect->toRoute('compliance.index', ['id' => (string) $vehicle->id]);
+        return $this->redirect->backOr($request, 'compliance.index', ['id' => (string) $vehicle->id]);
     }
 }

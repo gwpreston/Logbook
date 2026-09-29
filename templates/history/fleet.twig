@@ -1,0 +1,44 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'home' %}
+{% set vehicle_query = selected ? {vehicle: selected.id} : {} %}
+
+{% block title %}{{ 'history.fleet_title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('home', {}, vehicle_query) }}">{{ ui.icon('chevron_left') }}{{ 'nav.dashboard'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'history.fleet_title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'history.fleet_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {# The dashboard's vehicle chips (spec.md §7.8): plain links. #}
+        {% if vehicles|length > 1 %}
+            <nav class="vehicle-filter" aria-label="{{ 'dashboard.filter.label'|trans }}">
+                <ul class="vehicle-filter__list">
+                    <li>
+                        <a class="chip vehicle-filter__chip" href="{{ url_for('history.fleet', {}, chip.value == 'all' ? {} : {kind: chip.value}) }}"{% if not selected %} aria-current="page"{% endif %}>{{ ui.icon('apps') }}<span>{{ 'dashboard.filter.all'|trans }}</span></a>
+                    </li>
+                    {% for vehicle in vehicles %}
+                        <li>
+                            <a class="chip vehicle-filter__chip" href="{{ url_for('history.fleet', {}, {vehicle: vehicle.id}|merge(chip.value == 'all' ? {} : {kind: chip.value})) }}"{% if selected and selected.id == vehicle.id %} aria-current="page"{% endif %}>{{ ui.icon(vehicle.data.type.icon()) }}<span>{{ vehicle.name() }}</span></a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
+
+        {% include 'history/_page.twig' with {
+            route: 'history.fleet',
+            params: {},
+            query: vehicle_query,
+            show_vehicle: true,
+            archived: false,
+        } %}
+    </div>
+{% endblock %}

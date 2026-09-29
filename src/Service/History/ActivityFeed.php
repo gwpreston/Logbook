@@ -1,0 +1,441 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Service\History;
+
+use DateTimeImmutable;
+use DateTimeZone;
+use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Compliance\ComplianceDocument;
+use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\ActivityDateRepository;
+use Logbook\Repository\ComplianceDocumentRepository;
+use Logbook\Repository\DatedSource;
+use Logbook\Repository\ExpenseEntryRepository;
+use Logbook\Repository\FuelEntryRepository;
+use Logbook\Repository\MaintenanceEntryRepository;
+use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Date\LocalTime;
+
+/**
+ * The one list of entries across modules (spec.md §7.16): read by the
+ * dashboard's *Recent activity*, the History tab and the fleet history.
+ * Nothing else lists entries across modules.
+ *
+ * - Newest first by the owner's local date, then by when the entry was added
+ *   (ActivityItem::compare). Fill-ups and readings are instants and the rest
+ *   calendar dates, so everything is placed on the owner's calendar first.
+ * - Readings written by a fill-up, service or document are left out (the
+ *   entry itself is listed); so are a switched-off module's entries.
+ * - A range bounds every query: fill-ups and readings by the UTC instants of
+ *   its local start and end, services and expenses by date. Documents are
+ *   few, and "dated by its start, else the day it was added" needs the
+ *   owner's time zone, so they are read per vehicle and placed in PHP.
+ *   Milestones come from the vehicle rows.
+ * - Attachment counts come from one grouped query for the items read.
+ *
+ * Callers pass vehicles already resolved for the signed-in owner.
+ */
+final readonly class ActivityFeed
+{
+    /** The dashboard widget's length. */
+    public const int LATEST = 8;
+
+    public function __construct(
+        private FuelEntryRepository $fuel,
+        private OdometerReadingRepository $readings,
+        private MaintenanceEntryRepository $maintenance,
+        private ComplianceDocumentRepository $documents,
+        private ExpenseEntryRepository $expenses,
+        private ActivityDateRepository $dates,
+        private AttachmentService $attachments,
+        private VehicleService $vehicles,
+        private FeatureToggles $features,
+    ) {
+    }
+
+    /**
+     * @return list<ActivityItem> newest first
+     */
+    public function items(User $user, ActivityQuery $query): array
+    {
+        $query = $this->enabledOnly($query);
+
+        return $this->read($user, $query, $this->documentsOf($query));
+    }
+
+    /**
+     * The year page $requested (the newest year with anything when it is
+     * null or outside the years that have anything), with its neighbours.
+     *
+     * @param list<Vehicle> $vehicles
+     * @param list<ActivityKind> $kinds
+     */
+    public function year(User $user, array $vehicles, array $kinds, ?int $requested): FeedYear
+    {
+        $query = $this->enabledOnly(new ActivityQuery($vehicles, $kinds));
+        $documents = $this->documentsOf($query);
+        $zone = $user->preferences->timeZone();
+        [$first, $newest] = $this->span($query, $documents, $zone);
+        if ($first === null || $newest === null) {
+            return new FeedYear(null);
+        }
+
+        $year = $requested !== null && $requested >= $first && $requested <= $newest ? $requested : $newest;
+        $page = ActivityQuery::year($query->vehicles, $query->kinds, $year);
+
+        return new FeedYear(
+            $year,
+            $this->read($user, $page, $documents),
+            $this->newer($query, $documents, $zone, $year),
+            $this->older($query, $documents, $zone, $year),
+            $first,
+            $newest,
+        );
+    }
+
+    /**
+     * The latest entries (no milestones): the newest year pages, as many as
+     * it takes.
+     *
+     * @param list<Vehicle> $vehicles
+     * @return list<ActivityItem> newest first
+     */
+    public function latest(User $user, array $vehicles, int $limit = self::LATEST): array
+    {
+        $query = $this->enabledOnly(new ActivityQuery($vehicles, ActivityKind::entries()));
+        $documents = $this->documentsOf($query);
+        $zone = $user->preferences->timeZone();
+        $year = $this->span($query, $documents, $zone)[1];
+
+        $items = [];
+        while ($year !== null && count($items) < $limit) {
+            $page = ActivityQuery::year($query->vehicles, $query->kinds, $year);
+            array_push($items, ...$this->read($user, $page, $documents));
+            $year = $this->older($query, $documents, $zone, $year);
+        }
+
+        return array_slice($items, 0, $limit);
+    }
+
+    private function enabledOnly(ActivityQuery $query): ActivityQuery
+    {
+        $enabled = $this->features->all();
+        $kinds = array_values(array_filter(
+            $query->kinds,
+            static fn (ActivityKind $kind): bool => $kind->feature() === null || $enabled[$kind->feature()->value],
+        ));
+
+        return new ActivityQuery($query->vehicles, $kinds, $query->from, $query->until, $query->limit);
+    }
+
+    /**
+     * @return list<ComplianceDocument>
+     */
+    private function documentsOf(ActivityQuery $query): array
+    {
+        return $query->includes(ActivityKind::Document) ? $this->documents->listForVehicles($query->vehicleIds()) : [];
+    }
+
+    /**
+     * @param list<ComplianceDocument> $documents every document of the query's vehicles
+     * @return list<ActivityItem> newest first
+     */
+    private function read(User $user, ActivityQuery $query, array $documents): array
+    {
+        $zone = $user->preferences->timeZone();
+        $ids = $query->vehicleIds();
+        $from = $query->from === null ? null : self::startOf($query->from, $zone);
+        $until = $query->until === null ? null : self::startOf($query->until, $zone);
+
+        $fills = $query->includes(ActivityKind::Fuel) ? $this->fuel->listForVehiclesBetween($ids, $from, $until) : [];
+        $readings = $query->includes(ActivityKind::Odometer)
+            ? $this->readings->listManualForVehiclesBetween($ids, $from, $until)
+            : [];
+        $services = $query->includes(ActivityKind::Maintenance)
+            ? $this->maintenance->listForVehiclesBetween($ids, $query->from, $query->until)
+            : [];
+        $expenses = $query->includes(ActivityKind::Expense)
+            ? $this->expenses->listForVehiclesBetween($ids, $query->from, $query->until)
+            : [];
+        $documents = array_values(array_filter(
+            $documents,
+            static fn (ComplianceDocument $d): bool => $query->covers(self::documentDate($d, $zone)),
+        ));
+
+        $counts = $this->attachments->countsFor($ids, array_filter([
+            AttachmentOwner::Fuel->value => array_map(static fn ($e): int => $e->id, $fills),
+            AttachmentOwner::Odometer->value => array_map(static fn ($r): int => $r->id, $readings),
+            AttachmentOwner::Maintenance->value => array_map(static fn ($e): int => $e->id, $services),
+            AttachmentOwner::Compliance->value => array_map(static fn ($d): int => $d->id, $documents),
+            AttachmentOwner::Expense->value => array_map(static fn ($e): int => $e->id, $expenses),
+        ]));
+
+        $vehicles = [];
+        $currencies = [];
+        foreach ($query->vehicles as $vehicle) {
+            $vehicles[$vehicle->id] = $vehicle;
+            $currencies[$vehicle->id] = $this->vehicles->currencyFor($user, $vehicle);
+        }
+        $items = [];
+        foreach ($fills as $entry) {
+            $data = $entry->data;
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Fuel,
+                vehicle: $vehicles[$entry->vehicleId],
+                entryId: $entry->id,
+                date: LocalTime::dateOf($data->filledAt, $zone),
+                createdAt: $entry->createdAt,
+                label: '',
+                labelKey: $data->fuel->isElectric() ? 'history.kind.charge' : 'history.kind.fill_up',
+                icon: $data->fuel->isElectric() ? 'ev_station' : 'local_gas_station',
+                amount: $data->totalCost,
+                currency: $currencies[$entry->vehicleId],
+                odometerKm: $data->odometerKm,
+                fuel: $data->fuel,
+                grade: $data->grade,
+                volume: $data->volume,
+                files: $counts->of(AttachmentOwner::Fuel, $entry->id),
+            );
+        }
+        foreach ($readings as $reading) {
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Odometer,
+                vehicle: $vehicles[$reading->vehicleId],
+                entryId: $reading->id,
+                date: LocalTime::dateOf($reading->recordedAt, $zone),
+                createdAt: $reading->createdAt,
+                label: '',
+                labelKey: 'history.kind.reading',
+                icon: 'speed',
+                odometerKm: $reading->readingKm,
+                note: $reading->note,
+                files: $counts->of(AttachmentOwner::Odometer, $reading->id),
+            );
+        }
+        foreach ($services as $entry) {
+            $data = $entry->data;
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Maintenance,
+                vehicle: $vehicles[$entry->vehicleId],
+                entryId: $entry->id,
+                date: $data->performedOn,
+                createdAt: $entry->createdAt,
+                label: $data->title,
+                labelKey: 'maintenance.category.' . $data->category->value,
+                icon: $data->category->icon(),
+                amount: $data->cost,
+                currency: $currencies[$entry->vehicleId],
+                odometerKm: $data->odometerKm,
+                vendor: $data->vendor,
+                files: $counts->of(AttachmentOwner::Maintenance, $entry->id),
+            );
+        }
+        foreach ($documents as $document) {
+            $data = $document->data;
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Document,
+                vehicle: $vehicles[$document->vehicleId],
+                entryId: $document->id,
+                date: self::documentDate($document, $zone),
+                createdAt: $document->createdAt,
+                label: $data->title ?? '',
+                labelKey: 'compliance.type.' . $data->type->value,
+                icon: $data->type->icon(),
+                amount: $data->cost,
+                currency: $currencies[$document->vehicleId],
+                odometerKm: $data->odometerKm,
+                expiresOn: $data->expiryOn,
+                files: $counts->of(AttachmentOwner::Compliance, $document->id),
+            );
+        }
+        foreach ($expenses as $expense) {
+            $data = $expense->data;
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Expense,
+                vehicle: $vehicles[$expense->vehicleId],
+                entryId: $expense->id,
+                date: $data->spentOn,
+                createdAt: $expense->createdAt,
+                label: '',
+                labelKey: 'expense.category.' . $data->category->value,
+                icon: $data->category->icon(),
+                amount: $data->amount,
+                currency: $currencies[$expense->vehicleId],
+                note: $data->note,
+                files: $counts->of(AttachmentOwner::Expense, $expense->id),
+            );
+        }
+        if ($query->includes(ActivityKind::Milestone)) {
+            foreach ($query->vehicles as $vehicle) {
+                foreach (self::milestones($vehicle) as [$milestone, $date, $price]) {
+                    if ($query->covers($date)) {
+                        $items[] = new ActivityItem(
+                            kind: ActivityKind::Milestone,
+                            vehicle: $vehicle,
+                            entryId: $vehicle->id,
+                            date: $date,
+                            createdAt: $vehicle->createdAt,
+                            label: '',
+                            labelKey: 'history.milestone.' . $milestone->value,
+                            icon: $milestone->icon(),
+                            currency: $currencies[$vehicle->id],
+                            milestone: $milestone,
+                            price: $price,
+                        );
+                    }
+                }
+            }
+        }
+
+        usort($items, ActivityItem::compare(...));
+
+        return $query->limit === null ? $items : array_slice($items, 0, $query->limit);
+    }
+
+    /**
+     * The first and newest years with anything of the query's kinds.
+     *
+     * @param list<ComplianceDocument> $documents
+     * @return array{0: ?int, 1: ?int}
+     */
+    private function span(ActivityQuery $query, array $documents, DateTimeZone $zone): array
+    {
+        $years = $this->placedYears($query, $documents, $zone);
+        foreach ($this->datedSources($query) as $source) {
+            foreach ($this->dates->span($source, $query->vehicleIds()) as $date) {
+                if ($date !== null) {
+                    $years[] = self::yearOf($source, $date, $zone);
+                }
+            }
+        }
+
+        return $years === [] ? [null, null] : [min($years), max($years)];
+    }
+
+    /**
+     * The nearest later year with anything, or null.
+     *
+     * @param list<ComplianceDocument> $documents
+     */
+    private function newer(ActivityQuery $query, array $documents, DateTimeZone $zone, int $year): ?int
+    {
+        $years = array_filter($this->placedYears($query, $documents, $zone), static fn (int $y): bool => $y > $year);
+        foreach ($this->datedSources($query) as $source) {
+            $date = $this->dates->earliestFrom($source, $query->vehicleIds(), self::bound($source, $year + 1, $zone));
+            if ($date !== null) {
+                $years[] = self::yearOf($source, $date, $zone);
+            }
+        }
+
+        return $years === [] ? null : min($years);
+    }
+
+    /**
+     * The nearest earlier year with anything, or null.
+     *
+     * @param list<ComplianceDocument> $documents
+     */
+    private function older(ActivityQuery $query, array $documents, DateTimeZone $zone, int $year): ?int
+    {
+        $years = array_filter($this->placedYears($query, $documents, $zone), static fn (int $y): bool => $y < $year);
+        foreach ($this->datedSources($query) as $source) {
+            $date = $this->dates->latestBefore($source, $query->vehicleIds(), self::bound($source, $year, $zone));
+            if ($date !== null) {
+                $years[] = self::yearOf($source, $date, $zone);
+            }
+        }
+
+        return $years === [] ? null : max($years);
+    }
+
+    /**
+     * Years of the lines placed in PHP: documents and milestones.
+     *
+     * @param list<ComplianceDocument> $documents
+     * @return list<int>
+     */
+    private function placedYears(ActivityQuery $query, array $documents, DateTimeZone $zone): array
+    {
+        $years = array_map(
+            static fn (ComplianceDocument $d): int => (int) self::documentDate($d, $zone)->format('Y'),
+            $documents,
+        );
+        if ($query->includes(ActivityKind::Milestone)) {
+            foreach ($query->vehicles as $vehicle) {
+                foreach (self::milestones($vehicle) as [, $date]) {
+                    $years[] = (int) $date->format('Y');
+                }
+            }
+        }
+
+        return $years;
+    }
+
+    /**
+     * @return list<DatedSource>
+     */
+    private function datedSources(ActivityQuery $query): array
+    {
+        $sources = [];
+        foreach ($query->kinds as $kind) {
+            if ($kind->datedSource() !== null) {
+                $sources[] = $kind->datedSource();
+            }
+        }
+
+        return $sources;
+    }
+
+    /**
+     * The vehicle's milestones that have a date.
+     *
+     * @return list<array{0: Milestone, 1: DateTimeImmutable, 2: ?string}>
+     */
+    private static function milestones(Vehicle $vehicle): array
+    {
+        $data = $vehicle->data;
+
+        return array_values(array_filter([
+            $data->firstRegisteredOn === null ? null : [Milestone::FirstRegistered, $data->firstRegisteredOn, null],
+            $data->purchaseDate === null ? null : [Milestone::Bought, $data->purchaseDate, $data->purchasePrice],
+            $data->saleDate === null ? null : [Milestone::Sold, $data->saleDate, $data->salePrice],
+        ]));
+    }
+
+    /**
+     * As the cost ledger dates it: its start, else the day it was added.
+     */
+    private static function documentDate(ComplianceDocument $document, DateTimeZone $zone): DateTimeImmutable
+    {
+        return $document->data->startOn ?? LocalTime::dateOf($document->createdAt, $zone);
+    }
+
+    /**
+     * The UTC instant a calendar day starts in the owner's zone.
+     */
+    private static function startOf(DateTimeImmutable $day, DateTimeZone $zone): DateTimeImmutable
+    {
+        return LocalTime::toUtc($day->format('Y-m-d') . 'T00:00', $zone) ?? $day;
+    }
+
+    /**
+     * Where a year starts, in the source's terms (an instant or a date).
+     */
+    private static function bound(DatedSource $source, int $year, DateTimeZone $zone): DateTimeImmutable
+    {
+        $day = ActivityQuery::newYear($year);
+
+        return $source->isInstant() ? self::startOf($day, $zone) : $day;
+    }
+
+    private static function yearOf(DatedSource $source, DateTimeImmutable $date, DateTimeZone $zone): int
+    {
+        return (int) ($source->isInstant() ? LocalTime::fromUtc($date, $zone) : $date)->format('Y');
+    }
+}

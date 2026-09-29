@@ -73,7 +73,7 @@
             {% else %}
                 <ul class="list">
                     {% for item in rows %}
-                        {{ exp.cost_row(item) }}
+                        {{ exp.cost_row(item, false, attachment_counts.of(item.source.value, item.sourceId)) }}
                     {% endfor %}
                 </ul>
                 {{ ui.pagination(pagination, 'expenses.index', {id: vehicle.id}, period_query) }}

@@ -149,7 +149,7 @@ final readonly class CsvImporter
                     $data instanceof FuelEntryData => $this->fuel->create($vehicle, $data),
                     $data instanceof OdometerReadingData => $this->odometer->create($vehicle, $data),
                     $data instanceof MaintenanceEntryData => $this->maintenance->create($vehicle, $data, $zone),
-                    $data instanceof ComplianceDocumentData => $this->compliance->create($vehicle, $data),
+                    $data instanceof ComplianceDocumentData => $this->compliance->create($vehicle, $data, $zone),
                     $data instanceof ExpenseEntryData => $this->expenses->create($vehicle, $data),
                     default => throw new LogicException('Unexpected import row.'),
                 };
@@ -243,7 +243,7 @@ final readonly class CsvImporter
                 case FieldKind::Source:
                     assert($field->enum !== null && $field->labelPrefix !== null);
                     $source = $vocabulary->choice($field->enum, $field->labelPrefix, $value);
-                    if ($source === OdometerSource::Fuel->value || $source === OdometerSource::Maintenance->value) {
+                    if ($source !== null && $source !== OdometerSource::Manual->value) {
                         return ImportRowStatus::Implied;
                     }
                     break;

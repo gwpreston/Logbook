@@ -6,6 +6,7 @@
     fleet: {route: 'garage', label: 'dashboard.link.garage'},
     reminders: {route: 'reminders.index', label: 'reminders.view_all'},
     spend: {route: 'reports.index', label: 'dashboard.link.reports'},
+    recent_activity: {route: 'history.fleet', label: 'history.view_all'},
 } %}
 {% set widgets = customise ? dashboard.available : dashboard.visible() %}
 {% set selected = dashboard.selected %}
@@ -106,7 +107,8 @@
                                     <button type="submit" name="toggle" value="1" class="icon-btn" aria-pressed="{{ hidden ? 'false' : 'true' }}">{{ ui.icon(hidden ? 'visibility_off' : 'visibility') }}<span class="visually-hidden">{{ (hidden ? 'dashboard.show' : 'dashboard.hide')|trans({widget: title}) }}</span></button>
                                 </form>
                             {% elseif link and (widget.value != 'spend' or feature_enabled('reports')) %}
-                                <a class="card__link" href="{{ url_for(link.route) }}">{{ link.label|trans }}</a>
+                                {# The fleet history keeps the chosen vehicle (spec.md §7.8). #}
+                                <a class="card__link" href="{{ url_for(link.route, {}, widget.value == 'recent_activity' and selected ? {vehicle: selected.id} : {}) }}">{{ link.label|trans }}</a>
                             {% endif %}
                         </div>
                         {% if hidden %}

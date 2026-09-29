@@ -6,6 +6,7 @@ namespace Logbook\Tests\Support;
 
 use DateTimeImmutable;
 use DI\Container;
+use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
@@ -117,7 +118,7 @@ abstract class ReminderTestCase extends AppTestCase
             title: $title,
             startOn: $start === null ? null : self::date($start),
             expiryOn: $expiry === null ? null : self::date($expiry),
-        ));
+        ), new DateTimeZone('Europe/London'));
     }
 
     /**

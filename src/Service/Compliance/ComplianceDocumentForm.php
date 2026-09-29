@@ -7,6 +7,7 @@ namespace Logbook\Service\Compliance;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Validation\ValidationErrors;
@@ -16,7 +17,9 @@ use Logbook\Support\Validation\Validator;
  * Add/edit compliance document form ↔ ComplianceDocumentData. The same
  * parse() serves create and edit, so an edit can never be stricter than a
  * create. Dates are calendar dates; the cost is optional (blank = 0) and 0
- * is valid.
+ * is valid. The optional odometer (the reading on the certificate) is typed
+ * in the owner's distance unit, stored in km, and needs a start date: it is
+ * placed on the mileage series at noon that day.
  */
 final class ComplianceDocumentForm
 {
@@ -29,7 +32,7 @@ final class ComplianceDocumentForm
     /**
      * @return array<string, string>
      */
-    public static function values(ComplianceDocument $document): array
+    public static function values(ComplianceDocument $document, DisplayPreferences $preferences): array
     {
         $data = $document->data;
 
@@ -41,11 +44,16 @@ final class ComplianceDocumentForm
             'start_on' => $data->startOn?->format('Y-m-d') ?? '',
             'expiry_on' => $data->expiryOn?->format('Y-m-d') ?? '',
             'cost' => Decimal::trim($data->cost),
+            'odometer' => $data->odometerKm === null
+                ? ''
+                : OdometerReadingForm::distanceForDisplay($data->odometerKm, $preferences),
             'notes' => $data->notes ?? '',
         ];
     }
 
     /**
+     * Only the type is carried over when renewing; never the odometer.
+     *
      * @return array<string, string>
      */
     public static function defaults(?ComplianceType $type = null): array
@@ -67,6 +75,14 @@ final class ComplianceDocumentForm
         $startOn = $validator->date('start_on');
         $expiryOn = $validator->date('expiry_on');
         $cost = $validator->decimal('cost', false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
+        $odometer = $validator->decimal(
+            'odometer',
+            false,
+            OdometerReadingForm::KM_SCALE,
+            '0',
+            null,
+            OdometerReadingForm::MAX_WHOLE_DIGITS,
+        );
         $notes = $validator->string('notes', false, self::NOTES_MAX);
 
         if ($type === ComplianceType::Other && $title === null && !$validator->errors()->has('title')) {
@@ -74,6 +90,9 @@ final class ComplianceDocumentForm
         }
         if ($startOn !== null && $expiryOn !== null && $expiryOn < $startOn) {
             $validator->addError('expiry_on', 'compliance.expiry_before_start');
+        }
+        if ($odometer !== null && $startOn === null && !$validator->errors()->has('start_on')) {
+            $validator->addError('odometer', 'compliance.odometer_needs_start');
         }
 
         if (!$validator->errors()->isEmpty() || $type === null) {
@@ -89,6 +108,9 @@ final class ComplianceDocumentForm
             expiryOn: $expiryOn,
             cost: $cost ?? Decimal::round('0', self::MONEY_SCALE),
             notes: $notes,
+            odometerKm: $odometer === null
+                ? null
+                : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
         );
     }
 }

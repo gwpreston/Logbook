@@ -155,6 +155,7 @@ final readonly class ImportField
                     false,
                     ['expiry date', 'expires', 'valid until', 'until', 'end'],
                 ),
+                new self('odometer', FieldKind::Distance, 'export.column.odometer', false, ['mileage', 'odo']),
                 new self('cost', FieldKind::Number, 'export.column.cost', false, ['amount', 'price']),
                 $currency,
                 new self('notes', FieldKind::Text, 'export.column.notes', false, ['note', 'comment']),

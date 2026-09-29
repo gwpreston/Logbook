@@ -87,6 +87,7 @@ final class AccessibilityTest extends AppTestCase
 
         $pages = [
             '/', '/?customise=1', '/garage', '/vehicles/new', "/vehicles/$id", "/vehicles/$id/edit", "/vehicles/$id/delete",
+            "/vehicles/$id/history", "/vehicles/$id/history?kind=fuel", "/vehicles/$id/history/print", '/history',
             "/vehicles/$id/odometer", "/vehicles/$id/odometer/new",
             '/fuel/new', "/vehicles/$id/fuel", "/vehicles/$id/fuel/new", "/vehicles/$id/fuel/{$fill->id}/edit",
             "/vehicles/$id/maintenance", "/vehicles/$id/maintenance/new", "/vehicles/$id/maintenance/{$service->id}/edit",

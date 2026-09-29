@@ -37,6 +37,7 @@
                   },
               }">
             {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
 
             <section class="card" aria-labelledby="basics-heading">
                 <h2 id="basics-heading" class="card__title">{{ 'vehicle.section.basics'|trans }}</h2>
@@ -167,7 +168,7 @@
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'vehicle.add_submit')|trans }}</button>
-                <a data-modal-cancel class="btn btn--lg" href="{{ editing ? url_for('vehicles.show', {id: vehicle.id}) : url_for('garage') }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (editing ? url_for('vehicles.show', {id: vehicle.id}) : url_for('garage')) }}">{{ 'form.cancel'|trans }}</a>
             </div>
         </form>
         {% endblock %}

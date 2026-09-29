@@ -671,6 +671,36 @@
         navigator.serviceWorker.register(base + '/sw.js', { scope: base + '/' }).catch(function () {});
     }
 
+    /*
+     * Attachment inputs (spec.md §7.12) take up to data-max-files files per
+     * save. Choosing more marks the input invalid, so the browser refuses
+     * the submit (page or modal) before anything is sent. Delegated, so it
+     * also covers forms loaded into the modal.
+     */
+    document.addEventListener('change', function (event) {
+        var input = event.target;
+        if (!(input instanceof HTMLInputElement) || input.type !== 'file' || !input.hasAttribute('data-max-files')) {
+            return;
+        }
+        var max = parseInt(input.getAttribute('data-max-files'), 10);
+        var tooMany = input.files !== null && !isNaN(max) && input.files.length > max;
+        input.setCustomValidity(tooMany ? (input.getAttribute('data-max-files-message') || '') : '');
+        if (tooMany) {
+            input.reportValidity();
+        }
+    });
+
+    /*
+     * Print buttons (History print view): shown only with JS, since without
+     * it the browser's own Print does the same.
+     */
+    function enhancePrint(button) {
+        button.hidden = false;
+        button.addEventListener('click', function () {
+            window.print();
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         registerServiceWorker();
         modal.init();
@@ -715,6 +745,7 @@
         document.querySelectorAll('[data-fuel-amounts]').forEach(enhanceFuelAmounts);
         document.querySelectorAll('[data-dashboard-sortable]').forEach(enhanceDashboard);
         document.querySelectorAll('form[data-auto-submit]').forEach(enhanceAutoSubmit);
+        document.querySelectorAll('[data-print]').forEach(enhancePrint);
 
         drawCharts();
         // Redraw with the other theme's colours when the OS theme flips.

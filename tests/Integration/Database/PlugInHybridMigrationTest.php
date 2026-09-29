@@ -81,7 +81,7 @@ final class PlugInHybridMigrationTest extends AppTestCase
         self::assertSame($updatedAt, $this->updatedAt($app), 'the owner changed nothing');
         self::assertEquals($before, $this->figures($app, $charged), 'every figure is identical after the upgrade');
 
-        Migrator::run('rollback');
+        Migrator::run('rollback', ['--target' => self::BEFORE]);
         $this->assertFuelTypes($app, [
             'charged' => [$charged, FuelType::Hybrid],
             'archived and charged' => [$archived, FuelType::Hybrid],
@@ -101,7 +101,7 @@ final class PlugInHybridMigrationTest extends AppTestCase
         $this->createOwner($app);
         $phev = $this->vehicle($app, 'BMW', '330e', fuel: FuelType::Phev);
 
-        Migrator::run('rollback');
+        Migrator::run('rollback', ['--target' => self::BEFORE]);
         $this->assertFuelTypes($app, ['phev' => [$phev, FuelType::Hybrid]]);
         Migrator::run('migrate');
         $this->assertFuelTypes($app, ['never charged' => [$phev, FuelType::Hybrid]]);
