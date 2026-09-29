@@ -1,0 +1,59 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
+
+{% set active_nav = 'garage' %}
+{% set editing = valuation is not null %}
+{% set heading = (editing ? 'valuation.edit_title' : 'valuation.add_title')|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('valuations.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'valuation.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'valuation.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" enctype="multipart/form-data"
+              action="{{ editing ? url_for('valuations.edit', {id: vehicle.id, entry: valuation.id}) : url_for('valuations.create', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card">
+                <div class="form-row">
+                    {{ ui.input('valued_on', 'valuation.field.valued_on'|trans, values, errors, {type: 'date', required: true}) }}
+                    {{ ui.input('amount', 'valuation.field.amount'|trans, values, errors, {type: 'number', required: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'valuation.hint.amount'|trans}) }}
+                </div>
+                {{ ui.input('source', 'valuation.field.source'|trans, values, errors, {optional: true, maxlength: 100, hint: 'valuation.hint.source'|trans}) }}
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'valuation.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="500"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </section>
+
+            {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'valuation.add_submit')|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (url_for('valuations.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('valuations.delete', {id: vehicle.id, entry: valuation.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

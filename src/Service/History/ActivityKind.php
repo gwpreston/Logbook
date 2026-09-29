@@ -11,7 +11,8 @@ use Logbook\Repository\DatedSource;
 /**
  * What a line of the activity feed is (spec.md §7.16), where it is edited,
  * whose files it has and which module it belongs to. Milestones come from
- * the vehicle itself (first registered, bought, sold).
+ * the vehicle itself (first registered, bought, sold). A valuation is not a
+ * cost: its amount is a price, like a milestone's (spec.md §7.16).
  */
 enum ActivityKind: string
 {
@@ -21,6 +22,7 @@ enum ActivityKind: string
     case Document = 'document';
     case Expense = 'expense';
     case Tyre = 'tyre';
+    case Valuation = 'valuation';
     case Milestone = 'milestone';
 
     /**
@@ -30,7 +32,7 @@ enum ActivityKind: string
      */
     public static function entries(): array
     {
-        return [self::Fuel, self::Odometer, self::Maintenance, self::Document, self::Expense, self::Tyre];
+        return [self::Fuel, self::Odometer, self::Maintenance, self::Document, self::Expense, self::Tyre, self::Valuation];
     }
 
     /**
@@ -48,6 +50,7 @@ enum ActivityKind: string
             self::Document => ['compliance.edit', 'document'],
             self::Expense => ['expenses.edit', 'entry'],
             self::Tyre => ['tyres.changes.edit', 'change'],
+            self::Valuation => ['valuations.edit', 'entry'],
             self::Milestone => ['vehicles.edit', null],
         };
     }
@@ -62,7 +65,7 @@ enum ActivityKind: string
             self::Maintenance => Feature::Maintenance,
             self::Document => Feature::Compliance,
             self::Tyre => Feature::Tyres,
-            self::Odometer, self::Expense, self::Milestone => null,
+            self::Odometer, self::Expense, self::Valuation, self::Milestone => null,
         };
     }
 
@@ -78,6 +81,7 @@ enum ActivityKind: string
             self::Maintenance => AttachmentOwner::Maintenance,
             self::Document => AttachmentOwner::Compliance,
             self::Expense => AttachmentOwner::Expense,
+            self::Valuation => AttachmentOwner::Valuation,
             self::Tyre, self::Milestone => null,
         };
     }
@@ -94,6 +98,7 @@ enum ActivityKind: string
             self::Maintenance => DatedSource::Maintenance,
             self::Expense => DatedSource::Expense,
             self::Tyre => DatedSource::TyreChange,
+            self::Valuation => DatedSource::Valuation,
             self::Document, self::Milestone => null,
         };
     }
@@ -105,7 +110,7 @@ enum ActivityKind: string
     {
         return match ($this) {
             self::Fuel => 'c-fuel',
-            self::Odometer, self::Milestone => 'muted',
+            self::Odometer, self::Valuation, self::Milestone => 'muted',
             self::Maintenance, self::Tyre => 'c-maint',
             self::Document => 'c-ins',
             self::Expense => 'c-other',

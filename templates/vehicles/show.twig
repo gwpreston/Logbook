@@ -183,24 +183,84 @@
                         <dt>{{ data.fuelType.capacityLabelKey()|trans }}</dt>
                         <dd class="tabular">{{ data.capacity is null ? dash : (data.fuelType.isElectric() ? data.capacity|energy : data.capacity|volume) }}</dd>
                     </div>
-                </dl>
-            </section>
-
-            <section class="card" aria-labelledby="ownership-heading">
-                <h2 id="ownership-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>
-                <dl class="details">
                     <div><dt>{{ 'vehicle.field.currency'|trans }}</dt><dd>{{ currency }} — {{ currency_name(currency) }}{% if data.currency is null %} <span class="muted">({{ 'vehicle.currency_inherited'|trans }})</span>{% endif %}</dd></div>
-                    <div><dt>{{ 'vehicle.field.purchase_date'|trans }}</dt><dd>{{ data.purchaseDate ? data.purchaseDate|local_date : dash }}{{ _self.paperwork(vehicle, 'purchase', paperwork) }}</dd></div>
-                    <div><dt>{{ 'vehicle.field.purchase_price'|trans }}</dt><dd class="tabular">{{ data.purchasePrice is null ? dash : data.purchasePrice|money(currency) }}</dd></div>
-                    <div><dt>{{ 'vehicle.field.sale_date'|trans }}</dt><dd>{{ data.saleDate ? data.saleDate|local_date : dash }}{{ _self.paperwork(vehicle, 'sale', paperwork) }}</dd></div>
-                    <div><dt>{{ 'vehicle.field.sale_price'|trans }}</dt><dd class="tabular">{{ data.salePrice is null ? dash : data.salePrice|money(currency) }}</dd></div>
                     <div><dt>{{ 'vehicle.added'|trans }}</dt><dd>{{ vehicle.createdAt|local_datetime }}</dd></div>
                 </dl>
             </section>
 
+            {# Ownership (spec.md §7.1): hidden until there is a purchase, a sale or a valuation. #}
+            {% if data.purchaseDate or data.purchasePrice is not null or data.saleDate or data.salePrice is not null or has_valuations %}
+            {% set value = depreciation.current %}
+            <section class="card" aria-labelledby="ownership-heading">
+                <h2 id="ownership-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>
+                <dl class="details">
+                    {% if data.purchaseDate or data.purchasePrice is not null %}
+                        <div><dt>{{ 'valuation.row.bought'|trans }}</dt><dd>{{ _self.dated(data.purchaseDate, data.purchasePrice, currency) }}{{ _self.paperwork(vehicle, 'purchase', paperwork) }}</dd></div>
+                    {% endif %}
+                    {% if value and value.kind.value == 'valuation' %}
+                        <div><dt>{{ 'valuation.row.latest'|trans }}</dt><dd>{{ _self.dated(value.date, value.amount, currency) }}{% if value.source %} <span class="muted">· {{ value.source }}</span>{% endif %}</dd></div>
+                    {% endif %}
+                    {% if data.saleDate or data.salePrice is not null %}
+                        <div><dt>{{ 'valuation.row.sold'|trans }}</dt><dd>{{ _self.dated(data.saleDate, data.salePrice, currency) }}{{ _self.paperwork(vehicle, 'sale', paperwork) }}</dd></div>
+                    {% endif %}
+                    {% if depreciation.change is not null %}
+                        {% set change_amount = depreciation.change|trim('-', 'left')|money(currency) %}
+                        <div>
+                            <dt>{{ 'valuation.row.change'|trans }}</dt>
+                            <dd class="tabular">
+                                {%- if depreciation.fraction is null -%}
+                                    {{ ((depreciation.isGain() ? 'valuation.change.up' : 'valuation.change.down'))|trans({amount: change_amount}) }}
+                                {%- else -%}
+                                    {{ ((depreciation.isGain() ? 'valuation.change.up_percent' : 'valuation.change.down_percent'))|trans({amount: change_amount, percent: depreciation.fraction|percent}) }}
+                                {%- endif -%}
+                            </dd>
+                        </div>
+                    {% endif %}
+                    {% if depreciation.perYear is not null %}
+                        <div><dt>{{ 'valuation.row.per_year'|trans }}</dt><dd class="tabular">{{ depreciation.perYear|money(currency) }}</dd></div>
+                    {% endif %}
+                    {% if depreciation.perKm is not null %}
+                        <div><dt>{{ 'valuation.row.per_distance'|trans }}</dt><dd class="tabular">{{ depreciation.perKm|per_distance(currency) }}</dd></div>
+                    {% endif %}
+                </dl>
+                {% if depreciation.staleMonths is not null %}
+                    <p class="field__hint">{{ 'valuation.hint.stale'|trans({months: depreciation.staleMonths}) }}</p>
+                {% elseif depreciation.state.value == 'no_purchase_price' %}
+                    <p class="field__hint">{{ 'valuation.hint.no_purchase_price'|trans }}</p>
+                {% elseif depreciation.state.value == 'no_value' %}
+                    <p class="field__hint">{{ 'valuation.hint.no_value'|trans }}</p>
+                {% endif %}
+                {% if value_chart.hasData() %}
+                    {{ ui.chart(value_chart, 'valuation.chart.label'|trans) }}
+                    <table class="table chart-table">
+                        <caption class="visually-hidden">{{ 'valuation.chart.label'|trans }}</caption>
+                        <tbody>
+                            {% for point in depreciation.points %}
+                                <tr>
+                                    <th scope="row">{{ point.date|local_date }} · {{ ('valuation.point.' ~ point.kind.value)|trans }}</th>
+                                    <td class="table__num tabular">{{ point.amount|money(currency) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+                <div class="btn-row">
+                    <a class="btn" href="{{ url_for('valuations.index', {id: vehicle.id}) }}">{{ 'valuation.link'|trans }}</a>
+                    <a class="btn" href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'valuation.add'|trans }}</a>
+                </div>
+            </section>
+            {% endif %}
+
         </div>
     </div>
 {% endblock %}
+
+{# A date and an amount, either of which may be missing: "14 Mar 2021 · £14,250". #}
+{% macro dated(date, amount, currency) -%}
+    {{- date ? date|local_date -}}
+    {{- date and amount is not null ? ' · ' -}}
+    {%- if amount is not null %}<span class="tabular">{{ amount|money(currency) }}</span>{% endif -%}
+{%- endmacro %}
 
 {# The purchase or sale paperwork beside its date: a paperclip with the count,
    opening the edit form where the files are listed (spec.md §7.1). #}

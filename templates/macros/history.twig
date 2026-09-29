@@ -10,6 +10,8 @@
         {{- (item.price is not null and costs
             ? ('history.milestone.' ~ item.milestone.value ~ '_for')|trans({price: item.price|money(item.currency)})
             : item.labelKey|trans) -}}
+    {%- elseif item.kind.value == 'valuation' -%}
+        {{- costs ? 'history.valued_at'|trans({price: item.price|money(item.currency)}) : item.labelKey|trans -}}
     {%- elseif item.kind.value == 'document' -%}
         {{- item.label != '' ? item.label : item.labelKey|trans -}}
     {%- elseif item.kind.value == 'maintenance' -%}
@@ -25,6 +27,8 @@
         {%- set parts = parts|merge([item.volume|quantity(item.isElectric())]) -%}
     {%- elseif item.kind.value == 'maintenance' -%}
         {%- set parts = parts|merge([item.labelKey|trans]|merge(item.vendor ? [item.vendor] : [])) -%}
+    {%- elseif item.kind.value == 'valuation' -%}
+        {%- if item.label != '' %}{% set parts = parts|merge([item.label]) %}{% endif -%}
     {%- elseif item.kind.value == 'tyre' -%}
         {%- set parts = item.tyres|map(m => trans(m.message, m.parameters)) -%}
     {%- elseif item.kind.value == 'document' -%}

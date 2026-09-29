@@ -1,0 +1,58 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
+
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'valuation.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ 'valuation.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'valuation.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <div class="toolbar list-toolbar">
+            <h2 class="section-title">{{ 'valuation.list_title'|trans }}</h2>
+            <div class="btn-row list-toolbar__actions">
+                {% if valuations is not empty %}
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'valuations'}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+                {% endif %}
+                <a class="btn btn--primary" href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'valuation.add'|trans }}</a>
+            </div>
+        </div>
+
+        <section class="card" aria-label="{{ 'valuation.list_title'|trans }}">
+            {% if valuations is empty %}
+                <div class="empty">
+                    {{ ui.icon('price_check') }}
+                    <p class="empty__title">{{ 'valuation.empty_title'|trans }}</p>
+                    <p>{{ 'valuation.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for valuation in valuations %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon('price_check') }}</span>
+                            <span class="list__body">
+                                <span class="list__title"><a href="{{ url_for('valuations.edit', {id: vehicle.id, entry: valuation.id}) }}" data-modal>{{ valuation.data.source ?: 'valuation.untitled'|trans }}</a></span>
+                                <span class="list__meta truncate"{% if valuation.data.notes %} title="{{ valuation.data.notes }}"{% endif %}>
+                                    {{- valuation.data.valuedOn|local_date }}
+                                    {%- if valuation.data.notes %} · {{ valuation.data.notes }}{% endif -%}
+                                </span>
+                            </span>
+                            <span class="list__end">{{ paperclip.count(attachment_counts.of('valuation', valuation.id)) }}<span class="list__amount tabular">{{ valuation.data.amount|money(currency) }}</span></span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <p class="field__hint">{{ 'valuation.not_a_cost'|trans }}</p>
+        </section>
+    </div>
+{% endblock %}

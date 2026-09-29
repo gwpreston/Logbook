@@ -87,6 +87,7 @@ const icons = [
   'payments',
   'person',
   'picture_as_pdf',
+  'price_check',
   'print',
   'receipt_long',
   'restart_alt',

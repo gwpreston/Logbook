@@ -40,6 +40,7 @@ final class MigrationsTest extends AppTestCase
         'tyres',
         'tyre_changes',
         'tyre_change_lines',
+        'vehicle_valuations',
     ];
 
     protected function tearDown(): void
@@ -68,7 +69,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 13 economy confirmation, the Phase 12
+        // Newest first: the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
         // purchase and sale paperwork (no schema change), the Phase 11.2
         // tread depth, the Phase 11.1 tyre tables, the Phase 10 document odometer, the Phase 9.2
         // plug-in hybrid data migration (no schema change), the Phase 9.1
@@ -76,6 +77,9 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($schema->tablesExist(['vehicle_valuations']));
+        Migrator::run('rollback');
+        self::assertFalse($schema->tablesExist(['vehicle_valuations']), 'rollback must drop the valuations');
         self::assertTrue($this->hasColumn('fuel_entries', 'economy_confirmed'));
         Migrator::run('rollback');
         self::assertFalse($this->hasColumn('fuel_entries', 'economy_confirmed'), 'rollback must drop the economy confirmation');

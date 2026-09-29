@@ -130,6 +130,7 @@ final readonly class ActivityDateRepository
             DatedSource::Maintenance => 'maintenance_entries',
             DatedSource::Expense => 'expense_entries',
             DatedSource::TyreChange => 'tyre_changes',
+            DatedSource::Valuation => 'vehicle_valuations',
         };
     }
 
@@ -141,6 +142,7 @@ final readonly class ActivityDateRepository
             DatedSource::Maintenance => 'performed_on',
             DatedSource::Expense => 'spent_on',
             DatedSource::TyreChange => 'done_on',
+            DatedSource::Valuation => 'valued_on',
         };
     }
 }
