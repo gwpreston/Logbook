@@ -6,9 +6,32 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 17.1: the sale pack. Ships in v1.9.0 with Phase 17.2.
+## [1.9.0] — 2026-09-29
+
+Phases 17.1 and 17.2: the sale pack, and printable reports. A buyer's view
+of the car with its paperwork, and a clean paper or PDF copy of every
+report, without a PDF library.
 
 ### Added
+- **Printable reports:** a *Print* button on Reports (fleet or one
+  vehicle), the Ownership report, *Coming up* (fleet or one vehicle), the
+  Fuel tab and the Mileage tab; the browser's *Save as PDF* makes the PDF.
+  Each printout starts with a header saying what it is, for which vehicle
+  (name and registration) or all vehicles, the period (the report's range,
+  *Coming up*'s months, or the first to the latest record), your units and
+  the date printed. The filters, chips, tabs and buttons stay off the
+  paper; their choices are in the header.
+- **Charts on paper** are drawn again in black and grey, their series told
+  apart by solid, dashed and dotted lines, point shapes, and solid, striped,
+  dotted and cross-hatched bars, so none depends on colour. Each is sized to
+  the page and printed with its table: the economy, price and mileage
+  charts gain one on paper, listing every point.
+- Printouts are black on white in the dark theme and with any accent;
+  cards and table rows are not split across pages, table headers repeat
+  on each page and totals print once at the end; wide tables print
+  smaller instead of being cut off. On the Fuel tab both the economy and
+  the cost per mile or km trends print, and economy check flags print as
+  their words.
 - **Prepare for sale** on every vehicle (and *Sale pack* in the History
   toolbar): a buyer's view to print or save as a PDF. A summary page (what
   the car is, how long you have owned it and how far it has gone since, the
@@ -36,7 +59,8 @@ Phase 17.1: the sale pack. Ships in v1.9.0 with Phase 17.2.
 - [docs/sale-pack.md](docs/sale-pack.md).
 
 ### Upgrading
-- Pull and restart. No migration.
+- Pull and restart. No migrations, no new configuration, and the backup
+  format is unchanged.
 
 ## [1.8.0] — 2026-09-29
 
@@ -914,7 +938,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/gwpreston16/Logbook/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/gwpreston16/Logbook/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/gwpreston16/Logbook/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/gwpreston16/Logbook/compare/v1.5.0...v1.6.0

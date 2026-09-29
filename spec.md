@@ -1041,7 +1041,8 @@ iCal/webcal feed so items appear in the user's calendar.
 ### 7.7 Expenses and reports
 Per-vehicle and fleet cost breakdowns over time (fuel vs maintenance vs
 compliance vs other). Cost/distance and cost/month. Date-range filter. Simple,
-readable reports; export to CSV/PDF (PDF may be a later phase).
+readable reports; export to CSV, and print or *Save as PDF* through the
+browser (§8 *Printing reports*; server-side PDF is future work, §12).
 
 - **Cost ledger.** Every cost is one line with a vehicle, a calendar date, a
   group and an amount in the vehicle's currency: each fill-up (group *fuel*,
