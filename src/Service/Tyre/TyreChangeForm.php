@@ -19,17 +19,19 @@ use Logbook\Domain\Tyre\TyreSetData;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\Validation\Validator;
 
 /**
- * The tyre forms ↔ typed input (spec.md §7.17): the six change forms, the
+ * The tyre forms ↔ typed input (spec.md §7.17): the seven change forms, the
  * change edit form, the tyre edit form and the set form. Field names are
- * flat (`brand_fl`, `move_12`) so the forms work without JS and re-fill
- * after an error.
+ * flat (`brand_fl`, `move_12`, `tread_12`) so the forms work without JS and
+ * re-fill after an error.
  *
  * Dates are calendar dates; the odometer is typed in the owner's distance
- * unit and parsed like a reading; a cost of 0 is valid.
+ * unit and parsed like a reading; a cost of 0 is valid; a tread depth is
+ * typed in the owner's depth unit (0 is valid) and stored in millimetres.
  */
 final class TyreChangeForm
 {
@@ -96,18 +98,23 @@ final class TyreChangeForm
         $replaced = [];
         $positions = [];
         $removed = [];
+        $depths = [];
         $into = new SetChoice();
+        $unit = $preferences->depthUnit;
         switch ($kind) {
             case TyreChangeKind::Existing:
                 foreach (self::chosenPositions($validator, $context->positions) as $position) {
                     $tyre = self::tyreData($validator, '_' . $position->value, $context->today);
+                    $tread = self::depth($validator, 'tread_' . $position->value, $unit);
                     if ($tyre !== null) {
-                        $new[] = new NewTyre($position, $tyre);
+                        $new[] = new NewTyre($position, $tyre, $tread);
                     }
                 }
                 break;
             case TyreChangeKind::Fit:
                 $description = self::tyreData($validator, '', $context->today, false);
+                // Tread depth when new: one value, for every position fitted.
+                $tread = self::depth($validator, 'tread', $unit);
                 foreach (self::chosenPositions($validator, $context->positions) as $position) {
                     $dot = self::dot($validator, 'dot_' . $position->value, $context->today);
                     if ($description !== null) {
@@ -117,7 +124,7 @@ final class TyreChangeForm
                             $description->size,
                             $description->season,
                             $dot,
-                        ));
+                        ), $tread);
                     }
                     if (isset($context->fitted[$position->value])) {
                         $choice = self::replaceChoice($validator, 'replace_' . $position->value);
@@ -136,6 +143,8 @@ final class TyreChangeForm
                         $positions[$tyre->id] = TyrePosition::from($code);
                     }
                 }
+                // A depth for any tyre coming off or going on; the others are ignored.
+                $depths = self::depths($validator, [...array_values($context->fitted), ...$context->stored], $unit);
                 break;
             case TyreChangeKind::Rotate:
                 $codes = array_map(static fn (TyrePosition $p): string => $p->value, $context->positions);
@@ -168,6 +177,13 @@ final class TyreChangeForm
                 if ($removed === [] && !$validator->errors()->has('tyres')) {
                     $validator->addError('tyres', 'tyre.error.nothing');
                 }
+                $depths = array_intersect_key(self::depths($validator, array_values($context->fitted), $unit), $removed);
+                break;
+            case TyreChangeKind::Check:
+                $depths = self::depths($validator, array_values($context->fitted), $unit);
+                if ($depths === [] && $validator->errors()->isEmpty()) {
+                    $validator->addError('depths', 'tyre.error.nothing_measured');
+                }
                 break;
         }
 
@@ -175,7 +191,47 @@ final class TyreChangeForm
             return $validator->errors();
         }
 
-        return new TyreChangeInput($kind, $data, $cost, $new, $replaced, $positions, $removed, $into);
+        return new TyreChangeInput($kind, $data, $cost, $new, $replaced, $positions, $removed, $into, $depths);
+    }
+
+    /**
+     * The depth typed for each tyre (`tread_{id}`), in millimetres; blank
+     * ones are not measured.
+     *
+     * @param list<Tyre> $tyres
+     * @return array<int, string> tyre id → mm
+     */
+    private static function depths(Validator $validator, array $tyres, DepthUnit $unit): array
+    {
+        $depths = [];
+        foreach ($tyres as $tyre) {
+            $depth = self::depth($validator, 'tread_' . $tyre->id, $unit);
+            if ($depth !== null) {
+                $depths[$tyre->id] = $depth;
+            }
+        }
+
+        return $depths;
+    }
+
+    /**
+     * A tread depth typed in the owner's unit → millimetres, or null when
+     * blank or invalid (an error is recorded). 0 is valid.
+     */
+    private static function depth(Validator $validator, string $field, DepthUnit $unit): ?string
+    {
+        $value = $validator->decimal($field, false, $unit->inputScale(), '0', $unit->max(), 2);
+        if ($value === null) {
+            return null;
+        }
+        $problem = $unit->problem($value);
+        if ($problem !== null) {
+            $validator->addError($field, $problem, ['max' => $unit->max()]);
+
+            return null;
+        }
+
+        return $unit->toMm($value);
     }
 
     /**
@@ -199,6 +255,8 @@ final class TyreChangeForm
         }
         $stored = $change->data;
         $link = $context->maintenance ? $data->maintenanceEntryId : $stored->maintenanceEntryId;
+        // A check never links a service record (spec.md §6 TyreChange).
+        $link = $change->kind === TyreChangeKind::Check ? null : $link;
         if ($link !== null && $link === $stored->maintenanceEntryId) {
             return new TyreChangeData($stored->doneOn, $stored->odometerKm ?? $data->odometerKm, $link, $data->note);
         }

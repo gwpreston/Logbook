@@ -54,6 +54,7 @@ return [
             'document' => 'Dokument',
             'schedule' => 'Wartungsintervall',
             'tyre' => 'Reifenwechsel',
+            'tyre_check' => 'Profil prüfen',
         ],
         'pick_title' => [
             'odometer' => 'Kilometerstand hinzufügen',
@@ -62,6 +63,7 @@ return [
             'document' => 'Dokument hinzufügen',
             'schedule' => 'Wartungsintervall hinzufügen',
             'tyre' => 'Reifen montieren',
+            'tyre_check' => 'Profil prüfen',
         ],
     ],
     'theme' => [
@@ -868,6 +870,7 @@ return [
             'rotate' => 'Positionen tauschen',
             'repair' => 'Reparatur',
             'remove' => 'Abmontieren',
+            'check' => 'Profil prüfen',
         ],
         'line' => [
             'on' => 'Montiert',
@@ -883,6 +886,7 @@ return [
             'rotate' => 'Positionen getauscht',
             'repair' => 'Reifen repariert',
             'remove' => 'Reifen abmontiert',
+            'check' => 'Profilprüfung',
         ],
         'summary' => [
             'existing' => '{count, plural, one {# Reifen} other {# Reifen}} erfasst ({where})',
@@ -975,6 +979,7 @@ return [
             'tyres' => 'Reifen',
             'tread' => 'Profiltiefe',
             'estimate' => 'Schätzung',
+            'tread_new' => 'Profiltiefe im Neuzustand',
         ],
         'hint' => [
             'size' => 'Wie auf der Reifenflanke, z. B. 205/55 R16 91V.',
@@ -995,6 +1000,9 @@ return [
             'set' => 'Wo die abmontierten Reifen gelagert werden (optional).',
             'set_by_record' => 'Datum und Kilometerstand kommen aus dem Wartungseintrag: Ändere sie dort.',
             'change_lines' => 'Welche Reifen ein Reifenwechsel betraf, ist fest; lösche ihn dafür und erfasse ihn neu.',
+            'tread_new' => 'Steht auf der Rechnung oder im Datenblatt des Reifens; bei den meisten Autoreifen etwa 8 mm.',
+            'tread_off' => 'Profiltiefe der abgenommenen Reifen, falls gemessen (Reifeneinlagerungen messen meist bei der Annahme).',
+            'check' => 'Lass einen Reifen leer, um ihn auszulassen. 0 ist erlaubt.',
         ],
         'submit' => [
             'existing' => 'Reifen speichern',
@@ -1003,6 +1011,7 @@ return [
             'rotate' => 'Tausch speichern',
             'repair' => 'Reparatur speichern',
             'remove' => 'Speichern',
+            'check' => 'Profiltiefen speichern',
         ],
         'saved' => [
             'existing' => 'Reifen gespeichert.',
@@ -1011,6 +1020,7 @@ return [
             'rotate' => 'Positionen getauscht.',
             'repair' => 'Reparatur gespeichert.',
             'remove' => 'Reifen abmontiert.',
+            'check' => 'Profiltiefen gespeichert.',
         ],
         'no_tyres_fitted' => 'Es sind keine Reifen montiert: Erfasse die bereits montierten Reifen oder montiere neue.',
         'none_to_swap' => 'Nichts zu wechseln: Es sind keine Reifen montiert oder eingelagert.',
@@ -1075,6 +1085,7 @@ return [
             'cost_and_link' => 'Gib Kosten ein oder verknüpfe einen Wartungseintrag, nicht beides.',
             'depth_range' => 'Gib eine Tiefe von 0 bis {max} ein.',
             'depth_halves' => 'Nutze ganze oder halbe 32stel, etwa 6 oder 6,5.',
+            'nothing_measured' => 'Gib mindestens eine Profiltiefe ein.',
         ],
         'depth' => [
             'measured' => '{depth} am {date}',
@@ -1097,6 +1108,30 @@ return [
             'overdue' => 'Reifen müssen ersetzt werden',
             'soon' => 'Reifen bald fällig',
             'ok' => 'Profil und Alter in Ordnung',
+        ],
+        'warning' => [
+            'deeper' => 'Tiefer als beim letzten Mal ({depth} am {date}) – bitte die Messung prüfen.',
+            'deeper_named' => '{tyre}: tiefer als beim letzten Mal ({depth} am {date}) – bitte die Messung prüfen.',
+        ],
+        'settings' => [
+            'title' => 'Reifen',
+            'lead' => 'Wann Reifen als abgefahren oder zu alt gelten. Der Reifen-Tab und die Reifenerinnerungen nutzen beide diese Werte.',
+            'link' => 'Reifen',
+            'link_hint' => 'Ersetzen bei, gesetzliche Mindestprofiltiefe und Altersgrenze.',
+            'car' => 'Autos',
+            'bike' => 'Motorräder',
+            'replace_at' => 'Ersetzen bei',
+            'replace_at_hint' => 'Grundlage für die Verschleißschätzung und die Erinnerungen.',
+            'winter_replace_at' => 'Winterreifen ersetzen bei',
+            'legal_minimum' => 'Gesetzliche Mindestprofiltiefe',
+            'legal_hint' => 'Die gesetzliche Mindestprofiltiefe ist von Land zu Land verschieden; prüfe deine.',
+            'age_heading' => 'Alter',
+            'age_limit' => 'Altersgrenze',
+            'years' => 'Jahre',
+            'age_hint' => 'Ab dem DOT-Datum, für montierte und eingelagerte Reifen. 0 schaltet sie aus.',
+            'reminder_note' => 'Reifen sind innerhalb deiner Vorlaufzeit und -strecke für Wartungen fällig (Einstellungen → Erinnerungen).',
+            'save' => 'Reifeneinstellungen speichern',
+            'saved' => 'Reifeneinstellungen gespeichert.',
         ],
     ],
     // tyre:end

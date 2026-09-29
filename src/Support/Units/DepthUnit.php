@@ -42,11 +42,11 @@ enum DepthUnit: string
     }
 
     /**
-     * A depth typed in this unit (canonical decimal) → millimetres, or the
-     * translation key of what is wrong with it: out of 0 to max(), or (in
-     * 32nds) not a whole or half 32nd.
+     * What is wrong with a depth typed in this unit (canonical decimal), as
+     * a translation key, or null: it must be 0 to max() and, in 32nds, a
+     * whole or half 32nd.
      */
-    public function parse(string $value): string
+    public function problem(string $value): ?string
     {
         if (!Decimal::isCanonical($value)) {
             return 'validation.number';
@@ -54,19 +54,8 @@ enum DepthUnit: string
         if (Decimal::compare($value, '0') < 0 || Decimal::compare($value, $this->max()) > 0) {
             return 'tyre.error.depth_range';
         }
-        if ($this === self::ThirtySecond && !self::isHalf($value)) {
-            return 'tyre.error.depth_halves';
-        }
 
-        return $this->toMm($value);
-    }
-
-    /**
-     * Whether parse() returned millimetres rather than an error key.
-     */
-    public static function isDepth(string $parsed): bool
-    {
-        return Decimal::isCanonical($parsed);
+        return $this === self::ThirtySecond && !self::isHalf($value) ? 'tyre.error.depth_halves' : null;
     }
 
     /**

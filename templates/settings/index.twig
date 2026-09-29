@@ -151,6 +151,18 @@
                         {{ ui.icon('arrow_forward', 'list__trail') }}
                     </a>
                 </li>
+                {% if feature_enabled('tyres') %}
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.tyres') }}">
+                        <span class="list__icon">{{ ui.icon('tire_repair') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'tyre.settings.link'|trans }}</span>
+                            <span class="list__meta">{{ 'tyre.settings.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                {% endif %}
             </ul>
         </section>
 

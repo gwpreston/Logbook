@@ -54,6 +54,7 @@ return [
             'document' => 'Document',
             'schedule' => 'Service interval',
             'tyre' => 'Tyre change',
+            'tyre_check' => 'Check tread',
         ],
         'pick_title' => [
             'odometer' => 'Add an odometer reading',
@@ -62,6 +63,7 @@ return [
             'document' => 'Add a document',
             'schedule' => 'Add a service interval',
             'tyre' => 'Fit tyres',
+            'tyre_check' => 'Check tread',
         ],
     ],
     'theme' => [
@@ -869,6 +871,7 @@ return [
             'rotate' => 'Rotate',
             'repair' => 'Repair',
             'remove' => 'Remove',
+            'check' => 'Check tread',
         ],
         'line' => [
             'on' => 'Fitted',
@@ -884,6 +887,7 @@ return [
             'rotate' => 'Tyres rotated',
             'repair' => 'Tyre repaired',
             'remove' => 'Tyres removed',
+            'check' => 'Tread check',
         ],
         'summary' => [
             'existing' => '{count, plural, one {Recorded # tyre} other {Recorded # tyres}} ({where})',
@@ -976,6 +980,7 @@ return [
             'tyres' => 'Tyres',
             'tread' => 'Tread depth',
             'estimate' => 'Estimate',
+            'tread_new' => 'Tread depth when new',
         ],
         'hint' => [
             'size' => 'As on the sidewall, e.g. 205/55 R16 91V.',
@@ -996,6 +1001,9 @@ return [
             'set' => 'Where the tyres taken off are kept (optional).',
             'set_by_record' => 'The date and odometer come from its service record: edit them there.',
             'change_lines' => 'Which tyres a change touched is fixed; to change that, delete it and record it again.',
+            'tread_new' => 'On the invoice or the tyre’s specification; about 8 mm for most car tyres.',
+            'tread_off' => 'Tread depth of the tyres coming off, if measured (tyre storage services usually measure on the way in).',
+            'check' => 'Leave a tyre blank to skip it. 0 is allowed.',
         ],
         'submit' => [
             'existing' => 'Save tyres',
@@ -1004,6 +1012,7 @@ return [
             'rotate' => 'Save rotation',
             'repair' => 'Save repair',
             'remove' => 'Save',
+            'check' => 'Save depths',
         ],
         'saved' => [
             'existing' => 'Tyres saved.',
@@ -1012,6 +1021,7 @@ return [
             'rotate' => 'Tyres rotated.',
             'repair' => 'Repair saved.',
             'remove' => 'Tyres removed.',
+            'check' => 'Tread depths saved.',
         ],
         'no_tyres_fitted' => 'No tyres are fitted: record the tyres already on the vehicle, or fit new ones.',
         'none_to_swap' => 'Nothing to swap: no tyres are fitted or in storage.',
@@ -1076,6 +1086,7 @@ return [
             'cost_and_link' => 'Enter a cost or link a service record, not both.',
             'depth_range' => 'Enter a depth from 0 to {max}.',
             'depth_halves' => 'Use whole or half 32nds, like 6 or 6.5.',
+            'nothing_measured' => 'Enter at least one depth.',
         ],
         'depth' => [
             'measured' => '{depth} on {date}',
@@ -1098,6 +1109,30 @@ return [
             'overdue' => 'Tyres need replacing',
             'soon' => 'Tyres due soon',
             'ok' => 'Tread and age OK',
+        ],
+        'warning' => [
+            'deeper' => 'Deeper than last time ({depth} on {date}) — check the reading.',
+            'deeper_named' => '{tyre}: deeper than last time ({depth} on {date}) — check the reading.',
+        ],
+        'settings' => [
+            'title' => 'Tyres',
+            'lead' => 'When tyres count as worn or old. The Tyres tab and tyre reminders both use these.',
+            'link' => 'Tyres',
+            'link_hint' => 'Replace-at depth, legal minimum and age limit.',
+            'car' => 'Cars',
+            'bike' => 'Motorbikes',
+            'replace_at' => 'Replace at',
+            'replace_at_hint' => 'Drives the wear estimate and reminders.',
+            'winter_replace_at' => 'Replace winter tyres at',
+            'legal_minimum' => 'Legal minimum',
+            'legal_hint' => 'Legal minimums differ by country; check yours.',
+            'age_heading' => 'Age',
+            'age_limit' => 'Age limit',
+            'years' => 'years',
+            'age_hint' => 'From the DOT date, for tyres fitted or in storage. 0 turns it off.',
+            'reminder_note' => 'Tyres are due within your service lead time and distance (Settings → Reminders).',
+            'save' => 'Save tyre settings',
+            'saved' => 'Tyre settings saved.',
         ],
     ],
     // tyre:end
