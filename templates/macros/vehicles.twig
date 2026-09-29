@@ -65,12 +65,12 @@
 
 {# One-tap vehicle picker: each vehicle links to `route` (placeholder `id`).
    `offline`: keep each form for offline use (fill-ups; spec.md §7.15). #}
-{% macro pick_list(vehicles, route, offline = false) -%}
+{% macro pick_list(vehicles, route, offline = false, params = {}) -%}
     {% import 'macros/ui.twig' as ui %}
     <ul class="pick-list">
         {% for vehicle in vehicles %}
             <li>
-                <a class="pick" href="{{ url_for(route, {id: vehicle.id}) }}" data-modal{% if offline %} data-offline-cache{% endif %}>
+                <a class="pick" href="{{ url_for(route, {id: vehicle.id}|merge(params)) }}" data-modal{% if offline %} data-offline-cache{% endif %}>
                     {{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}
                     <span class="pick__body">
                         <span class="pick__name">{{ vehicle.name() }}</span>

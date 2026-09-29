@@ -41,7 +41,7 @@ final class TyreSummary
      */
     public static function title(TyreChange $change, array $tyres, array $sets): TranslatableMessage
     {
-        return self::message('tyre.title.', $change, $tyres, $sets);
+        return self::message('tyre.record_title.', $change, $tyres, $sets);
     }
 
     /**

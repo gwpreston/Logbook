@@ -1,0 +1,41 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/tyres.twig' as tyres %}
+
+{#
+ # Confirm deleting a tyre change (works without JS), naming the tyres that
+ # go with it; a refusal (later changes depend on it) is shown here.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'tyre.change.delete_title'|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <section class="card" aria-labelledby="delete-heading">
+            <h1 id="delete-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            {% if error %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ trans(error.key, error.params) }}</span></div>
+            {% endif %}
+            <p>{{ 'tyre.change.delete_body'|trans(params) }}</p>
+            {% if orphans is not empty %}
+                <p>{{ 'tyre.change.delete_tyres'|trans }}</p>
+                <ul>
+                    {% for tyre in orphans %}
+                        <li>{{ tyres.name(tyre) }}{% if tyre.data.size %} · {{ tyre.data.size }}{% endif %}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="btn-row">
+                <form method="post" action="{{ url_for('tyres.changes.delete', {id: vehicle.id, change: change.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'form.delete_confirm'|trans }}</button>
+                </form>
+                <a class="btn btn--ghost" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </section>
+    </div>
+{% endblock %}

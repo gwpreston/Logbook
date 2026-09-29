@@ -1,0 +1,123 @@
+{#
+ # Tyre fragments (spec.md §7.17). Import with:
+ # {% import 'macros/tyres.twig' as tyres %}
+ #}
+
+{# "Michelin Primacy 4", else the size, else "a tyre" (as messages name it). #}
+{% macro name(tyre) -%}
+    {%- set name = tyre.data.name() -%}
+    {{- name != '' ? name : (tyre.data.size ?? 'tyre.unnamed'|trans) -}}
+{%- endmacro %}
+
+{# The season badge; nothing when not specified. #}
+{% macro season(tyre) -%}
+    {%- if tyre.data.season %}<span class="pill tyre-season tyre-season--{{ tyre.data.season.value }}">{{ ('tyre.season.' ~ tyre.data.season.value)|trans }}</span>{% endif -%}
+{%- endmacro %}
+
+{# "3 yrs 4 mo" from the DOT date, or "Age not known". #}
+{% macro age(view) -%}
+    {%- if view.age -%}
+        {{- 'tyre.age'|trans({age: view.age.labelKey()|trans({years: view.age.years, months: view.age.months})}) -}}
+    {%- else -%}
+        {{- 'tyre.age_unknown'|trans -}}
+    {%- endif -%}
+{%- endmacro %}
+
+{# "12,400 mi", or "12,400 mi since 3 Oct 2026" when counted from the tyres already on the vehicle. #}
+{% macro distance(view) -%}
+    {%- if view.since -%}
+        {{- 'tyre.since'|trans({distance: view.distance.km|distance, date: view.since|local_date}) -}}
+    {%- else -%}
+        {{- view.distance.km|distance -}}
+    {%- endif -%}
+    {%- if view.distance.flagged %} <span class="tyre-flag" title="{{ 'tyre.flag_label'|trans }}">{% import 'macros/ui.twig' as ui %}{{ ui.icon('warning') }}<span class="visually-hidden">{{ 'tyre.flag_label'|trans }}</span></span>{% endif -%}
+{%- endmacro %}
+
+{# One position of the On the vehicle grid: plain HTML, reads well to a screen reader. #}
+{% macro position_card(position, view, vehicle) -%}
+    {% import _self as tyres %}
+    <article class="tyre-card{{ view ? '' : ' tyre-card--empty' }}{{ position.value == 'spare' ? ' tyre-card--spare' }}" aria-labelledby="tyre-pos-{{ position.value }}">
+        <h3 class="tyre-card__position" id="tyre-pos-{{ position.value }}">{{ ('tyre.position.' ~ position.value)|trans }}</h3>
+        {% if view %}
+            {% set tyre = view.tyre %}
+            <p class="tyre-card__name">
+                {%- if vehicle.isArchived() -%}
+                    {{ tyres.name(tyre) }}
+                {%- else -%}
+                    <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}">{{ tyres.name(tyre) }}</a>
+                {%- endif -%}
+            </p>
+            <p class="tyre-card__meta">
+                {%- if tyre.data.size %}<span class="tabular">{{ tyre.data.size }}</span>{% endif %}
+                {{ tyres.season(tyre) }}
+            </p>
+            <dl class="tyre-card__figures">
+                <div><dt class="visually-hidden">{{ 'tyre.field.age'|trans }}</dt><dd>{{ tyres.age(view) }}</dd></div>
+                <div><dt class="visually-hidden">{{ 'tyre.field.distance'|trans }}</dt><dd class="tabular">{{ tyres.distance(view) }}</dd></div>
+            </dl>
+        {% else %}
+            <p class="tyre-card__name muted">{{ 'tyre.empty_position'|trans }}</p>
+        {% endif %}
+    </article>
+{%- endmacro %}
+
+{# A stored or retired tyre as a list row. #}
+{% macro tyre_row(view, vehicle, currency) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as tyres %}
+    {% set tyre = view.tyre %}
+    <li class="list__item">
+        <span class="list__icon" style="--tone: var(--c-maint)">{{ ui.icon('tire_repair') }}</span>
+        <span class="list__body">
+            <span class="list__title">
+                {%- if vehicle.isArchived() -%}
+                    {{ tyres.name(tyre) }}
+                {%- else -%}
+                    <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}">{{ tyres.name(tyre) }}</a>
+                {%- endif %}
+                {{ tyres.season(tyre) }}
+            </span>
+            <span class="list__meta">
+                {%- set parts = [] -%}
+                {%- if tyre.data.size %}{% set parts = parts|merge([tyre.data.size]) %}{% endif -%}
+                {%- if tyre.isRetired() and view.retiredOn %}{% set parts = parts|merge(['tyre.retired_on'|trans({date: view.retiredOn|local_date})]) %}{% endif -%}
+                {%- if tyre.isRetired() and tyre.retiredReason %}{% set parts = parts|merge([('tyre.reason.' ~ tyre.retiredReason.value)|trans]) %}{% endif -%}
+                {%- set parts = parts|merge([tyres.age(view)]) -%}
+                {{- parts|join(' · ') -}}
+            </span>
+        </span>
+        <span class="list__end">
+            <span class="list__delta tabular">{{ tyre.isRetired() and not view.since ? 'tyre.lifetime'|trans({distance: view.distance.km|distance}) : tyres.distance(view) }}</span>
+            {% if view.costPerKm is not null %}<span class="list__amount tabular">{{ view.costPerKm|per_thousand_distance(currency) }}</span>{% endif %}
+        </span>
+    </li>
+{%- endmacro %}
+
+{# A tyre change as a list row: kind, summary, odometer and the linked record's cost. #}
+{% macro change_row(item, vehicle, currency, return_to = null) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set change = item.change %}
+    <li class="list__item">
+        <span class="list__icon" style="--tone: var(--c-maint)">{{ ui.icon(change.kind.icon()) }}</span>
+        <span class="list__body">
+            <span class="list__title"><a href="{{ url_for('tyres.changes.edit', {id: vehicle.id, change: change.id}, return_to ? {return: return_to} : {}) }}" data-modal>{{ ('tyre.kind_short.' ~ change.kind.value)|trans }}</a></span>
+            <span class="list__meta"><time datetime="{{ change.data.doneOn|date('Y-m-d', 'UTC') }}">{{ change.data.doneOn|local_date }}</time> · {{ trans(item.summary.message, item.summary.parameters) }}</span>
+        </span>
+        <span class="list__end">
+            {% if change.data.odometerKm is not null %}<span class="list__delta tabular">{{ change.data.odometerKm|distance }}</span>{% endif %}
+            {% if item.record %}
+                <a class="list__amount tabular" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: item.record.id}) }}" data-modal title="{{ 'tyre.record'|trans }}: {{ item.record.data.title }}">{{ item.record.data.cost|money(currency) }}</a>
+            {% endif %}
+        </span>
+    </li>
+{%- endmacro %}
+
+{# The tyre changes a vehicle can record, for the toolbar menu. #}
+{% macro change_links(vehicle, kinds, except = []) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <ul class="menu__list">
+        {% for kind in kinds|filter(k => k.value not in except) %}
+            <li><a class="menu__item" href="{{ url_for('tyres.change', {id: vehicle.id, kind: kind.value}) }}" data-modal>{{ ui.icon(kind.icon()) }}{{ ('tyre.kind.' ~ kind.value)|trans }}</a></li>
+        {% endfor %}
+    </ul>
+{%- endmacro %}

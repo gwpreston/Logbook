@@ -176,6 +176,8 @@ final readonly class ImportField
                 $currency,
                 new self('note', FieldKind::Text, 'export.column.note', false, ['notes', 'description', 'comment']),
             ],
+            // Export only (spec.md §7.17).
+            ExportModule::Tyres, ExportModule::TyreChanges => [],
         };
     }
 }

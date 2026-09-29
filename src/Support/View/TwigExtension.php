@@ -73,6 +73,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('economy', $this->formatter->economy(...)),
             new TwigFilter('unit_price', $this->formatter->unitPrice(...)),
             new TwigFilter('per_distance', $this->formatter->perDistance(...)),
+            new TwigFilter('per_thousand_distance', $this->formatter->perThousandDistance(...)),
             new TwigFilter('file_size', $this->formatter->fileSize(...)),
             new TwigFilter('local_date', $this->formatter->date(...)),
             new TwigFilter('local_datetime', $this->formatter->dateTime(...)),

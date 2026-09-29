@@ -1,0 +1,54 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Rename a tyre set or change where it is kept (spec.md §7.17). A set can be
+ # deleted only once no tyre in it is fitted or stored.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'tyre.set.edit_title'|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'tyre.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ url_for('tyres.sets.edit', {id: vehicle.id, set: set.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card">
+                {{ ui.input('name', 'tyre.set.field.name'|trans, values, errors, {required: true, maxlength: 100}) }}
+                {{ ui.input('storage_location', 'tyre.set.field.location'|trans, values, errors, {optional: true, maxlength: 200, hint: 'tyre.set.hint.location'|trans}) }}
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'tyre.set.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="500"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'form.save'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                {% if not in_use %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('tyres.sets.delete', {id: vehicle.id, set: set.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+            {% if in_use %}<p class="field__hint">{{ 'tyre.set.in_use'|trans }}</p>{% endif %}
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

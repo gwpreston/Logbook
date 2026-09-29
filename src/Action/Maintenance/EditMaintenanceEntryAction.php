@@ -6,9 +6,11 @@ namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
+use Logbook\Action\Tyre\TyreFormPage;
 use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
+use Logbook\Service\Tyre\TyreChangeRefused;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -30,6 +32,7 @@ final readonly class EditMaintenanceEntryAction
         private AttachmentUpload $upload,
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
+        private TyreFormPage $tyreErrors,
     ) {
     }
 
@@ -59,7 +62,15 @@ final readonly class EditMaintenanceEntryAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422);
         }
 
-        $updated = $this->maintenance->update($vehicle, $entry, $data, $user->preferences->timeZone(), $files);
+        try {
+            $updated = $this->maintenance->update($vehicle, $entry, $data, $user->preferences->timeZone(), $files);
+        } catch (TyreChangeRefused $refused) {
+            // A linked tyre change cannot move to the new date or odometer (spec.md §7.17).
+            $values = RequestContext::formValues($request);
+            $errors = $this->tyreErrors->errors($refused);
+
+            return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422);
+        }
         $session = RequestContext::session($request);
         $session->flash('success', 'maintenance.updated', ['title' => $updated->data->title]);
         $this->warnings->queue($session, $this->maintenance->odometerWarning($vehicle, $updated));

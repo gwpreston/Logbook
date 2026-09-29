@@ -23,7 +23,7 @@
         {% block modal_body %}
         {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
         {% if errors is not empty %}
-            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
         <form class="form" method="post" enctype="multipart/form-data"

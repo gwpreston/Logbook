@@ -61,6 +61,26 @@ final readonly class TyreChangeService
     }
 
     /**
+     * Save a parsed change form of any kind.
+     *
+     * @throws TyreChangeRefused
+     */
+    public function record(Vehicle $vehicle, TyreChangeInput $input, DateTimeZone $zone, string $locale): TyreChange
+    {
+        $data = $input->data;
+        $cost = $input->cost;
+
+        return match ($input->kind) {
+            TyreChangeKind::Existing => $this->existing($vehicle, $data, $input->new, $zone, $locale),
+            TyreChangeKind::Fit => $this->fit($vehicle, $data, $input->new, $input->replaced, $cost, $zone, $locale),
+            TyreChangeKind::Swap => $this->swap($vehicle, $data, $input->into, $input->positions, $cost, $zone, $locale),
+            TyreChangeKind::Rotate => $this->rotate($vehicle, $data, $input->positions, $zone, $locale),
+            TyreChangeKind::Repair => $this->repair($vehicle, $data, array_keys($input->removed), $cost, $zone, $locale),
+            TyreChangeKind::Remove => $this->remove($vehicle, $data, $input->removed, $input->into, $cost, $zone, $locale),
+        };
+    }
+
+    /**
      * Tyres already on the vehicle: how an owner starts.
      *
      * @param list<NewTyre> $new

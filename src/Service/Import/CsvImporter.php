@@ -301,6 +301,7 @@ final readonly class CsvImporter
             ExportModule::Maintenance => MaintenanceEntryForm::parse($input, $preferences, []),
             ExportModule::Documents => ComplianceDocumentForm::parse($input, $preferences),
             ExportModule::Expenses => ExpenseEntryForm::parse($input, $preferences),
+            ExportModule::Tyres, ExportModule::TyreChanges => throw new LogicException('Tyres are not imported.'),
         };
 
         if ($parsed instanceof ValidationErrors) {
@@ -363,6 +364,7 @@ final readonly class CsvImporter
                 static fn ($e): string => self::key($e->data),
                 $this->expenseEntries->listForVehicle($vehicle->id),
             ),
+            ExportModule::Tyres, ExportModule::TyreChanges => throw new LogicException('Tyres are not imported.'),
         };
     }
 

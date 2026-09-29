@@ -1,0 +1,77 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/tyres.twig' as tyres %}
+
+{#
+ # Edit a tyre change (spec.md §7.17): its date, odometer, note and service
+ # record link. Which tyres it touched is fixed (listed read-only).
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'tyre.change.edit_title'|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'tyre.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }} · {{ ('tyre.kind.' ~ kind.value)|trans }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }} · {{ ('tyre.kind.' ~ kind.value)|trans }}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ url_for('tyres.changes.edit', {id: vehicle.id, change: change.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card">
+                <div class="form-row">
+                    {{ ui.input('done_on', 'tyre.field.date'|trans, values, errors, {type: 'date', required: true}) }}
+                    {{ ui.input('odometer', 'tyre.field.odometer'|trans, values, errors, {type: 'number', required: kind.requiresOdometer(), optional: not kind.requiresOdometer(), step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, hint: 'tyre.hint.odometer'|trans}) }}
+                </div>
+                {% if context.maintenance and links is not empty %}
+                    {{ ui.select('link', 'tyre.field.link'|trans, values, errors,
+                        [{value: '', label: 'tyre.field.link_none'|trans}]|merge(links|map(e => {value: e.id, label: e.data.performedOn|local_date ~ ' · ' ~ e.data.title ~ ' · ' ~ e.data.cost|money(currency)})),
+                        {hint: 'tyre.hint.link'|trans}) }}
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-note">{{ 'tyre.field.note'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-note" name="note" rows="2" maxlength="500"{{ ui.described_by('note', errors, false) }}>{{ values.note ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'note') }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="change-lines">
+                <h2 id="change-lines" class="card__title">{{ 'tyre.change.lines'|trans }}</h2>
+                <ul class="list">
+                    {% for line in change.lines %}
+                        {% set tyre = tyres_by_id[line.tyreId] ?? null %}
+                        <li class="list__item">
+                            <span class="list__body">
+                                <span class="list__title">{{ tyre ? tyres.name(tyre) : 'tyre.unnamed'|trans }}</span>
+                                <span class="list__meta">{{ ('tyre.line.' ~ line.action.value)|trans }}{% if line.position %} · {{ ('tyre.position.' ~ line.position.value)|trans }}{% endif %}</span>
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <p class="field__hint">{{ 'tyre.hint.change_lines'|trans }}</p>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'form.save'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('tyres.changes.delete', {id: vehicle.id, change: change.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}
