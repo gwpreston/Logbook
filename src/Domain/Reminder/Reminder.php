@@ -18,7 +18,7 @@ final readonly class Reminder
         public int $id,
         public int $vehicleId,
         public ReminderSource $source,
-        /** The schedule or document; null for a manual reminder. */
+        /** The schedule or document; the vehicle for tyres; null for a manual reminder. */
         public ?int $sourceId,
         /** The source's due point this reminder was raised for (generated only). */
         public ?string $occurrence,
@@ -55,6 +55,7 @@ final readonly class Reminder
         return match ($this->source) {
             ReminderSource::Schedule => MaintenanceCategory::tryFrom($category)?->icon() ?? 'build',
             ReminderSource::Compliance => ComplianceType::tryFrom($category)?->icon() ?? 'description',
+            ReminderSource::Tyre => 'tire_repair',
             ReminderSource::Manual => 'notifications',
         };
     }

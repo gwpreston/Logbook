@@ -1133,6 +1133,12 @@ return [
             'save' => 'Reifeneinstellungen speichern',
             'saved' => 'Reifeneinstellungen gespeichert.',
         ],
+        'reminder' => [
+            'worn' => 'Reifen: {where} abgefahren',
+            'wear_due' => 'Reifen: {where} in etwa {distance} fällig',
+            'old' => 'Reifen: {what} über {years, plural, one {# Jahr} other {# Jahre}} alt',
+            'age_due' => 'Reifen: {what} am {date} {years, plural, one {# Jahr} other {# Jahre}} alt',
+        ],
     ],
     // tyre:end
     'compliance' => [
@@ -1229,6 +1235,7 @@ return [
             'schedule' => 'Wartung',
             'compliance' => 'Dokument',
             'manual' => 'Deine Erinnerung',
+            'tyre' => 'Reifen',
         ],
         'status' => [
             'upcoming' => 'Demnächst',
@@ -1870,5 +1877,9 @@ return [
             'title' => 'Dieses Formular ist abgelaufen',
             'body' => 'Zu deiner Sicherheit konnte das Formular nicht angenommen werden – es war vielleicht zu lange geöffnet oder wurde von einer anderen Seite gesendet. Geh zurück, lade die Seite neu und versuche es erneut.',
         ],
+    ],
+    'list' => [
+        'pair' => '{first} und {second}',
+        'last' => '{list} und {last}',
     ],
 ];

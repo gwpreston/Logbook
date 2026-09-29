@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Tyre;
 
+use DateTimeImmutable;
 use Logbook\Domain\Tyre\TyreSeason;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DepthUnit;
 
@@ -44,6 +46,16 @@ final readonly class TyreThresholds
             VehicleType::Car => $season === TyreSeason::Winter ? $this->carWinterReplaceMm : $this->carReplaceMm,
             VehicleType::Bike => $this->bikeReplaceMm,
         };
+    }
+
+    /**
+     * When a tyre made on $made reaches the age limit: that date + N years,
+     * clamped like maintenance intervals (29 Feb → 28 Feb); null without a
+     * date or with the limit off.
+     */
+    public function ageLimitOn(?DateTimeImmutable $made): ?DateTimeImmutable
+    {
+        return $made === null || $this->ageYears === 0 ? null : LocalTime::addMonths($made, 12 * $this->ageYears);
     }
 
     public function legalMinimum(VehicleType $type): string

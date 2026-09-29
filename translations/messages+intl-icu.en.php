@@ -1134,6 +1134,12 @@ return [
             'save' => 'Save tyre settings',
             'saved' => 'Tyre settings saved.',
         ],
+        'reminder' => [
+            'worn' => 'Tyres: {where} worn',
+            'wear_due' => 'Tyres: {where} due in about {distance}',
+            'old' => 'Tyres: {what} over {years, plural, one {# year} other {# years}} old',
+            'age_due' => 'Tyres: {what} {years, plural, one {# year} other {# years}} old on {date}',
+        ],
     ],
     // tyre:end
     'compliance' => [
@@ -1230,6 +1236,7 @@ return [
             'schedule' => 'Maintenance',
             'compliance' => 'Document',
             'manual' => 'Your reminder',
+            'tyre' => 'Tyres',
         ],
         'status' => [
             'upcoming' => 'Upcoming',
@@ -1871,5 +1878,9 @@ return [
             'title' => 'This form has expired',
             'body' => 'For your security the form could not be accepted — it may have been open too long, or sent from another site. Go back, reload the page and try again.',
         ],
+    ],
+    'list' => [
+        'pair' => '{first} and {second}',
+        'last' => '{list} and {last}',
     ],
 ];

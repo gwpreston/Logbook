@@ -356,9 +356,7 @@ final readonly class TyreService
                 retiredOn: $tyre->isRetired() ? ($retiredOn[$tyre->id] ?? null) : null,
                 costPerKm: $this->costPerKm($tyre, $fitting, $records, $distance),
                 wear: $wear,
-                ageLimitOn: $made === null || $tyre->isRetired() || $thresholds->ageYears === 0
-                    ? null
-                    : LocalTime::addMonths($made, 12 * $thresholds->ageYears),
+                ageLimitOn: $tyre->isRetired() ? null : $thresholds->ageLimitOn($made),
             );
         }
 

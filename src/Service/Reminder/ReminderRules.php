@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Service\Maintenance\DueState;
 use Logbook\Service\Maintenance\DueStatus;
+use Logbook\Service\Tyre\TyreVerdict;
 use Logbook\Support\Date\LocalTime;
 
 /**
@@ -38,6 +39,21 @@ final class ReminderRules
     public static function statusForSchedule(DueState $due): ?ReminderStatus
     {
         return match ($due->status) {
+            DueStatus::Overdue => ReminderStatus::Overdue,
+            DueStatus::Soon => ReminderStatus::Due,
+            DueStatus::Ok => ReminderStatus::Upcoming,
+            DueStatus::Unknown => null,
+        };
+    }
+
+    /**
+     * A vehicle's tyres judged as one (TyreJudgement, against the schedule
+     * lead time and distance) as a reminder status; null when nothing is
+     * judgeable.
+     */
+    public static function statusForTyres(TyreVerdict $verdict): ?ReminderStatus
+    {
+        return match ($verdict->status) {
             DueStatus::Overdue => ReminderStatus::Overdue,
             DueStatus::Soon => ReminderStatus::Due,
             DueStatus::Ok => ReminderStatus::Upcoming,
