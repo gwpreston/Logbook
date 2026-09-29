@@ -73,6 +73,10 @@ final readonly class TyreFormPage
             linkIds: array_map(static fn (MaintenanceEntry $e): int => $e->id, $links),
             today: $today,
             maintenance: $maintenance,
+            linkIdsWithOdometer: array_values(array_map(
+                static fn (MaintenanceEntry $e): int => $e->id,
+                array_filter($links, static fn (MaintenanceEntry $e): bool => $e->data->odometerKm !== null),
+            )),
         );
     }
 

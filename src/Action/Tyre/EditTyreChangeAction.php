@@ -65,7 +65,7 @@ final readonly class EditTyreChangeAction
         $input = RequestContext::form($request);
         $on = LocalTime::parseDate(is_string($input['done_on'] ?? null) ? $input['done_on'] : '') ?? $change->data->doneOn;
         $context = $this->page->context($vehicle, $today, $on, $link);
-        $data = TyreChangeForm::parseEdit($change->kind, $input, $preferences, $context, $link);
+        $data = TyreChangeForm::parseEdit($change, $input, $preferences, $context);
         $values = RequestContext::formValues($request);
         if ($data instanceof ValidationErrors) {
             return $this->page($request, $response, $vehicle, $change, $context, $currency, $values, $data);

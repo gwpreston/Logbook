@@ -974,6 +974,7 @@ return [
             'repair' => 'Wähle die reparierten Reifen.',
             'remove' => 'Wähle, was mit jedem Reifen passiert.',
             'set' => 'Wo die abmontierten Reifen gelagert werden (optional).',
+            'set_by_record' => 'Datum und Kilometerstand kommen aus dem Wartungseintrag: Ändere sie dort.',
             'change_lines' => 'Welche Reifen ein Reifenwechsel betraf, ist fest; lösche ihn dafür und erfasse ihn neu.',
         ],
         'submit' => [

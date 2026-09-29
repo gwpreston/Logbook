@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use DateTimeZone;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Maintenance\MaintenanceEntry;
+use Logbook\Domain\Maintenance\MaintenanceEntryData;
 use Logbook\Domain\Tyre\Tyre;
 use Logbook\Domain\Tyre\TyreStatus;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -13,7 +16,9 @@ use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Tyre\TyreService;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\TestBrowser;
@@ -87,6 +92,18 @@ final class TyrePagesTest extends AppTestCase
         }
         $response = $this->browser->post($this->base . '/existing', $form);
         self::assertSame(303, $response->getStatusCode(), self::body($response));
+    }
+
+    private function tyreRecord(string $date, ?string $km): MaintenanceEntry
+    {
+        $day = LocalTime::parseDate($date);
+        self::assertNotNull($day);
+
+        return $this->service($this->app, MaintenanceService::class)->create(
+            $this->car,
+            new MaintenanceEntryData($day, MaintenanceCategory::Tyres, 'Front tyres', '200.000', $km),
+            new DateTimeZone('Europe/London'),
+        );
     }
 
     public function testAnEmptyTabOffersTheTyresAlreadyOnTheVehicleFirst(): void
@@ -403,6 +420,62 @@ final class TyrePagesTest extends AppTestCase
                 . '"1 × Michelin Primacy 4, front left",120.00,GBP,',
             $lines[2],
         );
+    }
+
+    public function testLinkingARecordWithoutAnOdometerStillNeedsOne(): void
+    {
+        $this->startWithExistingTyres();
+        $record = $this->tyreRecord('2026-09-18', null);
+        $form = [
+            'done_on' => '2026-09-20',
+            'odometer' => '',
+            'pos_fl' => '1',
+            'brand' => 'Michelin',
+            'replace_fl' => 'worn',
+            'link' => (string) $record->id,
+        ];
+
+        $refused = $this->browser->post($this->base . '/fit', $form);
+        self::assertSame(422, $refused->getStatusCode(), 'the record has no odometer to cover the change');
+        $html = self::body($refused);
+        self::assertStringContainsString('id="f-odometer-error">This field is required.', $html);
+        self::assertStringNotContainsString('id="f-link-error"', $html, 'the link itself is fine');
+
+        $covered = $this->tyreRecord('2026-09-19', '33800.000');
+        $saved = $this->browser->post($this->base . '/fit', ['link' => (string) $covered->id] + $form);
+        self::assertSame(303, $saved->getStatusCode(), self::body($saved));
+    }
+
+    public function testALinkedChangesDateAndOdometerAreItsRecords(): void
+    {
+        $this->startWithExistingTyres();
+        $this->browser->post($this->base . '/fit', [
+            'done_on' => '2026-09-20',
+            'odometer' => '21000',
+            'pos_fl' => '1',
+            'brand' => 'Michelin',
+            'replace_fl' => 'worn',
+            'cost' => '120',
+        ]);
+        $fit = $this->service($this->app, TyreService::class)->changes($this->car)[0];
+        $edit = $this->base . '/changes/' . $fit->id . '/edit';
+
+        $form = self::body($this->browser->get($edit));
+        self::assertStringContainsString('The date and odometer come from its service record', $form);
+        self::assertMatchesRegularExpression('/name="done_on"[^>]*readonly/', $form);
+        self::assertMatchesRegularExpression('/name="odometer"[^>]*readonly/', $form);
+
+        $saved = $this->browser->post($edit, [
+            'done_on' => '2026-09-01',
+            'odometer' => '1',
+            'link' => (string) $fit->data->maintenanceEntryId,
+            'note' => 'Front left only',
+        ]);
+        self::assertSame(303, $saved->getStatusCode(), self::body($saved));
+        $kept = $this->service($this->app, TyreService::class)->changes($this->car)[0];
+        self::assertSame('2026-09-20', $kept->data->doneOn->format('Y-m-d'), 'the record\'s date is kept');
+        self::assertSame($fit->data->odometerKm, $kept->data->odometerKm);
+        self::assertSame('Front left only', $kept->data->note);
     }
 
     public function testTheLogEntryChooserOpensFitTyres(): void

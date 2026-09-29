@@ -300,10 +300,9 @@ final readonly class TyreChangeService
      */
     public function update(Vehicle $vehicle, TyreChange $change, TyreChangeData $data, DateTimeZone $zone): TyreChange
     {
-        $this->assertOdometer($change->kind, $data);
-
         $this->transaction->run(function () use ($vehicle, $change, $data, $zone): void {
             $data = $this->linked($vehicle, $data, $zone);
+            $this->assertOdometer($change->kind, $data);
             $this->tyres->updateChange($vehicle->id, $change->id, $data, $this->clock->now());
             $this->sync->recordReading($vehicle, $change->id, $data, $zone);
             $this->sync->replay($vehicle);
@@ -393,8 +392,6 @@ final readonly class TyreChangeService
         array $intoSet = [],
         array $reasons = [],
     ): TyreChange {
-        $this->assertOdometer($kind, $data);
-
         $id = $this->transaction->run(function () use (
             $vehicle,
             $kind,
@@ -417,6 +414,7 @@ final readonly class TyreChangeService
                 );
             }
             $data = $cost === null ? $this->linked($vehicle, $data, $zone) : $data;
+            $this->assertOdometer($kind, $data);
             $id = $this->tyres->insertChange($vehicle->id, $kind, $data, $lines, $now);
 
             $setId = $into->setId ?? ($into->newSet === null ? null : $this->tyres->insertSet($vehicle->id, $into->newSet, $now));
@@ -511,11 +509,14 @@ final readonly class TyreChangeService
     }
 
     /**
+     * Every kind but a repair needs an odometer: its own, or (once aligned)
+     * its linked record's.
+     *
      * @throws TyreChangeRefused
      */
     private function assertOdometer(TyreChangeKind $kind, TyreChangeData $data): void
     {
-        if ($kind->requiresOdometer() && $data->odometerKm === null && $data->maintenanceEntryId === null) {
+        if ($kind->requiresOdometer() && $data->odometerKm === null) {
             throw new TyreChangeRefused('tyre.error.odometer_required', [], 'odometer');
         }
     }

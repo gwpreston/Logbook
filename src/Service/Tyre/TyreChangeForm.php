@@ -180,26 +180,30 @@ final class TyreChangeForm
 
     /**
      * The change edit form: date, odometer, note and link. With maintenance
-     * off the link is not on the form and $currentLink is kept.
+     * off the link is not on the form and the stored one is kept. While the
+     * link stays, the date and odometer are its record's (read-only on the
+     * form; they move when the record is edited), so the stored ones are kept.
      *
      * @param array<array-key, mixed> $input
      */
     public static function parseEdit(
-        TyreChangeKind $kind,
+        TyreChange $change,
         array $input,
         DisplayPreferences $preferences,
         TyreFormContext $context,
-        ?int $currentLink,
     ): TyreChangeData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
-        [$data] = self::common($validator, $kind, $preferences, $context, false);
+        [$data] = self::common($validator, $change->kind, $preferences, $context, false);
         if (!$validator->errors()->isEmpty() || $data === null) {
             return $validator->errors();
         }
+        $stored = $change->data;
+        $link = $context->maintenance ? $data->maintenanceEntryId : $stored->maintenanceEntryId;
+        if ($link !== null && $link === $stored->maintenanceEntryId) {
+            return new TyreChangeData($stored->doneOn, $stored->odometerKm ?? $data->odometerKm, $link, $data->note);
+        }
 
-        return $context->maintenance
-            ? $data
-            : new TyreChangeData($data->doneOn, $data->odometerKm, $currentLink, $data->note);
+        return new TyreChangeData($data->doneOn, $data->odometerKm, $link, $data->note);
     }
 
     /**
@@ -290,9 +294,11 @@ final class TyreChangeForm
                 }
             }
         }
+        // A linked record's odometer covers the change's; without one, the change needs its own.
+        $covered = $link !== null && in_array($link, $context->linkIdsWithOdometer, true);
         $odometer = $validator->decimal(
             'odometer',
-            $kind->requiresOdometer() && $link === null,
+            $kind->requiresOdometer() && !$covered,
             OdometerReadingForm::KM_SCALE,
             '0',
             null,

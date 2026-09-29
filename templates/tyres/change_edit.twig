@@ -33,11 +33,17 @@
             {{ ui.csrf(csrf) }}
             {{ ui.return_field(return_to) }}
 
+            {# A linked change takes its record's date (and odometer, when it has one): edit them there. #}
+            {% set record = change.data.maintenanceEntryId ? links|filter(e => e.id == change.data.maintenanceEntryId)|first : null %}
+            {% set locked_km = record and record.data.odometerKm is not null %}
             <section class="card">
                 <div class="form-row">
-                    {{ ui.input('done_on', 'tyre.field.date'|trans, values, errors, {type: 'date', required: true}) }}
-                    {{ ui.input('odometer', 'tyre.field.odometer'|trans, values, errors, {type: 'number', required: kind.requiresOdometer(), optional: not kind.requiresOdometer(), step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, hint: 'tyre.hint.odometer'|trans}) }}
+                    {{ ui.input('done_on', 'tyre.field.date'|trans, values, errors, {type: 'date', required: true, readonly: record != null}) }}
+                    {{ ui.input('odometer', 'tyre.field.odometer'|trans, values, errors, {type: 'number', required: kind.requiresOdometer() and not locked_km, optional: not kind.requiresOdometer(), step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, readonly: locked_km, hint: locked_km ? null : 'tyre.hint.odometer'|trans}) }}
                 </div>
+                {% if record %}
+                    <p class="field__hint">{{ 'tyre.hint.set_by_record'|trans }} <a href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: record.id}) }}">{{ record.data.title }}</a></p>
+                {% endif %}
                 {% if context.maintenance and links is not empty %}
                     {{ ui.select('link', 'tyre.field.link'|trans, values, errors,
                         [{value: '', label: 'tyre.field.link_none'|trans}]|merge(links|map(e => {value: e.id, label: e.data.performedOn|local_date ~ ' · ' ~ e.data.title ~ ' · ' ~ e.data.cost|money(currency)})),

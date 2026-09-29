@@ -975,6 +975,7 @@ return [
             'repair' => 'Choose the tyres that were repaired.',
             'remove' => 'Choose what happens to each tyre.',
             'set' => 'Where the tyres taken off are kept (optional).',
+            'set_by_record' => 'The date and odometer come from its service record: edit them there.',
             'change_lines' => 'Which tyres a change touched is fixed; to change that, delete it and record it again.',
         ],
         'submit' => [

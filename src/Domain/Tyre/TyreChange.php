@@ -29,7 +29,9 @@ final readonly class TyreChange
 
     /**
      * Replay order: by date, then odometer, then id (spec.md §7.17). A
-     * change with no odometer (a repair) sorts before others of its day.
+     * change with no odometer (a repair) sorts after the others of its day,
+     * so tyres fitted that day can be repaired that day; among themselves
+     * such changes go by id.
      */
     public static function compare(self $a, self $b): int
     {
@@ -72,7 +74,7 @@ final readonly class TyreChange
     private static function compareKm(?string $a, ?string $b): int
     {
         if ($a === null || $b === null) {
-            return ($a !== null) <=> ($b !== null);
+            return ($a === null) <=> ($b === null);
         }
 
         return Decimal::compare($a, $b);

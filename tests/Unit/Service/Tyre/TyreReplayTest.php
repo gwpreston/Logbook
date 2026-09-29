@@ -205,6 +205,14 @@ final class TyreReplayTest extends TestCase
         self::assertSame('stored', self::where(self::replay([$remove, $fit]))[1]);
     }
 
+    public function testARepairWithoutAnOdometerComesAfterTheDaysOtherChanges(): void
+    {
+        $repair = self::change(1, '2025-04-01', null, [[2, A::Repair]], TyreChangeKind::Repair);
+        $fit = self::change(2, '2025-04-01', '10000', self::on([1, 2, 3, 4]));
+
+        self::assertSame('fitted fr', self::where(self::replay([$repair, $fit]))[2], 'fitted, then repaired, the same day');
+    }
+
     public function testSegmentsAcrossFitRotateToSpareAndBackAndSwap(): void
     {
         $changes = [

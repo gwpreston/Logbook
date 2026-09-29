@@ -21,6 +21,7 @@ final readonly class TyreFormContext
      * @param list<Tyre> $stored
      * @param list<int> $setIds
      * @param list<int> $linkIds service records the change may link
+     * @param list<int> $linkIdsWithOdometer those of them that have an odometer (which then covers the change's)
      * @param DateTimeImmutable $today the owner's calendar date
      * @param bool $maintenance whether the maintenance module is on (cost, garage and link fields)
      */
@@ -32,6 +33,7 @@ final readonly class TyreFormContext
         public array $linkIds,
         public DateTimeImmutable $today,
         public bool $maintenance,
+        public array $linkIdsWithOdometer = [],
     ) {
     }
 

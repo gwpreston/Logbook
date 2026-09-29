@@ -1266,7 +1266,8 @@ wear projection and tyre reminders follow in Phase 11.2.
     `sold`|`other`). A retired tyre keeps its history and lifetime figures.
 - **State is replayed, then stored.** Each tyre's status and position are
   computed by replaying the vehicle's changes in order (`done_on`, then
-  odometer, then id; ordered in PHP) and stored on the tyre. Within one
+  odometer — a change without one, a repair, last on its day — then id;
+  ordered in PHP) and stored on the tyre. Within one
   change every line leaves its position first, then takes its new one, so a
   rotation is checked as a whole. Every save, edit and delete of a change
   replays in the same transaction; one that makes the replay impossible —
