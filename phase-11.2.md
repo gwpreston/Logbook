@@ -193,56 +193,56 @@ New settings page **Settings → Tyres** (`/settings/tyres`), shown when the
 
 ### 11.2.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6 User: `depth_unit` and the presets.
-- [ ] §6 TyreChangeLine: `tread_mm`. TyreChange: kind `check`.
-- [ ] §6 Reminder: source `tyre`, with the vehicle-id `source_id` rule.
-- [ ] §7.6: the tyre source, due point, title, status, and the occurrence
+- [x] §6 User: `depth_unit` and the presets.
+- [x] §6 TyreChangeLine: `tread_mm`. TyreChange: kind `check`.
+- [x] §6 Reminder: source `tyre`, with the vehicle-id `source_id` rule.
+- [x] §7.6: the tyre source, due point, title, status, and the occurrence
       rule with its reason.
-- [ ] §7.17: depths, the `check` form, the wear estimate, thresholds, age
+- [x] §7.17: depths, the `check` form, the wear estimate, thresholds, age
       and flags.
-- [ ] §8: the depth unit in the units engine.
-- [ ] §7.13: depth columns in CSV; backup note.
-- [ ] §13: a Phase 11.2 entry.
-- [ ] `ROADMAP.md` gains a Phase 11.2 row and section.
-- [ ] `CHANGELOG.md` `[1.3.0]` entry.
+- [x] §8: the depth unit in the units engine.
+- [x] §7.13: depth columns in CSV; backup note.
+- [x] §13: a Phase 11.2 entry.
+- [x] `ROADMAP.md` gains a Phase 11.2 row and section.
+- [x] `CHANGELOG.md` `[1.3.0]` entry.
 
 ### 11.2.1 Units + migration
-- [ ] Migration: `users.depth_unit` (string, default `mm`). A data step sets
+- [x] Migration: `users.depth_unit` (string, default `mm`). A data step sets
       `in32` where `volume_unit = 'gal_us'` (DBAL, bound values).
       `tyre_change_lines.tread_mm` (`decimal(6,3)`, nullable).
-- [ ] Reversible. Applies and rolls back on SQLite, PostgreSQL, MySQL and
+- [x] Reversible. Applies and rolls back on SQLite, PostgreSQL, MySQL and
       MariaDB.
-- [ ] `DepthUnit` enum, and the units engine gains mm ↔ 32nds (1/32″ =
+- [x] `DepthUnit` enum, and the units engine gains mm ↔ 32nds (1/32″ =
       0.79375 mm) with parse and format. No conversion anywhere else.
-- [ ] Preferences: *Tread depth* select beside the other units, and in the
+- [x] Preferences: *Tread depth* select beside the other units, and in the
       Metric / UK / US presets.
 
 ### 11.2.2 Domain + services
-- [ ] `TyreChangeKind::Check` and `TyreLineAction::Measure`. The replay
+- [x] `TyreChangeKind::Check` and `TyreLineAction::Measure`. The replay
       treats `measure` as no movement.
-- [ ] `TyreChangeService::check()`, plus optional depths on existing, fit,
+- [x] `TyreChangeService::check()`, plus optional depths on existing, fit,
       swap and remove. Depth validation and the "deeper than last time"
       warning (a notice after save, the change saved).
-- [ ] `TyreThresholds` (settings read with defaults, by vehicle type and
+- [x] `TyreThresholds` (settings read with defaults, by vehicle type and
       season) and `TyreWear` (points, rate, depth now, distance left,
       wear-out odometer and date, flags). Both return typed results.
-- [ ] `ReminderGenerator` gains the `tyre` source: build, sync, status and
+- [x] `ReminderGenerator` gains the `tyre` source: build, sync, status and
       occurrence as above, reusing schedule lead times and the daily
       distance projection.
 
 ### 11.2.3 Forms + settings
-- [ ] *Check tread* page and modal: one depth input per fitted tyre in
+- [x] *Check tread* page and modal: one depth input per fitted tyre in
       position order, labelled with position and tyre. Works without JS;
       errors keep typed values.
-- [ ] Depth fields on *Fit tyres* (once), and on *Tyres already on the
+- [x] Depth fields on *Fit tyres* (once), and on *Tyres already on the
       vehicle*, *Swap set* and *Remove* (per tyre).
-- [ ] The Tyres tab menu gains *Check tread*. The *Log entry* chooser's
+- [x] The Tyres tab menu gains *Check tread*. The *Log entry* chooser's
       *Tyre change* offers it too.
-- [ ] Settings → Tyres page (plain form, CSRF, owner's depth unit) and its
+- [x] Settings → Tyres page (plain form, CSRF, owner's depth unit) and its
       link in Settings navigation when `tyres` is on.
 
 ### 11.2.4 Display
-- [ ] Tyres tab:
+- [x] Tyres tab:
   - fitted cards gain the latest measured depth with its date, and the
     estimate line when known;
   - flags use the status colours, and a flag never uses colour alone
@@ -250,43 +250,43 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - stored tyres show their latest depth;
   - retired tyres show their last measured depth;
   - the tab badge follows the same judgement as the reminder.
-- [ ] Overview *Tyres* card: each fitted tyre's depth, and the soonest
+- [x] Overview *Tyres* card: each fitted tyre's depth, and the soonest
       "about N mi left".
-- [ ] History and *Recent activity*: `check` rows. Depths appear in change
+- [x] History and *Recent activity*: `check` rows. Depths appear in change
       summaries where recorded.
-- [ ] Print view: the *Tyres fitted* header block gains each tyre's latest
+- [x] Print view: the *Tyres fitted* header block gains each tyre's latest
       measured depth and date (estimates are not printed, because a buyer
       gets measurements).
-- [ ] Reminders list, dashboard *Upcoming reminders*, *Next due*, garage
+- [x] Reminders list, dashboard *Upcoming reminders*, *Next due*, garage
       badges and sidebar dots: verify tyre reminders appear, with no new
       code beyond the generator.
 
 ### 11.2.5 CSV + backup
-- [ ] Changes export gains a depth per tyre (owner's unit). Tyres export
+- [x] Changes export gains a depth per tyre (owner's unit). Tyres export
       gains latest depth, its date, depth now and distance left (blank
       when not known).
-- [ ] Backups: the new column and setting are included automatically. The
+- [x] Backups: the new column and setting are included automatically. The
       schema version moves, so the rule is repeated in the upgrade note.
 
 ### 11.2.6 Demo seed
-- [ ] The seeded car's fronts get new depths at fitting and three checks
+- [x] The seeded car's fronts get new depths at fitting and three checks
       across the year, so the estimate and a *due* reminder appear. The
       winter set gets depths when swapped and a DOT date old enough to be
       *upcoming* for age.
-- [ ] The motorbike's rear gets one depth at fitting and one check.
+- [x] The motorbike's rear gets one depth at fitting and one check.
 
 ### 11.2.7 i18n
-- [ ] English and German for every new label, hint, flag, reminder title,
+- [x] English and German for every new label, hint, flag, reminder title,
       notification text and setting:
   - *Profiltiefe*, *Profil prüfen*, *Ersetzen bei*;
   - *Winterreifen ersetzen bei*, *Gesetzliche Mindestprofiltiefe*;
   - *Altersgrenze*, *etwa {distance} verbleibend*.
-- [ ] Reminder titles use ICU lists and plurals. 32nds display is
+- [x] Reminder titles use ICU lists and plurals. 32nds display is
       locale-neutral.
 
 ### 11.2.8 Release v1.3.0
-- [ ] `VERSION` → `1.3.0`. The sidebar, Settings and `/health` show it.
-- [ ] `CHANGELOG.md` `[1.3.0]` gathers Phases 11.1 and 11.2. Upgrade notes:
+- [x] `VERSION` → `1.3.0`. The sidebar, Settings and `/health` show it.
+- [x] `CHANGELOG.md` `[1.3.0]` gathers Phases 11.1 and 11.2. Upgrade notes:
   - four new tyre tables and a new odometer reading source (11.1);
   - `FEATURES_TYRES` (default on; `.env.example` and
     `docs/configuration.md` updated);
@@ -294,17 +294,17 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
     32nds (11.2);
   - the backup schema rule;
   - nothing in existing data changes.
-- [ ] `ROADMAP.md`: Phase 11.1 and 11.2 rows ✅.
+- [x] `ROADMAP.md`: Phase 11.1 and 11.2 rows ✅.
 - [ ] Tag `v1.3.0`. Image published as `1.3.0`, `1.3`, `1` and `latest`.
 
 ### 11.2.9 Tests
-- [ ] **Unit (units):**
+- [x] **Unit (units):**
   - 10/32″ ↔ 7.938 mm round-trips;
   - halves in 32nds;
   - 0 valid; 21 mm and −1 rejected;
   - presets set the depth unit;
   - the migration's data step sets `in32` for `gal_us` only.
-- [ ] **Unit (wear):**
+- [x] **Unit (wear):**
   - worked example: 8.0 mm at 0 km and 5.0 mm at 15,000 km gives
     0.2 mm per 1,000 km; with replace-at 3.0 mm that is 10,000 km left;
   - one point, or a span under 1,000 km, is *not known yet*;
@@ -314,10 +314,10 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - the winter threshold is used for a winter tyre and the bike
     threshold for a bike;
   - a stored tyre has no countdown.
-- [ ] **Unit (flags):** measured at the legal minimum → *below*; estimated
+- [x] **Unit (flags):** measured at the legal minimum → *below*; estimated
       only → *may be below*; "deeper than last time" at +0.6 mm and not at
       +0.4 mm.
-- [ ] **Unit (reminder):**
+- [x] **Unit (reminder):**
   - one reminder per vehicle with several due tyres, with the title
     naming them;
   - due point is the soonest of wear and age;
@@ -327,12 +327,12 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - age limit 0 turns age off;
   - none when nothing is judgeable, and sync deletes an old one;
   - archived vehicles raise none.
-- [ ] **Unit (occurrence):**
+- [x] **Unit (occurrence):**
   - new fill-ups move `due_on` without reopening or clearing
     `notified_status`;
   - a *Check tread* reopens a dismissed reminder;
   - repeated scheduled-task runs send nothing twice.
-- [ ] **Integration:**
+- [x] **Integration:**
   - *Check tread* page and modal, with and without JS;
   - depths on fit, swap and remove;
   - Settings → Tyres saves in 32nds and reads back;
@@ -345,7 +345,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
   - CSV columns;
   - backup → restore round-trip;
   - migration up and down.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -357,19 +357,19 @@ or ageing tyres through every channel the owner already uses. Released with
 Phase 11.1 as Logbook v1.3.0.
 
 ## Acceptance criteria
-- [ ] Depth is entered and shown in mm or 32nds per the owner's preference,
+- [x] Depth is entered and shown in mm or 32nds per the owner's preference,
       and round-trips exactly.
-- [ ] A fitted tyre with enough measurements shows depth now, distance left
+- [x] A fitted tyre with enough measurements shows depth now, distance left
       and a date, labelled as estimates. Without enough it shows the latest
       measurement only.
-- [ ] Worn and old tyres raise one reminder per vehicle, with the right
+- [x] Worn and old tyres raise one reminder per vehicle, with the right
       status relative to the schedule lead time and distance.
-- [ ] Daily fill-ups never re-send a tyre reminder. A new check reopens it.
-- [ ] Legal-minimum flags distinguish measured from estimated.
-- [ ] `/health`, sidebar and Settings show v1.3.0; changelog and roadmap
+- [x] Daily fill-ups never re-send a tyre reminder. A new check reopens it.
+- [x] Legal-minimum flags distinguish measured from estimated.
+- [x] `/health`, sidebar and Settings show v1.3.0; changelog and roadmap
       updated.
-- [ ] Existing data untouched; every existing figure unchanged.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Existing data untouched; every existing figure unchanged.
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas
