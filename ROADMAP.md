@@ -34,6 +34,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [9.2](phase-9.2.md) | Plug-in hybrids + v1.1 release | ✅ |
 | [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
 | [10.2](phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
+| [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -214,6 +215,24 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 
 → [`phase-10.2.md`](phase-10.2.md)
 
+## Phase 11.1 — Tyres
+*Which tyres are on it, which are in the garage, and how far did the last
+ones go?*
+
+- Each tyre recorded: brand, model, size, season and DOT date (so its age),
+  and where it is — fitted at a position, stored in a set (*Winter wheels*,
+  with where they are kept) or retired.
+- Every tyre change logged: tyres already on the vehicle, fit new, swap
+  set, rotate, repair, remove or retire, on cars and motorbikes.
+- Each tyre's distance worked out from the one mileage series (time as a
+  spare or in storage left out); lifetime distance and cost per distance
+  for retired tyres.
+- Costs stay on the linked `tyres` service record, so nothing is counted
+  twice. A Tyres tab, an overview card, history, print and CSV.
+- No release of its own: ships with Phase 11.2 as **v1.3.0**.
+
+→ [`phase-11.1.md`](phase-11.1.md)
+
 ---
 
 ## After 1.0
@@ -224,7 +243,7 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 - REST API with API keys (OpenAPI documented) for scripting / Home Assistant.
 - Multi-user with roles (admin/editor/viewer) and per-vehicle sharing.
 - OIDC / SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
-- Tyre-life tracking, trip/journey log (business vs personal mileage),
+- Trip/journey log (business vs personal mileage),
   personal fuel-tank entity, VIN decode / registration lookup, PDF reports,
   OBD-II / vehicle-API mileage import.
 

@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\Vehicle;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * One line of the activity feed (spec.md §7.16): an entry of any module, or
@@ -50,6 +51,13 @@ final readonly class ActivityItem
         public ?string $price = null,
         /** Number of files attached to the entry. */
         public int $files = 0,
+        /**
+         * A tyre change's summary; on a service record, the summaries of the
+         * tyre changes linked to it (its second line).
+         *
+         * @var list<TranslatableMessage>
+         */
+        public array $tyres = [],
     ) {
     }
 

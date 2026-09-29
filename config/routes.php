@@ -67,6 +67,14 @@ use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
 use Logbook\Action\Settings\SetThemeAction;
 use Logbook\Action\Settings\SettingsAction;
+use Logbook\Action\Tyre\DeleteTyreAction;
+use Logbook\Action\Tyre\DeleteTyreChangeAction;
+use Logbook\Action\Tyre\DeleteTyreSetAction;
+use Logbook\Action\Tyre\EditTyreAction;
+use Logbook\Action\Tyre\EditTyreChangeAction;
+use Logbook\Action\Tyre\EditTyreSetAction;
+use Logbook\Action\Tyre\TyreChangeFormAction;
+use Logbook\Action\Tyre\TyreListAction;
 use Logbook\Action\Vehicle\ArchiveVehicleAction;
 use Logbook\Action\Vehicle\CreateVehicleAction;
 use Logbook\Action\Vehicle\DeleteVehicleAction;
@@ -129,7 +137,7 @@ return static function (App $app): void {
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
         $group->get('/log/new', LogEntryAction::class)->setName('log.chooser');
-        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule}', LogPickVehicleAction::class)
+        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule|tyre}', LogPickVehicleAction::class)
             ->setName('log.pick');
 
         $group->get('/garage', GarageAction::class)->setName('garage');
@@ -182,6 +190,22 @@ return static function (App $app): void {
                     ->setName('maintenance.schedules.delete');
             })->add($module(Feature::Maintenance));
 
+            // Tyres (spec.md §7.17).
+            $vehicle->group('/tyres', function (Group $tyres): void {
+                $tyres->get('', TyreListAction::class)->setName('tyres.index');
+                $tyres->map(['GET', 'POST'], '/{kind:existing|fit|swap|rotate|repair|remove}', TyreChangeFormAction::class)
+                    ->setName('tyres.change');
+                $tyres->map(['GET', 'POST'], '/changes/{change:[0-9]+}/edit', EditTyreChangeAction::class)
+                    ->setName('tyres.changes.edit');
+                $tyres->map(['GET', 'POST'], '/changes/{change:[0-9]+}/delete', DeleteTyreChangeAction::class)
+                    ->setName('tyres.changes.delete');
+                $tyres->map(['GET', 'POST'], '/sets/{set:[0-9]+}/edit', EditTyreSetAction::class)->setName('tyres.sets.edit');
+                $tyres->map(['GET', 'POST'], '/sets/{set:[0-9]+}/delete', DeleteTyreSetAction::class)
+                    ->setName('tyres.sets.delete');
+                $tyres->map(['GET', 'POST'], '/{tyre:[0-9]+}/edit', EditTyreAction::class)->setName('tyres.edit');
+                $tyres->map(['GET', 'POST'], '/{tyre:[0-9]+}/delete', DeleteTyreAction::class)->setName('tyres.delete');
+            })->add($module(Feature::Tyres));
+
             $vehicle->group('', function (Group $documents): void {
                 $documents->get('/documents', ComplianceListAction::class)->setName('compliance.index');
                 $documents->map(['GET', 'POST'], '/documents/new', CreateComplianceDocumentAction::class)
@@ -200,7 +224,8 @@ return static function (App $app): void {
                 ->setName('expenses.delete');
 
             // Export and import check the module's toggle themselves (one route, several modules).
-            $vehicle->get('/export/{module:fuel|odometer|maintenance|documents|expenses}.csv', ExportModuleAction::class)
+            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes}';
+            $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module');
             $csvModule = '{module:fuel|odometer|maintenance|documents|expenses}';
             $vehicle->map(['GET', 'POST'], '/import/' . $csvModule, ImportUploadAction::class)

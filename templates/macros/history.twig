@@ -25,6 +25,8 @@
         {%- set parts = parts|merge([item.volume|quantity(item.isElectric())]) -%}
     {%- elseif item.kind.value == 'maintenance' -%}
         {%- set parts = parts|merge([item.labelKey|trans]|merge(item.vendor ? [item.vendor] : [])) -%}
+    {%- elseif item.kind.value == 'tyre' -%}
+        {%- set parts = item.tyres|map(m => trans(m.message, m.parameters)) -%}
     {%- elseif item.kind.value == 'document' -%}
         {%- if item.label != '' %}{% set parts = parts|merge([item.labelKey|trans]) %}{% endif -%}
         {%- if item.expiresOn %}{% set parts = parts|merge(['history.expires'|trans({date: item.expiresOn|local_date})]) %}{% endif -%}
@@ -61,6 +63,9 @@
                 {%- if opts.show_vehicle ?? false %} · {{ item.vehicle.name() }}{% endif %}
                 {%- if summary != '' %} · {{ summary }}{% endif -%}
             </span>
+            {%- if item.kind.value == 'maintenance' and item.tyres is not empty %}
+                <span class="list__meta history-row__tyres">{{ ui.icon('tire_repair') }}{{ item.tyres|map(m => trans(m.message, m.parameters))|join(' · ') }}</span>
+            {%- endif %}
         </span>
         <span class="list__end">
             {% if item.odometerKm is not null %}<span class="list__delta tabular">{{ item.odometerKm|distance }}</span>{% endif %}

@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/history.twig' as history %}
+{% import 'macros/tyres.twig' as tyre_ui %}
 {#
  # The print view (spec.md §7.16): the vehicle's whole history on one page, a
  # service history to hand to a buyer or a garage. The options form and the
@@ -61,6 +62,15 @@
                     </dd></div>
                     <div><dt>{{ 'odometer.stat.current'|trans }}</dt><dd class="tabular">{{ latest ? latest.readingKm|distance : dash }}</dd></div>
                     <div><dt>{{ 'history.printed_on'|trans }}</dt><dd>{{ today|local_date }}</dd></div>
+                    {% if tyres is not empty %}
+                        <div class="history-print__tyres"><dt>{{ 'tyre.print_fitted'|trans }}</dt><dd>
+                            <ul class="plain-list">
+                                {% for view in tyres %}
+                                    <li>{{ ('tyre.position.' ~ view.tyre.position.value)|trans }}: {{ tyre_ui.name(view.tyre) }}{% if view.tyre.data.size %}, {{ view.tyre.data.size }}{% endif %} · {{ tyre_ui.age(view) }}</li>
+                                {% endfor %}
+                            </ul>
+                        </dd></div>
+                    {% endif %}
                 </dl>
             </header>
 

@@ -196,11 +196,11 @@ MySQL only.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`|`document`), note (optional),
+  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`), note (optional),
   fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
-  by `ON DELETE CASCADE`), maintenance_entry_id and compliance_document_id
-  (likewise, for `maintenance` and `document` readings), created/updated
-  (UTC). Index `(vehicle_id, recorded_at)`.
+  by `ON DELETE CASCADE`), maintenance_entry_id, compliance_document_id and
+  tyre_change_id (likewise, for `maintenance`, `document` and `tyre`
+  readings), created/updated (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
   coherent series (see #230-style requirement). A fill-up writes its reading in
   the same transaction and moves it when edited; only `manual` readings are
@@ -212,6 +212,11 @@ MySQL only.
   on its start date (Phase 10). Rolling that migration back turns every
   `document` reading into a `manual` one (link cleared) before the columns
   are dropped, so no mileage is lost.
+- A tyre change with an odometer (§7.17) does the same through
+  tyre_change_id, at local noon on its date (Phase 11.1), unless the service
+  record it is linked to has an odometer: then that record's reading covers
+  it and the change writes none. Rolling that migration back turns every
+  `tyre` reading into a `manual` one first, as for `document`.
 - Only `manual` readings take attachments (owner type `odometer`); a derived
   reading's receipt belongs to the entry that owns it.
 
@@ -287,6 +292,46 @@ MySQL only.
   **roll up through a service-layer ledger** that reads them from their own
   tables on every request (§7.7): nothing is copied, so an edited fill-up can
   never leave a stale expense behind and nothing is counted twice.
+
+**Tyre** (Phase 11.1, §7.17)
+- id, vehicle_id (`ON DELETE CASCADE`), set_id (optional TyreSet, `ON DELETE
+  SET NULL`), brand and model (optional free text, up to 60 characters each;
+  trimmed, blank = null), size (optional free text up to 30 characters,
+  normalised on save: upper case, whitespace collapsed, e.g. `205/55 R16
+  91V`), season (optional `summer`|`winter`|`all_season`; null = not
+  specified), dot_code (optional, the four digits from the sidewall as
+  typed, `2323`), manufactured_on (optional calendar date: the Monday of the
+  DOT code's ISO week; never converted through a time zone), and the
+  **computed, stored** status (`fitted`|`stored`|`retired`) and position
+  (the position code while fitted, else null), retired_reason (`worn`|
+  `damaged`|`puncture`|`sold`|`other`, while retired), notes (optional, up
+  to 500 characters), created/updated (UTC). Index `(vehicle_id, status)`.
+- Status and position are replayed from the vehicle's tyre changes and
+  stored so lists can query them (like a schedule's next due); they are
+  never edited directly. Distance is never stored.
+
+**TyreSet** (Phase 11.1)
+- id, vehicle_id (`ON DELETE CASCADE`), name (up to 100 characters),
+  storage_location (optional, up to 200: "Kwik Fit Southend, ref 4471"),
+  notes (optional, up to 500), created/updated (UTC). Index `(vehicle_id)`.
+  A tyre belongs to at most one set; a set is deleted only while empty.
+
+**TyreChange** (Phase 11.1)
+- id, vehicle_id (`ON DELETE CASCADE`), kind (`existing`|`fit`|`swap`|
+  `rotate`|`repair`|`remove`), done_on (calendar date), odometer_km
+  (optional `decimal(12,3)`; required for every kind but `repair`),
+  maintenance_entry_id (optional link to a `tyres` service record that
+  carries the cost; `ON DELETE SET NULL`), note (optional, up to 500),
+  created/updated (UTC). Index `(vehicle_id, done_on)`. A change has no
+  cost column: costs stay in maintenance (§7.17).
+
+**TyreChangeLine** (Phase 11.1)
+- id, change_id (`ON DELETE CASCADE`), tyre_id (`ON DELETE CASCADE`),
+  action (`on`|`off`|`retire`|`move`|`repair`), position (for `on` and
+  `move` the tyre's position after the line; for `off`, `retire` and
+  `repair` the position it was at, kept for summaries and CSV — the replay
+  never reads it). Unique `(change_id, tyre_id)`: one line per tyre per
+  change.
 
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
@@ -373,6 +418,10 @@ from fleet totals unless "include archived" is toggled.
 - The overview's *Details* card lists variant and first registered (owner's
   date format, with the vehicle's age) next to the other details, archived
   vehicles included.
+- **Type change and tyres** (Phase 11.1): changing a vehicle's type is
+  refused while a tyre is fitted at a position the new type lacks (§7.17):
+  "Remove the tyres first: a motorbike has no front left wheel." The form
+  shows it as an error on the type and keeps the typed values.
 - Deleting asks for confirmation on its own page (works without JS) and
   removes the vehicle, its history and its photo. Archive/restore is one click.
 - Currency resolves as: vehicle override → the owner's default currency →
@@ -394,8 +443,9 @@ jumps, going backwards) without blocking.
   hard refresh): Overview (`/vehicles/{id}`), History
   (`/vehicles/{id}/history`, §7.16), Mileage
   (`/vehicles/{id}/odometer`), Fuel (`/vehicles/{id}/fuel`), Maintenance
-  (`/vehicles/{id}/maintenance`), Documents (`/vehicles/{id}/documents`) and
-  Expenses (`/vehicles/{id}/expenses`, §7.7). Each list tab has an
+  (`/vehicles/{id}/maintenance`), Tyres (`/vehicles/{id}/tyres`, §7.17),
+  Documents (`/vehicles/{id}/documents`) and Expenses
+  (`/vehicles/{id}/expenses`, §7.7). Each list tab has an
   "Export CSV" link (§7.7).
   Every tab shares one vehicle header (`templates/vehicles/_header.twig`):
   back link, then *Edit*, *Archive* / *Restore* and *Delete* in the same
@@ -409,7 +459,7 @@ jumps, going backwards) without blocking.
   history), *average per year since first registered* (below), distance
   logged; odometer-over-time chart; readings newest first (25 per page) with
   the distance since the one before and their source (*Manual*, *Fill-up*,
-  *Service*, *Document*). Each row shows a paperclip with its number of
+  *Service*, *Document*, *Tyres*). Each row shows a paperclip with its number of
   files: a manual reading's own, a derived reading's owning entry's.
 - Manual readings take attachments (a photo of the dashboard) through the
   shared attachment input (§7.12) on their add and edit forms; deleting the
@@ -420,6 +470,11 @@ jumps, going backwards) without blocking.
   does: written in the document's transaction, moved or removed when the
   document is edited, deleted with it, and checked for plausibility with the
   usual warning (never blocked).
+- A tyre change's odometer (§7.17) joins the series the same way as a
+  `tyre` reading (label *Tyres*) at local noon on the change's date; its
+  edit link opens the change. A change linked to a service record that has
+  an odometer writes none (the record's reading covers it): one event, one
+  reading.
 - **Age** (derived, never stored): whole years and months from
   first_registered_on to today in the owner's time zone ("7 yrs 6 mo";
   "4 mo" under a year; "under 1 mo" under a month). A month is complete on
@@ -471,9 +526,10 @@ math stays correct across gaps. Show per-fill and rolling consumption
 - **Fast path:** a "+ Log entry" button (sidebar, and the centre "+" of the
   mobile tab bar) opens the *Log something* chooser (`/log/new`; a modal on
   desktop, §5): Fill-up, Odometer reading, Service record, Expense,
-  Document, Service interval — choices of a switched-off module are left
-  out. Fill-up goes to `/fuel/new`; the others to `/log/new/{odometer|
-  maintenance|expense|document|schedule}`. Each goes straight to the form
+  Document, Service interval, Tyre change (Phase 11.1; opens *Fit tyres*) —
+  choices of a switched-off module are left out. Fill-up goes to
+  `/fuel/new`; the others to `/log/new/{odometer|maintenance|expense|
+  document|schedule|tyre}`. Each goes straight to the form
   with one active vehicle, a one-tap vehicle picker with several, "add a
   vehicle" with none.
   The form is mobile-first: odometer, date/time (defaults to now), fuel,
@@ -641,6 +697,10 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   start date, else the day it was added), and each ad-hoc expense (*other*,
   zero included, since the owner logged it deliberately). Sums are exact
   (integer micro-units, never floats).
+- **Tyre costs are maintenance costs** (Phase 11.1): a tyre change has no
+  cost of its own; what was paid is on the `tyres` service record it is
+  linked to (§7.17), so it is counted once, under *maintenance*. There is no
+  new ledger group.
 - **Expenses tab** (`/vehicles/{id}/expenses`): the vehicle's total and
   breakdown by group for the chosen period, beside (50/50 on wide screens) a
   *Last 12 months* bar chart of spend per month stacked by group — always the
@@ -676,7 +736,7 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
 - **CSV export** (UTF-8 with a byte-order mark so spreadsheets detect it;
   RFC 4180 quoting; text cells starting with `=`, `+`, `-`, `@` are prefixed
   with `'` against formula injection). Per vehicle and module
-  (`/vehicles/{id}/export/{fuel|odometer|maintenance|documents|expenses}.csv`,
+  (`/vehicles/{id}/export/{fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes}.csv`,
   archived vehicles included — it is their data) and for a report
   (`/reports/export.csv` with the report's filters: one row per ledger line).
   Numbers are plain machine-readable decimals (`1234.5`, no grouping) in the
@@ -717,8 +777,9 @@ toggles.
   driven in each of the last 12 calendar months (this month and the 11
   before), measured the same way; without JS the same figures are a table.
 - **Recent activity** (id `recent_activity`): the latest eight entries across
-  fill-ups, manual odometer readings, service records, documents and ad-hoc
-  expenses — newest first by the owner's local date, then by when they were
+  fill-ups, manual odometer readings, service records, documents, ad-hoc
+  expenses and tyre changes (Phase 11.1; a change linked to a service
+  record is never listed twice: the record's row carries it) — newest first by the owner's local date, then by when they were
   added — each with an icon, what it was, the vehicle, the date, its
   amount (or reading) and a paperclip with its number of files, linking to
   its edit page. Readings written by a fill-up, service or document are
@@ -785,7 +846,8 @@ First-run setup creates the initial account. CSRF on all forms.
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
 Disabled modules are removed from nav, routes, and dashboard.
 
-- Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`. A
+- Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`,
+  `tyres` (Phase 11.1). A
   module is enabled unless the global setting `features` (a JSON object of
   module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
   (default true). The garage, mileage log, expenses and history (§7.16) are
@@ -811,6 +873,15 @@ Disabled modules are removed from nav, routes, and dashboard.
     part, the calendar feed (404) and the scheduled notifications; lead
     times still drive the due badges on the vehicle tabs.
   - `reports` off: Reports, its CSV export and the spend widget.
+  - `tyres` off: the Tyres tab and its pages (404), the overview's *Tyres*
+    card, the chooser's *Tyre change*, the *Tyres* chip and tyre rows in
+    history, print and *Recent activity*, and the tyre CSV exports.
+    Readings already written by tyre changes stay in the mileage log; linked
+    service records are untouched (their tyre line is hidden). The vehicle
+    type check (§7.1) still applies, since the tyres are still fitted.
+  - `maintenance` off leaves tyres working: the cost, garage and link fields
+    are hidden on tyre forms, existing links are kept untouched, and a
+    linked change is listed on its own in history (without a cost).
 
 ### 7.11 Notifications (reminder delivery)
 In-app always; plus at least one outbound channel — email (SMTP) and/or a
@@ -937,6 +1008,9 @@ vehicles; a disabled module cannot be imported).
   before) and is read like the form's field: a row with an odometer writes
   its reading at local noon on its start date, and an odometer without a
   start date makes the row invalid.
+- A `tyre` reading in an odometer CSV imports as an ordinary manual
+  reading (tyre history itself is not imported, so it is not *implied*); the
+  duplicate key (time and odometer) keeps a re-import from doubling it.
 - Imports go through the same services as the forms: a fill-up writes its
   odometer reading, a maintenance entry with an odometer writes its reading
   at local noon; schedules and reminders follow as usual. Maintenance rows
@@ -967,9 +1041,11 @@ vehicles; a disabled module cannot be imported).
 - A backup from another app version with a different schema is refused with
   a clear message: restore it with the matching version, then upgrade.
   (Every release that adds a column moves the schema version, e.g. Phase
-  9.1's vehicle variant and first registration date, and Phase 10's
-  document odometer. Backups carry the new columns, `document` readings and
-  the `expense` / `odometer` attachments like any other row.)
+  9.1's vehicle variant and first registration date, Phase 10's document
+  odometer and Phase 11.1's tyre tables. Backups carry the new columns,
+  `document` and `tyre` readings, the `expense` / `odometer` attachments and
+  the four tyre tables — `tyre_sets`, `tyres`, `tyre_changes`,
+  `tyre_change_lines` — like any other rows.)
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -1032,6 +1108,17 @@ with a printable service history to hand to a buyer.
   | Document | `start_on`, else the day added (as the cost ledger does) | title, else the type label; "expires {date}" |
   | Expense | `spent_on` | category, note (truncated) |
   | Odometer reading | `recorded_at`, as a local date (manual readings only) | note |
+  | Tyres (Phase 11.1) | `done_on` | "Fitted 2 × Michelin Primacy 4 (front)", "Swapped to Winter wheels", "Rotated 4 tyres", "Repaired front left", "Removed 2 tyres" |
+
+  **A tyre change linked to a service record is never listed on its own**
+  (§7.17): the service record's row carries the change's summary as a second
+  line and counts under both the *Service* and the *Tyres* chip (a linked
+  change's date is always its record's date). With `tyres` off the second
+  line is hidden; with `maintenance` off the service row is gone, so the
+  change is listed on its own, without a cost. The second lines of a page
+  come from one grouped query, like its paperclips. Readings written by a
+  tyre change are left out, like other owned readings, and a tyre row breaks
+  a fill-up run like any other entry.
 
   Not listed: service intervals and reminders (the work appears once it is
   logged), readings owned by another entry, and attachments as rows of their
@@ -1055,8 +1142,9 @@ with a printable service history to hand to a buyer.
   under the *Fuel* chip, and only the History pages fold (the widget and the
   print view list plainly).
 - **Kind chips** under the toolbar: *Everything* (default), *Service*,
-  *Fuel*, *Documents*, *Expenses*, *Mileage*. Each is a link (`?kind=service`
-  / `fuel` / `documents` / `expenses` / `mileage`), one chosen at a time,
+  *Fuel*, *Tyres*, *Documents*, *Expenses*, *Mileage*. Each is a link
+  (`?kind=service` / `fuel` / `tyres` / `documents` / `expenses` /
+  `mileage`), one chosen at a time,
   with `aria-current` on the chosen one; a switched-off module's chip is
   hidden, and an unknown (or switched-off) value falls back to *Everything*.
   Milestones show under *Everything* only.
@@ -1092,12 +1180,14 @@ with a printable service history to hand to a buyer.
   history on one page, for printing or the browser's *Save as PDF* (no
   server-side PDF). Archived vehicles can print theirs.
   - **Options** (a plain GET form): the kinds to include, defaulting to
-    everything except fuel (a buyer wants the services, not 400 receipts),
+    everything except fuel (a buyer wants the services, not 400 receipts;
+    *Tyres* is included by default),
     and *Show costs* (default on; off also hides the purchase and sale
     prices). Milestones are always included.
   - **Header block:** name, descriptive line, registration, VIN, first
     registered with age, current odometer, and the date printed (owner's
-    date format).
+    date format); with `tyres` on and any tyre fitted, *Tyres fitted*: each
+    fitted tyre's position, brand, model, size and age.
   - **Rows:** every row, no folding and no year pages, each entry's
     attachment file names under it.
   - **Print CSS:** hides the app shell and the options, keeps rows from
@@ -1105,6 +1195,160 @@ with a printable service history to hand to a buyer.
     accent (its own colours, never the dark tokens).
   - **Print button:** calls `window.print()` with JS and is hidden without
     it (the browser's own print does the same).
+
+### 7.17 Tyres
+Which tyres are on the vehicle, which are in storage, how old each is and how
+far each has gone (Phase 11.1). A `tyres` service record says "two tyres,
+£240"; this says which tyres, where they sit and how long the last pair
+lasted. Costs stay in maintenance, so nothing is counted twice. Tread depth,
+wear projection and tyre reminders follow in Phase 11.2.
+
+- **The tyre is the unit; the set is optional.** Each tyre is its own row
+  (a front-wheel-drive car replaces its fronts long before its rears; a
+  motorbike's front and rear differ). A **set** groups tyres for seasonal
+  swaps (*Winter wheels*, stored at "Kwik Fit Southend, ref 4471"); a tyre
+  belongs to at most one. Tyres and sets belong to one vehicle: deleting it
+  deletes them, archiving keeps them as history. Moving a set to another
+  vehicle is out of scope.
+- **What a tyre records** (§6 Tyre): brand, model, size (normalised: upper
+  case, whitespace collapsed; free text like `variant`, because size, load
+  and speed notations vary too much), season (blank = not specified, and
+  no badge: most drivers never say "summer tyres"), DOT code and notes.
+  - **DOT code:** exactly four digits, week then two-digit year (`2323` =
+    week 23 of 2023), from 2000 on (the four-digit format). The week must be
+    01–53 and exist in that ISO year (week 53 only in a year that has one),
+    and the week's Monday must not be after today in the owner's time zone.
+    `manufactured_on` is that Monday, a calendar date computed without any
+    time zone.
+  - **Age** is derived from `manufactured_on` exactly as a vehicle's age
+    (§7.2): "3 yrs 4 mo".
+- **Positions** come from the vehicle type (`VehicleType::tyrePositions()`,
+  the one list the forms, the tab and validation use): a car has `fl`
+  *Front left*, `fr` *Front right*, `rl` *Rear left*, `rr` *Rear right* and
+  `spare`; a bike `front` and `rear`. At most one tyre per position at any
+  moment. The spare is optional and counts as fitted, never as rolling.
+  "Front" and "rear" in summaries name a pair (fl + fr, rl + rr).
+- **Tyre changes are the only way a tyre moves.** One form saves one change
+  (§6 TyreChange) with one line per tyre it touches:
+
+  | Kind | Lines | Odometer |
+  |---|---|---|
+  | `existing` *Tyres already on the vehicle* | `on` | required, prefilled |
+  | `fit` *Fit tyres* | `on` for the new; `off` or `retire` for any they replace | required, prefilled |
+  | `swap` *Swap set* | `off` for the fitted road tyres, `on` for the chosen set | required, prefilled |
+  | `rotate` *Rotate* | `move` for each tyre whose position changes | required, prefilled |
+  | `repair` *Repair* | `repair` | optional |
+  | `remove` *Remove* | `off` or `retire` | required, prefilled |
+
+  Prefilled means the latest reading in the owner's distance unit, as the
+  fill-up form does it; the odometer is parsed like a reading. The date
+  defaults to today in the owner's time zone. `done_on` is a calendar date.
+  - **Existing** is how an owner starts: a description per chosen position.
+    Its odometer hint reads "If you don't know when they were fitted, leave
+    today's reading: distance counts from now." A tyre whose first change is
+    `existing` shows its distance as "12,400 mi since 3 Oct 2026", not as a
+    lifetime figure.
+  - **Fit** takes one description (brand, model, size, season) for every
+    chosen position, plus an optional DOT code per position (pairs are
+    bought this way). A tyre already at a chosen position must be dealt
+    with on the same form: *Retire* (reason, default `worn`) or *Keep in
+    storage*. Without JS the description shows once and the DOT fields per
+    position.
+  - **Swap set** takes every fitted road tyre off into a set (an existing
+    one, or a new name with a storage location) and fits a stored set's
+    tyres at the positions they last had, changeable per tyre. The spare is
+    left alone. Either half may be empty (only on, or only off).
+  - **Rotate** takes a new position for every fitted tyre and must be a
+    permutation of the fitted positions (the spare may join it).
+  - **Repair** (a puncture and the like) marks one or more fitted tyres.
+  - **Remove** takes fitted tyres off into storage (optionally into a set,
+    existing or new) or retires them (reason `worn`|`damaged`|`puncture`|
+    `sold`|`other`). A retired tyre keeps its history and lifetime figures.
+- **State is replayed, then stored.** Each tyre's status and position are
+  computed by replaying the vehicle's changes in order (`done_on`, then
+  odometer — a change without one, a repair, last on its day — then id;
+  ordered in PHP) and stored on the tyre. Within one
+  change every line leaves its position first, then takes its new one, so a
+  rotation is checked as a whole. Every save, edit and delete of a change
+  replays in the same transaction; one that makes the replay impossible —
+  two tyres at one position, a stored tyre removed again, a retired tyre
+  fitted, a tyre moved or repaired while not fitted — is refused with a
+  message naming the tyre, the change and the problem, and nothing is
+  written. Nothing is re-sequenced silently.
+- **Editing a change** changes its date, odometer, note and service-record
+  link (its lines are fixed: delete it and log it again). **Deleting a
+  change** deletes its lines and reading; a tyre left with no lines (one it
+  created) is deleted with it, which the confirmation page says. Any linked
+  service record is kept.
+- **Editing a tyre** (its own page) changes brand, model, size, season, DOT
+  and notes, never status or position. Deleting a tyre deletes its lines; a
+  change left with no lines is deleted with its reading (a linked service
+  record is kept); then the replay runs.
+- **Sets** are created inline on *Swap set* and *Remove* (name and storage
+  location); a small edit page renames a set and changes its storage and
+  notes. A set can be deleted only while empty. Storage without a set is
+  allowed ("Not in a set").
+- **Distance is derived, never stored.** A tyre's distance is the sum of its
+  rolling segments. A segment starts when the tyre goes on (or moves) to a
+  non-spare position and ends when it comes off, moves to the spare or is
+  retired; segment ends use the change's odometer. An open segment runs to
+  the vehicle's current reading (§7.2). A segment that would be negative
+  (the odometer went backwards) counts as 0 and is flagged on the tab; the
+  plausibility warning on the reading itself is unchanged. This is why every
+  kind but repair needs an odometer.
+- **Costs stay in maintenance.** The fit, swap, repair and remove forms have
+  optional *Cost* and *Garage / shop* fields. When either is filled, saving
+  writes a `tyres` service record in the same transaction, dated and
+  odometered as the change, and links it (`maintenance_entry_id`). Its
+  title is generated once, in the owner's language ("2 × Michelin Primacy
+  4, front"), and is edited afterwards like any other.
+  - Instead the change can **link an existing service record**: a select
+    of the vehicle's `tyres` records within 30 days of the change's date.
+    A linked change always takes its record's date, and its record's
+    odometer when the record has one (hint: "The change takes the service
+    record's date and odometer."). When the record has no odometer, the
+    change's odometer is written to the record.
+  - **One reading, never two:** a linked record with an odometer owns the
+    reading and the change writes none; editing the record's date or
+    odometer moves its linked changes too (with a replay, refused like a
+    change edit when it breaks the sequence); deleting the record unlinks
+    its changes, and each then writes its own reading, in the same
+    transaction.
+  - **Cost per distance** for a *retired* tyre: the cost of the service
+    record linked to the `fit` change that fitted it, split evenly across
+    that change's `on` lines, divided by the tyre's lifetime distance ("£4.90
+    per 1,000 mi", per the owner's distance unit). Tyres still in use show
+    none (the figure falls as they run), nor does a tyre whose first change
+    is `existing`.
+  - The cost ledger (§7.7) is unchanged. With `maintenance` off, the cost,
+    garage and link fields are hidden and changes still save; existing
+    links are kept.
+- **Tyres tab** (`/vehicles/{id}/tyres`), after Maintenance, with the shared
+  header and toolbar: *Export CSV* (both files) and *Fit tyres* as the add
+  button, with *Tyres already on the vehicle*, *Swap set*, *Rotate*,
+  *Repair* and *Remove* beside it (each its own page and a desktop modal).
+  Sections:
+  - **On the vehicle:** a card per position in position order (a 2 × 2 grid
+    plus the spare for a car; front and rear for a bike): position, brand,
+    model, size, season badge, age and distance. Plain HTML, not a drawing.
+  - **In storage:** grouped by set, with its storage location.
+  - **Retired:** folded away, newest first, with lifetime distance, cost per
+    distance where known, and reason.
+  - **Changes:** newest first, 25 per page: kind, summary, odometer, and the
+    linked service record's cost linking to it.
+  - An empty tab offers *Tyres already on the vehicle* first, then *Fit
+    tyres*. Archived vehicles show their tyres read-only (no add buttons);
+    their changes stay editable, as other entries are.
+- **Overview:** a *Tyres* card (each fitted tyre on one line: position,
+  brand, model, age) with *All tyres →*, hidden when the vehicle has no
+  tyres.
+- **Log entry:** *Tyre change* opens *Fit tyres* through the vehicle picker.
+- **CSV export** (per §7.7): *Tyres* (`tyres.csv`: brand, model, size,
+  season, DOT, manufactured on, status, position, set, storage location,
+  distance in the owner's unit, retired reason) and *Tyre changes*
+  (`tyre-changes.csv`: date, kind, odometer in the owner's unit, tyres,
+  positions, linked service record, cost and currency). There is no tyre
+  import.
 
 ---
 
@@ -1204,7 +1448,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   (application token), `GOTIFY_PRIORITY` (0–10, default 5; overdue
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
-  `FEATURES_REMINDERS`, `FEATURES_REPORTS` (default true; see §7.10)
+  `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES` (default true;
+  see §7.10)
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
   `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
   task inside the container; default `true`), `SCHEDULER_INTERVAL` (seconds
@@ -1257,7 +1502,7 @@ Real environment variables override `.env`; an empty value counts as unset.
 - REST API with API keys (OpenAPI documented) for scripting/Home Assistant.
 - Multi-user with roles (admin/editor/viewer) and per-vehicle sharing.
 - OIDC/SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
-- Tyre-life tracking, trip/journey log (business vs personal for mileage claims),
+- Trip/journey log (business vs personal for mileage claims),
   personal fuel-tank entity, VIN decode/registration lookup, PDF reports,
   OBD-II / vehicle-API mileage import.
 
@@ -1310,6 +1555,11 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 10.2 — Tall vehicle photos + v1.2.1.** A tall photo no longer
   stretches the dashboard's pinned vehicle card; every photo frame crops to
   its own size; release v1.2.1.
+- **Phase 11.1 — Tyres.** Each tyre recorded (brand, model, size, season,
+  DOT date and age), where it is (fitted at a position, stored in a set,
+  retired), every tyre change (fit, swap, rotate, repair, remove) and each
+  tyre's distance derived from the mileage series; costs through linked
+  service records. Ships with Phase 11.2 as v1.3.0.
 
 ---
 

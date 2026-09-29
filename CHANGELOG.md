@@ -6,6 +6,47 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 11.1: tyres. Ships with Phase 11.2 as 1.3.0.
+
+### Added
+- **Tyres tab** on every vehicle, after Maintenance: the tyres on the
+  vehicle (a card per position: brand, model, size, season, age and
+  distance), those in storage grouped by set with where the set is kept,
+  retired tyres with how far they went, and every tyre change.
+- **Tyre changes:** *Tyres already on the vehicle* (to start with), *Fit
+  tyres* (one description for a pair, a DOT code per tyre, and what happens
+  to the ones they replace), *Swap set* (summers off into a set, winters
+  on), *Rotate*, *Repair* and *Remove* (into storage or retired, with a
+  reason). Cars have front left / right, rear left / right and a spare;
+  motorbikes front and rear.
+- **Age from the DOT code** (`2323` = week 23 of 2023) and **distance per
+  tyre** from the mileage log, leaving out time as a spare or in storage.
+  A retired tyre shows its lifetime distance and, when its fitting was
+  costed, its cost per distance ("£4.90 per 1,000 mi").
+- **Costs stay in maintenance:** a cost typed on a tyre form writes a
+  `tyres` service record, or a change can be linked to one already logged.
+  It is counted once, under maintenance, everywhere.
+- Tyre changes in **History** (a *Tyres* chip), the **print view** (with a
+  *Tyres fitted* header block) and *Recent activity*; a *Tyres* card on the
+  overview; *Tyre change* in *Log entry*; a new mileage source *Tyres*.
+- CSV export of tyres and of tyre changes; German translations.
+
+### Upgrade notes
+- Four new tables (`tyre_sets`, `tyres`, `tyre_changes`,
+  `tyre_change_lines`), a new nullable column
+  `odometer_readings.tyre_change_id` and a new reading source `tyre`. The
+  migration runs automatically on start (Docker) or with
+  `vendor/bin/phinx migrate` (bare PHP). Existing data and every existing
+  figure are unchanged.
+- New optional `FEATURES_TYRES` (default on), like the other modules.
+- Backups record the database schema, so a backup made with 1.2.x cannot
+  be restored into this version: restore it with its own version first,
+  then upgrade.
+- **Going back to 1.2.1:** roll back first, while still on this version,
+  with `vendor/bin/phinx rollback -e production -t 20261005100000`. Tyre
+  readings become ordinary manual readings, so no mileage is lost; the tyre
+  tables are dropped.
+
 ## [1.2.1] — 2026-09-29
 
 Phase 10.2: tall vehicle photos.

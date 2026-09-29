@@ -11,6 +11,7 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleStatus;
+use Logbook\Repository\TyreRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Odometer\OdometerService;
@@ -41,6 +42,7 @@ final readonly class VehicleService
         private AppSettings $settings,
         private OdometerService $odometer,
         private Transaction $transaction,
+        private TyreRepository $tyres,
     ) {
     }
 
@@ -99,8 +101,19 @@ final readonly class VehicleService
         });
     }
 
+    /**
+     * @throws TyresBlockTypeChange when the new type lacks a position a tyre is fitted at
+     */
     public function update(User $user, Vehicle $vehicle, VehicleData $data): Vehicle
     {
+        if ($data->type !== $vehicle->data->type) {
+            $positions = $data->type->tyrePositions();
+            foreach ($this->tyres->listTyres($vehicle->id) as $tyre) {
+                if ($tyre->isFitted() && $tyre->position !== null && !in_array($tyre->position, $positions, true)) {
+                    throw new TyresBlockTypeChange($data->type, $tyre->position);
+                }
+            }
+        }
         $this->vehicles->update($user->id, $vehicle->id, $data, $this->clock->now());
 
         return $this->get($user, $vehicle->id);

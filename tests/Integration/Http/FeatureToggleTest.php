@@ -41,7 +41,14 @@ final class FeatureToggleTest extends ReminderTestCase
         $response = $browser->post('/settings/modules', ['maintenance' => '1', 'reminders' => '1']);
         self::assertSame(303, $response->getStatusCode());
         self::assertSame(
-            ['fuel' => false, 'maintenance' => true, 'compliance' => false, 'reminders' => true, 'reports' => false],
+            [
+                'fuel' => false,
+                'maintenance' => true,
+                'compliance' => false,
+                'reminders' => true,
+                'reports' => false,
+                'tyres' => false,
+            ],
             $this->service($app, FeatureToggles::class)->all(),
         );
         $html = self::body($browser->follow($response));

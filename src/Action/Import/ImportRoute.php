@@ -34,7 +34,7 @@ final class ImportRoute
         $vehicle = VehicleRoute::vehicle($vehicles, $request, $args);
         $module = ExportModule::tryFrom($args['module'] ?? '') ?? throw new HttpNotFoundException($request);
         $feature = $module->feature();
-        if ($vehicle->isArchived() || ($feature !== null && !$features->isEnabled($feature))) {
+        if (!$module->isImportable() || $vehicle->isArchived() || ($feature !== null && !$features->isEnabled($feature))) {
             throw new HttpNotFoundException($request);
         }
 

@@ -243,7 +243,10 @@ final readonly class CsvImporter
                 case FieldKind::Source:
                     assert($field->enum !== null && $field->labelPrefix !== null);
                     $source = $vocabulary->choice($field->enum, $field->labelPrefix, $value);
-                    if ($source !== null && $source !== OdometerSource::Manual->value) {
+                    // Tyre history is not imported, so a tyre change's reading is kept as a
+                    // manual one (spec.md §7.13); the other owners write theirs on import.
+                    $owned = [OdometerSource::Manual->value, OdometerSource::Tyre->value];
+                    if ($source !== null && !in_array($source, $owned, true)) {
                         return ImportRowStatus::Implied;
                     }
                     break;
@@ -298,6 +301,7 @@ final readonly class CsvImporter
             ExportModule::Maintenance => MaintenanceEntryForm::parse($input, $preferences, []),
             ExportModule::Documents => ComplianceDocumentForm::parse($input, $preferences),
             ExportModule::Expenses => ExpenseEntryForm::parse($input, $preferences),
+            ExportModule::Tyres, ExportModule::TyreChanges => throw new LogicException('Tyres are not imported.'),
         };
 
         if ($parsed instanceof ValidationErrors) {
@@ -360,6 +364,7 @@ final readonly class CsvImporter
                 static fn ($e): string => self::key($e->data),
                 $this->expenseEntries->listForVehicle($vehicle->id),
             ),
+            ExportModule::Tyres, ExportModule::TyreChanges => throw new LogicException('Tyres are not imported.'),
         };
     }
 

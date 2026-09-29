@@ -36,6 +36,10 @@ final class MigrationsTest extends AppTestCase
         'attachments',
         'reminders',
         'expense_entries',
+        'tyre_sets',
+        'tyres',
+        'tyre_changes',
+        'tyre_change_lines',
     ];
 
     protected function tearDown(): void
@@ -64,12 +68,21 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 10 document odometer, the Phase 9.2
+        // Newest first: the Phase 11.1 tyre tables, the Phase 10 document odometer, the Phase 9.2
         // plug-in hybrid data migration (no schema change), the Phase 9.1
         // vehicle details, the Phase 8 grade
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($schema->tablesExist(['tyre_sets', 'tyres', 'tyre_changes', 'tyre_change_lines']));
+        self::assertTrue($this->hasColumn('odometer_readings', 'tyre_change_id'));
+        Migrator::run('rollback');
+        foreach (['tyre_change_lines', 'tyre_changes', 'tyres', 'tyre_sets'] as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+        self::assertFalse($this->hasColumn('odometer_readings', 'tyre_change_id'), 'and the reading link');
+        self::assertTrue($this->hasColumn('odometer_readings', 'compliance_document_id'), 'and keep the other links');
+
         self::assertTrue($this->hasColumn('compliance_documents', 'odometer_km'));
         self::assertTrue($this->hasColumn('odometer_readings', 'compliance_document_id'));
         Migrator::run('rollback');

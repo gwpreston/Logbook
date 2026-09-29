@@ -18,6 +18,7 @@ enum LogKind: string
     case Expense = 'expense';
     case Document = 'document';
     case Schedule = 'schedule';
+    case Tyre = 'tyre';
 
     /**
      * The vehicle's add form (route name; takes the vehicle `id`).
@@ -31,7 +32,18 @@ enum LogKind: string
             self::Expense => 'expenses.create',
             self::Document => 'compliance.create',
             self::Schedule => 'maintenance.schedules.create',
+            self::Tyre => 'tyres.change',
         };
+    }
+
+    /**
+     * Route placeholders beyond the vehicle `id`.
+     *
+     * @return array<string, string>
+     */
+    public function createParams(): array
+    {
+        return $this === self::Tyre ? ['kind' => 'fit'] : [];
     }
 
     /**
@@ -43,6 +55,7 @@ enum LogKind: string
             self::Fuel => Feature::Fuel,
             self::Maintenance, self::Schedule => Feature::Maintenance,
             self::Document => Feature::Compliance,
+            self::Tyre => Feature::Tyres,
             self::Odometer, self::Expense => null,
         };
     }
@@ -56,6 +69,7 @@ enum LogKind: string
             self::Expense => 'payments',
             self::Document => 'description',
             self::Schedule => 'event_repeat',
+            self::Tyre => 'tire_repair',
         };
     }
 
@@ -67,7 +81,7 @@ enum LogKind: string
         return match ($this) {
             self::Fuel => 'accent',
             self::Odometer => 'text',
-            self::Maintenance, self::Schedule => 'c-maint',
+            self::Maintenance, self::Schedule, self::Tyre => 'c-maint',
             self::Expense => 'c-other',
             self::Document => 'c-ins',
         };

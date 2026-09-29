@@ -16,7 +16,7 @@
             </div>
         </header>
         {% block modal_body %}
-            {{ vehicle_ui.pick_list(vehicles, kind.createRoute()) }}
+            {{ vehicle_ui.pick_list(vehicles, kind.createRoute(), false, kind.createParams()) }}
         {% endblock %}
     </div>
 {% endblock %}

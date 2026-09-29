@@ -1,0 +1,117 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/tyres.twig' as tyres %}
+
+{#
+ # The Tyres tab (spec.md §7.17): on the vehicle (a card per position), in
+ # storage by set, retired (folded away) and every change. Archived vehicles
+ # are read-only here; their changes stay editable.
+ #}
+{% set active_nav = 'garage' %}
+{% set archived = vehicle.isArchived() %}
+
+{% block title %}{{ 'tyre.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'tyres'} %}
+
+        <div class="toolbar list-toolbar">
+            <h1 class="section-title">{{ 'tyre.title'|trans }}</h1>
+            <div class="btn-row list-toolbar__actions">
+                {% if not overview.isEmpty() %}
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'tyres'}) }}" download>{{ ui.icon('download') }}{{ 'export.module.tyres'|trans }}</a>
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'tyre-changes'}) }}" download>{{ ui.icon('download') }}{{ 'export.module.tyre_changes'|trans }}</a>
+                {% endif %}
+                {# An empty tab offers its two ways to start in the empty state instead. #}
+                {% if not archived and not overview.isEmpty() %}
+                    <details class="menu">
+                        <summary class="btn">{{ ui.icon('tune') }}{{ 'tyre.more'|trans }}</summary>
+                        {{ tyres.change_links(vehicle, kinds, ['fit']) }}
+                    </details>
+                    <a class="btn btn--primary" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'fit'}) }}" data-modal>{{ ui.icon('add') }}{{ 'tyre.kind.fit'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if archived %}
+            <p class="alert alert--info">{{ ui.icon('inventory_2') }}<span>{{ 'tyre.read_only'|trans }}</span></p>
+        {% endif %}
+
+        {% if overview.isEmpty() %}
+            <section class="card">
+                <div class="empty">
+                    {{ ui.icon('tire_repair') }}
+                    <p class="empty__title">{{ 'tyre.empty_title'|trans }}</p>
+                    <p>{{ 'tyre.empty_body'|trans }}</p>
+                    {% if not archived %}
+                        <div class="btn-row">
+                            <a class="btn btn--primary" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'existing'}) }}" data-modal>{{ ui.icon('tire_repair') }}{{ 'tyre.kind.existing'|trans }}</a>
+                            <a class="btn" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'fit'}) }}" data-modal>{{ ui.icon('add') }}{{ 'tyre.kind.fit'|trans }}</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        {% else %}
+            {% if overview.isFlagged() %}
+                <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'tyre.flagged'|trans }}</span></p>
+            {% endif %}
+
+            <section class="card" aria-labelledby="tyres-fitted">
+                <h2 id="tyres-fitted" class="card__title">{{ 'tyre.section.fitted'|trans }}</h2>
+                <div class="tyre-grid tyre-grid--{{ vehicle.data.type.value }}">
+                    {% for position in vehicle.data.type.tyrePositions() %}
+                        {{ tyres.position_card(position, overview.at(position), vehicle) }}
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="tyres-stored">
+                <h2 id="tyres-stored" class="card__title">{{ 'tyre.section.stored'|trans }}</h2>
+                {% if overview.stored is empty %}
+                    <p class="muted">{{ 'tyre.none_stored'|trans }}</p>
+                {% endif %}
+                {% for group in overview.stored %}
+                    <div class="tyre-set">
+                        <div class="card__header">
+                            <h3 class="tyre-set__name">{{ group.set ? group.set.data.name : 'tyre.not_in_set'|trans }}</h3>
+                            {% if group.set and not archived %}
+                                <a class="btn btn--soft" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'swap'}, {set: group.set.id}) }}" data-modal>{{ ui.icon('inventory_2') }}{{ 'tyre.kind.swap'|trans }}</a>
+                                <a class="btn btn--ghost" href="{{ url_for('tyres.sets.edit', {id: vehicle.id, set: group.set.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'tyre.set.edit'|trans }}</a>
+                            {% endif %}
+                        </div>
+                        {% if group.set and group.set.data.storageLocation %}
+                            <p class="muted">{{ 'tyre.stored_at'|trans({location: group.set.data.storageLocation}) }}</p>
+                        {% endif %}
+                        <ul class="list">
+                            {% for view in group.tyres %}
+                                {{ tyres.tyre_row(view, vehicle, currency) }}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            </section>
+
+            {% if overview.retired is not empty %}
+                <details class="card disclosure">
+                    <summary class="disclosure__summary">{{ 'tyre.section.retired'|trans }} ({{ overview.retired|length }})</summary>
+                    <ul class="list">
+                        {% for view in overview.retired %}
+                            {{ tyres.tyre_row(view, vehicle, currency) }}
+                        {% endfor %}
+                    </ul>
+                </details>
+            {% endif %}
+
+            <section class="card" aria-labelledby="tyres-changes">
+                <h2 id="tyres-changes" class="card__title">{{ 'tyre.section.changes'|trans }}</h2>
+                <ul class="list">
+                    {% for item in changes %}
+                        {{ tyres.change_row(item, vehicle, currency) }}
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'tyres.index', {id: vehicle.id}) }}
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

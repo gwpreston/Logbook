@@ -96,7 +96,7 @@ final readonly class OdometerReadingRepository
     }
 
     /**
-     * The reading owned by a fill-up, maintenance entry or document.
+     * The reading owned by a fill-up, maintenance entry, document or tyre change.
      */
     public function findByEntry(int $vehicleId, OdometerSource $source, int $entryId): ?OdometerReading
     {
@@ -110,7 +110,8 @@ final readonly class OdometerReadingRepository
     }
 
     /**
-     * @param int|null $entryId the owning fill-up, maintenance entry or document (per $source); null for manual readings
+     * @param int|null $entryId the owning fill-up, maintenance entry, document or tyre change
+     *                          (per $source); null for manual readings
      */
     public function insert(
         int $vehicleId,
@@ -132,6 +133,7 @@ final readonly class OdometerReadingRepository
             'fuel_entry_id' => ParameterType::INTEGER,
             'maintenance_entry_id' => ParameterType::INTEGER,
             'compliance_document_id' => ParameterType::INTEGER,
+            'tyre_change_id' => ParameterType::INTEGER,
         ]);
 
         return (int) $this->connection->lastInsertId();
@@ -160,7 +162,8 @@ final readonly class OdometerReadingRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'reading_km', 'recorded_at', 'source', 'note', 'fuel_entry_id')
-            ->addSelect('maintenance_entry_id', 'compliance_document_id', 'created_at', 'updated_at')
+            ->addSelect('maintenance_entry_id', 'compliance_document_id', 'tyre_change_id')
+            ->addSelect('created_at', 'updated_at')
             ->from(self::TABLE);
     }
 
@@ -170,6 +173,7 @@ final readonly class OdometerReadingRepository
             OdometerSource::Fuel => 'fuel_entry_id',
             OdometerSource::Maintenance => 'maintenance_entry_id',
             OdometerSource::Document => 'compliance_document_id',
+            OdometerSource::Tyre => 'tyre_change_id',
             OdometerSource::Manual => throw new LogicException('Manual readings have no owning entry.'),
         };
     }
@@ -205,6 +209,7 @@ final readonly class OdometerReadingRepository
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
             maintenanceEntryId: Row::nullableInt($row, 'maintenance_entry_id'),
             complianceDocumentId: Row::nullableInt($row, 'compliance_document_id'),
+            tyreChangeId: Row::nullableInt($row, 'tyre_change_id'),
         );
     }
 }

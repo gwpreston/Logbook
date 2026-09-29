@@ -2,7 +2,16 @@
 
 declare(strict_types=1);
 
+use Logbook\Domain\Tyre\TyreChange;
+use Logbook\Domain\Tyre\TyreChangeData;
+use Logbook\Domain\Tyre\TyreChangeKind;
+use Logbook\Domain\Tyre\TyreChangeLine;
+use Logbook\Domain\Tyre\TyreLineAction;
+use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Kernel;
+use Logbook\Service\Tyre\TyreReplay;
+use Logbook\Service\Tyre\TyreReplayResult;
+use Logbook\Support\Date\LocalTime;
 use Phinx\Seed\AbstractSeed;
 
 /**
@@ -128,6 +137,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedDocuments($now);
         $this->seedReminders($now);
         $this->seedExpenses($now);
+        $this->seedTyres($now);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
@@ -376,7 +386,7 @@ final class DemoDataSeeder extends AbstractSeed
                 'vehicle_id' => $this->vehicleIds()['LB19 KTR'],
                 'source' => 'manual',
                 'title' => 'Winter tyres on',
-                'notes' => 'Stored at Main Street Motors.',
+                'notes' => 'Winter wheels are at Kwik Fit Southend, ref 4471.',
                 'due_on' => '2026-11-01',
                 'lead_time_days' => 14,
                 'status' => 'upcoming',
@@ -411,6 +421,254 @@ final class DemoDataSeeder extends AbstractSeed
             $expense('MT20 BKE', '2026-05-11', 'accessories', '64.990', 'Tank bag'),
             $expense('EV23 KIA', '2026-06-18', 'tolls', '9.800', 'Péage A26'),
         ])->saveData();
+    }
+
+    /**
+     * A year of tyres (spec.md §7.17). The Golf starts with the summers already
+     * on it, gets winters in November (the summers go into storage), swaps
+     * back in March (the winters into the *Winter wheels* set), has its worn
+     * fronts replaced (linked to the "Two front tyres" service record), a
+     * puncture repaired, one rotation, and a damaged tyre replaced, so a
+     * retired tyre shows its cost per distance. The bike has its rear
+     * replaced once. Odometers come from each vehicle's own mileage series,
+     * so no reading looks implausible; state comes from the replay.
+     */
+    private function seedTyres(string $now): void
+    {
+        $ids = $this->vehicleIds();
+        $golf = $ids['LB19 KTR'];
+        $bike = $ids['MT20 BKE'];
+
+        $tyre = function (
+            int $vehicle,
+            string $brand,
+            string $model,
+            string $size,
+            ?string $season,
+            string $dot,
+        ) use ($now): int {
+            $week = (int) substr($dot, 0, 2);
+            $made = (new DateTimeImmutable('@0'))->setISODate(2000 + (int) substr($dot, 2), $week, 1)->format('Y-m-d');
+
+            return $this->insertRow('tyres', [
+                'vehicle_id' => $vehicle, 'set_id' => null, 'brand' => $brand, 'model' => $model, 'size' => $size,
+                'season' => $season, 'dot_code' => $dot, 'manufactured_on' => $made, 'status' => 'stored',
+                'position' => null, 'retired_reason' => null, 'notes' => null, 'created_at' => $now, 'updated_at' => $now,
+            ]);
+        };
+        $summer = static fn (string $dot): array => ['Goodyear', 'EfficientGrip Performance 2', '205/55 R16 91V', null, $dot];
+        $s = array_map(fn (string $dot): int => $tyre($golf, ...$summer($dot)), ['1823', '1823', '1923', '1923']);
+        $w = array_map(
+            fn (string $dot): int => $tyre($golf, 'Continental', 'WinterContact TS 870', '205/55 R16 91H', 'winter', $dot),
+            ['3825', '3825', '3825', '3925'],
+        );
+        $f = array_map(
+            fn (string $dot): int => $tyre($golf, 'Michelin', 'Primacy 4+', '205/55 R16 91V', null, $dot),
+            ['0526', '0526', '2926'],
+        );
+        $bikeFront = $tyre($bike, 'Michelin', 'Road 6', '120/70 ZR17', null, '4424');
+        $bikeRear = [
+            $tyre($bike, 'Michelin', 'Road 6', '180/55 ZR17', null, '4424'),
+            $tyre($bike, 'Michelin', 'Road 6', '180/55 ZR17', null, '2226'),
+        ];
+
+        $winterWheels = $this->insertRow('tyre_sets', [
+            'vehicle_id' => $golf, 'name' => 'Winter wheels', 'storage_location' => 'Kwik Fit Southend, ref 4471',
+            'notes' => 'On their own steel rims.', 'created_at' => $now, 'updated_at' => $now,
+        ]);
+        $this->execute(sprintf('UPDATE tyres SET set_id = %d WHERE id IN (%s)', $winterWheels, implode(', ', $w)));
+
+        $record = null;
+        foreach ($this->fetchAll('SELECT id, title FROM maintenance_entries') as $row) {
+            if (is_array($row) && ($row['title'] ?? null) === 'Two front tyres') {
+                $record = self::intValue($row['id'] ?? null);
+            }
+        }
+        $repairOn = '2026-05-02';
+        $repairKm = $this->odometerOn($golf, $repairOn);
+        $repair = $this->serviceRecord($golf, $repairOn, $repairKm, 'Tyre repair, front right', '25.000', 'Kwik Fit', $now);
+        $bikeRearOn = '2026-08-10';
+        $bikeKm = $this->odometerOn($bike, $bikeRearOn);
+        $bikeTitle = '1 × Michelin Road 6, rear';
+        $bikeRecord = $this->serviceRecord($bike, $bikeRearOn, $bikeKm, $bikeTitle, '169.000', 'Rider Tyres, Leeds', $now);
+
+        $on = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::On, $p);
+        $off = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Off, $p);
+        $retire = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Retire, $p);
+        $move = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Move, $p);
+        $fl = TyrePosition::FrontLeft;
+        $fr = TyrePosition::FrontRight;
+        $rl = TyrePosition::RearLeft;
+        $rr = TyrePosition::RearRight;
+        $road = [$fl, $fr, $rl, $rr];
+
+        /**
+         * vehicle, kind, date, linked record (its odometer covers the change), lines, retire reasons
+         *
+         * @var list<array{0: int, 1: TyreChangeKind, 2: string, 3: ?int, 4: list<TyreChangeLine>, 5: array<int, string>}> $plan
+         */
+        $plan = [
+            [$golf, TyreChangeKind::Existing, '2025-09-28', null, array_map($on, $s, $road), []],
+            [$golf, TyreChangeKind::Fit, '2025-11-08', null, [...array_map($off, $s, $road), ...array_map($on, $w, $road)], []],
+            [$golf, TyreChangeKind::Swap, '2026-03-08', null, [...array_map($off, $w, $road), ...array_map($on, $s, $road)], []],
+            [$golf, TyreChangeKind::Fit, '2026-03-10', $record, [
+                $retire($s[0], $fl), $retire($s[1], $fr), $on($f[0], $fl), $on($f[1], $fr),
+            ], [$s[0] => 'worn', $s[1] => 'worn']],
+            [$golf, TyreChangeKind::Repair, $repairOn, $repair, [new TyreChangeLine($f[1], TyreLineAction::Repair, $fr)], []],
+            [$golf, TyreChangeKind::Rotate, '2026-07-12', null, [
+                $move($f[0], $rl), $move($f[1], $rr), $move($s[2], $fl), $move($s[3], $fr),
+            ], []],
+            [$golf, TyreChangeKind::Fit, '2026-08-22', null, [$retire($f[0], $rl), $on($f[2], $rl)], [$f[0] => 'damaged']],
+            [$bike, TyreChangeKind::Existing, '2026-03-20', null, [
+                $on($bikeFront, TyrePosition::Front), $on($bikeRear[0], TyrePosition::Rear),
+            ], []],
+            [$bike, TyreChangeKind::Fit, $bikeRearOn, $bikeRecord, [
+                $retire($bikeRear[0], TyrePosition::Rear), $on($bikeRear[1], TyrePosition::Rear),
+            ], [$bikeRear[0] => 'worn']],
+        ];
+
+        $changes = [];
+        $readings = [];
+        foreach ($plan as [$vehicle, $kind, $date, $linked, $lines, $reasons]) {
+            $km = $linked === null ? $this->odometerOn($vehicle, $date) : $this->recordOdometer($linked);
+            $id = $this->insertRow('tyre_changes', [
+                'vehicle_id' => $vehicle, 'kind' => $kind->value, 'done_on' => $date, 'odometer_km' => $km,
+                'maintenance_entry_id' => $linked, 'note' => null, 'created_at' => $now, 'updated_at' => $now,
+            ]);
+            foreach ($lines as $line) {
+                $this->table('tyre_change_lines')->insert([
+                    'change_id' => $id, 'tyre_id' => $line->tyreId, 'action' => $line->action->value,
+                    'position' => $line->position?->value,
+                ])->saveData();
+            }
+            foreach ($reasons as $tyreId => $reason) {
+                $this->execute(sprintf("UPDATE tyres SET retired_reason = '%s' WHERE id = %d", $reason, $tyreId));
+            }
+            if ($linked === null) {
+                $readings[] = [
+                    'vehicle_id' => $vehicle, 'reading_km' => $km, 'recorded_at' => self::localNoon($date),
+                    'source' => 'tyre', 'tyre_change_id' => $id, 'created_at' => $now, 'updated_at' => $now,
+                ];
+            }
+            $day = LocalTime::parseDate($date) ?? throw new RuntimeException($date);
+            $changes[$vehicle][] = new TyreChange(
+                $id,
+                $vehicle,
+                $kind,
+                new TyreChangeData($day, $km, $linked),
+                $lines,
+                new DateTimeImmutable($now),
+                new DateTimeImmutable($now),
+            );
+        }
+        $this->table('odometer_readings')->insert($readings)->saveData();
+
+        // Store what the replay says, as the app does after every change.
+        foreach ($changes as $vehicleChanges) {
+            $result = TyreReplay::run($vehicleChanges);
+            if (!$result instanceof TyreReplayResult) {
+                throw new RuntimeException('The demo tyre changes do not replay.');
+            }
+            foreach ($result->states as $tyreId => $state) {
+                $this->execute(sprintf(
+                    "UPDATE tyres SET status = '%s', position = %s WHERE id = %d",
+                    $state->status->value,
+                    $state->position === null ? 'NULL' : "'" . $state->position->value . "'",
+                    $tyreId,
+                ));
+            }
+        }
+    }
+
+    /**
+     * A `tyres` service record with its odometer reading at local noon.
+     */
+    private function serviceRecord(
+        int $vehicle,
+        string $date,
+        string $km,
+        string $title,
+        string $cost,
+        string $vendor,
+        string $now,
+    ): int {
+        $id = $this->insertRow('maintenance_entries', [
+            'vehicle_id' => $vehicle, 'schedule_id' => null, 'performed_on' => $date, 'odometer_km' => $km,
+            'category' => 'tyres', 'title' => $title, 'description' => null, 'cost' => $cost, 'vendor' => $vendor,
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+        $this->table('odometer_readings')->insert([
+            'vehicle_id' => $vehicle, 'reading_km' => $km, 'recorded_at' => self::localNoon($date),
+            'source' => 'maintenance', 'maintenance_entry_id' => $id, 'created_at' => $now, 'updated_at' => $now,
+        ])->saveData();
+
+        return $id;
+    }
+
+    private function recordOdometer(int $entryId): string
+    {
+        $row = $this->fetchRow(sprintf('SELECT odometer_km FROM maintenance_entries WHERE id = %d', $entryId));
+        $km = is_array($row) ? ($row['odometer_km'] ?? $row[0] ?? null) : null;
+
+        return is_numeric($km) ? number_format((float) $km, 3, '.', '') : throw new RuntimeException('No odometer.');
+    }
+
+    /**
+     * The vehicle's odometer at local noon on $date, read off its mileage
+     * series (linear between the readings either side, in whole km).
+     */
+    private function odometerOn(int $vehicle, string $date): string
+    {
+        $at = self::localNoon($date);
+        $before = null;
+        $after = null;
+        $rows = $this->fetchAll(sprintf('SELECT reading_km, recorded_at FROM odometer_readings WHERE vehicle_id = %d', $vehicle));
+        foreach ($rows as $row) {
+            if (!is_array($row) || !is_numeric($row['reading_km'] ?? null) || !is_string($row['recorded_at'] ?? null)) {
+                continue;
+            }
+            $point = [substr($row['recorded_at'], 0, 19), (float) $row['reading_km']];
+            if ($point[0] <= $at && ($before === null || $point[0] > $before[0])) {
+                $before = $point;
+            } elseif ($point[0] > $at && ($after === null || $point[0] < $after[0])) {
+                $after = $point;
+            }
+        }
+        // Rounded up after a reading and down before one, so the series never goes backwards.
+        $km = match (true) {
+            $before !== null && $after !== null => ceil($before[1] + ($after[1] - $before[1])
+                * (strtotime($at . ' UTC') - strtotime($before[0] . ' UTC'))
+                / max(1, strtotime($after[0] . ' UTC') - strtotime($before[0] . ' UTC'))),
+            $before !== null => ceil($before[1]),
+            $after !== null => floor($after[1]),
+            default => throw new RuntimeException('No readings to place a tyre change on.'),
+        };
+
+        return number_format($km, 3, '.', '');
+    }
+
+    /**
+     * Noon in Europe/London on $date, as a UTC timestamp for the database.
+     */
+    private static function localNoon(string $date): string
+    {
+        return (new DateTimeImmutable($date . ' 12:00', new DateTimeZone('Europe/London')))
+            ->setTimezone(new DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Insert one row and return its id (MAX(id) works on every engine; the
+     * seeder is the only writer).
+     *
+     * @param array<string, mixed> $values
+     */
+    private function insertRow(string $table, array $values): int
+    {
+        $this->table($table)->insert($values)->saveData();
+        $row = $this->fetchRow('SELECT MAX(id) AS id FROM ' . $table);
+
+        return self::intValue(is_array($row) ? ($row['id'] ?? $row[0] ?? null) : null);
     }
 
     /**

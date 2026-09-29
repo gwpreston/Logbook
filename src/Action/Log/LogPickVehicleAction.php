@@ -45,7 +45,7 @@ final readonly class LogPickVehicleAction
             return $this->redirect->toRoute('vehicles.create');
         }
         if (count($vehicles) === 1) {
-            return $this->redirect->toRoute($kind->createRoute(), ['id' => (string) $vehicles[0]->id]);
+            return $this->redirect->toRoute($kind->createRoute(), ['id' => (string) $vehicles[0]->id] + $kind->createParams());
         }
 
         return $this->view->render($request, $response, 'log/pick.twig', ['kind' => $kind, 'vehicles' => $vehicles]);

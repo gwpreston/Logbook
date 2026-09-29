@@ -116,7 +116,7 @@ start if something else already holds the app port. On Windows run it from
 
 | Option | What it does |
 |---|---|
-| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived — with a year of fill-ups (including partial fills, a missed fill-up and EV charges) and monthly odometer readings. Skipped if an account already exists. |
+| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived — with a year of fill-ups (including partial fills, a missed fill-up and EV charges) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced; the motorbike's rear replaced once. Skipped if an account already exists. |
 | `--postgres`, `--mysql`, `--mariadb`, `--sqlite` | Which database engine to run. PostgreSQL is the default. Each engine keeps its own data and photos, so you can switch back and forth. |
 | `--reset` | Empty the chosen engine's database (full rollback + migrate) and delete its uploads. With `--stop`, delete every dev database, the uploads and the `vendor/` volume instead. Asks first unless `--yes`. |
 | `--stop`, `--down` | Stop the containers instead of starting them. |

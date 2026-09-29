@@ -16,6 +16,8 @@ use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
+use Logbook\Service\Tyre\TyreChangeRefused;
+use Logbook\Service\Tyre\TyreSync;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
@@ -24,7 +26,9 @@ use Psr\Clock\ClockInterface;
  * Service history (spec.md §7.4). Saving an entry, in one transaction:
  * writes its odometer reading (when it has an odometer) into the mileage
  * series, records its new attachments, and recomputes the schedule it
- * completes — both the old and the new one when an edit moves it.
+ * completes — both the old and the new one when an edit moves it. Tyre
+ * changes linked to an entry follow its date and odometer, and write their
+ * own readings when it is deleted (spec.md §7.17).
  *
  * Callers pass a Vehicle already resolved for the signed-in owner.
  */
@@ -40,6 +44,7 @@ final readonly class MaintenanceService
         private AttachmentService $attachments,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private TyreSync $tyres,
     ) {
     }
 
@@ -55,6 +60,11 @@ final readonly class MaintenanceService
     {
         return $this->entries->find($vehicle->id, $id)
             ?? throw new MaintenanceEntryNotFound(sprintf('Maintenance entry %d not found.', $id));
+    }
+
+    public function find(Vehicle $vehicle, int $id): ?MaintenanceEntry
+    {
+        return $this->entries->find($vehicle->id, $id);
     }
 
     /**
@@ -79,6 +89,9 @@ final readonly class MaintenanceService
         return $this->get($vehicle, $id);
     }
 
+    /**
+     * @throws TyreChangeRefused when a linked tyre change cannot move to the new date or odometer
+     */
     public function update(
         Vehicle $vehicle,
         MaintenanceEntry $entry,
@@ -90,6 +103,7 @@ final readonly class MaintenanceService
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $entry->id, $data, $zone);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId, $data->scheduleId);
+            $this->tyres->followServiceRecord($vehicle, $this->get($vehicle, $entry->id), $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $entry->id, $stored);
         });
 
@@ -98,11 +112,15 @@ final readonly class MaintenanceService
 
     /**
      * Delete an entry with its odometer reading and attachments; the schedule
-     * it completed falls back to the previous entry (or its baseline).
+     * it completed falls back to the previous entry (or its baseline). Tyre
+     * changes linked to it are unlinked and write their own readings.
+     *
+     * @param DateTimeZone $zone the owner's zone, for those readings
      */
-    public function delete(Vehicle $vehicle, MaintenanceEntry $entry): void
+    public function delete(Vehicle $vehicle, MaintenanceEntry $entry, DateTimeZone $zone): void
     {
-        $this->transaction->run(function () use ($vehicle, $entry): void {
+        $this->transaction->run(function () use ($vehicle, $entry, $zone): void {
+            $this->tyres->releaseServiceRecord($vehicle, $entry->id, $zone);
             $this->odometer->forgetEntry($vehicle, OdometerSource::Maintenance, $entry->id);
             $this->entries->delete($vehicle->id, $entry->id);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId);

@@ -8,6 +8,9 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceDocument;
+use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Maintenance\MaintenanceEntry;
+use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ActivityDateRepository;
@@ -17,10 +20,14 @@ use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Repository\TyreRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Tyre\TyreService;
+use Logbook\Service\Tyre\TyreSummary;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * The one list of entries across modules (spec.md §7.16): read by the
@@ -30,8 +37,11 @@ use Logbook\Support\Date\LocalTime;
  * - Newest first by the owner's local date, then by when the entry was added
  *   (ActivityItem::compare). Fill-ups and readings are instants and the rest
  *   calendar dates, so everything is placed on the owner's calendar first.
- * - Readings written by a fill-up, service or document are left out (the
- *   entry itself is listed); so are a switched-off module's entries.
+ * - Readings written by a fill-up, service, document or tyre change are left
+ *   out (the entry itself is listed); so are a switched-off module's entries.
+ * - A tyre change linked to a service record is never listed on its own:
+ *   the record's row carries its summary (a second line) and is listed under
+ *   the Tyres kind too. With maintenance off the change is listed itself.
  * - A range bounds every query: fill-ups and readings by the UTC instants of
  *   its local start and end, services and expenses by date. Documents are
  *   few, and "dated by its start, else the day it was added" needs the
@@ -56,6 +66,7 @@ final readonly class ActivityFeed
         private AttachmentService $attachments,
         private VehicleService $vehicles,
         private FeatureToggles $features,
+        private TyreRepository $tyres,
     ) {
     }
 
@@ -157,9 +168,28 @@ final readonly class ActivityFeed
         $readings = $query->includes(ActivityKind::Odometer)
             ? $this->readings->listManualForVehiclesBetween($ids, $from, $until)
             : [];
-        $services = $query->includes(ActivityKind::Maintenance)
+        $enabled = $this->features->all();
+        $maintenanceOn = $enabled[Feature::Maintenance->value];
+        $tyresOn = $enabled[Feature::Tyres->value];
+        $withTyres = $query->includes(ActivityKind::Tyre);
+        // The Tyres kind lists linked service records too, so read them when either is asked for.
+        $services = $query->includes(ActivityKind::Maintenance) || ($withTyres && $maintenanceOn)
             ? $this->maintenance->listForVehiclesBetween($ids, $query->from, $query->until)
             : [];
+        $changes = $withTyres || ($tyresOn && $services !== [])
+            ? $this->tyres->listChangesBetween($ids, $query->from, $query->until)
+            : [];
+        [$ownChanges, $linkedTo] = $this->splitLinked($changes, $services, $maintenanceOn);
+        if (!$query->includes(ActivityKind::Maintenance)) {
+            $services = array_values(array_filter(
+                $services,
+                static fn (MaintenanceEntry $e): bool => isset($linkedTo[$e->id]),
+            ));
+        }
+        if (!$withTyres) {
+            $ownChanges = [];
+        }
+        $summaries = $this->tyreSummaries($ids, $changes);
         $expenses = $query->includes(ActivityKind::Expense)
             ? $this->expenses->listForVehiclesBetween($ids, $query->from, $query->until)
             : [];
@@ -234,6 +264,24 @@ final readonly class ActivityFeed
                 odometerKm: $data->odometerKm,
                 vendor: $data->vendor,
                 files: $counts->of(AttachmentOwner::Maintenance, $entry->id),
+                tyres: $tyresOn
+                    ? array_map(static fn (TyreChange $c): TranslatableMessage => $summaries[$c->id], $linkedTo[$entry->id] ?? [])
+                    : [],
+            );
+        }
+        foreach ($ownChanges as $change) {
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Tyre,
+                vehicle: $vehicles[$change->vehicleId],
+                entryId: $change->id,
+                date: $change->data->doneOn,
+                createdAt: $change->createdAt,
+                label: '',
+                labelKey: 'tyre.kind_short.' . $change->kind->value,
+                icon: $change->kind->icon(),
+                currency: $currencies[$change->vehicleId],
+                odometerKm: $change->data->odometerKm,
+                tyres: [$summaries[$change->id]],
             );
         }
         foreach ($documents as $document) {
@@ -296,6 +344,61 @@ final readonly class ActivityFeed
         usort($items, ActivityItem::compare(...));
 
         return $query->limit === null ? $items : array_slice($items, 0, $query->limit);
+    }
+
+    /**
+     * Split tyre changes into those listed on their own and those a listed
+     * service record carries. A change is carried only while maintenance is
+     * on and its record is in $services (a linked change always has its
+     * record's date, so both fall in the same range).
+     *
+     * @param list<TyreChange> $changes
+     * @param list<MaintenanceEntry> $services
+     * @return array{0: list<TyreChange>, 1: array<int, list<TyreChange>>}
+     */
+    private function splitLinked(array $changes, array $services, bool $maintenanceOn): array
+    {
+        $records = [];
+        foreach ($services as $entry) {
+            $records[$entry->id] = true;
+        }
+        $own = [];
+        $linkedTo = [];
+        foreach ($changes as $change) {
+            $record = $change->data->maintenanceEntryId;
+            if ($maintenanceOn && $record !== null && isset($records[$record])) {
+                $linkedTo[$record][] = $change;
+            } else {
+                $own[] = $change;
+            }
+        }
+
+        return [$own, $linkedTo];
+    }
+
+    /**
+     * Each change's summary line, from one read of the tyres and sets of the page's vehicles.
+     *
+     * @param list<int> $vehicleIds
+     * @param list<TyreChange> $changes
+     * @return array<int, TranslatableMessage> by change id
+     */
+    private function tyreSummaries(array $vehicleIds, array $changes): array
+    {
+        if ($changes === []) {
+            return [];
+        }
+        $tyres = [];
+        foreach ($this->tyres->listTyresOf($vehicleIds) as $tyre) {
+            $tyres[$tyre->id] = $tyre;
+        }
+        $sets = TyreService::setsById($this->tyres->listSetsOf($vehicleIds));
+        $summaries = [];
+        foreach ($changes as $change) {
+            $summaries[$change->id] = TyreSummary::line($change, $tyres, $sets);
+        }
+
+        return $summaries;
     }
 
     /**

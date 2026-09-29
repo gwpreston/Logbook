@@ -6,7 +6,8 @@ namespace Logbook\Domain\Odometer;
 
 /**
  * Where an odometer reading came from. Readings from fill-ups, maintenance
- * entries and compliance documents are owned by that entry and change with it.
+ * entries, compliance documents and tyre changes are owned by that entry
+ * and change with it.
  */
 enum OdometerSource: string
 {
@@ -14,6 +15,7 @@ enum OdometerSource: string
     case Fuel = 'fuel';
     case Maintenance = 'maintenance';
     case Document = 'document';
+    case Tyre = 'tyre';
 
     /**
      * Icon name in the vendored sprite (assets/vendor/icons.svg).
@@ -25,6 +27,7 @@ enum OdometerSource: string
             self::Fuel => 'local_gas_station',
             self::Maintenance => 'build',
             self::Document => 'verified_user',
+            self::Tyre => 'tire_repair',
         };
     }
 }

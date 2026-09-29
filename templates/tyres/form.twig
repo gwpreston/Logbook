@@ -1,0 +1,247 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/tyres.twig' as tyres %}
+
+{#
+ # A tyre change form (spec.md §7.17), one kind at a time: tyres already on
+ # the vehicle, fit, swap set, rotate, repair or remove. Every kind works
+ # without JS; field names are flat (brand_fl, move_12) so a validation
+ # error keeps what was typed.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = ('tyre.kind.' ~ kind.value)|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+{% set fitted = context.fitted %}
+{% set position_options = context.positions|map(p => {value: p.value, label: ('tyre.position.' ~ p.value)|trans}) %}
+{% set rolling_options = context.rollingPositions()|map(p => {value: p.value, label: ('tyre.position.' ~ p.value)|trans}) %}
+{% set season_options = [{value: '', label: 'tyre.field.season_none'|trans}]|merge(seasons|map(s => {value: s.value, label: ('tyre.season.' ~ s.value)|trans})) %}
+{% set reason_options = reasons|map(r => {value: r.value, label: 'tyre.field.replace_retire'|trans ~ ' — ' ~ ('tyre.reason.' ~ r.value)|trans}) %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% macro description(values, errors, seasons, suffix = '') -%}
+    {% import 'macros/ui.twig' as ui %}
+    <div class="form-row">
+        {{ ui.input('brand' ~ suffix, 'tyre.field.brand'|trans, values, errors, {optional: true, maxlength: 60, autocomplete: 'off'}) }}
+        {{ ui.input('model' ~ suffix, 'tyre.field.model'|trans, values, errors, {optional: true, maxlength: 60, autocomplete: 'off'}) }}
+    </div>
+    <div class="form-row">
+        {{ ui.input('size' ~ suffix, 'tyre.field.size'|trans, values, errors, {optional: true, maxlength: 30, autocomplete: 'off', hint: 'tyre.hint.size'|trans}) }}
+        {{ ui.select('season' ~ suffix, 'tyre.field.season'|trans, values, errors, seasons) }}
+    </div>
+{%- endmacro %}
+
+{% macro dot(name, label, values, errors) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {{ ui.input(name, label, values, errors, {optional: true, maxlength: 4, inputmode: 'numeric', autocomplete: 'off', placeholder: '2323', hint: 'tyre.hint.dot'|trans}) }}
+{%- endmacro %}
+
+{# Into which set the tyres taken off go: keep theirs, an existing set, or a new one. #}
+{% macro set_choice(values, errors, sets) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {{ ui.select('set', 'tyre.field.set'|trans, values, errors,
+        [{value: '', label: 'tyre.field.set_keep'|trans}]|merge(sets|map(s => {value: s.id, label: s.data.name}))|merge([{value: 'new', label: 'tyre.field.set_new'|trans}]),
+        {hint: 'tyre.hint.set'|trans}) }}
+    <div class="form-row">
+        {{ ui.input('set_name', 'tyre.field.set_name'|trans, values, errors, {optional: true, maxlength: 100}) }}
+        {{ ui.input('set_location', 'tyre.field.set_location'|trans, values, errors, {optional: true, maxlength: 200, hint: 'tyre.set.hint.location'|trans}) }}
+    </div>
+{%- endmacro %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'tyre.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% import _self as form %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        {% set needs_fitted = kind.value in ['rotate', 'repair', 'remove'] %}
+        {% if needs_fitted and fitted is empty %}
+            <p class="alert alert--info">{{ ui.icon('info') }}<span>{{ 'tyre.no_tyres_fitted'|trans }}</span></p>
+            <div class="btn-row">
+                <a class="btn btn--primary" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'existing'}) }}">{{ 'tyre.kind.existing'|trans }}</a>
+                <a data-modal-cancel class="btn" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        {% elseif kind.value == 'swap' and fitted is empty and context.stored is empty %}
+            <p class="alert alert--info">{{ ui.icon('info') }}<span>{{ 'tyre.none_to_swap'|trans }}</span></p>
+        {% else %}
+        <form class="form" method="post" action="{{ url_for('tyres.change', {id: vehicle.id, kind: kind.value}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card">
+                <div class="form-row">
+                    {{ ui.input('done_on', 'tyre.field.date'|trans, values, errors, {type: 'date', required: true}) }}
+                    {% set odometer_hint = kind.value == 'existing' ? 'tyre.hint.odometer_existing'|trans : (kind.value == 'repair' ? 'tyre.hint.odometer_repair'|trans : 'tyre.hint.odometer'|trans) %}
+                    {{ ui.input('odometer', 'tyre.field.odometer'|trans, values, errors, {type: 'number', required: kind.requiresOdometer(), optional: not kind.requiresOdometer(), step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, hint: odometer_hint}) }}
+                </div>
+            </section>
+
+            {% if kind.value == 'existing' %}
+                <p class="field__hint">{{ 'tyre.hint.existing'|trans }}</p>
+                {{ ui.field_error(errors, 'positions') }}
+                {% for position in context.positions %}
+                    {% set code = position.value %}
+                    <fieldset class="card fieldset">
+                        <legend class="card__title fieldset__legend">
+                            <label class="checkbox">
+                                <input type="checkbox" name="pos_{{ code }}" value="1"{% if (values['pos_' ~ code] ?? '') == '1' %} checked{% endif %}{% if fitted[code] is defined %} disabled{% endif %}>
+                                <span>{{ ('tyre.position.' ~ code)|trans }}</span>
+                            </label>
+                        </legend>
+                        {% if fitted[code] is defined %}
+                            <p class="muted">{{ tyres.name(fitted[code]) }} · {{ 'tyre.status.fitted'|trans }}</p>
+                        {% else %}
+                            {{ form.description(values, errors, season_options, '_' ~ code) }}
+                            {{ form.dot('dot_' ~ code, 'tyre.field.dot'|trans, values, errors) }}
+                        {% endif %}
+                    </fieldset>
+                {% endfor %}
+
+            {% elseif kind.value == 'fit' %}
+                <fieldset class="card fieldset">
+                    <legend class="card__title fieldset__legend">{{ 'tyre.field.positions'|trans }}</legend>
+                    <p class="field__hint">{{ 'tyre.hint.fit'|trans }}</p>
+                    <div class="chip-row">
+                        {% for position in context.positions %}
+                            <label class="checkbox">
+                                <input type="checkbox" name="pos_{{ position.value }}" value="1"{% if (values['pos_' ~ position.value] ?? '') == '1' %} checked{% endif %}>
+                                <span>{{ ('tyre.position.' ~ position.value)|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {{ ui.field_error(errors, 'positions') }}
+                </fieldset>
+                <section class="card">
+                    {{ form.description(values, errors, season_options) }}
+                </section>
+                <fieldset class="card fieldset">
+                    <legend class="card__title fieldset__legend">{{ 'tyre.field.dot'|trans }}</legend>
+                    <p class="field__hint">{{ 'tyre.hint.dot'|trans }}</p>
+                    <div class="form-row form-row--wrap">
+                        {% for position in context.positions %}
+                            {{ ui.input('dot_' ~ position.value, ('tyre.position.' ~ position.value)|trans, values, errors, {optional: true, maxlength: 4, inputmode: 'numeric', autocomplete: 'off', placeholder: '2323'}) }}
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                {% if fitted is not empty %}
+                    <fieldset class="card fieldset">
+                        <legend class="card__title fieldset__legend">{{ 'tyre.field.replace'|trans }}</legend>
+                        <p class="field__hint">{{ 'tyre.hint.replace'|trans }}</p>
+                        {% for code, tyre in fitted %}
+                            {{ ui.select('replace_' ~ code, ('tyre.position.' ~ code)|trans ~ ' · ' ~ tyres.name(tyre), values, errors,
+                                reason_options|merge([{value: 'store', label: 'tyre.field.replace_keep'|trans}])) }}
+                        {% endfor %}
+                    </fieldset>
+                {% endif %}
+
+            {% elseif kind.value == 'swap' %}
+                <fieldset class="card fieldset">
+                    <legend class="card__title fieldset__legend">{{ 'tyre.section.stored'|trans }}</legend>
+                    <p class="field__hint">{{ 'tyre.hint.swap'|trans }}</p>
+                    {% set road = fitted|filter(t => t.position.isRolling()) %}
+                    {% if road is not empty %}
+                        <ul class="plain-list">
+                            {% for code, tyre in road %}
+                                <li>{{ ('tyre.position.' ~ code)|trans }} · {{ tyres.name(tyre) }}</li>
+                            {% endfor %}
+                        </ul>
+                        {{ form.set_choice(values, errors, sets) }}
+                    {% endif %}
+                </fieldset>
+                {% if context.stored is not empty %}
+                    <fieldset class="card fieldset">
+                        <legend class="card__title fieldset__legend">{{ 'tyre.field.fit_set'|trans }}</legend>
+                        <p class="field__hint">{{ 'tyre.hint.swap_on'|trans }}</p>
+                        {{ ui.field_error(errors, 'on') }}
+                        {% for tyre in context.stored %}
+                            {% set set = sets|filter(s => s.id == tyre.setId)|first %}
+                            {{ ui.select('on_' ~ tyre.id, tyres.name(tyre) ~ (set ? ' · ' ~ set.data.name : ''), values, errors,
+                                [{value: '', label: 'tyre.status.stored'|trans}]|merge(rolling_options)) }}
+                        {% endfor %}
+                    </fieldset>
+                {% endif %}
+
+            {% elseif kind.value == 'rotate' %}
+                <fieldset class="card fieldset">
+                    <legend class="card__title fieldset__legend">{{ 'tyre.field.new_position'|trans }}</legend>
+                    <p class="field__hint">{{ 'tyre.hint.rotate'|trans }}</p>
+                    {{ ui.field_error(errors, 'positions') }}
+                    {% for code, tyre in fitted %}
+                        {{ ui.select('move_' ~ tyre.id, ('tyre.position.' ~ code)|trans ~ ' · ' ~ tyres.name(tyre), values, errors, position_options, {required: true}) }}
+                    {% endfor %}
+                </fieldset>
+
+            {% elseif kind.value == 'repair' %}
+                <fieldset class="card fieldset">
+                    <legend class="card__title fieldset__legend">{{ 'tyre.field.tyres'|trans }}</legend>
+                    <p class="field__hint">{{ 'tyre.hint.repair'|trans }}</p>
+                    {% for code, tyre in fitted %}
+                        <label class="checkbox">
+                            <input type="checkbox" name="repair_{{ tyre.id }}" value="1"{% if (values['repair_' ~ tyre.id] ?? '') == '1' %} checked{% endif %}>
+                            <span>{{ ('tyre.position.' ~ code)|trans }} · {{ tyres.name(tyre) }}</span>
+                        </label>
+                    {% endfor %}
+                    {{ ui.field_error(errors, 'tyres') }}
+                </fieldset>
+
+            {% elseif kind.value == 'remove' %}
+                <fieldset class="card fieldset">
+                    <legend class="card__title fieldset__legend">{{ 'tyre.field.tyres'|trans }}</legend>
+                    <p class="field__hint">{{ 'tyre.hint.remove'|trans }}</p>
+                    {{ ui.field_error(errors, 'tyres') }}
+                    {% for code, tyre in fitted %}
+                        {{ ui.select('action_' ~ tyre.id, ('tyre.position.' ~ code)|trans ~ ' · ' ~ tyres.name(tyre), values, errors,
+                            [{value: 'keep', label: 'tyre.field.keep'|trans}, {value: 'store', label: 'tyre.field.into_storage'|trans}]|merge(reason_options)) }}
+                    {% endfor %}
+                </fieldset>
+                <section class="card">
+                    {{ form.set_choice(values, errors, sets) }}
+                </section>
+            {% endif %}
+
+            {% if context.maintenance and (kind.takesCost() or links is not empty) %}
+                <section class="card">
+                    {% if kind.takesCost() %}
+                        <div class="form-row">
+                            {{ ui.input('cost', 'tyre.field.cost'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency)}) }}
+                            {{ ui.input('vendor', 'tyre.field.vendor'|trans, values, errors, {optional: true, maxlength: 100}) }}
+                        </div>
+                        <p class="field__hint">{{ 'tyre.hint.cost'|trans }}</p>
+                    {% endif %}
+                    {% if links is not empty %}
+                        {{ ui.select('link', 'tyre.field.link'|trans, values, errors,
+                            [{value: '', label: 'tyre.field.link_none'|trans}]|merge(links|map(e => {value: e.id, label: e.data.performedOn|local_date ~ ' · ' ~ e.data.title ~ ' · ' ~ e.data.cost|money(currency)})),
+                            {hint: 'tyre.hint.link'|trans}) }}
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            <section class="card">
+                <div class="field">
+                    <label class="field__label" for="f-note">{{ 'tyre.field.note'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-note" name="note" rows="2" maxlength="500"{{ ui.described_by('note', errors, false) }}>{{ values.note ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'note') }}
+                </div>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ ('tyre.submit.' ~ kind.value)|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endif %}
+        {% endblock %}
+    </div>
+{% endblock %}

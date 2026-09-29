@@ -124,6 +124,31 @@
             </section>
             {% endif %}
 
+            {% if tyres is not null %}
+            {% import 'macros/tyres.twig' as tyre_ui %}
+            <section class="card" aria-labelledby="tyres-heading">
+                <div class="card__header">
+                    <h2 id="tyres-heading" class="card__title">{{ 'tyre.title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ 'tyre.all'|trans }} →</a>
+                </div>
+                {% if tyres is empty %}
+                    <p class="muted">{{ 'tyre.none_fitted'|trans }}</p>
+                {% else %}
+                    <ul class="list">
+                        {% for view in tyres %}
+                            <li class="list__item">
+                                <span class="list__icon" style="--tone: var(--c-maint)">{{ ui.icon('tire_repair') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ ('tyre.position.' ~ view.tyre.position.value)|trans }} · {{ tyre_ui.name(view.tyre) }}</span>
+                                    <span class="list__meta">{{ tyre_ui.age(view) }}</span>
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+            {% endif %}
+
             {% if feature_enabled('compliance') %}
             <section class="card" aria-labelledby="documents-heading">
                 <div class="card__header">

@@ -114,6 +114,28 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * A cost per kilometre as a cost per 1,000 of the user's distance unit,
+     * for figures too small to read per km (a tyre's): "£4.90 per 1,000 mi".
+     *
+     * @param string|null $perKm canonical decimal
+     */
+    public function perThousandDistance(?string $perKm, string $currency): string
+    {
+        if ($perKm === null || !Decimal::isCanonical($perKm)) {
+            return '';
+        }
+
+        $unit = $this->context->preferences()->distanceUnit;
+        $value = ($unit === DistanceUnit::Mile ? (float) $perKm * DistanceUnit::KM_PER_MILE : (float) $perKm) * 1000;
+        $digits = Currency::fractionDigits($currency);
+
+        return $this->translator->trans('tyre.cost_per', [
+            'price' => $this->formatMoney($value, $currency, $digits, $digits),
+            'unit' => $unit->value,
+        ]);
+    }
+
+    /**
      * A distance stored in km, in the user's distance unit: "12,345 mi".
      */
     public function distance(int|float|string|null $km, int $decimals = 0): string
