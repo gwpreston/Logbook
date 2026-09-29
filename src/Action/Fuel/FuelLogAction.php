@@ -8,6 +8,7 @@ use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\RequestContext;
@@ -21,6 +22,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * GET /vehicles/{id}/fuel — the fuel log: fill-ups with per-fill economy and
  * cost, summaries, and economy / price trend charts. Liquid fuel and
  * electricity are summarised separately; the vehicle's own kind comes first.
+ * Economy checks flag the rows whose economy is far from usual; `?check=1`
+ * lists only those (spec.md §7.3).
  */
 final readonly class FuelLogAction
 {
@@ -42,7 +45,12 @@ final readonly class FuelLogAction
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $history = $this->fuel->history($vehicle);
+        $checks = $this->fuel->checks($history);
+        $toCheck = ($request->getQueryParams()['check'] ?? '') === '1';
         $rows = $history->newestFirst();
+        if ($toCheck) {
+            $rows = array_values(array_filter($rows, static fn (FillEconomy $f): bool => $checks->isFlagged($f->entry->id)));
+        }
         $pagination = Pagination::fromQuery($request->getQueryParams(), count($rows));
 
         $grades = $this->fuel->gradeBreakdowns($history);
@@ -59,6 +67,7 @@ final readonly class FuelLogAction
                 'electric' => $kind === EnergyKind::Electric,
                 'summary' => $summary,
                 'grades' => $grades[$kind->value] ?? null,
+                'to_check' => $checks->flaggedCount($kind),
                 'economy_chart' => $this->charts->economy($history, $kind, $user->preferences),
                 'price_chart' => $this->charts->price($history, $kind, $user->preferences, $currency),
             ];
@@ -68,6 +77,8 @@ final readonly class FuelLogAction
             'vehicle' => $vehicle,
             'currency' => $currency,
             'history' => $history,
+            'checks' => $checks,
+            'to_check' => $toCheck,
             'sections' => $sections,
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,

@@ -22,6 +22,7 @@ use Logbook\Action\Expense\DeleteExpenseAction;
 use Logbook\Action\Expense\EditExpenseAction;
 use Logbook\Action\Expense\VehicleExpensesAction;
 use Logbook\Action\Export\ExportModuleAction;
+use Logbook\Action\Fuel\ConfirmEconomyAction;
 use Logbook\Action\Fuel\CreateFuelEntryAction;
 use Logbook\Action\Fuel\DeleteFuelEntryAction;
 use Logbook\Action\Fuel\EditFuelEntryAction;
@@ -172,6 +173,8 @@ return static function (App $app): void {
                 ->setName('fuel.edit');
             $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/delete', DeleteFuelEntryAction::class)
                 ->setName('fuel.delete');
+            $fuel->post('/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/economy', ConfirmEconomyAction::class)
+                ->setName('fuel.economy');
         })->add($module(Feature::Fuel));
 
         $group->group('/vehicles/{id:[0-9]+}', function (Group $vehicle) use ($module): void {

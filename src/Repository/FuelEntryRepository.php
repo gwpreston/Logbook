@@ -25,6 +25,7 @@ final readonly class FuelEntryRepository
     public const int QUANTITY_SCALE = 3;
     public const int PRICE_SCALE = 6;
     public const int MONEY_SCALE = 3;
+    public const int CONSUMPTION_SCALE = 6;
 
     public function __construct(private Connection $connection, private StoredGrade $grades)
     {
@@ -109,6 +110,20 @@ final readonly class FuelEntryRepository
         );
     }
 
+    /**
+     * Record (or, with null, clear) the confirmed economy of a fill-up
+     * (spec.md §7.3). Leaves updated_at alone: the fill-up itself is unchanged.
+     */
+    public function setEconomyConfirmed(int $vehicleId, int $id, ?string $consumption): void
+    {
+        $this->connection->update(
+            self::TABLE,
+            ['economy_confirmed' => $consumption],
+            ['vehicle_id' => $vehicleId, 'id' => $id],
+            ['vehicle_id' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER],
+        );
+    }
+
     public function delete(int $vehicleId, int $id): void
     {
         $this->connection->delete(
@@ -135,6 +150,7 @@ final readonly class FuelEntryRepository
                 'is_missed_previous',
                 'station',
                 'notes',
+                'economy_confirmed',
                 'created_at',
                 'updated_at',
             )
@@ -196,6 +212,7 @@ final readonly class FuelEntryRepository
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
+            economyConfirmed: Row::nullableDecimal($row, 'economy_confirmed', self::CONSUMPTION_SCALE),
         );
     }
 }

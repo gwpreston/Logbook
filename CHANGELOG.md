@@ -6,6 +6,51 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-09-29
+
+Phase 13: economy checks.
+
+### Added
+- **Economy checks.** Each full-to-full tank (or charge) of at least 100 km
+  is compared with the median of the vehicle's previous ten, from its sixth
+  on, in fuel used per distance, so mpg UK, mpg US, L/100 km and km/L all
+  agree. A tank that used at least 25% more or 20% less than usual (35% more
+  or 26% less for charging, which swings more with the seasons) is flagged
+  with the likely cause and links to the fill-ups to check. Most flags are
+  typing mistakes, so the hints send you to the data first.
+- **A mistyped reading shows as a pair.** One odometer typed too high makes
+  one tank look thrifty and the next thirsty; both flags name the fill-up
+  they share and say when the two tanks are normal taken together.
+- **Looks right** confirms a genuine one (a winter trip with a roof box) and
+  keeps it quiet until that tank's figures change; *Undo* brings the flag
+  back. A plain form: works without JavaScript.
+- Where flags show: beside the economy on the Fuel tab, with "N fill-ups to
+  check" in the summary and a *To check* list (`?check=1`); in the notice
+  after saving a fill-up; above the fill-up's edit form; beside the economy
+  on the dashboard's *Recent fuel*; and as a count after a CSV import of
+  fill-ups ("3 imported fill-ups look unusual").
+- The demo Golf has a mistyped odometer and a confirmed thirsty January tank.
+- German translations for all of the above.
+
+### Unchanged, on purpose
+- Every average, trend, cost per distance and report figure is exactly as
+  before: flagged tanks still count until you correct them. No notification
+  or reminder is ever sent for a flag. Flags never appear in History, the
+  print view, reports or the garage.
+
+### Upgrade notes
+- One migration: a nullable column `fuel_entries.economy_confirmed`, empty
+  for every existing fill-up. It runs automatically on start (Docker) or
+  with `vendor/bin/phinx migrate` (bare PHP). Every existing figure is
+  unchanged.
+- No configuration changes.
+- Backups record the database schema, so a backup made with 1.4.x cannot
+  be restored into this version (restore it with its own version first,
+  then upgrade), and a 1.5.0 backup cannot be restored into 1.4.x.
+- **Going back to 1.4.0:** roll back first, while still on this version,
+  with `vendor/bin/phinx rollback -e production -t 20261008100000`. Only the
+  *Looks right* confirmations are lost.
+
 ## [1.4.0] — 2026-09-29
 
 Phase 12: buyer-first print, ownership paperwork and a dated starting
@@ -674,7 +719,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/gwpreston16/Logbook/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/gwpreston16/Logbook/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/gwpreston16/Logbook/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/gwpreston16/Logbook/compare/v1.2.0...v1.2.1

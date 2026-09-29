@@ -96,17 +96,86 @@
     </section>
 {%- endmacro %}
 
+{# The economy check's short mark beside a fill-up's economy (a
+   Service\Fuel\SegmentCheck, spec.md §7.3): an icon and text, never colour
+   alone. Shows nothing for a segment that is normal or not checked. #}
+{% macro check_mark(check) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% if check and check.isFlagged() %}
+        <span class="economy-check economy-check--flag">{{ ui.icon('warning') }}{{ ('fuel.check.short.' ~ check.verdict.value)|trans }}</span>
+    {%- elseif check and check.isConfirmedFlag() %}
+        <span class="economy-check economy-check--confirmed">{{ ui.icon('check') }}{{ 'fuel.check.short.confirmed'|trans }}</span>
+    {%- endif %}
+{%- endmacro %}
+
+{# The full economy check of a flagged (or confirmed) segment: how far from
+   usual in fuel used, the likely cause (or the pair's shared fill-up), links
+   to the fill-ups to check and the *Looks right* / *Undo* form. Nothing is
+   changed for the owner but the confirmation. opts: id (for
+   aria-describedby), csrf, return_to, on_edit (hides "Edit this fill-up"). #}
+{% macro check_flag(check, vehicle, opts = {}) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set fill = check.fill %}
+    {% set entry = fill.entry %}
+    {% set electric = entry.data.fuel.isElectric() %}
+    {% set other = check.otherEntry() %}
+    {% set params = {
+        percent: check.difference()|percent,
+        economy: fill.segment.distanceKm|economy(fill.segment.volume, electric),
+        usual: '100'|economy(check.baseline, electric),
+    } %}
+    <div class="economy-check__body"{% if opts.id ?? null %} id="{{ opts.id }}"{% endif %}>
+        {% if check.isFlagged() %}
+            <p class="economy-check__headline">{{ ui.icon('warning') }}<span>{{ ('fuel.check.' ~ check.verdict.value)|trans(params) }}</span></p>
+            {% if check.pairShared %}
+                <p>{{ (check.pairNormal ? 'fuel.check.pair_normal' : 'fuel.check.pair')|trans({date: check.pairShared.data.filledAt|instant_date}) }}</p>
+            {% else %}
+                <p>{{ ('fuel.check.hint.' ~ check.verdict.value)|trans }}</p>
+            {% endif %}
+        {% else %}
+            <p class="economy-check__headline">{{ ui.icon('check') }}<span>{{ 'fuel.check.confirmed_note'|trans(params) }}</span></p>
+        {% endif %}
+        <div class="economy-check__actions">
+            {% if check.isFlagged() %}
+                {% if not (opts.on_edit ?? false) %}
+                    <a class="btn btn--sm" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'fuel.check.edit_this'|trans }}</a>
+                {% endif %}
+                {% if other %}
+                    <a class="btn btn--sm" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: other.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'fuel.check.edit_other'|trans({date: other.data.filledAt|instant_date}) }}</a>
+                {% endif %}
+            {% endif %}
+            <form method="post" action="{{ url_for('fuel.economy', {id: vehicle.id, entry: entry.id}) }}">
+                {{ ui.csrf(opts.csrf ?? null) }}
+                {{ ui.return_field(opts.return_to ?? '') }}
+                {% if check.isFlagged() %}
+                    <button type="submit" class="btn btn--sm btn--soft">{{ ui.icon('check') }}{{ 'fuel.check.looks_right'|trans }}</button>
+                {% else %}
+                    <input type="hidden" name="undo" value="1">
+                    <button type="submit" class="btn btn--sm">{{ ui.icon('undo') }}{{ 'fuel.check.undo'|trans }}</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+{%- endmacro %}
+
 {# One fill-up (a Service\Fuel\FillEconomy) as a list row linking to its edit
    page: when, odometer · volume · price, total, and the economy of the
-   full-to-full segment it closes (or why there is none). #}
-{% macro row(fill, vehicle, currency, files = 0) -%}
+   full-to-full segment it closes (or why there is none). A flagged or
+   confirmed economy check (opts.check) adds its mark beside the economy and
+   the full check in a disclosure under the row (a sibling of the link, so
+   its links and form are reachable from the keyboard; works without JS).
+   opts: check, csrf, return_to. #}
+{% macro row(fill, vehicle, currency, files = 0, opts = {}) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import 'macros/attachments.twig' as paperclip %}
     {% import _self as fuel_ui %}
     {% set data = fill.entry.data %}
     {% set electric = data.fuel.isElectric() %}
     {% set status = fill.status.value %}
-    <li>
+    {% set check = opts.check ?? null %}
+    {% set shown = check and (check.isFlagged() or check.isConfirmedFlag()) %}
+    {% set check_id = 'check-' ~ fill.entry.id %}
+    <li{% if shown %} class="list__group"{% endif %}>
         <a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}" data-modal>
             <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
             <span class="list__body">
@@ -122,12 +191,19 @@
             <span class="list__end">
                 <span class="list__amount tabular">{{ data.totalCost|money(currency) }}</span>
                 {% if fill.segment %}
-                    <span class="economy tabular">{{ fill.segment.distanceKm|economy(fill.segment.volume, electric) }}</span>
+                    <span class="economy tabular"{% if shown %} aria-describedby="{{ check_id }}"{% endif %}>{{ fill.segment.distanceKm|economy(fill.segment.volume, electric) }}</span>
+                    {% if shown %}{{ fuel_ui.check_mark(check) }}{% endif %}
                 {% else %}
                     <span class="economy economy--none">{{ ('fuel.status.' ~ status ~ (electric ? '_ev' : ''))|trans }}</span>
                 {% endif %}
                 {{ paperclip.count(files) }}
             </span>
         </a>
+        {% if shown %}
+            <details class="economy-check__details"{% if opts.open ?? false %} open{% endif %}>
+                <summary>{{ (check.isFlagged() ? 'fuel.check.what_to_check' : 'fuel.check.checked_summary')|trans }}</summary>
+                {{ fuel_ui.check_flag(check, vehicle, {id: check_id, csrf: opts.csrf ?? null, return_to: opts.return_to ?? ''}) }}
+            </details>
+        {% endif %}
     </li>
 {%- endmacro %}

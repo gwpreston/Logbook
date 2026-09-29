@@ -237,9 +237,16 @@ MySQL only.
   (`decimal(14,3)`; 0 is valid), is_partial (bool), is_missed_previous (bool,
   for gap handling), station, notes, created/updated (UTC).
   Index `(vehicle_id, filled_at)`.
+- economy_confirmed (`decimal(14,6)`, nullable; Phase 13): set by *Looks
+  right* on a flagged economy check (§7.3) on the fill-up that closes the
+  segment. It holds the segment's canonical consumption (litres or kWh per
+  100 km) at the moment the owner confirmed it, not a yes/no: the flag stays
+  hidden only while the segment still measures exactly that (to 6 places),
+  so an edit that changes the segment brings the flag back. Never set by the
+  fill-up form or CSV import; editing the fill-up keeps it.
 - Derived on every read, never stored (so edits cannot leave stale figures):
   distance since the previous fill, full-to-full segments, consumption,
-  average price, cost/distance.
+  average price, cost/distance, economy checks.
 
 **MaintenanceEntry**
 - id, vehicle_id, performed_on (calendar date), odometer_km (optional: a
@@ -593,6 +600,77 @@ math stays correct across gaps. Show per-fill and rolling consumption
 - Saving shows the fill's economy when it closes a segment, and any odometer
   plausibility warning.
 
+**Economy checks** (Phase 13). A fill-up whose economy is far from the
+vehicle's usual is flagged, with the likely cause and links to the fill-ups
+to check. Most odd tanks are typing mistakes (an extra digit on the
+odometer, a fill-up that was not really full, a missed fill-up that was not
+flagged), so the flag sends the owner to the data first. It is derived on
+every read (`Service\Fuel\EconomyCheck`, from the segments above; no second
+walk of the fill-ups) and changes nothing else: **every average, trend and
+cost figure still counts every segment**, flagged or not.
+
+- **What is checked:** each closed full-to-full segment in its own series
+  (liquid fuel or electricity; a plug-in hybrid's two series are checked
+  separately), belonging to its **closing** fill-up. Figures are compared in
+  canonical consumption (litres or kWh per 100 km), never in mpg or km/L, so
+  every unit gets the same answer. Only **checkable** segments count: at
+  least **100 km** long (shorter ones are too noisy); they are neither
+  checked nor used in a baseline otherwise.
+- **Baseline:** the median consumption of the up-to-**10** checkable
+  segments of the same vehicle and series that **ended before** this one
+  (the mean of the two middle ones for an even count). With fewer than **5**
+  the segment is *not checked*. Later segments are never used, so a
+  segment's verdict changes only when it or an earlier segment is edited;
+  an imported history is checked from its sixth checkable segment on.
+- **Bands:** r = consumption ÷ baseline. Liquid fuel: *more than usual* at
+  r ≥ 1.25, *less than usual* at r ≤ 0.80. Electricity (which swings more
+  with the seasons): r ≥ 1.35 / r ≤ 0.74. Both symmetric on a log scale.
+  Thresholds are constants on the service; there is no setting.
+- **Wording**, in fuel used, the same in every unit: "Used about 32% more
+  than usual (8.9 L/100 km; usually 6.7 L/100 km)" / "Used about 28% less
+  than usual (…)", the figures in the owner's consumption (or efficiency)
+  unit. One line of likely cause under it — *less*: "Was a fill-up missed,
+  or was this one or the one before it not quite full? Check the odometer
+  too." *More*: "Check the odometer and the amount. Was the fill-up before it
+  only partly full? Winter, towing, short trips and roof boxes also cost
+  fuel." The hints name common causes; they are not a diagnosis.
+- **Pairs:** when a flagged segment is followed, in the same series, by a
+  segment that opens at its closing fill-up and is flagged the other way,
+  that shared fill-up is almost certainly the mistake (its odometer, or
+  whether the tank was really full). Pairs are taken left to right, and a
+  confirmed segment is never part of one. When the two segments taken
+  together (their volumes over their distances) are inside the first one's
+  band, against the first one's baseline, both flags say "Probably the
+  fill-up on 3 Sep: taken together, these two tanks are normal." The pair
+  note therefore appears once the next tank is logged; the verdict itself
+  (more / less, ratio, baseline) never depends on later fill-ups.
+- **Links, not fixes:** each flag links to *Edit this fill-up* and *Edit the
+  fill-up on {date}* (the segment's opening fill-up, or the shared one of a
+  pair when that is another fill-up). Nothing is changed for the owner.
+- **Looks right** (`POST /vehicles/{id}/fuel/{entry}/economy`, CSRF, a plain
+  form that works without JS) stores the segment's current consumption in
+  the closing fill-up's `economy_confirmed` (§6); *Undo* (same path, with
+  `undo=1`) clears it. Refused (404) for a fill-up that closes no checkable
+  segment. The value stored is computed server-side, never taken from the
+  form. While the segment still measures that figure the flag is hidden and
+  a small "Checked" mark shows instead; any change to the segment (its
+  odometers, volumes, partial / missed flags, a fill-up added inside it)
+  brings the flag back. An unrelated fill-up leaves it confirmed.
+- **Where flags show:** the Fuel tab (an icon and short text — *More than
+  usual* / *Less than usual*, never colour alone — beside the row's economy,
+  with the full flag, links and *Looks right* in a disclosure under the row;
+  the economy figure is `aria-describedby` the flag); the summary card's
+  "N fill-ups to check" linking to `?check=1`, which lists only flagged
+  fill-ups (a plain GET, paged as usual, with an empty state); the save
+  notice of a fill-up that closes a flagged segment (the fill-up is saved);
+  above the fill-up edit form; beside the economy on the dashboard's
+  *Recent fuel* (§7.8); and a count on the CSV import result page (§7.13).
+  Nowhere else: not in History, print, reports, garage cards or the pinned
+  card. No notification or reminder is ever sent for a flag. With the
+  `fuel` module off nothing about economy checks appears.
+- **Not in scope:** checks by grade (the family series only), removing
+  flagged segments from any figure, thresholds as settings, a CSV column.
+
 **Fuel grades** (Phase 8). A grade refines `fuel`; it never replaces it:
 `fuel` stays the energy family and alone drives units, series and the
 full-to-full maths above. Grades live in one PHP enum (`Domain\Fuel\FuelGrade`,
@@ -851,7 +929,8 @@ toggles.
   the descriptive line (§7.1), current odometer and "N due" as on the garage cards (§7.1); the title
   links to the garage; count of archived ones), *upcoming reminders* (the
   five most urgent open reminders), *recent fuel* (the last five fill-ups
-  across active vehicles with their economy), *spend this month* (per
+  across active vehicles with their economy, and the economy-check icon
+  beside a flagged one, §7.3), *spend this month* (per
   currency, by group, with last month for comparison), *efficiency trend*
   (each active vehicle's average economy over the last 12 months and a chart
   of per-fill economy), *compliance status* (current documents that are
@@ -1077,7 +1156,10 @@ vehicles; a disabled module cannot be imported).
   (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
   defaults to ISO. The preview lists every row with what will happen to it.
   (3) Import: one transaction; the result page lists what was imported and
-  every row that was not, with its line number and reason.
+  every row that was not, with its line number and reason. For fill-ups it
+  also says how many of the imported ones are flagged by the economy check
+  (§7.3; "3 imported fill-ups look unusual", linking to the Fuel tab's
+  `?check=1`). Imports are where most typing mistakes arrive.
 - **Rows are read exactly as the forms read them** (the same parsers, so
   the same validation and messages): quantities in the chosen units, amounts
   in the vehicle's currency, times in the owner's time zone. Choice columns
@@ -1140,8 +1222,8 @@ vehicles; a disabled module cannot be imported).
   a clear message: restore it with the matching version, then upgrade.
   (Every release that adds a column moves the schema version, e.g. Phase
   9.1's vehicle variant and first registration date, Phase 10's document
-  odometer, Phase 11.1's tyre tables and Phase 11.2's tread depth and depth
-  unit. Backups carry the new columns, `document` and `tyre` readings, the
+  odometer, Phase 11.1's tyre tables, Phase 11.2's tread depth and depth
+  unit and Phase 13's `fuel_entries.economy_confirmed`. Backups carry the new columns, `document` and `tyre` readings, the
   `expense` / `odometer` attachments and the four tyre tables — `tyre_sets`,
   `tyres`, `tyre_changes`, `tyre_change_lines` — like any other rows; the
   `tyres.thresholds` setting travels in `settings`.)
@@ -1779,6 +1861,13 @@ task breakdowns live in the per-phase files; this is the map.
   the add form's starting odometer and the lifetime average measured to the
   reading's date; the overview's latest fill-ups list removed; release
   v1.4.0.
+- **Phase 13 — Economy checks + v1.5.0.** Each full-to-full segment compared
+  with the median of the vehicle's previous ten in canonical consumption;
+  flags for tanks far outside it with the likely cause and links to the
+  fill-ups to check, a mistyped reading shown as a pair naming one fill-up,
+  *Looks right* confirming a figure until it changes; on the Fuel tab, save
+  notice, edit page, *Recent fuel* and the import result; no notifications
+  and no figure changed; release v1.5.0.
 
 ---
 

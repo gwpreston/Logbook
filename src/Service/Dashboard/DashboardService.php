@@ -243,8 +243,10 @@ final readonly class DashboardService
         $fills = [];
         foreach ($histories as ['vehicle' => $vehicle, 'history' => $history]) {
             $currency = $this->vehicles->currencyFor($user, $vehicle);
+            $checks = $this->fuel->checks($history);
             foreach (array_slice($history->newestFirst(), 0, self::RECENT_FILLS) as $fill) {
-                $fills[] = new RecentFill($vehicle, $fill, $currency);
+                $check = $checks->for($fill->entry->id);
+                $fills[] = new RecentFill($vehicle, $fill, $currency, $check?->isFlagged() === true ? $check : null);
             }
         }
         usort($fills, static fn (RecentFill $a, RecentFill $b): int

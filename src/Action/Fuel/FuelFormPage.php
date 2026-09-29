@@ -53,9 +53,13 @@ final readonly class FuelFormPage
             $values['fuel'] ?? '',
         );
 
+        // The economy check of the segment this fill-up closes, shown above the form.
+        $check = $entry === null ? null : $this->fuel->checks($this->fuel->history($vehicle))->for($entry->id);
+
         return $this->view->render($request, $response, 'fuel/form.twig', [
             'vehicle' => $vehicle,
             'entry' => $entry,
+            'check' => $check !== null && ($check->isFlagged() || $check->isConfirmedFlag()) ? $check : null,
             'currency' => $currency,
             'values' => $values,
             'errors' => $errors?->all() ?? [],

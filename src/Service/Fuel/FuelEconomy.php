@@ -105,7 +105,7 @@ final class FuelEconomy
                     $distance = Decimal::subtract($data->odometerKm, $anchor->data->odometerKm);
                     if (Decimal::compare($distance, '0') > 0) {
                         $status = EconomyStatus::Measured;
-                        $segment = new EconomySegment($distance, $volume, $cost, $fills, $data->filledAt, $burned);
+                        $segment = new EconomySegment($distance, $volume, $cost, $fills, $data->filledAt, $burned, $anchor);
                     } else {
                         $status = EconomyStatus::Invalid;
                     }

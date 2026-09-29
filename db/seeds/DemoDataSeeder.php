@@ -12,6 +12,7 @@ use Logbook\Kernel;
 use Logbook\Service\Tyre\TyreReplay;
 use Logbook\Service\Tyre\TyreReplayResult;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Number\Decimal;
 use Phinx\Seed\AbstractSeed;
 
 /**
@@ -162,24 +163,26 @@ final class DemoDataSeeder extends AbstractSeed
             }
         }
 
+        // Golf: ~45 mpg (UK), fill every ~12 days; partial every 6th; one fill-up never logged.
+        // Grades from the 9th fill on (older ones predate grades): mostly E10, E5 97 now and then.
+        [$golf, $confirmed] = self::economyChecks($this->fillUps(
+            $ids['LB19 KTR'],
+            '2025-09-20',
+            30,
+            61155.0,
+            540.0,
+            15.9,
+            1.479,
+            'petrol',
+            6,
+            17,
+            $now,
+            ['e10_95', 'e10_95', 'e10_95', 'e5_97', 'e5_97'],
+            8,
+        ));
+
         $entries = [
-            // Golf: ~45 mpg (UK), fill every ~12 days; partial every 6th; one fill-up never logged.
-            // Grades from the 9th fill on (older ones predate grades): mostly E10, E5 97 now and then.
-            ...$this->fillUps(
-                $ids['LB19 KTR'],
-                '2025-09-20',
-                30,
-                61155.0,
-                540.0,
-                15.9,
-                1.479,
-                'petrol',
-                6,
-                17,
-                $now,
-                ['e10_95', 'e10_95', 'e10_95', 'e5_97', 'e5_97'],
-                8,
-            ),
+            ...$golf,
             // The bike always takes super unleaded.
             ...$this->fillUps($ids['MT20 BKE'], '2026-03-15', 12, 18500.0, 230.0, 19.5, 1.529, 'petrol', 0, null, $now, grades: [
                 'e5_98',
@@ -202,6 +205,13 @@ final class DemoDataSeeder extends AbstractSeed
             ...$this->plugInHybrid($ids['YR21 PHV'], $now),
         ];
         $this->table('fuel_entries')->insert($entries)->saveData();
+        $updated = $this->execute(
+            'UPDATE fuel_entries SET economy_confirmed = ? WHERE vehicle_id = ? AND filled_at = ?',
+            [$confirmed['consumption'], $ids['LB19 KTR'], $confirmed['filled_at']],
+        );
+        if ($updated !== 1) {
+            throw new LogicException('The demo economy confirmation matched no single fill-up.');
+        }
 
         // Each fill-up's odometer reading (portable INSERT … SELECT).
         $this->execute(
@@ -860,6 +870,43 @@ final class DemoDataSeeder extends AbstractSeed
     }
 
     /**
+     * Something for each economy check state (spec.md §7.3) on the Golf: one
+     * mistyped odometer (300 km too high on the 20th fill-up: its tank reads
+     * *less than usual*, the next *more*, a pair naming it) and one genuinely
+     * thirsty January tank (40% more fuel) the owner confirmed as right.
+     *
+     * @param list<array<string, mixed>> $rows the Golf's fill-ups, as fillUps() made them
+     * @return array{list<array<string, mixed>>, array{filled_at: string, consumption: string}}
+     *     the rows, and which one to confirm with what
+     */
+    private static function economyChecks(array $rows): array
+    {
+        [$typo, $thirsty] = [19, 9];
+        foreach ([$typo - 1, $typo, $typo + 1, $thirsty - 1, $thirsty] as $i) {
+            if ($rows[$i]['is_partial'] !== false || ($i !== $typo - 1 && $rows[$i]['is_missed_previous'] !== false)) {
+                throw new LogicException('The demo economy checks need full fill-ups there.');
+            }
+        }
+
+        $rows[$typo]['odometer_km'] = Decimal::add(self::stringValue($rows[$typo]['odometer_km']), '300');
+
+        $volume = Decimal::multiply(self::stringValue($rows[$thirsty]['volume']), '1.4', 3);
+        $rows[$thirsty]['volume'] = $volume;
+        $rows[$thirsty]['total_cost'] = Decimal::multiply($volume, self::stringValue($rows[$thirsty]['price_per_unit']), 2);
+        $rows[$thirsty]['notes'] = 'Snow, roof box and a trailer to the tip';
+        $distance = Decimal::subtract(
+            self::stringValue($rows[$thirsty]['odometer_km']),
+            self::stringValue($rows[$thirsty - 1]['odometer_km']),
+        );
+
+        // Confirmed exactly as *Looks right* stores it.
+        return [$rows, [
+            'filled_at' => self::stringValue($rows[$thirsty]['filled_at']),
+            'consumption' => Decimal::divide(Decimal::multiply($volume, '100', 3), $distance, 6),
+        ]];
+    }
+
+    /**
      * A plug-in hybrid on one rising odometer: charged at home every other
      * evening, filled with petrol every three weeks. Worked out without
      * mt_rand(), so the other vehicles' figures stay as they were.
@@ -903,6 +950,11 @@ final class DemoDataSeeder extends AbstractSeed
     /**
      * Drivers return integers as int or numeric string.
      */
+    private static function stringValue(mixed $value): string
+    {
+        return is_string($value) ? $value : throw new LogicException('Expected a string.');
+    }
+
     private static function intValue(mixed $value): int
     {
         return is_numeric($value) ? (int) $value : 0;
