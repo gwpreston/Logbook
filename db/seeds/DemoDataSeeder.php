@@ -143,6 +143,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedTyres($now);
         $this->seedPaperwork($now);
         $this->seedValuations($now);
+        $this->seedSalePack($now);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
@@ -314,6 +315,20 @@ final class DemoDataSeeder extends AbstractSeed
             'updated_at' => $now,
         ], $values);
         $this->table('maintenance_entries')->insert([
+            // The Golf's service history since it was bought (the sale pack's *Service and repairs*).
+            $entry([
+                'performed_on' => '2022-03-20', 'odometer_km' => '38900.000', 'title' => 'Annual service',
+                'description' => 'Oil and filter, brake fluid.', 'cost' => '165.000', 'vendor' => 'Main Street Motors',
+            ]),
+            $entry([
+                'performed_on' => '2023-03-18', 'odometer_km' => '45600.000', 'title' => 'Annual service',
+                'description' => 'Oil and filter, air filter, spark plugs.', 'cost' => '239.000',
+                'vendor' => 'Main Street Motors',
+            ]),
+            $entry([
+                'performed_on' => '2024-10-01', 'odometer_km' => '55000.000', 'title' => 'Annual service',
+                'description' => 'Oil and filter, pollen filter.', 'cost' => '178.000', 'vendor' => 'Main Street Motors',
+            ]),
             $entry([
                 'schedule_id' => $serviceId, 'performed_on' => '2025-10-02', 'odometer_km' => '62100.000',
                 'title' => 'Annual service', 'description' => 'Oil and filter, air filter, pollen filter.',
@@ -325,7 +340,7 @@ final class DemoDataSeeder extends AbstractSeed
                 'title' => 'Two front tyres', 'cost' => '176.000', 'vendor' => 'Kwik Fit',
             ]),
             $entry([
-                'performed_on' => '2026-06-18', 'odometer_km' => '73950.000', 'category' => 'brakes',
+                'performed_on' => '2026-06-18', 'odometer_km' => '74050.000', 'category' => 'brakes',
                 'title' => 'Front brake pads', 'cost' => '95.500', 'vendor' => 'Main Street Motors',
             ]),
         ])->saveData();
@@ -368,6 +383,7 @@ final class DemoDataSeeder extends AbstractSeed
             'expiry_on' => null,
             'cost' => '0.000',
             'notes' => null,
+            'odometer_km' => null,
             'created_at' => $now,
             'updated_at' => $now,
         ], $values);
@@ -380,9 +396,14 @@ final class DemoDataSeeder extends AbstractSeed
                 'provider' => 'Admiral', 'reference' => 'P-88213901', 'start_on' => '2025-10-10',
                 'expiry_on' => '2026-10-09', 'cost' => '412.500', 'notes' => 'Fully comprehensive, protected NCD.',
             ]),
+            // Last year's MOT and this year's, each with the mileage on the certificate.
+            $document([
+                'type' => 'inspection', 'provider' => 'Main Street Motors', 'reference' => '4403 1192 6650',
+                'start_on' => '2025-03-06', 'expiry_on' => '2026-03-05', 'cost' => '54.850', 'odometer_km' => '57800.000',
+            ]),
             $document([
                 'type' => 'inspection', 'provider' => 'Main Street Motors', 'reference' => '5512 8830 1127',
-                'start_on' => '2026-03-05', 'expiry_on' => '2027-03-04', 'cost' => '54.850',
+                'start_on' => '2026-03-05', 'expiry_on' => '2027-03-04', 'cost' => '54.850', 'odometer_km' => '69050.000',
             ]),
             $document(['type' => 'registration', 'title' => 'V5C logbook', 'reference' => 'DVLA 4421 90871']),
             $document([
@@ -394,6 +415,24 @@ final class DemoDataSeeder extends AbstractSeed
                 'expiry_on' => '2027-02-09', 'cost' => '640.000',
             ]),
         ])->saveData();
+
+        // A document's odometer joins the mileage series, at noon on its start date (spec.md §7.5).
+        $readings = [];
+        foreach ($this->fetchAll('SELECT id, vehicle_id, start_on, odometer_km FROM compliance_documents') as $row) {
+            if (!is_array($row) || $row['odometer_km'] === null || !is_string($row['start_on'])) {
+                continue;
+            }
+            $readings[] = [
+                'vehicle_id' => self::intValue($row['vehicle_id']),
+                'reading_km' => $row['odometer_km'],
+                'recorded_at' => self::localNoon(substr($row['start_on'], 0, 10)),
+                'source' => 'document',
+                'compliance_document_id' => self::intValue($row['id']),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        $this->table('odometer_readings')->insert($readings)->saveData();
     }
 
     /**
@@ -603,6 +642,87 @@ final class DemoDataSeeder extends AbstractSeed
             'stored_path' => $stored,
             'uploaded_at' => $now,
         ])->saveData();
+    }
+
+    /**
+     * The sale pack (spec.md §7.19) shows every block for the Golf: invoices
+     * on most service records (not the DIY wipers or the tyre repair), both
+     * MOT certificates, and a dashboard photo taken on collection, the day it
+     * was bought, so the pack can say how far it has gone since.
+     */
+    private function seedSalePack(string $now): void
+    {
+        $golf = $this->vehicleIds()['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
+        $directory = Kernel::settings()->uploadPath . '/attachments';
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample invoices skipped.</comment>');
+
+            return;
+        }
+        $pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            . "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+            . "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\n"
+            . "trailer<</Root 1 0 R>>\n%%EOF\n";
+        $png = (string) base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        );
+        $attachments = [];
+        $attach = function (
+            string $owner,
+            int $ownerId,
+            string $name,
+            string $contents,
+            string $mime,
+        ) use (
+            $golf,
+            $now,
+            &$attachments,
+        ): void {
+            $stored = 'attachments/' . bin2hex(random_bytes(16)) . ($mime === 'image/png' ? '.png' : '.pdf');
+            file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $contents);
+            $attachments[] = [
+                'vehicle_id' => $golf,
+                'owner_type' => $owner,
+                'owner_id' => $ownerId,
+                'filename' => $name,
+                'mime' => $mime,
+                'size' => strlen($contents),
+                'stored_path' => $stored,
+                'uploaded_at' => $now,
+            ];
+        };
+
+        foreach ($this->fetchAll('SELECT id, vehicle_id, performed_on, title, vendor FROM maintenance_entries') as $row) {
+            if (
+                is_array($row)
+                && self::intValue($row['vehicle_id'] ?? null) === $golf
+                && is_string($row['vendor'] ?? null)
+                && ($row['title'] ?? null) !== 'Tyre repair, front right'
+            ) {
+                $on = substr(self::stringValue($row['performed_on']), 0, 10);
+                $attach('maintenance', self::intValue($row['id']), 'Invoice ' . $on . '.pdf', $pdf, 'application/pdf');
+            }
+        }
+        foreach ($this->fetchAll('SELECT id, vehicle_id, type, start_on FROM compliance_documents') as $row) {
+            $ours = is_array($row) && self::intValue($row['vehicle_id'] ?? null) === $golf;
+            if ($ours && ($row['type'] ?? null) === 'inspection') {
+                $on = substr(self::stringValue($row['start_on']), 0, 10);
+                $attach('compliance', self::intValue($row['id']), 'MOT certificate ' . $on . '.pdf', $pdf, 'application/pdf');
+            }
+        }
+
+        $photo = $this->insertRow('odometer_readings', [
+            'vehicle_id' => $golf,
+            'reading_km' => '31200.000',
+            'recorded_at' => self::localNoon('2021-03-14'),
+            'source' => 'manual',
+            'note' => 'On collection from the dealer',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $attach('odometer', $photo, 'Dashboard 2021-03-14.png', $png, 'image/png');
+
+        $this->table('attachments')->insert($attachments)->saveData();
     }
 
     /**

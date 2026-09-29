@@ -2,7 +2,7 @@
 
 *Everything a buyer wants to see, and nothing they shouldn't.*
 
-Status: 🚧 in progress · ships with Phase 17.2 as **v1.9.0**
+Status: ✅ complete · ships with Phase 17.2 as **v1.9.0**
 
 The print view (§7.16, Phases 10 and 12) already gives a buyer the history
 they need. It includes every service, repair, inspection and tyre event,
@@ -195,79 +195,80 @@ with invoices merged)".
 - [x] Add §7.19 to `spec.md`, the §12 wording, and the Phase 17.1 line to
       §13.
 - [x] `ROADMAP.md` row and section (done in the roadmap update).
-- [ ] `docs/sale-pack.md`: what is in it, what never is, and how to save the
+- [x] `docs/sale-pack.md`: what is in it, what never is, and how to save the
       PDF on desktop and phone.
 
 ### Services
-- [ ] `Service\SalePack\SalePackBuilder`: assembles the view model from
+- [x] `Service\SalePack\SalePackBuilder`: assembles the view model from
       `ActivityFeed`, the odometer series, `Service\Forecast\ComingUp`, the
       tyre summary and compliance documents. Typed result, no arrays crossing
       the boundary.
-- [ ] `Service\SalePack\MileageEvidence`: selects the readings (by source,
+- [x] `Service\SalePack\MileageEvidence`: selects the readings (by source,
       and manual readings with files), works out the distance since the one
       before, and reuses the existing plausibility check to mark readings
       for the seller notice.
-- [ ] `Service\SalePack\OwnershipSpan`: purchase month, the earliest
+- [x] `Service\SalePack\OwnershipSpan`: purchase month, the earliest
       reading within 31 days of purchase, distance covered, sold range.
-- [ ] `Service\SalePack\PaperworkSelector`: the offered kinds (an enum with
+- [x] `Service\SalePack\PaperworkSelector`: the offered kinds (an enum with
       defaults and a `neverOffered` list), the files by vehicle, and the
       exclusions applied.
-- [ ] `Service\SalePack\PaperworkArchive`: streams the ZIP (no temp file
+- [x] `Service\SalePack\PaperworkArchive`: streams the ZIP (no temp file
       over `MAX_UPLOAD_MB`), handles naming, de-duplication and
       `contents.txt`.
 
 ### Actions, routes, templates
-- [ ] `Action\SalePack\ShowSalePack` (GET) and
+- [x] `Action\SalePack\ShowSalePack` (GET) and
       `Action\SalePack\DownloadPaperwork` (GET), both behind the auth guard.
       Option parsing is strict and unknown values fall back to defaults.
       `costs` is only true at `1`.
-- [ ] `templates/sale_pack/show.twig`, with partials for the summary,
+- [x] `templates/sale_pack/show.twig`, with partials for the summary,
       mileage record, groups and options. It reuses the print view's partials
       for rows and the tyre block rather than copying them.
-- [ ] Header menu item and History toolbar link.
-- [ ] Print CSS additions: page break after the summary; screen-only classes
+- [x] Header menu item and History toolbar link. (The header has no menu:
+      *Prepare for sale* is a button beside Edit.)
+- [x] Print CSS additions: page break after the summary; screen-only classes
       for options and notices.
-- [ ] Mileage chart: progressive enhancement, print palette (never dark
+- [x] Mileage chart: progressive enhancement, print palette (never dark
       tokens), table always rendered.
 
 ### Translations
-- [ ] Every new string in English and German. For German, the inspection
+- [x] Every new string in English and German. For German, the inspection
       line uses the document type's label ("HU gültig bis …"). The gov.uk
       line exists only for GB, so it needs no German variant beyond the
       catalogue key.
 
 ### Tests
-- [ ] The pack never contains purchase or sale prices, fuel, expenses,
+- [x] The pack never contains purchase or sale prices, fuel, expenses,
       valuations or ownership figures, with any combination of options,
       `costs=1` included. Test this against the rendered HTML with seeded
       sentinel amounts.
-- [ ] `costs` values `0`, `true`, `yes` and absent all hide costs; `1`
+- [x] `costs` values `0`, `true`, `yes` and absent all hide costs; `1`
       shows work costs and the total.
-- [ ] The ownership span: purchase with a reading on the day; the first
+- [x] The ownership span: purchase with a reading on the day; the first
       reading 45 days later (line left out); no purchase date; a sold
       vehicle.
-- [ ] Mileage record: includes maintenance, document and tyre readings and
+- [x] Mileage record: includes maintenance, document and tyre readings and
       manual readings with files; excludes fill-up readings and manual
       readings without files. A backwards reading raises the seller notice
       and never breaks the page.
-- [ ] *Due next*: overdue first, at most five, left out for archived
+- [x] *Due next*: overdue first, at most five, left out for archived
       vehicles, and no costs even with `costs=1`.
-- [ ] GB and registration show the gov.uk line; `de_DE` or no registration
+- [x] GB and registration show the gov.uk line; `de_DE` or no registration
       leaves it out.
-- [ ] ZIP: defaults, exclusions and never-offered kinds (a registration
+- [x] ZIP: defaults, exclusions and never-offered kinds (a registration
       document's id in `exclude[]` or a forged `kinds[]=registration` adds
       nothing); another vehicle's attachment id is ignored; names,
       duplicates and `contents.txt`; module off → its files are not
       offered.
-- [ ] Module toggles remove each part of the pack.
-- [ ] Without JS, the options, the file choice and the tables all work.
+- [x] Module toggles remove each part of the pack.
+- [x] Without JS, the options, the file choice and the tables all work.
       `APP_BASE_PATH` links and a hard refresh work.
-- [ ] Translation suite (keys, placeholders, templates) passes for en and
+- [x] Translation suite (keys, placeholders, templates) passes for en and
       de.
-- [ ] Integration suite green on SQLite, PostgreSQL, MySQL and MariaDB.
+- [x] Integration suite green on SQLite, PostgreSQL, MySQL and MariaDB.
 
 ### Sample data
-- [ ] The Golf in `DemoDataSeeder` gets attachments on most service records
+- [x] The Golf in `DemoDataSeeder` gets attachments on most service records
       and its MOT documents, one manual reading with a dashboard photo, and
       a purchase date matching its first reading. The demo pack then shows
       every block.

@@ -3729,9 +3729,11 @@ a.list__title:hover {
     border-radius: var(--radius-lg);
 }
 
-.sale-pack__table td .icon {
-    vertical-align: -0.2em;
-    margin-inline-end: var(--space-1);
+.sale-pack__files-count {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    white-space: nowrap;
 }
 
 @media print {

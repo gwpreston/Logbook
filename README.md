@@ -6,7 +6,7 @@ your own server.
 
 > **Status: v1.8.0 — every roadmap phase complete.** First-run setup, secure sign-in, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), purchase and sale paperwork and archiving, per-user units, currency,
 > language and time zone; a History tab per vehicle (and for the fleet) with a
-> printable service history that leaves costs off unless asked; a mileage log with plausibility warnings; fuel / EV
+> printable service history that leaves costs off unless asked, and a sale pack for a buyer (summary, checkable mileage record, the paperwork as a ZIP); a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
 > kWh/100 km, mi/kWh), checks that flag tanks far from the usual (a mistyped odometer, a fill-up that was not full), prices and running costs, and the grade bought (E10 /
 > E5, diesel blends, home or rapid charging) compared by price and economy; a categorised service
@@ -63,6 +63,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
+| [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in each release, with upgrade notes |
@@ -199,5 +200,5 @@ translations/  message catalogues
 tests/         Unit/ and Integration/
 docker/        Apache vhost, PHP ini, entrypoint, nginx example, dev DB init
 bin/           CLI helpers (asset build, backup, dev router, wait-for-db, scheduler, test scripts)
-docs/          deployment, configuration, import, notification and translation guides
+docs/          deployment, configuration, import, sale pack, notification and translation guides
 ```

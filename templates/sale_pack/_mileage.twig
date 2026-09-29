@@ -47,7 +47,7 @@
                             <td class="table__num tabular">{{ evidence.reading.readingKm|distance }}</td>
                             <td class="table__num tabular">{{ evidence.deltaKm is null ? '—' : evidence.deltaKm|distance }}</td>
                             <td>{{ mileage.source(evidence) }}</td>
-                            <td class="table__num">{% if evidence.files > 0 %}{{ ui.icon('attach_file') }}{{ 'attachment.count'|trans({count: evidence.files}) }}{% endif %}</td>
+                            <td class="table__num">{% if evidence.files > 0 %}<span class="sale-pack__files-count">{{ ui.icon('attach_file') }}{{ 'attachment.count'|trans({count: evidence.files}) }}</span>{% endif %}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
