@@ -6,6 +6,15 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 12: buyer-first print, ownership paperwork and a dated starting
+mileage.
+
+### Added
+- **Purchase and sale paperwork** on the vehicle form.
+
+### Changed
+- The print view hides costs by default.
+
 ## [1.3.0] — 2026-09-29
 
 Phases 11.1 and 11.2: tyres, then tread depth, wear and tyre reminders.

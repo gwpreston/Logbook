@@ -486,12 +486,15 @@ Logbook v1.2.0.
 ## Open questions
 - **Overview:** once *Recent history* is there, does the overview still
   need its list of latest fill-ups? The Fuel tab lists them all.
+  *Answered in Phase 12:* no; the list is removed.
 - **Purchase and sale paperwork.** A V5C fits a *Registration* document, but
   the purchase invoice or sale receipt has nowhere to go. Owner types for
   the vehicle's purchase and sale would give the *Bought* and *Sold* rows a
   paperclip without turning the vehicle photo into a gallery.
+  *Answered in Phase 12:* owner types `purchase` and `sale`.
 - **Print defaults for a buyer:** costs on (the owner's copy) or off (the
-  buyer's)? Either way it is one tick.
+  buyer's)? Either way it is one tick. *Answered in Phase 12:* off, the
+  copy a buyer can be handed.
 - **MOT history import.** The DVSA MOT history API returns each test's
   date, result and odometer, which would fill a UK car's history in one go.
   It needs an API key per install; it sits with registration lookup in §12.

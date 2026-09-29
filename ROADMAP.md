@@ -36,6 +36,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [10.2](phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
 | [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
 | [11.2](phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
+| [12](phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | 🚧 |
 
 *Update the status column as each phase lands.*
 
@@ -249,6 +250,22 @@ says so?*
 - Released with Phase 11.1 as **v1.3.0**.
 
 → [`phase-11.2.md`](phase-11.2.md)
+
+## Phase 12 — Buyer-first print, ownership paperwork, dated starting mileage
+*Hand the printout to a buyer without thinking twice, and keep the purchase
+invoice with the purchase.*
+
+- The print view hides costs (and the purchase and sale prices) unless
+  *Show costs* is ticked; no old link shows costs it used to hide.
+- Purchase and sale paperwork on the vehicle form, shown on the *Bought*
+  and *Sold* milestones, the overview and the print view.
+- An *As of* date for the add form's current odometer; the lifetime average
+  measured to the date of the reading it uses.
+- The overview's latest fill-ups list removed (*Recent history* and the
+  Fuel tab cover it).
+- Release **v1.4.0**.
+
+→ [`phase-12.md`](phase-12.md)
 
 ---
 
