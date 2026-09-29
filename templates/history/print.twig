@@ -62,11 +62,12 @@
                     </dd></div>
                     <div><dt>{{ 'odometer.stat.current'|trans }}</dt><dd class="tabular">{{ latest ? latest.readingKm|distance : dash }}</dd></div>
                     <div><dt>{{ 'history.printed_on'|trans }}</dt><dd>{{ today|local_date }}</dd></div>
+                    {# Measured depths only: a buyer's service history shows what was measured, never an estimate. #}
                     {% if tyres is not empty %}
                         <div class="history-print__tyres"><dt>{{ 'tyre.print_fitted'|trans }}</dt><dd>
                             <ul class="plain-list">
                                 {% for view in tyres %}
-                                    <li>{{ ('tyre.position.' ~ view.tyre.position.value)|trans }}: {{ tyre_ui.name(view.tyre) }}{% if view.tyre.data.size %}, {{ view.tyre.data.size }}{% endif %} · {{ tyre_ui.age(view) }}</li>
+                                    <li>{{ ('tyre.position.' ~ view.tyre.position.value)|trans }}: {{ tyre_ui.name(view.tyre) }}{% if view.tyre.data.size %}, {{ view.tyre.data.size }}{% endif %} · {{ tyre_ui.age(view) }}{% if view.wear.latest %} · {{ tyre_ui.latest_depth(view) }}{% endif %}</li>
                                 {% endfor %}
                             </ul>
                         </dd></div>

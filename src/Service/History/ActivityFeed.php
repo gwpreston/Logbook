@@ -27,6 +27,7 @@ use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Tyre\TyreSummary;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Units\DepthUnit;
 use Symfony\Component\Translation\TranslatableMessage;
 
 /**
@@ -189,7 +190,7 @@ final readonly class ActivityFeed
         if (!$withTyres) {
             $ownChanges = [];
         }
-        $summaries = $this->tyreSummaries($ids, $changes);
+        $summaries = $this->tyreSummaries($ids, $changes, $user->preferences->depthUnit);
         $expenses = $query->includes(ActivityKind::Expense)
             ? $this->expenses->listForVehiclesBetween($ids, $query->from, $query->until)
             : [];
@@ -383,7 +384,7 @@ final readonly class ActivityFeed
      * @param list<TyreChange> $changes
      * @return array<int, TranslatableMessage> by change id
      */
-    private function tyreSummaries(array $vehicleIds, array $changes): array
+    private function tyreSummaries(array $vehicleIds, array $changes, DepthUnit $unit): array
     {
         if ($changes === []) {
             return [];
@@ -395,7 +396,7 @@ final readonly class ActivityFeed
         $sets = TyreService::setsById($this->tyres->listSetsOf($vehicleIds));
         $summaries = [];
         foreach ($changes as $change) {
-            $summaries[$change->id] = TyreSummary::line($change, $tyres, $sets);
+            $summaries[$change->id] = TyreSummary::line($change, $tyres, $sets, $unit);
         }
 
         return $summaries;

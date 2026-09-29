@@ -10,6 +10,7 @@ use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Display\Theme;
 use Logbook\Support\I18n\AvailableLocales;
 use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
@@ -37,6 +38,7 @@ final class ProfileForm
             'distance_unit' => $preferences->distanceUnit->value,
             'volume_unit' => $preferences->volumeUnit->value,
             'consumption_unit' => $preferences->consumptionUnit->value,
+            'depth_unit' => $preferences->depthUnit->value,
             'currency' => $preferences->currency,
             'locale' => $preferences->locale,
             'timezone' => $preferences->timezone,
@@ -57,6 +59,8 @@ final class ProfileForm
         $distance = $validator->enum('distance_unit', DistanceUnit::class, true);
         $volume = $validator->enum('volume_unit', VolumeUnit::class, true);
         $consumption = $validator->enum('consumption_unit', ConsumptionUnit::class, true);
+        // Optional, like the accent: a form without it (an older page) keeps millimetres.
+        $depth = $validator->enum('depth_unit', DepthUnit::class, false) ?? DepthUnit::Millimetre;
         $preferences = PreferenceFields::read($validator, $locales);
 
         if (
@@ -82,6 +86,7 @@ final class ProfileForm
             currency: $preferences['currency'],
             theme: $theme,
             accent: $accent,
+            depthUnit: $depth,
         ));
     }
 }

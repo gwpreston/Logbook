@@ -51,18 +51,22 @@ final readonly class ReminderRepository
     }
 
     /**
-     * Schedule and document reminders of every vehicle of the owner (archived
-     * ones included, so ReminderSync can remove theirs).
+     * Generated (schedule, document and tyre) reminders of every vehicle of
+     * the owner (archived ones included, so ReminderSync can remove theirs).
      *
      * @return list<Reminder>
      */
     public function listGeneratedForUser(int $userId): array
     {
+        $generated = array_values(array_filter(
+            ReminderSource::cases(),
+            static fn (ReminderSource $source): bool => $source->isGenerated(),
+        ));
         $query = $this->select()
             ->where('source IN (:sources)')
             ->setParameter(
                 'sources',
-                [ReminderSource::Schedule->value, ReminderSource::Compliance->value],
+                array_map(static fn (ReminderSource $source): string => $source->value, $generated),
                 ArrayParameterType::STRING,
             );
         $this->scopeToUser($query, $userId, false);

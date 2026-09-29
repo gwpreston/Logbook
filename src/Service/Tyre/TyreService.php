@@ -17,11 +17,13 @@ use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\Tyre\TyreSet;
 use Logbook\Domain\Tyre\TyreSetData;
 use Logbook\Domain\Tyre\TyreStatus;
+use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\TyreRepository;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
@@ -29,8 +31,10 @@ use Psr\Clock\ClockInterface;
 /**
  * A vehicle's tyres and sets as shown (spec.md §7.17): what is fitted,
  * stored and retired, with distance (from the mileage series), age (from the
- * DOT date) and cost per distance derived on every read; and the edits that
- * do not move a tyre (a tyre's description, a set's name and storage).
+ * DOT date), cost per distance, tread and the wear estimate derived on every
+ * read against the owner's thresholds, and the judgement the tyre reminder
+ * shares; and the edits that do not move a tyre (a tyre's description, a
+ * set's name and storage).
  *
  * Linked service records are read only while the maintenance module is on.
  * Callers pass a Vehicle already resolved for the signed-in owner.
@@ -46,17 +50,16 @@ final readonly class TyreService
         private OdometerService $odometer,
         private FeatureToggles $features,
         private ClockInterface $clock,
+        private TyreSettingsStore $settings,
+        private ReminderSettingsStore $reminderSettings,
     ) {
     }
 
-    /**
-     * @param DateTimeImmutable $today the owner's calendar date
-     */
-    public function overview(Vehicle $vehicle, DateTimeImmutable $today): TyreOverview
+    public function overview(Vehicle $vehicle, User $user): TyreOverview
     {
         $changes = $this->tyres->listChanges($vehicle->id);
         $sets = $this->tyres->listSets($vehicle->id);
-        $views = $this->build($vehicle, $this->tyres->listTyres($vehicle->id), $changes, $today);
+        $views = $this->build($vehicle, $user, $this->tyres->listTyres($vehicle->id), $changes);
         $records = $this->records($vehicle);
         $tyresById = [];
         foreach ($views as $view) {
@@ -98,13 +101,14 @@ final readonly class TyreService
             ?: $b->tyre->id <=> $a->tyre->id);
 
         usort($changes, static fn (TyreChange $a, TyreChange $b): int => TyreChange::compare($b, $a));
+        $unit = $user->preferences->depthUnit;
         $listed = array_map(static fn (TyreChange $change): TyreChangeView => new TyreChangeView(
             $change,
-            TyreSummary::line($change, $tyresById, $setsById),
+            TyreSummary::line($change, $tyresById, $setsById, $unit),
             $change->data->maintenanceEntryId === null ? null : ($records[$change->data->maintenanceEntryId] ?? null),
         ), $changes);
 
-        return new TyreOverview($fitted, $stored, $retired, $listed, $sets);
+        return new TyreOverview($fitted, $stored, $retired, $listed, $sets, $this->judge($user, $views));
     }
 
     /**
@@ -112,20 +116,56 @@ final readonly class TyreService
      *
      * @return list<TyreView>
      */
-    public function views(Vehicle $vehicle, DateTimeImmutable $today): array
+    public function views(Vehicle $vehicle, User $user): array
     {
-        return $this->build($vehicle, $this->tyres->listTyres($vehicle->id), $this->tyres->listChanges($vehicle->id), $today);
+        return $this->build($vehicle, $user, $this->tyres->listTyres($vehicle->id), $this->tyres->listChanges($vehicle->id));
     }
 
     /**
-     * The fitted tyres of several vehicles with their figures (the print
-     * header), by vehicle id, in position order.
+     * The fitted tyres with their figures (the print header, the overview
+     * card), in position order.
      *
      * @return list<TyreView>
      */
-    public function fitted(Vehicle $vehicle, DateTimeImmutable $today): array
+    public function fitted(Vehicle $vehicle, User $user): array
     {
-        return $this->overview($vehicle, $today)->fittedTyres();
+        return $this->overview($vehicle, $user)->fittedTyres();
+    }
+
+    /**
+     * The vehicle's tyres judged against the owner's thresholds and schedule
+     * lead times (spec.md §7.6): what the tyre reminder and the tab badge
+     * show. Read for an active or archived vehicle alike.
+     */
+    public function verdict(Vehicle $vehicle, User $user): TyreVerdict
+    {
+        return $this->judge($user, $this->views($vehicle, $user));
+    }
+
+    /**
+     * The id of the vehicle's latest tyre change (by id: the last one
+     * recorded), the tyre reminder's occurrence; null with none.
+     */
+    public function latestChangeId(Vehicle $vehicle): ?int
+    {
+        $ids = array_map(static fn (TyreChange $c): int => $c->id, $this->tyres->listChanges($vehicle->id));
+
+        return $ids === [] ? null : max($ids);
+    }
+
+    /**
+     * @param list<TyreView> $views
+     */
+    private function judge(User $user, array $views): TyreVerdict
+    {
+        $lead = $this->reminderSettings->reminderPreferences($user->id);
+
+        return TyreJudgement::judge($views, $this->today($user), $lead->scheduleDays, $lead->scheduleKm);
+    }
+
+    private function today(User $user): DateTimeImmutable
+    {
+        return LocalTime::today($this->clock, $user->preferences->timeZone());
     }
 
     /**
@@ -268,10 +308,15 @@ final readonly class TyreService
      * @param list<TyreChange> $changes
      * @return list<TyreView>
      */
-    private function build(Vehicle $vehicle, array $tyres, array $changes, DateTimeImmutable $today): array
+    private function build(Vehicle $vehicle, User $user, array $tyres, array $changes): array
     {
+        $today = $this->today($user);
+        $thresholds = $this->settings->thresholds($user->id);
+        $type = $vehicle->data->type;
         $result = TyreReplay::run($changes);
-        $current = $this->odometer->history($vehicle)->latest()?->readingKm;
+        $history = $this->odometer->history($vehicle);
+        $current = $history->latest()?->readingKm;
+        $perDay = $history->averageKmPerDay();
         $records = $this->records($vehicle);
         $byId = [];
         foreach ($changes as $change) {
@@ -292,6 +337,16 @@ final readonly class TyreService
             $distance = TyreDistance::of($segments, $current);
             $fitting = $result instanceof TyreReplayResult ? ($byId[$result->fittedBy[$tyre->id] ?? 0] ?? null) : null;
             $made = $tyre->data->dot?->manufacturedOn;
+            $wear = TyreWear::estimate(
+                $result instanceof TyreReplayResult ? $result->measurements($tyre->id) : [],
+                $distance->km,
+                $tyre->isFitted() && $tyre->position?->isRolling() === true,
+                $thresholds->replaceAt($type, $tyre->data->season),
+                $thresholds->legalMinimum($type),
+                $current,
+                $perDay,
+                $today,
+            );
 
             $views[] = new TyreView(
                 tyre: $tyre,
@@ -300,6 +355,8 @@ final readonly class TyreService
                 since: $fitting?->kind === TyreChangeKind::Existing ? $fitting->data->doneOn : null,
                 retiredOn: $tyre->isRetired() ? ($retiredOn[$tyre->id] ?? null) : null,
                 costPerKm: $this->costPerKm($tyre, $fitting, $records, $distance),
+                wear: $wear,
+                ageLimitOn: $tyre->isRetired() ? null : $thresholds->ageLimitOn($made),
             );
         }
 

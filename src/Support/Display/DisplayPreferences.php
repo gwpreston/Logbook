@@ -6,6 +6,7 @@ namespace Logbook\Support\Display;
 
 use DateTimeZone;
 use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\UnitPreset;
 use Logbook\Support\Units\VolumeUnit;
@@ -25,6 +26,7 @@ final readonly class DisplayPreferences
         public string $currency,
         public Theme $theme = Theme::System,
         public Accent $accent = Accent::Blue,
+        public DepthUnit $depthUnit = DepthUnit::Millimetre,
     ) {
     }
 
@@ -39,6 +41,7 @@ final readonly class DisplayPreferences
             $preset->volume(),
             $preset->consumption(),
             $currency,
+            depthUnit: $preset->depth(),
         );
     }
 
@@ -58,11 +61,12 @@ final readonly class DisplayPreferences
             $this->currency,
             $this->theme,
             $this->accent,
+            $this->depthUnit,
         );
     }
 
     public function unitPreset(): ?UnitPreset
     {
-        return UnitPreset::matching($this->distanceUnit, $this->volumeUnit, $this->consumptionUnit);
+        return UnitPreset::matching($this->distanceUnit, $this->volumeUnit, $this->consumptionUnit, $this->depthUnit);
     }
 }

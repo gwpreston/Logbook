@@ -22,6 +22,7 @@ use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvNumber;
 use Logbook\Support\Csv\CsvTable;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Units\DepthUnit;
 use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -161,10 +162,10 @@ final readonly class CsvExporter
     private function tyresTable(User $user, Vehicle $vehicle): array
     {
         $prefs = $user->preferences;
-        $today = LocalTime::today($this->clock, $prefs->timeZone());
         $sets = TyreService::setsById($this->tyres->sets($vehicle));
         $rows = [];
-        foreach ($this->tyres->views($vehicle, $today) as $view) {
+        foreach ($this->tyres->views($vehicle, $user) as $view) {
+            $wear = $view->wear;
             $tyre = $view->tyre;
             $data = $tyre->data;
             $set = $tyre->setId === null ? null : ($sets[$tyre->setId] ?? null);
@@ -181,6 +182,10 @@ final readonly class CsvExporter
                 $set?->data->storageLocation,
                 CsvNumber::distance($view->distance->km, $prefs->distanceUnit),
                 $tyre->retiredReason === null ? null : $this->t('tyre.reason.' . $tyre->retiredReason->value),
+                $wear->latest === null ? null : CsvNumber::depth($wear->latest->treadMm, $prefs->depthUnit),
+                $wear->latest?->doneOn->format('Y-m-d'),
+                $wear->depthNowMm === null ? null : CsvNumber::depth($wear->depthNowMm, $prefs->depthUnit),
+                $wear->kmLeft === null ? null : CsvNumber::distance($wear->kmLeft, $prefs->distanceUnit),
             ];
         }
 
@@ -197,6 +202,10 @@ final readonly class CsvExporter
             'export.column.storage_location',
             ['export.column.distance', ['unit' => $this->t('units.name.' . $prefs->distanceUnit->value)]],
             'export.column.retired_reason',
+            ['export.column.latest_depth', ['unit' => $this->t('units.name.' . $prefs->depthUnit->value)]],
+            'export.column.latest_depth_on',
+            ['export.column.depth_now', ['unit' => $this->t('units.name.' . $prefs->depthUnit->value)]],
+            ['export.column.distance_left', ['unit' => $this->t('units.name.' . $prefs->distanceUnit->value)]],
         ]), $rows];
     }
 
@@ -213,7 +222,7 @@ final readonly class CsvExporter
         foreach ($this->tyres->tyres($vehicle) as $tyre) {
             $tyres[$tyre->id] = $tyre;
         }
-        $overview = $this->tyres->overview($vehicle, LocalTime::today($this->clock, $prefs->timeZone()));
+        $overview = $this->tyres->overview($vehicle, $user);
         $rows = [];
         foreach (array_reverse($overview->changes) as $item) {
             $change = $item->change;
@@ -235,6 +244,7 @@ final readonly class CsvExporter
                 $change->data->odometerKm === null ? null : CsvNumber::distance($change->data->odometerKm, $prefs->distanceUnit),
                 implode('; ', $names),
                 implode('; ', $positions),
+                self::depths($change->lines, $prefs->depthUnit),
                 $item->record?->data->title,
                 $item->record === null ? null : CsvNumber::money($item->record->data->cost, $currency),
                 $item->record === null ? null : $currency,
@@ -248,11 +258,28 @@ final readonly class CsvExporter
             ['export.column.odometer', ['unit' => $this->t('units.name.' . $prefs->distanceUnit->value)]],
             'export.column.tyres',
             'export.column.positions',
+            ['export.column.depths', ['unit' => $this->t('units.name.' . $prefs->depthUnit->value)]],
             'export.column.service_record',
             'export.column.cost',
             'export.column.currency',
             'export.column.note',
         ]), $rows];
+    }
+
+    /**
+     * A change's depths, one per line in the tyres' order ("7.9; 8"; blank
+     * for a tyre not measured), or null when none was measured.
+     *
+     * @param list<TyreChangeLine> $lines
+     */
+    private static function depths(array $lines, DepthUnit $unit): ?string
+    {
+        $depths = array_map(
+            static fn (TyreChangeLine $line): string => $line->treadMm === null ? '' : CsvNumber::depth($line->treadMm, $unit),
+            $lines,
+        );
+
+        return array_filter($depths, static fn (string $d): bool => $d !== '') === [] ? null : implode('; ', $depths);
     }
 
     /**

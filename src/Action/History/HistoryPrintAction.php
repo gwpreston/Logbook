@@ -85,7 +85,7 @@ final readonly class HistoryPrintAction
             'latest' => $this->odometer->history($vehicle)->latest(),
             'age' => VehicleAge::of($vehicle, $today),
             'today' => $today,
-            'tyres' => $this->features->isEnabled(Feature::Tyres) ? $this->tyres->fitted($vehicle, $today) : [],
+            'tyres' => $this->features->isEnabled(Feature::Tyres) ? $this->tyres->fitted($vehicle, $user) : [],
         ]);
     }
 }

@@ -90,7 +90,7 @@ final readonly class ShowVehicleAction
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
             'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)
-                ? $this->tyres->fitted($vehicle, $today)
+                ? $this->tyres->overview($vehicle, $user)
                 : null,
         ]);
     }

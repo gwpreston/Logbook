@@ -14,6 +14,8 @@ use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Tyre\TyreReminderTitle;
+use Logbook\Service\Tyre\TyreService;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
 
@@ -34,6 +36,8 @@ final readonly class ReminderSync
         private ReminderSettingsStore $settings,
         private ClockInterface $clock,
         private FeatureToggles $features,
+        private TyreService $tyres,
+        private TyreReminderTitle $tyreTitles,
     ) {
     }
 
@@ -52,6 +56,7 @@ final readonly class ReminderSync
         $enabled = $this->features->all();
         $withSchedules = $enabled[Feature::Maintenance->value];
         $withDocuments = $enabled[Feature::Compliance->value];
+        $withTyres = $enabled[Feature::Tyres->value];
         foreach ($existing as $key => $reminder) {
             $feature = $reminder->source->feature();
             if ($feature !== null && !$enabled[$feature->value]) {
@@ -75,6 +80,19 @@ final readonly class ReminderSync
             if ($withDocuments) {
                 $documents = $this->compliance->states($vehicle, $today, $preferences->documentDays);
                 $wanted = [...$wanted, ...ReminderGenerator::fromDocuments($vehicle->id, $documents, $today, $preferences)];
+            }
+            if ($withTyres) {
+                $verdict = $this->tyres->verdict($vehicle, $user);
+                $tyres = $verdict->isJudgeable() ? ReminderGenerator::fromTyres(
+                    $vehicle->id,
+                    $verdict,
+                    $this->tyres->latestChangeId($vehicle),
+                    $this->tyreTitles->title($user, $vehicle, $verdict),
+                    $preferences,
+                ) : null;
+                if ($tyres !== null) {
+                    $wanted[] = $tyres;
+                }
             }
 
             foreach ($wanted as $generated) {

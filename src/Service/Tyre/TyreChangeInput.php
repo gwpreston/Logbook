@@ -20,6 +20,7 @@ final readonly class TyreChangeInput
      * @param array<string, ?TyreRetireReason> $replaced fit: position → what happens to the tyre there (null = storage)
      * @param array<int, TyrePosition> $positions swap: stored tyre → position; rotate: fitted tyre → new position
      * @param array<int, ?TyreRetireReason> $removed remove: tyre → reason (null = storage); repair: tyre → null
+     * @param array<int, string> $depths swap, remove, check: tyre → depth measured, mm
      */
     public function __construct(
         public TyreChangeKind $kind,
@@ -30,6 +31,7 @@ final readonly class TyreChangeInput
         public array $positions = [],
         public array $removed = [],
         public SetChoice $into = new SetChoice(),
+        public array $depths = [],
     ) {
     }
 }

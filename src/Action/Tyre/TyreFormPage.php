@@ -125,6 +125,7 @@ final readonly class TyreFormPage
                 break;
             case TyreChangeKind::Repair:
             case TyreChangeKind::Remove:
+            case TyreChangeKind::Check:
                 break;
         }
 

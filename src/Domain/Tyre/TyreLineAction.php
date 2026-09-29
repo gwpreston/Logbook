@@ -15,6 +15,8 @@ enum TyreLineAction: string
     case Retire = 'retire';
     case Move = 'move';
     case Repair = 'repair';
+    /** A tread depth taken (a *Check tread*); the tyre does not move. */
+    case Measure = 'measure';
 
     public function takesPosition(): bool
     {

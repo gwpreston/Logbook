@@ -54,6 +54,7 @@ return [
             'document' => 'Document',
             'schedule' => 'Service interval',
             'tyre' => 'Tyre change',
+            'tyre_check' => 'Check tread',
         ],
         'pick_title' => [
             'odometer' => 'Add an odometer reading',
@@ -62,6 +63,7 @@ return [
             'document' => 'Add a document',
             'schedule' => 'Add a service interval',
             'tyre' => 'Fit tyres',
+            'tyre_check' => 'Check tread',
         ],
     ],
     'theme' => [
@@ -182,6 +184,7 @@ return [
         'locale' => 'Language',
         'timezone' => 'Time zone',
         'timezone_hint' => 'Dates and times are shown in this zone; they are stored in UTC.',
+        'depth_unit' => 'Tread depth',
     ],
     'units' => [
         'preset' => [
@@ -203,6 +206,8 @@ return [
             'km_per_kwh' => 'km/kWh',
             'mi_per_kwh' => 'mi/kWh',
             'kwh' => 'kWh',
+            'mm' => 'Millimetres',
+            'in32' => '32nds of an inch',
         ],
         'symbol' => [
             'km' => 'km',
@@ -211,6 +216,8 @@ return [
             'gal_uk' => 'gal',
             'gal_us' => 'US gal',
             'kwh' => 'kWh',
+            'mm' => 'mm',
+            'in32' => '/32″',
         ],
         'distance' => [
             'km' => '{value} km',
@@ -250,6 +257,14 @@ return [
             'b' => '{value} B',
             'kb' => '{value} KB',
             'mb' => '{value} MB',
+        ],
+        'depth' => [
+            'mm' => '{value} mm',
+            'in32' => '{value}/32″',
+        ],
+        'depth_range' => [
+            'mm' => '{min}–{max} mm',
+            'in32' => '{min}–{max}/32″',
         ],
     ],
     'home' => [
@@ -856,6 +871,7 @@ return [
             'rotate' => 'Rotate',
             'repair' => 'Repair',
             'remove' => 'Remove',
+            'check' => 'Check tread',
         ],
         'line' => [
             'on' => 'Fitted',
@@ -871,6 +887,7 @@ return [
             'rotate' => 'Tyres rotated',
             'repair' => 'Tyre repaired',
             'remove' => 'Tyres removed',
+            'check' => 'Tread check',
         ],
         'summary' => [
             'existing' => '{count, plural, one {Recorded # tyre} other {Recorded # tyres}} ({where})',
@@ -882,6 +899,9 @@ return [
             'repair' => 'Repaired {where}',
             'remove' => '{count, plural, one {Removed # tyre} other {Removed # tyres}} ({where})',
             'retire' => '{count, plural, one {Retired # tyre} other {Retired # tyres}} ({where})',
+            'check' => 'Checked tread: {depths}',
+            'check_where' => 'Checked tread ({where})',
+            'with_depths' => '{summary} · {depths}',
         ],
         'record_title' => [
             'existing' => 'Tyres on the vehicle, {where}',
@@ -893,6 +913,7 @@ return [
             'repair' => 'Tyre repair, {where}',
             'remove' => 'Tyres removed, {where}',
             'retire' => 'Tyres removed, {where}',
+            'check_where' => 'Tread check, {where}',
         ],
         'section' => [
             'fitted' => 'On the vehicle',
@@ -957,6 +978,9 @@ return [
             'set_location' => 'Storage location',
             'fit_set' => 'Fit from storage',
             'tyres' => 'Tyres',
+            'tread' => 'Tread depth',
+            'estimate' => 'Estimate',
+            'tread_new' => 'Tread depth when new',
         ],
         'hint' => [
             'size' => 'As on the sidewall, e.g. 205/55 R16 91V.',
@@ -977,6 +1001,9 @@ return [
             'set' => 'Where the tyres taken off are kept (optional).',
             'set_by_record' => 'The date and odometer come from its service record: edit them there.',
             'change_lines' => 'Which tyres a change touched is fixed; to change that, delete it and record it again.',
+            'tread_new' => 'On the invoice or the tyre’s specification; about 8 mm for most car tyres.',
+            'tread_off' => 'Tread depth of the tyres coming off, if measured (tyre storage services usually measure on the way in).',
+            'check' => 'Leave a tyre blank to skip it. 0 is allowed.',
         ],
         'submit' => [
             'existing' => 'Save tyres',
@@ -985,6 +1012,7 @@ return [
             'rotate' => 'Save rotation',
             'repair' => 'Save repair',
             'remove' => 'Save',
+            'check' => 'Save depths',
         ],
         'saved' => [
             'existing' => 'Tyres saved.',
@@ -993,6 +1021,7 @@ return [
             'rotate' => 'Tyres rotated.',
             'repair' => 'Repair saved.',
             'remove' => 'Tyres removed.',
+            'check' => 'Tread depths saved.',
         ],
         'no_tyres_fitted' => 'No tyres are fitted: record the tyres already on the vehicle, or fit new ones.',
         'none_to_swap' => 'Nothing to swap: no tyres are fitted or in storage.',
@@ -1055,6 +1084,61 @@ return [
             'unknown_set' => 'Choose one of this vehicle’s sets.',
             'link' => 'Choose one of the listed service records.',
             'cost_and_link' => 'Enter a cost or link a service record, not both.',
+            'depth_range' => 'Enter a depth from 0 to {max}.',
+            'depth_halves' => 'Use whole or half 32nds, like 6 or 6.5.',
+            'nothing_measured' => 'Enter at least one depth.',
+        ],
+        'depth' => [
+            'measured' => '{depth} on {date}',
+        ],
+        'wear' => [
+            'depth_now' => 'about {depth} now',
+            'left' => 'about {distance} left',
+            'around' => 'around {month}',
+            'soonest_left' => 'Soonest: about {distance} left',
+        ],
+        'flag' => [
+            'wear_overdue' => 'Worn: replace',
+            'wear_soon' => 'Replace soon',
+            'age_overdue' => 'Over the age limit',
+            'age_soon' => 'Age limit soon',
+            'legal_below' => 'Below the legal minimum',
+            'legal_may_be_below' => 'May be below the legal minimum — check it',
+        ],
+        'verdict' => [
+            'overdue' => 'Tyres need replacing',
+            'soon' => 'Tyres due soon',
+            'ok' => 'Tread and age OK',
+        ],
+        'warning' => [
+            'deeper' => 'Deeper than last time ({depth} on {date}) — check the reading.',
+            'deeper_named' => '{tyre}: deeper than last time ({depth} on {date}) — check the reading.',
+        ],
+        'settings' => [
+            'title' => 'Tyres',
+            'lead' => 'When tyres count as worn or old. The Tyres tab and tyre reminders both use these.',
+            'link' => 'Tyres',
+            'link_hint' => 'Replace-at depth, legal minimum and age limit.',
+            'car' => 'Cars',
+            'bike' => 'Motorbikes',
+            'replace_at' => 'Replace at',
+            'replace_at_hint' => 'Drives the wear estimate and reminders.',
+            'winter_replace_at' => 'Replace winter tyres at',
+            'legal_minimum' => 'Legal minimum',
+            'legal_hint' => 'Legal minimums differ by country; check yours.',
+            'age_heading' => 'Age',
+            'age_limit' => 'Age limit',
+            'years' => 'years',
+            'age_hint' => 'From the DOT date, for tyres fitted or in storage. 0 turns it off.',
+            'reminder_note' => 'Tyres are due within your service lead time and distance (Settings → Reminders).',
+            'save' => 'Save tyre settings',
+            'saved' => 'Tyre settings saved.',
+        ],
+        'reminder' => [
+            'worn' => 'Tyres: {where} worn',
+            'wear_due' => 'Tyres: {where} due in about {distance}',
+            'old' => 'Tyres: {what} over {years, plural, one {# year} other {# years}} old',
+            'age_due' => 'Tyres: {what} {years, plural, one {# year} other {# years}} old on {date}',
         ],
     ],
     // tyre:end
@@ -1152,6 +1236,7 @@ return [
             'schedule' => 'Maintenance',
             'compliance' => 'Document',
             'manual' => 'Your reminder',
+            'tyre' => 'Tyres',
         ],
         'status' => [
             'upcoming' => 'Upcoming',
@@ -1410,6 +1495,11 @@ return [
             'reference' => 'Reference',
             'start' => 'Start',
             'expiry' => 'Expiry',
+            'latest_depth' => 'Latest depth ({unit})',
+            'latest_depth_on' => 'Latest depth on',
+            'depth_now' => 'Depth now ({unit})',
+            'distance_left' => 'Distance left ({unit})',
+            'depths' => 'Depths ({unit})',
         ],
     ],
     'import' => [
@@ -1759,6 +1849,7 @@ return [
         'password_changed' => 'Your password was changed. Other devices have been signed out.',
         'installation' => 'Installation',
         'version' => 'Version',
+        'preview_depth' => 'Tread depth',
     ],
     'diagnostics' => [
         'deep_link' => [
@@ -1787,5 +1878,9 @@ return [
             'title' => 'This form has expired',
             'body' => 'For your security the form could not be accepted — it may have been open too long, or sent from another site. Go back, reload the page and try again.',
         ],
+    ],
+    'list' => [
+        'pair' => '{first} and {second}',
+        'last' => '{list} and {last}',
     ],
 ];

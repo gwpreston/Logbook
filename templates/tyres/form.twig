@@ -4,9 +4,10 @@
 
 {#
  # A tyre change form (spec.md §7.17), one kind at a time: tyres already on
- # the vehicle, fit, swap set, rotate, repair or remove. Every kind works
- # without JS; field names are flat (brand_fl, move_12) so a validation
- # error keeps what was typed.
+ # the vehicle, fit, swap set, rotate, repair, remove or check tread. Every
+ # kind works without JS; field names are flat (brand_fl, move_12, tread_12)
+ # so a validation error keeps what was typed. Depths are typed in the
+ # owner's depth unit.
  #}
 {% set active_nav = 'garage' %}
 {% set heading = ('tyre.kind.' ~ kind.value)|trans %}
@@ -29,6 +30,13 @@
         {{ ui.input('size' ~ suffix, 'tyre.field.size'|trans, values, errors, {optional: true, maxlength: 30, autocomplete: 'off', hint: 'tyre.hint.size'|trans}) }}
         {{ ui.select('season' ~ suffix, 'tyre.field.season'|trans, values, errors, seasons) }}
     </div>
+{%- endmacro %}
+
+{# A tread depth in the owner's unit: 0.1 mm, or half 32nds. #}
+{% macro depth(name, label, values, errors, hint = null) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set unit = prefs().depthUnit %}
+    {{ ui.input(name, label, values, errors, {type: 'number', optional: true, step: unit.value == 'in32' ? 0.5 : 'any', min: 0, max: unit.max(), inputmode: 'decimal', suffix: ('units.symbol.' ~ unit.value)|trans, hint: hint}) }}
 {%- endmacro %}
 
 {% macro dot(name, label, values, errors) -%}
@@ -66,7 +74,7 @@
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
-        {% set needs_fitted = kind.value in ['rotate', 'repair', 'remove'] %}
+        {% set needs_fitted = kind.value in ['rotate', 'repair', 'remove', 'check'] %}
         {% if needs_fitted and fitted is empty %}
             <p class="alert alert--info">{{ ui.icon('info') }}<span>{{ 'tyre.no_tyres_fitted'|trans }}</span></p>
             <div class="btn-row">
@@ -104,7 +112,10 @@
                             <p class="muted">{{ tyres.name(fitted[code]) }} · {{ 'tyre.status.fitted'|trans }}</p>
                         {% else %}
                             {{ form.description(values, errors, season_options, '_' ~ code) }}
-                            {{ form.dot('dot_' ~ code, 'tyre.field.dot'|trans, values, errors) }}
+                            <div class="form-row">
+                                {{ form.dot('dot_' ~ code, 'tyre.field.dot'|trans, values, errors) }}
+                                {{ form.depth('tread_' ~ code, 'tyre.field.tread'|trans, values, errors) }}
+                            </div>
                         {% endif %}
                     </fieldset>
                 {% endfor %}
@@ -125,6 +136,7 @@
                 </fieldset>
                 <section class="card">
                     {{ form.description(values, errors, season_options) }}
+                    {{ form.depth('tread', 'tyre.field.tread_new'|trans, values, errors, 'tyre.hint.tread_new'|trans) }}
                 </section>
                 <fieldset class="card fieldset">
                     <legend class="card__title fieldset__legend">{{ 'tyre.field.dot'|trans }}</legend>
@@ -152,11 +164,12 @@
                     <p class="field__hint">{{ 'tyre.hint.swap'|trans }}</p>
                     {% set road = fitted|filter(t => t.position.isRolling()) %}
                     {% if road is not empty %}
-                        <ul class="plain-list">
+                        <p class="field__hint">{{ 'tyre.hint.tread_off'|trans }}</p>
+                        <div class="form-row form-row--wrap">
                             {% for code, tyre in road %}
-                                <li>{{ ('tyre.position.' ~ code)|trans }} · {{ tyres.name(tyre) }}</li>
+                                {{ form.depth('tread_' ~ tyre.id, ('tyre.position.' ~ code)|trans ~ ' · ' ~ tyres.name(tyre), values, errors) }}
                             {% endfor %}
-                        </ul>
+                        </div>
                         {{ form.set_choice(values, errors, sets) }}
                     {% endif %}
                 </fieldset>
@@ -167,8 +180,11 @@
                         {{ ui.field_error(errors, 'on') }}
                         {% for tyre in context.stored %}
                             {% set set = sets|filter(s => s.id == tyre.setId)|first %}
-                            {{ ui.select('on_' ~ tyre.id, tyres.name(tyre) ~ (set ? ' · ' ~ set.data.name : ''), values, errors,
-                                [{value: '', label: 'tyre.status.stored'|trans}]|merge(rolling_options)) }}
+                            <div class="form-row">
+                                {{ ui.select('on_' ~ tyre.id, tyres.name(tyre) ~ (set ? ' · ' ~ set.data.name : ''), values, errors,
+                                    [{value: '', label: 'tyre.status.stored'|trans}]|merge(rolling_options)) }}
+                                {{ form.depth('tread_' ~ tyre.id, 'tyre.field.tread'|trans, values, errors) }}
+                            </div>
                         {% endfor %}
                     </fieldset>
                 {% endif %}
@@ -202,16 +218,29 @@
                     <p class="field__hint">{{ 'tyre.hint.remove'|trans }}</p>
                     {{ ui.field_error(errors, 'tyres') }}
                     {% for code, tyre in fitted %}
-                        {{ ui.select('action_' ~ tyre.id, ('tyre.position.' ~ code)|trans ~ ' · ' ~ tyres.name(tyre), values, errors,
-                            [{value: 'keep', label: 'tyre.field.keep'|trans}, {value: 'store', label: 'tyre.field.into_storage'|trans}]|merge(reason_options)) }}
+                        <div class="form-row">
+                            {{ ui.select('action_' ~ tyre.id, ('tyre.position.' ~ code)|trans ~ ' · ' ~ tyres.name(tyre), values, errors,
+                                [{value: 'keep', label: 'tyre.field.keep'|trans}, {value: 'store', label: 'tyre.field.into_storage'|trans}]|merge(reason_options)) }}
+                            {{ form.depth('tread_' ~ tyre.id, 'tyre.field.tread'|trans, values, errors) }}
+                        </div>
                     {% endfor %}
                 </fieldset>
                 <section class="card">
                     {{ form.set_choice(values, errors, sets) }}
                 </section>
+
+            {% elseif kind.value == 'check' %}
+                <fieldset class="card fieldset">
+                    <legend class="card__title fieldset__legend">{{ 'tyre.field.tread'|trans }}</legend>
+                    <p class="field__hint">{{ 'tyre.hint.check'|trans }}</p>
+                    {{ ui.field_error(errors, 'depths') }}
+                    {% for code, tyre in fitted %}
+                        {{ form.depth('tread_' ~ tyre.id, ('tyre.position.' ~ code)|trans ~ ' · ' ~ tyres.name(tyre), values, errors) }}
+                    {% endfor %}
+                </fieldset>
             {% endif %}
 
-            {% if context.maintenance and (kind.takesCost() or links is not empty) %}
+            {% if context.maintenance and (kind.takesCost() or (kind.takesLink() and links is not empty)) %}
                 <section class="card">
                     {% if kind.takesCost() %}
                         <div class="form-row">
@@ -220,7 +249,7 @@
                         </div>
                         <p class="field__hint">{{ 'tyre.hint.cost'|trans }}</p>
                     {% endif %}
-                    {% if links is not empty %}
+                    {% if kind.takesLink() and links is not empty %}
                         {{ ui.select('link', 'tyre.field.link'|trans, values, errors,
                             [{value: '', label: 'tyre.field.link_none'|trans}]|merge(links|map(e => {value: e.id, label: e.data.performedOn|local_date ~ ' · ' ~ e.data.title ~ ' · ' ~ e.data.cost|money(currency)})),
                             {hint: 'tyre.hint.link'|trans}) }}

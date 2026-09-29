@@ -35,6 +35,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
 | [10.2](phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
 | [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
+| [11.2](phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -232,6 +233,22 @@ ones go?*
 - No release of its own: ships with Phase 11.2 as **v1.3.0**.
 
 → [`phase-11.1.md`](phase-11.1.md)
+
+## Phase 11.2 — Tread depth, wear and age reminders
+*When do these tyres need replacing, before an MOT tester or a wet roundabout
+says so?*
+
+- Tread depth in mm or 32nds of an inch (a new unit preference), recorded
+  when tyres are fitted, swapped or removed, and with a new *Check tread*.
+- A wear estimate per fitted tyre from its own distance: depth now, distance
+  left to the owner's replace-at depth and roughly when, always labelled as
+  an estimate.
+- Replace-at, legal-minimum and age-limit settings (from the DOT date).
+- One tyre reminder per vehicle through the existing engine and channels,
+  quiet across fill-ups and reopened by a new check.
+- Released with Phase 11.1 as **v1.3.0**.
+
+→ [`phase-11.2.md`](phase-11.2.md)
 
 ---
 

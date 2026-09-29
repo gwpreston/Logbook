@@ -14,6 +14,7 @@ use Logbook\Support\Display\Accent;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Display\Theme;
 use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 
@@ -25,7 +26,7 @@ final readonly class UserRepository
     private const string TABLE = 'users';
     private const array COLUMNS = [
         'id', 'username', 'password_hash', 'display_name', 'locale', 'timezone', 'distance_unit',
-        'volume_unit', 'consumption_unit', 'currency', 'theme', 'accent', 'created_at', 'updated_at',
+        'volume_unit', 'consumption_unit', 'depth_unit', 'currency', 'theme', 'accent', 'created_at', 'updated_at',
     ];
 
     public function __construct(private Connection $connection)
@@ -142,6 +143,7 @@ final readonly class UserRepository
             'distance_unit' => $preferences->distanceUnit->value,
             'volume_unit' => $preferences->volumeUnit->value,
             'consumption_unit' => $preferences->consumptionUnit->value,
+            'depth_unit' => $preferences->depthUnit->value,
             'currency' => $preferences->currency,
             'theme' => $preferences->theme->value,
             'accent' => $preferences->accent->value,
@@ -169,6 +171,7 @@ final readonly class UserRepository
                 currency: Row::string($row, 'currency'),
                 theme: Theme::tryFrom(Row::string($row, 'theme')) ?? Theme::System,
                 accent: Accent::tryFrom(Row::nullableString($row, 'accent') ?? '') ?? Accent::DEFAULT,
+                depthUnit: DepthUnit::tryFrom(Row::nullableString($row, 'depth_unit') ?? '') ?? DepthUnit::Millimetre,
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'], $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'], $platform),

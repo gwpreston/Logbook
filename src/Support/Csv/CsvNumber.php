@@ -6,6 +6,7 @@ namespace Logbook\Support\Csv;
 
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Number\Decimal;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 
@@ -39,6 +40,15 @@ final class CsvNumber
     public static function distance(string $km, DistanceUnit $unit): string
     {
         return Decimal::trim($unit->fromKmDecimal($km, self::QUANTITY_SCALE));
+    }
+
+    /**
+     * A tread depth in the owner's depth unit, as typed on the forms ("4.2",
+     * "6.5" in 32nds).
+     */
+    public static function depth(string $mm, DepthUnit $unit): string
+    {
+        return $unit->toInput($mm);
     }
 
     /**

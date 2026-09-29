@@ -32,8 +32,11 @@ use Logbook\Service\Tyre\NewTyre;
 use Logbook\Service\Tyre\SetChoice;
 use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreCost;
+use Logbook\Service\Tyre\TyreSettingsStore;
+use Logbook\Service\Tyre\TyreThresholds;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Number\Decimal;
 use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
 use Logbook\Support\Storage\UploadKind;
@@ -104,9 +107,16 @@ final class BackupTest extends AppTestCase
         self::assertContains('tyre', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertCount(1, $before['tables']['tyre_sets']);
         self::assertCount(2, $before['tables']['tyres']);
-        self::assertCount(2, $before['tables']['tyre_changes']);
-        self::assertCount(4, $before['tables']['tyre_change_lines']);
-        self::assertNotNull($before['tables']['tyre_changes'][1]['maintenance_entry_id'] ?? null, 'the swap links its record');
+        self::assertCount(3, $before['tables']['tyre_changes']);
+        self::assertCount(5, $before['tables']['tyre_change_lines']);
+        self::assertNotNull($before['tables']['tyre_changes'][2]['maintenance_entry_id'] ?? null, 'the swap links its record');
+        self::assertContains('check', array_column($before['tables']['tyre_changes'], 'kind'));
+        self::assertContains('7.144', array_map(
+            static fn (mixed $v): ?string => is_string($v) ? Decimal::round($v, 3) : null,
+            array_column($before['tables']['tyre_change_lines'], 'tread_mm'),
+        ), 'the depths travel with the lines');
+        self::assertContains('tyres.thresholds', array_column($before['tables']['settings'], 'name'));
+        self::assertContains('mm', array_column($before['tables']['users'], 'depth_unit'));
 
         $response = $browser->get('/settings/backup/download');
         self::assertSame(200, $response->getStatusCode());
@@ -322,11 +332,16 @@ final class BackupTest extends AppTestCase
         $tyres = $this->service($app, TyreChangeService::class);
         $day = static fn (string $date): DateTimeImmutable => LocalTime::parseDate($date) ?? throw new \LogicException($date);
         $primacy = new TyreData('Michelin', 'Primacy 4', '205/55 R16 91V');
-        $michelin = static fn (TyrePosition $p): NewTyre => new NewTyre($p, $primacy);
-        $tyres->existing($golf, new TyreChangeData($day('2026-09-01'), '1000.500'), [
+        // Tread depths (Phase 11.2): on the lines, a check, and the thresholds setting.
+        $michelin = static fn (TyrePosition $p): NewTyre => new NewTyre($p, $primacy, '7.938');
+        $existing = $tyres->existing($golf, new TyreChangeData($day('2026-09-01'), '1000.500'), [
             $michelin(TyrePosition::FrontLeft),
             $michelin(TyrePosition::FrontRight),
         ], $zone, 'en_GB');
+        $tyres->check($golf, new TyreChangeData($day('2026-09-10'), '1500.000'), [
+            $existing->tyreIds()[0] => '7.144',
+        ], $zone, 'en_GB');
+        $this->service($app, TyreSettingsStore::class)->saveThresholds($owner->id, new TyreThresholds(ageYears: 5));
         $tyres->swap(
             $golf,
             new TyreChangeData($day('2026-09-15'), '1620.000'),

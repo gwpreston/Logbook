@@ -405,18 +405,22 @@ final class TyrePagesTest extends AppTestCase
         self::assertStringStartsWith("\u{FEFF}", $tyres, 'UTF-8 with a byte-order mark');
         $lines = explode("\r\n", trim(substr($tyres, 3)));
         self::assertSame(
-            'Brand,Model,Size,Season,DOT,Manufactured on,Status,Position,Set,Storage location,Distance (Miles),Retired reason',
+            'Brand,Model,Size,Season,DOT,Manufactured on,Status,Position,Set,Storage location,Distance (Miles),Retired reason,'
+                . 'Latest depth (Millimetres),Latest depth on,Depth now (Millimetres),Distance left (Miles)',
             $lines[0],
         );
-        self::assertContains('Goodyear,EfficientGrip,205/55 R16 91V,,1223,2023-03-20,Retired,,,,1000,Worn out', $lines);
-        self::assertContains('Michelin,Primacy 4,205/55 R16 91V,Summer,3025,2025-07-21,Fitted,Front left,,,0,', $lines);
+        self::assertContains('Goodyear,EfficientGrip,205/55 R16 91V,,1223,2023-03-20,Retired,,,,1000,Worn out,,,,', $lines);
+        self::assertContains('Michelin,Primacy 4,205/55 R16 91V,Summer,3025,2025-07-21,Fitted,Front left,,,0,,,,,', $lines);
 
         $changes = self::body($this->browser->get($export . 'tyre-changes.csv'));
         $lines = explode("\r\n", trim(substr($changes, 3)));
-        self::assertSame('Date,Kind,Odometer (Miles),Tyres,Positions,Service record,Cost,Currency,Note', $lines[0]);
+        self::assertSame(
+            'Date,Kind,Odometer (Miles),Tyres,Positions,Depths (Millimetres),Service record,Cost,Currency,Note',
+            $lines[0],
+        );
         self::assertStringStartsWith('2025-10-03,Tyres already on the vehicle,20000,Goodyear EfficientGrip;', $lines[1]);
         self::assertSame(
-            '2026-09-20,Fit tyres,21000,Goodyear EfficientGrip; Michelin Primacy 4,Front left; Front left,'
+            '2026-09-20,Fit tyres,21000,Goodyear EfficientGrip; Michelin Primacy 4,Front left; Front left,,'
                 . '"1 × Michelin Primacy 4, front left",120.00,GBP,',
             $lines[2],
         );

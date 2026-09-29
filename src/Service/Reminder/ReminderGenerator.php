@@ -8,9 +8,10 @@ use DateTimeImmutable;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Maintenance\ScheduleState;
+use Logbook\Service\Tyre\TyreVerdict;
 
 /**
- * Which reminders a vehicle's schedules and documents call for today
+ * Which reminders a vehicle's schedules, documents and tyres call for today
  * (spec.md §7.6). Pure: the states come in already judged against the
  * owner's today and lead times.
  */
@@ -89,5 +90,42 @@ final class ReminderGenerator
         }
 
         return $reminders;
+    }
+
+    /**
+     * The one tyre reminder of a vehicle, or null when nothing about its
+     * tyres can be judged. Its source id is the vehicle's own id (one per
+     * vehicle, not per tyre). The occurrence is the vehicle's latest tyre
+     * change, not the projected date: the projection moves with every
+     * fill-up and would reopen and re-send the reminder each time; a new
+     * check, fit or swap is what opens it again.
+     *
+     * @param int|null $latestChangeId the vehicle's latest tyre change
+     * @param string $title already in the owner's language (TyreReminderTitle)
+     */
+    public static function fromTyres(
+        int $vehicleId,
+        TyreVerdict $verdict,
+        ?int $latestChangeId,
+        string $title,
+        ReminderPreferences $preferences,
+    ): ?GeneratedReminder {
+        $status = ReminderRules::statusForTyres($verdict);
+        if ($status === null) {
+            return null;
+        }
+
+        return new GeneratedReminder(
+            vehicleId: $vehicleId,
+            source: ReminderSource::Tyre,
+            sourceId: $vehicleId,
+            occurrence: (string) ($latestChangeId ?? 0),
+            category: 'tyres',
+            title: $title,
+            dueOn: $verdict->dueOn,
+            dueKm: $verdict->dueKm,
+            leadTimeDays: $preferences->scheduleDays,
+            status: $status,
+        );
     }
 }

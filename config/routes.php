@@ -66,6 +66,7 @@ use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
 use Logbook\Action\Settings\SetThemeAction;
+use Logbook\Action\Settings\TyreSettingsAction;
 use Logbook\Action\Settings\SettingsAction;
 use Logbook\Action\Tyre\DeleteTyreAction;
 use Logbook\Action\Tyre\DeleteTyreChangeAction;
@@ -137,7 +138,7 @@ return static function (App $app): void {
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
         $group->get('/log/new', LogEntryAction::class)->setName('log.chooser');
-        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule|tyre}', LogPickVehicleAction::class)
+        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule|tyre|tyre_check}', LogPickVehicleAction::class)
             ->setName('log.pick');
 
         $group->get('/garage', GarageAction::class)->setName('garage');
@@ -193,7 +194,7 @@ return static function (App $app): void {
             // Tyres (spec.md §7.17).
             $vehicle->group('/tyres', function (Group $tyres): void {
                 $tyres->get('', TyreListAction::class)->setName('tyres.index');
-                $tyres->map(['GET', 'POST'], '/{kind:existing|fit|swap|rotate|repair|remove}', TyreChangeFormAction::class)
+                $tyres->map(['GET', 'POST'], '/{kind:existing|fit|swap|rotate|repair|remove|check}', TyreChangeFormAction::class)
                     ->setName('tyres.change');
                 $tyres->map(['GET', 'POST'], '/changes/{change:[0-9]+}/edit', EditTyreChangeAction::class)
                     ->setName('tyres.changes.edit');
@@ -261,6 +262,9 @@ return static function (App $app): void {
         // Lead times also drive the vehicle tabs' due badges, so this page stays when reminders are off.
         $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');
         $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules');
+        $group->map(['GET', 'POST'], '/settings/tyres', TyreSettingsAction::class)
+            ->setName('settings.tyres')
+            ->add($module(Feature::Tyres));
         $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index');
         $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download');
         $group->post('/settings/backup/restore', UploadRestoreAction::class)->setName('backup.restore');

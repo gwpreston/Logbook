@@ -14,6 +14,7 @@ use Logbook\Service\Tyre\TyreChangeRefused;
 use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
@@ -24,10 +25,11 @@ use Slim\Exception\HttpNotFoundException;
 
 /**
  * GET|POST /vehicles/{id}/tyres/{kind} — record a tyre change: tyres already
- * on the vehicle, fit, swap set, rotate, repair or remove (spec.md §7.17).
- * One route and form page for the six kinds; each kind parses its own
- * fields and the service checks them against the tyres as they are.
- * `?set={id}` on the swap form fits that set.
+ * on the vehicle, fit, swap set, rotate, repair, remove or check tread
+ * (spec.md §7.17). One route and form page for the seven kinds; each kind
+ * parses its own fields and the service checks them against the tyres as
+ * they are. `?set={id}` on the swap form fits that set. A depth much deeper
+ * than the tyre's last one is saved, with a notice to check it.
  */
 final readonly class TyreChangeFormAction
 {
@@ -39,6 +41,7 @@ final readonly class TyreChangeFormAction
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
         private ClockInterface $clock,
+        private DisplayFormatter $formatter,
     ) {
     }
 
@@ -86,6 +89,14 @@ final readonly class TyreChangeFormAction
         $this->warnings->queue($session, $change->data->maintenanceEntryId === null
             ? $this->odometer->warningForEntry($vehicle, OdometerSource::Tyre, $change->id)
             : $this->odometer->warningForEntry($vehicle, OdometerSource::Maintenance, $change->data->maintenanceEntryId));
+        foreach ($this->changes->deeperReadings($vehicle, $change) as $deeper) {
+            $name = $deeper->tyre->data->name() ?: ($deeper->tyre->data->size ?? '');
+            $session->flash('warning', $name === '' ? 'tyre.warning.deeper' : 'tyre.warning.deeper_named', [
+                'tyre' => $name,
+                'depth' => $this->formatter->depth($deeper->previous->treadMm),
+                'date' => $this->formatter->date($deeper->previous->doneOn),
+            ]);
+        }
 
         return $this->redirect->backOr($request, 'tyres.index', ['id' => (string) $vehicle->id]);
     }

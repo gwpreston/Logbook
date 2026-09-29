@@ -15,6 +15,11 @@ enum ReminderSource: string
     case Schedule = 'schedule';
     /** A compliance document's expiry. */
     case Compliance = 'compliance';
+    /**
+     * A vehicle's tyres, worn or ageing (Phase 11.2). Its source id is the
+     * vehicle's own id: one tyre reminder per vehicle, never per tyre.
+     */
+    case Tyre = 'tyre';
     /** Added by hand. */
     case Manual = 'manual';
 
@@ -35,6 +40,7 @@ enum ReminderSource: string
         return match ($this) {
             self::Schedule => Feature::Maintenance,
             self::Compliance => Feature::Compliance,
+            self::Tyre => Feature::Tyres,
             self::Manual => null,
         };
     }

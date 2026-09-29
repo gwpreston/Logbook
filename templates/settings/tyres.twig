@@ -1,0 +1,61 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Settings → Tyres (spec.md §7.17): when to replace, the legal minimum and
+ # the age limit. Depths are typed in the owner's depth unit.
+ #}
+{% set active_nav = 'settings' %}
+{% set unit = prefs().depthUnit %}
+{% set depth = {type: 'number', required: true, step: unit.value == 'in32' ? 0.5 : 'any', min: 0, max: unit.max(), inputmode: 'decimal', suffix: ('units.symbol.' ~ unit.value)|trans} %}
+
+{% block title %}{{ 'tyre.settings.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'tyre.settings.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'tyre.settings.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <form class="form" method="post" action="{{ url_for('settings.tyres') }}">
+            {{ ui.csrf(csrf) }}
+
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+
+            <section class="card" aria-labelledby="tyres-car-heading">
+                <h2 id="tyres-car-heading" class="card__title">{{ ui.icon('directions_car') }}{{ 'tyre.settings.car'|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.input('car_replace', 'tyre.settings.replace_at'|trans, values, errors, depth|merge({hint: 'tyre.settings.replace_at_hint'|trans})) }}
+                    {{ ui.input('car_winter_replace', 'tyre.settings.winter_replace_at'|trans, values, errors, depth) }}
+                </div>
+                {{ ui.input('car_legal', 'tyre.settings.legal_minimum'|trans, values, errors, depth|merge({hint: 'tyre.settings.legal_hint'|trans})) }}
+            </section>
+
+            <section class="card" aria-labelledby="tyres-bike-heading">
+                <h2 id="tyres-bike-heading" class="card__title">{{ ui.icon('two_wheeler') }}{{ 'tyre.settings.bike'|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.input('bike_replace', 'tyre.settings.replace_at'|trans, values, errors, depth) }}
+                    {{ ui.input('bike_legal', 'tyre.settings.legal_minimum'|trans, values, errors, depth) }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="tyres-age-heading">
+                <h2 id="tyres-age-heading" class="card__title">{{ 'tyre.settings.age_heading'|trans }}</h2>
+                {{ ui.input('age_years', 'tyre.settings.age_limit'|trans, values, errors, {type: 'number', required: true, step: 1, min: 0, max: 15, inputmode: 'numeric', suffix: 'tyre.settings.years'|trans, hint: 'tyre.settings.age_hint'|trans}) }}
+            </section>
+
+            <p class="field__hint">{{ 'tyre.settings.reminder_note'|trans }}</p>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'tyre.settings.save'|trans }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

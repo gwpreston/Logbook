@@ -92,7 +92,7 @@ which configured channels to use in **Settings → Reminders**. See
 | `FEATURES_COMPLIANCE` | `true` | Documents (insurance, certificates…). |
 | `FEATURES_REMINDERS` | `true` | Reminder list, notifications, calendar feed. |
 | `FEATURES_REPORTS` | `true` | Reports and the spend widget. |
-| `FEATURES_TYRES` | `true` | Tyres: what is fitted and stored, tyre changes and distance per tyre. |
+| `FEATURES_TYRES` | `true` | Tyres: what is fitted and stored, tyre changes, distance per tyre, tread depth, the wear estimate, Settings → Tyres and tyre reminders. |
 
 These are defaults: once an owner saves **Settings → Modules**, that choice
 wins. A switched-off module disappears from menus, pages (404), the dashboard,

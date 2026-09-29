@@ -11,8 +11,8 @@ use Logbook\Domain\Tyre\TyreStatus;
 
 /**
  * Replays a vehicle's tyre changes in order (spec.md §7.17) into each tyre's
- * state and rolling segments. Pure: no database, so every sequence rule is
- * unit-tested here.
+ * state, rolling segments and tread measurements. Pure: no database, so
+ * every sequence rule is unit-tested here.
  *
  * Order is by date, then odometer, then id (TyreChange::compare, in PHP:
  * engines disagree on where a repair's null odometer sorts). Within one
@@ -22,12 +22,13 @@ use Logbook\Domain\Tyre\TyreStatus;
  * - `off`: a fitted tyre, into storage.
  * - `retire`: a fitted or stored tyre.
  * - `move`: a fitted tyre, to a free position.
- * - `repair`: a fitted tyre; nothing moves.
+ * - `repair`, `measure`: a fitted tyre; nothing moves.
  * A retired tyre is never touched again. The first failure is returned.
  *
  * A segment opens when a tyre goes on (or moves) to a rolling position and
  * closes when it comes off, moves to the spare or is retired, at the
- * change's odometer.
+ * change's odometer. A line with a depth records a measurement at the
+ * tyre's distance up to that change (the same before and after the line).
  */
 final class TyreReplay
 {
@@ -46,6 +47,8 @@ final class TyreReplay
         $segments = [];
         /** @var array<int, int> $fittedBy */
         $fittedBy = [];
+        /** @var array<int, list<TyreMeasurement>> $measurements */
+        $measurements = [];
 
         foreach ($changes as $change) {
             $km = $change->data->odometerKm;
@@ -60,7 +63,7 @@ final class TyreReplay
             // Leave: every line that moves a fitted tyre frees its position first.
             foreach ($change->lines as $line) {
                 $state = $states[$line->tyreId] ?? null;
-                if ($state?->position !== null && $line->action !== TyreLineAction::Repair) {
+                if ($state?->position !== null && !self::staysPut($line->action)) {
                     unset($occupied[$state->position->value]);
                 }
             }
@@ -80,6 +83,14 @@ final class TyreReplay
                 $tyre = $line->tyreId;
                 $before = $states[$tyre] ?? null;
                 $wasRolling = $before?->position?->isRolling() ?? false;
+                if ($line->treadMm !== null) {
+                    $measurements[$tyre][] = new TyreMeasurement(
+                        $change->id,
+                        $change->data->doneOn,
+                        $line->treadMm,
+                        TyreDistance::of($segments[$tyre] ?? [], $km)->km,
+                    );
+                }
 
                 $after = match ($line->action) {
                     TyreLineAction::On, TyreLineAction::Move => new TyreState(
@@ -93,7 +104,7 @@ final class TyreReplay
                         null,
                         $before->position ?? $before->lastPosition ?? null,
                     ),
-                    TyreLineAction::Repair => $before,
+                    TyreLineAction::Repair, TyreLineAction::Measure => $before,
                 };
                 assert($after instanceof TyreState);
                 $states[$tyre] = $after;
@@ -111,7 +122,15 @@ final class TyreReplay
             }
         }
 
-        return new TyreReplayResult($states, $segments, $fittedBy);
+        return new TyreReplayResult($states, $segments, $fittedBy, $measurements);
+    }
+
+    /**
+     * Lines that leave the tyre where it is.
+     */
+    private static function staysPut(TyreLineAction $action): bool
+    {
+        return $action === TyreLineAction::Repair || $action === TyreLineAction::Measure;
     }
 
     private static function check(TyreLineAction $action, ?TyreState $state): ?TyreSequenceProblem
@@ -123,7 +142,7 @@ final class TyreReplay
 
         return match ($action) {
             TyreLineAction::On => $fitted ? TyreSequenceProblem::AlreadyFitted : null,
-            TyreLineAction::Off, TyreLineAction::Move, TyreLineAction::Repair => $fitted
+            TyreLineAction::Off, TyreLineAction::Move, TyreLineAction::Repair, TyreLineAction::Measure => $fitted
                 ? null
                 : TyreSequenceProblem::NotFitted,
             TyreLineAction::Retire => $state === null ? TyreSequenceProblem::NotFitted : null,

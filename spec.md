@@ -269,7 +269,10 @@ MySQL only.
 
 **Reminder**
 - id, vehicle_id (`ON DELETE CASCADE`), source (`schedule`|`compliance`|
-  `manual`), source_id (the schedule or document; none for manual),
+  `tyre`|`manual`), source_id (the schedule or document; for `tyre` the
+  **vehicle's own id**, because the source is the vehicle's tyres as a
+  whole — one tyre reminder per vehicle, never one per tyre, so do not
+  "fix" it into a tyre id; none for manual),
   occurrence (the due point a generated reminder was raised for, e.g. the
   schedule's stored next-due date and distance), title, notes (manual only),
   due_on (calendar date; empty only for a distance-only schedule that cannot
@@ -278,7 +281,8 @@ MySQL only.
   status last notified), channels_notified (JSON list of channel keys),
   last_notified_at, closed_at (UTC; when dismissed or done),
   created/updated (UTC). Unique `(vehicle_id, source, source_id)`: one
-  reminder per schedule or document, for its current occurrence. Indexes on
+  reminder per schedule or document (and per vehicle for tyres), for its
+  current occurrence. Indexes on
   status and due_on.
 
 **ExpenseEntry** (ad-hoc costs: parking, tolls, road tax, …)
@@ -318,20 +322,25 @@ MySQL only.
 
 **TyreChange** (Phase 11.1)
 - id, vehicle_id (`ON DELETE CASCADE`), kind (`existing`|`fit`|`swap`|
-  `rotate`|`repair`|`remove`), done_on (calendar date), odometer_km
+  `rotate`|`repair`|`remove`|`check`; `check` from Phase 11.2), done_on (calendar date), odometer_km
   (optional `decimal(12,3)`; required for every kind but `repair`),
   maintenance_entry_id (optional link to a `tyres` service record that
   carries the cost; `ON DELETE SET NULL`), note (optional, up to 500),
   created/updated (UTC). Index `(vehicle_id, done_on)`. A change has no
-  cost column: costs stay in maintenance (§7.17).
+  cost column: costs stay in maintenance (§7.17). A `check` never links a
+  service record and never moves a tyre.
 
 **TyreChangeLine** (Phase 11.1)
 - id, change_id (`ON DELETE CASCADE`), tyre_id (`ON DELETE CASCADE`),
-  action (`on`|`off`|`retire`|`move`|`repair`), position (for `on` and
-  `move` the tyre's position after the line; for `off`, `retire` and
-  `repair` the position it was at, kept for summaries and CSV — the replay
-  never reads it). Unique `(change_id, tyre_id)`: one line per tyre per
-  change.
+  action (`on`|`off`|`retire`|`move`|`repair`|`measure`), position (for
+  `on` and `move` the tyre's position after the line; for `off`, `retire`,
+  `repair` and `measure` the position it was at, kept for summaries and
+  CSV — the replay never reads it), tread_mm (optional `decimal(6,3)`, the
+  tread depth measured at that change, in millimetres; Phase 11.2). Unique
+  `(change_id, tyre_id)`: one line per tyre per change.
+- Tread depths live only on lines: a depth is a measurement made at a
+  visit, and the change is that visit. There is no measurements table and
+  no depth on the tyre row.
 
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
@@ -349,10 +358,13 @@ MySQL only.
   engine), password_hash (Argon2id), display name, locale, timezone, and the
   unit preferences: distance unit (`km`|`mi`), volume unit
   (`l`|`gal_uk`|`gal_us`), consumption unit (`l_per_100km`|`km_per_l`|
-  `mpg_uk`|`mpg_us`), default currency (ISO 4217), theme
+  `mpg_uk`|`mpg_us`), tread depth unit (`mm`|`in32`, 32nds of an inch;
+  default `mm`; Phase 11.2), default currency (ISO 4217), theme
   (`system`|`light`|`dark`), accent colour (`blue`|`teal`|`indigo`|`purple`,
   default `blue`; §8); created/updated (UTC). "Metric", "UK" and "US"
-  are presets that fill in the three unit preferences. (Single row day-one;
+  are presets that fill in the four unit preferences (Metric and UK set
+  `mm`, US sets `in32`). Upgrading to 1.3.0 sets `in32` for owners whose
+  volume unit is `gal_us` and `mm` for everyone else. (Single row day-one;
   table shaped for multi-user later.)
 
 **Session**
@@ -648,8 +660,9 @@ iCal/webcal feed so items appear in the user's calendar.
 
 - **Sources.** Generated from every maintenance schedule whose next-due
   point can be judged (§7.4) and every current compliance document with an
-  expiry date (a replaced one raises nothing, so renewing clears it); plus
-  **manual** reminders (vehicle, title, due date, lead time, notes).
+  expiry date (a replaced one raises nothing, so renewing clears it); one
+  **tyre** reminder per vehicle for worn or ageing tyres (Phase 11.2, below);
+  plus **manual** reminders (vehicle, title, due date, lead time, notes).
   Archived vehicles raise none, and their manual reminders are neither
   listed nor sent until the vehicle is restored.
 - **Lead times** (per owner, Settings → Reminders): days before a schedule
@@ -683,6 +696,40 @@ iCal/webcal feed so items appear in the user's calendar.
   file of the open reminders that have a date, as all-day events with an
   alarm at the lead time. It needs no session (calendar apps cannot sign
   in); an unknown or revoked token gets a 404.
+- **Tyre reminders** (Phase 11.2): source `tyre`, `source_id` = the
+  vehicle's id, so one reminder per vehicle: four tyres wearing together
+  are one nudge, not four pushes.
+  - **Due point:** the soonest of every fitted road tyre's wear-out date and
+    every non-retired tyre's age-limit date (§7.17). `due_km` is the
+    wear-out odometer when wear is the soonest. A wear-out with a distance
+    but no date yet (under a week of mileage history) gives `due_km` and no
+    `due_on`, as a distance-only schedule does, unless an age limit gives a
+    date.
+  - **Title** (stored in the owner's language, rewritten by sync when it
+    changes) names what is due, wear first: "Tyres: front left and front
+    right worn", "Tyres: rear due in about 800 mi", "Tyres: Winter wheels
+    over 6 years old". Tyres are named by position while fitted and grouped
+    by set when a whole set is due for age.
+  - **Status**, against the owner's today: *overdue* once any tyre is at or
+    under its replace-at depth (measured, or estimated now) or past its age
+    limit; *due* within the owner's **schedule** lead time or lead distance
+    (tyres are maintenance and have no lead times of their own); otherwise
+    *upcoming*. With nothing judgeable (no estimate, no measurement at or
+    under replace-at, no DOT dates) there is no reminder, and sync deletes
+    any old one.
+  - **Occurrence = the id of the vehicle's latest tyre change.** The
+    projected date moves with every fill-up, so it updates `due_on` /
+    `due_km` in place without reopening or clearing notification state;
+    only recording something about the tyres (a check, a fit, a swap) opens
+    it again for the new estimate, as logging a schedule does. A status
+    change (upcoming → due) still notifies once, as for every source.
+    Keying the occurrence on the projection would re-send the reminder
+    after every fill-up.
+  - Everything else is the existing engine: sync on read, dismiss / done /
+    reopen, idempotent dispatch, every channel and the digest, the calendar
+    feed (when it has a date), archived vehicles raise none. With `tyres`
+    off, tyre reminders are neither listed nor sent and are kept for when
+    the module returns. The reminder links to the Tyres tab.
 
 ### 7.7 Expenses and reports
 Per-vehicle and fleet cost breakdowns over time (fuel vs maintenance vs
@@ -879,6 +926,8 @@ Disabled modules are removed from nav, routes, and dashboard.
     Readings already written by tyre changes stay in the mileage log; linked
     service records are untouched (their tyre line is hidden). The vehicle
     type check (§7.1) still applies, since the tyres are still fitted.
+    Settings → Tyres is gone and tyre reminders are neither listed nor sent
+    (kept, untouched, for when the module returns).
   - `maintenance` off leaves tyres working: the cost, garage and link fields
     are hidden on tyre forms, existing links are kept untouched, and a
     linked change is listed on its own in history (without a cost).
@@ -1042,10 +1091,11 @@ vehicles; a disabled module cannot be imported).
   a clear message: restore it with the matching version, then upgrade.
   (Every release that adds a column moves the schema version, e.g. Phase
   9.1's vehicle variant and first registration date, Phase 10's document
-  odometer and Phase 11.1's tyre tables. Backups carry the new columns,
-  `document` and `tyre` readings, the `expense` / `odometer` attachments and
-  the four tyre tables — `tyre_sets`, `tyres`, `tyre_changes`,
-  `tyre_change_lines` — like any other rows.)
+  odometer, Phase 11.1's tyre tables and Phase 11.2's tread depth and depth
+  unit. Backups carry the new columns, `document` and `tyre` readings, the
+  `expense` / `odometer` attachments and the four tyre tables — `tyre_sets`,
+  `tyres`, `tyre_changes`, `tyre_change_lines` — like any other rows; the
+  `tyres.thresholds` setting travels in `settings`.)
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -1201,7 +1251,7 @@ Which tyres are on the vehicle, which are in storage, how old each is and how
 far each has gone (Phase 11.1). A `tyres` service record says "two tyres,
 £240"; this says which tyres, where they sit and how long the last pair
 lasted. Costs stay in maintenance, so nothing is counted twice. Tread depth,
-wear projection and tyre reminders follow in Phase 11.2.
+the wear estimate and tyre reminders came with Phase 11.2 (below).
 
 - **The tyre is the unit; the set is optional.** Each tyre is its own row
   (a front-wheel-drive car replaces its fronts long before its rears; a
@@ -1239,6 +1289,7 @@ wear projection and tyre reminders follow in Phase 11.2.
   | `rotate` *Rotate* | `move` for each tyre whose position changes | required, prefilled |
   | `repair` *Repair* | `repair` | optional |
   | `remove` *Remove* | `off` or `retire` | required, prefilled |
+  | `check` *Check tread* (Phase 11.2) | `measure` for each fitted tyre measured | required, prefilled |
 
   Prefilled means the latest reading in the owner's distance unit, as the
   fill-up form does it; the odometer is parsed like a reading. The date
@@ -1264,6 +1315,11 @@ wear projection and tyre reminders follow in Phase 11.2.
   - **Remove** takes fitted tyres off into storage (optionally into a set,
     existing or new) or retires them (reason `worn`|`damaged`|`puncture`|
     `sold`|`other`). A retired tyre keeps its history and lifetime figures.
+  - **Check tread** (Phase 11.2) takes one optional depth per fitted tyre,
+    in position order; tyres left blank are not measured, and at least one
+    depth is needed. A `measure` line never moves a tyre (the replay treats
+    it as a repair: the tyre must be fitted, nothing changes). It has no
+    cost fields and links no service record.
 - **State is replayed, then stored.** Each tyre's status and position are
   computed by replaying the vehicle's changes in order (`done_on`, then
   odometer — a change without one, a repair, last on its day — then id;
@@ -1340,21 +1396,116 @@ wear projection and tyre reminders follow in Phase 11.2.
     tyres*. Archived vehicles show their tyres read-only (no add buttons);
     their changes stay editable, as other entries are.
 - **Overview:** a *Tyres* card (each fitted tyre on one line: position,
-  brand, model, age) with *All tyres →*, hidden when the vehicle has no
-  tyres.
-- **Log entry:** *Tyre change* opens *Fit tyres* through the vehicle picker.
+  brand, model, age and, from Phase 11.2, its latest depth) with the
+  soonest "about 6,000 mi left" and *All tyres →*, hidden when the vehicle
+  has no tyres.
+- **Log entry:** *Tyre change* opens *Fit tyres* through the vehicle picker,
+  with *Check tread* beside it (Phase 11.2).
 - **CSV export** (per §7.7): *Tyres* (`tyres.csv`: brand, model, size,
   season, DOT, manufactured on, status, position, set, storage location,
-  distance in the owner's unit, retired reason) and *Tyre changes*
-  (`tyre-changes.csv`: date, kind, odometer in the owner's unit, tyres,
-  positions, linked service record, cost and currency). There is no tyre
-  import.
+  distance in the owner's unit, retired reason; from Phase 11.2 latest
+  depth, its date, depth now and distance left, blank when not known) and
+  *Tyre changes* (`tyre-changes.csv`: date, kind, odometer in the owner's
+  unit, tyres, positions, linked service record, cost and currency; from
+  Phase 11.2 the depths, one per tyre in the tyres' order, in the owner's
+  depth unit). There is no tyre import.
+
+#### Tread depth, wear and age (Phase 11.2)
+
+Tell the owner when tyres need replacing before an MOT tester or a wet
+roundabout does.
+
+- **Depth is stored in millimetres** (`tyre_change_lines.tread_mm`,
+  `decimal(6,3)`), so a value typed in 32nds round-trips exactly: 10/32″ is
+  7.938 mm and displays back as 10/32″. Three decimals are needed: two
+  would drift by a 32nd after a few edits.
+  - Shown per the owner's depth unit (§8): `mm` with one decimal
+    ("4.2 mm"), `in32` as whole or half 32nds ("6/32″", "6½/32″").
+    Typed as a plain number in the owner's unit; halves are allowed in
+    32nds.
+  - 0–20 mm (0–25/32″); anything else is refused. 0 is valid: alarming,
+    not impossible.
+  - **Deeper than last time:** a tyre measured more than 0.5 mm deeper than
+    its previous measurement saves, with a notice after the save: "Deeper
+    than last time (5.1 mm on 3 Jun) — check the reading." Tread does not
+    grow back, but a regrooved or misread tyre is the owner's call.
+- **Where depths come from:** any tyre change line can carry one. *Fit
+  tyres* takes *Tread depth when new* once, for every position (hint: "On
+  the invoice or the tyre's specification; about 8 mm for most car
+  tyres."). *Tyres already on the vehicle*, *Swap set* and *Remove* take an
+  optional depth per tyre (storage services usually measure on the way
+  in). *Check tread* takes one per fitted tyre. Repair and rotate take
+  none.
+- **The wear estimate is derived, never stored** (`Service\Tyre\TyreWear`),
+  like economy: a vehicle has a handful of tyres, and it can never go stale.
+  - **Points:** (the tyre's distance at the change, depth). The tyre's
+    distance at a change is its rolling distance (above) up to that change's
+    odometer, so time in storage or as the spare adds nothing. Distance, not
+    odometer, is the x-axis: a winter set measured in March and again in
+    November did no distance in between.
+  - **Enough data:** at least two points spanning at least 1,000 km of the
+    tyre's own distance; otherwise the estimate is *not known yet* and only
+    the latest measurement is shown.
+  - **Rate:** the least-squares slope of depth over distance. A slope that
+    is not negative (no measurable wear, or noisy readings) is *not known
+    yet*.
+  - **Depth now** = the latest measurement + rate × the tyre's distance
+    since it. The latest measurement is the anchor, not the fitted line, so
+    a fresh reading is always what the owner sees first.
+  - **Distance left** = (depth now − replace-at) ÷ |rate|, clamped at 0.
+    **Wear-out odometer** = current reading + distance left. **Wear-out
+    date** comes from the average daily distance (§7.4, needs a week of
+    history). These exist only while the tyre is fitted at a road
+    position: a stored tyre or the spare is not wearing, so it shows its
+    latest measurement with no countdown.
+  - Always labelled as an estimate: "about 3.4 mm now · about 6,000 mi left
+    · around Mar 2027".
+- **Settings → Tyres** (`/settings/tyres`, shown and routed only while the
+  `tyres` module is on): the user setting `tyres.thresholds` (JSON, in mm),
+  typed in the owner's depth unit. A value saved unchanged keeps its stored
+  millimetres (so the 3.0 mm default shown as 4/32″ is not rewritten as
+  3.175 mm).
+
+  | Setting | Car | Motorbike |
+  |---|---|---|
+  | Replace at | 3.0 mm | 2.0 mm |
+  | Replace winter tyres at | 4.0 mm | — |
+  | Legal minimum | 1.6 mm | 1.0 mm |
+  | Age limit | 6 years (0 = off, 1–15) | same |
+
+  - **Replace at** drives the wear estimate and reminders; a winter tyre
+    (season `winter`) on a car uses its own value.
+  - **Legal minimum** only drives a flag: *Below the legal minimum* when a
+    *measured* depth is at or under it; *May be below the legal minimum —
+    check it* when only the *estimate* is. Hint: "Legal minimums differ by
+    country; check yours." No region rules are built in.
+  - **Age limit** applies to fitted and stored tyres with a DOT date: due
+    on `manufactured_on` + N years (clamped like maintenance intervals, so
+    29 Feb + 1 year is 28 Feb). Retired tyres raise nothing.
+- **One judgement** (`Service\Tyre\TyreJudgement`) of a vehicle's tyres
+  against the thresholds, the owner's today and the schedule lead time and
+  distance drives both the tyre reminder (§7.6) and the Tyres tab's status
+  badge, so the tab shows it whether or not the `reminders` module is on
+  (as lead times already drive the other tabs, §7.10). Each tyre is
+  *worn* (at or under replace-at, measured or estimated now), *old* (past
+  its age limit), *due* (within the lead time or distance) or fine.
+- **Shown:** fitted cards gain the latest measured depth with its date and
+  the estimate line when known; flags use the status colours, never colour
+  alone (an icon and text too); stored and retired tyres show their latest
+  depth. History, *Recent activity* and the Tyres tab list `check` rows as
+  "Checked tread: 5.1–6.3 mm"; other changes show their depths where
+  recorded. The print view's *Tyres fitted* block gains each tyre's latest
+  measured depth and date: **estimates are never printed**, because a
+  buyer's service history shows what was measured.
 
 ---
 
 ## 8. Cross-cutting requirements
 
 - **Units:** per-user metric/imperial; canonical SI storage; both UK and US mpg.
+  Tread depth (Phase 11.2) is stored in millimetres and shown in `mm` or
+  `in32` (1/32″ = 0.79375 mm, exact) through `Support\Units\DepthUnit`,
+  the only place it is converted, parsed or formatted.
 - **Currency:** configurable + per-vehicle override; `intl` formatting; DECIMAL
   storage; zero is valid.
 - **Dates/timezone:** locale + timezone aware display, UTC storage,
@@ -1560,6 +1711,12 @@ task breakdowns live in the per-phase files; this is the map.
   retired), every tyre change (fit, swap, rotate, repair, remove) and each
   tyre's distance derived from the mileage series; costs through linked
   service records. Ships with Phase 11.2 as v1.3.0.
+- **Phase 11.2 — Tread depth, wear and age reminders + v1.3.0.** A depth
+  unit preference (mm or 32nds), tread depth on tyre changes and a *Check
+  tread* change, a wear estimate per fitted tyre (depth now, distance and
+  date left), replace-at, legal-minimum and age-limit settings, and one
+  tyre reminder per vehicle through the existing engine; release v1.3.0
+  with Phase 11.1.
 
 ---
 

@@ -16,6 +16,7 @@ use Logbook\Domain\Tyre\TyrePosition as P;
 use Logbook\Domain\Tyre\TyreRetireReason;
 use Logbook\Domain\Tyre\TyreSetData;
 use Logbook\Domain\Tyre\TyreStatus;
+use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
@@ -49,13 +50,14 @@ final class TyreChangeServiceTest extends AppTestCase
     /** @var App<ContainerInterface> */
     private App $app;
     private Vehicle $car;
+    private User $owner;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->app = $this->createApp();
         $this->resetDatabase($this->app);
-        $this->createOwner($this->app);
+        $this->owner = $this->createOwner($this->app);
         $this->pinClock($this->app, '2026-09-29T10:00:00Z');
         $this->car = $this->vehicle($this->app);
     }
@@ -177,7 +179,7 @@ final class TyreChangeServiceTest extends AppTestCase
         self::assertSame(['fl' => 'Michelin', 'fr' => 'Michelin', 'rl' => 'Goodyear', 'rr' => 'Goodyear'], $this->fitted());
 
         // The retired fronts: 12,000 km each, £120 each → £0.01/km.
-        $retired = $this->tyres()->overview($this->car, self::day('2026-09-29'))->retired;
+        $retired = $this->tyres()->overview($this->car, $this->owner)->retired;
         self::assertCount(2, $retired);
         self::assertSame('12000.000', $retired[0]->distance->km);
         self::assertSame(TyreRetireReason::Worn, $retired[0]->tyre->retiredReason);
@@ -206,7 +208,7 @@ final class TyreChangeServiceTest extends AppTestCase
             'en_GB',
         );
 
-        $overview = $this->tyres()->overview($this->car, self::day('2026-09-29'));
+        $overview = $this->tyres()->overview($this->car, $this->owner);
         $michelins = array_values(array_filter($overview->retired, static fn ($v): bool => $v->tyre->data->brand === 'Michelin'));
         self::assertCount(2, $michelins);
         self::assertSame('24000.000', $michelins[0]->distance->km);
@@ -399,7 +401,7 @@ final class TyreChangeServiceTest extends AppTestCase
             ['fl' => 'Goodyear', 'fr' => 'Goodyear', 'rl' => 'Goodyear', 'rr' => 'Goodyear', 'spare' => 'Spare'],
             $this->fitted(),
         );
-        $overview = $this->tyres()->overview($this->car, self::day('2026-09-29'));
+        $overview = $this->tyres()->overview($this->car, $this->owner);
         self::assertSame('1500.000', $overview->at(P::FrontLeft)?->distance->km, 'storage time is not counted');
         self::assertSame('0.000', $overview->at(P::Spare)?->distance->km, 'spare time is not counted');
     }

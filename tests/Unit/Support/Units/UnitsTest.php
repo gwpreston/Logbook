@@ -6,6 +6,7 @@ namespace Logbook\Tests\Unit\Support\Units;
 
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\UnitPreset;
 use Logbook\Support\Units\VolumeUnit;
@@ -79,11 +80,21 @@ final class UnitsTest extends TestCase
         self::assertSame(VolumeUnit::Litre, UnitPreset::Uk->volume());
         self::assertSame(ConsumptionUnit::MpgUk, UnitPreset::Uk->consumption());
         self::assertSame(VolumeUnit::UsGallon, UnitPreset::Us->volume());
-        self::assertSame(
-            UnitPreset::Metric,
-            UnitPreset::matching(DistanceUnit::Kilometre, VolumeUnit::Litre, ConsumptionUnit::LitresPer100Km),
+        self::assertSame(DepthUnit::Millimetre, UnitPreset::Metric->depth());
+        self::assertSame(DepthUnit::Millimetre, UnitPreset::Uk->depth());
+        self::assertSame(DepthUnit::ThirtySecond, UnitPreset::Us->depth());
+        self::assertSame(UnitPreset::Metric, UnitPreset::matching(
+            DistanceUnit::Kilometre,
+            VolumeUnit::Litre,
+            ConsumptionUnit::LitresPer100Km,
+            DepthUnit::Millimetre,
+        ));
+        self::assertNull(
+            UnitPreset::matching(DistanceUnit::Kilometre, VolumeUnit::Litre, ConsumptionUnit::MpgUk, DepthUnit::Millimetre),
         );
-        self::assertNull(UnitPreset::matching(DistanceUnit::Kilometre, VolumeUnit::Litre, ConsumptionUnit::MpgUk));
+        self::assertNull(
+            UnitPreset::matching(DistanceUnit::Mile, VolumeUnit::UsGallon, ConsumptionUnit::MpgUs, DepthUnit::Millimetre),
+        );
     }
 
     /**

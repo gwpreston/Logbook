@@ -54,6 +54,7 @@ return [
             'document' => 'Dokument',
             'schedule' => 'Wartungsintervall',
             'tyre' => 'Reifenwechsel',
+            'tyre_check' => 'Profil prüfen',
         ],
         'pick_title' => [
             'odometer' => 'Kilometerstand hinzufügen',
@@ -62,6 +63,7 @@ return [
             'document' => 'Dokument hinzufügen',
             'schedule' => 'Wartungsintervall hinzufügen',
             'tyre' => 'Reifen montieren',
+            'tyre_check' => 'Profil prüfen',
         ],
     ],
     'theme' => [
@@ -182,6 +184,7 @@ return [
         'locale' => 'Sprache',
         'timezone' => 'Zeitzone',
         'timezone_hint' => 'Datum und Uhrzeit werden in dieser Zone angezeigt; gespeichert wird in UTC.',
+        'depth_unit' => 'Profiltiefe',
     ],
     'units' => [
         'preset' => [
@@ -203,6 +206,8 @@ return [
             'km_per_kwh' => 'km/kWh',
             'mi_per_kwh' => 'mi/kWh',
             'kwh' => 'kWh',
+            'mm' => 'Millimeter',
+            'in32' => '32stel Zoll',
         ],
         'symbol' => [
             'km' => 'km',
@@ -211,6 +216,8 @@ return [
             'gal_uk' => 'gal',
             'gal_us' => 'US-gal',
             'kwh' => 'kWh',
+            'mm' => 'mm',
+            'in32' => '/32″',
         ],
         'distance' => [
             'km' => '{value} km',
@@ -250,6 +257,14 @@ return [
             'b' => '{value} B',
             'kb' => '{value} KB',
             'mb' => '{value} MB',
+        ],
+        'depth' => [
+            'mm' => '{value} mm',
+            'in32' => '{value}/32″',
+        ],
+        'depth_range' => [
+            'mm' => '{min}–{max} mm',
+            'in32' => '{min}–{max}/32″',
         ],
     ],
     'home' => [
@@ -855,6 +870,7 @@ return [
             'rotate' => 'Positionen tauschen',
             'repair' => 'Reparatur',
             'remove' => 'Abmontieren',
+            'check' => 'Profil prüfen',
         ],
         'line' => [
             'on' => 'Montiert',
@@ -870,6 +886,7 @@ return [
             'rotate' => 'Positionen getauscht',
             'repair' => 'Reifen repariert',
             'remove' => 'Reifen abmontiert',
+            'check' => 'Profilprüfung',
         ],
         'summary' => [
             'existing' => '{count, plural, one {# Reifen} other {# Reifen}} erfasst ({where})',
@@ -881,6 +898,9 @@ return [
             'repair' => 'Repariert: {where}',
             'remove' => '{count, plural, one {# Reifen} other {# Reifen}} abmontiert ({where})',
             'retire' => '{count, plural, one {# Reifen} other {# Reifen}} ausgemustert ({where})',
+            'check' => 'Profil geprüft: {depths}',
+            'check_where' => 'Profil geprüft ({where})',
+            'with_depths' => '{summary} · {depths}',
         ],
         'record_title' => [
             'existing' => 'Montierte Reifen, {where}',
@@ -892,6 +912,7 @@ return [
             'repair' => 'Reifenreparatur, {where}',
             'remove' => 'Reifen abmontiert, {where}',
             'retire' => 'Reifen abmontiert, {where}',
+            'check_where' => 'Profilprüfung, {where}',
         ],
         'section' => [
             'fitted' => 'Am Fahrzeug',
@@ -956,6 +977,9 @@ return [
             'set_location' => 'Lagerort',
             'fit_set' => 'Aus dem Lager montieren',
             'tyres' => 'Reifen',
+            'tread' => 'Profiltiefe',
+            'estimate' => 'Schätzung',
+            'tread_new' => 'Profiltiefe im Neuzustand',
         ],
         'hint' => [
             'size' => 'Wie auf der Reifenflanke, z. B. 205/55 R16 91V.',
@@ -976,6 +1000,9 @@ return [
             'set' => 'Wo die abmontierten Reifen gelagert werden (optional).',
             'set_by_record' => 'Datum und Kilometerstand kommen aus dem Wartungseintrag: Ändere sie dort.',
             'change_lines' => 'Welche Reifen ein Reifenwechsel betraf, ist fest; lösche ihn dafür und erfasse ihn neu.',
+            'tread_new' => 'Steht auf der Rechnung oder im Datenblatt des Reifens; bei den meisten Autoreifen etwa 8 mm.',
+            'tread_off' => 'Profiltiefe der abgenommenen Reifen, falls gemessen (Reifeneinlagerungen messen meist bei der Annahme).',
+            'check' => 'Lass einen Reifen leer, um ihn auszulassen. 0 ist erlaubt.',
         ],
         'submit' => [
             'existing' => 'Reifen speichern',
@@ -984,6 +1011,7 @@ return [
             'rotate' => 'Tausch speichern',
             'repair' => 'Reparatur speichern',
             'remove' => 'Speichern',
+            'check' => 'Profiltiefen speichern',
         ],
         'saved' => [
             'existing' => 'Reifen gespeichert.',
@@ -992,6 +1020,7 @@ return [
             'rotate' => 'Positionen getauscht.',
             'repair' => 'Reparatur gespeichert.',
             'remove' => 'Reifen abmontiert.',
+            'check' => 'Profiltiefen gespeichert.',
         ],
         'no_tyres_fitted' => 'Es sind keine Reifen montiert: Erfasse die bereits montierten Reifen oder montiere neue.',
         'none_to_swap' => 'Nichts zu wechseln: Es sind keine Reifen montiert oder eingelagert.',
@@ -1054,6 +1083,61 @@ return [
             'unknown_set' => 'Wähle einen Reifensatz dieses Fahrzeugs.',
             'link' => 'Wähle einen der aufgeführten Wartungseinträge.',
             'cost_and_link' => 'Gib Kosten ein oder verknüpfe einen Wartungseintrag, nicht beides.',
+            'depth_range' => 'Gib eine Tiefe von 0 bis {max} ein.',
+            'depth_halves' => 'Nutze ganze oder halbe 32stel, etwa 6 oder 6,5.',
+            'nothing_measured' => 'Gib mindestens eine Profiltiefe ein.',
+        ],
+        'depth' => [
+            'measured' => '{depth} am {date}',
+        ],
+        'wear' => [
+            'depth_now' => 'jetzt etwa {depth}',
+            'left' => 'etwa {distance} verbleibend',
+            'around' => 'um {month}',
+            'soonest_left' => 'Am frühesten: etwa {distance} verbleibend',
+        ],
+        'flag' => [
+            'wear_overdue' => 'Abgefahren: ersetzen',
+            'wear_soon' => 'Bald ersetzen',
+            'age_overdue' => 'Über der Altersgrenze',
+            'age_soon' => 'Altersgrenze bald erreicht',
+            'legal_below' => 'Unter der gesetzlichen Mindestprofiltiefe',
+            'legal_may_be_below' => 'Vielleicht unter der gesetzlichen Mindestprofiltiefe – bitte prüfen',
+        ],
+        'verdict' => [
+            'overdue' => 'Reifen müssen ersetzt werden',
+            'soon' => 'Reifen bald fällig',
+            'ok' => 'Profil und Alter in Ordnung',
+        ],
+        'warning' => [
+            'deeper' => 'Tiefer als beim letzten Mal ({depth} am {date}) – bitte die Messung prüfen.',
+            'deeper_named' => '{tyre}: tiefer als beim letzten Mal ({depth} am {date}) – bitte die Messung prüfen.',
+        ],
+        'settings' => [
+            'title' => 'Reifen',
+            'lead' => 'Wann Reifen als abgefahren oder zu alt gelten. Der Reifen-Tab und die Reifenerinnerungen nutzen beide diese Werte.',
+            'link' => 'Reifen',
+            'link_hint' => 'Ersetzen bei, gesetzliche Mindestprofiltiefe und Altersgrenze.',
+            'car' => 'Autos',
+            'bike' => 'Motorräder',
+            'replace_at' => 'Ersetzen bei',
+            'replace_at_hint' => 'Grundlage für die Verschleißschätzung und die Erinnerungen.',
+            'winter_replace_at' => 'Winterreifen ersetzen bei',
+            'legal_minimum' => 'Gesetzliche Mindestprofiltiefe',
+            'legal_hint' => 'Die gesetzliche Mindestprofiltiefe ist von Land zu Land verschieden; prüfe deine.',
+            'age_heading' => 'Alter',
+            'age_limit' => 'Altersgrenze',
+            'years' => 'Jahre',
+            'age_hint' => 'Ab dem DOT-Datum, für montierte und eingelagerte Reifen. 0 schaltet sie aus.',
+            'reminder_note' => 'Reifen sind innerhalb deiner Vorlaufzeit und -strecke für Wartungen fällig (Einstellungen → Erinnerungen).',
+            'save' => 'Reifeneinstellungen speichern',
+            'saved' => 'Reifeneinstellungen gespeichert.',
+        ],
+        'reminder' => [
+            'worn' => 'Reifen: {where} abgefahren',
+            'wear_due' => 'Reifen: {where} in etwa {distance} fällig',
+            'old' => 'Reifen: {what} über {years, plural, one {# Jahr} other {# Jahre}} alt',
+            'age_due' => 'Reifen: {what} am {date} {years, plural, one {# Jahr} other {# Jahre}} alt',
         ],
     ],
     // tyre:end
@@ -1151,6 +1235,7 @@ return [
             'schedule' => 'Wartung',
             'compliance' => 'Dokument',
             'manual' => 'Deine Erinnerung',
+            'tyre' => 'Reifen',
         ],
         'status' => [
             'upcoming' => 'Demnächst',
@@ -1409,6 +1494,11 @@ return [
             'reference' => 'Nummer',
             'start' => 'Beginn',
             'expiry' => 'Ablauf',
+            'latest_depth' => 'Letzte Profiltiefe ({unit})',
+            'latest_depth_on' => 'Letzte Profiltiefe am',
+            'depth_now' => 'Profiltiefe jetzt ({unit})',
+            'distance_left' => 'Verbleibende Strecke ({unit})',
+            'depths' => 'Profiltiefen ({unit})',
         ],
     ],
     'import' => [
@@ -1758,6 +1848,7 @@ return [
         'password_changed' => 'Dein Passwort wurde geändert. Andere Geräte wurden abgemeldet.',
         'installation' => 'Installation',
         'version' => 'Version',
+        'preview_depth' => 'Profiltiefe',
     ],
     'diagnostics' => [
         'deep_link' => [
@@ -1786,5 +1877,9 @@ return [
             'title' => 'Dieses Formular ist abgelaufen',
             'body' => 'Zu deiner Sicherheit konnte das Formular nicht angenommen werden – es war vielleicht zu lange geöffnet oder wurde von einer anderen Seite gesendet. Geh zurück, lade die Seite neu und versuche es erneut.',
         ],
+    ],
+    'list' => [
+        'pair' => '{first} und {second}',
+        'last' => '{list} und {last}',
     ],
 ];

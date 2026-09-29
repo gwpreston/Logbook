@@ -8,11 +8,9 @@ use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Tyre\TyreChangeKind;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
-use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\Pagination;
 use Logbook\Support\View\View;
-use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -26,7 +24,6 @@ final readonly class TyreListAction
         private VehicleService $vehicles,
         private TyreService $tyres,
         private View $view,
-        private ClockInterface $clock,
     ) {
     }
 
@@ -37,8 +34,7 @@ final readonly class TyreListAction
     {
         $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
         $user = RequestContext::requireUser($request);
-        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
-        $overview = $this->tyres->overview($vehicle, $today);
+        $overview = $this->tyres->overview($vehicle, $user);
         $pagination = Pagination::fromQuery($request->getQueryParams(), count($overview->changes));
 
         return $this->view->render($request, $response, 'tyres/index.twig', [
