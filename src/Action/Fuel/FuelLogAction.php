@@ -23,7 +23,9 @@ use Psr\Http\Message\ServerRequestInterface;
  * cost, summaries, and economy / price trend charts. Liquid fuel and
  * electricity are summarised separately; the vehicle's own kind comes first.
  * Economy checks flag the rows whose economy is far from usual; `?check=1`
- * lists only those (spec.md §7.3).
+ * lists only those. Fuel insights (grade verdict, cost per distance trend
+ * with `?trend=cost`, economy by month) are derived from the same history
+ * (spec.md §7.3).
  */
 final readonly class FuelLogAction
 {
@@ -47,6 +49,8 @@ final readonly class FuelLogAction
         $history = $this->fuel->history($vehicle);
         $checks = $this->fuel->checks($history);
         $toCheck = ($request->getQueryParams()['check'] ?? '') === '1';
+        $trend = TrendMode::fromQuery($request->getQueryParams());
+        $timeZone = $user->preferences->timeZone();
         $rows = $history->newestFirst();
         if ($toCheck) {
             $rows = array_values(array_filter($rows, static fn (FillEconomy $f): bool => $checks->isFlagged($f->entry->id)));
@@ -62,14 +66,22 @@ final readonly class FuelLogAction
             if ($summary === null) {
                 continue;
             }
+            $breakdown = $grades[$kind->value] ?? null;
+            $costs = $this->fuel->segmentCosts($history, $kind);
+            $monthly = $this->fuel->monthlyEconomy($history, $kind, $timeZone);
             $sections[] = [
                 'kind' => $kind,
                 'electric' => $kind === EnergyKind::Electric,
                 'summary' => $summary,
-                'grades' => $grades[$kind->value] ?? null,
+                'grades' => $breakdown,
+                'verdicts' => $breakdown === null ? [] : $this->fuel->gradeVerdicts($history, $breakdown, $timeZone),
                 'to_check' => $checks->flaggedCount($kind),
                 'economy_chart' => $this->charts->economy($history, $kind, $user->preferences),
+                'costs' => $costs,
+                'cost_chart' => $this->charts->cost($costs, $kind, $user->preferences, $currency),
                 'price_chart' => $this->charts->price($history, $kind, $user->preferences, $currency),
+                'monthly' => $monthly,
+                'monthly_chart' => $this->charts->monthly($monthly, $user->preferences),
             ];
         }
 
@@ -79,6 +91,8 @@ final readonly class FuelLogAction
             'history' => $history,
             'checks' => $checks,
             'to_check' => $toCheck,
+            'trend' => $trend,
+            'trend_modes' => TrendMode::cases(),
             'sections' => $sections,
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,

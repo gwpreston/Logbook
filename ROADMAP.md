@@ -41,6 +41,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [14.1](phase-14.1.md) | Valuations and depreciation | ✅ |
 | [14.2](phase-14.2.md) | Total cost of ownership + v1.6 release | ✅ |
 | [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | ✅ |
+| [16](phase-16.md) | Fuel insights + v1.8 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -322,6 +323,20 @@ invoice with the purchase.*
 - Release **v1.7.0**.
 
 → [`phase-15.md`](phase-15.md)
+
+## Phase 16 — Fuel insights + v1.8 release
+*Is the dearer fuel worth it, what does a mile really cost, and how much does
+winter take?*
+
+- A grade verdict on the *By grade* card: how much more or less a grade
+  costs per mile or km than the usual one, from its economy and a price
+  premium taken from fills bought within a month of each other.
+- Cost per mile or km for each charging type.
+- A cost per distance mode on the *Economy trend* chart.
+- *Economy by month*: the seasonal effect, per year and averaged.
+- Nothing new is stored; release **v1.8.0**.
+
+→ [`phase-16.md`](phase-16.md)
 
 ---
 

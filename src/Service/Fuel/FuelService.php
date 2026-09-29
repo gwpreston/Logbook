@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Fuel;
 
+use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Fuel\GradeVerdict;
+use Logbook\Domain\Fuel\MonthlyEconomy;
+use Logbook\Domain\Fuel\SegmentCost;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\FuelEntryRepository;
@@ -105,6 +109,36 @@ final readonly class FuelService
         }
 
         return $breakdowns;
+    }
+
+    /**
+     * The fuel cost of each closed segment of one kind (spec.md §7.3, *Fuel
+     * insights*), oldest first.
+     *
+     * @return list<SegmentCost>
+     */
+    public function segmentCosts(FuelHistory $history, EnergyKind $kind): array
+    {
+        return SegmentCostCalculator::of($history, $kind);
+    }
+
+    /**
+     * The grade verdicts of a liquid *By grade* breakdown (spec.md §7.3);
+     * none for electricity.
+     *
+     * @return list<GradeVerdict>
+     */
+    public function gradeVerdicts(FuelHistory $history, GradeBreakdown $breakdown, DateTimeZone $timeZone): array
+    {
+        return GradeComparison::verdicts($history, $breakdown, $this->clock->now(), $timeZone);
+    }
+
+    /**
+     * Economy by month of one kind, in the owner's time zone (spec.md §7.3).
+     */
+    public function monthlyEconomy(FuelHistory $history, EnergyKind $kind, DateTimeZone $timeZone): MonthlyEconomy
+    {
+        return SeasonalEconomy::of($history, $kind, $timeZone, $this->clock->now());
     }
 
     /**

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Display;
 
+use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use IntlDateFormatter;
 use IntlDatePatternGenerator;
 use Logbook\Support\Date\LocalTime;
@@ -364,6 +366,26 @@ final readonly class DisplayFormatter
         $formatted = $formatter->format($date);
 
         return is_string($formatted) ? $formatted : $date->format('Y-m');
+    }
+
+    /**
+     * A month's name on its own in the user's language (ICU stand-alone
+     * form): 1 → "January" / "Januar", or "Jan" short.
+     */
+    public function monthName(int $month, bool $short = false): string
+    {
+        $formatter = new IntlDateFormatter(
+            $this->locale(),
+            IntlDateFormatter::NONE,
+            IntlDateFormatter::NONE,
+            'UTC',
+            null,
+            $short ? 'LLL' : 'LLLL',
+        );
+        $date = new DateTimeImmutable(sprintf('2000-%02d-15', $month), new DateTimeZone('UTC'));
+        $formatted = $formatter->format($date);
+
+        return is_string($formatted) ? $formatted : (string) $month;
     }
 
     /**

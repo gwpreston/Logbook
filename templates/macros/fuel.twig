@@ -23,7 +23,7 @@
    §7.3). Liquid fuel: fills, volume, average price and — with at least two
    segments burned on one grade — an indicative economy. Electricity: share
    of energy and cost per kWh per charging type, then the blended cost. #}
-{% macro grade_card(breakdown, currency, electric) -%}
+{% macro grade_card(breakdown, currency, electric, verdicts = []) -%}
     {% import _self as fuel_ui %}
     {% set dash = '—' %}
     {% set title = (electric ? 'fuel.grades.title_ev' : 'fuel.grades.title')|trans %}
@@ -38,6 +38,7 @@
                         {% if electric %}
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.share'|trans }}</th>
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.cost_per_kwh'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'fuel.grades.column.per_distance'|trans({unit: prefs().distanceUnit.value}) }}</th>
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.energy'|trans }}</th>
                         {% else %}
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.fills'|trans }}</th>
@@ -61,6 +62,8 @@
                             {% if electric %}
                                 <td class="table__num tabular">{{ 'fuel.grades.share'|trans({share: row.share()}) }}</td>
                                 <td class="table__num tabular">{{ price is null ? dash : price|unit_price(currency, true) }}</td>
+                                {% set per_km = breakdown.costPerKm(row) %}
+                                <td class="table__num tabular">{{ per_km is null ? dash : per_km|per_distance(currency) }}</td>
                                 <td class="table__num tabular">{{ row.volume|quantity(true, 0) }}</td>
                             {% else %}
                                 <td class="table__num tabular">{{ row.fills|number }}</td>
@@ -85,6 +88,8 @@
                             <th scope="row">{{ 'fuel.grades.blended'|trans }}</th>
                             <td class="table__num tabular">{{ 'fuel.grades.share'|trans({share: 1}) }}</td>
                             <td class="table__num tabular"><strong>{{ breakdown.blendedPricePerUnit()|unit_price(currency, true) }}</strong></td>
+                            {% set blended_per_km = breakdown.blendedCostPerKm() %}
+                            <td class="table__num tabular">{{ blended_per_km is null ? dash : blended_per_km|per_distance(currency) }}</td>
                             <td class="table__num tabular">{{ breakdown.totalVolume|quantity(true, 0) }}</td>
                             <td></td>
                         </tr>
@@ -92,6 +97,30 @@
                 {% endif %}
             </table>
         </div>
+        {% set compared = verdicts|filter(v => v.status.value != 'single_grade') %}
+        {% if compared is not empty %}
+            <h4 class="grade-verdicts__title">{{ 'fuel.verdict.title'|trans }}</h4>
+            <ul class="grade-verdicts">
+                {% for verdict in compared %}
+                    {% set grade = verdict.grade.shortLabelKey()|trans %}
+                    {% set reference = verdict.reference.shortLabelKey()|trans %}
+                    <li>
+                        {% if verdict.isOk() %}
+                            {% set cost = verdict.cost() %}
+                            {% set price = verdict.price() %}
+                            {% set used = verdict.fuelUsed() %}
+                            <p><strong>{{ 'fuel.verdict.cost'|trans({grade: grade, reference: reference, direction: cost.direction, percent: cost.fraction(), unit: prefs().distanceUnit.value}) }}</strong></p>
+                            <p class="tabular">{{ 'fuel.verdict.parts'|trans({price: price.direction, price_percent: price.fraction(), volume: prefs().volumeUnit.value, used: used.direction, used_percent: used.fraction()}) }}</p>
+                            <p class="field__hint">{{ 'fuel.verdict.basis'|trans({grade: grade, reference: reference, grade_tanks: verdict.gradeSegments, reference_tanks: verdict.referenceSegments, pairs: verdict.pairs}) }}</p>
+                        {% elseif verdict.status.value == 'not_enough_economy' %}
+                            <p>{{ 'fuel.verdict.not_enough_economy'|trans({grade: grade, reference: reference}) }}</p>
+                        {% else %}
+                            <p>{{ 'fuel.verdict.not_enough_prices'|trans({grade: grade, reference: reference}) }}</p>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
         <p class="field__hint">{{ 'fuel.grades.hint'|trans }}</p>
     </section>
 {%- endmacro %}

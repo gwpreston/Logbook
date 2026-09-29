@@ -90,7 +90,12 @@ final class GradeStatistics
                 ?: ($order[$a->grade->value ?? ''] ?? 0) <=> ($order[$b->grade->value ?? ''] ?? 0);
         });
 
-        return new GradeBreakdown($kind, $summaries, $totalVolume, $totalCost);
+        $summary = $history->summary($kind);
+        $perKm = $summary !== null && $summary->hasEconomy()
+            ? Decimal::divide($summary->measuredVolume, $summary->measuredDistanceKm, 8)
+            : null;
+
+        return new GradeBreakdown($kind, $summaries, $totalVolume, $totalCost, $perKm);
     }
 
     /**

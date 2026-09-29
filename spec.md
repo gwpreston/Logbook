@@ -829,6 +829,92 @@ always valid; existing fill-ups are never guessed (they read "Not recorded").
   line of a fill-up. "Not recorded"
   shows no badge. With the `fuel` module off nothing about grades appears.
 
+**Fuel insights** (Phase 16). Derived on every read from the segments
+above, with no second walk of the fill-ups. Nothing is stored and no other
+figure changes. With the `fuel` module off nothing about insights appears.
+
+- **Segment cost.** The fuel cost of a closed full-to-full segment is its
+  volume (the same volume its consumption uses) × the *burned unit price*.
+  The burned unit price is the volume-weighted price per unit of the
+  opening full fill and every partial inside the segment: the fuel that
+  was in the tank, the same attribution as *Economy by grade*. Free
+  charges at cost 0 count. Every fill-up has a price (the form derives
+  whichever of volume, price and total was left blank, and all three are
+  stored), so every closed segment has a cost. Segment cost per
+  distance = segment cost ÷ segment distance, in the vehicle's currency.
+  Liquid fuel and electricity are separate series, as everywhere.
+
+- **Grade verdict** (liquid families only, petrol and diesel):
+  - *Reference grade:* the family's most-used grade on the vehicle by
+    volume over the last 12 months up to today (ties go to the grade used
+    most recently; with no graded fill of the family in that window, over
+    all time). A vehicle with only one grade gets no verdict.
+  - *Economy ratio* = grade's consumption ÷ reference's consumption. Both
+    are the existing *Economy by grade* figures, in canonical L/100 km, and
+    each needs its own two single-grade segments (§ above).
+  - *Price premium:* each fill-up of the grade is paired with the nearest
+    fill-up of the reference grade, on the same vehicle, within **30 days**
+    either side. Dates are compared in the owner's time zone, and a
+    reference fill may pair more than once. The ratio for each pair is
+    price per canonical litre ÷ price per canonical litre, and the premium
+    is the **median** ratio over at least **3** pairs. Averages taken
+    across all time are never used, because they measure fuel price
+    inflation as much as grade.
+  - *Cost ratio* = price premium × economy ratio. Shown as a whole
+    percentage. Under 1% either way reads "about the same".
+  - *Wording*, in the *By grade* card, one line per compared grade:
+    "E5 98 costs about 10% more per mile than E10 95", with a second line
+    "7% more per litre, 3% more fuel used". Fuel used is worded as in
+    economy checks, so the percentage is the same in every unit. Under it
+    is the basis: "From 4 tanks of E5 98 and 11 of E10 95; prices from 5
+    fill-ups within a month of each other. An indication: season and
+    driving also change economy."
+  - *Not enough data:* when the economy ratio is missing, the card shows
+    the existing "Not enough fills yet". When fewer than 3 price pairs
+    exist, it shows "Not enough fill-ups near each other in time to
+    compare prices" and gives no verdict.
+  - Constants (30 days, 3 pairs, 1%) live on the service. There is no
+    setting.
+
+- **Cost per distance by charging type** (electricity): each type's cost
+  per kWh (the existing figure) × the vehicle's average electricity
+  consumption in kWh per canonical km. The charging method does not change
+  consumption at the wheel, and single-type segments are rare. It is a new
+  column in the charging card, labelled "per mile" or "per km".
+
+- **Cost per distance trend:** the *Economy trend* card gets a two-way
+  switch, *Economy* | *Cost per mile/km*. The switch is plain links
+  (`?trend=cost`) that work without JS, survive a refresh and respect the
+  base path; with JS they swap the chart without reloading. Cost mode plots
+  each segment's cost per distance and a weighted running average (Σ cost
+  ÷ Σ distance so far). The tooltip reads "Fuel used in this tank". Without
+  JS the same points are a table. The headline cost per distance (spend ÷
+  distance) is unchanged. It is a different measure and the chart does not
+  replace it.
+
+- **Economy by month** (full-width card below the trend charts, one per
+  series):
+  - A segment's distance and volume are split across the calendar months
+    it spans, in proportion to elapsed time between its opening and
+    closing fill-ups. Month boundaries are in the owner's time zone,
+    stored instants are UTC, and DST is handled by `DateTimeImmutable`
+    arithmetic, never by counting hours.
+  - Segments longer than **92 days** are left out of this card only, as
+    they are too long to place in a season.
+  - A month's figure = Σ volume share ÷ Σ distance share, worked in
+    canonical units and converted at the edge. mpg is never averaged.
+    A month with under **200 km** of distance shows "—".
+  - The table is one row per month (January to December, ICU month names)
+    and one column per calendar year with data (the last five at most),
+    plus *Average*, weighted across every year. The chart shows *Average*
+    as bars, with the current and previous year as lines. Without JS only
+    the table is shown.
+  - Hidden until at least one month has a figure.
+
+- **Not in scope:** temperature or weather, insights by grade for
+  electricity beyond cost per distance, fleet insights, a dashboard
+  widget, CSV or backup changes, settings.
+
 ### 7.4 Maintenance
 Full service history per vehicle, categorised. **Recurring schedules**
 ("every 10,000 km or 12 months") that compute the next due point and raise
@@ -2231,6 +2317,9 @@ task breakdowns live in the per-phase files; this is the map.
   `/upcoming` with chips, chart and CSV, an overview card and a `coming_up`
   dashboard widget; no notifications, no migration; release v1.7.0.
 
+- **Phase 16 — Fuel insights + v1.8.0.** Grade verdict, cost per
+  distance by charging type, cost per distance trend and economy by month
+  (§7.3). No schema change.
 ---
 
 ## 14. Definition of done

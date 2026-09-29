@@ -104,12 +104,29 @@
             data: {
                 labels: spec.labels,
                 datasets: spec.series.map(function (series) {
+                    var colour = token(series.color) || token('accent');
+                    if (series.type === 'line') {
+                        // A line over the bars (e.g. one year against the average); null leaves a gap.
+                        return {
+                            type: 'line',
+                            label: series.label,
+                            data: series.values,
+                            borderColor: colour,
+                            backgroundColor: colour,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            tension: 0.25,
+                            stack: series.label,
+                            order: 0,
+                        };
+                    }
                     return {
                         label: series.label,
                         data: series.values,
-                        backgroundColor: token(series.color) || token('accent'),
+                        backgroundColor: colour,
                         borderRadius: 4,
                         maxBarThickness: 40,
+                        order: 1,
                     };
                 }),
             },
@@ -123,6 +140,7 @@
                     y: {
                         stacked: spec.stacked,
                         beginAtZero: true,
+                        title: { display: !!spec.unit, text: spec.unit || '', color: muted },
                         ticks: { color: muted, callback: function (value) { return numberFormat.format(value); } },
                         grid: { color: token('border') },
                     },
@@ -130,8 +148,11 @@
                 plugins: {
                     legend: { display: spec.series.length > 1, labels: { color: muted, boxWidth: 12 } },
                     tooltip: {
+                        filter: function (item) { return item.parsed.y !== null; },
                         callbacks: {
-                            label: function (item) { return item.dataset.label + ': ' + numberFormat.format(item.parsed.y); },
+                            label: function (item) {
+                                return item.dataset.label + ': ' + numberFormat.format(item.parsed.y) + (spec.unit ? ' ' + spec.unit : '');
+                            },
                         },
                     },
                 },
@@ -156,6 +177,47 @@
                 ? barConfig(spec)
                 : { type: 'line', data: chartData(spec), options: chartOptions(spec) };
             charts.push(new window.Chart(canvas, config));
+        });
+    }
+
+    /*
+     * Fuel tab, Economy | Cost per distance switch: the links work without
+     * JS (?trend=cost); with it, both charts are already on the page, so
+     * the switch swaps them and keeps the address (and the pagination
+     * links) in step, without a reload.
+     */
+    function enhanceTrendLink(link) {
+        link.addEventListener('click', function (event) {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+            event.preventDefault();
+            var mode = link.getAttribute('data-trend-link');
+            document.querySelectorAll('[data-trend-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-trend-panel') !== mode;
+            });
+            document.querySelectorAll('a[data-trend-link]').forEach(function (other) {
+                if (other.getAttribute('data-trend-link') === mode) {
+                    other.setAttribute('aria-current', 'true');
+                } else {
+                    other.removeAttribute('aria-current');
+                }
+            });
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', link.href);
+            }
+            var trend = new URL(link.href, window.location.href).searchParams.get('trend');
+            document.querySelectorAll('.pagination a[href]').forEach(function (pageLink) {
+                var url = new URL(pageLink.href, window.location.href);
+                if (trend) {
+                    url.searchParams.set('trend', trend);
+                } else {
+                    url.searchParams.delete('trend');
+                }
+                pageLink.href = url.pathname + url.search + url.hash;
+            });
+            // A chart drawn while hidden has no size: draw them again now they show.
+            drawCharts();
         });
     }
 
@@ -762,6 +824,7 @@
         document.querySelectorAll('[data-dashboard-sortable]').forEach(enhanceDashboard);
         document.querySelectorAll('form[data-auto-submit]').forEach(enhanceAutoSubmit);
         document.querySelectorAll('[data-print]').forEach(enhancePrint);
+        document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
 
         drawCharts();
         // Redraw with the other theme's colours when the OS theme flips.

@@ -7,22 +7,99 @@ namespace Logbook\Action\Fuel;
 use DateTimeImmutable;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\Fuel\MonthlyEconomy;
+use Logbook\Domain\Fuel\MonthlyEconomyRow;
+use Logbook\Domain\Fuel\SegmentCost;
 use Logbook\Service\Fuel\FuelHistory;
+use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Money\Currency;
+use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\ElectricEfficiencyUnit;
+use Logbook\Support\View\BarChart;
 use Logbook\Support\View\LineChart;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Economy and price trends for one kind of energy, in the user's units.
+ * Economy, cost and price trends and economy by month for one kind of
+ * energy, in the user's units.
  */
 final readonly class FuelCharts
 {
     /** Chart tokens (app.css) for grade series, in turn. */
     private const array SERIES_COLOURS = ['accent', 'c-maint', 'c-tax', 'c-ins', 'red', 'green', 'amber'];
 
-    public function __construct(private TranslatorInterface $translator)
+    public function __construct(
+        private TranslatorInterface $translator,
+        private DisplayFormatter $formatter,
+    ) {
+    }
+
+    /**
+     * Each segment's fuel cost per distance (spec.md §7.3, *Fuel insights*)
+     * in the user's distance unit, plus the weighted running average
+     * (Σ cost ÷ Σ distance so far).
+     *
+     * @param list<SegmentCost> $costs oldest first
+     */
+    public function cost(array $costs, EnergyKind $kind, DisplayPreferences $preferences, string $currency): LineChart
     {
+        $kmPerUnit = $preferences->distanceUnit === DistanceUnit::Mile ? DistanceUnit::KM_PER_MILE : 1.0;
+        $perTank = [];
+        $average = [];
+        $cost = 0.0;
+        $distance = 0.0;
+        foreach ($costs as $segment) {
+            $cost += (float) $segment->cost;
+            $distance += (float) $segment->distanceKm;
+            $perTank[] = [$segment->endedAt, (float) $segment->costPerKm * $kmPerUnit];
+            $average[] = [$segment->endedAt, $cost / $distance * $kmPerUnit];
+        }
+
+        $label = $this->translator->trans('fuel.chart.cost_axis', ['unit' => $preferences->distanceUnit->value]);
+        $electric = $kind === EnergyKind::Electric;
+
+        return (new LineChart($preferences, $label, Currency::fractionDigits($currency) + 1, $currency))
+            ->addSeries($this->translator->trans($electric ? 'fuel.chart.per_tank_ev' : 'fuel.chart.per_tank'), $perTank, 'green')
+            ->addSeries($this->translator->trans('fuel.chart.average'), $average, 'muted', true);
+    }
+
+    /**
+     * Economy by month (spec.md §7.3): the average across years as bars,
+     * the current and previous year as lines; a month without a figure
+     * leaves a gap.
+     */
+    public function monthly(MonthlyEconomy $months, DisplayPreferences $preferences): BarChart
+    {
+        $electric = $months->kind === EnergyKind::Electric;
+        $efficiency = ElectricEfficiencyUnit::forDistanceUnit($preferences->distanceUnit);
+        $consumption = $preferences->consumptionUnit;
+        $value = static fn (?MonthlyEconomyRow $row): ?float => $row === null || !$row->hasFigure() ? null : ($electric
+            ? $efficiency->fromDistanceAndEnergy((float) $row->distanceKm, (float) $row->volume)
+            : $consumption->fromDistanceAndVolume((float) $row->distanceKm, (float) $row->volume));
+        $monthNumbers = range(1, 12);
+
+        $chart = new BarChart(
+            $preferences,
+            array_map(fn (int $m): string => $this->formatter->monthName($m, true), $monthNumbers),
+            1,
+            null,
+            false,
+            $this->translator->trans('units.name.' . ($electric ? $efficiency->value : $consumption->value)),
+        );
+        $chart->addSeries(
+            $this->translator->trans('fuel.monthly.average'),
+            array_map(static fn (int $m): ?float => $value($months->average($m)), $monthNumbers),
+            'accent',
+        );
+        foreach ([$months->currentYear - 1 => 'c-tax', $months->currentYear => 'green'] as $year => $colour) {
+            $values = array_map(static fn (int $m): ?float => $value($months->cell($year, $m)), $monthNumbers);
+            if (array_filter($values, static fn (?float $v): bool => $v !== null) !== []) {
+                $chart->addSeries((string) $year, $values, $colour, true);
+            }
+        }
+
+        return $chart;
     }
 
     /**

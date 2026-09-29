@@ -767,6 +767,11 @@ pre {
     min-height: 1.75rem;
 }
 
+.card__header--wrap {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+}
+
 .card__title {
     flex: 1;
     font-size: var(--fs-lg);
@@ -1027,10 +1032,20 @@ a.list__item:hover {
     cursor: pointer;
 }
 
-.segmented__option[aria-pressed="true"] {
+.segmented__option[aria-pressed="true"],
+.segmented__option[aria-current="true"] {
     background: var(--surface);
     color: var(--text);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+a.segmented__option {
+    text-decoration: none;
+}
+
+.segmented__option:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 /* Status pill (reminders, compliance). */
@@ -1726,6 +1741,25 @@ a.list__item:hover {
 .economy-units {
     margin: 0;
     font-size: var(--fs-sm);
+}
+
+/* Grade verdicts under the By grade table (spec.md §7.3, Fuel insights). */
+.grade-verdicts {
+    display: grid;
+    gap: var(--space-3);
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.grade-verdicts p {
+    margin: 0;
+}
+
+.grade-verdicts__title {
+    margin: var(--space-4) 0 0;
+    font-size: var(--fs-sm);
+    font-weight: 700;
 }
 
 /* Charts: drawn by js/app.js; without JS the lists carry the same figures. */

@@ -662,6 +662,7 @@ return [
                 'price' => 'Avg price',
                 'share' => 'Share',
                 'cost_per_kwh' => 'Cost per kWh',
+                'per_distance' => '{unit, select, mi {Per mile} other {Per km}}',
                 'energy' => 'Energy',
                 'economy' => 'Economy',
                 'efficiency' => 'Efficiency',
@@ -670,6 +671,38 @@ return [
             'blended' => 'All charging',
             'not_enough' => 'Not enough fills yet',
             'hint' => 'Economy by grade is an indication, not a test result: it counts only full-to-full stretches driven entirely on that grade (the fuel that went in at the start of the stretch), and needs at least two of them.',
+        ],
+        // Fuel insights (spec.md §7.3): worked out from the fill-ups, nothing stored.
+        'verdict' => [
+            'title' => 'Compared with your usual grade',
+            'cost' => '{grade} costs {direction, select, same {about the same {unit, select, mi {per mile} other {per km}} as {reference}} more {about {percent, number, percent} more {unit, select, mi {per mile} other {per km}} than {reference}} other {about {percent, number, percent} less {unit, select, mi {per mile} other {per km}} than {reference}}}',
+            'parts' => '{price, select, same {about the same {volume, select, l {per litre} other {per gallon}}} more {{price_percent, number, percent} more {volume, select, l {per litre} other {per gallon}}} other {{price_percent, number, percent} less {volume, select, l {per litre} other {per gallon}}}}, {used, select, same {about the same fuel used} more {{used_percent, number, percent} more fuel used} other {{used_percent, number, percent} less fuel used}}',
+            'basis' => 'From {grade_tanks, plural, one {# tank} other {# tanks}} of {grade} and {reference_tanks, number} of {reference}; prices from {pairs, plural, one {# fill-up} other {# fill-ups}} within a month of each other. An indication: season and driving also change economy.',
+            'not_enough_economy' => '{grade} against {reference}: not enough fills yet.',
+            'not_enough_prices' => '{grade} against {reference}: not enough fill-ups near each other in time to compare prices.',
+        ],
+        'trend' => [
+            'label' => 'Show on the chart',
+            'economy' => 'Economy',
+            'economy_ev' => 'Efficiency',
+            'cost' => 'Cost {unit, select, mi {per mile} other {per km}}',
+            'cost_title' => 'Cost {unit, select, mi {per mile} other {per km}} trend',
+            'cost_hint' => 'Each point is what the fuel used in one tank cost, per distance; the dashed line is the running average. The headline fuel cost counts what you spent instead, so the two can differ a little.',
+            'cost_hint_ev' => 'Each point is what the energy used on one stretch cost, per distance; the dashed line is the running average. The headline charging cost counts what you spent instead, so the two can differ a little.',
+            'column' => [
+                'to' => 'Full-to-full to',
+                'distance' => 'Distance',
+                'cost' => 'Fuel used',
+                'cost_ev' => 'Energy used',
+                'per_distance' => '{unit, select, mi {Per mile} other {Per km}}',
+            ],
+        ],
+        'monthly' => [
+            'title' => 'Economy by month',
+            'title_ev' => 'Efficiency by month',
+            'month' => 'Month',
+            'average' => 'Average',
+            'hint' => 'Each full-to-full stretch is shared between the months it spans, by time. Months with less than {distance} of driving show “—”, and stretches over three months are left out. The average is weighted across every year.',
         ],
         'kind' => [
             'liquid' => 'Fuel',
@@ -714,6 +747,9 @@ return [
             'price_axis' => 'Price per {unit}',
             'need_more' => 'Log at least three full fill-ups to see a trend.',
             'need_two' => 'Log two or more fill-ups to see a trend.',
+            'cost_axis' => 'Cost {unit, select, mi {per mile} other {per km}}',
+            'per_tank' => 'Fuel used in this tank',
+            'per_tank_ev' => 'Energy used on this stretch',
         ],
         // Economy checks (spec.md §7.3): compared in fuel used, never in mpg.
         'check' => [
