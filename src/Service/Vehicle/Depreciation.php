@@ -24,6 +24,8 @@ use Logbook\Support\Number\Decimal;
  * The change needs only a purchase price; per year and per distance are
  * measured from the purchase date to the value's own date (not today: that
  * is when the value was true) and need both dates at least 90 days apart.
+ * Per distance also needs the mileage series to reach back to the purchase:
+ * otherwise the whole loss would be divided by part of the distance.
  * Nothing is extrapolated and amounts stay in the vehicle's currency.
  */
 final readonly class Depreciation
@@ -96,7 +98,9 @@ final readonly class Depreciation
             $loss = ltrim($changeDecimal, '-');
             $months = self::monthsBetween($purchased, $current->date);
             $perYear = Decimal::divide(Decimal::multiply($loss, '12', 6), $months, self::MONEY_SCALE);
-            $km = PeriodDistance::km($readings, new ReportPeriod(ReportRange::Custom, $purchased, $current->date), $zone);
+            $km = self::coversPurchase($readings, $purchased, $zone)
+                ? PeriodDistance::km($readings, new ReportPeriod(ReportRange::Custom, $purchased, $current->date), $zone)
+                : null;
             $perKm = $km === null ? null : Decimal::divide($loss, $km, 6);
         }
 
@@ -174,6 +178,17 @@ final readonly class Depreciation
         }
 
         return $latest;
+    }
+
+    /**
+     * Whether the mileage series starts on or before the purchase date (the
+     * owner's local day of its first reading).
+     *
+     * @param list<OdometerReading> $readings oldest first
+     */
+    private static function coversPurchase(array $readings, DateTimeImmutable $purchased, DateTimeZone $zone): bool
+    {
+        return $readings !== [] && LocalTime::dateOf($readings[0]->recordedAt, $zone) <= $purchased;
     }
 
     /**

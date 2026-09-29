@@ -106,6 +106,13 @@ typed result, like `VehicleAge`.
   in the owner's distance unit ("£0.26 per mile"). Shown under the same 90
   days rule and only when some distance was driven. Not shown for a gain
   ("per mile" of appreciation is meaningless).
+- **Per distance needs mileage back to the purchase:** a reading on or
+  before the purchase date (the add form's *As of* date can record one).
+  A report's rule starts from the first reading when there is none before
+  the period, which suits a report (its costs cover the same stretch) but
+  would divide the whole loss by part of the distance here, so the figure
+  is left out instead. Found while building: the demo Golf's mileage starts
+  in 2025, four years after its purchase.
 - **Stale value:** when the vehicle is not sold and the latest valuation is
   more than 12 months old, a hint: "Valued 14 months ago; add a new
   valuation for an up-to-date figure." The figures still show; nothing is
@@ -151,84 +158,84 @@ typed result, like `VehicleAge`.
 
 ### 14.1.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6: `VehicleValuation`; Attachment owner type `valuation`
+- [x] §6: `VehicleValuation`; Attachment owner type `valuation`
       (`purchase` and `sale` exist since Phase 12).
-- [ ] §7.1: the *Ownership* card, valuations page, depreciation and its
+- [x] §7.1: the *Ownership* card, valuations page, depreciation and its
       rules, and why nothing is extrapolated or fetched.
-- [ ] §7.12: the new owner types.
-- [ ] §7.13: valuations CSV export; backup note.
-- [ ] §7.16: the *Valuation* kind; milestone paperclips; not printed.
-- [ ] §13: a Phase 14.1 entry.
-- [ ] `ROADMAP.md` Phase 14.1 row 🚧; `CHANGELOG.md` `[Unreleased]` entry.
+- [x] §7.12: the new owner types.
+- [x] §7.13: valuations CSV export; backup note.
+- [x] §7.16: the *Valuation* kind; milestone paperclips; not printed.
+- [x] §13: a Phase 14.1 entry.
+- [x] `ROADMAP.md` Phase 14.1 row 🚧; `CHANGELOG.md` `[Unreleased]` entry.
 
 ### 14.1.1 Migration + domain
-- [ ] Migration: `vehicle_valuations` as above, with the FK and index.
+- [x] Migration: `vehicle_valuations` as above, with the FK and index.
       Reversible; applies and rolls back on SQLite, PostgreSQL, MySQL and
       MariaDB.
-- [ ] `VehicleValuation` entity, `ValuationRepository` (DBAL), `Row`
+- [x] `VehicleValuation` entity, `ValuationRepository` (DBAL), `Row`
       mapping (the date read without time-zone conversion, as for
       `first_registered_on`).
-- [ ] `ValuationService` (create / update / delete with the validation
+- [x] `ValuationService` (create / update / delete with the validation
       above; deleting deletes its files).
-- [ ] Attachment owner types added to the enum and to the authenticated
+- [x] Attachment owner types added to the enum and to the authenticated
       file handler's owner checks. Reuse the one upload path.
 
 ### 14.1.2 Depreciation
-- [ ] `Depreciation` service and typed result (state, points, current
+- [x] `Depreciation` service and typed result (state, points, current
       value, change amount and percentage, per year, per distance, value
       age), reusing the reports' distance-driven calculation and the money
       value object (integer micro-units, no floats).
 
 ### 14.1.3 Forms + pages
-- [ ] Valuations page with add / edit / delete (page and modal; CSRF;
+- [x] Valuations page with add / edit / delete (page and modal; CSRF;
       errors keep typed values; attachments input).
-- [ ] Vehicle form: the purchase section links to *Valuations* on edit
+- [x] Vehicle form: the purchase section links to *Valuations* on edit
       (its file inputs exist since Phase 12).
 
 ### 14.1.4 Display
-- [ ] Overview *Ownership* card and value chart (table without JS).
-- [ ] History and *Recent activity*: the *Valuation* kind through
+- [x] Overview *Ownership* card and value chart (table without JS).
+- [x] History and *Recent activity*: the *Valuation* kind through
       `ActivityFeed`; print view excludes valuations (milestone paperclips
       exist since Phase 12).
 
 ### 14.1.5 CSV + backup
-- [ ] `/vehicles/{id}/export/valuations.csv`: Date, Amount, Currency,
+- [x] `/vehicles/{id}/export/valuations.csv`: Date, Amount, Currency,
       Source, Notes, with the usual quoting and formula guard. The
       valuations page carries *Export CSV*.
-- [ ] Backups: add `vehicle_valuations` if the table list is explicit, in
+- [x] Backups: add `vehicle_valuations` if the table list is explicit, in
       FK-safe restore order; the new attachment owner types restore with
       their files. The schema version moves.
 
 ### 14.1.6 Demo seed
-- [ ] The Golf gets a purchase price, a part-exchange offer and an online
+- [x] The Golf gets a purchase price, a part-exchange offer and an online
       valuation a year apart, with a screenshot attachment; the sold,
       archived vehicle keeps its purchase and sale prices and gets one
       valuation before the sale.
 
 ### 14.1.7 i18n
-- [ ] English and German: *Bewertung*, *Aktueller Wert*, *Wertverlust*,
+- [x] English and German: *Bewertung*, *Aktueller Wert*, *Wertverlust*,
       *Wertzuwachs*, *pro Jahr*, *Quelle*, the hints and messages above
       (the purchase and sale paperwork strings exist since Phase 12).
 
 ### 14.1.8 Tests
-- [ ] **Unit (validation):** future date (owner's time zone, around
+- [x] **Unit (validation):** future date (owner's time zone, around
       midnight), before purchase, after sale refused; 0 accepted; source
       101 characters refused.
-- [ ] **Unit (depreciation):** worked example: bought £15,000 on 1 Mar
+- [x] **Unit (depreciation):** worked example: bought £15,000 on 1 Mar
       2023, valued £9,800 on 1 Mar 2026, 36,000 mi driven in between →
       down £5,200 (−34.67%), £1,733.33 per year, £0.144 per mile; sold
       overrides the latest valuation; a gain shows no per-distance figure;
       89 days → no per-year or per-distance figure; 90 → shown; no purchase
       price and no value states; the stale hint at 12 months and one day;
       currency never converted.
-- [ ] **Unit (series order):** same-day purchase, valuation and sale.
-- [ ] **Integration:** valuations CRUD (page and modal, with and without
+- [x] **Unit (series order):** same-day purchase, valuation and sale.
+- [x] **Integration:** valuations CRUD (page and modal, with and without
       JS), attachments on valuations, authenticated
       serving; the overview card and chart; History rows and milestone
       paperclips still shown; print excludes valuations; CSV export; deleting the
       vehicle removes valuations and files; backup → restore round-trip;
       migration up and down; every existing figure unchanged.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -239,15 +246,15 @@ depreciation figure (amount, percentage, per year, per distance) with a
 value-over-time chart. Released with Phase 14.2 as Logbook v1.6.0.
 
 ## Acceptance criteria
-- [ ] Valuations are validated against today, the purchase and the sale,
+- [x] Valuations are validated against today, the purchase and the sale,
       and take attachments.
-- [ ] Depreciation appears only when it can be computed, is measured to the
+- [x] Depreciation appears only when it can be computed, is measured to the
       value's own date, and never extrapolates.
-- [ ] A sold vehicle's depreciation uses its sale price.
-- [ ] Valuations appear in History and *Recent activity*, never in the
+- [x] A sold vehicle's depreciation uses its sale price.
+- [x] Valuations appear in History and *Recent activity*, never in the
       print view or the cost ledger.
-- [ ] Existing data untouched; every existing figure unchanged.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Existing data untouched; every existing figure unchanged.
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas

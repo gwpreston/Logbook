@@ -14,6 +14,41 @@ Phase 14.1: valuations and depreciation.
   *Valuations* on the overview's *Ownership* card, with a screenshot or PDF
   attached. Nothing is fetched from an online service: a value is always
   one someone quoted.
+- **Depreciation** on the overview's *Ownership* card: what the vehicle has
+  lost (or gained) from the purchase price to the latest valuation, or to
+  the sale price once sold, as an amount and a percentage, per year and per
+  mile or km. Both rates are measured to the value's own date, not today, and
+  per distance appears only when the mileage log reaches back to the
+  purchase. Nothing is extrapolated; a valuation more than a year old says
+  so. With two or more values, a small value-over-time chart (a table
+  without JavaScript).
+- Valuations appear in History (under *Everything*) and *Recent activity*
+  as "Valued at £9,800", never in the amount column, and **never in the
+  print view**: a service history handed to a buyer does not carry your own
+  valuations. They are not costs and stay out of expenses and reports.
+- Valuations export to CSV (Date, Amount, Currency, Source, Notes) and are
+  included in backups with their files.
+
+### Changed
+- The overview's *Currency* and *Added* rows moved from *Ownership* to
+  *Details*. The *Ownership* card now leaves out rows that are not set and
+  is hidden until the vehicle has a purchase, a sale or a valuation.
+
+### Unchanged, on purpose
+- Every existing figure: costs, reports, economy and mileage are as they were.
+
+### Upgrade notes
+- One migration: a new table `vehicle_valuations`. It runs automatically on
+  start (Docker) or with `vendor/bin/phinx migrate` (bare PHP). Nothing in
+  existing data changes.
+- No configuration changes.
+- Backups record the database schema, so a backup made with 1.5.x cannot be
+  restored into this version (restore it with its own version first, then
+  upgrade), and a backup from this version cannot be restored into 1.5.x.
+- **Going back to 1.5.0:** roll back first, while still on this version,
+  with `vendor/bin/phinx rollback -e production -t 20261009100000`. The
+  valuations and their attachment rows are removed (the files stay under
+  `UPLOAD_PATH`); everything else is unchanged.
 
 ## [1.5.0] — 2026-09-29
 

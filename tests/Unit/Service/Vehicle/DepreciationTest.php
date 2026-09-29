@@ -120,6 +120,32 @@ final class DepreciationTest extends TestCase
         self::assertSame('2000.000', $result->perYear, 'one year, not the time to today');
     }
 
+    public function testNoPerDistanceWhenTheMileageStartsAfterThePurchase(): void
+    {
+        // Bought in 2021, first logged in 2025: part of the distance, not all of it.
+        $vehicle = self::vehicle(purchased: '2021-03-14', price: '14250.000');
+        $readings = [self::reading(1, '61680', '2025-09-28T11:00:00Z'), self::reading(2, '70000', '2026-03-14T11:00:00Z')];
+
+        $result = self::of($vehicle, [self::valuation(1, '2026-03-14', '9800.000')], $readings);
+
+        self::assertNotNull($result->perYear, 'the per-year figure needs no mileage');
+        self::assertNull($result->perKm);
+    }
+
+    public function testPerDistanceStartsFromTheLastReadingBeforeThePurchase(): void
+    {
+        $vehicle = self::vehicle(purchased: '2024-01-10', price: '10000.000');
+        $readings = [
+            self::reading(1, '5000', '2023-12-01T12:00:00Z'),
+            self::reading(2, '6000', '2024-01-05T12:00:00Z'),
+            self::reading(3, '16000', '2025-01-10T12:00:00Z'),
+        ];
+
+        $result = self::of($vehicle, [self::valuation(1, '2025-01-10', '8000.000')], $readings);
+
+        self::assertSame('0.200000', $result->perKm, '£2,000 over the 10,000 km from the reading just before the purchase');
+    }
+
     public function testThePriceAloneGivesTheChangeButNotTheRates(): void
     {
         $vehicle = self::vehicle(purchased: null, price: '15000.000');

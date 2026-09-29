@@ -535,8 +535,12 @@ from fleet totals unless "include archived" is toggled.
     distance driven between the same two dates, measured as a report's
     *distance driven* (§7.7), in the owner's distance unit ("£0.14/mi").
     Both need the purchase date and are shown only when the two dates are at
-    least 90 days apart; per distance also needs some distance driven. For a
-    gain neither is shown (a per-mile appreciation means nothing).
+    least 90 days apart; per distance also needs some distance driven and a
+    mileage series that reaches back to the purchase (a reading on or before
+    the purchase date). Without one, a report's rule would start from the
+    first reading and divide the whole loss by part of the distance, so the
+    figure is left out. For a gain neither is shown (a per-mile appreciation
+    means nothing).
   - **Stale value:** when the vehicle is not sold and its latest valuation
     is more than 12 months old: "Valued 14 months ago; add a new valuation
     for an up-to-date figure." The figures still show.
