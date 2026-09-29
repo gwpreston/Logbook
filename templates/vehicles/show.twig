@@ -251,6 +251,67 @@
             </section>
             {% endif %}
 
+            {# Cost of ownership (spec.md §7.1, §7.7): core, hidden only without an ownership period. #}
+            {% if ownership_cost %}
+            {% import 'macros/ownership.twig' as own %}
+            {% set cost = ownership_cost %}
+            <section class="card" aria-labelledby="cost-heading">
+                <h2 id="cost-heading" class="card__title">
+                    {{- cost.isComplete() ? 'ownership.title'|trans : 'ownership.title_running'|trans({date: cost.period.from|local_date}) -}}
+                </h2>
+                <dl class="details">
+                    <div><dt>{{ 'ownership.row.owned_for'|trans }}</dt><dd>{{ own.owned_for(cost) }}</dd></div>
+                    {% if cost.distanceKm is not null %}
+                        <div><dt>{{ 'ownership.row.distance'|trans }}</dt><dd class="tabular">{{ cost.distanceKm|distance }}</dd></div>
+                    {% endif %}
+                    <div>
+                        <dt>{{ 'ownership.row.running'|trans }}</dt>
+                        <dd>
+                            <span class="tabular">{{ cost.running|money }}</span>
+                            {% for group in cost.spentGroups() %}
+                                <br><span class="muted">{{ ('expense.group.' ~ group.group.value)|trans }} <span class="tabular">{{ group.amount|money }}</span></span>
+                            {% endfor %}
+                        </dd>
+                    </div>
+                    {% if cost.isComplete() %}
+                        <div><dt>{{ 'ownership.row.depreciation'|trans }}</dt><dd class="tabular">{{ own.depreciation(cost) }}</dd></div>
+                        <div>
+                            <dt>{{ 'ownership.row.total'|trans }}</dt>
+                            <dd><strong class="tabular">{{ cost.total|money }}</strong> <span class="muted">({{ own.total_label(cost) }})</span></dd>
+                        </div>
+                    {% endif %}
+                    {% if cost.perKm is not null %}
+                        <div>
+                            <dt>{{ 'ownership.row.per_distance'|trans }}</dt>
+                            <dd><span class="tabular">{{ cost.perKm|per_distance(cost.currency) }}</span><br><span class="muted">{{ own.per_distance_parts(cost) }}</span></dd>
+                        </div>
+                    {% endif %}
+                    {% if cost.perMonth is not null %}
+                        <div>
+                            <dt>{{ 'ownership.row.per_month'|trans }}</dt>
+                            <dd><span class="tabular">{{ cost.perMonth|money }}</span><br><span class="muted">{{ own.per_month_parts(cost) }}</span></dd>
+                        </div>
+                    {% endif %}
+                </dl>
+                {% if not cost.isComplete() %}
+                    <p class="field__hint">{{ (cost.depreciation.state.value == 'no_purchase_price' ? 'valuation.hint.no_purchase_price' : 'valuation.hint.no_value')|trans }}</p>
+                {% endif %}
+                {% if cost.isTooShort() %}
+                    <p class="field__hint">{{ 'ownership.hint.too_short'|trans }}</p>
+                {% elseif cost.mileageStartsOn() %}
+                    <p class="field__hint">{{ 'ownership.hint.mileage_starts'|trans({date: cost.mileageStartsOn()|local_date}) }}</p>
+                {% elseif cost.distanceKm is null %}
+                    <p class="field__hint">{{ 'ownership.hint.no_distance'|trans }}</p>
+                {% endif %}
+                <div class="btn-row">
+                    <a class="btn" href="{{ url_for('expenses.index', {id: vehicle.id}) }}">{{ 'expense.title'|trans }}</a>
+                    {% if feature_enabled('reports') %}
+                        <a class="btn" href="{{ url_for('reports.ownership', {}, {vehicle: vehicle.id}) }}">{{ 'ownership.report_link'|trans }}</a>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+
         </div>
     </div>
 {% endblock %}

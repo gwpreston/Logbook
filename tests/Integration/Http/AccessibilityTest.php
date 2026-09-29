@@ -95,7 +95,7 @@ final class AccessibilityTest extends AppTestCase
             "/vehicles/$id/documents", "/vehicles/$id/documents/new", "/vehicles/$id/documents/{$document->id}/edit",
             "/vehicles/$id/expenses", "/vehicles/$id/expenses/new", "/vehicles/$id/expenses/{$expense->id}/edit",
             '/reminders', '/reminders/new', "/reminders/{$reminder->id}/edit",
-            '/reports', '/reports?range=all',
+            '/reports', '/reports?range=all', '/reports/ownership', '/reports/ownership?include_archived=1',
             '/settings', '/settings/reminders', '/settings/modules', '/settings/backup',
             "/vehicles/$id/import/fuel",
         ];

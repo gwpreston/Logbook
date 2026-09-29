@@ -6,9 +6,37 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 14.1: valuations and depreciation.
+## [1.6.0] — 2026-09-29
+
+Phases 14.1 and 14.2: valuations, depreciation and the total cost of
+ownership.
 
 ### Added
+- **Cost of ownership** (Phase 14.2): what each vehicle has really cost
+  since you bought it, on a new overview card beside *Ownership*. Running
+  costs (every ledger line since the purchase date, by group) plus
+  depreciation, as a total and per mile or km and per month. Each part is
+  worked out over its own period and the two are added: running costs to
+  today, depreciation to the date of the latest value, and the total says
+  so ("depreciation to 1 Mar 2026"). A sold vehicle's figures run to the
+  sale date and are exact ("Lifetime, sold 12 Mar 2026").
+- Nothing is shown as complete when a part is missing. Without a purchase
+  price or a value the card is titled *Running costs since …* and has no
+  total. Rates that lack their depreciation part are marked "running costs
+  only". Per distance needs the mileage log to reach back to the start of
+  ownership, and the card says when it doesn't. There are no rates for the
+  first 90 days or before any cost is logged.
+- **Reports → Cost of ownership** (`/reports/ownership`): every vehicle
+  side by side, grouped by currency (never converted), with a fleet row,
+  the reports' vehicle and *include archived* filters, and a CSV export.
+  Part of the Reports module; the overview card stays when it is off.
+- **Finance and lease**, a new expense category for loan interest, lease
+  and PCP payments. The form reminds you not to log the payments that pay
+  off a purchase price you have already entered. CSV import accepts it by
+  code or label.
+- Demo data: the EV is leased (monthly payments, no purchase price) and the
+  sold Fiesta has nine years of services, road tax and mileage, so it shows
+  exact lifetime figures.
 - **Valuations.** A small log of what each vehicle is worth (a dealer's
   part-exchange offer, an online valuation, an insurer's figure) at
   *Valuations* on the overview's *Ownership* card, with a screenshot or PDF
@@ -35,12 +63,19 @@ Phase 14.1: valuations and depreciation.
   is hidden until the vehicle has a purchase, a sale or a valuation.
 
 ### Unchanged, on purpose
-- Every existing figure: costs, reports, economy and mileage are as they were.
+- Every existing figure: costs, reports, economy and mileage are as they
+  were. The dashboard's *Running cost* tile (last 12 months) and cost of
+  ownership (since bought) answer different questions, and both stay.
+- Depreciation per distance uses the same "mileage reaches back to the
+  purchase" rule as before, now shared with cost of ownership.
 
 ### Upgrade notes
-- One migration: a new table `vehicle_valuations`. It runs automatically on
-  start (Docker) or with `vendor/bin/phinx migrate` (bare PHP). Nothing in
-  existing data changes.
+- One migration: a new table `vehicle_valuations`, whose files use a new
+  attachment owner type, `valuation`. It runs automatically on start (Docker) or
+  with `vendor/bin/phinx migrate` (bare PHP). Nothing in existing data
+  changes.
+- The *Finance and lease* expense category is a new code (`finance`) in an
+  existing column: no migration.
 - No configuration changes.
 - Backups record the database schema, so a backup made with 1.5.x cannot be
   restored into this version (restore it with its own version first, then
@@ -763,7 +798,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/gwpreston16/Logbook/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/gwpreston16/Logbook/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/gwpreston16/Logbook/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/gwpreston16/Logbook/compare/v1.2.1...v1.3.0

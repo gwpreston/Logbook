@@ -31,9 +31,12 @@
             {{ ui.csrf(csrf) }}
             {{ ui.return_field(return_to) }}
 
-            <section class="card">
+            {# The finance hint shows while Finance and lease is picked (always, without JS). #}
+            <section class="card" x-data="{ category: '{{ (values.category ?? '')|e('js') }}' }"
+                     @change="if ($event.target.name === 'category') category = $event.target.value">
                 {{ ui.select('category', 'expense.field.category'|trans, values, errors,
                     categories|map(c => {value: c.value, label: ('expense.category.' ~ c.value)|trans}), {required: true}) }}
+                <p class="field__hint" x-show="category === 'finance'">{{ 'expense.hint.finance'|trans }}</p>
                 <div class="form-row">
                     {{ ui.input('spent_on', 'expense.field.spent_on'|trans, values, errors, {type: 'date', required: true}) }}
                     {{ ui.input('amount', 'expense.field.amount'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'expense.hint.amount'|trans}) }}

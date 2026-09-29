@@ -298,10 +298,11 @@ MySQL only.
 
 **ExpenseEntry** (ad-hoc costs: parking, tolls, road tax, …)
 - id, vehicle_id (`ON DELETE CASCADE`), spent_on (calendar date), category
-  (`tax`|`parking`|`tolls`|`cleaning`|`accessories`|`fines`|`other` —
-  stored as a code, like maintenance categories), amount (`decimal(14,3)`,
-  **0 allowed**; blank means 0), note (optional, up to 500 characters),
-  created/updated (UTC), plus attachments (Phase 10). Index
+  (`tax`|`parking`|`tolls`|`cleaning`|`accessories`|`fines`|`finance`|`other`
+  — stored as a code, like maintenance categories, so a new one needs no
+  migration; `finance`, *Finance and lease*, is Phase 14.2's), amount
+  (`decimal(14,3)`, **0 allowed**; blank means 0), note (optional, up to 500
+  characters), created/updated (UTC), plus attachments (Phase 10). Index
   `(vehicle_id, spent_on)`.
 - Only ad-hoc costs are stored here. Fuel, maintenance and compliance costs
   **roll up through a service-layer ledger** that reads them from their own
@@ -562,6 +563,22 @@ from fleet totals unless "include archived" is toggled.
   valuation. *Currency* and *Added* moved to the *Details* card. With two or
   more points in the value series, a small line chart of it (dated x-axis,
   the vehicle's currency); without JS the same points are a table.
+- **Overview *Cost of ownership* card** (Phase 14.2), beside *Ownership*:
+  what the vehicle has cost over the time it has been owned (§7.7 *Cost of
+  ownership*). Rows: *Owned for* (written as the vehicle's age is, "3 yrs
+  2 mo", with the start date: "since 1 Mar 2023", or "since first logged,
+  4 May 2024" without a purchase date), *Distance owned*, *Running costs*
+  with one line per group that has something in it, *Depreciation* (a gain
+  shown as money back), *Total so far* with its label ("depreciation to
+  1 Mar 2026", or "Lifetime, sold 12 Mar 2026"), *Per distance* and *Per
+  month*, each with its two parts beneath. Without a purchase price or a
+  value the card is titled *Running costs since …*, shows the running costs
+  alone with the Ownership card's prompt and never a total (its rates are
+  marked "running costs only"); rows that cannot be worked out are left out
+  with the reason as a hint. Core:
+  shown whatever modules are on (like the Expenses tab), and hidden only
+  when the ownership period has no start (no purchase date and nothing
+  logged).
 - Deleting asks for confirmation on its own page (works without JS) and
   removes the vehicle, its history, its photo and every file attached to it
   or its purchase and sale. Archive/restore is one click.
@@ -1004,6 +1021,102 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   Date, Amount, Currency, Source and Notes, oldest first; valuations have no
   CSV import (a handful of rows a year).
 
+#### Cost of ownership (Phase 14.2)
+What a vehicle has really cost over the time it has been owned: the running
+costs plus what it has lost in value (§7.1 *Depreciation*). Derived on every
+read (`Service\Report\OwnershipCost`), never stored, in the vehicle's
+currency and never converted.
+
+- **The ownership period** (calendar dates in the owner's time zone, both
+  inclusive) **starts** on the purchase date; without one, at the earlier of
+  the vehicle's first ledger line and first odometer reading, and says so
+  ("Since first logged, 4 May 2024"). It **ends** on the sale date when one
+  is set, else today. Without a start (no purchase date, nothing logged), or
+  with a purchase date after today, there is no period and nothing is shown.
+- **What is counted.** *Running costs* are the ledger lines (above) dated in
+  the period, read through the same ledger with its rules unchanged: exact
+  sums, tyre costs once under *maintenance*, a switched-off module's costs
+  left out. Lines before the purchase date are outside the period (a
+  deposit logged the day before is the owner's to move). *Depreciation* is
+  §7.1's, measured to the value's own date: the loss is a cost and a gain
+  is money back, so a gain lowers the total. *Distance owned* is the
+  period's *distance driven*, measured as a report's.
+- **Rates add, each over its own period.** The latest value is rarely dated
+  today, so running costs (to the end of the period) and depreciation (to
+  the value's date) are never cut to match:
+  - **Total so far** = running costs + depreciation, labelled with the
+    value's date: "£16,900 (depreciation to 1 Mar 2026)".
+  - **Per distance** = running costs ÷ distance owned + depreciation per
+    distance (§7.1). **Per month** = running costs ÷ months owned +
+    depreciation per year ÷ 12. Months owned counts the calendar months the
+    period touches, as reports do (the current month counts). Each part is
+    shown beside the sum.
+  - A **sold** vehicle (a sale date and a sale price) ends both periods on
+    the sale date, so every figure is exact and labelled "Lifetime, sold
+    12 Mar 2026". A sale date without a price ends the period there, but
+    depreciation still runs to the latest valuation and keeps that label.
+- **When a part is missing**, nothing is shown as if it were complete:
+  - No purchase price, or no value: running costs only, titled *Running
+    costs since …*, with the §7.1 prompt ("Add what you paid …"). No
+    total; per distance and per month are the running part alone, labelled
+    "running costs only". A leased car has no purchase price: its running
+    costs, lease payments included, are what it cost.
+  - **The mileage log must reach back to the start** (a reading on or
+    before the first day of the period, e.g. the dated starting mileage,
+    §7.2): otherwise there is no *distance owned* and no per-distance figure
+    at all, since the whole period's costs would be divided by part of its
+    distance. The card says why: "Your mileage log starts on 15 Jan 2026;
+    add a reading dated on the day the ownership began …". For a purchase
+    start this is §7.1's own condition, so depreciation per distance never
+    appears without its running part.
+  - No distance driven in the period: no per-distance figure.
+  - No cost logged in the period: no per-distance or per-month figure
+    (nothing logged is not nothing spent, and a rate of £0 would be made
+    up); the totals still show.
+  - Under 90 days owned: no per-distance or per-month figure (too short to
+    mean anything); the totals still show.
+  - Depreciation per distance unknown (no price or value, a gain, no
+    purchase date, or the value under 90 days after the purchase, §7.1):
+    per distance is the running part alone,
+    labelled "running costs only". Likewise per month when depreciation per
+    year is unknown (a gain, no purchase date, under 90 days).
+- **Finance and leases.** The expense category `finance` (*Finance and
+  lease*) holds loan interest, lease and PCP payments. Its hint on the
+  expense form: "Loan interest, lease or PCP payments. If you entered a
+  purchase price, log only the interest and fees, not the payments that pay
+  off that price, or it is counted twice." It is an ad-hoc expense like any
+  other (group *other*) and counts in every report as such.
+- **Kept apart from running cost.** The dashboard's pinned *Running cost*
+  tile, the Expenses tab and every report keep their own periods and
+  figures; cost of ownership is a different question and replaces none of
+  them.
+- **Ownership report** (`/reports/ownership`, linked from the Reports page
+  header; part of the `reports` module, §7.10): one row per vehicle with
+  owned from and to, distance owned, running costs, depreciation, total, per
+  distance and per month, and the same rules as the card (a missing part is
+  a dash, a partial rate is marked "running costs only").
+  - Filters are the reports' plain GET form: vehicle (`?vehicle=`) and
+    *include archived* (`include_archived=1`, off by default as in every
+    fleet report; picking an archived vehicle includes it). The page hints
+    that sold vehicles have exact lifetime figures. A vehicle with no
+    ownership period is left out.
+  - Grouped by currency, each with its own rows and fleet row; amounts are
+    never converted. The **fleet row** sums distance, running costs and
+    depreciation over all its vehicles; its total sums the vehicles that
+    have one ("3 of 4 vehicles" when some do not), and its per distance is
+    the total of the vehicles that have both a total and a distance ÷ their
+    distance. It has no per month (the vehicles were owned over different
+    months).
+  - `/reports/ownership.csv` with the same filters: one row per vehicle,
+    the rules of every CSV export above. Columns: vehicle, registration,
+    currency, owned from, owned to, started (*purchase* or *first logged*),
+    sold (yes/no), distance owned (unit in the header), running costs per
+    group and in total, depreciation, depreciation to (date), total, per
+    distance (running, depreciation, total) and per month (running,
+    depreciation, total); a figure that cannot be worked out is empty.
+- Not on the dashboard yet: the pinned card's four tiles need a design look
+  before a fifth.
+
 ### 7.8 Dashboard
 At-a-glance fleet overview built from rearrangeable widgets (drag via SortableJS,
 layout persisted per user): fleet summary, upcoming reminders, recent fuel,
@@ -1127,7 +1240,9 @@ Disabled modules are removed from nav, routes, and dashboard.
   - `reminders` off: the reminder list, Settings → Reminders' notification
     part, the calendar feed (404) and the scheduled notifications; lead
     times still drive the due badges on the vehicle tabs.
-  - `reports` off: Reports, its CSV export and the spend widget.
+  - `reports` off: Reports, its CSV export, the ownership report and its
+    CSV (Phase 14.2), and the spend widget. The overview's *Cost of
+    ownership* card stays: it is part of the garage.
   - `tyres` off: the Tyres tab and its pages (404), the overview's *Tyres*
     card, the chooser's *Tyre change*, the *Tyres* chip and tyre rows in
     history, print and *Recent activity*, and the tyre CSV exports.
@@ -1974,6 +2089,13 @@ task breakdowns live in the per-phase files; this is the map.
   overview's *Ownership* card; valuations in History and *Recent activity*,
   never printed and never a cost; valuations CSV export. Ships with Phase
   14.2 as v1.6.0.
+- **Phase 14.2 — Total cost of ownership + v1.6.0.** Running costs plus
+  depreciation over the ownership period (purchase to sale or today), each
+  rate over its own period and added, exact lifetime figures for sold
+  vehicles, never a total or rate shown as complete without both parts; a
+  *Cost of ownership* card on the overview and an *Ownership* report
+  (`/reports/ownership`) by currency with a fleet row and CSV export; a
+  *Finance and lease* expense category; release v1.6.0 with Phase 14.1.
 
 ---
 

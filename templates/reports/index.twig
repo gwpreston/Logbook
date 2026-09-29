@@ -21,7 +21,10 @@
                     {%- if not selected and filter.includeArchived %} · {{ 'report.archived_included'|trans }}{% endif -%}
                 </p>
             </div>
-            <a class="btn" href="{{ url_for('reports.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+            <div class="btn-row">
+                <a class="btn" href="{{ url_for('reports.ownership', {}, ownership_query) }}">{{ ui.icon('sell') }}{{ 'ownership.report_title'|trans }}</a>
+                <a class="btn" href="{{ url_for('reports.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+            </div>
         </header>
 
         <form class="card report-filter" method="get" action="{{ url_for('reports.index') }}" data-auto-submit>

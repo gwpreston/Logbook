@@ -16,20 +16,27 @@ use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\ValuationRepository;
+use Logbook\Domain\Expense\CostGroup;
 use Logbook\Service\Expense\CostItem;
+use Logbook\Service\Report\GroupTotal;
+use Logbook\Service\Report\OwnershipCost;
+use Logbook\Service\Report\OwnershipReport;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvNumber;
 use Logbook\Support\Csv\CsvTable;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Money\Money;
+use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DepthUnit;
+use Logbook\Support\Units\DistanceUnit;
 use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * CSV exports (spec.md §7.7): one table per vehicle and module, and the
- * ledger lines of a report. Headers are in the owner's language with the
+ * CSV exports (spec.md §7.7): one table per vehicle and module, the
+ * ledger lines of a report, and the ownership report's rows. Headers are in the owner's language with the
  * unit in brackets; numbers are plain decimals in the owner's units (see
  * CsvNumber); dates are ISO; instants are local wall-clock times.
  */
@@ -105,6 +112,74 @@ final readonly class CsvExporter
                 'export.column.description',
                 'export.column.amount',
                 'export.column.currency',
+            ]),
+            $rows,
+        );
+    }
+
+    /**
+     * The ownership report (spec.md §7.7 *Cost of ownership*): one row per
+     * vehicle, section by section; a figure that cannot be worked out is
+     * empty. Money per distance is in the owner's distance unit.
+     */
+    public function ownership(User $user, OwnershipReport $report, DateTimeImmutable $today): CsvTable
+    {
+        $unit = $user->preferences->distanceUnit;
+        $unitName = ['unit' => $this->t('units.name.' . $unit->value)];
+        $perUnit = ['unit' => $this->t('units.symbol.' . $unit->value)];
+        $money = static fn (?Money $m): ?string
+            => $m === null ? null : CsvNumber::money($m->toDecimal(3), $m->currency);
+        $perDistance = static fn (?string $perKm): ?string => $perKm === null ? null : Decimal::trim(
+            $unit === DistanceUnit::Mile ? Decimal::multiply($perKm, DistanceUnit::KM_PER_MILE_DECIMAL, 6) : $perKm,
+        );
+
+        $rows = array_map(fn (OwnershipCost $cost): array => [
+            $cost->vehicle->name(),
+            $cost->vehicle->data->registration,
+            $cost->currency,
+            $cost->period->from?->format('Y-m-d'),
+            $cost->period->to->format('Y-m-d'),
+            $this->t('ownership.start.' . $cost->start->value),
+            $this->yesNo($cost->vehicle->data->saleDate !== null),
+            $cost->distanceKm === null ? null : CsvNumber::distance($cost->distanceKm, $unit),
+            ...array_map(static fn (GroupTotal $g): ?string => $money($g->amount), $cost->groups),
+            $money($cost->running),
+            $money($cost->depreciationCost),
+            $cost->valuedOn()?->format('Y-m-d'),
+            $money($cost->total),
+            $perDistance($cost->runningPerKm),
+            $perDistance($cost->depreciationPerKm),
+            $cost->perKmIsPartial ? null : $perDistance($cost->perKm),
+            $money($cost->runningPerMonth),
+            $money($cost->depreciationPerMonth),
+            $cost->perMonthIsPartial ? null : $money($cost->perMonth),
+        ], $report->rows());
+
+        return new CsvTable(
+            sprintf('logbook-ownership-%s.csv', $today->format('Y-m-d')),
+            $this->headers([
+                'export.column.vehicle',
+                'export.column.registration',
+                'export.column.currency',
+                'export.column.owned_from',
+                'export.column.owned_to',
+                'export.column.started',
+                'export.column.sold',
+                ['export.column.distance_owned', $unitName],
+                ...array_map(fn (CostGroup $g): array => [
+                    'export.column.running_group',
+                    ['group' => $this->t('expense.group.' . $g->value)],
+                ], CostGroup::cases()),
+                'export.column.running',
+                'export.column.depreciation',
+                'export.column.depreciation_to',
+                'export.column.total',
+                ['export.column.running_per_distance', $perUnit],
+                ['export.column.depreciation_per_distance', $perUnit],
+                ['export.column.total_per_distance', $perUnit],
+                'export.column.running_per_month',
+                'export.column.depreciation_per_month',
+                'export.column.total_per_month',
             ]),
             $rows,
         );

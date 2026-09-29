@@ -117,7 +117,8 @@ final class DemoDataSeeder extends AbstractSeed
                 'type' => 'car', 'make' => 'Kia', 'model' => 'EV6 GT-Line', 'year' => 2023,
                 'registration' => 'EV23 KIA', 'fuel_type' => 'ev', 'default_grade' => 'home',
                 'capacity' => '77.400', 'currency' => 'EUR',
-                'purchase_date' => '2024-02-10', 'purchase_price' => '0.000',
+                // Leased: no purchase price, so its cost of ownership is its running costs, lease included.
+                'purchase_date' => '2024-02-10', 'purchase_price' => null,
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Ford', 'model' => 'Fiesta 1.0 EcoBoost', 'year' => 2014,
@@ -138,6 +139,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedDocuments($now);
         $this->seedReminders($now);
         $this->seedExpenses($now);
+        $this->seedFiestaLifetime($now);
         $this->seedTyres($now);
         $this->seedPaperwork($now);
         $this->seedValuations($now);
@@ -432,6 +434,7 @@ final class DemoDataSeeder extends AbstractSeed
             $expense('LB19 KTR', '2026-09-06', 'parking', '0.000', 'Free after 6pm'),
             $expense('MT20 BKE', '2026-05-11', 'accessories', '64.990', 'Tank bag'),
             $expense('EV23 KIA', '2026-06-18', 'tolls', '9.800', 'Péage A26'),
+            ...$this->leasePayments($expense),
         ])->saveData();
     }
 
@@ -439,6 +442,68 @@ final class DemoDataSeeder extends AbstractSeed
      * The sold Fiesta's sale receipt (spec.md §7.12): a one-page PDF written
      * under UPLOAD_PATH, shown on its *Sold* milestone.
      */
+    /**
+     * The leased Kia's monthly payments (the `finance` category), from the
+     * month after the lease started to this month (spec.md §7.7 *Cost of
+     * ownership*).
+     *
+     * @param callable(string, string, string, string, ?string): array<string, mixed> $expense
+     * @return list<array<string, mixed>>
+     */
+    private function leasePayments(callable $expense): array
+    {
+        $rows = [];
+        $month = new DateTimeImmutable('2024-03-10');
+        $last = new DateTimeImmutable('2026-09-10');
+        while ($month <= $last) {
+            $rows[] = $expense('EV23 KIA', $month->format('Y-m-d'), 'finance', '449.000', 'Lease payment');
+            $month = $month->modify('+1 month');
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The sold Fiesta's years with its owner, so its cost of ownership is an
+     * exact lifetime figure (spec.md §7.7): the mileage at purchase and at
+     * sale, a yearly service and road tax.
+     */
+    private function seedFiestaLifetime(string $now): void
+    {
+        $fiesta = $this->vehicleIds()['WR14 FNE'];
+        $reading = static fn (string $date, string $km, string $note): array => [
+            'vehicle_id' => $fiesta,
+            'reading_km' => $km,
+            'recorded_at' => self::localNoon($date),
+            'source' => 'manual',
+            'note' => $note,
+            'fuel_entry_id' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+        $this->table('odometer_readings')->insert([
+            $reading('2016-06-30', '38400.000', 'Bought'),
+            $reading('2025-11-20', '131900.000', 'Sold'),
+        ])->saveData();
+
+        $services = [];
+        $tax = [];
+        for ($year = 2017; $year <= 2025; $year++) {
+            $services[] = [
+                'vehicle_id' => $fiesta, 'schedule_id' => null, 'performed_on' => sprintf('%d-06-15', $year),
+                'odometer_km' => null, 'category' => 'service', 'title' => 'Annual service', 'description' => null,
+                'cost' => $year % 2 === 0 ? '289.000' : '189.000', 'vendor' => 'Ford Main Dealer',
+                'created_at' => $now, 'updated_at' => $now,
+            ];
+            $tax[] = [
+                'vehicle_id' => $fiesta, 'spent_on' => sprintf('%d-07-01', $year), 'category' => 'tax',
+                'amount' => '30.000', 'note' => 'Vehicle excise duty', 'created_at' => $now, 'updated_at' => $now,
+            ];
+        }
+        $this->table('maintenance_entries')->insert($services)->saveData();
+        $this->table('expense_entries')->insert($tax)->saveData();
+    }
+
     private function seedPaperwork(string $now): void
     {
         $pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"

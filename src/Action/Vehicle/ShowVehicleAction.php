@@ -18,6 +18,7 @@ use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\Report\OwnershipService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
@@ -35,7 +36,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * the latest history, what maintenance is due next, where each document
  * stands, the tyres fitted, and the vehicle's details and ownership (with
  * paperclips for the purchase and sale paperwork, the latest value, the
- * depreciation and the value over time).
+ * depreciation and the value over time), and its cost of ownership.
  * Each area has its own tab.
  */
 final readonly class ShowVehicleAction
@@ -59,6 +60,7 @@ final readonly class ShowVehicleAction
         private AttachmentService $attachments,
         private ValuationService $valuations,
         private ValueChart $valueChart,
+        private OwnershipService $ownership,
     ) {
     }
 
@@ -105,6 +107,8 @@ final readonly class ShowVehicleAction
             'depreciation' => $depreciation,
             'value_chart' => $this->valueChart->build($depreciation, $user->preferences),
             'has_valuations' => $valuations !== [],
+            // Core, like the Expenses tab: shown whatever modules are on (spec.md §7.1).
+            'ownership_cost' => $this->ownership->forVehicle($user, $vehicle, $odometer->readings, $depreciation, $today),
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
             'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)

@@ -54,6 +54,7 @@ const icons = [
   'close',
   'cloud_off',
   'contrast',
+  'credit_card',
   'dark_mode',
   'delete',
   'description',

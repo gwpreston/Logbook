@@ -58,6 +58,8 @@ use Logbook\Action\Reminder\DeleteReminderAction;
 use Logbook\Action\Reminder\EditReminderAction;
 use Logbook\Action\Reminder\ReminderListAction;
 use Logbook\Action\Reminder\ReminderStatusAction;
+use Logbook\Action\Report\OwnershipExportAction;
+use Logbook\Action\Report\OwnershipReportAction;
 use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
@@ -271,6 +273,8 @@ return static function (App $app): void {
         $group->group('', function (Group $reports): void {
             $reports->get('/reports', ReportAction::class)->setName('reports.index');
             $reports->get('/reports/export.csv', ReportExportAction::class)->setName('reports.export');
+            $reports->get('/reports/ownership', OwnershipReportAction::class)->setName('reports.ownership');
+            $reports->get('/reports/ownership.csv', OwnershipExportAction::class)->setName('reports.ownership.export');
         })->add($module(Feature::Reports));
 
         $group->get('/settings', SettingsAction::class)->setName('settings');

@@ -1,0 +1,95 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Service\Report;
+
+use DateTimeImmutable;
+use Logbook\Domain\Odometer\OdometerReading;
+use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Service\Expense\CostItem;
+use Logbook\Service\Expense\CostLedger;
+use Logbook\Service\Valuation\ValuationService;
+use Logbook\Service\Vehicle\Depreciation;
+use Logbook\Service\Vehicle\VehicleService;
+
+/**
+ * Cost of ownership (spec.md §7.7): gathers a vehicle's ledger lines,
+ * mileage log and depreciation and hands them to OwnershipCost; for the
+ * ownership report, groups the vehicles by currency as reports do.
+ */
+final readonly class OwnershipService
+{
+    public function __construct(
+        private VehicleService $vehicles,
+        private CostLedger $ledger,
+        private OdometerReadingRepository $readings,
+        private ValuationService $valuations,
+    ) {
+    }
+
+    /**
+     * For the overview card, which has already worked out the vehicle's
+     * depreciation and read its mileage log.
+     *
+     * @param list<OdometerReading> $readings oldest first
+     */
+    public function forVehicle(
+        User $user,
+        Vehicle $vehicle,
+        array $readings,
+        Depreciation $depreciation,
+        DateTimeImmutable $today,
+    ): ?OwnershipCost {
+        return OwnershipCost::of(
+            $vehicle,
+            $this->ledger->items($user, [$vehicle]),
+            $readings,
+            $depreciation,
+            $today,
+            $user->preferences->timeZone(),
+        );
+    }
+
+    public function report(User $user, ReportFilter $filter, DateTimeImmutable $today): OwnershipReport
+    {
+        $vehicles = $filter->scope($this->vehicles->listFleet($user, true));
+        $zone = $user->preferences->timeZone();
+
+        /** @var array<int, list<CostItem>> $items */
+        $items = [];
+        foreach ($this->ledger->items($user, $vehicles) as $item) {
+            $items[$item->vehicle->id][] = $item;
+        }
+
+        /** @var array<string, list<OwnershipCost>> $byCurrency */
+        $byCurrency = [];
+        foreach ($vehicles as $vehicle) {
+            $currency = $this->vehicles->currencyFor($user, $vehicle);
+            $readings = $this->readings->listForVehicle($vehicle->id);
+            $depreciation = Depreciation::of(
+                $vehicle,
+                $this->valuations->forVehicle($vehicle),
+                $readings,
+                $today,
+                $zone,
+                $currency,
+            );
+            $cost = OwnershipCost::of($vehicle, $items[$vehicle->id] ?? [], $readings, $depreciation, $today, $zone);
+            if ($cost !== null) {
+                $byCurrency[$currency][] = $cost;
+            }
+        }
+        uksort($byCurrency, static fn (string $a, string $b): int
+            => (count($byCurrency[$b]) <=> count($byCurrency[$a])) ?: strcmp($a, $b));
+
+        $sections = [];
+        foreach ($byCurrency as $currency => $rows) {
+            $sections[] = OwnershipSection::of($currency, $rows);
+        }
+
+        return new OwnershipReport($filter, $vehicles, $sections);
+    }
+}

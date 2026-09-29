@@ -48,6 +48,19 @@ final class PeriodDistance
         return Decimal::compare($distance, '0') > 0 ? $distance : null;
     }
 
+    /**
+     * Whether the mileage series starts on or before $start (the owner's
+     * local day of its first reading). Without that, the distance from the
+     * first reading on is only part of what was driven since $start, and a
+     * cost over the whole of it divided by that part would be too high.
+     *
+     * @param list<OdometerReading> $readings oldest first
+     */
+    public static function reachesBack(array $readings, DateTimeImmutable $start, DateTimeZone $zone): bool
+    {
+        return $readings !== [] && LocalTime::dateOf($readings[0]->recordedAt, $zone) <= $start;
+    }
+
     private static function day(DateTimeImmutable $instant, DateTimeZone $zone): DateTimeImmutable
     {
         $day = LocalTime::parseDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));
