@@ -32,6 +32,9 @@ report, without a PDF library.
   smaller instead of being cut off. On the Fuel tab both the economy and
   the cost per mile or km trends print, and economy check flags print as
   their words.
+- The sale pack's mileage chart now fills the page width when printed, at
+  the same proportions as the report charts, instead of keeping its screen
+  width and printing squashed.
 - **Prepare for sale** on every vehicle (and *Sale pack* in the History
   toolbar): a buyer's view to print or save as a PDF. A summary page (what
   the car is, how long you have owned it and how far it has gone since, the

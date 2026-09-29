@@ -3452,6 +3452,17 @@ a.list__title:hover {
     .history-print__item {
         border-top: 1px solid #ccc;
     }
+
+    /* Charts take the printable width; js/app.js draws them for it. */
+    .js .chart {
+        display: block;
+        height: auto !important;
+    }
+
+    .chart canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
 }
 
 /* ---------------------------------------------------------------------------
@@ -3773,10 +3784,6 @@ a.list__title:hover {
         padding: 0;
         border: 0;
     }
-
-    .sale-pack__chart .chart {
-        height: 9rem;
-    }
 }
 
 /* ---------------------------------------------------------------------------
@@ -3900,17 +3907,6 @@ a.list__title:hover {
     .print-report .section-title {
         break-after: avoid;
         page-break-after: avoid;
-    }
-
-    /* Charts take the printable width; js/app.js draws them for it. */
-    .js .print-report .chart {
-        display: block;
-        height: auto !important;
-    }
-
-    .print-report .chart canvas {
-        width: 100% !important;
-        height: auto !important;
     }
 
     /* Bars print in grey even with the browser's background graphics off. */

@@ -38,6 +38,10 @@
     var PRINT_DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3]];
     var PRINT_POINTS = ['circle', 'rect', 'triangle', 'rectRot'];
     var PRINT_FILLS = ['solid', 'stripes', 'dots', 'hatch', 'light'];
+    // Every chart is drawn at the printable width (A4 or Letter less the
+    // margins) and scaled to fit by print CSS: beforeprint fires before the
+    // print layout, so a chart sized to its box would keep its screen size.
+    var PRINT_SIZE = { width: 680, height: 260 };
 
     function chartToken(spec, name) {
         if (spec.print || printing) {
@@ -147,7 +151,8 @@
         });
 
         return {
-            responsive: true,
+            // Printing: a fixed size (beforePrint), not one measured mid-layout.
+            responsive: !printing,
             maintainAspectRatio: false,
             animation: false,
             devicePixelRatio: printing ? 2 : undefined,
@@ -288,7 +293,7 @@
                 }),
             },
             options: {
-                responsive: true,
+                responsive: !printing,
                 maintainAspectRatio: false,
                 animation: false,
                 devicePixelRatio: printing ? 2 : undefined,
@@ -337,14 +342,15 @@
             if (printing && spec.type === 'bar') {
                 config.plugins = [printTexture];
             }
-            charts.push(new window.Chart(canvas, config));
+            var chart = new window.Chart(canvas, config);
+            if (printing) {
+                // However it is redrawn while printing (the theme can flip for print too).
+                chart.resize(PRINT_SIZE.width, PRINT_SIZE.height);
+            }
+            charts.push(chart);
         });
     }
 
-    // The report pages' charts are drawn at the printable width (A4 or Letter
-    // less the margins) and scaled to fit by print CSS; others, such as the
-    // sale pack's, fit their own box.
-    var PRINT_SIZE = { width: 680, height: 260 };
     var shownForPrint = [];
 
     function beforePrint() {
@@ -356,13 +362,6 @@
         shownForPrint = Array.prototype.slice.call(document.querySelectorAll('.print-report [data-trend-panel][hidden]'));
         shownForPrint.forEach(function (panel) { panel.hidden = false; });
         drawCharts();
-        charts.forEach(function (chart) {
-            if (chart.canvas.closest('.print-report')) {
-                chart.resize(PRINT_SIZE.width, PRINT_SIZE.height);
-            } else {
-                chart.resize();
-            }
-        });
     }
 
     function afterPrint() {

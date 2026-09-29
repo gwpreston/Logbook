@@ -2249,8 +2249,8 @@ available for active and archived vehicles.
   - **Charts:** on `beforeprint`, every chart is drawn again in the print
     palette (black, dark grey and grey; lines solid, dashed and dotted by
     series with hollow points; bars in solid, striped, dotted and hatched
-    fills), so no chart depends on colour, sized to the printable width,
-    and restored on `afterprint`. The palette is a set of `--print-*`
+    fills), so no chart depends on colour, sized to the printable width
+    (every chart, the sale pack's included), and restored on `afterprint`. The palette is a set of `--print-*`
     tokens. Every chart has a table in the markup (a line chart's own
     points, `ui.chart_table()`, where the page had none) and it prints with
     the chart, even where the screen folds it away. Without JS, only the

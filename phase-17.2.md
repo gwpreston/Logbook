@@ -171,5 +171,9 @@ spec.md §8 *Printing reports* is the current text.
   than at the foot of every page, where they read as page totals.
 - **No landscape page.** Wide tables shrink their font instead.
 - The printed date comes from a `today()` Twig function (the app clock in
-  the owner's time zone), so no Action changed. Sale pack charts print at
-  twice the pixel density, otherwise as before.
+  the owner's time zone), so no Action changed. The sale pack's mileage
+  chart is drawn at the printable width like the report charts (it kept
+  its screen size before, and printed squashed to 9rem). A chart redrawn
+  while printing (printing can flip the colour scheme, which redraws the
+  charts) keeps the print size, and Chart.js's own resizing is off while
+  printing, so every printout comes out the same size.
