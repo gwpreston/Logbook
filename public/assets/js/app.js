@@ -711,12 +711,12 @@
         flushOutbox();
         window.addEventListener('online', flushOutbox);
 
-        // Settings: "Quick setup" buttons fill in the three unit preferences.
+        // Settings: "Quick setup" buttons fill in the four unit preferences.
         document.querySelectorAll('[data-unit-presets]').forEach(function (group) {
             group.hidden = false;
             group.querySelectorAll('[data-unit-preset]').forEach(function (button) {
                 button.addEventListener('click', function () {
-                    ['distance_unit', 'volume_unit', 'consumption_unit'].forEach(function (name) {
+                    ['distance_unit', 'volume_unit', 'consumption_unit', 'depth_unit'].forEach(function (name) {
                         var value = button.getAttribute('data-' + name.replace('_', '-'));
                         var radio = button.form && button.form.querySelector(
                             'input[type="radio"][name="' + name + '"][value="' + value + '"]'

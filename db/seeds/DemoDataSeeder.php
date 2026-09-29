@@ -432,6 +432,12 @@ final class DemoDataSeeder extends AbstractSeed
      * retired tyre shows its cost per distance. The bike has its rear
      * replaced once. Odometers come from each vehicle's own mileage series,
      * so no reading looks implausible; state comes from the replay.
+     *
+     * Tread depths (Phase 11.2): taken at fitting and on every swap, and in
+     * three checks across the year, so the old Goodyears now at the front
+     * have an estimate and a *due* tyre reminder; the winter set's DOT date
+     * makes it *upcoming* for age. The bike's rear is measured at fitting
+     * and once since.
      */
     private function seedTyres(string $now): void
     {
@@ -460,7 +466,7 @@ final class DemoDataSeeder extends AbstractSeed
         $s = array_map(fn (string $dot): int => $tyre($golf, ...$summer($dot)), ['1823', '1823', '1923', '1923']);
         $w = array_map(
             fn (string $dot): int => $tyre($golf, 'Continental', 'WinterContact TS 870', '205/55 R16 91H', 'winter', $dot),
-            ['3825', '3825', '3825', '3925'],
+            ['5020', '5020', '5020', '5120'],
         );
         $f = array_map(
             fn (string $dot): int => $tyre($golf, 'Michelin', 'Primacy 4+', '205/55 R16 91V', null, $dot),
@@ -496,6 +502,18 @@ final class DemoDataSeeder extends AbstractSeed
         $off = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Off, $p);
         $retire = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Retire, $p);
         $move = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Move, $p);
+        $measure = static fn (int $tyre, TyrePosition $p, string $mm): TyreChangeLine
+            => new TyreChangeLine($tyre, TyreLineAction::Measure, $p, $mm);
+        /**
+         * @param list<TyreChangeLine> $lines
+         * @param list<string> $mm one depth per line
+         * @return list<TyreChangeLine>
+         */
+        $depths = static fn (array $lines, array $mm): array => array_map(
+            static fn (TyreChangeLine $line, string $depth): TyreChangeLine => $line->withTread($depth),
+            $lines,
+            $mm,
+        );
         $fl = TyrePosition::FrontLeft;
         $fr = TyrePosition::FrontRight;
         $rl = TyrePosition::RearLeft;
@@ -503,34 +521,56 @@ final class DemoDataSeeder extends AbstractSeed
         $road = [$fl, $fr, $rl, $rr];
 
         /**
-         * vehicle, kind, date, linked record (its odometer covers the change), lines, retire reasons
+         * vehicle, kind, date, linked record (its odometer covers the change), lines, retire reasons,
+         * and an odometer beyond the mileage series (a check writes its own reading)
          *
-         * @var list<array{0: int, 1: TyreChangeKind, 2: string, 3: ?int, 4: list<TyreChangeLine>, 5: array<int, string>}> $plan
+         * @var list<array{0: int, 1: TyreChangeKind, 2: string, 3: ?int, 4: list<TyreChangeLine>, 5: array<int, string>, 6?: string}> $plan
          */
         $plan = [
-            [$golf, TyreChangeKind::Existing, '2025-09-28', null, array_map($on, $s, $road), []],
-            [$golf, TyreChangeKind::Fit, '2025-11-08', null, [...array_map($off, $s, $road), ...array_map($on, $w, $road)], []],
-            [$golf, TyreChangeKind::Swap, '2026-03-08', null, [...array_map($off, $w, $road), ...array_map($on, $s, $road)], []],
+            [$golf, TyreChangeKind::Existing, '2025-09-28', null, $depths(array_map($on, $s, $road), ['4.2', '4.1', '6.2', '6.2']), []],
+            [$golf, TyreChangeKind::Fit, '2025-11-08', null, [
+                ...$depths(array_map($off, $s, $road), ['4.0', '3.9', '6.0', '6.0']),
+                ...$depths(array_map($on, $w, $road), ['7.0', '7.0', '7.2', '7.1']),
+            ], []],
+            [$golf, TyreChangeKind::Swap, '2026-03-08', null, [
+                ...$depths(array_map($off, $w, $road), ['6.2', '6.3', '6.6', '6.6']),
+                ...$depths(array_map($on, $s, $road), ['4.0', '3.9', '6.0', '6.0']),
+            ], []],
             [$golf, TyreChangeKind::Fit, '2026-03-10', $record, [
-                $retire($s[0], $fl), $retire($s[1], $fr), $on($f[0], $fl), $on($f[1], $fr),
+                $retire($s[0], $fl), $retire($s[1], $fr), ...$depths([$on($f[0], $fl), $on($f[1], $fr)], ['8.0', '8.0']),
             ], [$s[0] => 'worn', $s[1] => 'worn']],
+            [$golf, TyreChangeKind::Check, '2026-04-20', null, [
+                $measure($f[0], $fl, '7.7'), $measure($f[1], $fr, '7.7'), $measure($s[2], $rl, '5.5'), $measure($s[3], $rr, '5.6'),
+            ], []],
             [$golf, TyreChangeKind::Repair, $repairOn, $repair, [new TyreChangeLine($f[1], TyreLineAction::Repair, $fr)], []],
+            [$golf, TyreChangeKind::Check, '2026-06-20', null, [
+                $measure($f[0], $fl, '7.1'), $measure($f[1], $fr, '7.2'), $measure($s[2], $rl, '4.7'), $measure($s[3], $rr, '4.8'),
+            ], []],
             [$golf, TyreChangeKind::Rotate, '2026-07-12', null, [
                 $move($f[0], $rl), $move($f[1], $rr), $move($s[2], $fl), $move($s[3], $fr),
             ], []],
-            [$golf, TyreChangeKind::Fit, '2026-08-22', null, [$retire($f[0], $rl), $on($f[2], $rl)], [$f[0] => 'damaged']],
+            [$golf, TyreChangeKind::Fit, '2026-08-22', null, [
+                $retire($f[0], $rl)->withTread('6.4'), $on($f[2], $rl)->withTread('8.0'),
+            ], [$f[0] => 'damaged']],
+            [$golf, TyreChangeKind::Check, '2026-09-20', null, [
+                $measure($s[2], $fl, '3.3'), $measure($s[3], $fr, '3.5'), $measure($f[2], $rl, '7.9'), $measure($f[1], $rr, '6.3'),
+            ], [], '78700.000'],
             [$bike, TyreChangeKind::Existing, '2026-03-20', null, [
-                $on($bikeFront, TyrePosition::Front), $on($bikeRear[0], TyrePosition::Rear),
+                $on($bikeFront, TyrePosition::Front)->withTread('3.1'), $on($bikeRear[0], TyrePosition::Rear)->withTread('2.4'),
             ], []],
             [$bike, TyreChangeKind::Fit, $bikeRearOn, $bikeRecord, [
-                $retire($bikeRear[0], TyrePosition::Rear), $on($bikeRear[1], TyrePosition::Rear),
+                $retire($bikeRear[0], TyrePosition::Rear)->withTread('1.6'), $on($bikeRear[1], TyrePosition::Rear)->withTread('6.0'),
             ], [$bikeRear[0] => 'worn']],
+            [$bike, TyreChangeKind::Check, '2026-09-19', null, [
+                $measure($bikeFront, TyrePosition::Front, '2.6'), $measure($bikeRear[1], TyrePosition::Rear, '5.4'),
+            ], [], '22050.000'],
         ];
 
         $changes = [];
         $readings = [];
-        foreach ($plan as [$vehicle, $kind, $date, $linked, $lines, $reasons]) {
-            $km = $linked === null ? $this->odometerOn($vehicle, $date) : $this->recordOdometer($linked);
+        foreach ($plan as $step) {
+            [$vehicle, $kind, $date, $linked, $lines, $reasons] = $step;
+            $km = $step[6] ?? ($linked === null ? $this->odometerOn($vehicle, $date) : $this->recordOdometer($linked));
             $id = $this->insertRow('tyre_changes', [
                 'vehicle_id' => $vehicle, 'kind' => $kind->value, 'done_on' => $date, 'odometer_km' => $km,
                 'maintenance_entry_id' => $linked, 'note' => null, 'created_at' => $now, 'updated_at' => $now,
@@ -538,7 +578,7 @@ final class DemoDataSeeder extends AbstractSeed
             foreach ($lines as $line) {
                 $this->table('tyre_change_lines')->insert([
                     'change_id' => $id, 'tyre_id' => $line->tyreId, 'action' => $line->action->value,
-                    'position' => $line->position?->value,
+                    'position' => $line->position?->value, 'tread_mm' => $line->treadMm,
                 ])->saveData();
             }
             foreach ($reasons as $tyreId => $reason) {

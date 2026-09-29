@@ -60,6 +60,9 @@ case "$variant" in
         expect "$base/fuel/new" 303
         # Tyre change from Log entry (Phase 11.1): the same, at the subpath.
         expect "$base/log/new/tyre" 303
+        # Check tread and Settings → Tyres (Phase 11.2), deep links at the subpath.
+        expect "$base/log/new/tyre_check" 303
+        expect "$base/settings/tyres" 200 'action="/logbook/settings/tyres"'
         # Installable app at the subpath.
         expect "$base/manifest.webmanifest" 200 '"start_url": "/logbook/"'
         expect "$base/sw.js" 200 '"base":"/logbook"'
