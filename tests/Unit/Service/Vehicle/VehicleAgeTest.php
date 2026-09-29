@@ -87,6 +87,56 @@ final class VehicleAgeTest extends TestCase
         self::assertEqualsWithDelta(15000.0, $age->averageKmPerYear(self::reading('60000')), 1.0);
     }
 
+    public function testTheLifetimeAverageIsMeasuredToTheReadingsDate(): void
+    {
+        // Three years old today, but the reading was taken 200 days ago.
+        $vehicle = self::vehicle('2023-09-27');
+        $reading = self::reading('30000', '2026-03-11T12:00:00Z');
+        $zone = new DateTimeZone('Europe/London');
+
+        $average = VehicleAge::lifetimeAverageKmPerYear($vehicle, $reading, $zone);
+        // 30,000 km over the 896 days to 11 March 2026, not the 1,096 to today.
+        self::assertEqualsWithDelta(30000 / (896 / 365.2425), $average, 0.01);
+        self::assertGreaterThan(30000 / 3.0, $average, 'no longer understated');
+
+        // Age itself is still to today.
+        $age = VehicleAge::of($vehicle, self::date('2026-09-27'));
+        self::assertNotNull($age);
+        self::assertSame([3, 0], [$age->years, $age->months]);
+    }
+
+    public function testTheNinetyDayFloorIsMeasuredAtTheReading(): void
+    {
+        $vehicle = self::vehicle('2026-01-01');
+        $zone = new DateTimeZone('Europe/London');
+
+        // 89 days old at the reading, however old today.
+        self::assertNull(VehicleAge::lifetimeAverageKmPerYear($vehicle, self::reading('900', '2026-03-31T12:00:00Z'), $zone));
+        self::assertNotNull(VehicleAge::lifetimeAverageKmPerYear($vehicle, self::reading('900', '2026-04-01T12:00:00Z'), $zone));
+    }
+
+    public function testTheReadingsDateIsItsLocalDate(): void
+    {
+        $vehicle = self::vehicle('2026-01-01');
+        // 23:30 UTC on 31 March is already 1 April in Berlin (90 days), still 31 March in New York (89).
+        $reading = self::reading('900', '2026-03-31T23:30:00Z');
+
+        self::assertNotNull(VehicleAge::lifetimeAverageKmPerYear($vehicle, $reading, new DateTimeZone('Europe/Berlin')));
+        self::assertNull(VehicleAge::lifetimeAverageKmPerYear($vehicle, $reading, new DateTimeZone('America/New_York')));
+    }
+
+    public function testNoLifetimeAverageWithoutARegistrationOrAReadingOrBeforeRegistration(): void
+    {
+        $zone = new DateTimeZone('Europe/London');
+
+        self::assertNull(VehicleAge::lifetimeAverageKmPerYear(self::vehicle(null), self::reading('1000'), $zone));
+        self::assertNull(VehicleAge::lifetimeAverageKmPerYear(self::vehicle('2020-01-01'), null, $zone));
+        self::assertNull(
+            VehicleAge::lifetimeAverageKmPerYear(self::vehicle('2026-03-01'), self::reading('8', '2026-02-20T12:00:00Z'), $zone),
+            'delivery mileage dated before registration',
+        );
+    }
+
     private static function date(string $value): DateTimeImmutable
     {
         $date = LocalTime::parseDate($value);
@@ -109,10 +159,10 @@ final class VehicleAgeTest extends TestCase
         return new Vehicle(1, 1, $data, VehicleStatus::Active, null, null, null, $now, $now);
     }
 
-    private static function reading(string $km): OdometerReading
+    private static function reading(string $km, string $recordedAt = '2026-09-27T10:00:00Z'): OdometerReading
     {
         $now = new DateTimeImmutable('2026-09-27T10:00:00Z');
 
-        return new OdometerReading(1, 1, $km, $now, OdometerSource::Manual, null, null, $now, $now);
+        return new OdometerReading(1, 1, $km, new DateTimeImmutable($recordedAt), OdometerSource::Manual, null, null, $now, $now);
     }
 }

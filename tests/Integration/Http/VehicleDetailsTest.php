@@ -262,6 +262,159 @@ final class VehicleDetailsTest extends AppTestCase
         self::assertStringContainsString('42,000 mi', $garage, 'the starting reading is still the latest');
     }
 
+    public function testADatedStartingReadingIsLocalNoonAndSitsInOrder(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+
+        $form = self::body($browser->get('/vehicles/new'));
+        self::assertStringContainsString('name="current_odometer_on"', $form);
+        self::assertStringContainsString('value="2026-09-27"', $form, 'As of defaults to today');
+        self::assertStringContainsString('When the figure was read, for example on the MOT certificate or at the sale.', $form);
+
+        $dated = ['current_odometer' => '40000', 'current_odometer_on' => '2026-03-14'];
+        $created = $browser->post('/vehicles/new', $dated + self::FOCUS);
+        self::assertSame(303, $created->getStatusCode(), self::body($created));
+        $focus = $this->onlyVehicle($app);
+        $readings = $this->readings($app, $focus);
+        self::assertCount(1, $readings, 'exactly one manual reading');
+        self::assertSame(OdometerSource::Manual, $readings[0]->source);
+        self::assertSame('2026-03-14T12:00:00Z', $readings[0]->recordedAt->format('Y-m-d\TH:i:s\Z'), 'local noon (GMT in March)');
+        self::assertStringNotContainsString('before the first registration', self::body($browser->follow($created)));
+
+        // Fill-ups before and after it sit in order.
+        foreach ([['2026-02-01T09:00', '39000'], ['2026-06-01T09:00', '41000']] as [$at, $odometer]) {
+            $fill = $browser->post('/vehicles/' . $focus->id . '/fuel/new', [
+                'filled_at' => $at,
+                'odometer' => $odometer,
+                'fuel' => 'petrol',
+                'volume' => '40',
+                'price' => '1.5',
+                'total' => '',
+            ]);
+            self::assertSame(303, $fill->getStatusCode(), self::body($fill));
+        }
+        self::assertSame([OdometerSource::Fuel, OdometerSource::Manual, OdometerSource::Fuel], array_map(
+            static fn (OdometerReading $r): OdometerSource => $r->source,
+            $this->readings($app, $focus),
+        ));
+
+        $mileage = self::body($browser->get('/vehicles/' . $focus->id . '/odometer'));
+        self::assertStringContainsString('14 Mar 2026', $mileage);
+        self::assertStringContainsString('40,000 mi', $mileage);
+        self::assertStringContainsString('41,000 mi', $mileage, 'the latest');
+        self::assertStringContainsString('41,000 mi', self::body($browser->get('/garage')));
+        self::assertStringContainsString('41,000 mi', self::body($browser->get('/')));
+    }
+
+    public function testASameDayStartingReadingIsTheMomentOfSaving(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $browser->get('/vehicles/new');
+
+        $browser->post('/vehicles/new', ['current_odometer' => '100', 'current_odometer_on' => '2026-09-27'] + self::FOCUS);
+        $readings = $this->readings($app, $this->onlyVehicle($app));
+        self::assertSame(self::NOW, $readings[0]->recordedAt->format('Y-m-d\TH:i:s\Z'));
+    }
+
+    public function testTheAsOfDateIsCheckedAndKeptOnAnError(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $browser->get('/vehicles/new');
+
+        $future = $browser->post('/vehicles/new', self::dated('2026-09-28'));
+        self::assertSame(422, $future->getStatusCode());
+        self::assertStringContainsString('The odometer reading cannot be dated in the future.', self::body($future));
+        self::assertStringContainsString('value="2026-09-28"', self::body($future), 'kept');
+
+        $early = $browser->post('/vehicles/new', self::dated('1884-12-31'));
+        self::assertStringContainsString('The odometer reading cannot be dated before 1885.', self::body($early));
+
+        $other = $browser->post('/vehicles/new', ['make' => '', 'current_odometer_on' => '2026-01-05'] + self::FOCUS);
+        self::assertSame(422, $other->getStatusCode());
+        self::assertStringContainsString('value="2026-01-05"', self::body($other), 'kept on any validation error');
+        self::assertSame([], $this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, true));
+    }
+
+    public function testAStartingReadingBeforeRegistrationIsSavedWithAWarning(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $browser->get('/vehicles/new');
+
+        $created = $browser->post('/vehicles/new', [
+            'current_odometer' => '8',
+            'current_odometer_on' => '2019-03-01',
+        ] + self::FOCUS);
+        self::assertSame(303, $created->getStatusCode());
+        self::assertStringContainsString(
+            'Saved, but the odometer reading is dated before the first registration: check both.',
+            self::body($browser->follow($created)),
+        );
+        self::assertCount(1, $this->readings($app, $this->onlyVehicle($app)));
+    }
+
+    public function testTheLifetimeAverageIsMeasuredToTheLatestReading(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $browser->get('/vehicles/new');
+        // Registered 14 Mar 2019; 22,695.6 mi read on 14 Mar 2024, five years later.
+        $browser->post('/vehicles/new', ['current_odometer' => '22695.6', 'current_odometer_on' => '2024-03-14'] + self::FOCUS);
+        $focus = $this->onlyVehicle($app);
+
+        $mileage = self::body($browser->get('/vehicles/' . $focus->id . '/odometer'));
+        // About 4,537 mi a year to the reading's date, not 3,010 mi a year to today.
+        self::assertStringContainsString('4,537 mi', $mileage);
+        self::assertStringNotContainsString('3,010 mi', $mileage);
+        $overview = self::body($browser->get('/vehicles/' . $focus->id));
+        self::assertStringContainsString('(7 yrs 6 mo old)', $overview, 'age is to today');
+    }
+
+    public function testTheOverviewNoLongerListsFillUpsAndLosesNoFigure(): void
+    {
+        foreach (['true', 'false'] as $fuel) {
+            $app = $this->createApp(['FEATURES_FUEL' => $fuel]);
+            $this->pinClock($app, self::NOW);
+            $browser = $this->signedIn($app);
+            $browser->get('/vehicles/new');
+            $browser->post('/vehicles/new', ['current_odometer' => '100'] + self::FOCUS);
+            $focus = $this->onlyVehicle($app);
+            if ($fuel === 'true') {
+                foreach ([['2026-09-01T09:00', '41000'], ['2026-09-20T09:00', '41400']] as [$at, $odometer]) {
+                    $browser->post('/vehicles/' . $focus->id . '/fuel/new', [
+                        'filled_at' => $at,
+                        'odometer' => $odometer,
+                        'fuel' => 'petrol',
+                        'volume' => '40',
+                        'price' => '1.5',
+                        'total' => '',
+                    ]);
+                }
+            }
+
+            $overview = self::body($browser->get('/vehicles/' . $focus->id));
+            self::assertStringNotContainsString('fills-heading', $overview, 'fuel ' . $fuel);
+            self::assertStringNotContainsString('Recent fill-ups', $overview);
+            self::assertStringContainsString('Recent history', $overview, 'which lists fill-ups with everything else');
+            if ($fuel === 'true') {
+                // Economy, cost per distance and spend stay in the stats row.
+                self::assertStringContainsString('Average economy', $overview);
+                self::assertStringContainsString('£120.00', $overview, 'spend');
+                self::assertStringContainsString('Fill-up', $overview, 'in Recent history');
+            } else {
+                self::assertStringNotContainsString('Average economy', $overview);
+            }
+        }
+    }
+
     public function testGermanLabels(): void
     {
         $app = $this->createApp();
@@ -276,9 +429,22 @@ final class VehicleDetailsTest extends AppTestCase
         self::assertStringContainsString('Variante / Ausstattung', $form);
         self::assertStringContainsString('Erstzulassung', $form);
         self::assertStringContainsString('Aktueller Kilometerstand', $form);
+        self::assertStringContainsString('Stand vom', $form);
+        self::assertStringContainsString('Kaufunterlagen', $form);
+        self::assertStringContainsString('Verkaufsunterlagen', $form);
         self::assertStringContainsString('(1 Jahr alt)', self::body($browser->get('/vehicles/' . $focus->id)));
         $mileage = self::body($browser->get('/vehicles/' . $focus->id . '/odometer'));
         self::assertStringContainsString('Ø pro Jahr seit Erstzulassung', $mileage);
+    }
+
+    /**
+     * The Focus with a starting reading of 100 read on $on.
+     *
+     * @return array<string, string>
+     */
+    private static function dated(string $on): array
+    {
+        return ['current_odometer' => '100', 'current_odometer_on' => $on] + self::FOCUS;
     }
 
     /**

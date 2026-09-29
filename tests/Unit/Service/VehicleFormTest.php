@@ -240,6 +240,66 @@ final class VehicleFormTest extends TestCase
         self::assertSame(['current_odometer'], array_keys($errors->all()));
     }
 
+    public function testAsOfDatesTheStartingReading(): void
+    {
+        $dated = $this->parseNew(self::MINIMAL + ['current_odometer' => '10000', 'current_odometer_on' => '2026-03-14']);
+        self::assertSame('2026-03-14', $dated->startingReading?->on?->format('Y-m-d'));
+
+        $today = $this->parseNew(self::MINIMAL + ['current_odometer' => '10000', 'current_odometer_on' => '2026-09-27']);
+        self::assertSame('2026-09-27', $today->startingReading?->on?->format('Y-m-d'));
+
+        $blank = $this->parseNew(self::MINIMAL + ['current_odometer' => '10000', 'current_odometer_on' => '']);
+        self::assertNotNull($blank->startingReading);
+        self::assertNull($blank->startingReading->on, 'blank means today');
+    }
+
+    public function testAsOfIsNeitherInTheFutureNorBefore1885(): void
+    {
+        $future = self::newErrors(['current_odometer' => '1', 'current_odometer_on' => '2026-09-28']);
+        self::assertSame('vehicle.reading_in_future', $future['current_odometer_on']['key'] ?? null);
+        $early = self::newErrors(['current_odometer' => '1', 'current_odometer_on' => '1884-12-31']);
+        self::assertSame('vehicle.reading_too_early', $early['current_odometer_on']['key'] ?? null);
+        $first = $this->parseNew(self::MINIMAL + ['current_odometer' => '1', 'current_odometer_on' => '1885-01-01']);
+        self::assertSame('1885-01-01', $first->startingReading?->on?->format('Y-m-d'));
+    }
+
+    public function testAsOfIsIgnoredWithoutAnOdometer(): void
+    {
+        $new = $this->parseNew(self::MINIMAL + ['current_odometer' => '', 'current_odometer_on' => 'not a date']);
+        self::assertNull($new->startingReading);
+    }
+
+    public function testAReadingBeforeFirstRegistrationWarnsButIsKept(): void
+    {
+        $before = $this->parseNew(self::MINIMAL + [
+            'first_registered_on' => '2026-03-01',
+            'current_odometer' => '8',
+            'current_odometer_on' => '2026-02-20',
+        ]);
+        self::assertSame('2026-02-20', $before->startingReading?->on?->format('Y-m-d'));
+        self::assertTrue(VehicleForm::startingReadingWarning($before), 'delivery mileage is saved, with a warning');
+
+        $after = $this->parseNew(self::MINIMAL + [
+            'first_registered_on' => '2026-03-01',
+            'current_odometer' => '8',
+            'current_odometer_on' => '2026-03-01',
+        ]);
+        self::assertFalse(VehicleForm::startingReadingWarning($after));
+        self::assertFalse(VehicleForm::startingReadingWarning($this->parseNew(self::MINIMAL + [
+            'first_registered_on' => '2026-03-01',
+            'current_odometer' => '8',
+        ])), 'today is never before registration');
+        self::assertFalse(VehicleForm::startingReadingWarning($this->parseNew(self::MINIMAL + [
+            'current_odometer' => '8',
+            'current_odometer_on' => '2026-02-20',
+        ])), 'no registration date, nothing to compare');
+    }
+
+    public function testDefaultsDateTheReadingToday(): void
+    {
+        self::assertSame('2026-09-27', VehicleForm::defaults(self::today())['current_odometer_on']);
+    }
+
     public function testTheEditFormIgnoresACurrentOdometer(): void
     {
         $data = VehicleForm::parse(self::MINIMAL + ['current_odometer' => 'lots'], self::prefs(), self::today());
@@ -256,6 +316,18 @@ final class VehicleFormTest extends TestCase
         self::assertInstanceOf(NewVehicle::class, $new, $problems);
 
         return $new;
+    }
+
+    /**
+     * @param array<string, string> $input
+     * @return array<string, array{key: string, params: array<string, mixed>}>
+     */
+    private static function newErrors(array $input): array
+    {
+        $errors = VehicleForm::parseNew(self::MINIMAL + $input, self::prefs(), self::today());
+        self::assertInstanceOf(ValidationErrors::class, $errors);
+
+        return $errors->all();
     }
 
     private static function today(): DateTimeImmutable
