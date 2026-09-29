@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\History;
 
 use Logbook\Action\Vehicle\VehicleRoute;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\History\ActivityFeed;
@@ -12,6 +13,7 @@ use Logbook\Service\History\ActivityKind;
 use Logbook\Service\History\ActivityQuery;
 use Logbook\Service\History\HistoryChip;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -39,6 +41,7 @@ final readonly class HistoryPrintAction
         private FeatureToggles $features,
         private View $view,
         private ClockInterface $clock,
+        private TyreService $tyres,
     ) {
     }
 
@@ -82,6 +85,7 @@ final readonly class HistoryPrintAction
             'latest' => $this->odometer->history($vehicle)->latest(),
             'age' => VehicleAge::of($vehicle, $today),
             'today' => $today,
+            'tyres' => $this->features->isEnabled(Feature::Tyres) ? $this->tyres->fitted($vehicle, $today) : [],
         ]);
     }
 }

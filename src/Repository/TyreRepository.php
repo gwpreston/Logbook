@@ -192,6 +192,26 @@ final readonly class TyreRepository
         return array_values(array_map($this->hydrateSet(...), $rows));
     }
 
+    /**
+     * @param list<int> $vehicleIds
+     * @return list<TyreSet>
+     */
+    public function listSetsOf(array $vehicleIds): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $rows = $this->connection->createQueryBuilder()
+            ->select('*')
+            ->from(self::SETS)
+            ->where('vehicle_id IN (:vehicles)')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrateSet(...), $rows));
+    }
+
     public function findSet(int $vehicleId, int $id): ?TyreSet
     {
         $row = $this->connection->createQueryBuilder()

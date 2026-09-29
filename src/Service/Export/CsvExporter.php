@@ -6,6 +6,8 @@ namespace Logbook\Service\Export;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use Logbook\Domain\Tyre\TyreChangeLine;
+use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ComplianceDocumentRepository;
@@ -15,15 +17,13 @@ use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Report\Report;
+use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvNumber;
 use Logbook\Support\Csv\CsvTable;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Logbook\Service\Tyre\TyreService;
-use Logbook\Domain\Tyre\TyreChangeLine;
-use Logbook\Domain\Tyre\TyrePosition;
 
 /**
  * CSV exports (spec.md §7.7): one table per vehicle and module, and the

@@ -138,10 +138,18 @@ final class HistoryPageTest extends TestCase
 
     public function testChipsHideSwitchedOffModulesAndFallBackToEverything(): void
     {
-        $on = ['fuel' => true, 'maintenance' => true, 'compliance' => true, 'reminders' => true, 'reports' => true];
-        $off = ['fuel' => false, 'maintenance' => true, 'compliance' => false] + $on;
+        $on = [
+            'fuel' => true,
+            'maintenance' => true,
+            'compliance' => true,
+            'reminders' => true,
+            'reports' => true,
+            'tyres' => true,
+        ];
+        $off = ['fuel' => false, 'maintenance' => true, 'compliance' => false, 'tyres' => false] + $on;
 
-        self::assertCount(6, HistoryChip::available($on));
+        self::assertCount(7, HistoryChip::available($on));
+        self::assertSame(HistoryChip::Tyres, HistoryChip::available($on)[3], 'Tyres after Fuel');
         self::assertSame(
             [HistoryChip::Everything, HistoryChip::Service, HistoryChip::Expenses, HistoryChip::Mileage],
             HistoryChip::available($off),

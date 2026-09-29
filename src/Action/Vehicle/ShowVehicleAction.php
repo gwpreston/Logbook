@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\History\ActivityFeed;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -26,8 +29,8 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * GET /vehicles/{id} — vehicle overview: current odometer and fuel figures,
  * the latest history, what maintenance is due next, where each document
- * stands, the latest fill-ups, and the vehicle's details. Each area has its
- * own tab.
+ * stands, the tyres fitted, the latest fill-ups, and the vehicle's details.
+ * Each area has its own tab.
  */
 final readonly class ShowVehicleAction
 {
@@ -46,6 +49,8 @@ final readonly class ShowVehicleAction
         private ClockInterface $clock,
         private ReminderSettingsStore $reminderSettings,
         private ActivityFeed $feed,
+        private TyreService $tyres,
+        private FeatureToggles $features,
     ) {
     }
 
@@ -83,6 +88,10 @@ final readonly class ShowVehicleAction
             'documents' => array_values($documents),
             'age' => VehicleAge::of($vehicle, $today),
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
+            // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
+            'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)
+                ? $this->tyres->fitted($vehicle, $today)
+                : null,
         ]);
     }
 }

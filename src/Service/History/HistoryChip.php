@@ -16,6 +16,7 @@ enum HistoryChip: string
     case Everything = 'all';
     case Service = 'service';
     case Fuel = 'fuel';
+    case Tyres = 'tyres';
     case Documents = 'documents';
     case Expenses = 'expenses';
     case Mileage = 'mileage';
@@ -59,6 +60,7 @@ enum HistoryChip: string
             self::Everything => [...ActivityKind::entries(), ActivityKind::Milestone],
             self::Service => [ActivityKind::Maintenance],
             self::Fuel => [ActivityKind::Fuel],
+            self::Tyres => [ActivityKind::Tyre],
             self::Documents => [ActivityKind::Document],
             self::Expenses => [ActivityKind::Expense],
             self::Mileage => [ActivityKind::Odometer],
@@ -71,6 +73,7 @@ enum HistoryChip: string
             self::Service => Feature::Maintenance,
             self::Fuel => Feature::Fuel,
             self::Documents => Feature::Compliance,
+            self::Tyres => Feature::Tyres,
             self::Everything, self::Expenses, self::Mileage => null,
         };
     }
@@ -89,6 +92,7 @@ enum HistoryChip: string
             self::Everything => 'history',
             self::Service => 'build',
             self::Fuel => 'local_gas_station',
+            self::Tyres => 'tire_repair',
             self::Documents => 'verified_user',
             self::Expenses => 'payments',
             self::Mileage => 'speed',

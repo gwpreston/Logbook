@@ -3440,3 +3440,8 @@ a.list__title:hover {
         left: 0;
     }
 }
+
+/* Print header: the fitted tyres take the whole row. */
+.history-print__tyres {
+    grid-column: 1 / -1;
+}

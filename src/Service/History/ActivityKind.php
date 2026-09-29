@@ -20,6 +20,7 @@ enum ActivityKind: string
     case Maintenance = 'maintenance';
     case Document = 'document';
     case Expense = 'expense';
+    case Tyre = 'tyre';
     case Milestone = 'milestone';
 
     /**
@@ -29,7 +30,7 @@ enum ActivityKind: string
      */
     public static function entries(): array
     {
-        return [self::Fuel, self::Odometer, self::Maintenance, self::Document, self::Expense];
+        return [self::Fuel, self::Odometer, self::Maintenance, self::Document, self::Expense, self::Tyre];
     }
 
     /**
@@ -46,6 +47,7 @@ enum ActivityKind: string
             self::Maintenance => ['maintenance.edit', 'entry'],
             self::Document => ['compliance.edit', 'document'],
             self::Expense => ['expenses.edit', 'entry'],
+            self::Tyre => ['tyres.changes.edit', 'change'],
             self::Milestone => ['vehicles.edit', null],
         };
     }
@@ -59,12 +61,14 @@ enum ActivityKind: string
             self::Fuel => Feature::Fuel,
             self::Maintenance => Feature::Maintenance,
             self::Document => Feature::Compliance,
+            self::Tyre => Feature::Tyres,
             self::Odometer, self::Expense, self::Milestone => null,
         };
     }
 
     /**
-     * Whose attachments the line counts (none for a milestone).
+     * Whose attachments the line counts (none for a milestone or a tyre
+     * change: its receipt is on the linked service record).
      */
     public function filesOwner(): ?AttachmentOwner
     {
@@ -74,7 +78,7 @@ enum ActivityKind: string
             self::Maintenance => AttachmentOwner::Maintenance,
             self::Document => AttachmentOwner::Compliance,
             self::Expense => AttachmentOwner::Expense,
-            self::Milestone => null,
+            self::Tyre, self::Milestone => null,
         };
     }
 
@@ -89,6 +93,7 @@ enum ActivityKind: string
             self::Odometer => DatedSource::Reading,
             self::Maintenance => DatedSource::Maintenance,
             self::Expense => DatedSource::Expense,
+            self::Tyre => DatedSource::TyreChange,
             self::Document, self::Milestone => null,
         };
     }
@@ -101,7 +106,7 @@ enum ActivityKind: string
         return match ($this) {
             self::Fuel => 'c-fuel',
             self::Odometer, self::Milestone => 'muted',
-            self::Maintenance => 'c-maint',
+            self::Maintenance, self::Tyre => 'c-maint',
             self::Document => 'c-ins',
             self::Expense => 'c-other',
         };

@@ -129,6 +129,7 @@ final readonly class ActivityDateRepository
             DatedSource::Reading => 'odometer_readings',
             DatedSource::Maintenance => 'maintenance_entries',
             DatedSource::Expense => 'expense_entries',
+            DatedSource::TyreChange => 'tyre_changes',
         };
     }
 
@@ -139,6 +140,7 @@ final readonly class ActivityDateRepository
             DatedSource::Reading => 'recorded_at',
             DatedSource::Maintenance => 'performed_on',
             DatedSource::Expense => 'spent_on',
+            DatedSource::TyreChange => 'done_on',
         };
     }
 }
