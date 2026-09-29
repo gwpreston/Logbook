@@ -129,7 +129,10 @@ final class TyreSummary
         $set = count($setIds) === 1 ? ($sets[(int) reset($setIds)] ?? null) : null;
 
         return $set === null
-            ? new TranslatableMessage($prefix . 'swap', ['count' => count($change->lines)])
+            ? new TranslatableMessage($prefix . 'swap', [
+                // The tyres that went on (or, for a swap that only took tyres off, those).
+                'count' => count($change->linesOf(TyreLineAction::On)) ?: count($change->lines),
+            ])
             : new TranslatableMessage($prefix . 'swap_to', ['set' => $set->data->name]);
     }
 
