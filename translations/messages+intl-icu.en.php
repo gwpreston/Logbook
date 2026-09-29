@@ -2160,4 +2160,26 @@ return [
         'pair' => '{first} and {second}',
         'last' => '{list} and {last}',
     ],
+    'sale_pack' => [
+        'document' => [
+            'inspection' => 'MOT',
+            'pollution' => 'Emissions certificate',
+            'insurance' => 'Insurance',
+            'registration' => 'Registration',
+            'other' => 'Document',
+        ],
+        'source' => [
+            'photo' => 'Dashboard photo',
+        ],
+        'paperwork' => [
+            'purchase_name' => 'Purchase',
+        ],
+        'zip' => [
+            'heading' => 'Paperwork for {name}, {date}',
+            'heading_registration' => 'Paperwork for {name} ({registration}), {date}',
+            'empty' => 'No files were chosen.',
+            'filename' => '{name} paperwork',
+            'missing' => 'This file is missing from the server and is not in the ZIP.',
+        ],
+    ],
 ];

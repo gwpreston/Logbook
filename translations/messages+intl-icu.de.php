@@ -2159,4 +2159,26 @@ return [
         'pair' => '{first} und {second}',
         'last' => '{list} und {last}',
     ],
+    'sale_pack' => [
+        'document' => [
+            'inspection' => 'HU',
+            'pollution' => 'AU',
+            'insurance' => 'Versicherung',
+            'registration' => 'Zulassung',
+            'other' => 'Dokument',
+        ],
+        'source' => [
+            'photo' => 'Foto vom Tacho',
+        ],
+        'paperwork' => [
+            'purchase_name' => 'Kauf',
+        ],
+        'zip' => [
+            'heading' => 'Unterlagen für {name}, {date}',
+            'heading_registration' => 'Unterlagen für {name} ({registration}), {date}',
+            'empty' => 'Es wurden keine Dateien ausgewählt.',
+            'filename' => '{name} Unterlagen',
+            'missing' => 'Diese Datei fehlt auf dem Server und ist nicht in der ZIP-Datei.',
+        ],
+    ],
 ];
