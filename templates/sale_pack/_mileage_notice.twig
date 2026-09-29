@@ -1,0 +1,16 @@
+{# Seller notice (screen only, spec.md §7.19): readings the Mileage tab flags. The pack still prints. #}
+{% import 'macros/ui.twig' as ui %}
+<section class="card no-print sale-pack__notice" aria-labelledby="sale-pack-check" role="note">
+    <h2 id="sale-pack-check" class="card__title">{{ ui.icon('warning') }}{{ 'sale_pack.mileage.check_title'|trans }}</h2>
+    <ul class="plain-list">
+        {% for evidence in pack.mileage|filter(e => e.looksWrong()) %}
+            {% set route = evidence.source.editRoute() %}
+            <li>
+                <time datetime="{{ evidence.reading.recordedAt|date('Y-m-d', prefs().timezone) }}">{{ evidence.reading.recordedAt|instant_date }}</time>
+                · <span class="tabular">{{ evidence.reading.readingKm|distance }}</span>:
+                {{ 'sale_pack.mileage.looks_wrong'|trans }}
+                <a href="{{ url_for(route[0], {id: vehicle.id, (route[1]): evidence.entryId}) }}">{{ 'sale_pack.mileage.check_entry'|trans }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</section>

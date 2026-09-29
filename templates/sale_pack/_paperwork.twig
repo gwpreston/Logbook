@@ -1,0 +1,52 @@
+{#
+ # The paperwork ZIP (spec.md §7.19): a warning, the link, and *Choose files*.
+ # Without JS the file boxes are a form that sends the files still ticked
+ # back here (`choose=1`, `keep[]`), and the link then carries the rest as
+ # `exclude[]`; with JS the link follows the boxes as they change.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% set paperwork = pack.paperwork %}
+<section class="card sale-pack__paperwork" aria-labelledby="sale-pack-paperwork" data-sale-pack-paperwork>
+    <h2 id="sale-pack-paperwork" class="card__title">{{ 'sale_pack.paperwork.title'|trans }}</h2>
+    <p class="alert alert--warning">{{ ui.icon('warning') }}<span>{{ 'sale_pack.paperwork.warning'|trans }}</span></p>
+    {% if paperwork.chosen is empty %}
+        <p class="muted">{{ 'sale_pack.paperwork.none_chosen'|trans }}</p>
+    {% else %}
+        <p><strong>{{ 'sale_pack.paperwork.count'|trans({count: paperwork.count()}) }}</strong></p>
+        {% set zip = url_for('sale_pack.paperwork', {id: vehicle.id}, query) %}
+        <div class="btn-row">
+            <a class="btn btn--primary" href="{{ zip }}" download data-sale-pack-zip="{{ url_for('sale_pack.paperwork', {id: vehicle.id}, query|filter((v, k) => k != 'exclude')) }}">{{ ui.icon('download') }}{{ 'sale_pack.paperwork.download'|trans }}</a>
+        </div>
+        {% if paperwork.files is not empty %}
+            <details class="sale-pack__files"{% if paperwork.excludedIds() is not empty %} open{% endif %}>
+                <summary>{{ 'sale_pack.paperwork.choose'|trans }}</summary>
+                <form method="get" action="{{ url_for('sale_pack.show', {id: vehicle.id}) }}">
+                    {% for name, value in query|filter((v, k) => k != 'exclude') %}
+                        {% if value is iterable %}
+                            {% for item in value %}<input type="hidden" name="{{ name }}[]" value="{{ item }}">{% endfor %}
+                        {% else %}
+                            <input type="hidden" name="{{ name }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                    <input type="hidden" name="choose" value="1">
+                    <ul class="plain-list sale-pack__file-list">
+                        {% for file in paperwork.files %}
+                            <li>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="keep[]" value="{{ file.id() }}"{% if file.included %} checked{% endif %} data-sale-pack-file>
+                                    <span>
+                                        <span class="sale-pack__file-name">{{ ui.icon(file.attachment.icon()) }}{{ file.name }}</span>
+                                        <span class="muted">{{ file.attachment.filename }} · {{ file.attachment.size|file_size }}</span>
+                                    </span>
+                                </label>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="btn-row">
+                        <button type="submit" class="btn">{{ ui.icon('check') }}{{ 'history.print_options.apply'|trans }}</button>
+                    </div>
+                </form>
+            </details>
+        {% endif %}
+    {% endif %}
+</section>

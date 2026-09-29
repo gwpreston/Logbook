@@ -62,7 +62,7 @@ final readonly class FileResponder
     /**
      * RFC 6266 disposition with an ASCII fallback and the UTF-8 name.
      */
-    private static function attachment(string $name): string
+    public static function attachment(string $name): string
     {
         $ascii = preg_replace('/[^\x20-\x7E]|["\\\\%]/', '_', $name) ?? 'download';
 

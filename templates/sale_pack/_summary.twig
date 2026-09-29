@@ -1,0 +1,100 @@
+{#
+ # The summary, the pack's first printed page (spec.md §7.19): what the car
+ # is, how long it has been owned and how far it has gone, its servicing,
+ # its MOT, its tyres, what is due and how much paperwork there is.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/forecast.twig' as forecast_ui %}
+{% set data = vehicle.data %}
+{% set dash = '—' %}
+<section class="sale-pack__summary" aria-labelledby="sale-pack-name">
+    <header class="history-print__header">
+        <p class="history-print__eyebrow">{{ 'sale_pack.eyebrow'|trans }}</p>
+        <h1 id="sale-pack-name" class="history-print__name">{{ vehicle.name() }}</h1>
+        {% if vehicle.description() %}<p class="muted">{{ vehicle.description() }}</p>{% endif %}
+        <dl class="details history-print__details">
+            <div><dt>{{ 'vehicle.field.registration'|trans }}</dt><dd>{{ data.registration ?: dash }}</dd></div>
+            <div><dt>{{ 'vehicle.field.vin'|trans }}</dt><dd class="tabular">{{ data.vin ?: dash }}</dd></div>
+            <div><dt>{{ 'sale_pack.summary.model_year'|trans }}</dt><dd class="tabular">{{ data.year ?: dash }}</dd></div>
+            <div><dt>{{ 'vehicle.field.fuel_type'|trans }}</dt><dd>{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</dd></div>
+            <div><dt>{{ 'vehicle.field.first_registered_on'|trans }}</dt><dd>
+                {%- if data.firstRegisteredOn -%}
+                    {{ data.firstRegisteredOn|local_date }}{% if pack.age %} ({{ 'vehicle.age.label'|trans({age: pack.age.labelKey()|trans({years: pack.age.years, months: pack.age.months})}) }}){% endif %}
+                {%- else -%}{{ dash }}{%- endif -%}
+            </dd></div>
+            <div><dt>{{ 'history.printed_on'|trans }}</dt><dd>{{ pack.today|local_date }}</dd></div>
+        </dl>
+    </header>
+
+    <dl class="details sale-pack__facts">
+        {% if pack.ownership %}
+            {% set span = pack.ownership %}
+            <div><dt>{{ 'sale_pack.summary.ownership'|trans }}</dt><dd>
+                {{- span.isSold()
+                    ? 'sale_pack.summary.owned_range'|trans({from: span.from|local_month(false), until: span.until|local_month(false)})
+                    : 'sale_pack.summary.owned_since'|trans({from: span.from|local_month(false)}) -}}
+                {%- if span.distanceKm is not null %} · {{ 'sale_pack.summary.owned_distance'|trans({distance: span.distanceKm|distance}) }}{% endif -%}
+            </dd></div>
+        {% endif %}
+
+        <div><dt>{{ 'sale_pack.summary.mileage'|trans }}</dt><dd>
+            {%- if pack.latest -%}
+                {{ 'sale_pack.summary.odometer_on'|trans({odometer: pack.latest.readingKm|distance, date: pack.latest.recordedAt|instant_date}) }}
+                {%- if pack.kmPerYear is not null %} · {{ 'sale_pack.summary.per_year'|trans({distance: pack.kmPerYear|distance}) }}{% endif -%}
+            {%- else -%}{{ dash }}{%- endif -%}
+        </dd></div>
+
+        {% if pack.servicing %}
+            {% set servicing = pack.servicing %}
+            <div><dt>{{ 'sale_pack.summary.servicing'|trans }}</dt><dd>
+                {{- 'sale_pack.summary.records'|trans({count: servicing.records}) -}}
+                {%- if servicing.lastService %}
+                    {%- set last = servicing.lastService.data %} · {{ last.odometerKm is not null
+                        ? 'sale_pack.summary.last_service_at'|trans({date: last.performedOn|local_date, odometer: last.odometerKm|distance})
+                        : 'sale_pack.summary.last_service'|trans({date: last.performedOn|local_date}) }}
+                {%- endif -%}
+                {%- if servicing.records > 0 %} · {{ 'sale_pack.summary.with_paperwork'|trans({count: servicing.withPaperwork}) }}{% endif -%}
+            </dd></div>
+        {% endif %}
+
+        {% if pack.compliance and (pack.inspections is not empty or pack.motHistory) %}
+            <div><dt>{{ 'sale_pack.summary.inspection'|trans }}</dt><dd>
+                <ul class="plain-list">
+                    {% for line in pack.inspections %}
+                        {% set what = ('sale_pack.document.' ~ line.type.value)|trans %}
+                        <li>{{ (line.expired ? 'sale_pack.summary.expired_on' : 'sale_pack.summary.valid_until')|trans({what: what, date: line.expiresOn|local_date}) }}</li>
+                    {% endfor %}
+                    {% if pack.motHistory %}
+                        {% set url = constant('Logbook\\Service\\SalePack\\SalePackBuilder::MOT_HISTORY_URL') %}
+                        <li>{{ 'sale_pack.summary.mot_history'|trans({url: url|replace({'https://www.': '', 'https://': ''})}) }}</li>
+                    {% endif %}
+                </ul>
+            </dd></div>
+        {% endif %}
+
+        {% include 'history/_print_tyres.twig' with {tyres: pack.tyres} %}
+
+        {% if pack.dueNext is not null %}
+            <div class="sale-pack__due"><dt>{{ 'sale_pack.summary.due_next'|trans }}</dt><dd>
+                {% if pack.dueNext is empty %}
+                    {{ 'sale_pack.summary.nothing_due'|trans }}
+                {% else %}
+                    <ul class="plain-list">
+                        {% for item in pack.dueNext %}
+                            {# Never a cost here, whatever the options. #}
+                            <li>{{ forecast_wording.title(item) }} · {{ item.overdue ? 'sale_pack.summary.due_now'|trans : forecast_ui.when(item) }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </dd></div>
+        {% endif %}
+
+        {% if pack.paperwork.count() > 0 %}
+            <div><dt>{{ 'sale_pack.summary.paperwork'|trans }}</dt><dd>{{ 'sale_pack.summary.paperwork_count'|trans({count: pack.paperwork.count()}) }}</dd></div>
+        {% endif %}
+
+        {% if pack.workCost %}
+            <div><dt>{{ 'sale_pack.summary.work_cost'|trans }}</dt><dd>{{ 'sale_pack.summary.work_cost_since'|trans({amount: pack.workCost.total|money, month: pack.workCost.since|local_month(false)}) }}</dd></div>
+        {% endif %}
+    </dl>
+</section>

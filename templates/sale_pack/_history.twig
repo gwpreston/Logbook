@@ -1,0 +1,63 @@
+{#
+ # The history, grouped (spec.md §7.19): the milestones without prices, then
+ # service and repairs, inspections and certificates, and tyres, each newest
+ # first, then the full timeline when asked for. Rows are the print view's
+ # (macros/history.twig): work costs only with `costs=1`, milestone prices
+ # never.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/history.twig' as history %}
+{% macro item(item, pack) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/history.twig' as history %}
+    <li class="history-print__item">
+        {{ history.row(item, {link: false, costs: item.milestone ? false : pack.options.costs}) }}
+        {% set description = item.kind.value == 'maintenance' ? (pack.descriptions[item.entryId] ?? null) : null %}
+        {% if description %}<p class="sale-pack__description">{{ description }}</p>{% endif %}
+        {% set owner = item.filesOwner() %}
+        {% set files = owner ? pack.attachments.of(owner, item.entryId) : [] %}
+        {% if files is not empty %}
+            <p class="history-print__files">{{ ui.icon('attach_file') }}{{ files|map(f => f.filename)|join(', ') }}</p>
+        {% endif %}
+    </li>
+{%- endmacro %}
+{% import _self as pack_ui %}
+<section class="sale-pack__section sale-pack__history" aria-labelledby="sale-pack-history">
+    {% include 'sale_pack/_running.twig' %}
+    <h2 id="sale-pack-history" class="sale-pack__heading">{{ 'sale_pack.history.title'|trans }}</h2>
+    {% if pack.milestones is not empty %}
+        <ol class="list history-print__list">
+            {% for item in pack.milestones %}{{ pack_ui.item(item, pack) }}{% endfor %}
+        </ol>
+    {% endif %}
+
+    {% set groups = [
+        {key: 'services', items: pack.services, on: pack.servicing is not null},
+        {key: 'documents', items: pack.documents, on: pack.compliance},
+        {key: 'tyres', items: pack.tyreChanges, on: feature_enabled('tyres')},
+    ] %}
+    {% for group in groups|filter(g => g.on) %}
+        <h3 class="sale-pack__group">{{ ('sale_pack.history.' ~ group.key)|trans }}</h3>
+        {% if group.items is empty %}
+            <p class="muted">{{ 'sale_pack.history.none'|trans }}</p>
+        {% else %}
+            <ol class="list history-print__list">
+                {% for item in group.items %}{{ pack_ui.item(item, pack) }}{% endfor %}
+            </ol>
+        {% endif %}
+    {% endfor %}
+</section>
+
+{% if pack.timeline is not null %}
+    <section class="sale-pack__section sale-pack__timeline" aria-labelledby="sale-pack-timeline">
+        {% include 'sale_pack/_running.twig' %}
+        <h2 id="sale-pack-timeline" class="sale-pack__heading">{{ 'sale_pack.history.timeline'|trans }}</h2>
+        {% if pack.timeline is empty %}
+            <p class="muted">{{ 'history.empty_title'|trans }}</p>
+        {% else %}
+            <ol class="list history-print__list">
+                {% for item in pack.timeline %}{{ pack_ui.item(item, pack) }}{% endfor %}
+            </ol>
+        {% endif %}
+    </section>
+{% endif %}

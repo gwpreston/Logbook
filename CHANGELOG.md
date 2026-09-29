@@ -6,6 +6,38 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 17.1: the sale pack. Ships in v1.9.0 with Phase 17.2.
+
+### Added
+- **Prepare for sale** on every vehicle (and *Sale pack* in the History
+  toolbar): a buyer's view to print or save as a PDF. A summary page (what
+  the car is, how long you have owned it and how far it has gone since, the
+  current mileage, servicing, when the MOT runs out, the tyres, what is due
+  next, how much paperwork there is); a mileage record of readings a buyer
+  can check (services, inspections, tyre changes and dashboard photos,
+  never fill-ups) with where each came from and a chart; and the history
+  grouped as service and repairs, inspections and certificates, and tyres,
+  with the full timeline as an option. UK owners get a pointer to
+  gov.uk/check-mot-history; nothing is fetched.
+- **The paperwork as a ZIP:** service invoices, MOT certificates and
+  dashboard photos by default, purchase paperwork and insurance if you tick
+  them, each file readably named ("2024-03-12 Service - Kwik Fit.pdf") with
+  a `contents.txt`. *Choose files* drops single files, with or without
+  JavaScript. Registration documents, sale paperwork, valuations, fill-ups
+  and expenses are never offered. The ZIP is streamed from your uploads with
+  no temporary copy and needs no PHP extension.
+- A notice (never printed) when a reading in the mileage record looks
+  wrong, with a link to the entry.
+- Purchase and sale prices, fuel, expenses, valuations and ownership costs
+  are never in the pack; *Show the cost of work* adds the cost of work only.
+- The demo Golf has a service history back to its purchase, invoices,
+  both MOT certificates and a dashboard photo from the day it was bought.
+  Its brake pads record no longer reads below the fill-up before it.
+- [docs/sale-pack.md](docs/sale-pack.md).
+
+### Upgrading
+- Pull and restart. No migration.
+
 ## [1.8.0] — 2026-09-29
 
 Phase 16: fuel insights. Is the dearer fuel worth it, what does a mile

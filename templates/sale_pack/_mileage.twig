@@ -1,0 +1,57 @@
+{#
+ # The mileage record (spec.md §7.19): readings a buyer can check, oldest
+ # first, with where each came from. The chart needs JS; the table is
+ # always there. A reading that looks wrong is flagged to the seller only
+ # (_mileage_notice.twig), never printed as a flag.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% macro source(evidence) -%}
+    {%- set kind = evidence.source.value -%}
+    {%- if kind == 'service' -%}
+        {{- (evidence.files > 0 ? 'sale_pack.source.service_invoice' : 'sale_pack.source.service_record')|trans -}}
+        {%- if evidence.vendor %}, {{ evidence.vendor }}{% endif -%}
+    {%- elseif kind == 'document' -%}
+        {{- 'sale_pack.source.document'|trans({type: ('sale_pack.document.' ~ (evidence.documentType.value ?? 'other'))|trans}) -}}
+    {%- elseif kind == 'tyre' -%}
+        {{- evidence.tyreKind is null or evidence.tyreKind.value == 'fit' ? 'sale_pack.source.tyre_fit'|trans : ('tyre.kind_short.' ~ evidence.tyreKind.value)|trans -}}
+    {%- else -%}
+        {{- 'sale_pack.source.photo'|trans -}}
+    {%- endif -%}
+{%- endmacro %}
+{% import _self as mileage %}
+<section class="sale-pack__section sale-pack__mileage" aria-labelledby="sale-pack-mileage">
+    {% include 'sale_pack/_running.twig' %}
+    <h2 id="sale-pack-mileage" class="sale-pack__heading">{{ 'sale_pack.mileage.title'|trans }}</h2>
+    <p class="muted">{{ 'sale_pack.mileage.intro'|trans }}</p>
+    {% if pack.mileage is empty %}
+        <p class="muted">{{ 'sale_pack.mileage.empty'|trans }}</p>
+    {% else %}
+        {% if chart.hasData() %}
+            <div class="sale-pack__chart">{{ ui.chart(chart, 'sale_pack.mileage.chart'|trans) }}</div>
+        {% endif %}
+        <div class="table-wrap">
+            <table class="table sale-pack__table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'sale_pack.mileage.date'|trans }}</th>
+                        <th scope="col" class="table__num">{{ 'sale_pack.mileage.odometer'|trans }}</th>
+                        <th scope="col" class="table__num">{{ 'sale_pack.mileage.since'|trans }}</th>
+                        <th scope="col">{{ 'sale_pack.mileage.source'|trans }}</th>
+                        <th scope="col" class="table__num">{{ 'sale_pack.mileage.files'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evidence in pack.mileage %}
+                        <tr>
+                            <td><time datetime="{{ evidence.reading.recordedAt|date('Y-m-d', prefs().timezone) }}">{{ evidence.reading.recordedAt|instant_date }}</time></td>
+                            <td class="table__num tabular">{{ evidence.reading.readingKm|distance }}</td>
+                            <td class="table__num tabular">{{ evidence.deltaKm is null ? '—' : evidence.deltaKm|distance }}</td>
+                            <td>{{ mileage.source(evidence) }}</td>
+                            <td class="table__num">{% if evidence.files > 0 %}<span class="sale-pack__files-count">{{ ui.icon('attach_file') }}{{ 'attachment.count'|trans({count: evidence.files}) }}</span>{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</section>

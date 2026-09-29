@@ -24,14 +24,25 @@
         return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim();
     }
 
+    // A chart that is printed (the sale pack) keeps the print palette whatever
+    // the theme: a canvas keeps the colours it was drawn with.
+    var PRINT_PALETTE = { muted: '#333', border: '#bbb' };
+
+    function chartToken(spec, name) {
+        if (spec.print) {
+            return PRINT_PALETTE[name] || '#000';
+        }
+        return token(name);
+    }
+
     function chartOptions(spec) {
         var dateFormat = new Intl.DateTimeFormat(spec.locale, { day: 'numeric', month: 'short', year: '2-digit', timeZone: spec.timeZone });
         var longDate = new Intl.DateTimeFormat(spec.locale, { dateStyle: 'medium', timeZone: spec.timeZone });
         var numberFormat = spec.currency
             ? new Intl.NumberFormat(spec.locale, { style: 'currency', currency: spec.currency, maximumFractionDigits: spec.decimals })
             : new Intl.NumberFormat(spec.locale, { maximumFractionDigits: spec.decimals });
-        var muted = token('muted');
-        var grid = token('border');
+        var muted = chartToken(spec, 'muted');
+        var grid = chartToken(spec, 'border');
         var times = [];
         spec.series.forEach(function (series) {
             series.points.forEach(function (point) { times.push(point[0]); });
@@ -74,7 +85,7 @@
     function chartData(spec) {
         return {
             datasets: spec.series.map(function (series) {
-                var colour = token(series.color) || token('accent');
+                var colour = chartToken(spec, series.color) || chartToken(spec, 'accent');
                 return {
                     label: series.label,
                     data: series.points.map(function (point) { return { x: point[0], y: point[1] }; }),
@@ -769,8 +780,32 @@
     });
 
     /*
-     * Print buttons (History print view): shown only with JS, since without
-     * it the browser's own Print does the same.
+     * Sale pack, *Choose files* (spec.md §7.19): without JS the boxes are a
+     * form sent back to the page, which then links the ZIP with the choice.
+     * With JS the ZIP link follows the boxes as they change.
+     */
+    function enhancePaperwork(panel) {
+        var link = panel.querySelector('a[data-sale-pack-zip]');
+        if (!link) {
+            return;
+        }
+        var update = function () {
+            var url = new URL(link.getAttribute('data-sale-pack-zip'), window.location.href);
+            panel.querySelectorAll('input[data-sale-pack-file]').forEach(function (box) {
+                if (!box.checked) {
+                    url.searchParams.append('exclude[]', box.value);
+                }
+            });
+            link.href = url.pathname + url.search;
+        };
+        panel.querySelectorAll('input[data-sale-pack-file]').forEach(function (box) {
+            box.addEventListener('change', update);
+        });
+    }
+
+    /*
+     * Print buttons (History print view, sale pack): shown only with JS,
+     * since without it the browser's own Print does the same.
      */
     function enhancePrint(button) {
         button.hidden = false;
@@ -824,9 +859,16 @@
         document.querySelectorAll('[data-dashboard-sortable]').forEach(enhanceDashboard);
         document.querySelectorAll('form[data-auto-submit]').forEach(enhanceAutoSubmit);
         document.querySelectorAll('[data-print]').forEach(enhancePrint);
+        document.querySelectorAll('[data-sale-pack-paperwork]').forEach(enhancePaperwork);
         document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
 
         drawCharts();
+        // The sheet is narrower on paper (and the sale pack's chart shorter): fit the charts to it and back.
+        ['beforeprint', 'afterprint'].forEach(function (event) {
+            window.addEventListener(event, function () {
+                charts.forEach(function (chart) { chart.resize(); });
+            });
+        });
         // Redraw with the other theme's colours when the OS theme flips.
         if (window.matchMedia) {
             var scheme = window.matchMedia('(prefers-color-scheme: dark)');

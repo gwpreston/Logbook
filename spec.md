@@ -2059,6 +2059,125 @@ nothing about reminders (§7.6). Derived on every read
 - Not in History, print or reports. Nothing is stored, so there is no
   migration and nothing in backups.
 
+### 7.19 Sale pack (Phase 17.1)
+
+A buyer's view of one vehicle (`/vehicles/{id}/sale-pack`), for printing
+or the browser's *Save as PDF*, plus the paperwork as a ZIP. It is derived
+on every read from the same sources as History (`ActivityFeed`), the
+Mileage tab, *Coming up* and Tyres, and is never stored. It is core,
+available for active and archived vehicles.
+
+- **Entry points:** *Prepare for sale* among the vehicle header's actions
+  (beside Edit and Archive), on every tab, and *Sale pack* in the History
+  toolbar beside *Print*.
+- **Options** (a plain GET form, works without JS, bookmarkable; like the
+  print view, a hidden `options=1` marks the form as sent, and until it is
+  the defaults apply, so a default-on box can be unticked):
+  - *Show what's due next*: on by default.
+  - *Include descriptions*: on by default. Service descriptions often say
+    what was done, which buyers value, but they can hold private notes.
+  - *Include the full timeline*: off by default.
+  - *Show the cost of work*: off by default. Only `costs=1` shows it. It
+    adds the cost of each service, repair, inspection and tyre record, and
+    one total ("£3,240 spent on servicing and repairs since March 2021").
+    Purchase and sale prices, fuel, expenses, valuations and ownership
+    costs are **never** in the pack, whatever the options.
+  - Which kinds of paperwork go in the ZIP (below).
+  The options panel and every seller notice are screen-only and are never
+  printed.
+- **Summary** (the first printed page):
+  - *Vehicle:* name, make, model and variant, model year, fuel type,
+    registration, VIN, and first registered with age (as the print header
+    shows them today).
+  - *Ownership:* "Owned since March 2021" (the purchase month) and the
+    distance covered since then. That distance is the latest reading minus
+    the earliest reading on or after the purchase date (by the owner's local
+    date). It is shown only when both exist and the earliest is within 31
+    days of the purchase. Without a purchase date the line is left out; it
+    is never guessed. Sold vehicles say "Owned March 2021 to May 2026".
+  - *Mileage:* the current odometer with its date ("78,421 mi on 12 Sep
+    2026") and the average per year since first registered (§7.2).
+  - *Servicing:* the number of service and repair records, the last
+    `service` or `oil` record (date and odometer), and how many records
+    carry paperwork.
+  - *Inspection:* for each current `inspection` or `pollution` document
+    with an expiry, "MOT valid until 14 Jun 2027" (the label is the
+    document type's). For an owner whose locale region is
+    GB and a vehicle with a registration, the line "Check the full MOT
+    history at gov.uk/check-mot-history" follows. The URL is plain printed
+    text, a constant on the service, checked at release. Nothing is fetched.
+  - *Tyres:* the fitted tyres with their latest **measured** tread and
+    date, as the print view's *Tyres fitted* block. Estimates are never
+    printed.
+  - *Due next* (with that option on): from *Coming up* (§7.18), up to
+    five dated items within the next 12 months, overdue ones first as "Due
+    now", each with its date or distance. Costs are never shown here.
+    Archived vehicles have no *Coming up*, so the block is left out.
+  - *Paperwork:* "31 invoices and certificates available". This is the
+    count of files the current ZIP choice would hold, and the line is
+    left out when that is zero.
+- **Mileage record:** the readings a buyer can check, oldest first. That
+  means every `maintenance`, `document` and `tyre` reading (§6
+  OdometerReading), plus `manual` readings that have an attachment (a
+  dashboard photo). Each shows the date, odometer, distance since the
+  listed one before, its source ("Service invoice, Kwik Fit", "MOT
+  certificate", "Tyre fitting", "Dashboard photo"), and a paperclip mark
+  with the file count when the owning entry has files. Fill-up readings are
+  never listed, because there are hundreds and they are the owner's own
+  typing. A small line chart of the listed readings (odometer against
+  date) prints above the table when JS is on; without JS, only the table.
+  **Seller notice** (screen only): when a listed reading has the Mileage
+  tab's plausibility warning (§7.2, judged against the whole series: it
+  goes backwards, or jumps implausibly), "This reading looks wrong. Check
+  it before you share the pack", with a link to the entry. The pack still
+  renders.
+- **History, grouped:** *Service and repairs* (every maintenance record;
+  a linked tyre change shows as its second line, as in History), then
+  *Inspections and certificates* (`inspection` and `pollution` documents),
+  then *Tyres* (tyre changes not linked to a record). Each group is newest
+  first, with date, odometer, title or summary, vendor, description (if
+  that option is on) and the attachment file names. Insurance,
+  registration and `other` documents are not listed: they are about the
+  seller, not the car. The milestones *First registered* and *Bought*
+  head the pack without prices.
+- **Full timeline** (option): the print view's rows for the pack's kinds
+  (milestones, service records, inspection and pollution documents, tyre
+  changes), as §7.16 prints them, with the pack's cost rule: work costs
+  with `costs=1`, milestone prices never.
+- **Module toggles:** a switched-off module's parts leave the pack, as in
+  History (`tyres` off: no tyre block or group; `compliance` off: no
+  inspection line or group; `maintenance` off: no servicing line or group
+  and no *Due next* schedules).
+- **Paperwork ZIP** (`/vehicles/{id}/sale-pack/paperwork.zip`, GET, owner
+  only). It is streamed as it is written (stored, uncompressed: invoices
+  and photos are compressed already), so there is no temporary copy of the
+  files and it needs no PHP extension:
+  - Kinds offered, with their defaults: service and repair records (on),
+    inspection and pollution documents (on), manual-reading photos (on),
+    purchase paperwork (off), insurance (off). Registration documents,
+    `other` documents, sale paperwork, valuations, fill-ups and expenses
+    are **never offered**. A registration document (the V5C in the UK)
+    carries a reference that can be used for fraud.
+  - A *Choose files* disclosure lists every file of the ticked kinds with
+    a checkbox each, all ticked, so the seller can drop one. Without JS it
+    is a plain `<details>` whose *Update* button sends the choice back to
+    the pack page, which then links the ZIP with it; with JS the link
+    follows the boxes as they change. The ZIP link carries the choice
+    (`kinds[]`, plus `exclude[]` attachment ids).
+  - Files are named `YYYY-MM-DD <kind> - <title or vendor>.<ext>` in the
+    owner's language (`2024-03-12 Service - Kwik Fit.pdf`). Names are
+    sanitised; duplicates get ` (2)`, ` (3)`. `contents.txt` lists each
+    file with its entry, date and odometer.
+  - Screen-only warning above the link: "Invoices often show your name
+    and address. Check them before you send them."
+  - Every attachment is loaded by vehicle and owner type (§7.12). An id
+    from another vehicle or a never-offered type is ignored, never an
+    error that confirms it exists.
+- **Print CSS:** the print view's rules (black on white, no app shell, rows
+  never split), plus a page break after the summary. The pack's header
+  repeats name and registration. The date printed is in the owner's
+  format.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -2215,8 +2334,10 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Multi-user with roles (admin/editor/viewer) and per-vehicle sharing.
 - OIDC/SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
 - Trip/journey log (business vs personal for mileage claims),
-  personal fuel-tank entity, VIN decode/registration lookup, PDF reports,
+  personal fuel-tank entity, VIN decode/registration lookup,
   OBD-II / vehicle-API mileage import.
+- Server-side PDF (emailed reports, one-file sale pack with invoices
+  merged).
 
 ---
 
@@ -2320,6 +2441,12 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 16 — Fuel insights + v1.8.0.** Grade verdict, cost per
   distance by charging type, cost per distance trend and economy by month
   (§7.3). No schema change.
+- **Phase 17.1 — Sale pack.** *Prepare for sale* on every vehicle: a
+  buyer's summary page, a mileage record from readings a buyer can check,
+  history grouped by type and the invoices and certificates as a ZIP
+  (§7.19); no prices paid, fuel, valuations or ownership costs, ever; no
+  migration. Ships with Phase 17.2 as v1.9.0.
+
 ---
 
 ## 14. Definition of done

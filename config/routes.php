@@ -64,6 +64,8 @@ use Logbook\Action\Report\OwnershipExportAction;
 use Logbook\Action\Report\OwnershipReportAction;
 use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
+use Logbook\Action\SalePack\DownloadPaperworkAction;
+use Logbook\Action\SalePack\ShowSalePackAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
 use Logbook\Action\Settings\ModuleSettingsAction;
@@ -164,6 +166,12 @@ return static function (App $app): void {
         $group->get('/history', FleetHistoryAction::class)->setName('history.fleet');
         $group->get('/vehicles/{id:[0-9]+}/history', VehicleHistoryAction::class)->setName('history.vehicle');
         $group->get('/vehicles/{id:[0-9]+}/history/print', HistoryPrintAction::class)->setName('history.print');
+
+        // Sale pack (spec.md §7.19): core, for active and archived vehicles;
+        // each module's parts leave it when that module is off.
+        $group->get('/vehicles/{id:[0-9]+}/sale-pack', ShowSalePackAction::class)->setName('sale_pack.show');
+        $group->get('/vehicles/{id:[0-9]+}/sale-pack/paperwork.zip', DownloadPaperworkAction::class)
+            ->setName('sale_pack.paperwork');
 
         // Coming up (spec.md §7.18): core too; each module's items leave it
         // when that module is off.

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Logbook\Service\Fuel;
 
 use DateTimeImmutable;
-use Locale;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelChoice;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Support\I18n\Region;
 
 /**
  * The fill-up form's one grouped fuel select (spec.md §7.3): what was used
@@ -92,9 +92,7 @@ final class FuelPicker
      */
     public static function region(string $locale): ?string
     {
-        $region = Locale::getRegion($locale);
-
-        return is_string($region) && $region !== '' ? strtoupper($region) : null;
+        return Region::of($locale);
     }
 
     /**

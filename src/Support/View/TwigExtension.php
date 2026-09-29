@@ -88,14 +88,17 @@ final class TwigExtension extends AbstractExtension
 
     /**
      * @param array<string, int|string> $data
-     * @param array<string, int|string> $query
+     * @param array<string, int|string|list<int|string>> $query a list becomes `name[]=…` (the sale pack's kinds)
      */
     public function urlFor(string $routeName, array $data = [], array $query = []): string
     {
         return $this->routeParser->urlFor(
             $routeName,
             array_map(strval(...), $data),
-            array_map(strval(...), $query),
+            array_map(
+                static fn (int|string|array $v): string|array => is_array($v) ? array_map(strval(...), $v) : (string) $v,
+                $query,
+            ),
         );
     }
 
