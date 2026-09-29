@@ -155,7 +155,7 @@ final class OdometerTest extends AppTestCase
         self::assertStringContainsString('48,412 mi', $html);
         self::assertStringContainsString('as of 1 Jun 2026', $html);
         self::assertStringContainsString('href="/vehicles/' . $car->id . '/odometer"', $html);
-        self::assertStringContainsString('No fill-ups yet', $html);
+        self::assertStringNotContainsString('No fill-ups yet', $html, 'the latest fill-ups list is gone (Phase 12)');
     }
 
     public function testValidation(): void

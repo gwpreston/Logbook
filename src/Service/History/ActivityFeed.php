@@ -199,12 +199,29 @@ final readonly class ActivityFeed
             static fn (ComplianceDocument $d): bool => $query->covers(self::documentDate($d, $zone)),
         ));
 
+        $milestones = [];
+        if ($query->includes(ActivityKind::Milestone)) {
+            foreach ($query->vehicles as $vehicle) {
+                foreach (self::milestones($vehicle) as [$milestone, $date, $price]) {
+                    if ($query->covers($date)) {
+                        $milestones[] = [$vehicle, $milestone, $date, $price];
+                    }
+                }
+            }
+        }
+        $paperwork = static fn (AttachmentOwner $owner): array => array_values(array_map(
+            static fn (array $m): int => $m[0]->id,
+            array_filter($milestones, static fn (array $m): bool => $m[1]->filesOwner() === $owner),
+        ));
+
         $counts = $this->attachments->countsFor($ids, array_filter([
             AttachmentOwner::Fuel->value => array_map(static fn ($e): int => $e->id, $fills),
             AttachmentOwner::Odometer->value => array_map(static fn ($r): int => $r->id, $readings),
             AttachmentOwner::Maintenance->value => array_map(static fn ($e): int => $e->id, $services),
             AttachmentOwner::Compliance->value => array_map(static fn ($d): int => $d->id, $documents),
             AttachmentOwner::Expense->value => array_map(static fn ($e): int => $e->id, $expenses),
+            AttachmentOwner::Purchase->value => $paperwork(AttachmentOwner::Purchase),
+            AttachmentOwner::Sale->value => $paperwork(AttachmentOwner::Sale),
         ]));
 
         $vehicles = [];
@@ -320,26 +337,22 @@ final readonly class ActivityFeed
                 files: $counts->of(AttachmentOwner::Expense, $expense->id),
             );
         }
-        if ($query->includes(ActivityKind::Milestone)) {
-            foreach ($query->vehicles as $vehicle) {
-                foreach (self::milestones($vehicle) as [$milestone, $date, $price]) {
-                    if ($query->covers($date)) {
-                        $items[] = new ActivityItem(
-                            kind: ActivityKind::Milestone,
-                            vehicle: $vehicle,
-                            entryId: $vehicle->id,
-                            date: $date,
-                            createdAt: $vehicle->createdAt,
-                            label: '',
-                            labelKey: 'history.milestone.' . $milestone->value,
-                            icon: $milestone->icon(),
-                            currency: $currencies[$vehicle->id],
-                            milestone: $milestone,
-                            price: $price,
-                        );
-                    }
-                }
-            }
+        foreach ($milestones as [$vehicle, $milestone, $date, $price]) {
+            $owner = $milestone->filesOwner();
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Milestone,
+                vehicle: $vehicle,
+                entryId: $vehicle->id,
+                date: $date,
+                createdAt: $vehicle->createdAt,
+                label: '',
+                labelKey: 'history.milestone.' . $milestone->value,
+                icon: $milestone->icon(),
+                currency: $currencies[$vehicle->id],
+                milestone: $milestone,
+                price: $price,
+                files: $owner === null ? 0 : $counts->of($owner, $vehicle->id),
+            );
         }
 
         usort($items, ActivityItem::compare(...));

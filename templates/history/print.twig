@@ -82,7 +82,7 @@
                     {% for item in items %}
                         <li class="history-print__item">
                             {{ history.row(item, {link: false, costs: costs}) }}
-                            {% set owner = item.kind.filesOwner() %}
+                            {% set owner = item.filesOwner() %}
                             {% set files = owner ? attachments.of(owner, item.entryId) : [] %}
                             {% if files is not empty %}
                                 <p class="history-print__files">{{ ui.icon('attach_file') }}{{ files|map(f => f.filename)|join(', ') }}</p>

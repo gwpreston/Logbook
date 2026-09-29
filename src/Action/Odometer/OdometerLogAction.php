@@ -9,11 +9,9 @@ use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
-use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\Pagination;
 use Logbook\Support\View\View;
-use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -30,7 +28,6 @@ final readonly class OdometerLogAction
         private OdometerChart $chart,
         private OdometerWarningFlash $warnings,
         private View $view,
-        private ClockInterface $clock,
     ) {
     }
 
@@ -59,7 +56,8 @@ final readonly class OdometerLogAction
             'warnings' => $warnings,
             'attachment_counts' => $this->attachments->counts($vehicle),
             'chart' => $this->chart->build($history, $user->preferences),
-            'age' => VehicleAge::of($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone())),
+            // To the latest reading's date, not today (spec.md §7.2).
+            'per_year' => VehicleAge::lifetimeAverageKmPerYear($vehicle, $history->latest(), $user->preferences->timeZone()),
         ]);
     }
 }

@@ -266,8 +266,12 @@ final class HistoryTest extends AppTestCase
         // Fuel is left out by default.
         self::assertStringNotContainsString('Fill-up', explode('history-print__sheet', $default)[1] ?? '');
         self::assertStringNotContainsString('<details', $default, 'nothing folds');
-        self::assertStringContainsString('£420.00', $default);
-        self::assertStringContainsString('Bought for £12,500.00', $default);
+        // Costs are off by default: the copy for a buyer.
+        self::assertStringNotContainsString('£420.00', $default, 'costs off by default');
+        self::assertStringNotContainsString('£12,500', $default, 'and so the prices');
+        self::assertStringContainsString('>Bought<', $default);
+        self::assertStringNotContainsString('name="costs" value="1" checked', $default, 'Show costs unticked');
+        self::assertStringContainsString('Leave off for a copy you give to a buyer.', $default);
         // Print needs JS.
         self::assertStringContainsString('<button type="button" class="btn btn--primary" data-print hidden>', $default);
 
@@ -275,8 +279,14 @@ final class HistoryTest extends AppTestCase
         self::assertSame(2, substr_count(explode('history-print__sheet', $withFuel)[1] ?? '', 'list__title">Fill-up'));
         self::assertStringNotContainsString('£420.00', $withFuel, 'costs unticked');
         self::assertStringNotContainsString('£12,500', $withFuel, 'and so the prices');
-        self::assertStringContainsString('>Bought<', $withFuel);
         self::assertStringContainsString('Timing belt', $withFuel);
+
+        $withCosts = self::body($browser->get($path . '?options=1&kinds[]=service&costs=1'));
+        self::assertStringContainsString('£420.00', $withCosts, 'costs=1 shows them');
+        self::assertStringContainsString('Bought for £12,500.00', $withCosts);
+        self::assertStringContainsString('name="costs" value="1" checked', $withCosts);
+        $linked = self::body($browser->get($path . '?costs=1'));
+        self::assertStringContainsString('£420.00', $linked, 'with or without the form sent');
     }
 
     public function testHistoryAtASubpathSurvivesAHardRefresh(): void

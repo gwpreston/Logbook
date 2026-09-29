@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
 
 {% set active_nav = 'garage' %}
 {% set editing = vehicle is not null %}
@@ -127,7 +128,10 @@
                         <dd class="field__hint">{{ 'vehicle.hint.current_odometer_edit'|trans }}</dd>
                     </dl>
                 {% else %}
-                    {{ ui.input('current_odometer', 'vehicle.field.current_odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: ('units.symbol.' ~ prefs().distanceUnit.value)|trans, hint: 'vehicle.hint.current_odometer'|trans}) }}
+                    <div class="form-row">
+                        {{ ui.input('current_odometer', 'vehicle.field.current_odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: ('units.symbol.' ~ prefs().distanceUnit.value)|trans, hint: 'vehicle.hint.current_odometer'|trans}) }}
+                        {{ ui.input('current_odometer_on', 'vehicle.field.current_odometer_on'|trans, values, errors, {type: 'date', optional: true, min: first_registration, max: last_registration, hint: 'vehicle.hint.current_odometer_on'|trans}) }}
+                    </div>
                 {% endif %}
             </section>
 
@@ -160,10 +164,16 @@
                     {{ ui.input('purchase_date', 'vehicle.field.purchase_date'|trans, values, errors, {type: 'date', optional: true}) }}
                     {{ ui.input('purchase_price', 'vehicle.field.purchase_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal'}) }}
                 </div>
+                {# Paperwork belongs to the purchase and the sale, and shows on
+                   their milestones, so it needs their dates (spec.md §7.12).
+                   Both inputs share one limit per save. #}
+                {% set paperwork_hint = 'vehicle.hint.paperwork'|trans({files: max_upload_files, max: max_upload_mb}) %}
+                {{ files.input(vehicle, purchase_files, errors, max_upload_mb, max_upload_files, {field: 'purchase_attachments', label: 'vehicle.field.purchase_paperwork'|trans, hint: paperwork_hint, group: 'paperwork'}) }}
                 <div class="form-row">
                     {{ ui.input('sale_date', 'vehicle.field.sale_date'|trans, values, errors, {type: 'date', optional: true}) }}
                     {{ ui.input('sale_price', 'vehicle.field.sale_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal'}) }}
                 </div>
+                {{ files.input(vehicle, sale_files, errors, max_upload_mb, max_upload_files, {field: 'sale_attachments', label: 'vehicle.field.sale_paperwork'|trans, hint: paperwork_hint, group: 'paperwork'}) }}
             </section>
 
             <div class="btn-row">

@@ -221,11 +221,11 @@ final class VehicleFormTest extends TestCase
     public function testCurrentOdometerIsTypedInTheOwnersUnitAndStoredInKm(): void
     {
         $miles = $this->parseNew(self::MINIMAL + ['current_odometer' => '10000']);
-        self::assertSame('16093.440', $miles->startingOdometerKm);
+        self::assertSame('16093.440', $miles->startingReading?->km);
 
-        self::assertSame('0.000', $this->parseNew(self::MINIMAL + ['current_odometer' => '0'])->startingOdometerKm);
-        self::assertNull($this->parseNew(self::MINIMAL + ['current_odometer' => ''])->startingOdometerKm);
-        self::assertNull($this->parseNew(self::MINIMAL)->startingOdometerKm);
+        self::assertSame('0.000', $this->parseNew(self::MINIMAL + ['current_odometer' => '0'])->startingReading?->km);
+        self::assertNull($this->parseNew(self::MINIMAL + ['current_odometer' => ''])->startingReading?->km);
+        self::assertNull($this->parseNew(self::MINIMAL)->startingReading?->km);
     }
 
     public function testCurrentOdometerErrorsShowWithTheVehicleErrors(): void

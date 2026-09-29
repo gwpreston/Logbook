@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
+use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Feature\FeatureToggles;
@@ -29,12 +31,12 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * GET /vehicles/{id} — vehicle overview: current odometer and fuel figures,
  * the latest history, what maintenance is due next, where each document
- * stands, the tyres fitted, the latest fill-ups, and the vehicle's details.
+ * stands, the tyres fitted, and the vehicle's details and ownership (with
+ * paperclips for the purchase and sale paperwork).
  * Each area has its own tab.
  */
 final readonly class ShowVehicleAction
 {
-    private const int RECENT_FILLS = 3;
     private const int RECENT_HISTORY = 5;
     private const int SCHEDULES_SHOWN = 3;
 
@@ -51,6 +53,7 @@ final readonly class ShowVehicleAction
         private ActivityFeed $feed,
         private TyreService $tyres,
         private FeatureToggles $features,
+        private AttachmentService $attachments,
     ) {
     }
 
@@ -78,7 +81,6 @@ final readonly class ShowVehicleAction
             'fuel' => $fuel,
             'fuel_summary' => $fuel->summary($kind),
             'electric' => $kind === EnergyKind::Electric,
-            'recent_fills' => array_slice($fuel->newestFirst(), 0, self::RECENT_FILLS),
             'maintenance' => $this->maintenance->history($vehicle),
             'schedules' => array_slice(
                 $this->schedules->states($vehicle, $today, $odometer, $lead->scheduleDays, $lead->scheduleKm),
@@ -87,6 +89,10 @@ final readonly class ShowVehicleAction
             ),
             'documents' => array_values($documents),
             'age' => VehicleAge::of($vehicle, $today),
+            'paperwork' => $this->attachments->countsFor([$vehicle->id], [
+                AttachmentOwner::Purchase->value => [$vehicle->id],
+                AttachmentOwner::Sale->value => [$vehicle->id],
+            ]),
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
             'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)

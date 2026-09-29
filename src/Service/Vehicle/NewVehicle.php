@@ -8,13 +8,14 @@ use Logbook\Domain\Vehicle\VehicleData;
 
 /**
  * What the add-vehicle form yields: the vehicle and, if one was typed, its
- * current odometer in km (written as its first manual reading).
+ * current odometer with the date it was read (written as its first manual
+ * reading).
  */
 final readonly class NewVehicle
 {
     public function __construct(
         public VehicleData $data,
-        public ?string $startingOdometerKm = null,
+        public ?StartingReading $startingReading = null,
     ) {
     }
 }

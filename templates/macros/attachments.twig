@@ -8,24 +8,35 @@
    form and saved with it, all or nothing; with JS, choosing more than
    `max_files` is refused before submitting (js/app.js). #}
 {% macro card(vehicle, attachments, errors, max_mb, max_files) -%}
-    {% import 'macros/ui.twig' as ui %}
     {% import _self as files %}
     <section class="card" aria-labelledby="attachments-heading">
         <h2 id="attachments-heading" class="card__title">{{ 'attachment.title'|trans }}</h2>
-        {% if attachments is not empty %}
-            <ul class="attachment-list">
-                {% for attachment in attachments %}
-                    {{ files.item(vehicle, attachment, true) }}
-                {% endfor %}
-            </ul>
-        {% endif %}
-        <div class="field">
-            <label class="field__label" for="f-attachments">{{ (attachments is empty ? 'attachment.field.add' : 'attachment.field.add_another')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-            <input class="input input--file" id="f-attachments" name="attachments[]" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-max-files="{{ max_files }}" data-max-files-message="{{ 'upload.too_many'|trans({max: max_files}) }}"{{ ui.described_by('attachments', errors, true) }}>
-            <p class="field__hint" id="f-attachments-hint">{{ 'attachment.hint'|trans({files: max_files, max: max_mb}) }}</p>
-            {{ ui.field_error(errors, 'attachments') }}
-        </div>
+        {{ files.input(vehicle, attachments, errors, max_mb, max_files) }}
     </section>
+{%- endmacro %}
+
+{# The files already attached and one input for more, without a card. Options:
+   field (default `attachments`: the input posts `field[]`, and ids and the
+   error key follow it), label (the field's label, default "Attach files"),
+   hint (the hint text), group (inputs of one form with the same group share
+   one limit: js/app.js counts their files together). #}
+{% macro input(vehicle, attachments, errors, max_mb, max_files, opts = {}) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as files %}
+    {% set field = opts.field ?? 'attachments' %}
+    {% if attachments is not empty %}
+        <ul class="attachment-list">
+            {% for attachment in attachments %}
+                {{ files.item(vehicle, attachment, true) }}
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <div class="field">
+        <label class="field__label" for="f-{{ field }}">{{ opts.label ?? (attachments is empty ? 'attachment.field.add' : 'attachment.field.add_another')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+        <input class="input input--file" id="f-{{ field }}" name="{{ field }}[]" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-max-files="{{ max_files }}" data-max-files-message="{{ 'upload.too_many'|trans({max: max_files}) }}"{% if opts.group is defined %} data-max-files-group="{{ opts.group }}"{% endif %}{{ ui.described_by(field, errors, true) }}>
+        <p class="field__hint" id="f-{{ field }}-hint">{{ opts.hint ?? 'attachment.hint'|trans({files: max_files, max: max_mb}) }}</p>
+        {{ ui.field_error(errors, field) }}
+    </div>
 {%- endmacro %}
 
 {# One attached file: opens it (images in the browser, PDFs download), with
