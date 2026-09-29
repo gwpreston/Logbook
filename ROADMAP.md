@@ -42,6 +42,11 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [14.2](phase-14.2.md) | Total cost of ownership + v1.6 release | ✅ |
 | [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | ✅ |
 | [16](phase-16.md) | Fuel insights + v1.8 release | ✅ |
+| [17.1](phase-17.1.md) | Sale pack | 🚧 |
+| [17.2](phase-17.2.md) | Printable reports + v1.9 release | 📋 |
+| [18.1](phase-18.1.md) | Access policy | 📋 |
+| [18.2](phase-18.2.md) | REST API v1 + v1.10 release | 📋 |
+| [19](phase-19.md) | Multiple users and vehicle sharing + v2.0 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -338,6 +343,68 @@ winter take?*
 
 → [`phase-16.md`](phase-16.md)
 
+## Phase 17.1 — Sale pack
+*Everything a buyer wants to see, and nothing they shouldn't.*
+
+- *Prepare for sale*: a summary page (ownership, mileage, last service, MOT,
+  tyres, what's due next, paperwork on file), a mileage record from readings
+  a buyer can check, and history grouped by type.
+- The invoices and certificates as a ZIP, readably named. Registration
+  documents are never offered.
+- Printed through the browser like History. No prices paid, fuel,
+  valuations or ownership costs, ever; work costs only on request.
+- No release of its own: ships with Phase 17.2 as **v1.9.0**.
+
+→ [`phase-17.1.md`](phase-17.1.md)
+
+## Phase 17.2 — Printable reports + v1.9 release
+*A clean paper or PDF copy of any report, without a PDF library.*
+
+- Print layouts and a *Print* button for Reports, the Ownership report,
+  *Coming up*, and the Fuel and Mileage tabs.
+- A shared print header (what, for which vehicle and period, units, date),
+  charts in a print palette with their tables.
+- Release **v1.9.0** (Phases 17.1 and 17.2).
+
+→ [`phase-17.2.md`](phase-17.2.md)
+
+## Phase 18.1 — Access policy
+*One place that decides who may do what, before anyone else can sign in.*
+
+- A vehicle access policy and an instance policy asked by every route and
+  every cross-vehicle read; cost visibility behind one check.
+- A route inventory test that fails the build for any unclassified route.
+- No visible change and no migration. Ships with Phase 18.2 as **v1.10.0**.
+
+→ [`phase-18.1.md`](phase-18.1.md)
+
+## Phase 18.2 — REST API v1 + v1.10 release
+*Let Home Assistant, Shortcuts, Grafana and OBD tools read and log.*
+
+- API keys per user (read, or read and write), shown once, revocable.
+- Read endpoints for vehicles, a summary, entries, tyres, *Coming up* and
+  reminders; write endpoints for fill-ups and odometer readings through the
+  same services as the forms, safe to retry.
+- OpenAPI 3.1, contract-tested; guides for Home Assistant, Shortcuts,
+  Grafana and Node-RED.
+- Release **v1.10.0** (Phases 18.1 and 18.2).
+
+→ [`phase-18.2.md`](phase-18.2.md)
+
+## Phase 19 — Multiple users and vehicle sharing + v2.0 release
+*A family garage: everyone sees their own cars and the ones shared with
+them.*
+
+- Admins and members; invitations by one-time link; disable, transfer,
+  delete.
+- Per-vehicle sharing at Manage, Log or View, with a separate *Can see
+  costs* flag; "added by" on entries.
+- Reminders to the owner and to shared users who opt in, each in their own
+  language and units.
+- Release **v2.0.0**.
+
+→ [`phase-19.md`](phase-19.md)
+
 ---
 
 ## After 1.0
@@ -345,12 +412,14 @@ winter take?*
 Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 §12):
 
-- REST API with API keys (OpenAPI documented) for scripting / Home Assistant.
-- Multi-user with roles (admin/editor/viewer) and per-vehicle sharing.
-- OIDC / SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
+- OIDC / SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth,
+  once Phase 19 has users to attach them to.
+- Server-side PDF: emailed or scheduled reports, and a one-file sale pack
+  with the invoices merged in.
+- An MCP server on the REST API, for AI actions.
 - Trip/journey log (business vs personal mileage),
-  personal fuel-tank entity, VIN decode / registration lookup, PDF reports,
-  OBD-II / vehicle-API mileage import.
+  personal fuel-tank entity, VIN decode / registration lookup,
+  OBD-II / vehicle-API mileage import (through the REST API, Phase 18.2).
 - A *Needs attention* list on the overview (overdue items, economy and tyre
   flags), once Phases 13–15 are in. Deliberately not a health score.
 
