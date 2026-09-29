@@ -44,7 +44,7 @@
                 {% if record %}
                     <p class="field__hint">{{ 'tyre.hint.set_by_record'|trans }} <a href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: record.id}) }}">{{ record.data.title }}</a></p>
                 {% endif %}
-                {% if context.maintenance and links is not empty %}
+                {% if context.maintenance and kind.takesLink() and links is not empty %}
                     {{ ui.select('link', 'tyre.field.link'|trans, values, errors,
                         [{value: '', label: 'tyre.field.link_none'|trans}]|merge(links|map(e => {value: e.id, label: e.data.performedOn|local_date ~ ' · ' ~ e.data.title ~ ' · ' ~ e.data.cost|money(currency)})),
                         {hint: 'tyre.hint.link'|trans}) }}

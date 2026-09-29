@@ -6,7 +6,9 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 11.1: tyres. Ships with Phase 11.2 as 1.3.0.
+## [1.3.0] — 2026-09-29
+
+Phases 11.1 and 11.2: tyres, then tread depth, wear and tyre reminders.
 
 ### Added
 - **Tyres tab** on every vehicle, after Maintenance: the tyres on the
@@ -30,22 +32,54 @@ Phase 11.1: tyres. Ships with Phase 11.2 as 1.3.0.
   *Tyres fitted* header block) and *Recent activity*; a *Tyres* card on the
   overview; *Tyre change* in *Log entry*; a new mileage source *Tyres*.
 - CSV export of tyres and of tyre changes; German translations.
+- **Tread depth** in millimetres or 32nds of an inch (a new *Tread depth*
+  unit beside the others in Settings; the US preset picks 32nds). Recorded
+  when tyres are fitted (*Tread depth when new*), already on the vehicle,
+  swapped or removed, and with a new **Check tread**: one depth per fitted
+  tyre, from the Tyres tab or *Log entry*. A reading more than 0.5 mm
+  deeper than the last is saved with a notice to check it.
+- **Wear estimate** for every fitted tyre, from its own distance (time in
+  storage or as the spare leaves it out): depth now, distance left to the
+  replace-at depth and roughly when, always labelled as an estimate ("about
+  3.4 mm now · about 6,000 mi left · around Mar 2027"). The overview's
+  *Tyres* card shows each tyre's depth and the soonest distance left.
+- **Settings → Tyres:** replace-at (and a winter replace-at for cars),
+  legal minimum and an age limit from the DOT date (6 years by default;
+  0 turns it off), for cars and motorbikes. Flags say *Below the legal
+  minimum* when a measured depth is, and *May be below the legal minimum —
+  check it* when only the estimate is.
+- **One tyre reminder per vehicle** for worn or ageing tyres ("Tyres: front
+  left and front right worn", "Tyres: rear due in about 800 mi"), due
+  within the service lead time and distance, through every channel, the
+  digest and the calendar feed. Daily driving updates it quietly; a new
+  check, fit or swap opens it again. The Tyres tab shows the same verdict
+  as a badge, reminders module or not.
+- Depths in tyre history ("Checked tread: 5.1–6.3 mm"), the print view's
+  *Tyres fitted* block (measured depths only: estimates are never printed)
+  and both tyre CSV exports.
 
 ### Upgrade notes
-- Four new tables (`tyre_sets`, `tyres`, `tyre_changes`,
+- **Tyres (11.1):** four new tables (`tyre_sets`, `tyres`, `tyre_changes`,
   `tyre_change_lines`), a new nullable column
-  `odometer_readings.tyre_change_id` and a new reading source `tyre`. The
-  migration runs automatically on start (Docker) or with
-  `vendor/bin/phinx migrate` (bare PHP). Existing data and every existing
-  figure are unchanged.
-- New optional `FEATURES_TYRES` (default on), like the other modules.
+  `odometer_readings.tyre_change_id` and a new reading source `tyre`.
+- **Tread depth (11.2):** a new column `users.depth_unit` and a nullable
+  `tyre_change_lines.tread_mm`. Owners whose fuel volume unit is US gallons
+  are set to 32nds of an inch; everyone else to millimetres. New tyre
+  change kind `check` and reminder source `tyre`.
+- The migrations run automatically on start (Docker) or with
+  `vendor/bin/phinx migrate` (bare PHP). Nothing in existing data changes,
+  and every existing figure is unchanged.
+- New optional `FEATURES_TYRES` (default on), like the other modules; see
+  `.env.example` and `docs/configuration.md`.
 - Backups record the database schema, so a backup made with 1.2.x cannot
   be restored into this version: restore it with its own version first,
-  then upgrade.
+  then upgrade. (Every release that adds a column moves the schema
+  version.)
 - **Going back to 1.2.1:** roll back first, while still on this version,
-  with `vendor/bin/phinx rollback -e production -t 20261005100000`. Tyre
-  readings become ordinary manual readings, so no mileage is lost; the tyre
-  tables are dropped.
+  with `vendor/bin/phinx rollback -e production -t 20261005100000`. Tread
+  checks' readings and every tyre reading become ordinary manual readings,
+  so no mileage is lost; tread checks, tyre reminders, the tyre thresholds
+  and the tyre tables are removed.
 
 ## [1.2.1] — 2026-09-29
 
@@ -585,7 +619,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/gwpreston16/Logbook/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/gwpreston16/Logbook/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/gwpreston16/Logbook/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/gwpreston16/Logbook/compare/v1.0.0...v1.1.0

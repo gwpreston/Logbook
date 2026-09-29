@@ -240,7 +240,7 @@
                 </fieldset>
             {% endif %}
 
-            {% if context.maintenance and (kind.takesCost() or links is not empty) %}
+            {% if context.maintenance and (kind.takesCost() or (kind.takesLink() and links is not empty)) %}
                 <section class="card">
                     {% if kind.takesCost() %}
                         <div class="form-row">
@@ -249,7 +249,7 @@
                         </div>
                         <p class="field__hint">{{ 'tyre.hint.cost'|trans }}</p>
                     {% endif %}
-                    {% if links is not empty %}
+                    {% if kind.takesLink() and links is not empty %}
                         {{ ui.select('link', 'tyre.field.link'|trans, values, errors,
                             [{value: '', label: 'tyre.field.link_none'|trans}]|merge(links|map(e => {value: e.id, label: e.data.performedOn|local_date ~ ' · ' ~ e.data.title ~ ' · ' ~ e.data.cost|money(currency)})),
                             {hint: 'tyre.hint.link'|trans}) }}

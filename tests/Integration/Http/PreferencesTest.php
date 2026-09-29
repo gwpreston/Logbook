@@ -6,6 +6,7 @@ namespace Logbook\Tests\Integration\Http;
 
 use Logbook\Repository\UserRepository;
 use Logbook\Support\Display\Theme;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Tests\Support\AppTestCase;
 
 final class PreferencesTest extends AppTestCase
@@ -16,6 +17,7 @@ final class PreferencesTest extends AppTestCase
         'distance_unit' => 'mi',
         'volume_unit' => 'gal_us',
         'consumption_unit' => 'mpg_us',
+        'depth_unit' => 'in32',
         'currency' => 'USD',
         'locale' => 'en_US',
         'timezone' => 'America/Los_Angeles',
@@ -49,12 +51,15 @@ final class PreferencesTest extends AppTestCase
         self::assertStringContainsString('Your preferences were saved.', $html);
         self::assertStringContainsString('12.02 US gal', $html, '45.5 L in US gallons');
         self::assertStringContainsString('$1,234.50', $html);
+        self::assertStringContainsString('6/32″', $html, 'tread depth in 32nds of an inch');
+        self::assertMatchesRegularExpression('~data-unit-preset[^>]*data-depth-unit="in32"~s', $html, 'the US preset sets it');
         self::assertStringContainsString('Hello, Pat', self::body($browser->get('/')));
 
         $user = $this->service($app, UserRepository::class)->findByUsername('owner');
         self::assertNotNull($user);
         self::assertSame('America/Los_Angeles', $user->preferences->timezone);
         self::assertSame('USD', $user->preferences->currency);
+        self::assertSame(DepthUnit::ThirtySecond, $user->preferences->depthUnit);
 
         // Metric with km/L: mix and match is allowed.
         $metric = ['distance_unit' => 'km', 'volume_unit' => 'l', 'consumption_unit' => 'km_per_l'];

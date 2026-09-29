@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Http;
 
 use DateTimeImmutable;
+use DateTimeZone;
+use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Maintenance\MaintenanceEntryData;
 use Logbook\Domain\Tyre\Tyre;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\Tyre\TyreChangeKind;
@@ -12,8 +15,10 @@ use Logbook\Domain\Tyre\TyreStatus;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Tyre\TyreSettingsStore;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\DepthUnit;
 use Logbook\Tests\Support\AppTestCase;
@@ -138,6 +143,13 @@ final class TyreTreadTest extends AppTestCase
     public function testCheckTreadAsAPageAndInTheModal(): void
     {
         $this->fitFronts();
+        $day = LocalTime::parseDate('2026-09-20');
+        self::assertNotNull($day);
+        $this->service($this->app, MaintenanceService::class)->create(
+            $this->car,
+            new MaintenanceEntryData($day, MaintenanceCategory::Tyres, 'Tyre check', '0'),
+            new DateTimeZone('Europe/London'),
+        );
         $fitted = $this->fitted();
 
         $page = $this->browser->get($this->base . '/check');
@@ -150,6 +162,8 @@ final class TyreTreadTest extends AppTestCase
             'in position order',
         );
         self::assertStringContainsString('Front left · Michelin Primacy 4', $html, 'labelled with position and tyre');
+        self::assertStringNotContainsString('name="link"', $html, 'a check links no service record');
+        self::assertStringNotContainsString('name="cost"', $html);
         $modal = self::body($this->browser->get($this->base . '/check', self::MODAL));
         self::assertStringNotContainsString('<nav class="tabs"', $modal, 'the modal renders only the form');
 

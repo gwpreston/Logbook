@@ -254,9 +254,10 @@ final class TyreChangeForm
             return $validator->errors();
         }
         $stored = $change->data;
-        $link = $context->maintenance ? $data->maintenanceEntryId : $stored->maintenanceEntryId;
         // A check never links a service record (spec.md §6 TyreChange).
-        $link = $change->kind === TyreChangeKind::Check ? null : $link;
+        $link = !$change->kind->takesLink()
+            ? null
+            : ($context->maintenance ? $data->maintenanceEntryId : $stored->maintenanceEntryId);
         if ($link !== null && $link === $stored->maintenanceEntryId) {
             return new TyreChangeData($stored->doneOn, $stored->odometerKm ?? $data->odometerKm, $link, $data->note);
         }
@@ -334,7 +335,7 @@ final class TyreChangeForm
         $link = null;
         $cost = null;
         $vendor = null;
-        if ($context->maintenance) {
+        if ($context->maintenance && $kind->takesLink()) {
             $chosen = $validator->choice('link', array_map(strval(...), $context->linkIds));
             $link = $chosen === null ? null : (int) $chosen;
             if ($costs && $kind->takesCost()) {

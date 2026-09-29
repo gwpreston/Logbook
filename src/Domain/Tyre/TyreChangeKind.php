@@ -35,6 +35,15 @@ enum TyreChangeKind: string
     }
 
     /**
+     * Whether it may link a `tyres` service record: every kind but a tread
+     * check, which is a measurement, not work done.
+     */
+    public function takesLink(): bool
+    {
+        return $this !== self::Check;
+    }
+
+    /**
      * Whether the form takes tread depths (spec.md §7.17): every kind but a
      * rotation and a repair.
      */
