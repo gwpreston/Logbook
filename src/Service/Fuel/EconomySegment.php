@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Fuel;
 
 use DateTimeImmutable;
+use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelGrade;
 
 /**
@@ -32,6 +33,8 @@ final readonly class EconomySegment
          * (that fuel is burned in the next segment).
          */
         public ?FuelGrade $grade = null,
+        /** The full fill it was measured from (the economy check links to it). */
+        public ?FuelEntry $opening = null,
     ) {
     }
 }

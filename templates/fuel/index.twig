@@ -39,6 +39,12 @@
                     {{ ui.stat((electric ? 'fuel.stat.spend_ev' : 'fuel.stat.spend')|trans, summary.totalCost|money(currency), 'fuel.stat.all_time'|trans) }}
                 </dl>
 
+                {% if section.to_check > 0 %}
+                    <p class="economy-check-count">
+                        {{ ui.icon('warning') }}<a href="{{ url_for('fuel.index', {id: vehicle.id}, {check: 1}) }}">{{ 'fuel.check.to_check_count'|trans({count: section.to_check}) }}</a>
+                    </p>
+                {% endif %}
+
                 {% if summary.hasEconomy() and not electric %}
                     <p class="muted economy-units">
                         {{ 'fuel.also_as'|trans }}
@@ -83,9 +89,18 @@
 
         <section class="card" aria-labelledby="fills-heading">
             <div class="card__header">
-                <h2 id="fills-heading" class="card__title">{{ 'fuel.fills'|trans }}</h2>
+                <h2 id="fills-heading" class="card__title">{{ (to_check ? 'fuel.check.to_check_title' : 'fuel.fills')|trans }}</h2>
+                {% if to_check %}
+                    <a class="btn btn--ghost" href="{{ url_for('fuel.index', {id: vehicle.id}) }}">{{ 'fuel.check.show_all'|trans }}</a>
+                {% endif %}
             </div>
-            {% if history.isEmpty() %}
+            {% if to_check and rows is empty %}
+                <div class="empty">
+                    {{ ui.icon('check_circle') }}
+                    <p class="empty__title">{{ 'fuel.check.none_title'|trans }}</p>
+                    <p>{{ 'fuel.check.none_body'|trans }}</p>
+                </div>
+            {% elseif history.isEmpty() %}
                 <div class="empty">
                     {{ ui.icon(vehicle.data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station') }}
                     <p class="empty__title">{{ 'fuel.empty_title'|trans }}</p>
@@ -94,10 +109,15 @@
             {% else %}
                 <ul class="list">
                     {% for fill in rows %}
-                        {{ fuel_ui.row(fill, vehicle, currency, attachment_counts.of('fuel', fill.entry.id)) }}
+                        {{ fuel_ui.row(fill, vehicle, currency, attachment_counts.of('fuel', fill.entry.id), {
+                            check: checks.for(fill.entry.id),
+                            csrf: csrf,
+                            return_to: current_path,
+                            open: to_check,
+                        }) }}
                     {% endfor %}
                 </ul>
-                {{ ui.pagination(pagination, 'fuel.index', {id: vehicle.id}) }}
+                {{ ui.pagination(pagination, 'fuel.index', {id: vehicle.id}, to_check ? {check: 1} : {}) }}
                 <p class="field__hint">{{ 'fuel.full_to_full_note'|trans }}</p>
             {% endif %}
         </section>

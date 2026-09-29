@@ -43,6 +43,44 @@ final readonly class FuelService
     }
 
     /**
+     * The economy checks of a history (spec.md §7.3). Kept apart from
+     * history(): only the pages that show flags ask for them.
+     */
+    public function checks(FuelHistory $history): EconomyChecks
+    {
+        return EconomyCheck::of($history);
+    }
+
+    /**
+     * *Looks right*: store the consumption the segment closed by this
+     * fill-up measures now, so its flag stays hidden until the figure changes.
+     *
+     * @throws EconomyNotCheckable when it closes no checkable segment
+     */
+    public function confirmEconomy(Vehicle $vehicle, FuelEntry $entry): void
+    {
+        $segment = null;
+        foreach ($this->history($vehicle)->fills as $fill) {
+            if ($fill->entry->id === $entry->id) {
+                $segment = $fill->segment;
+            }
+        }
+        if ($segment === null || !EconomyCheck::isCheckable($segment)) {
+            throw new EconomyNotCheckable(sprintf('Fuel entry %d closes no checkable segment.', $entry->id));
+        }
+
+        $this->entries->setEconomyConfirmed($vehicle->id, $entry->id, EconomyCheck::consumption($segment));
+    }
+
+    /**
+     * *Undo* a confirmation: the flag (if any) shows again.
+     */
+    public function unconfirmEconomy(Vehicle $vehicle, FuelEntry $entry): void
+    {
+        $this->entries->setEconomyConfirmed($vehicle->id, $entry->id, null);
+    }
+
+    /**
      * @return list<FuelEntry> oldest first
      */
     public function entries(Vehicle $vehicle): array

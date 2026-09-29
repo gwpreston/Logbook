@@ -26,6 +26,10 @@
 
         <div class="alert alert--success" role="status">{{ ui.icon('check_circle') }}<span>{{ 'import.done'|trans({count: result.count(statuses[0])}) }}</span></div>
 
+        {% if result.unusualFills > 0 %}
+            <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span><a href="{{ url_for('fuel.index', {id: vehicle.id}, {check: 1}) }}">{{ 'import.unusual_fills'|trans({count: result.unusualFills}) }}</a></span></div>
+        {% endif %}
+
         {{ imp.counts(result, statuses) }}
 
         {% if skipped is not empty %}

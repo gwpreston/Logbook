@@ -49,6 +49,24 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * A fraction as a percentage in the user's locale: 0.32 → "32%" ("32 %"
+     * in German).
+     */
+    public function percent(int|float|string|null $fraction, int $maxFractionDigits = 0): string
+    {
+        $number = self::toFloat($fraction);
+        if ($number === null) {
+            return '';
+        }
+
+        $formatter = new NumberFormatter($this->locale(), NumberFormatter::PERCENT);
+        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $maxFractionDigits);
+        $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, NumberFormatter::ROUND_HALFUP);
+
+        return (string) $formatter->format($number);
+    }
+
+    /**
      * @param Money|string|null $amount a Money, or a canonical decimal in $currency
      * @param string|null $currency defaults to the user's currency
      */

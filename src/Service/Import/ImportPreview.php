@@ -13,8 +13,11 @@ final readonly class ImportPreview
     /**
      * @param list<ImportRow> $rows
      */
-    public function __construct(public array $rows)
-    {
+    public function __construct(
+        public array $rows,
+        /** After importing fill-ups: how many of them the economy check flags (spec.md §7.13). */
+        public int $unusualFills = 0,
+    ) {
     }
 
     public function count(ImportRowStatus $status): int

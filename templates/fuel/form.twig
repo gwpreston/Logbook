@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/attachments.twig' as files %}
+{% import 'macros/fuel.twig' as fuel_ui %}
 
 {% set active_nav = 'garage' %}
 {% set editing = entry is not null %}
@@ -30,6 +31,11 @@
         {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
         {% if errors is not empty %}
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        {% if check %}
+            <section class="economy-check__panel{{ check.isFlagged() ? ' economy-check__panel--flag' : '' }}" aria-label="{{ 'fuel.check.title'|trans }}">
+                {{ fuel_ui.check_flag(check, vehicle, {csrf: csrf, return_to: return_to, on_edit: true}) }}
+            </section>
         {% endif %}
 
         <form class="form" method="post" enctype="multipart/form-data"

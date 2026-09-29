@@ -1790,6 +1790,103 @@ a.list__item:hover {
     font-weight: 600;
 }
 
+/* Economy checks (spec.md §7.3): an icon and text beside the figure, the
+   full flag in a disclosure under the row (never colour alone). */
+.economy-check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+}
+
+.economy-check .icon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.economy-check--flag {
+    color: var(--amber);
+}
+
+.economy-check--confirmed {
+    color: var(--muted);
+}
+
+.economy-check__details {
+    margin: 0 var(--space-2) var(--space-2) calc(var(--space-2) + 2.375rem + var(--space-3));
+    font-size: var(--fs-sm);
+}
+
+.economy-check__details > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-weight: 600;
+    width: fit-content;
+}
+
+.economy-check__body {
+    display: grid;
+    gap: var(--space-2);
+    padding-top: var(--space-2);
+}
+
+.economy-check__body p {
+    margin: 0;
+}
+
+.economy-check__headline {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-weight: 700;
+}
+
+.economy-check__headline .icon {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.15em;
+}
+
+.economy-check__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.economy-check__actions form {
+    margin: 0;
+}
+
+.economy-check__panel {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+}
+
+.economy-check__panel--flag {
+    background: var(--amber-soft);
+}
+
+.economy-check__panel--flag .economy-check__headline {
+    color: var(--amber);
+}
+
+.economy-check-count {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--amber);
+    font-weight: 700;
+}
+
+.economy-check-count .icon {
+    width: 1rem;
+    height: 1rem;
+}
+
 .pagination {
     display: flex;
     flex-wrap: wrap;

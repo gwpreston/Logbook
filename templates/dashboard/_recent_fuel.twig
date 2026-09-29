@@ -18,6 +18,7 @@
                     <span class="list__meta">
                         {{- data.filledAt|instant_date }} · {{ data.volume|quantity(electric) -}}
                         {%- if segment %} · {{ segment.distanceKm|economy(segment.volume, electric) }}{% endif -%}
+                        {%- if row.check %} {{ fuel_ui.check_mark(row.check) }}{% endif -%}
                     </span>
                 </span>
                 <span class="list__end"><span class="list__amount tabular">{{ data.totalCost|money(row.currency) }}</span></span>

@@ -10,6 +10,7 @@ use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Repository\FuelEntryRepository;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Domain\Tyre\TyreChangeData;
@@ -118,6 +119,10 @@ final class BackupTest extends AppTestCase
         ), 'the depths travel with the lines');
         self::assertContains('tyres.thresholds', array_column($before['tables']['settings'], 'name'));
         self::assertContains('mm', array_column($before['tables']['users'], 'depth_unit'));
+        self::assertContains('9.625000', array_map(
+            static fn (mixed $v): ?string => is_string($v) ? Decimal::round($v, 6) : null,
+            array_column($before['tables']['fuel_entries'], 'economy_confirmed'),
+        ), 'economy confirmations travel with their fill-ups');
 
         $response = $browser->get('/settings/backup/download');
         self::assertSame(200, $response->getStatusCode());
@@ -312,7 +317,9 @@ final class BackupTest extends AppTestCase
 
         $this->fillUp($app, $golf, '2026-09-01T08:00:00Z', '1000.5', '40.123', '60.18', true);
         // The grade column is backed up and restored like any other (Phase 8).
-        $this->fillUp($app, $golf, '2026-09-08T08:00:00Z', '1400', '38.5', '57.75', grade: FuelGrade::E5_97);
+        $graded = $this->fillUp($app, $golf, '2026-09-08T08:00:00Z', '1400', '38.5', '57.75', grade: FuelGrade::E5_97);
+        // So is an economy confirmation (Phase 13).
+        $this->service($app, FuelEntryRepository::class)->setEconomyConfirmed($golf->id, $graded->id, '9.625000');
         $service = $this->maintenance($app, $golf, '2026-09-14', 'Annual service', '189.5', '1609.344');
         $zone = new DateTimeZone('Europe/London');
         // Several files per save, on every owner type (Phase 10).

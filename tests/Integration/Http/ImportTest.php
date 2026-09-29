@@ -167,6 +167,34 @@ final class ImportTest extends AppTestCase
         self::assertNull($imported[0]->data->grade);
     }
 
+    public function testImportedFillUpsThatLookUnusualAreCounted(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        // 300 mi on 30 L a tank, then one on 60 L (the sixth checkable
+        // segment: the first one the economy check can judge).
+        $rows = ['Date,Odometer,Fuel,Litres,Price,Total'];
+        foreach ([30, 30, 30, 30, 30, 30, 60, 30] as $i => $litres) {
+            $rows[] = sprintf('2026-06-%02d 09:00,%d,Petrol,%d,1.50,', $i + 1, 1000 + 300 * $i, $litres);
+        }
+
+        $map = $this->upload($browser, $golf->id, 'fuel', implode("\n", $rows) . "\n");
+        $html = self::body($this->commit($browser, $map, $this->preview($browser, $map)));
+        self::assertStringContainsString('8 rows were imported.', $html);
+        self::assertStringContainsString('1 imported fill-up looks unusual: check it on the Fuel tab.', $html);
+        self::assertStringContainsString('href="/vehicles/' . $golf->id . '/fuel?check=1"', $html);
+
+        // Nothing to say when every tank is ordinary.
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $map = $this->upload($browser, $polo->id, 'fuel', str_replace(',60,', ',30,', implode("\n", $rows)) . "\n");
+        $html = self::body($this->commit($browser, $map, $this->preview($browser, $map)));
+        self::assertStringContainsString('8 rows were imported.', $html);
+        self::assertStringNotContainsString('look unusual', $html);
+        self::assertStringNotContainsString('looks unusual', $html);
+    }
+
     public function testOdometerReadingsFromFillUpsAndServicesAreNeverImportedTwice(): void
     {
         $app = $this->createApp();

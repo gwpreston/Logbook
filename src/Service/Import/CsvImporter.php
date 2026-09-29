@@ -142,11 +142,12 @@ final readonly class CsvImporter
         $preview = $this->analyse($user, $vehicle, $module, $csv, $options);
         $zone = $user->preferences->timeZone();
 
-        $this->transaction->run(function () use ($preview, $vehicle, $zone): void {
+        $fills = [];
+        $this->transaction->run(function () use ($preview, $vehicle, $zone, &$fills): void {
             foreach ($preview->withStatus(ImportRowStatus::Import) as $row) {
                 $data = $row->data;
                 match (true) {
-                    $data instanceof FuelEntryData => $this->fuel->create($vehicle, $data),
+                    $data instanceof FuelEntryData => $fills[] = $this->fuel->create($vehicle, $data)->id,
                     $data instanceof OdometerReadingData => $this->odometer->create($vehicle, $data),
                     $data instanceof MaintenanceEntryData => $this->maintenance->create($vehicle, $data, $zone),
                     $data instanceof ComplianceDocumentData => $this->compliance->create($vehicle, $data, $zone),
@@ -156,7 +157,15 @@ final readonly class CsvImporter
             }
         });
 
-        return $preview;
+        if ($fills === []) {
+            return $preview;
+        }
+
+        // Imports are where most typing mistakes arrive: count the imported
+        // fill-ups the economy check flags.
+        $checks = $this->fuel->checks($this->fuel->history($vehicle));
+
+        return new ImportPreview($preview->rows, $checks->flaggedAmong($fills));
     }
 
     /**

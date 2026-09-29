@@ -18,6 +18,12 @@ final readonly class FuelEntry
         public FuelEntryData $data,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
+        /**
+         * The segment consumption (litres or kWh per 100 km, 6 places) the
+         * owner confirmed as right on an economy check (spec.md §7.3); null
+         * when never confirmed. Not part of the form data: editing keeps it.
+         */
+        public ?string $economyConfirmed = null,
     ) {
     }
 
