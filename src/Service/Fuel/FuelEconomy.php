@@ -27,7 +27,9 @@ use Logbook\Support\Number\Decimal;
  *  - Liquid fuel (litres) and electricity (kWh) are separate series.
  *  - Grades never split a series. Each segment only records the grade that
  *    was burned over it: the opening full fill's, when every partial inside
- *    shares it (EconomySegment::$grade); GradeStatistics reads that.
+ *    shares it (EconomySegment::$grade); GradeStatistics reads that. The
+ *    price of that same fuel (the opening fill and the partials, weighted by
+ *    volume) is carried too, for SegmentCostCalculator.
  *
  * Pure: no I/O, so every rule is unit-tested with worked examples.
  */
@@ -75,6 +77,8 @@ final class FuelEconomy
         $cost = '0';
         $fills = 0;
         $burned = null;       // the grade burned since the anchor, while one grade throughout
+        $burnedValue = '0';   // price × volume of the anchor and the partials since
+        $burnedVolume = '0';
         $previous = null;
 
         foreach ($entries as $entry) {
@@ -97,6 +101,8 @@ final class FuelEconomy
 
                 if (!$entry->isFull()) {
                     $status = EconomyStatus::Partial;
+                    $burnedValue = Decimal::add($burnedValue, self::value($entry));
+                    $burnedVolume = Decimal::add($burnedVolume, $data->volume);
                     // A partial of another (or no recorded) grade mixes the segment.
                     if ($data->grade !== $burned) {
                         $burned = null;
@@ -105,7 +111,17 @@ final class FuelEconomy
                     $distance = Decimal::subtract($data->odometerKm, $anchor->data->odometerKm);
                     if (Decimal::compare($distance, '0') > 0) {
                         $status = EconomyStatus::Measured;
-                        $segment = new EconomySegment($distance, $volume, $cost, $fills, $data->filledAt, $burned, $anchor);
+                        $segment = new EconomySegment(
+                            $distance,
+                            $volume,
+                            $cost,
+                            $fills,
+                            $data->filledAt,
+                            $burned,
+                            $anchor,
+                            $burnedValue,
+                            $burnedVolume,
+                        );
                     } else {
                         $status = EconomyStatus::Invalid;
                     }
@@ -119,12 +135,23 @@ final class FuelEconomy
                 $cost = '0';
                 $fills = 0;
                 $burned = $data->grade;
+                $burnedValue = self::value($entry);
+                $burnedVolume = $data->volume;
             }
 
             $results[] = new FillEconomy($entry, $status, $sincePrevious, $segment);
         }
 
         return $results;
+    }
+
+    /**
+     * Price × volume of one fill-up, 6 places (the burned price weights by
+     * volume, so a rounded total cost is not used).
+     */
+    private static function value(FuelEntry $entry): string
+    {
+        return Decimal::multiply($entry->data->pricePerUnit, $entry->data->volume, 6);
     }
 
     /**
