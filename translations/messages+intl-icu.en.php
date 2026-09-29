@@ -826,6 +826,11 @@ return [
             'front' => 'front',
             'rear' => 'rear',
             'all' => 'all four',
+            'fl' => 'front left',
+            'fr' => 'front right',
+            'rl' => 'rear left',
+            'rr' => 'rear right',
+            'spare' => 'spare',
         ],
         'season' => [
             'summer' => 'Summer',

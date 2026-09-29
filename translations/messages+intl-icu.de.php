@@ -825,6 +825,11 @@ return [
             'front' => 'vorne',
             'rear' => 'hinten',
             'all' => 'alle vier',
+            'fl' => 'vorne links',
+            'fr' => 'vorne rechts',
+            'rl' => 'hinten links',
+            'rr' => 'hinten rechts',
+            'spare' => 'Reserverad',
         ],
         'season' => [
             'summer' => 'Sommerreifen',

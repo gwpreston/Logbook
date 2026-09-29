@@ -59,10 +59,11 @@ final class TyreSummary
             ['fl', 'fr'] => new TranslatableMessage('tyre.where.front'),
             ['rl', 'rr'] => new TranslatableMessage('tyre.where.rear'),
             ['fl', 'fr', 'rl', 'rr'] => new TranslatableMessage('tyre.where.all'),
+            // Positions inside a sentence are lower case: "Repaired front left".
             default => count($codes) === 1
-                ? new TranslatableMessage('tyre.position.' . $codes[0])
+                ? new TranslatableMessage('tyre.where.' . $codes[0])
                 : new JoinedMessage(array_map(
-                    static fn (TyrePosition $p): TranslatableMessage => new TranslatableMessage('tyre.position.' . $p->value),
+                    static fn (TyrePosition $p): TranslatableMessage => new TranslatableMessage('tyre.where.' . $p->value),
                     self::ordered($positions),
                 )),
         };

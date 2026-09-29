@@ -12,6 +12,10 @@ use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ManualReminderData;
+use Logbook\Domain\Tyre\TyreChangeData;
+use Logbook\Domain\Tyre\TyreData;
+use Logbook\Domain\Tyre\TyrePosition;
+use Logbook\Domain\Tyre\TyreSetData;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Repository\VehicleRepository;
@@ -24,6 +28,10 @@ use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
+use Logbook\Service\Tyre\NewTyre;
+use Logbook\Service\Tyre\SetChoice;
+use Logbook\Service\Tyre\TyreChangeService;
+use Logbook\Service\Tyre\TyreCost;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Storage\FileStorage;
@@ -93,6 +101,12 @@ final class BackupTest extends AppTestCase
         sort($owners);
         self::assertSame(['compliance', 'expense', 'maintenance', 'maintenance', 'odometer'], $owners);
         self::assertContains('document', array_column($before['tables']['odometer_readings'], 'source'));
+        self::assertContains('tyre', array_column($before['tables']['odometer_readings'], 'source'));
+        self::assertCount(1, $before['tables']['tyre_sets']);
+        self::assertCount(2, $before['tables']['tyres']);
+        self::assertCount(2, $before['tables']['tyre_changes']);
+        self::assertCount(4, $before['tables']['tyre_change_lines']);
+        self::assertNotNull($before['tables']['tyre_changes'][1]['maintenance_entry_id'] ?? null, 'the swap links its record');
 
         $response = $browser->get('/settings/backup/download');
         self::assertSame(200, $response->getStatusCode());
@@ -304,6 +318,24 @@ final class BackupTest extends AppTestCase
             startOn: LocalTime::parseDate('2026-09-02'),
             odometerKm: '1650.000',
         ), $zone, $this->files([[self::PDF, 'mot.pdf']]));
+        // Tyres (Phase 11.1): the four tables, a `tyre` reading and a change linked to its service record.
+        $tyres = $this->service($app, TyreChangeService::class);
+        $day = static fn (string $date): DateTimeImmutable => LocalTime::parseDate($date) ?? throw new \LogicException($date);
+        $primacy = new TyreData('Michelin', 'Primacy 4', '205/55 R16 91V');
+        $michelin = static fn (TyrePosition $p): NewTyre => new NewTyre($p, $primacy);
+        $tyres->existing($golf, new TyreChangeData($day('2026-09-01'), '1000.500'), [
+            $michelin(TyrePosition::FrontLeft),
+            $michelin(TyrePosition::FrontRight),
+        ], $zone, 'en_GB');
+        $tyres->swap(
+            $golf,
+            new TyreChangeData($day('2026-09-15'), '1620.000'),
+            new SetChoice(newSet: new TyreSetData('Summer wheels', 'Garage loft')),
+            [],
+            new TyreCost('25.000', 'Kwik Fit'),
+            $zone,
+            'en_GB',
+        );
         $due = LocalTime::parseDate('2026-10-01');
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));
