@@ -6,7 +6,8 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 14.1: valuations and depreciation.
+Phases 14.1 and 14.2: valuations, depreciation and the total cost of
+ownership. To be released as 1.6.0.
 
 ### Added
 - **Valuations.** A small log of what each vehicle is worth (a dealer's
