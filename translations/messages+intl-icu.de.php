@@ -687,7 +687,7 @@ return [
             'cost' => 'Kosten {unit, select, mi {pro Meile} other {pro km}}',
             'cost_title' => 'Verlauf der Kosten {unit, select, mi {pro Meile} other {pro km}}',
             'cost_hint' => 'Jeder Punkt zeigt, was der Kraftstoff einer Tankfüllung pro Strecke gekostet hat; die gestrichelte Linie ist der laufende Durchschnitt. Die Kraftstoffkosten oben zählen stattdessen, was du ausgegeben hast, deshalb können beide leicht abweichen.',
-            'cost_hint_ev' => 'Jeder Punkt zeigt, was die Energie einer Strecke pro Strecke gekostet hat; die gestrichelte Linie ist der laufende Durchschnitt. Die Ladekosten oben zählen stattdessen, was du ausgegeben hast, deshalb können beide leicht abweichen.',
+            'cost_hint_ev' => 'Jeder Punkt zeigt, was die Energie eines Abschnitts von voll zu voll pro Strecke gekostet hat; die gestrichelte Linie ist der laufende Durchschnitt. Die Ladekosten oben zählen stattdessen, was du ausgegeben hast, deshalb können beide leicht abweichen.',
             'column' => [
                 'to' => 'Voll zu voll bis',
                 'distance' => 'Strecke',
