@@ -364,6 +364,39 @@ final readonly class TyreService
     }
 
     /**
+     * The service records linked to the `fit` changes that first put these
+     * tyres on, each record once (Coming up's price last time, spec.md
+     * §7.18); none while maintenance is off, as in the ledger.
+     *
+     * @param list<int> $tyreIds
+     * @return list<MaintenanceEntry>
+     */
+    public function fittingRecords(Vehicle $vehicle, array $tyreIds): array
+    {
+        $records = $this->records($vehicle);
+        $changes = $this->tyres->listChanges($vehicle->id);
+        $result = TyreReplay::run($changes);
+        if ($records === [] || !$result instanceof TyreReplayResult) {
+            return [];
+        }
+        $byId = [];
+        foreach ($changes as $change) {
+            $byId[$change->id] = $change;
+        }
+
+        $found = [];
+        foreach ($tyreIds as $tyreId) {
+            $fitting = $byId[$result->fittedBy[$tyreId] ?? 0] ?? null;
+            $entryId = $fitting?->kind === TyreChangeKind::Fit ? $fitting->data->maintenanceEntryId : null;
+            if ($entryId !== null && isset($records[$entryId])) {
+                $found[$entryId] = $records[$entryId];
+            }
+        }
+
+        return array_values($found);
+    }
+
+    /**
      * @param array<int, MaintenanceEntry> $records
      */
     private function costPerKm(Tyre $tyre, ?TyreChange $fitting, array $records, TyreDistanceFigure $distance): ?string
