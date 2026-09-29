@@ -187,7 +187,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
       migrations, no configuration changes, no change to the backup
       format; a new dashboard widget is appended to saved layouts.
 - [x] `ROADMAP.md`: Phase 15 row ✅.
-- [ ] Tag `v1.7.0`; image published as `1.7.0`, `1.7`, `1` and `latest`.
+- [x] Tag `v1.7.0`; image published as `1.7.0`, `1.7`, `1` and `latest`.
 
 ### 15.7 Tests
 - [x] **Unit (schedules):** today 1 Oct 2026, every 6 months, last done
