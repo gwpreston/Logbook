@@ -124,120 +124,120 @@ tagged.
 
 ### 12.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] §6 Attachment: owner types `purchase` and `sale` (owner_id = the
+- [x] §6 Attachment: owner types `purchase` and `sale` (owner_id = the
       vehicle); the date rule.
-- [ ] §6 OdometerReading / §7.1: the add form's *As of* and how it is
+- [x] §6 OdometerReading / §7.1: the add form's *As of* and how it is
       stored.
-- [ ] §7.2: *average per year since first registered* measured to the
+- [x] §7.2: *average per year since first registered* measured to the
       reading's date.
-- [ ] §7.3: drop "the vehicle overview's latest fill-ups" from the badge
+- [x] §7.3: drop "the vehicle overview's latest fill-ups" from the badge
       list.
-- [ ] §7.12: purchase and sale take files; reword "a vehicle keeps a single
+- [x] §7.12: purchase and sale take files; reword "a vehicle keeps a single
       photo" so it is clear the paperwork belongs to the events, not the
       vehicle.
-- [ ] §7.16: print *Show costs* default off, with the hint; paperclips on
+- [x] §7.16: print *Show costs* default off, with the hint; paperclips on
       *Bought* and *Sold*; file names under milestones in print.
-- [ ] §13: a Phase 12 entry.
-- [ ] `ROADMAP.md` gains a Phase 12 row and section; `CHANGELOG.md`
+- [x] §13: a Phase 12 entry.
+- [x] `ROADMAP.md` gains a Phase 12 row and section; `CHANGELOG.md`
       `[Unreleased]` entry.
-- [ ] Mark the answered open questions in `phase-9.1.md` (*Date the
+- [x] Mark the answered open questions in `phase-9.1.md` (*Date the
       starting reading?*) and `phase-10.md` (*Overview*, *Purchase and sale
       paperwork*, *Print defaults*) as "Answered in Phase 12", leaving the
       others open.
 
 ### 12.1 Print view
-- [ ] *Show costs* unticked by default; `costs=1` shows them. Hint as above.
-- [ ] Links from the History toolbar open the print view with the new
+- [x] *Show costs* unticked by default; `costs=1` shows them. Hint as above.
+- [x] Links from the History toolbar open the print view with the new
       default.
-- [ ] Old option encoding checked; the fail-safe direction holds.
+- [x] Old option encoding checked; the fail-safe direction holds.
 
 ### 12.2 Purchase and sale paperwork: domain
-- [ ] Check how `attachments.owner_type` is stored now (Phase 10 checked it
+- [x] Check how `attachments.owner_type` is stored now (Phase 10 checked it
       for `expense` and `odometer`). If there is a length limit, check
       constraint or native enum on any engine, widen it in a migration.
-- [ ] The owner-type enum gains `Purchase` and `Sale`; the attachment
+- [x] The owner-type enum gains `Purchase` and `Sale`; the attachment
       service resolves both to the vehicle.
-- [ ] **Backups and going back.** If no migration is needed, the schema
+- [x] **Backups and going back.** If no migration is needed, the schema
       version does not move, so a 1.4.0 backup would restore into 1.3.x.
       Check what 1.3.x does with an unknown owner type (an enum `from()`
       throwing on a History page, say). If anything breaks, add a
       migration so the backup rule blocks the restore; otherwise the upgrade
       note says the files are ignored by 1.3.x.
-- [ ] The shared parser takes a field name; every existing caller keeps
+- [x] The shared parser takes a field name; every existing caller keeps
       `attachments[]` without change.
-- [ ] `VehicleService::create()` / `update()` write the files in the
+- [x] `VehicleService::create()` / `update()` write the files in the
       vehicle's transaction (files first, rows in the transaction, files
       deleted if it fails), with the date rules above.
 
 ### 12.3 Purchase and sale paperwork: forms and display
-- [ ] Vehicle form (page and modal, add and edit): the attachment input and
+- [x] Vehicle form (page and modal, add and edit): the attachment input and
       file list under the purchase fields and under the sale fields. Works
       without JS; the JS limit check counts both inputs together.
-- [ ] Paperclips on *Bought* and *Sold* in History and fleet history, from
+- [x] Paperclips on *Bought* and *Sold* in History and fleet history, from
       the page's grouped query.
-- [ ] Overview *Ownership* card: a paperclip beside each date that has
+- [x] Overview *Ownership* card: a paperclip beside each date that has
       files, linking to the edit form.
-- [ ] Print view: file names under the milestones, as under entries.
-- [ ] Delete confirmation mentions the paperwork in its count of files, if
+- [x] Print view: file names under the milestones, as under entries.
+- [x] Delete confirmation mentions the paperwork in its count of files, if
       it counts files.
 
 ### 12.4 Dated starting mileage
-- [ ] Add form: *As of* beside *Current odometer*, default today (owner's
+- [x] Add form: *As of* beside *Current odometer*, default today (owner's
       time zone), kept on a validation error.
-- [ ] `VehicleService::create()` takes the date with the reading; today →
+- [x] `VehicleService::create()` takes the date with the reading; today →
       now, earlier → local noon; plausibility as for any reading.
-- [ ] The lifetime average (`VehicleAge` or wherever 9.1 put it) takes the
+- [x] The lifetime average (`VehicleAge` or wherever 9.1 put it) takes the
       reading's local date instead of today; no date maths in templates or
       Actions.
 
 ### 12.5 Overview
-- [ ] Remove the latest fill-ups list; keep any figure found only there.
-- [ ] Remove its now-unused template partial, translation keys and query.
+- [x] Remove the latest fill-ups list; keep any figure found only there.
+- [x] Remove its now-unused template partial, translation keys and query.
 
 ### 12.6 Demo seed + backup
-- [ ] `bin/dev seed`: where cheap, give the sold, archived vehicle a small
+- [x] `bin/dev seed`: where cheap, give the sold, archived vehicle a small
       generated PDF as its sale paperwork; otherwise skip.
-- [ ] Backups include the new owner types automatically (they are rows and
+- [x] Backups include the new owner types automatically (they are rows and
       files like any other). Follow the rule decided in 12.2.
 
 ### 12.7 i18n
-- [ ] English and German for every new label, hint, error and notice:
+- [x] English and German for every new label, hint, error and notice:
       *Purchase paperwork* / *Kaufunterlagen*, *Sale paperwork* /
       *Verkaufsunterlagen*, *As of* / *Stand vom*, the print hint, the two
       date-rule errors, the before-registration warning.
-- [ ] Remove the overview list's keys from both catalogues.
+- [x] Remove the overview list's keys from both catalogues.
 
 ### 12.8 Release v1.4.0
-- [ ] `VERSION` → `1.4.0`; sidebar, Settings and `/health` show it.
-- [ ] `CHANGELOG.md` `[1.4.0]`: *Added* (paperwork, *As of*), *Changed*
+- [x] `VERSION` → `1.4.0`; sidebar, Settings and `/health` show it.
+- [x] `CHANGELOG.md` `[1.4.0]`: *Added* (paperwork, *As of*), *Changed*
       (print costs off by default; lifetime average to the reading's date;
       overview list removed), upgrade notes (migration or not, per 12.2; the
       backup rule; no config changes).
-- [ ] `ROADMAP.md`: Phase 12 row ✅.
+- [x] `ROADMAP.md`: Phase 12 row ✅.
 - [ ] Tag `v1.4.0`; image published as `1.4.0`, `1.4`, `1` and `latest`.
 
 ### 12.9 Tests
-- [ ] Unit: print option parsing (absent, `costs=1`, the 1.3.0 encoding);
+- [x] Unit: print option parsing (absent, `costs=1`, the 1.3.0 encoding);
       lifetime average to the reading's date (a reading 200 days old on a
       3-year-old vehicle; the 90-day floor measured at the reading);
       *As of* today → now, earlier → local noon in a zone ahead of and
       behind UTC; future and 1884 rejected; before first registration warns.
-- [ ] Unit: the paperwork date rules (files without a date refused;
+- [x] Unit: the paperwork date rules (files without a date refused;
       clearing a date with files refused; clearing one without files
       allowed).
-- [ ] Integration: add and edit a vehicle with purchase and sale files
+- [x] Integration: add and edit a vehicle with purchase and sale files
       (page and modal); 6 + 5 files refused as over the limit; one bad file
       fails the save and writes nothing; files served only to the owner;
       deleting the vehicle removes them; archiving keeps them.
-- [ ] Integration: paperclips on *Bought* / *Sold* in History, fleet
+- [x] Integration: paperclips on *Bought* / *Sold* in History, fleet
       history and the overview; file names in print; print hides costs and
       prices by default and shows them with `costs=1`.
-- [ ] Integration: add a vehicle with a dated starting reading; it sits in
+- [x] Integration: add a vehicle with a dated starting reading; it sits in
       order with fill-ups before and after it; the Mileage tab, garage card
       and dashboard show it.
-- [ ] Integration: overview without the fill-ups list, with `fuel` on and
+- [x] Integration: overview without the fill-ups list, with `fuel` on and
       off.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
@@ -249,19 +249,19 @@ starting mileage that can be dated when it was read, and a leaner overview;
 released as Logbook v1.4.0.
 
 ## Acceptance criteria
-- [ ] The print view hides costs and purchase / sale prices unless *Show
+- [x] The print view hides costs and purchase / sale prices unless *Show
       costs* is ticked; no old link shows costs it used to hide.
-- [ ] Purchase and sale files can be added, listed and deleted on the
+- [x] Purchase and sale files can be added, listed and deleted on the
       vehicle form, and show on the milestones, the overview and in print.
-- [ ] No file is ever attached to a purchase or sale without its date.
-- [ ] A vehicle added with a dated starting reading has exactly one manual
+- [x] No file is ever attached to a purchase or sale without its date.
+- [x] A vehicle added with a dated starting reading has exactly one manual
       reading, at local noon on that date (or now, for today).
-- [ ] The lifetime average uses the reading's date; every other figure is
+- [x] The lifetime average uses the reading's date; every other figure is
       unchanged.
-- [ ] The overview no longer lists fill-ups and loses no figure.
-- [ ] `/health`, sidebar and Settings show v1.4.0; changelog and roadmap
+- [x] The overview no longer lists fill-ups and loses no figure.
+- [x] `/health`, sidebar and Settings show v1.4.0; changelog and roadmap
       updated.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas

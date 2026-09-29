@@ -36,7 +36,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [10.2](phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
 | [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
 | [11.2](phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
-| [12](phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | 🚧 |
+| [12](phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | ✅ |
 
 *Update the status column as each phase lands.*
 
