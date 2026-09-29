@@ -182,6 +182,7 @@ return [
         'locale' => 'Sprache',
         'timezone' => 'Zeitzone',
         'timezone_hint' => 'Datum und Uhrzeit werden in dieser Zone angezeigt; gespeichert wird in UTC.',
+        'depth_unit' => 'Profiltiefe',
     ],
     'units' => [
         'preset' => [
@@ -203,6 +204,8 @@ return [
             'km_per_kwh' => 'km/kWh',
             'mi_per_kwh' => 'mi/kWh',
             'kwh' => 'kWh',
+            'mm' => 'Millimeter',
+            'in32' => '32stel Zoll',
         ],
         'symbol' => [
             'km' => 'km',
@@ -211,6 +214,8 @@ return [
             'gal_uk' => 'gal',
             'gal_us' => 'US-gal',
             'kwh' => 'kWh',
+            'mm' => 'mm',
+            'in32' => '/32″',
         ],
         'distance' => [
             'km' => '{value} km',
@@ -250,6 +255,14 @@ return [
             'b' => '{value} B',
             'kb' => '{value} KB',
             'mb' => '{value} MB',
+        ],
+        'depth' => [
+            'mm' => '{value} mm',
+            'in32' => '{value}/32″',
+        ],
+        'depth_range' => [
+            'mm' => '{min}–{max} mm',
+            'in32' => '{min}–{max}/32″',
         ],
     ],
     'home' => [
@@ -881,6 +894,9 @@ return [
             'repair' => 'Repariert: {where}',
             'remove' => '{count, plural, one {# Reifen} other {# Reifen}} abmontiert ({where})',
             'retire' => '{count, plural, one {# Reifen} other {# Reifen}} ausgemustert ({where})',
+            'check' => 'Profil geprüft: {depths}',
+            'check_where' => 'Profil geprüft ({where})',
+            'with_depths' => '{summary} · {depths}',
         ],
         'record_title' => [
             'existing' => 'Montierte Reifen, {where}',
@@ -892,6 +908,7 @@ return [
             'repair' => 'Reifenreparatur, {where}',
             'remove' => 'Reifen abmontiert, {where}',
             'retire' => 'Reifen abmontiert, {where}',
+            'check_where' => 'Profilprüfung, {where}',
         ],
         'section' => [
             'fitted' => 'Am Fahrzeug',
@@ -956,6 +973,8 @@ return [
             'set_location' => 'Lagerort',
             'fit_set' => 'Aus dem Lager montieren',
             'tyres' => 'Reifen',
+            'tread' => 'Profiltiefe',
+            'estimate' => 'Schätzung',
         ],
         'hint' => [
             'size' => 'Wie auf der Reifenflanke, z. B. 205/55 R16 91V.',
@@ -1054,6 +1073,30 @@ return [
             'unknown_set' => 'Wähle einen Reifensatz dieses Fahrzeugs.',
             'link' => 'Wähle einen der aufgeführten Wartungseinträge.',
             'cost_and_link' => 'Gib Kosten ein oder verknüpfe einen Wartungseintrag, nicht beides.',
+            'depth_range' => 'Gib eine Tiefe von 0 bis {max} ein.',
+            'depth_halves' => 'Nutze ganze oder halbe 32stel, etwa 6 oder 6,5.',
+        ],
+        'depth' => [
+            'measured' => '{depth} am {date}',
+        ],
+        'wear' => [
+            'depth_now' => 'jetzt etwa {depth}',
+            'left' => 'etwa {distance} verbleibend',
+            'around' => 'um {month}',
+            'soonest_left' => 'Am frühesten: etwa {distance} verbleibend',
+        ],
+        'flag' => [
+            'wear_overdue' => 'Abgefahren: ersetzen',
+            'wear_soon' => 'Bald ersetzen',
+            'age_overdue' => 'Über der Altersgrenze',
+            'age_soon' => 'Altersgrenze bald erreicht',
+            'legal_below' => 'Unter der gesetzlichen Mindestprofiltiefe',
+            'legal_may_be_below' => 'Vielleicht unter der gesetzlichen Mindestprofiltiefe – bitte prüfen',
+        ],
+        'verdict' => [
+            'overdue' => 'Reifen müssen ersetzt werden',
+            'soon' => 'Reifen bald fällig',
+            'ok' => 'Profil und Alter in Ordnung',
         ],
     ],
     // tyre:end
@@ -1409,6 +1452,11 @@ return [
             'reference' => 'Nummer',
             'start' => 'Beginn',
             'expiry' => 'Ablauf',
+            'latest_depth' => 'Letzte Profiltiefe ({unit})',
+            'latest_depth_on' => 'Letzte Profiltiefe am',
+            'depth_now' => 'Profiltiefe jetzt ({unit})',
+            'distance_left' => 'Verbleibende Strecke ({unit})',
+            'depths' => 'Profiltiefen ({unit})',
         ],
     ],
     'import' => [
@@ -1758,6 +1806,7 @@ return [
         'password_changed' => 'Dein Passwort wurde geändert. Andere Geräte wurden abgemeldet.',
         'installation' => 'Installation',
         'version' => 'Version',
+        'preview_depth' => 'Profiltiefe',
     ],
     'diagnostics' => [
         'deep_link' => [

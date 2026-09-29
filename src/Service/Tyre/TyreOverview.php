@@ -6,6 +6,8 @@ namespace Logbook\Service\Tyre;
 
 use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\Tyre\TyreSet;
+use Logbook\Service\Maintenance\DueStatus;
+use Logbook\Support\Number\Decimal;
 
 /**
  * Everything the Tyres tab shows (spec.md §7.17), derived on every read.
@@ -25,7 +27,26 @@ final readonly class TyreOverview
         public array $retired,
         public array $changes,
         public array $sets,
+        /** The tyres judged as one: the tab badge, and what the tyre reminder says. */
+        public TyreVerdict $verdict = new TyreVerdict(DueStatus::Unknown),
     ) {
+    }
+
+    /**
+     * The soonest distance left among the fitted tyres, or null when none
+     * is known (the overview card's "about 6,000 mi left").
+     */
+    public function soonestKmLeft(): ?string
+    {
+        $soonest = null;
+        foreach ($this->fittedTyres() as $view) {
+            $left = $view->wear->kmLeft;
+            if ($left !== null && ($soonest === null || Decimal::compare($left, $soonest) < 0)) {
+                $soonest = $left;
+            }
+        }
+
+        return $soonest;
     }
 
     public function isEmpty(): bool

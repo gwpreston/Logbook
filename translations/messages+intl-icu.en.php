@@ -182,6 +182,7 @@ return [
         'locale' => 'Language',
         'timezone' => 'Time zone',
         'timezone_hint' => 'Dates and times are shown in this zone; they are stored in UTC.',
+        'depth_unit' => 'Tread depth',
     ],
     'units' => [
         'preset' => [
@@ -203,6 +204,8 @@ return [
             'km_per_kwh' => 'km/kWh',
             'mi_per_kwh' => 'mi/kWh',
             'kwh' => 'kWh',
+            'mm' => 'Millimetres',
+            'in32' => '32nds of an inch',
         ],
         'symbol' => [
             'km' => 'km',
@@ -211,6 +214,8 @@ return [
             'gal_uk' => 'gal',
             'gal_us' => 'US gal',
             'kwh' => 'kWh',
+            'mm' => 'mm',
+            'in32' => '/32″',
         ],
         'distance' => [
             'km' => '{value} km',
@@ -250,6 +255,14 @@ return [
             'b' => '{value} B',
             'kb' => '{value} KB',
             'mb' => '{value} MB',
+        ],
+        'depth' => [
+            'mm' => '{value} mm',
+            'in32' => '{value}/32″',
+        ],
+        'depth_range' => [
+            'mm' => '{min}–{max} mm',
+            'in32' => '{min}–{max}/32″',
         ],
     ],
     'home' => [
@@ -882,6 +895,9 @@ return [
             'repair' => 'Repaired {where}',
             'remove' => '{count, plural, one {Removed # tyre} other {Removed # tyres}} ({where})',
             'retire' => '{count, plural, one {Retired # tyre} other {Retired # tyres}} ({where})',
+            'check' => 'Checked tread: {depths}',
+            'check_where' => 'Checked tread ({where})',
+            'with_depths' => '{summary} · {depths}',
         ],
         'record_title' => [
             'existing' => 'Tyres on the vehicle, {where}',
@@ -893,6 +909,7 @@ return [
             'repair' => 'Tyre repair, {where}',
             'remove' => 'Tyres removed, {where}',
             'retire' => 'Tyres removed, {where}',
+            'check_where' => 'Tread check, {where}',
         ],
         'section' => [
             'fitted' => 'On the vehicle',
@@ -957,6 +974,8 @@ return [
             'set_location' => 'Storage location',
             'fit_set' => 'Fit from storage',
             'tyres' => 'Tyres',
+            'tread' => 'Tread depth',
+            'estimate' => 'Estimate',
         ],
         'hint' => [
             'size' => 'As on the sidewall, e.g. 205/55 R16 91V.',
@@ -1055,6 +1074,30 @@ return [
             'unknown_set' => 'Choose one of this vehicle’s sets.',
             'link' => 'Choose one of the listed service records.',
             'cost_and_link' => 'Enter a cost or link a service record, not both.',
+            'depth_range' => 'Enter a depth from 0 to {max}.',
+            'depth_halves' => 'Use whole or half 32nds, like 6 or 6.5.',
+        ],
+        'depth' => [
+            'measured' => '{depth} on {date}',
+        ],
+        'wear' => [
+            'depth_now' => 'about {depth} now',
+            'left' => 'about {distance} left',
+            'around' => 'around {month}',
+            'soonest_left' => 'Soonest: about {distance} left',
+        ],
+        'flag' => [
+            'wear_overdue' => 'Worn: replace',
+            'wear_soon' => 'Replace soon',
+            'age_overdue' => 'Over the age limit',
+            'age_soon' => 'Age limit soon',
+            'legal_below' => 'Below the legal minimum',
+            'legal_may_be_below' => 'May be below the legal minimum — check it',
+        ],
+        'verdict' => [
+            'overdue' => 'Tyres need replacing',
+            'soon' => 'Tyres due soon',
+            'ok' => 'Tread and age OK',
         ],
     ],
     // tyre:end
@@ -1410,6 +1453,11 @@ return [
             'reference' => 'Reference',
             'start' => 'Start',
             'expiry' => 'Expiry',
+            'latest_depth' => 'Latest depth ({unit})',
+            'latest_depth_on' => 'Latest depth on',
+            'depth_now' => 'Depth now ({unit})',
+            'distance_left' => 'Distance left ({unit})',
+            'depths' => 'Depths ({unit})',
         ],
     ],
     'import' => [
@@ -1759,6 +1807,7 @@ return [
         'password_changed' => 'Your password was changed. Other devices have been signed out.',
         'installation' => 'Installation',
         'version' => 'Version',
+        'preview_depth' => 'Tread depth',
     ],
     'diagnostics' => [
         'deep_link' => [

@@ -10,6 +10,7 @@ use Logbook\Support\Display\Theme;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\I18n\AvailableLocales;
 use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\UnitPreset;
 use Logbook\Support\Units\VolumeUnit;
@@ -55,6 +56,7 @@ final readonly class SettingsPage
             'distance_units' => DistanceUnit::cases(),
             'volume_units' => VolumeUnit::cases(),
             'consumption_units' => ConsumptionUnit::cases(),
+            'depth_units' => DepthUnit::cases(),
             'unit_presets' => UnitPreset::cases(),
             'locale_options' => FormOptions::locales($this->locales),
             'timezone_options' => FormOptions::timezones(),

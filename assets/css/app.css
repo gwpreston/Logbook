@@ -3445,3 +3445,22 @@ a.list__title:hover {
 .history-print__tyres {
     grid-column: 1 / -1;
 }
+
+/* Phase 11.2: tread depth and the wear estimate on a tyre card. */
+.tyre-card__estimate {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.tyre-card__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+}
+
+.tyre-soonest {
+    margin: 0 0 var(--space-2);
+    font-weight: 600;
+}

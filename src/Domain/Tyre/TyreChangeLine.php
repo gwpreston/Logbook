@@ -17,6 +17,13 @@ final readonly class TyreChangeLine
          * `repair`: where it was (for summaries; the replay never reads it).
          */
         public ?TyrePosition $position = null,
+        /** The tread depth measured at this change, mm (canonical, 3 places); null when not measured. */
+        public ?string $treadMm = null,
     ) {
+    }
+
+    public function withTread(?string $treadMm): self
+    {
+        return new self($this->tyreId, $this->action, $this->position, $treadMm);
     }
 }

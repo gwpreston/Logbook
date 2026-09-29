@@ -33,8 +33,51 @@
     {%- if view.distance.flagged %} <span class="tyre-flag" title="{{ 'tyre.flag_label'|trans }}">{% import 'macros/ui.twig' as ui %}{{ ui.icon('warning') }}<span class="visually-hidden">{{ 'tyre.flag_label'|trans }}</span></span>{% endif -%}
 {%- endmacro %}
 
+{# "4.2 mm on 3 Jun 2026": the latest measured depth, or nothing. #}
+{% macro latest_depth(view) -%}
+    {%- if view.wear.latest -%}
+        {{- 'tyre.depth.measured'|trans({depth: view.wear.latest.treadMm|depth, date: view.wear.latest.doneOn|local_date}) -}}
+    {%- endif -%}
+{%- endmacro %}
+
+{# "about 3.4 mm now · about 6,000 mi left · around Mar 2027": always an estimate; nothing when not known. #}
+{% macro estimate(view) -%}
+    {%- set wear = view.wear -%}
+    {%- if wear.isKnown() -%}
+        {%- set parts = ['tyre.wear.depth_now'|trans({depth: wear.depthNowMm|depth}), 'tyre.wear.left'|trans({distance: wear.kmLeft|about_distance})] -%}
+        {%- if wear.wearOutOn %}{% set parts = parts|merge(['tyre.wear.around'|trans({month: wear.wearOutOn|local_month})]) %}{% endif -%}
+        {{- parts|join(' · ') -}}
+    {%- endif -%}
+{%- endmacro %}
+
+{#
+ # A tyre's flags (spec.md §7.17): due or overdue for wear or age, and the
+ # legal minimum, measured or estimated. Status colours, never colour alone:
+ # each has an icon and its words.
+ #}
+{% macro standing_flag(standing, view) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {%- if standing and standing.status.value in ['overdue', 'soon'] -%}
+        <span class="pill pill--{{ standing.status.tone() }}">{{ ui.icon('warning') }}{{ ('tyre.flag.' ~ standing.reason ~ '_' ~ standing.status.value)|trans }}</span>
+    {%- endif -%}
+    {%- if view.wear.legal -%}
+        <span class="pill pill--overdue">{{ ui.icon('error') }}{{ ('tyre.flag.legal_' ~ view.wear.legal.value)|trans }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{# The tab's badge: the tyres judged as one, as the tyre reminder judges them. #}
+{% macro verdict_badge(verdict) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {%- if verdict.isJudgeable() -%}
+        <span class="pill{{ verdict.status.tone() ? ' pill--' ~ verdict.status.tone() }}" data-testid="tyre-verdict">
+            {%- if verdict.status.value != 'ok' %}{{ ui.icon('warning') }}{% endif -%}
+            {{- ('tyre.verdict.' ~ verdict.status.value)|trans -}}
+        </span>
+    {%- endif -%}
+{%- endmacro %}
+
 {# One position of the On the vehicle grid: plain HTML, reads well to a screen reader. #}
-{% macro position_card(position, view, vehicle) -%}
+{% macro position_card(position, view, vehicle, standing = null) -%}
     {% import _self as tyres %}
     <article class="tyre-card{{ view ? '' : ' tyre-card--empty' }}{{ position.value == 'spare' ? ' tyre-card--spare' }}" aria-labelledby="tyre-pos-{{ position.value }}">
         <h3 class="tyre-card__position" id="tyre-pos-{{ position.value }}">{{ ('tyre.position.' ~ position.value)|trans }}</h3>
@@ -54,7 +97,15 @@
             <dl class="tyre-card__figures">
                 <div><dt class="visually-hidden">{{ 'tyre.field.age'|trans }}</dt><dd>{{ tyres.age(view) }}</dd></div>
                 <div><dt class="visually-hidden">{{ 'tyre.field.distance'|trans }}</dt><dd class="tabular">{{ tyres.distance(view) }}</dd></div>
+                {% if view.wear.latest %}
+                    <div><dt class="visually-hidden">{{ 'tyre.field.tread'|trans }}</dt><dd class="tabular">{{ tyres.latest_depth(view) }}</dd></div>
+                {% endif %}
             </dl>
+            {% if view.wear.isKnown() %}
+                <p class="tyre-card__estimate"><span class="visually-hidden">{{ 'tyre.field.estimate'|trans }}: </span>{{ tyres.estimate(view) }}</p>
+            {% endif %}
+            {% set flags = tyres.standing_flag(standing, view) %}
+            {% if flags|trim %}<p class="tyre-card__flags">{{ flags }}</p>{% endif %}
         {% else %}
             <p class="tyre-card__name muted">{{ 'tyre.empty_position'|trans }}</p>
         {% endif %}
@@ -62,7 +113,7 @@
 {%- endmacro %}
 
 {# A stored or retired tyre as a list row. #}
-{% macro tyre_row(view, vehicle, currency) -%}
+{% macro tyre_row(view, vehicle, currency, standing = null) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import _self as tyres %}
     {% set tyre = view.tyre %}
@@ -83,8 +134,10 @@
                 {%- if tyre.isRetired() and view.retiredOn %}{% set parts = parts|merge(['tyre.retired_on'|trans({date: view.retiredOn|local_date})]) %}{% endif -%}
                 {%- if tyre.isRetired() and tyre.retiredReason %}{% set parts = parts|merge([('tyre.reason.' ~ tyre.retiredReason.value)|trans]) %}{% endif -%}
                 {%- set parts = parts|merge([tyres.age(view)]) -%}
+                {%- if view.wear.latest %}{% set parts = parts|merge([tyres.latest_depth(view)]) %}{% endif -%}
                 {{- parts|join(' · ') -}}
             </span>
+            {% if not tyre.isRetired() %}{{ tyres.standing_flag(standing, view) }}{% endif %}
         </span>
         <span class="list__end">
             <span class="list__delta tabular">{{ tyre.isRetired() and not view.since ? 'tyre.lifetime'|trans({distance: view.distance.km|distance}) : tyres.distance(view) }}</span>

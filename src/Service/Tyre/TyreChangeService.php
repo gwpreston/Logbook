@@ -27,12 +27,13 @@ use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Tyre changes (spec.md §7.17): the only way a tyre moves. One method per
- * kind checks the choices against the tyres as they are, then, in one
- * transaction: creates any new tyres and set, writes the change and its
- * lines, writes or links the service record that carries the cost, writes
- * the change's reading, and replays the vehicle's changes into the stored
- * tyre state. A refusal (TyreChangeRefused) rolls everything back.
+ * Tyre changes (spec.md §7.17): the only way a tyre moves, and where tread
+ * depths are recorded. One method per kind checks the choices against the
+ * tyres as they are, then, in one transaction: creates any new tyres and
+ * set, writes the change and its lines (with any depths), writes or links
+ * the service record that carries the cost, writes the change's reading,
+ * and replays the vehicle's changes into the stored tyre state. A refusal
+ * (TyreChangeRefused) rolls everything back.
  *
  * Callers pass a Vehicle already resolved for the signed-in owner, the
  * owner's time zone (readings at local noon) and locale (the generated
@@ -73,10 +74,29 @@ final readonly class TyreChangeService
         return match ($input->kind) {
             TyreChangeKind::Existing => $this->existing($vehicle, $data, $input->new, $zone, $locale),
             TyreChangeKind::Fit => $this->fit($vehicle, $data, $input->new, $input->replaced, $cost, $zone, $locale),
-            TyreChangeKind::Swap => $this->swap($vehicle, $data, $input->into, $input->positions, $cost, $zone, $locale),
+            TyreChangeKind::Swap => $this->swap(
+                $vehicle,
+                $data,
+                $input->into,
+                $input->positions,
+                $cost,
+                $zone,
+                $locale,
+                $input->depths,
+            ),
             TyreChangeKind::Rotate => $this->rotate($vehicle, $data, $input->positions, $zone, $locale),
             TyreChangeKind::Repair => $this->repair($vehicle, $data, array_keys($input->removed), $cost, $zone, $locale),
-            TyreChangeKind::Remove => $this->remove($vehicle, $data, $input->removed, $input->into, $cost, $zone, $locale),
+            TyreChangeKind::Remove => $this->remove(
+                $vehicle,
+                $data,
+                $input->removed,
+                $input->into,
+                $cost,
+                $zone,
+                $locale,
+                $input->depths,
+            ),
+            TyreChangeKind::Check => $this->check($vehicle, $data, $input->depths, $zone, $locale),
         };
     }
 
@@ -149,6 +169,7 @@ final readonly class TyreChangeService
      * in $on fitted at their positions. The spare is left alone.
      *
      * @param array<int, TyrePosition> $on stored tyre id → position
+     * @param array<int, string> $depths tyre id → depth measured, mm (tyres coming off or going on)
      * @throws TyreChangeRefused
      */
     public function swap(
@@ -159,6 +180,7 @@ final readonly class TyreChangeService
         ?TyreCost $cost,
         DateTimeZone $zone,
         string $locale,
+        array $depths = [],
     ): TyreChange {
         $lines = [];
         $off = [];
@@ -184,6 +206,8 @@ final readonly class TyreChangeService
         if ($lines === []) {
             throw new TyreChangeRefused('tyre.error.nothing', [], 'on');
         }
+
+        $lines = self::measured($lines, $depths);
 
         return $this->save($vehicle, TyreChangeKind::Swap, $data, [], $lines, $cost, $zone, $locale, $into, $off);
     }
@@ -259,6 +283,7 @@ final readonly class TyreChangeService
      * Remove fitted tyres: into storage (optionally into a set) or retired.
      *
      * @param array<int, ?TyreRetireReason> $tyres fitted tyre id → reason (null = into storage)
+     * @param array<int, string> $depths tyre id → depth measured as it came off, mm
      * @throws TyreChangeRefused
      */
     public function remove(
@@ -269,6 +294,7 @@ final readonly class TyreChangeService
         ?TyreCost $cost,
         DateTimeZone $zone,
         string $locale,
+        array $depths = [],
     ): TyreChange {
         $lines = [];
         $reasons = [];
@@ -289,7 +315,90 @@ final readonly class TyreChangeService
             throw new TyreChangeRefused('tyre.error.nothing', [], 'tyres');
         }
 
-        return $this->save($vehicle, TyreChangeKind::Remove, $data, [], $lines, $cost, $zone, $locale, $into, $stored, $reasons);
+        return $this->save(
+            $vehicle,
+            TyreChangeKind::Remove,
+            $data,
+            [],
+            self::measured($lines, $depths),
+            $cost,
+            $zone,
+            $locale,
+            $into,
+            $stored,
+            $reasons,
+        );
+    }
+
+    /**
+     * Check tread: a depth for one or more fitted tyres; nothing moves, and
+     * no service record is written or linked.
+     *
+     * @param array<int, string> $depths fitted tyre id → depth, mm
+     * @throws TyreChangeRefused
+     */
+    public function check(
+        Vehicle $vehicle,
+        TyreChangeData $data,
+        array $depths,
+        DateTimeZone $zone,
+        string $locale,
+    ): TyreChange {
+        $lines = [];
+        foreach ($depths as $id => $depth) {
+            $tyre = $this->tyre($vehicle, $id);
+            if (!$tyre->isFitted()) {
+                throw new TyreChangeRefused('tyre.error.not_fitted', ['tyre' => TyreSync::label($tyre)], 'depths');
+            }
+            $lines[] = new TyreChangeLine($id, TyreLineAction::Measure, $tyre->position, $depth);
+        }
+        if ($lines === []) {
+            throw new TyreChangeRefused('tyre.error.nothing_measured', [], 'depths');
+        }
+        $data = new TyreChangeData($data->doneOn, $data->odometerKm, null, $data->note);
+
+        return $this->save($vehicle, TyreChangeKind::Check, $data, [], $lines, null, $zone, $locale);
+    }
+
+    /**
+     * The depths just saved on a change that are more than
+     * TyreWear::DEEPER_MM deeper than the same tyre's previous measurement
+     * (the change is saved all the same; spec.md §7.17).
+     *
+     * @return list<DeeperReading>
+     */
+    public function deeperReadings(Vehicle $vehicle, TyreChange $change): array
+    {
+        $result = TyreReplay::run($this->tyres->listChanges($vehicle->id));
+        if (!$result instanceof TyreReplayResult) {
+            return [];
+        }
+        $deeper = [];
+        foreach ($change->lines as $line) {
+            if ($line->treadMm === null) {
+                continue;
+            }
+            $previous = TyreWear::deeperThan($result->measurements($line->tyreId), $change->id);
+            $tyre = $previous === null ? null : $this->tyres->findTyre($vehicle->id, $line->tyreId);
+            if ($previous !== null && $tyre !== null) {
+                $deeper[] = new DeeperReading($tyre, $line->treadMm, $previous);
+            }
+        }
+
+        return $deeper;
+    }
+
+    /**
+     * @param list<TyreChangeLine> $lines
+     * @param array<int, string> $depths tyre id → mm
+     * @return list<TyreChangeLine>
+     */
+    private static function measured(array $lines, array $depths): array
+    {
+        return array_map(
+            static fn (TyreChangeLine $line): TyreChangeLine => $line->withTread($depths[$line->tyreId] ?? null),
+            $lines,
+        );
     }
 
     /**
@@ -411,6 +520,7 @@ final readonly class TyreChangeService
                     $this->tyres->insertTyre($vehicle->id, $tyre->data, $now),
                     TyreLineAction::On,
                     $tyre->position,
+                    $tyre->treadMm,
                 );
             }
             $data = $cost === null ? $this->linked($vehicle, $data, $zone) : $data;

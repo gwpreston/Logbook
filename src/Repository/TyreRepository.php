@@ -25,6 +25,7 @@ use Logbook\Domain\Tyre\TyreSetData;
 use Logbook\Domain\Tyre\TyreStatus;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
+use Logbook\Support\Units\DepthUnit;
 use UnexpectedValueException;
 
 /**
@@ -352,6 +353,7 @@ final readonly class TyreRepository
                 'tyre_id' => $line->tyreId,
                 'action' => $line->action->value,
                 'position' => $line->position?->value,
+                'tread_mm' => $line->treadMm,
             ], ['change_id' => ParameterType::INTEGER, 'tyre_id' => ParameterType::INTEGER]);
         }
 
@@ -409,7 +411,7 @@ final readonly class TyreRepository
         $ids = array_map(static fn (array $row): int => Row::int($row, 'id'), $rows);
         $lines = [];
         $lineRows = $this->connection->createQueryBuilder()
-            ->select('change_id', 'tyre_id', 'action', 'position')
+            ->select('change_id', 'tyre_id', 'action', 'position', 'tread_mm')
             ->from(self::LINES)
             ->where('change_id IN (:changes)')
             ->setParameter('changes', $ids, ArrayParameterType::INTEGER)
@@ -422,6 +424,7 @@ final readonly class TyreRepository
                 TyreLineAction::tryFrom(Row::string($row, 'action'))
                     ?? throw new UnexpectedValueException('Unknown tyre line action.'),
                 $position === null ? null : TyrePosition::tryFrom($position),
+                Row::nullableDecimal($row, 'tread_mm', DepthUnit::MM_SCALE),
             );
         }
 

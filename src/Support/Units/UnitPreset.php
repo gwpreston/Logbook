@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Support\Units;
 
 /**
- * Common combinations of display units. A preset only fills in the three
+ * Common combinations of display units. A preset only fills in the four
  * individual preferences; users can then mix and match (e.g. km with mpg).
  */
 enum UnitPreset: string
@@ -40,12 +40,29 @@ enum UnitPreset: string
     }
 
     /**
+     * Tread depth: millimetres, except 32nds of an inch in the US.
+     */
+    public function depth(): DepthUnit
+    {
+        return $this === self::Us ? DepthUnit::ThirtySecond : DepthUnit::Millimetre;
+    }
+
+    /**
      * The preset matching these units exactly, if any.
      */
-    public static function matching(DistanceUnit $distance, VolumeUnit $volume, ConsumptionUnit $consumption): ?self
-    {
+    public static function matching(
+        DistanceUnit $distance,
+        VolumeUnit $volume,
+        ConsumptionUnit $consumption,
+        DepthUnit $depth,
+    ): ?self {
         foreach (self::cases() as $preset) {
-            if ($preset->distance() === $distance && $preset->volume() === $volume && $preset->consumption() === $consumption) {
+            if (
+                $preset->distance() === $distance
+                && $preset->volume() === $volume
+                && $preset->consumption() === $consumption
+                && $preset->depth() === $depth
+            ) {
                 return $preset;
             }
         }

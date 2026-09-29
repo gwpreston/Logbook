@@ -11,7 +11,10 @@ use Logbook\Domain\Tyre\TyreChangeLine;
 use Logbook\Domain\Tyre\TyreLineAction;
 use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\Tyre\TyreSet;
+use Logbook\Support\Display\DepthText;
 use Logbook\Support\I18n\JoinedMessage;
+use Logbook\Support\Number\Decimal;
+use Logbook\Support\Units\DepthUnit;
 use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatableInterface;
 
@@ -19,18 +22,47 @@ use Symfony\Contracts\Translation\TranslatableInterface;
  * The words for a tyre change (spec.md §7.16, §7.17), built in PHP as
  * translation keys and parameters: its one-line summary ("Fitted 2 ×
  * Michelin Primacy 4 (front)", "Swapped to Winter wheels", "Rotated 4
- * tyres", "Repaired front left") and the title of the service record it
- * writes ("2 × Michelin Primacy 4, front").
+ * tyres", "Repaired front left", "Checked tread: 5.1–6.3 mm"; the depths
+ * recorded on any other change follow its summary) and the title of the
+ * service record it writes ("2 × Michelin Primacy 4, front").
  */
 final class TyreSummary
 {
     /**
      * @param array<int, Tyre> $tyres the vehicle's tyres by id
      * @param array<int, TyreSet> $sets the vehicle's sets by id
+     * @param DepthUnit $unit the owner's depth unit
      */
-    public static function line(TyreChange $change, array $tyres, array $sets): TranslatableMessage
+    public static function line(
+        TyreChange $change,
+        array $tyres,
+        array $sets,
+        DepthUnit $unit = DepthUnit::Millimetre,
+    ): TranslatableMessage {
+        $depths = self::depths($change, $unit);
+        if ($change->kind === TyreChangeKind::Check) {
+            return new TranslatableMessage('tyre.summary.check', ['depths' => $depths ?? '']);
+        }
+        $summary = self::message('tyre.summary.', $change, $tyres, $sets);
+
+        return $depths === null
+            ? $summary
+            : new TranslatableMessage('tyre.summary.with_depths', ['summary' => $summary, 'depths' => $depths]);
+    }
+
+    /**
+     * The depths recorded on a change, as a range ("5.1–6.3 mm"), or null
+     * when none was.
+     */
+    public static function depths(TyreChange $change, DepthUnit $unit): ?DepthText
     {
-        return self::message('tyre.summary.', $change, $tyres, $sets);
+        $depths = array_values(array_filter(array_map(static fn (TyreChangeLine $l): ?string => $l->treadMm, $change->lines)));
+        if ($depths === []) {
+            return null;
+        }
+        usort($depths, Decimal::compare(...));
+
+        return new DepthText($depths[0], $depths[count($depths) - 1], $unit);
     }
 
     /**
@@ -95,6 +127,9 @@ final class TyreSummary
                 $prefix . (count($retired) === count($change->lines) ? 'retire' : 'remove'),
                 ['count' => count($change->lines), 'where' => self::where(self::positions($change->lines))],
             ),
+            TyreChangeKind::Check => new TranslatableMessage($prefix . 'check_where', [
+                'where' => self::where(self::positions($change->lines)),
+            ]),
         };
     }
 

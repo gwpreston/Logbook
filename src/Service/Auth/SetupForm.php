@@ -65,6 +65,7 @@ final class SetupForm
                 volumeUnit: $preset->volume(),
                 consumptionUnit: $preset->consumption(),
                 currency: $preferences['currency'],
+                depthUnit: $preset->depth(),
             ),
         );
     }

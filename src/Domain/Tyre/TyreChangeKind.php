@@ -17,6 +17,8 @@ enum TyreChangeKind: string
     case Rotate = 'rotate';
     case Repair = 'repair';
     case Remove = 'remove';
+    /** Tread depths measured (Phase 11.2); nothing moves. */
+    case Check = 'check';
 
     public function requiresOdometer(): bool
     {
@@ -33,6 +35,15 @@ enum TyreChangeKind: string
     }
 
     /**
+     * Whether the form takes tread depths (spec.md §7.17): every kind but a
+     * rotation and a repair.
+     */
+    public function takesDepth(): bool
+    {
+        return $this !== self::Rotate && $this !== self::Repair;
+    }
+
+    /**
      * Icon name in the vendored sprite (assets/vendor/icons.svg).
      */
     public function icon(): string
@@ -43,6 +54,7 @@ enum TyreChangeKind: string
             self::Rotate => 'restart_alt',
             self::Repair => 'build',
             self::Remove => 'archive',
+            self::Check => 'fact_check',
         };
     }
 }

@@ -66,6 +66,8 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('money', $this->formatter->money(...)),
             new TwigFilter('distance', $this->formatter->distance(...)),
             new TwigFilter('volume', $this->formatter->volume(...)),
+            new TwigFilter('depth', $this->formatter->depth(...)),
+            new TwigFilter('about_distance', $this->formatter->aboutDistance(...)),
             new TwigFilter('energy', $this->formatter->energy(...)),
             new TwigFilter('quantity', $this->formatter->quantity(...)),
             new TwigFilter('consumption', $this->formatter->consumption(...)),

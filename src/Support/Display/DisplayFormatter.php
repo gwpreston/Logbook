@@ -156,6 +156,39 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * A distance that is only an estimate, rounded so it does not look
+     * precise: to the nearest 100 from 1,000 up, else to the nearest 10
+     * ("about 6,000 mi left", "about 800 mi").
+     */
+    public function aboutDistance(?string $km): string
+    {
+        if ($km === null || !Decimal::isCanonical($km)) {
+            return '';
+        }
+
+        $unit = $this->context->preferences()->distanceUnit;
+        $value = (float) $unit->fromKmDecimal($km, 3);
+        $step = $value >= 1000 ? 100 : 10;
+
+        return $this->translator->trans('units.distance.' . $unit->value, [
+            'value' => $this->number(round($value / $step) * $step, 0),
+        ]);
+    }
+
+    /**
+     * A tread depth stored in millimetres, in the user's depth unit:
+     * "4.2 mm", "6½/32″" (spec.md §7.17).
+     */
+    public function depth(?string $mm): string
+    {
+        if ($mm === null || !Decimal::isCanonical($mm)) {
+            return '';
+        }
+
+        return (new DepthText($mm, null, $this->context->preferences()->depthUnit, $this->locale()))->trans($this->translator);
+    }
+
+    /**
      * A volume stored in litres, in the user's volume unit: "45.2 L".
      */
     public function volume(int|float|string|null $litres, int $maxDecimals = 2): string

@@ -15,6 +15,8 @@ final readonly class NewTyre
     public function __construct(
         public TyrePosition $position,
         public TyreData $data,
+        /** The tread depth measured as it went on, mm; null when not measured. */
+        public ?string $treadMm = null,
     ) {
     }
 }

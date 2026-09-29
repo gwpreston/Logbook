@@ -22,6 +22,10 @@
     {% for unit in consumption_units %}
         {% set consumption_options = consumption_options|merge([{value: unit.value, label: ('units.name.' ~ unit.value)|trans}]) %}
     {% endfor %}
+    {% set depth_options = [] %}
+    {% for unit in depth_units %}
+        {% set depth_options = depth_options|merge([{value: unit.value, label: ('units.name.' ~ unit.value)|trans}]) %}
+    {% endfor %}
 
     <div class="page__stack page__stack--narrow">
         <header class="page-header">
@@ -76,7 +80,8 @@
                             <button type="button" class="chip" data-unit-preset
                                     data-distance-unit="{{ preset.distance().value }}"
                                     data-volume-unit="{{ preset.volume().value }}"
-                                    data-consumption-unit="{{ preset.consumption().value }}">{{ ('units.preset.' ~ preset.value)|trans }}</button>
+                                    data-consumption-unit="{{ preset.consumption().value }}"
+                                    data-depth-unit="{{ preset.depth().value }}">{{ ('units.preset.' ~ preset.value)|trans }}</button>
                         {% endfor %}
                     </div>
                 </div>
@@ -84,6 +89,7 @@
                 {{ ui.chips('distance_unit', 'prefs.distance_unit'|trans, values, errors, distance_options, {required: true}) }}
                 {{ ui.chips('volume_unit', 'prefs.volume_unit'|trans, values, errors, volume_options, {required: true}) }}
                 {{ ui.chips('consumption_unit', 'prefs.consumption_unit'|trans, values, errors, consumption_options, {required: true, hint: 'settings.mpg_hint'|trans}) }}
+                {{ ui.chips('depth_unit', 'prefs.depth_unit'|trans, values, errors, depth_options, {required: true}) }}
                 {{ ui.select('currency', 'prefs.currency'|trans, values, errors, currency_options, {required: true, hint: 'settings.currency_hint'|trans}) }}
                 <p class="field__hint">{{ 'settings.units_note'|trans }}</p>
             </section>
@@ -99,6 +105,7 @@
                 <dl class="details details--compact" data-testid="format-preview">
                     <div><dt>{{ 'settings.preview_distance'|trans }}</dt><dd class="tabular">{{ 12345.6|distance }}</dd></div>
                     <div><dt>{{ 'settings.preview_volume'|trans }}</dt><dd class="tabular">{{ 45.5|volume }}</dd></div>
+                    <div><dt>{{ 'settings.preview_depth'|trans }}</dt><dd class="tabular">{{ '4.763'|depth }}</dd></div>
                     <div><dt>{{ 'settings.preview_money'|trans }}</dt><dd class="tabular">{{ '1234.5'|money }}</dd></div>
                     <div><dt>{{ 'settings.preview_date'|trans }}</dt><dd>{{ now|local_datetime }}</dd></div>
                 </dl>

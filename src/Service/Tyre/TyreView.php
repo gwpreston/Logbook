@@ -25,6 +25,10 @@ final readonly class TyreView
         public ?DateTimeImmutable $retiredOn = null,
         /** Retired and costed: its share of the fitting's cost per km, in the vehicle's currency. */
         public ?string $costPerKm = null,
+        /** Its latest depth and, while fitted at a road position, the wear estimate (Phase 11.2). */
+        public TyreWearEstimate $wear = new TyreWearEstimate(),
+        /** When it reaches the owner's age limit; null without a DOT date, with the limit off, or retired. */
+        public ?DateTimeImmutable $ageLimitOn = null,
     ) {
     }
 }

@@ -17,7 +17,7 @@
         {% include 'vehicles/_header.twig' with {active_tab: 'tyres'} %}
 
         <div class="toolbar list-toolbar">
-            <h1 class="section-title">{{ 'tyre.title'|trans }}</h1>
+            <h1 class="section-title">{{ 'tyre.title'|trans }} {{ tyres.verdict_badge(overview.verdict) }}</h1>
             <div class="btn-row list-toolbar__actions">
                 {% if not overview.isEmpty() %}
                     <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'tyres'}) }}" download>{{ ui.icon('download') }}{{ 'export.module.tyres'|trans }}</a>
@@ -61,7 +61,8 @@
                 <h2 id="tyres-fitted" class="card__title">{{ 'tyre.section.fitted'|trans }}</h2>
                 <div class="tyre-grid tyre-grid--{{ vehicle.data.type.value }}">
                     {% for position in vehicle.data.type.tyrePositions() %}
-                        {{ tyres.position_card(position, overview.at(position), vehicle) }}
+                        {% set view = overview.at(position) %}
+                        {{ tyres.position_card(position, view, vehicle, view ? overview.verdict.standing(view.tyre.id) : null) }}
                     {% endfor %}
                 </div>
             </section>
@@ -85,7 +86,7 @@
                         {% endif %}
                         <ul class="list">
                             {% for view in group.tyres %}
-                                {{ tyres.tyre_row(view, vehicle, currency) }}
+                                {{ tyres.tyre_row(view, vehicle, currency, overview.verdict.standing(view.tyre.id)) }}
                             {% endfor %}
                         </ul>
                     </div>
