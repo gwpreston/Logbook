@@ -661,6 +661,7 @@ return [
                 'price' => 'Ø Preis',
                 'share' => 'Anteil',
                 'cost_per_kwh' => 'Kosten pro kWh',
+                'per_distance' => '{unit, select, mi {Pro Meile} other {Pro km}}',
                 'energy' => 'Energie',
                 'economy' => 'Verbrauch',
                 'efficiency' => 'Effizienz',
@@ -669,6 +670,38 @@ return [
             'blended' => 'Alle Ladevorgänge',
             'not_enough' => 'Noch zu wenige Füllungen',
             'hint' => 'Der Verbrauch nach Sorte ist ein Richtwert, kein Messergebnis: Er zählt nur Strecken von Volltanken zu Volltanken, die ganz mit dieser Sorte gefahren wurden (dem Kraftstoff, der zu Beginn der Strecke getankt wurde), und braucht mindestens zwei davon.',
+        ],
+        // Kraftstoff-Einblicke (spec.md §7.3): aus den Tankfüllungen berechnet, nichts gespeichert.
+        'verdict' => [
+            'title' => 'Im Vergleich zu deiner üblichen Sorte',
+            'cost' => '{grade} kostet {direction, select, same {etwa gleich viel {unit, select, mi {pro Meile} other {pro km}} wie {reference}} more {etwa {percent, number, percent} mehr {unit, select, mi {pro Meile} other {pro km}} als {reference}} other {etwa {percent, number, percent} weniger {unit, select, mi {pro Meile} other {pro km}} als {reference}}}',
+            'parts' => '{price, select, same {etwa gleicher Preis {volume, select, l {pro Liter} other {pro Gallone}}} more {{price_percent, number, percent} mehr {volume, select, l {pro Liter} other {pro Gallone}}} other {{price_percent, number, percent} weniger {volume, select, l {pro Liter} other {pro Gallone}}}}, {used, select, same {etwa gleicher Verbrauch} more {{used_percent, number, percent} mehr Verbrauch} other {{used_percent, number, percent} weniger Verbrauch}}',
+            'basis' => 'Aus {grade_tanks, plural, one {# Tankfüllung} other {# Tankfüllungen}} {grade} und {reference_tanks, number} {reference}; Preise aus {pairs, plural, one {# Tankvorgang} other {# Tankvorgängen}} höchstens einen Monat auseinander. Ein Richtwert: Jahreszeit und Fahrweise beeinflussen den Verbrauch ebenfalls.',
+            'not_enough_economy' => '{grade} im Vergleich zu {reference}: noch zu wenige Füllungen.',
+            'not_enough_prices' => '{grade} im Vergleich zu {reference}: zu wenige Tankvorgänge zeitlich nah beieinander, um Preise zu vergleichen.',
+        ],
+        'trend' => [
+            'label' => 'Im Diagramm zeigen',
+            'economy' => 'Verbrauch',
+            'economy_ev' => 'Effizienz',
+            'cost' => 'Kosten {unit, select, mi {pro Meile} other {pro km}}',
+            'cost_title' => 'Verlauf der Kosten {unit, select, mi {pro Meile} other {pro km}}',
+            'cost_hint' => 'Jeder Punkt zeigt, was der Kraftstoff einer Tankfüllung pro Strecke gekostet hat; die gestrichelte Linie ist der laufende Durchschnitt. Die Kraftstoffkosten oben zählen stattdessen, was du ausgegeben hast, deshalb können beide leicht abweichen.',
+            'cost_hint_ev' => 'Jeder Punkt zeigt, was die Energie einer Strecke pro Strecke gekostet hat; die gestrichelte Linie ist der laufende Durchschnitt. Die Ladekosten oben zählen stattdessen, was du ausgegeben hast, deshalb können beide leicht abweichen.',
+            'column' => [
+                'to' => 'Voll zu voll bis',
+                'distance' => 'Strecke',
+                'cost' => 'Verbrauchter Kraftstoff',
+                'cost_ev' => 'Verbrauchte Energie',
+                'per_distance' => '{unit, select, mi {Pro Meile} other {Pro km}}',
+            ],
+        ],
+        'monthly' => [
+            'title' => 'Verbrauch nach Monat',
+            'title_ev' => 'Effizienz nach Monat',
+            'month' => 'Monat',
+            'average' => 'Durchschnitt',
+            'hint' => 'Jede Strecke von voll zu voll wird zeitanteilig auf die Monate verteilt, die sie umfasst. Monate mit weniger als {distance} Fahrstrecke zeigen „—“, Strecken über drei Monate bleiben außen vor. Der Durchschnitt ist über alle Jahre gewichtet.',
         ],
         'kind' => [
             'liquid' => 'Kraftstoff',
@@ -713,6 +746,9 @@ return [
             'price_axis' => 'Preis pro {unit}',
             'need_more' => 'Erfasse mindestens drei volle Tankfüllungen, um einen Verlauf zu sehen.',
             'need_two' => 'Erfasse zwei oder mehr Tankfüllungen, um einen Verlauf zu sehen.',
+            'cost_axis' => 'Kosten {unit, select, mi {pro Meile} other {pro km}}',
+            'per_tank' => 'Verbrauchter Kraftstoff dieser Tankfüllung',
+            'per_tank_ev' => 'Verbrauchte Energie dieser Strecke',
         ],
         // Verbrauchsprüfung (spec.md §7.3): verglichen im Verbrauch, nie in mpg.
         'check' => [

@@ -52,9 +52,21 @@ final readonly class GradeBreakdown
     {
         $price = $row->averagePricePerUnit();
 
-        return $price === null || $this->averageVolumePerKm === null
-            ? null
-            : Decimal::multiply($price, $this->averageVolumePerKm, 8);
+        return self::perKm($price, $this->averageVolumePerKm);
+    }
+
+    /**
+     * The blended cost per kWh × the average kWh per km (the charging card's
+     * footer).
+     */
+    public function blendedCostPerKm(): ?string
+    {
+        return self::perKm($this->blendedPricePerUnit(), $this->averageVolumePerKm);
+    }
+
+    private static function perKm(?string $price, ?string $volumePerKm): ?string
+    {
+        return $price === null || $volumePerKm === null ? null : Decimal::multiply($price, $volumePerKm, 8);
     }
 
     /**

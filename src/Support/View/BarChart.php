@@ -15,7 +15,7 @@ use Logbook\Support\Display\DisplayPreferences;
  */
 final class BarChart implements JsonSerializable
 {
-    /** @var list<array{label: string, color: string, values: list<float>}> */
+    /** @var list<array{label: string, color: string, type: string, values: list<?float>}> */
     private array $series = [];
 
     /**
@@ -28,19 +28,23 @@ final class BarChart implements JsonSerializable
         /** Currency code when values are money. */
         private readonly ?string $currency = null,
         private readonly bool $stacked = true,
+        /** Axis title when values are not money, e.g. "mpg (UK)". */
+        private readonly ?string $unit = null,
     ) {
     }
 
     /**
-     * @param list<float> $values one per label
+     * @param list<?float> $values one per label; null leaves a gap
      * @param string $color a colour token from app.css, e.g. "c-fuel"
+     * @param bool $line drawn as a line over the bars (never stacked)
      */
-    public function addSeries(string $label, array $values, string $color): self
+    public function addSeries(string $label, array $values, string $color, bool $line = false): self
     {
         $this->series[] = [
             'label' => $label,
             'color' => $color,
-            'values' => array_map(static fn (float $v): float => round($v, 6), $values),
+            'type' => $line ? 'line' : 'bar',
+            'values' => array_map(static fn (?float $v): ?float => $v === null ? null : round($v, 6), $values),
         ];
 
         return $this;
@@ -74,6 +78,7 @@ final class BarChart implements JsonSerializable
             'decimals' => $this->decimals,
             'currency' => $this->currency,
             'stacked' => $this->stacked,
+            'unit' => $this->unit,
             'series' => $this->series,
         ];
     }

@@ -167,7 +167,10 @@ final class DemoDataSeeder extends AbstractSeed
         }
 
         // Golf: ~45 mpg (UK), fill every ~12 days; partial every 6th; one fill-up never logged.
-        // Grades from the 9th fill on (older ones predate grades): mostly E10, E5 97 now and then.
+        // Grades from the 11th fill on (older ones predate grades, the snowy January tank among
+        // them): mostly E10, with E5 97 in between, close enough together for a grade verdict
+        // (E5 97 uses 3% less fuel and costs 12p a litre more). Winter costs about 7% more fuel
+        // (Economy by month).
         [$golf, $confirmed] = self::economyChecks($this->fillUps(
             $ids['LB19 KTR'],
             '2025-09-20',
@@ -180,8 +183,12 @@ final class DemoDataSeeder extends AbstractSeed
             6,
             17,
             $now,
-            ['e10_95', 'e10_95', 'e10_95', 'e5_97', 'e5_97'],
-            8,
+            // In this order both tanks of the odometer typo are E10, so it cannot skew the verdict.
+            ['e10_95', 'e5_97', 'e10_95', 'e5_97', 'e10_95'],
+            10,
+            noise: 0.03,
+            winter: 0.07,
+            burnedFactor: ['e5_97' => 0.97],
         ));
 
         $entries = [
@@ -925,6 +932,9 @@ final class DemoDataSeeder extends AbstractSeed
      * @param int|null $missed index of a fill-up that happens but is never logged
      * @param list<string> $grades grade codes, in turn (empty: none recorded)
      * @param int $ungraded how many of the first fill-ups have no grade (logged before grades existed)
+     * @param float $noise how far each tank's economy strays, either way (0.07: ±7%)
+     * @param float $winter extra fuel used in mid-January, tapering to as much less in mid-July
+     * @param array<string, float> $burnedFactor fuel used on a grade, relative to the others (0.97: 3% less)
      * @return list<array<string, mixed>>
      */
     private function fillUps(
@@ -941,16 +951,23 @@ final class DemoDataSeeder extends AbstractSeed
         string $now,
         array $grades = [],
         int $ungraded = 0,
+        float $noise = 0.07,
+        float $winter = 0.0,
+        array $burnedFactor = [],
     ): array {
         $rows = [];
         $deficit = 0.0;
         $time = (int) strtotime($start . ' 08:00 UTC');
         $afterGap = false;
+        $burning = null; // the grade of the last full fill, burned until the next
 
         for ($i = 0; $i < $count; $i++) {
             $distance = $kmPerFill * (0.8 + mt_rand(0, 400) / 1000);
             $km += $distance;
-            $deficit += $distance / ($kmPerUnit * (0.93 + mt_rand(0, 140) / 1000));
+            // The same mt_rand() calls whatever the options, so other vehicles' figures never move.
+            $spread = 1 - $noise + mt_rand(0, 140) / 1000 * ($noise / 0.07);
+            $season = 1 + $winter * cos(2 * M_PI * ((int) gmdate('z', $time) - 14) / 365.25);
+            $deficit += $distance / $kmPerUnit / $spread * $season * ($burnedFactor[$burning ?? ''] ?? 1.0);
             $time += (int) ($distance / $kmPerFill * 11 * 86400) + mt_rand(0, 36000);
 
             $partial = $partialEvery > 0 ? ($i % $partialEvery === $partialEvery - 1)
@@ -996,6 +1013,9 @@ final class DemoDataSeeder extends AbstractSeed
                 'updated_at' => $now,
             ];
             $afterGap = false;
+            if (!$partial) {
+                $burning = $grade;
+            }
         }
 
         return $rows;

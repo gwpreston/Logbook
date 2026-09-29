@@ -59,21 +59,70 @@
                 {% if section.grades %}
                     <div class="split">
                         <div class="page__stack">{{ overview }}</div>
-                        {{ fuel_ui.grade_card(section.grades, currency, electric) }}
+                        {{ fuel_ui.grade_card(section.grades, currency, electric, section.verdicts) }}
                     </div>
                 {% else %}
                     {{ overview }}
                 {% endif %}
 
                 <div class="split">
+                    {% set trend_title = (electric ? 'fuel.chart.efficiency_title' : 'fuel.chart.economy_title')|trans %}
                     <section class="card" aria-labelledby="economy-{{ section.kind.value }}">
-                        <h3 id="economy-{{ section.kind.value }}" class="card__title">{{ (electric ? 'fuel.chart.efficiency_title' : 'fuel.chart.economy_title')|trans }}</h3>
-                        {% if section.economy_chart.hasData() %}
-                            {{ ui.chart(section.economy_chart, (electric ? 'fuel.chart.efficiency_title' : 'fuel.chart.economy_title')|trans) }}
-                            <p class="field__hint">{{ 'fuel.chart.economy_hint'|trans }}</p>
-                        {% else %}
-                            <p class="muted">{{ 'fuel.chart.need_more'|trans }}</p>
-                        {% endif %}
+                        <div class="card__header card__header--wrap">
+                            <h3 id="economy-{{ section.kind.value }}" class="card__title">{{ trend_title }}</h3>
+                            {# Plain links: work without JS and survive a refresh; js/app.js swaps the charts in place. #}
+                            <nav class="segmented" aria-label="{{ 'fuel.trend.label'|trans }}">
+                                {% for mode in trend_modes %}
+                                    <a class="segmented__option" data-trend-link="{{ mode.value }}"
+                                       href="{{ url_for('fuel.index', {id: vehicle.id}, mode.query()|merge(to_check ? {check: 1} : {})) }}"
+                                       {%- if mode == trend %} aria-current="true"{% endif %}>
+                                        {{- ('fuel.trend.' ~ mode.value ~ (electric and mode.value == 'economy' ? '_ev' : ''))|trans({unit: prefs().distanceUnit.value}) -}}
+                                    </a>
+                                {% endfor %}
+                            </nav>
+                        </div>
+                        <div data-trend-panel="economy"{% if trend.value != 'economy' %} hidden{% endif %}>
+                            {% if section.economy_chart.hasData() %}
+                                {{ ui.chart(section.economy_chart, trend_title) }}
+                                <p class="field__hint">{{ 'fuel.chart.economy_hint'|trans }}</p>
+                            {% else %}
+                                <p class="muted">{{ 'fuel.chart.need_more'|trans }}</p>
+                            {% endif %}
+                        </div>
+                        <div data-trend-panel="cost"{% if trend.value != 'cost' %} hidden{% endif %}>
+                            {% set cost_title = 'fuel.trend.cost_title'|trans({unit: prefs().distanceUnit.value}) %}
+                            {% if section.cost_chart.hasData() %}
+                                {{ ui.chart(section.cost_chart, cost_title) }}
+                            {% endif %}
+                            {% if section.costs is empty %}
+                                <p class="muted">{{ 'fuel.chart.need_more'|trans }}</p>
+                            {% else %}
+                                <div class="table-wrap">
+                                    <table class="table chart-table">
+                                        <caption class="visually-hidden">{{ cost_title }}</caption>
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">{{ 'fuel.trend.column.to'|trans }}</th>
+                                                <th scope="col" class="table__num">{{ 'fuel.trend.column.distance'|trans }}</th>
+                                                <th scope="col" class="table__num">{{ (electric ? 'fuel.trend.column.cost_ev' : 'fuel.trend.column.cost')|trans }}</th>
+                                                <th scope="col" class="table__num">{{ 'fuel.trend.column.per_distance'|trans({unit: prefs().distanceUnit.value}) }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cost in section.costs|reverse %}
+                                                <tr>
+                                                    <th scope="row">{{ cost.endedAt|instant_date }}</th>
+                                                    <td class="table__num tabular">{{ cost.distanceKm|distance }}</td>
+                                                    <td class="table__num tabular">{{ cost.cost|money(currency) }}</td>
+                                                    <td class="table__num tabular">{{ cost.costPerKm|per_distance(currency) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p class="field__hint">{{ (electric ? 'fuel.trend.cost_hint_ev' : 'fuel.trend.cost_hint')|trans }}</p>
+                            {% endif %}
+                        </div>
                     </section>
                     <section class="card" aria-labelledby="price-{{ section.kind.value }}">
                         <h3 id="price-{{ section.kind.value }}" class="card__title">{{ 'fuel.chart.price_title'|trans }}</h3>
@@ -84,6 +133,45 @@
                         {% endif %}
                     </section>
                 </div>
+
+                {% set monthly = section.monthly %}
+                {% if monthly.hasFigures() %}
+                    {% set monthly_title = (electric ? 'fuel.monthly.title_ev' : 'fuel.monthly.title')|trans %}
+                    <section class="card" aria-labelledby="monthly-{{ section.kind.value }}">
+                        <h3 id="monthly-{{ section.kind.value }}" class="card__title">{{ monthly_title }}</h3>
+                        {% if section.monthly_chart.hasData() %}
+                            {{ ui.chart(section.monthly_chart, monthly_title) }}
+                        {% endif %}
+                        <div class="table-wrap">
+                            <table class="table">
+                                <caption class="visually-hidden">{{ monthly_title }}</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{{ 'fuel.monthly.month'|trans }}</th>
+                                        {% for year in monthly.years() %}
+                                            <th scope="col" class="table__num">{{ year }}</th>
+                                        {% endfor %}
+                                        <th scope="col" class="table__num">{{ 'fuel.monthly.average'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for month in 1..12 %}
+                                        <tr>
+                                            <th scope="row">{{ month|month_name }}</th>
+                                            {% for year in monthly.years() %}
+                                                {% set cell = monthly.cell(year, month) %}
+                                                <td class="table__num tabular">{{ cell and cell.hasFigure() ? cell.distanceKm|economy(cell.volume, electric) : dash }}</td>
+                                            {% endfor %}
+                                            {% set average = monthly.average(month) %}
+                                            <td class="table__num tabular"><strong>{{ average.hasFigure() ? average.distanceKm|economy(average.volume, electric) : dash }}</strong></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="field__hint">{{ 'fuel.monthly.hint'|trans({distance: constant('Logbook\\Domain\\Fuel\\MonthlyEconomyRow::MIN_DISTANCE_KM')|about_distance}) }}</p>
+                    </section>
+                {% endif %}
             </section>
         {% endfor %}
 
@@ -117,7 +205,7 @@
                         }) }}
                     {% endfor %}
                 </ul>
-                {{ ui.pagination(pagination, 'fuel.index', {id: vehicle.id}, to_check ? {check: 1} : {}) }}
+                {{ ui.pagination(pagination, 'fuel.index', {id: vehicle.id}, trend.query()|merge(to_check ? {check: 1} : {})) }}
                 <p class="field__hint">{{ 'fuel.full_to_full_note'|trans }}</p>
             {% endif %}
         </section>
