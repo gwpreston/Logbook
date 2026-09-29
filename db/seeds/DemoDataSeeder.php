@@ -205,10 +205,13 @@ final class DemoDataSeeder extends AbstractSeed
             ...$this->plugInHybrid($ids['YR21 PHV'], $now),
         ];
         $this->table('fuel_entries')->insert($entries)->saveData();
-        $this->execute(
+        $updated = $this->execute(
             'UPDATE fuel_entries SET economy_confirmed = ? WHERE vehicle_id = ? AND filled_at = ?',
             [$confirmed['consumption'], $ids['LB19 KTR'], $confirmed['filled_at']],
         );
+        if ($updated !== 1) {
+            throw new LogicException('The demo economy confirmation matched no single fill-up.');
+        }
 
         // Each fill-up's odometer reading (portable INSERT … SELECT).
         $this->execute(
