@@ -6,6 +6,9 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 15: *Coming up*, the next 12 months of maintenance, renewals and
+fuel. To be released as 1.7.0.
+
 ## [1.6.0] — 2026-09-29
 
 Phases 14.1 and 14.2: valuations, depreciation and the total cost of

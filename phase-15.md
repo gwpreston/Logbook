@@ -134,20 +134,27 @@ tagged.
 
 ### 15.0 Spec first
 Per `CLAUDE.md` §12, update `spec.md` before building:
-- [ ] A new §7 section *Coming up*: horizon, sources and repeats, expected
+- [x] A new §7 section *Coming up*: horizon, sources and repeats, expected
       costs, fuel estimate, totals, pages, and why it reads sources rather
       than reminders.
-- [ ] §7.8: the `coming_up` widget and default order.
-- [ ] §7.10: how each module's items leave.
-- [ ] §7.13: the CSV export.
-- [ ] §13: a Phase 15 entry.
-- [ ] `ROADMAP.md` Phase 15 row 🚧; `CHANGELOG.md` `[1.7.0]` entry.
+- [x] §7.8: the `coming_up` widget and default order.
+- [x] §7.10: how each module's items leave.
+- [x] §7.13: the CSV export (it lives in §7.7's *CSV export* bullet with
+      the other exports).
+- [x] §13: a Phase 15 entry.
+- [x] `ROADMAP.md` Phase 15 row 🚧; `CHANGELOG.md` `[1.7.0]` entry.
 
 ### 15.1 Refactor first, if needed
-- [ ] If schedule, document or tyre due-point logic lives inside
+- [x] If schedule, document or tyre due-point logic lives inside
       `ReminderGenerator`, extract it into services both can call, with no
       change in behaviour (the reminder suite must pass unchanged before
       anything new is added).
+      *Nothing to extract: the due points already live in
+      `ScheduleCalculator` / `DueState` (§7.4), `DocumentState` (§7.5) and
+      `TyreJudgement` (§7.17); `ReminderGenerator` only maps their states to
+      rows. The one shared piece made public is the "latest completing
+      entry" order (`ScheduleCalculator::latest()`), so the schedule's
+      last-time cost reads the same entry that sets *last done*.*
 
 ### 15.2 Service
 - [ ] `ComingUp` with typed items (source, vehicle, title, date or
