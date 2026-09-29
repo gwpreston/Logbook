@@ -157,68 +157,85 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
       last-time cost reads the same entry that sets *last done*.*
 
 ### 15.2 Service
-- [ ] `ComingUp` with typed items (source, vehicle, title, date or
+- [x] `ComingUp` with typed items (source, vehicle, title, date or
       distance, projected flag, expected cost or unknown, link) and typed
       month totals per currency.
-- [ ] Schedule repeats with the sooner-first rule and the 24 cap; document
+- [x] Schedule repeats with the sooner-first rule and the 24 cap; document
       repeats by term; tyre grouping through the tyre reminder's title
       helper; manual reminders; overdue and date-unknown groups.
-- [ ] Fuel estimate from the projection and the ledger.
+- [x] Fuel estimate from the projection and the ledger.
 
 ### 15.3 Display
-- [ ] `/upcoming` page, chart (table without JS), chips, CSV.
-- [ ] Overview card; dashboard widget and layout registration.
-- [ ] Accessible: sections as headings, dates in `<time>`, estimates
+- [x] `/upcoming` page, chart (table without JS), chips, CSV.
+- [x] Overview card; dashboard widget and layout registration.
+- [x] Accessible: sections as headings, dates in `<time>`, estimates
       marked in text, not only by style.
 
 ### 15.4 Demo seed
-- [ ] Check the seed gives each source at least one item in the horizon,
+- [x] Check the seed gives each source at least one item in the horizon,
       with and without a known cost (an interval never completed; an
       insurance renewal with last year's premium; the Golf's fronts).
 
 ### 15.5 i18n
-- [ ] English and German: *Demnächst*, *Überfällig*, *Datum noch nicht
+- [x] English and German: *Demnächst*, *Überfällig*, *Datum noch nicht
       bekannt*, *etwa {amount} (letztes Mal)*, *etwa {amount} für
       Kraftstoff*, *mindestens*, month headings through ICU dates.
 
 ### 15.6 Release v1.7.0
-- [ ] `VERSION` → `1.7.0`; sidebar, Settings and `/health` show it.
-- [ ] `CHANGELOG.md` `[1.7.0]`: *Added* — *Coming up*. Upgrade notes: no
+- [x] `VERSION` → `1.7.0`; sidebar, Settings and `/health` show it.
+- [x] `CHANGELOG.md` `[1.7.0]`: *Added* — *Coming up*. Upgrade notes: no
       migrations, no configuration changes, no change to the backup
       format; a new dashboard widget is appended to saved layouts.
-- [ ] `ROADMAP.md`: Phase 15 row ✅.
+- [x] `ROADMAP.md`: Phase 15 row ✅.
 - [ ] Tag `v1.7.0`; image published as `1.7.0`, `1.7`, `1` and `latest`.
 
 ### 15.7 Tests
-- [ ] **Unit (schedules):** today 1 Oct 2026, every 6 months, last done
+- [x] **Unit (schedules):** today 1 Oct 2026, every 6 months, last done
       15 Aug 2026 → 15 Feb and 15 Aug 2027 in the horizon; every 10,000 mi
       at 1,000 mi a month, last done at 40,000 → about 10 months out;
       both limits → the sooner each time; 31 Aug + 6 months clamps to
       28/29 Feb; overdue listed once; under a week of history → *Date not
       known yet*; the 24 cap.
-- [ ] **Unit (documents):** annual insurance expiring in 2 months → one
+- [x] **Unit (documents):** annual insurance expiring in 2 months → one
       item; a 6-month policy → two; a replaced document raises nothing; no
       start date → no repeat.
-- [ ] **Unit (tyres and manual):** wear-out and age items grouped as the
+- [x] **Unit (tyres and manual):** wear-out and age items grouped as the
       reminder title; a dismissed reminder's source still appears; manual
       reminders hidden with `reminders` off.
-- [ ] **Unit (costs):** last completing entry's cost; 0 → unknown; tyre
+- [x] **Unit (costs):** last completing entry's cost; 0 → unknown; tyre
       cost from the linked fitting record, each record once; "at least"
       when any is unknown.
-- [ ] **Unit (fuel):** worked example: 30 mi a day, £0.15 per mile over the
+- [x] **Unit (fuel):** worked example: 30 mi a day, £0.15 per mile over the
       last 12 months → about £139.50 for a 31-day month; under 90 days of
       fill-ups → not enough yet; `fuel` off → no estimate.
-- [ ] **Unit (horizon):** starts today in the owner's time zone (a user
+- [x] **Unit (horizon):** starts today in the owner's time zone (a user
       ahead of UTC just after midnight); ends at the last day of the 11th
       month after this one.
-- [ ] **Integration:** `/upcoming` with and without JS, chips, CSV;
+- [x] **Integration:** `/upcoming` with and without JS, chips, CSV;
       overview card; widget appended to an old saved layout; each module
       off removes its items; archived vehicles excluded; several currencies
       kept apart; the reminder list and notifications unchanged.
-- [ ] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
+- [x] Pass on **both** MySQL and Postgres (plus MariaDB and SQLite via
       `bin/test-all-dbs.sh`); smoke test at a subpath.
 
 ---
+
+## Departures from the plan (spec updated)
+- **Tyre costs are each tyre's share** of the service record that fitted
+  it (the record's cost split across the tyres it fitted), not the whole
+  record per item. Two fronts fitted together wear out at different points
+  and are two items; the whole record on each would count it twice.
+- **A set's age limits are one item**, at the soonest, so the title names
+  the set ("Tyres: Winter wheels 6 years old on 7 Dec 2026") instead of
+  listing the same model three times.
+- **A schedule overdue by distance** shows the odometer it was due at
+  ("due at 48,587 mi"), not a projected day in the past.
+- **Totals:** overdue items count in this month; *Date not known yet* items
+  are in no total. A month with only unknown costs shows "—" as planned.
+- **CSV columns:** Date, Vehicle, Registration, Source, Title, Expected cost,
+  Currency, Projected, Overdue; fuel rows are marked *Projected*.
+- **The empty page** ("Nothing planned yet") shows while there are no items
+  and no fuel estimate, even if fill-ups have been logged for under 90 days.
 
 ## Deliverables
 A 12-month forward view of everything due, with each item's cost last
@@ -226,17 +243,17 @@ time, a fuel estimate and monthly totals, per vehicle and for the fleet,
 on a page, the overview and the dashboard. Released as Logbook v1.7.0.
 
 ## Acceptance criteria
-- [ ] Every schedule, document, tyre and manual due point in the horizon is
+- [x] Every schedule, document, tyre and manual due point in the horizon is
       listed, with repeats where the source recurs.
-- [ ] Costs come only from the owner's own previous records; unknown costs
+- [x] Costs come only from the owner's own previous records; unknown costs
       are shown as unknown and counted.
-- [ ] The fuel estimate uses the existing projection and the last 12 months'
+- [x] The fuel estimate uses the existing projection and the last 12 months'
       fuel cost per distance, and needs 90 days of fill-ups.
-- [ ] Works with the `reminders` module off; changes nothing about
+- [x] Works with the `reminders` module off; changes nothing about
       reminders or notifications.
-- [ ] `/health`, sidebar and Settings show v1.7.0; changelog and roadmap
+- [x] `/health`, sidebar and Settings show v1.7.0; changelog and roadmap
       updated.
-- [ ] Suite green on both DBs; translatable (en + de); works behind a
+- [x] Suite green on both DBs; translatable (en + de); works behind a
       subpath with deep-link refresh; Docker and bare-PHP paths both work.
 
 ## Gotchas
