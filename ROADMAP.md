@@ -37,6 +37,10 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
 | [11.2](phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
 | [12](phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | ✅ |
+| [13](phase-13.md) | Economy checks + v1.5 release | 🚧 |
+| [14.1](phase-14.1.md) | Valuations and depreciation | 📋 |
+| [14.2](phase-14.2.md) | Total cost of ownership + v1.6 release | 📋 |
+| [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -267,6 +271,58 @@ invoice with the purchase.*
 
 → [`phase-12.md`](phase-12.md)
 
+## Phase 13 — Economy checks + v1.5 release
+*Is that tank really that bad, or was the odometer mistyped?*
+
+- Each full-to-full segment compared with the median of the vehicle's own
+  previous ten, in litres (or kWh) per 100 km so every unit agrees.
+- Flags for tanks far outside the usual, with the likely cause and links to
+  the fill-ups to check; a mistyped reading shows as a pair pointing at one
+  fill-up.
+- *Looks right* confirms a genuine one until its figures change. Averages
+  are never altered and nothing is sent as a notification.
+- Release **v1.5.0**.
+
+→ [`phase-13.md`](phase-13.md)
+
+## Phase 14.1 — Valuations and depreciation
+*What is it worth, and what has it lost?*
+
+- A valuation log per vehicle (date, amount, source, attachments), and
+  paperwork for the purchase and the sale.
+- Depreciation from the purchase price to the latest value or the sale
+  price: amount, percentage, per year and per distance, measured to the
+  value's own date. Nothing is fetched from third parties or extrapolated.
+- Valuations in History and *Recent activity*, never in the print view or
+  the cost ledger.
+- No release of its own: ships with Phase 14.2 as **v1.6.0**.
+
+→ [`phase-14.1.md`](phase-14.1.md)
+
+## Phase 14.2 — Total cost of ownership + v1.6 release
+*What has this car really cost?*
+
+- Running costs plus depreciation over the time owned, per distance and per
+  month; exact lifetime figures for sold vehicles.
+- A *Cost of ownership* card on the overview and an *Ownership* report
+  comparing vehicles, with CSV export.
+- A *Finance and lease* expense category.
+- Release **v1.6.0** (Phases 14.1 and 14.2).
+
+→ [`phase-14.2.md`](phase-14.2.md)
+
+## Phase 15 — Coming up + v1.7 release
+*What is due in the next year, and roughly what will it cost?*
+
+- Schedules (with repeats), document renewals, tyres and manual reminders
+  over the next 12 months, from the same due-point logic as reminders.
+- Each item costed from its last occurrence, never guessed; a fuel estimate
+  from the current rate of driving and cost per distance.
+- A fleet page, an overview card and a dashboard widget; CSV export.
+- Release **v1.7.0**.
+
+→ [`phase-15.md`](phase-15.md)
+
 ---
 
 ## After 1.0
@@ -280,6 +336,12 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 - Trip/journey log (business vs personal mileage),
   personal fuel-tank entity, VIN decode / registration lookup, PDF reports,
   OBD-II / vehicle-API mileage import.
+- A *Needs attention* list on the overview (overdue items, economy and tyre
+  flags), once Phases 13–15 are in. Deliberately not a health score.
+
+Not planned: automatic vehicle valuation from online services (third-party
+lookups and paid APIs, against keeping data local) and generic depreciation
+curves (invented figures beside real ones).
 
 ---
 

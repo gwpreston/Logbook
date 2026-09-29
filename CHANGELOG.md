@@ -6,6 +6,14 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 13: economy checks.
+
+### Added
+- **Economy checks.** Fill-ups whose economy is far from the vehicle's usual
+  are flagged with the likely cause and links to the fill-ups to check; a
+  mistyped odometer shows as a pair naming one fill-up; *Looks right*
+  confirms a genuine one.
+
 ## [1.4.0] — 2026-09-29
 
 Phase 12: buyer-first print, ownership paperwork and a dated starting
