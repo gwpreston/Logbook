@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Service\Vehicle\TyresBlockTypeChange;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -15,6 +16,7 @@ use Logbook\Support\Validation\ValidationErrors;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * GET|POST /vehicles/{id}/edit — edit details; upload, replace or remove the photo.
@@ -57,7 +59,17 @@ final readonly class EditVehicleAction
             return $this->page->render($request, $response, RequestContext::formValues($request), $vehicle, $errors, 422);
         }
 
-        $updated = $this->vehicles->update($user, $vehicle, $data);
+        try {
+            $updated = $this->vehicles->update($user, $vehicle, $data);
+        } catch (TyresBlockTypeChange $refused) {
+            $errors = new ValidationErrors();
+            $errors->add('type', 'vehicle.error.type_tyres', [
+                'type' => $refused->type->value,
+                'position' => new TranslatableMessage('tyre.wheel.' . $refused->position->value),
+            ]);
+
+            return $this->page->render($request, $response, RequestContext::formValues($request), $vehicle, $errors, 422);
+        }
         if ($photo !== null && $checked !== null) {
             $this->vehicles->replacePhoto($user, $updated, $photo, $checked);
         } elseif (($input['remove_photo'] ?? '') === '1' && $updated->hasPhoto()) {

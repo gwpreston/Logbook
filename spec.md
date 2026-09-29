@@ -327,9 +327,11 @@ MySQL only.
 
 **TyreChangeLine** (Phase 11.1)
 - id, change_id (`ON DELETE CASCADE`), tyre_id (`ON DELETE CASCADE`),
-  action (`on`|`off`|`retire`|`move`|`repair`), position (the tyre's
-  position after the line: set for `on` and `move`, null otherwise).
-  Unique `(change_id, tyre_id)`: one line per tyre per change.
+  action (`on`|`off`|`retire`|`move`|`repair`), position (for `on` and
+  `move` the tyre's position after the line; for `off`, `retire` and
+  `repair` the position it was at, kept for summaries and CSV — the replay
+  never reads it). Unique `(change_id, tyre_id)`: one line per tyre per
+  change.
 
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type

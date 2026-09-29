@@ -12,7 +12,10 @@ final readonly class TyreChangeLine
     public function __construct(
         public int $tyreId,
         public TyreLineAction $action,
-        /** The tyre's position after the line (`on` and `move` only). */
+        /**
+         * `on` / `move`: the tyre's position after the line. `off` / `retire` /
+         * `repair`: where it was (for summaries; the replay never reads it).
+         */
         public ?TyrePosition $position = null,
     ) {
     }

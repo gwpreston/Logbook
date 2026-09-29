@@ -52,7 +52,7 @@ final readonly class DeleteMaintenanceEntryAction
             ]);
         }
 
-        $this->maintenance->delete($vehicle, $entry);
+        $this->maintenance->delete($vehicle, $entry, RequestContext::requireUser($request)->preferences->timeZone());
         RequestContext::session($request)->flash('success', 'maintenance.deleted', $description);
 
         return $this->redirect->toRoute('maintenance.index', ['id' => (string) $vehicle->id]);
