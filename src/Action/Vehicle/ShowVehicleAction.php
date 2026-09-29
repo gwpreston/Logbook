@@ -12,6 +12,8 @@ use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Forecast\ComingUp;
+use Logbook\Service\Forecast\ForecastWording;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\History\ActivityFeed;
 use Logbook\Service\Maintenance\MaintenanceService;
@@ -36,7 +38,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * the latest history, what maintenance is due next, where each document
  * stands, the tyres fitted, and the vehicle's details and ownership (with
  * paperclips for the purchase and sale paperwork, the latest value, the
- * depreciation and the value over time), and its cost of ownership.
+ * depreciation and the value over time), its cost of ownership, and what
+ * is coming up in the next 12 months.
  * Each area has its own tab.
  */
 final readonly class ShowVehicleAction
@@ -61,6 +64,8 @@ final readonly class ShowVehicleAction
         private ValuationService $valuations,
         private ValueChart $valueChart,
         private OwnershipService $ownership,
+        private ComingUp $comingUp,
+        private ForecastWording $forecastWording,
     ) {
     }
 
@@ -109,6 +114,9 @@ final readonly class ShowVehicleAction
             'has_valuations' => $valuations !== [],
             // Core, like the Expenses tab: shown whatever modules are on (spec.md §7.1).
             'ownership_cost' => $this->ownership->forVehicle($user, $vehicle, $odometer->readings, $depreciation, $today),
+            // Core too; an archived vehicle raises nothing (spec.md §7.18).
+            'coming_up' => $vehicle->isArchived() ? null : $this->comingUp->forecast($user, [$vehicle]),
+            'forecast_wording' => $this->forecastWording,
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
             'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)

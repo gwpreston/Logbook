@@ -13,6 +13,7 @@ use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelHistory;
 use Logbook\Service\Fuel\FuelService;
@@ -58,6 +59,7 @@ final readonly class DashboardService
         private ComplianceService $compliance,
         private ActivityFeed $activity,
         private ClockInterface $clock,
+        private ComingUp $comingUp,
     ) {
     }
 
@@ -118,6 +120,7 @@ final readonly class DashboardService
             compliance: $show(DashboardWidget::Compliance) ? $this->compliance($user, $scope, $today) : [],
             mileage: $show(DashboardWidget::Mileage) ? $this->mileage($user, $scope, $today) : null,
             activity: $show(DashboardWidget::RecentActivity) ? $this->activity->latest($user, $scope) : [],
+            comingUp: $show(DashboardWidget::ComingUp) ? $this->comingUp->forecast($user, $scope) : null,
         );
     }
 

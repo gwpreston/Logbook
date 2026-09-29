@@ -95,6 +95,17 @@
             </section>
             {% endif %}
 
+            {# The next five of Coming up (spec.md §7.18): core, active vehicles only. #}
+            {% if coming_up %}
+            <section class="card" aria-labelledby="coming-up-heading">
+                <div class="card__header">
+                    <h2 id="coming-up-heading" class="card__title">{{ 'coming_up.title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('upcoming', {}, {vehicle: vehicle.id}) }}">{{ 'coming_up.card_link'|trans }}</a>
+                </div>
+                {% include 'forecast/_next.twig' with {forecast: coming_up, wording: forecast_wording, show_vehicle: false} %}
+            </section>
+            {% endif %}
+
             {% if tyres is not null %}
             {% import 'macros/tyres.twig' as tyre_ui %}
             <section class="card" aria-labelledby="tyres-heading">

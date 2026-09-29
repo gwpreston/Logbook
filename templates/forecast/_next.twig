@@ -1,0 +1,15 @@
+{# The next five items and the 12-month total: the overview card and the
+   dashboard widget (spec.md §7.18). Needs `forecast`, `wording`, `show_vehicle`. #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/forecast.twig' as forecast_ui %}
+{% set next = forecast.next(5) %}
+{% if next is empty %}
+    <p class="widget__ok">{{ ui.icon('check_circle') }}{{ 'coming_up.nothing_due'|trans }}</p>
+{% else %}
+    <ul class="list">
+        {% for item in next %}
+            {{ forecast_ui.row(item, wording, show_vehicle) }}
+        {% endfor %}
+    </ul>
+{% endif %}
+{{ forecast_ui.next_twelve(forecast) }}

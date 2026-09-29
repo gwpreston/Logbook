@@ -1,0 +1,80 @@
+{#
+ # Coming up fragments (spec.md §7.18). Import with:
+ # {% import 'macros/forecast.twig' as forecast_ui %}
+ # `wording` is a Service\Forecast\ForecastWording.
+ #}
+
+{# Where an item comes from, as a link target. #}
+{% macro url(item) -%}
+    {%- if item.source.value == 'schedule' -%}
+        {{ url_for('maintenance.schedules.edit', {id: item.vehicle.id, schedule: item.sourceId}) }}
+    {%- elseif item.source.value == 'document' -%}
+        {{ url_for('compliance.edit', {id: item.vehicle.id, document: item.sourceId}) }}
+    {%- elseif item.source.value == 'tyres' -%}
+        {{ url_for('tyres.index', {id: item.vehicle.id}) }}
+    {%- else -%}
+        {{ url_for('reminders.edit', {reminder: item.sourceId}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# The day, "around March 2027" for a projected date, or the odometer when
+   it cannot be placed on the calendar yet. #}
+{% macro when(item) -%}
+    {%- if item.dueOn is null and item.overdue and item.dueKm is not null -%}
+        {{ 'coming_up.due_at'|trans({odometer: item.dueKm|distance}) }}
+    {%- elseif item.dueOn is null -%}
+        {{ item.dueKm is not null ? 'coming_up.at_about'|trans({odometer: item.dueKm|about_distance}) : 'coming_up.undated'|trans }}
+    {%- elseif item.projected -%}
+        <time datetime="{{ item.dueOn.format('Y-m') }}">{{ 'coming_up.around'|trans({month: item.dueOn|local_month(false)}) }}</time>
+    {%- else -%}
+        <time datetime="{{ item.dueOn.format('Y-m-d') }}">{{ item.dueOn|local_date }}</time>
+    {%- endif -%}
+{%- endmacro %}
+
+{# "about £240 (last time)", or a dash read out as "cost not known". #}
+{% macro cost(item) -%}
+    {%- if item.cost -%}
+        {{ 'coming_up.cost_last_time'|trans({amount: item.cost|money}) }}
+    {%- else -%}
+        <span aria-hidden="true">—</span><span class="visually-hidden">{{ 'coming_up.cost_unknown'|trans }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{# An amount that is "at least" while some item's cost is not known. #}
+{% macro amount(money, at_least) -%}
+    {{- at_least ? 'coming_up.at_least'|trans({amount: money|money}) : 'coming_up.about'|trans({amount: money|money}) -}}
+{%- endmacro %}
+
+{# One item as a list row. #}
+{% macro row(item, wording, show_vehicle = true) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as forecast_ui %}
+    <li class="list__item forecast-item">
+        <span class="list__icon">{{ ui.icon(item.icon) }}</span>
+        <span class="list__body">
+            <a class="list__title" href="{{ forecast_ui.url(item) }}">{{ wording.title(item) }}</a>
+            <span class="list__meta">
+                {%- if show_vehicle %}{{ item.vehicle.name() }} · {% endif -%}
+                {{ wording.source(item.source) }} · {{ forecast_ui.when(item) }}
+            </span>
+        </span>
+        <span class="list__end forecast-item__end">
+            {%- if item.overdue -%}
+                <span class="pill pill--overdue">{{ ui.icon('warning') }}{{ 'coming_up.overdue'|trans }}</span>
+            {%- endif -%}
+            <span class="forecast-item__cost tabular">{{ forecast_ui.cost(item) }}</span>
+        </span>
+    </li>
+{%- endmacro %}
+
+{# The 12-month total of each currency, one line each: "Next 12 months: about £1,240". #}
+{% macro next_twelve(forecast) -%}
+    {% import _self as forecast_ui %}
+    {% for totals in forecast.totals %}
+        <p class="forecast-total">
+            <span>{{ 'coming_up.next_12_months'|trans }}</span>
+            <strong class="tabular">{{ forecast_ui.amount(totals.total(), totals.isAtLeast()) }}</strong>
+            {%- if totals.hasFuel %}<span class="muted"> · {{ 'coming_up.includes_fuel'|trans({amount: totals.fuel()|money}) }}</span>{% endif -%}
+        </p>
+    {% endfor %}
+{%- endmacro %}

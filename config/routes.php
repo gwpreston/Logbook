@@ -30,6 +30,8 @@ use Logbook\Action\Fuel\FuelLogAction;
 use Logbook\Action\Fuel\QuickFuelAction;
 use Logbook\Action\Garage\GarageAction;
 use Logbook\Action\HealthAction;
+use Logbook\Action\Forecast\ComingUpAction;
+use Logbook\Action\Forecast\ComingUpExportAction;
 use Logbook\Action\History\FleetHistoryAction;
 use Logbook\Action\History\HistoryPrintAction;
 use Logbook\Action\History\VehicleHistoryAction;
@@ -162,6 +164,11 @@ return static function (App $app): void {
         $group->get('/history', FleetHistoryAction::class)->setName('history.fleet');
         $group->get('/vehicles/{id:[0-9]+}/history', VehicleHistoryAction::class)->setName('history.vehicle');
         $group->get('/vehicles/{id:[0-9]+}/history/print', HistoryPrintAction::class)->setName('history.print');
+
+        // Coming up (spec.md §7.18): core too; each module's items leave it
+        // when that module is off.
+        $group->get('/upcoming', ComingUpAction::class)->setName('upcoming');
+        $group->get('/upcoming.csv', ComingUpExportAction::class)->setName('upcoming.export');
 
         $group->get('/vehicles/{id:[0-9]+}/odometer', OdometerLogAction::class)->setName('odometer.index');
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/new', CreateOdometerReadingAction::class)

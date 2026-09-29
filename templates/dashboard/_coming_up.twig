@@ -1,0 +1,6 @@
+{# Coming up: the next five items across the vehicle filter (spec.md §7.8). #}
+{% include 'forecast/_next.twig' with {
+    forecast: dashboard.comingUp,
+    wording: forecast_wording,
+    show_vehicle: not selected,
+} %}

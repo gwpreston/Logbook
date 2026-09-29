@@ -6,6 +6,48 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-09-29
+
+Phase 15: *Coming up*, the next 12 months of maintenance, renewals and
+fuel.
+
+### Added
+- **Coming up** (`/upcoming`): everything the app already knows is due in
+  the next 12 months (this month and the 11 after), per vehicle and for the
+  fleet. Services from your maintenance schedules, repeated as often as they
+  fall due in the year (a 6-monthly service shows twice, whichever of the
+  months or the mileage comes first each time); document renewals, repeated
+  at the document's own term; tyres wearing out or reaching your age limit;
+  and your own reminders. Overdue work is listed first, once; a service due
+  at a mileage that cannot be placed on the calendar yet is listed under
+  *Date not known yet*.
+- Each item shows what it cost **last time**, from your own records: the
+  service record that last completed the schedule, the current document's
+  price, or the tyres' share of the service record that fitted them. When
+  there is no such record the cost is shown as unknown and counted, never
+  guessed.
+- A **fuel estimate** per vehicle and month: your average daily distance
+  times the last 12 months' fuel cost per mile or km (it needs 90 days of
+  fill-ups). A plug-in hybrid's petrol and electricity are covered together.
+- Month-by-month and 12-month totals per currency (never converted):
+  planned, fuel and the two together, "at least" while some item's cost is
+  unknown. A stacked bar chart (a table without JavaScript), the dashboard's
+  vehicle chips and a CSV export.
+- A *Coming up* card on each vehicle's overview and a *Coming up* dashboard
+  widget, each with the next five items and the 12-month total.
+- It reads the same due dates your reminders use, but not the reminders
+  themselves: it works with the Reminders module off, a dismissed reminder's
+  service still appears, and viewing it never changes a reminder or sends a
+  notification. A switched-off module's items leave it.
+
+### Upgrade notes
+- No migrations and no configuration changes. Nothing new is stored and the
+  backup format is unchanged; the database schema is the same as 1.6.0's,
+  so a backup restores into either version.
+- The new dashboard widget is added to saved layouts at the end; move or
+  hide it under *Customise*. Without a saved layout it comes second, after
+  *Upcoming reminders*.
+
 ## [1.6.0] — 2026-09-29
 
 Phases 14.1 and 14.2: valuations, depreciation and the total cost of
@@ -799,6 +841,7 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   forms, pills and alerts.
 
 [Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.6.0...HEAD
+[1.7.0]: https://github.com/gwpreston16/Logbook/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/gwpreston16/Logbook/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/gwpreston16/Logbook/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/gwpreston16/Logbook/compare/v1.3.0...v1.4.0

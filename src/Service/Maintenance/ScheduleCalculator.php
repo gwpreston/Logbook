@@ -32,6 +32,22 @@ final class ScheduleCalculator
      */
     public static function lastDone(MaintenanceScheduleData $schedule, array $entries): DonePoint
     {
+        $latest = self::latest($entries);
+
+        return $latest === null
+            ? new DonePoint($schedule->baselineDoneOn, $schedule->baselineDoneKm)
+            : new DonePoint($latest->data->performedOn, $latest->data->odometerKm);
+    }
+
+    /**
+     * The entry that sets *last done*: the latest by date, then odometer,
+     * then as logged. Coming up (spec.md §7.18) reads its cost as the
+     * schedule's price last time.
+     *
+     * @param list<MaintenanceEntry> $entries entries completing one schedule, any order
+     */
+    public static function latest(array $entries): ?MaintenanceEntry
+    {
         $latest = null;
         foreach ($entries as $entry) {
             if ($latest === null || self::isLater($entry, $latest)) {
@@ -39,9 +55,7 @@ final class ScheduleCalculator
             }
         }
 
-        return $latest === null
-            ? new DonePoint($schedule->baselineDoneOn, $schedule->baselineDoneKm)
-            : new DonePoint($latest->data->performedOn, $latest->data->odometerKm);
+        return $latest;
     }
 
     public static function nextDue(DonePoint $lastDone, ?string $intervalKm, ?int $intervalMonths): NextDue

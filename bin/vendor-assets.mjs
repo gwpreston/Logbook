@@ -66,6 +66,7 @@ const icons = [
   'error',
   'ev_station',
   'event_repeat',
+  'event_upcoming',
   'fact_check',
   'format_paint',
   'garage',

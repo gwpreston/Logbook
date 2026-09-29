@@ -26,6 +26,7 @@ use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Number\Decimal;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -361,6 +362,44 @@ final readonly class TyreService
         }
 
         return $views;
+    }
+
+    /**
+     * Each tyre's share of the service record linked to the `fit` change that
+     * first put it on: the record's cost split evenly across the tyres that
+     * change fitted, as a retired tyre's cost per distance is (Coming up's
+     * price last time, spec.md §7.18). Tyres without such a record are left
+     * out; none while maintenance is off, as in the ledger.
+     *
+     * @param list<int> $tyreIds
+     * @return array<int, string> tyre id → canonical decimal in the vehicle's currency
+     */
+    public function fittingShares(Vehicle $vehicle, array $tyreIds): array
+    {
+        $records = $this->records($vehicle);
+        $changes = $this->tyres->listChanges($vehicle->id);
+        $result = TyreReplay::run($changes);
+        if ($records === [] || !$result instanceof TyreReplayResult) {
+            return [];
+        }
+        $byId = [];
+        foreach ($changes as $change) {
+            $byId[$change->id] = $change;
+        }
+
+        $shares = [];
+        foreach ($tyreIds as $tyreId) {
+            $fitting = $byId[$result->fittedBy[$tyreId] ?? 0] ?? null;
+            $record = $fitting?->kind === TyreChangeKind::Fit && $fitting->data->maintenanceEntryId !== null
+                ? ($records[$fitting->data->maintenanceEntryId] ?? null)
+                : null;
+            $fitted = $fitting === null ? 0 : count($fitting->linesOf(TyreLineAction::On));
+            if ($record !== null && $fitted > 0) {
+                $shares[$tyreId] = Decimal::divide($record->data->cost, (string) $fitted, 6);
+            }
+        }
+
+        return $shares;
     }
 
     /**

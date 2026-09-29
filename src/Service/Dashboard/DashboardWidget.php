@@ -13,6 +13,8 @@ use Logbook\Domain\Feature\Feature;
 enum DashboardWidget: string
 {
     case Reminders = 'reminders';
+    /** Phase 15: the 12-month forecast (spec.md §7.18); core. */
+    case ComingUp = 'coming_up';
     case Spend = 'spend';
     case RecentFuel = 'recent_fuel';
     case Fleet = 'fleet';
@@ -27,7 +29,7 @@ enum DashboardWidget: string
     public function feature(): ?Feature
     {
         return match ($this) {
-            self::Fleet, self::Mileage, self::RecentActivity => null,
+            self::Fleet, self::Mileage, self::RecentActivity, self::ComingUp => null,
             self::Reminders => Feature::Reminders,
             self::Spend => Feature::Reports,
             self::RecentFuel, self::Efficiency => Feature::Fuel,
@@ -40,6 +42,7 @@ enum DashboardWidget: string
         return match ($this) {
             self::Fleet => 'garage',
             self::Reminders => 'notifications',
+            self::ComingUp => 'event_upcoming',
             self::Spend => 'payments',
             self::RecentFuel => 'local_gas_station',
             self::Efficiency => 'trending_up',

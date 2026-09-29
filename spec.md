@@ -1006,7 +1006,13 @@ readable reports; export to CSV/PDF (PDF may be a later phase).
   with `'` against formula injection). Per vehicle and module
   (`/vehicles/{id}/export/{fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations}.csv`,
   archived vehicles included — it is their data) and for a report
-  (`/reports/export.csv` with the report's filters: one row per ledger line).
+  (`/reports/export.csv` with the report's filters: one row per ledger line)
+  and for *Coming up* (§7.18; `/upcoming.csv` with the page's `?vehicle=`:
+  one row per item — date (blank when not known yet; the day even when
+  projected), vehicle, registration, source, title, expected cost (blank
+  when not known), currency, *Projected* yes/no, *Overdue* yes/no — then one
+  row per vehicle per month for fuel, dated the month's first day in the
+  horizon, marked as an estimate).
   Numbers are plain machine-readable decimals (`1234.5`, no grouping) in the
   owner's units, with the unit in the column header; converted quantities
   carry 6 places so they convert back to the stored value exactly; amounts
@@ -1178,9 +1184,13 @@ toggles.
   JSON in `settings` (scope user, key `dashboard.layout`). Unknown widget
   ids are dropped and widgets added in later releases are appended, so an old
   saved layout never breaks. Without a saved layout (and without JS) the
-  default order applies: upcoming reminders, spend this month, recent fuel,
-  your vehicles, efficiency trend, compliance status, mileage, recent
-  activity.
+  default order applies: upcoming reminders, coming up, spend this month,
+  recent fuel, your vehicles, efficiency trend, compliance status, mileage,
+  recent activity.
+- **Coming up** (id `coming_up`, Phase 15; core): the next five items of
+  the 12-month forecast (§7.18) across the vehicle filter, overdue first,
+  and the 12-month total per currency; *View all* → `/upcoming`, keeping
+  `?vehicle=`. Appended to saved layouts by the rule above.
 - **Customise** (`/?customise=1`, also a button): each widget gets move up /
   move down / hide-show buttons — plain forms, so arranging works without JS
   and from the keyboard — plus "reset layout". With JS, widgets can also be
@@ -1254,6 +1264,11 @@ Disabled modules are removed from nav, routes, and dashboard.
   - `maintenance` off leaves tyres working: the cost, garage and link fields
     are hidden on tyre forms, existing links are kept untouched, and a
     linked change is listed on its own in history (without a cost).
+  - *Coming up* (§7.18) is core, like history: each module's items simply
+    leave it. `maintenance` off: schedule items and tyre costs; `compliance`
+    off: renewals; `tyres` off: tyre items; `reminders` off: manual
+    reminders; `fuel` off: the fuel estimate. The page, card and widget
+    stay.
 
 ### 7.11 Notifications (reminder delivery)
 In-app always; plus at least one outbound channel — email (SMTP) and/or a
@@ -1849,6 +1864,115 @@ roundabout does.
   measured depth and date: **estimates are never printed**, because a
   buyer's service history shows what was measured.
 
+### 7.18 Coming up (Phase 15)
+The next 12 months, looking forward the way History looks back: every
+service, renewal, tyre replacement and manual reminder the app already knows
+is coming, each with what it cost last time, and an estimate of fuel at the
+current rate of driving. A plan, not an alert: it sends nothing and changes
+nothing about reminders (§7.6). Derived on every read
+(`Service\Forecast\ComingUp`), never stored.
+
+- **Horizon:** from the owner's today (in their time zone) to the last day
+  of the 11th calendar month after this one: this month and the 11 after, as
+  the reports' *last 12 months* (§7.7) in reverse. Only 12 months; no other
+  horizon.
+- **Read from the sources, not from the reminders table.** The items come
+  from the same due-point calculations the reminders use (a schedule's next
+  due and distance projection §7.4, a document's expiry §7.5, the tyre
+  judgement §7.17), so the forecast and the reminder never show two dates
+  for one service. Reminder status is about nudging; the forecast is about
+  what will happen: a dismissed reminder's service still appears, and the
+  page works with the `reminders` module off. Reading it never syncs or
+  writes reminders.
+- **Items** (active vehicles only; archived ones raise nothing):
+  - **Schedule** (§7.4), titled with its title. The first occurrence is the
+    schedule's due date as its reminder has it: the sooner of the date limit
+    and the projected distance limit. **Repeats:** each next occurrence
+    assumes the work is done on the day it falls due, at the odometer
+    projected for that day (current reading + average daily distance ×
+    days), and adds the interval exactly as logging the service would
+    (months, end-of-month clamped, so 31 Aug + 6 months is 28/29 Feb and
+    the next is 28 Aug; and/or distance); the sooner of the two limits
+    applies. Without a projection a distance limit cannot repeat, so a
+    schedule with both limits repeats by its months alone. At most 24
+    occurrences per schedule, so "every 100 km" cannot flood the page.
+  - **Document** (§7.5): "Renew {title, else type}" on its expiry date, for
+    each current document with an expiry (a replaced one raises nothing).
+    **Repeats** at the document's own term when it has a start date and the
+    term (start to expiry) is at least 28 days: in whole months when the
+    start plus a number of months gives the expiry or the day after it (a
+    policy from 1 Jan to 31 Dec is 12 months), else in days.
+  - **Tyres** (§7.17): the fitted road tyres' wear-out dates and the
+    non-retired tyres' age-limit dates, grouped as the tyre reminder groups
+    them (every tyre past a limit, per reason; otherwise tyres sharing the
+    reason and due point; the age limits of one set together, at the
+    soonest) and titled by the same helper ("Tyres: rear due in about
+    800 mi", "Tyres: Winter wheels 6 years old on 7 Dec 2026"). No repeats:
+    a new tyre's wear is unknown.
+  - **Manual reminder** (§7.6): each open one with a due date, titled with
+    its title; no repeats. Only with the `reminders` module on.
+- **Groups:** **Overdue** first, once each and without repeats (the next
+  occurrence counts from when the work is actually done, not known yet),
+  oldest first; then one section per month of the horizon; then **Date not
+  known yet**: a distance-only due point that cannot be placed on the
+  calendar (under a week of mileage history) or a tyre wear-out with a
+  distance but no date, shown with its odometer ("at about 48,000 mi").
+  Within a month, by date. A date placed by the distance projection is
+  *projected* and shown as "around {month}", not as a day. A schedule past
+  its distance limit shows the odometer it was due at ("due at 48,590 mi").
+  A month's planned figure is "—" while nothing in it has a known cost.
+- **Expected cost: last time's price, from the owner's own records.** A
+  schedule: the cost of its latest completing entry (the same entry that
+  sets *last done*, §7.4), when above 0. A document: the current document's
+  cost, when above 0. Tyres: each tyre's share of the service record linked
+  to the `fit` change that put it on (the record's cost split evenly across
+  the tyres it fitted, as a retired tyre's cost per distance is, §7.17), added
+  up for the tyres in the item and known only when every one has a share, so
+  a pair fitted together and wearing out a month apart never counts the
+  record twice (needs `maintenance` on, as tyre costs do in the ledger).
+  Manual reminders: none. Otherwise the cost is **not known**, shown as "—" and counted ("3
+  items without a known cost"); never a guess, never an average. Always
+  labelled "about £240 (last time)". Repeats carry the same cost.
+- **Fuel estimate** (needs `fuel` on), per vehicle and month:
+  - *Projected distance* = the average daily distance (§7.4's projection;
+    needs a week of mileage history) × the days of that month inside the
+    horizon (today counts).
+  - *Fuel cost per distance* = the vehicle's fuel-group ledger spend over
+    the reports' *last 12 months* ÷ the *distance driven* in the same
+    period (§7.7). It needs at least 90 days from the first fill-up in that
+    period to today; otherwise "not enough fill-ups yet". A plug-in
+    hybrid's petrol and electricity are both fuel-group costs, so one
+    estimate covers both.
+  - *Estimate* = projected distance × fuel cost per distance, worked in
+    exact decimals and rounded once. Labelled "about £160 on fuel (at the
+    last 12 months' cost per mile)". No inflation or price trend.
+- **Totals**, per month and for the 12 months, **per currency** (never
+  converted): *planned* (known item costs), *fuel* (the estimate) and the
+  two together, each shown apart. Overdue items count in this month: the
+  work is still to be paid for. *Date not known yet* items are in no total
+  (they may fall outside the horizon); the summary says how many there are.
+  A total with any item of unknown cost reads "at least £…". Everything is
+  an estimate and says so.
+- **Fleet page `/upcoming`** (core, like `/history`; linked from the
+  dashboard widget and the overview card): the 12-month summary per
+  currency (planned, fuel, total, items without a known cost), a stacked bar
+  chart of planned and fuel per month (a table without JS), then *Overdue*,
+  one section per month (heading an ICU month name; each item with its
+  source icon, title, vehicle, `<time>` date or "around {month}", expected
+  cost and a link to its source: the schedule, the document, the Tyres tab
+  or the reminder), then *Date not known yet*. With two or more active
+  vehicles, the dashboard's vehicle chips (`?vehicle=`; an unknown or
+  archived id falls back to all). *Export CSV* in the toolbar.
+- **Overview *Coming up* card** (active vehicles only; core): the vehicle's
+  next five items (overdue first, then by date, then undated) and its
+  12-month estimate, linking to `/upcoming?vehicle={id}`. Not a new tab.
+- **Dashboard widget** `coming_up` (§7.8): the next five items across the
+  dashboard's vehicle filter, ordered as the card, and the 12-month total;
+  *View all* links to `/upcoming` keeping `?vehicle=`.
+- **CSV** `/upcoming.csv` with the page's filter (§7.7 *CSV export*).
+- Not in History, print or reports. Nothing is stored, so there is no
+  migration and nothing in backups.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -2096,6 +2220,16 @@ task breakdowns live in the per-phase files; this is the map.
   *Cost of ownership* card on the overview and an *Ownership* report
   (`/reports/ownership`) by currency with a fleet row and CSV export; a
   *Finance and lease* expense category; release v1.6.0 with Phase 14.1.
+- **Phase 15 — Coming up + v1.7.0.** A 12-month forward view (§7.18)
+  read from the sources the reminders use, not the reminders table:
+  schedules with repeats (sooner-first, capped at 24), document renewals
+  repeating at their own term, tyres grouped as the tyre reminder, and open
+  manual reminders; each item costed at last time's price from the owner's
+  records or shown as unknown; a fuel estimate from the average daily
+  distance and the last 12 months' fuel cost per distance (90 days of
+  fill-ups); per-currency month and 12-month totals; a fleet page
+  `/upcoming` with chips, chart and CSV, an overview card and a `coming_up`
+  dashboard widget; no notifications, no migration; release v1.7.0.
 
 ---
 
