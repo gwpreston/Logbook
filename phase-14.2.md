@@ -161,7 +161,7 @@ Per `CLAUDE.md` §12, update `spec.md` before building:
       category, no migration (14.2); the backup schema rule; no config
       changes; nothing in existing data or figures changes.
 - [x] `ROADMAP.md`: Phase 14.1 and 14.2 rows ✅.
-- [ ] Tag `v1.6.0`; image published as `1.6.0`, `1.6`, `1` and `latest`
+- [x] Tag `v1.6.0`; image published as `1.6.0`, `1.6`, `1` and `latest`
       (after the merge; pushing the tag publishes the image).
 
 ### 14.2.6 Tests
