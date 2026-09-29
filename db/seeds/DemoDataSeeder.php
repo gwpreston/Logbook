@@ -439,7 +439,14 @@ final class DemoDataSeeder extends AbstractSeed
         $golf = $ids['LB19 KTR'];
         $bike = $ids['MT20 BKE'];
 
-        $tyre = function (int $vehicle, string $brand, string $model, string $size, ?string $season, string $dot) use ($now): int {
+        $tyre = function (
+            int $vehicle,
+            string $brand,
+            string $model,
+            string $size,
+            ?string $season,
+            string $dot,
+        ) use ($now): int {
             $week = (int) substr($dot, 0, 2);
             $made = (new DateTimeImmutable('@0'))->setISODate(2000 + (int) substr($dot, 2), $week, 1)->format('Y-m-d');
 
@@ -478,18 +485,28 @@ final class DemoDataSeeder extends AbstractSeed
             }
         }
         $repairOn = '2026-05-02';
-        $repair = $this->serviceRecord($golf, $repairOn, $this->odometerOn($golf, $repairOn), 'Tyre repair, front right', '25.000', 'Kwik Fit', $now);
+        $repairKm = $this->odometerOn($golf, $repairOn);
+        $repair = $this->serviceRecord($golf, $repairOn, $repairKm, 'Tyre repair, front right', '25.000', 'Kwik Fit', $now);
         $bikeRearOn = '2026-08-10';
-        $bikeRecord = $this->serviceRecord($bike, $bikeRearOn, $this->odometerOn($bike, $bikeRearOn), '1 × Michelin Road 6, rear', '169.000', 'Rider Tyres, Leeds', $now);
+        $bikeKm = $this->odometerOn($bike, $bikeRearOn);
+        $bikeTitle = '1 × Michelin Road 6, rear';
+        $bikeRecord = $this->serviceRecord($bike, $bikeRearOn, $bikeKm, $bikeTitle, '169.000', 'Rider Tyres, Leeds', $now);
 
         $on = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::On, $p);
         $off = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Off, $p);
         $retire = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Retire, $p);
         $move = static fn (int $tyre, TyrePosition $p): TyreChangeLine => new TyreChangeLine($tyre, TyreLineAction::Move, $p);
-        [$fl, $fr, $rl, $rr] = [TyrePosition::FrontLeft, TyrePosition::FrontRight, TyrePosition::RearLeft, TyrePosition::RearRight];
+        $fl = TyrePosition::FrontLeft;
+        $fr = TyrePosition::FrontRight;
+        $rl = TyrePosition::RearLeft;
+        $rr = TyrePosition::RearRight;
         $road = [$fl, $fr, $rl, $rr];
 
-        // [vehicle, kind, date, linked record (its odometer covers the change), lines, retire reasons]
+        /**
+         * vehicle, kind, date, linked record (its odometer covers the change), lines, retire reasons
+         *
+         * @var list<array{0: int, 1: TyreChangeKind, 2: string, 3: ?int, 4: list<TyreChangeLine>, 5: array<int, string>}> $plan
+         */
         $plan = [
             [$golf, TyreChangeKind::Existing, '2025-09-28', null, array_map($on, $s, $road), []],
             [$golf, TyreChangeKind::Fit, '2025-11-08', null, [...array_map($off, $s, $road), ...array_map($on, $w, $road)], []],
@@ -605,7 +622,8 @@ final class DemoDataSeeder extends AbstractSeed
         $at = self::localNoon($date);
         $before = null;
         $after = null;
-        foreach ($this->fetchAll(sprintf('SELECT reading_km, recorded_at FROM odometer_readings WHERE vehicle_id = %d', $vehicle)) as $row) {
+        $rows = $this->fetchAll(sprintf('SELECT reading_km, recorded_at FROM odometer_readings WHERE vehicle_id = %d', $vehicle));
+        foreach ($rows as $row) {
             if (!is_array($row) || !is_numeric($row['reading_km'] ?? null) || !is_string($row['recorded_at'] ?? null)) {
                 continue;
             }
