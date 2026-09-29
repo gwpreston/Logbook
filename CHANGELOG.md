@@ -6,6 +6,19 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-09-29
+
+Phase 10.2: tall vehicle photos.
+
+### Fixed
+- A tall (portrait) vehicle photo no longer stretches the dashboard's pinned
+  vehicle card on wide screens. The card is as tall as its content and the
+  photo is cropped to fit, as a landscape photo already was.
+
+### Upgrade notes
+- None: no migrations, no configuration changes and no change to the backup
+  format. Stored photos are untouched.
+
 ## [1.2.0] — 2026-09-28
 
 Phase 10: vehicle history, multiple attachments and the document odometer.
@@ -531,7 +544,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/gwpreston16/Logbook/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/gwpreston16/Logbook/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/gwpreston16/Logbook/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/gwpreston16/Logbook/compare/v0.7.0...v1.0.0

@@ -381,6 +381,9 @@ from fleet totals unless "include archived" is toggled.
   `MAX_UPLOAD_MB`; stored under `UPLOAD_PATH` with a random name and served
   only to the signed-in owner through an authenticated route. Replacing or
   removing a photo deletes the old file.
+- Wherever a photo is shown it is cropped to its frame (cover, centred) and
+  never sets the frame's size, so a tall or very wide photo leaves the card
+  around it exactly as it is with any other.
 
 ### 7.2 Odometer
 First-class mileage log with manual entries plus readings derived from fuel and
@@ -1304,6 +1307,9 @@ task breakdowns live in the per-phase files; this is the map.
   on every attachment input, attachments on expenses and manual readings;
   an optional odometer on documents that joins the mileage series; release
   v1.2.0.
+- **Phase 10.2 — Tall vehicle photos + v1.2.1.** A tall photo no longer
+  stretches the dashboard's pinned vehicle card; every photo frame crops to
+  its own size; release v1.2.1.
 
 ---
 
