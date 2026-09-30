@@ -333,3 +333,16 @@ spec.md §7.20 is the current text.
   proxy.
 - `ExpenseService::entries()` was added for the expenses list (repositories
   stay behind services).
+- **Every decimal has a fixed number of places** (`Serializer::dec()`: 3 for
+  km, litres, kWh, mm and money, 6 for a price per unit, 3 for consumption,
+  4 for money per km), so a sum that starts at zero reads `"0.000"`, not
+  `"0"`. An edge-case test (a single fill-up, every vehicle detail, a
+  plug-in hybrid, a distance interval, a document's odometer, a manual
+  reminder, stored, retired and worn tyres) runs every GET through the
+  contract; it failed on the one-fill summary before the fix.
+- **`/fuel` computes the economy checks once per request**, not once per
+  item: 200 fill-ups of 500 went from about 2.7 s to under 0.2 s.
+- **Known limit:** the duplicate check reads, then writes, without a lock, so
+  a retry sent while the first request is still being saved could write
+  twice. Retries after a timeout (the case that matters) arrive after the
+  first write and are caught.

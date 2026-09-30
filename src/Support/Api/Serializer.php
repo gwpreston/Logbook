@@ -46,6 +46,10 @@ final class Serializer
     public const int CONSUMPTION_SCALE = 3;
     /** Places for money per kilometre. */
     public const int PER_KM_SCALE = 4;
+    /** Places for km, litres, kWh, mm and money: the stored precision. */
+    public const int QUANTITY_SCALE = 3;
+    /** Places for a price per litre (kWh), as stored. */
+    public const int PRICE_SCALE = 6;
 
     public static function instant(?DateTimeInterface $instant): ?string
     {
@@ -78,7 +82,7 @@ final class Serializer
             'vin' => $data->vin,
             'fuel_type' => $data->fuelType->value,
             'default_grade' => $data->defaultGrade?->value,
-            'capacity' => $data->capacity,
+            'capacity' => self::dec($data->capacity, self::QUANTITY_SCALE),
             'capacity_unit' => $data->fuelType === FuelType::Electric ? 'kwh' : 'l',
             'first_registered_on' => self::date($data->firstRegisteredOn),
             'purchase_date' => self::date($data->purchaseDate),
@@ -92,8 +96,8 @@ final class Serializer
             'updated_at' => self::instant($vehicle->updatedAt),
         ];
         if ($costs) {
-            $out['purchase_price'] = $data->purchasePrice;
-            $out['sale_price'] = $data->salePrice;
+            $out['purchase_price'] = self::dec($data->purchasePrice, self::QUANTITY_SCALE);
+            $out['sale_price'] = self::dec($data->salePrice, self::QUANTITY_SCALE);
         }
 
         return $out;
@@ -117,12 +121,12 @@ final class Serializer
             'id' => $entry->id,
             'vehicle_id' => $entry->vehicleId,
             'filled_at' => self::instant($data->filledAt),
-            'odometer' => $data->odometerKm,
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
             'distance_unit' => self::DISTANCE_UNIT,
             'fuel' => $data->fuel->value,
             'grade' => $data->grade?->value,
             'energy' => $electric ? EnergyKind::Electric->value : EnergyKind::Liquid->value,
-            'volume' => $data->volume,
+            'volume' => self::dec($data->volume, self::QUANTITY_SCALE),
             'volume_unit' => $electric ? 'kwh' : 'l',
             'is_partial' => $data->isPartial,
             'is_missed_previous' => $data->isMissedPrevious,
@@ -139,8 +143,8 @@ final class Serializer
         ];
         if ($costs) {
             $out['currency'] = $currency;
-            $out['price_per_unit'] = $data->pricePerUnit;
-            $out['total_cost'] = $data->totalCost;
+            $out['price_per_unit'] = self::dec($data->pricePerUnit, self::PRICE_SCALE);
+            $out['total_cost'] = self::dec($data->totalCost, self::QUANTITY_SCALE);
         }
 
         return $out;
@@ -153,7 +157,7 @@ final class Serializer
     {
         return [
             'status' => $fill->status->value,
-            'distance_since_previous' => $fill->distanceSincePreviousKm,
+            'distance_since_previous' => self::dec($fill->distanceSincePreviousKm, self::QUANTITY_SCALE),
             'consumption_unit' => self::consumptionUnit($electric),
             'segment' => $fill->segment === null ? null : self::segment($fill->segment, $costs),
         ];
@@ -165,14 +169,14 @@ final class Serializer
     private static function segment(EconomySegment $segment, bool $costs): array
     {
         $out = [
-            'distance' => $segment->distanceKm,
-            'volume' => $segment->volume,
+            'distance' => self::dec($segment->distanceKm, self::QUANTITY_SCALE),
+            'volume' => self::dec($segment->volume, self::QUANTITY_SCALE),
             'consumption' => self::per100Km($segment->volume, $segment->distanceKm),
             'fills' => $segment->fills,
             'grade' => $segment->grade?->value,
         ];
         if ($costs) {
-            $out['cost'] = $segment->cost;
+            $out['cost'] = self::dec($segment->cost, self::QUANTITY_SCALE);
         }
 
         return $out;
@@ -196,13 +200,13 @@ final class Serializer
                 ? self::per100Km($summary->measuredVolume, $summary->measuredDistanceKm)
                 : null,
             'last_consumption' => $last === null ? null : self::per100Km($last->volume, $last->distanceKm),
-            'measured_distance' => $summary->measuredDistanceKm,
-            'total_volume' => $summary->totalVolume,
+            'measured_distance' => self::dec($summary->measuredDistanceKm, self::QUANTITY_SCALE),
+            'total_volume' => self::dec($summary->totalVolume, self::QUANTITY_SCALE),
         ];
         if ($costs) {
             $perUnit = $summary->averagePricePerUnit();
             $perKm = $summary->costPerKm();
-            $out['total_cost'] = $summary->totalCost;
+            $out['total_cost'] = self::dec($summary->totalCost, self::QUANTITY_SCALE);
             $out['average_price_per_unit'] = $perUnit === null ? null : Decimal::round($perUnit, 3);
             $out['cost_per_distance'] = $perKm === null ? null : Decimal::round($perKm, self::PER_KM_SCALE);
         }
@@ -219,7 +223,7 @@ final class Serializer
             'id' => $reading->id,
             'vehicle_id' => $reading->vehicleId,
             'recorded_at' => self::instant($reading->recordedAt),
-            'odometer' => $reading->readingKm,
+            'odometer' => self::dec($reading->readingKm, self::QUANTITY_SCALE),
             'distance_unit' => self::DISTANCE_UNIT,
             'source' => $reading->source->value,
             'source_id' => match ($reading->source) {
@@ -247,7 +251,7 @@ final class Serializer
             'performed_on' => self::date($data->performedOn),
             'category' => $data->category->value,
             'title' => $data->title,
-            'odometer' => $data->odometerKm,
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
             'distance_unit' => self::DISTANCE_UNIT,
             'vendor' => $data->vendor,
             'description' => $data->description,
@@ -257,7 +261,7 @@ final class Serializer
         ];
         if ($costs) {
             $out['currency'] = $currency;
-            $out['cost'] = $data->cost;
+            $out['cost'] = self::dec($data->cost, self::QUANTITY_SCALE);
         }
 
         return $out;
@@ -281,7 +285,7 @@ final class Serializer
             'expiry_on' => self::date($data->expiryOn),
             'status' => $state->status->value,
             'days_left' => $state->daysLeft,
-            'odometer' => $data->odometerKm,
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
             'distance_unit' => self::DISTANCE_UNIT,
             'notes' => $data->notes,
             'created_at' => self::instant($document->createdAt),
@@ -289,7 +293,7 @@ final class Serializer
         ];
         if ($costs) {
             $out['currency'] = $currency;
-            $out['cost'] = $data->cost;
+            $out['cost'] = self::dec($data->cost, self::QUANTITY_SCALE);
         }
 
         return $out;
@@ -328,7 +332,7 @@ final class Serializer
             'vehicle_id' => $entry->vehicleId,
             'spent_on' => self::date($data->spentOn),
             'category' => $data->category->value,
-            'amount' => $data->amount,
+            'amount' => self::dec($data->amount, self::QUANTITY_SCALE),
             'currency' => $currency,
             'note' => $data->note,
             'created_at' => self::instant($entry->createdAt),
@@ -365,19 +369,19 @@ final class Serializer
             'tread' => [
                 'latest' => $latest === null ? null : [
                     'measured_on' => self::date($latest->doneOn),
-                    'depth' => $latest->treadMm,
-                    'distance' => $latest->distanceKm,
+                    'depth' => self::dec($latest->treadMm, self::QUANTITY_SCALE),
+                    'distance' => self::dec($latest->distanceKm, self::QUANTITY_SCALE),
                 ],
-                'depth_now' => $wear->depthNowMm,
-                'replace_at' => $wear->replaceAtMm,
-                'distance_left' => $wear->kmLeft,
+                'depth_now' => self::dec($wear->depthNowMm, self::QUANTITY_SCALE),
+                'replace_at' => self::dec($wear->replaceAtMm, self::QUANTITY_SCALE),
+                'distance_left' => self::dec($wear->kmLeft, self::QUANTITY_SCALE),
                 'worn' => $wear->worn,
             ],
             'due' => $standing === null ? null : [
                 'status' => $standing->status->value,
                 'reason' => $standing->reason,
                 'due_on' => self::date($standing->dueOn),
-                'due_odometer' => $standing->dueKm,
+                'due_odometer' => self::dec($standing->dueKm, self::QUANTITY_SCALE),
             ],
             'notes' => $tyre->data->notes,
             'created_at' => self::instant($tyre->createdAt),
@@ -405,7 +409,7 @@ final class Serializer
             'title' => $item->title,
             'category' => $item->category,
             'due_on' => self::date($item->dueOn),
-            'due_odometer' => $item->dueKm,
+            'due_odometer' => self::dec($item->dueKm, self::QUANTITY_SCALE),
             'distance_unit' => self::DISTANCE_UNIT,
             'projected' => $item->projected,
             'overdue' => $item->overdue,
@@ -435,13 +439,22 @@ final class Serializer
             'notes' => $reminder->notes,
             'status' => $reminder->status->value,
             'due_on' => self::date($reminder->dueOn),
-            'due_odometer' => $reminder->dueKm,
+            'due_odometer' => self::dec($reminder->dueKm, self::QUANTITY_SCALE),
             'distance_unit' => self::DISTANCE_UNIT,
             'days_left' => $entry->daysLeft($today),
             'lead_time_days' => $reminder->leadTimeDays,
             'created_at' => self::instant($reminder->createdAt),
             'updated_at' => self::instant($reminder->updatedAt),
         ];
+    }
+
+    /**
+     * A decimal at a fixed number of places ("0" → "0.000"), so every value
+     * of a field has the same shape whatever produced it.
+     */
+    public static function dec(?string $value, int $scale): ?string
+    {
+        return $value === null ? null : Decimal::round($value, $scale);
     }
 
     public static function consumptionUnit(bool $electric): string

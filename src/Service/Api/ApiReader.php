@@ -141,10 +141,20 @@ final readonly class ApiReader
             $history->fills,
             static fn (FillEconomy $fill): array => [$fill->entry->data->filledAt, $fill->entry->id],
         );
+        // Once per request, not per item: the checks read the whole history.
+        $checks = $this->fuel->checks($history);
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $costs = $this->costs($user, $vehicle);
 
         return [
             'items' => array_map(
-                fn (FillEconomy $fill): array => $this->fuelEntry($user, $vehicle, $fill->entry, $history),
+                static fn (FillEconomy $fill): array => Serializer::fuelEntry(
+                    $fill->entry,
+                    $fill,
+                    $checks->for($fill->entry->id),
+                    $currency,
+                    $costs,
+                ),
                 $page['items'],
             ),
             'cursor' => $page['cursor'],
@@ -165,12 +175,11 @@ final readonly class ApiReader
                 $fill = $candidate;
             }
         }
-        $check = $this->fuel->checks($history)->for($entry->id);
 
         return Serializer::fuelEntry(
             $fill->entry ?? $entry,
             $fill,
-            $check,
+            $this->fuel->checks($history)->for($entry->id),
             $this->vehicles->currencyFor($user, $vehicle),
             $this->costs($user, $vehicle),
         );
@@ -341,7 +350,7 @@ final readonly class ApiReader
             'status' => $vehicle->status->value,
             'distance_unit' => Serializer::DISTANCE_UNIT,
             'odometer' => $latest === null ? null : [
-                'value' => $latest->readingKm,
+                'value' => Serializer::dec($latest->readingKm, Serializer::QUANTITY_SCALE),
                 'recorded_at' => Serializer::instant($latest->recordedAt),
                 'source' => $latest->source->value,
             ],
@@ -382,7 +391,7 @@ final readonly class ApiReader
                 'from' => Serializer::date($report->period->from),
                 'to' => Serializer::date($report->period->to),
                 'total' => ($section?->total)?->toDecimal(3) ?? '0.000',
-                'distance' => $section?->distanceKm,
+                'distance' => Serializer::dec($section?->distanceKm, Serializer::QUANTITY_SCALE),
                 'cost_per_distance' => $perKm === null ? null : Decimal::round($perKm, Serializer::PER_KM_SCALE),
             ];
             $display['cost_per_distance'] = $perKm === null ? null : $this->format->perDistance($perKm, $currency);
@@ -417,7 +426,7 @@ final readonly class ApiReader
                 'status' => $verdict->status->value,
                 'reason' => $verdict->reason,
                 'due_on' => Serializer::date($verdict->dueOn),
-                'due_odometer' => $verdict->dueKm,
+                'due_odometer' => Serializer::dec($verdict->dueKm, Serializer::QUANTITY_SCALE),
                 'worn' => $verdict->isWorn(),
             ];
         }

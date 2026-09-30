@@ -121,6 +121,10 @@ api() { # api <path> <status> [body-substring] [token]
 api /vehicles 200 '"items":[]' "$token"
 api /me 200 '"username":"smoke"' "$token"
 api /vehicles 401 '"code":"missing_key"'
+# A bad key is counted: the throttle's counter must be writable by www-data.
+api /me 401 '"code":"invalid_key"' "lbk_0000000000000000000000000000000000000000000"
+$compose exec -T app sh -c 'ls var/cache/api-throttle/*.json' >/dev/null || fail "the failed-key counter was not written"
+echo "ok  failed-key counter written"
 api /openapi.json 200 '"openapi":"3.1.0"'
 
 # Restarting must be idempotent (migrations already applied) and keep sessions.
