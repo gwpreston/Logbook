@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -18,8 +19,9 @@ use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
 /**
- * The garage (`vehicles` table). Every lookup is scoped to the owner, so one
- * user can never reach another's vehicle by guessing an id.
+ * The garage (`vehicles` table). Lookups by id are not scoped: the access
+ * policy (spec.md §5) decides who reaches a vehicle, and writes are keyed by
+ * the vehicle's own owner as well as its id.
  */
 final readonly class VehicleRepository
 {
@@ -32,40 +34,54 @@ final readonly class VehicleRepository
     }
 
     /**
-     * @return list<Vehicle> in creation order
+     * The ids of one owner's vehicles, in creation order: the one query
+     * behind the access policy (the user + status index).
+     *
+     * @param VehicleStatus|null $status null for every status
+     * @return list<int>
      */
-    public function listForUser(int $userId, bool $includeArchived): array
+    public function idsOwnedBy(int $userId, ?VehicleStatus $status): array
     {
-        $query = $this->select()
+        $query = $this->connection->createQueryBuilder()
+            ->select('id')
+            ->from(self::TABLE)
             ->where('user_id = :user')
             ->setParameter('user', $userId, ParameterType::INTEGER)
             ->orderBy('id');
-
-        if (!$includeArchived) {
-            $query->andWhere('status = :status')->setParameter('status', VehicleStatus::Active->value);
+        if ($status !== null) {
+            $query->andWhere('status = :status')->setParameter('status', $status->value);
         }
 
-        return array_values(array_map($this->hydrate(...), $query->fetchAllAssociative()));
+        return array_values(array_map(static fn (array $row): int => Row::int($row, 'id'), $query->fetchAllAssociative()));
     }
 
-    public function countByStatus(int $userId, VehicleStatus $status): int
+    /**
+     * @param list<int> $ids
+     * @return list<Vehicle> in creation order
+     */
+    public function listByIds(array $ids): array
     {
-        $count = $this->connection->createQueryBuilder()
-            ->select('COUNT(*)')
-            ->from(self::TABLE)
-            ->where('user_id = :user', 'status = :status')
-            ->setParameter('user', $userId, ParameterType::INTEGER)
-            ->setParameter('status', $status->value)
-            ->fetchOne();
+        if ($ids === []) {
+            return [];
+        }
 
-        return is_numeric($count) ? (int) $count : 0;
+        $rows = $this->select()
+            ->where('id IN (:ids)')
+            ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
     }
 
-    public function find(int $userId, int $id): ?Vehicle
+    /**
+     * Whoever owns it: access is the policy's question (spec.md §5), asked
+     * by the caller before anything is shown.
+     */
+    public function findById(int $id): ?Vehicle
     {
         $row = $this->select()
-            ->where('user_id = :user', 'id = :id')
-            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->where('id = :id')
             ->setParameter('id', $id, ParameterType::INTEGER)
             ->fetchAssociative();
 

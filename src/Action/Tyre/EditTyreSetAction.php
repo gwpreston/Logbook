@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Tyre\TyreChangeForm;
 use Logbook\Service\Tyre\TyreService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
@@ -22,7 +20,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class EditTyreSetAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private TyreService $tyres,
         private View $view,
         private Redirector $redirect,
@@ -34,7 +31,7 @@ final readonly class EditTyreSetAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $set = TyreRoute::set($this->tyres, $vehicle, $request, $args);
         $preferences = RequestContext::requireUser($request)->preferences;
         $page = fn (array $values, ?ValidationErrors $errors = null, int $status = 200): ResponseInterface => $this->view->render(

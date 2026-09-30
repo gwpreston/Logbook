@@ -6,7 +6,6 @@ namespace Logbook\Action\Compliance;
 
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Compliance\ComplianceDocumentForm;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -39,7 +38,7 @@ final readonly class EditComplianceDocumentAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $document = ComplianceRoute::document($this->compliance, $vehicle, $request, $args);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);

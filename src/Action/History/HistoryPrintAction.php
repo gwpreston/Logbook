@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Action\History;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Feature\FeatureToggles;
@@ -15,7 +14,6 @@ use Logbook\Service\History\PrintOptions;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleAge;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
@@ -35,7 +33,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class HistoryPrintAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private ActivityFeed $feed,
         private AttachmentService $attachments,
         private OdometerService $odometer,
@@ -51,7 +48,7 @@ final readonly class HistoryPrintAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $available = array_values(array_filter(
             HistoryChip::available($this->features->all()),

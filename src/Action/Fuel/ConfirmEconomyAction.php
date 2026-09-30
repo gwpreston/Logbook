@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Fuel\EconomyNotCheckable;
 use Logbook\Service\Fuel\FuelService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -23,7 +21,6 @@ use Slim\Exception\HttpNotFoundException;
 final readonly class ConfirmEconomyAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private FuelService $fuel,
         private Redirector $redirect,
     ) {
@@ -34,7 +31,7 @@ final readonly class ConfirmEconomyAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $entry = FuelRoute::entry($this->fuel, $vehicle, $request, $args);
         $undo = (RequestContext::form($request)['undo'] ?? '') === '1';
 

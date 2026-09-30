@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Tyre\TyreChangeKind;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -32,7 +31,7 @@ final readonly class TyreListAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $overview = $this->tyres->overview($vehicle, $user);
         $pagination = Pagination::fromQuery($request->getQueryParams(), count($overview->changes));

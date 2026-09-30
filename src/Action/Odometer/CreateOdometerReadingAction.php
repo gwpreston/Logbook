@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Action\Odometer;
 
 use Logbook\Action\Attachment\AttachmentUpload;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
@@ -23,7 +21,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class CreateOdometerReadingAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private OdometerService $odometer,
         private OdometerFormPage $page,
         private AttachmentUpload $upload,
@@ -38,7 +35,7 @@ final readonly class CreateOdometerReadingAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $preferences = RequestContext::requireUser($request)->preferences;
 
         if ($request->getMethod() !== 'POST') {

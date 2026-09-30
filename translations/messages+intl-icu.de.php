@@ -2155,6 +2155,7 @@ return [
         'status_code' => 'Fehler {status}',
         '400' => ['title' => 'Ungültige Anfrage', 'body' => 'Die Anfrage war nicht verständlich. Bitte prüfe sie und versuche es erneut.'],
         '403' => ['title' => 'Zugriff verweigert', 'body' => 'Du darfst diese Seite nicht ansehen.'],
+        'access_denied' => ['title' => 'Nicht erlaubt', 'body' => 'Du kannst das öffnen, darfst diese Änderung aber nicht vornehmen.'],
         '404' => ['title' => 'Seite nicht gefunden', 'body' => 'Die angefragte Seite existiert nicht oder ist umgezogen.'],
         '405' => ['title' => 'Methode nicht erlaubt', 'body' => 'Diese Seite lässt sich so nicht verwenden.'],
         '413' => ['title' => 'Zu groß', 'body' => 'Das Gesendete war größer, als dieser Server annimmt. Versuche es mit einer kleineren Datei.'],

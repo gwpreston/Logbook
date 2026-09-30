@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Maintenance\MaintenanceScheduleForm;
 use Logbook\Service\Maintenance\ScheduleService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
@@ -21,7 +19,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class CreateScheduleAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private ScheduleService $schedules,
         private ScheduleFormPage $page,
         private Redirector $redirect,
@@ -33,7 +30,7 @@ final readonly class CreateScheduleAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
 
         if ($request->getMethod() !== 'POST') {
             return $this->page->render($request, $response, $vehicle, MaintenanceScheduleForm::defaults());

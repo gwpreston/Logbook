@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Import;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Export\ExportModule;
 use Logbook\Service\Feature\FeatureToggles;
-use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
 
@@ -25,13 +24,9 @@ final class ImportRoute
      * @param array<string, string> $args
      * @return array{0: Vehicle, 1: ExportModule}
      */
-    public static function resolve(
-        VehicleService $vehicles,
-        FeatureToggles $features,
-        ServerRequestInterface $request,
-        array $args,
-    ): array {
-        $vehicle = VehicleRoute::vehicle($vehicles, $request, $args);
+    public static function resolve(FeatureToggles $features, ServerRequestInterface $request, array $args): array
+    {
+        $vehicle = RequestContext::vehicle($request);
         $module = ExportModule::tryFrom($args['module'] ?? '') ?? throw new HttpNotFoundException($request);
         $feature = $module->feature();
         if (!$module->isImportable() || $vehicle->isArchived() || ($feature !== null && !$features->isEnabled($feature))) {

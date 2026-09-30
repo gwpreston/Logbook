@@ -71,7 +71,8 @@ final readonly class ComingUp
 
         $manual = [];
         if ($enabled[Feature::Reminders->value]) {
-            foreach ($this->reminders->listOpenManualForUser($user->id) as $reminder) {
+            $ids = array_map(static fn (Vehicle $v): int => $v->id, $vehicles);
+            foreach ($this->reminders->listOpenManualForVehicles($ids) as $reminder) {
                 $manual[$reminder->vehicleId][] = $reminder;
             }
         }

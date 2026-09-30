@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Action\Fuel;
 
 use Logbook\Action\Attachment\AttachmentUpload;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -37,7 +36,7 @@ final readonly class EditFuelEntryAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $entry = FuelRoute::entry($this->fuel, $vehicle, $request, $args);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);

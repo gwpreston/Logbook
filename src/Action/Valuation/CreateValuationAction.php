@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Action\Valuation;
 
 use Logbook\Action\Attachment\AttachmentUpload;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Valuation\ValuationForm;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -39,7 +38,7 @@ final readonly class CreateValuationAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());

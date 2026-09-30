@@ -6,7 +6,6 @@ namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Maintenance\MaintenanceSchedule;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
@@ -46,7 +45,7 @@ final readonly class CreateMaintenanceEntryAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 

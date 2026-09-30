@@ -15,15 +15,15 @@ use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
-use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Service\Reminder\GeneratedReminder;
 use Logbook\Service\Reminder\OpenReminderRow;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
 /**
- * Reminders (`reminders`). Reads are scoped to an owner through their
- * vehicles; writes take a reminder already resolved for that owner.
+ * Reminders (`reminders`). Reads are scoped to the vehicle ids the access
+ * policy gives (spec.md §5); writes take a reminder already resolved
+ * through it.
  *
  * Notification bookkeeping goes through claim() / release() /
  * recordDelivery(): claim() is a conditional update, so of two overlapping
@@ -39,25 +39,32 @@ final readonly class ReminderRepository
     }
 
     /**
-     * @param bool $activeVehiclesOnly leave out the reminders of archived vehicles
+     * @param list<int> $vehicleIds the vehicles in scope (the access policy's visible ids)
      * @return list<Reminder>
      */
-    public function listForUser(int $userId, bool $activeVehiclesOnly = true): array
+    public function listForVehicles(array $vehicleIds): array
     {
+        if ($vehicleIds === []) {
+            return [];
+        }
         $query = $this->select();
-        $this->scopeToUser($query, $userId, $activeVehiclesOnly);
+        self::scopeToVehicles($query, $vehicleIds);
 
         return $this->hydrateAll($query->orderBy('id')->fetchAllAssociative());
     }
 
     /**
-     * Generated (schedule, document and tyre) reminders of every vehicle of
-     * the owner (archived ones included, so ReminderSync can remove theirs).
+     * Generated (schedule, document and tyre) reminders of these vehicles
+     * (ReminderSync passes archived ones too, so it can remove theirs).
      *
+     * @param list<int> $vehicleIds
      * @return list<Reminder>
      */
-    public function listGeneratedForUser(int $userId): array
+    public function listGeneratedForVehicles(array $vehicleIds): array
     {
+        if ($vehicleIds === []) {
+            return [];
+        }
         $generated = array_values(array_filter(
             ReminderSource::cases(),
             static fn (ReminderSource $source): bool => $source->isGenerated(),
@@ -69,35 +76,43 @@ final readonly class ReminderRepository
                 array_map(static fn (ReminderSource $source): string => $source->value, $generated),
                 ArrayParameterType::STRING,
             );
-        $this->scopeToUser($query, $userId, false);
+        self::scopeToVehicles($query, $vehicleIds);
 
         return $this->hydrateAll($query->orderBy('id')->fetchAllAssociative());
     }
 
     /**
-     * Open manual reminders of the owner's active vehicles.
+     * Open manual reminders of these vehicles.
      *
+     * @param list<int> $vehicleIds
      * @return list<Reminder>
      */
-    public function listOpenManualForUser(int $userId): array
+    public function listOpenManualForVehicles(array $vehicleIds): array
     {
+        if ($vehicleIds === []) {
+            return [];
+        }
         $query = $this->select()
             ->where('source = :source', 'status IN (:open)')
             ->setParameter('source', ReminderSource::Manual->value)
             ->setParameter('open', self::openStatuses(), ArrayParameterType::STRING);
-        $this->scopeToUser($query, $userId, true);
+        self::scopeToVehicles($query, $vehicleIds);
 
         return $this->hydrateAll($query->orderBy('id')->fetchAllAssociative());
     }
 
     /**
-     * Reminders of the owner's active vehicles whose current status has not
-     * been sent out yet.
+     * Reminders of these vehicles whose current status has not been sent
+     * out yet.
      *
+     * @param list<int> $vehicleIds
      * @return list<Reminder>
      */
-    public function listAwaitingNotification(int $userId): array
+    public function listAwaitingNotification(array $vehicleIds): array
     {
+        if ($vehicleIds === []) {
+            return [];
+        }
         $query = $this->select()
             ->where('status IN (:notifiable)')
             ->andWhere('notified_status IS NULL OR notified_status <> status')
@@ -106,25 +121,29 @@ final readonly class ReminderRepository
                 [ReminderStatus::Due->value, ReminderStatus::Overdue->value],
                 ArrayParameterType::STRING,
             );
-        $this->scopeToUser($query, $userId, true);
+        self::scopeToVehicles($query, $vehicleIds);
 
         return $this->hydrateAll($query->orderBy('id')->fetchAllAssociative());
     }
 
     /**
-     * Open reminders of the owner's active vehicles, only the columns the
-     * due counts need (one query on the status index; spec.md §8).
+     * Open reminders of these vehicles, only the columns the due counts
+     * need (one query on the status index; spec.md §8).
      *
+     * @param list<int> $vehicleIds
      * @return list<OpenReminderRow>
      */
-    public function listOpenForCounts(int $userId): array
+    public function listOpenForCounts(array $vehicleIds): array
     {
+        if ($vehicleIds === []) {
+            return [];
+        }
         $query = $this->connection->createQueryBuilder()
             ->select('vehicle_id', 'source', 'status', 'due_on', 'lead_time_days')
             ->from(self::TABLE)
             ->where('status IN (:open)')
             ->setParameter('open', self::openStatuses(), ArrayParameterType::STRING);
-        $this->scopeToUser($query, $userId, true);
+        self::scopeToVehicles($query, $vehicleIds);
 
         $rows = [];
         foreach ($query->fetchAllAssociative() as $row) {
@@ -140,11 +159,13 @@ final readonly class ReminderRepository
         return $rows;
     }
 
-    public function find(int $userId, int $id): ?Reminder
+    /**
+     * Whichever vehicle it is for: the caller checks that vehicle with the
+     * access policy.
+     */
+    public function findById(int $id): ?Reminder
     {
-        $query = $this->select()->where('id = :id')->setParameter('id', $id, ParameterType::INTEGER);
-        $this->scopeToUser($query, $userId, false);
-        $row = $query->fetchAssociative();
+        $row = $this->select()->where('id = :id')->setParameter('id', $id, ParameterType::INTEGER)->fetchAssociative();
 
         return $row === false ? null : $this->hydrate($row);
     }
@@ -321,19 +342,12 @@ final readonly class ReminderRepository
             ->from(self::TABLE);
     }
 
-    private function scopeToUser(QueryBuilder $query, int $userId, bool $activeVehiclesOnly): void
+    /**
+     * @param non-empty-list<int> $vehicleIds
+     */
+    private static function scopeToVehicles(QueryBuilder $query, array $vehicleIds): void
     {
-        $vehicles = $this->connection->createQueryBuilder()
-            ->select('v.id')
-            ->from('vehicles', 'v')
-            ->where('v.user_id = :user');
-        if ($activeVehiclesOnly) {
-            $vehicles->andWhere('v.status = :vehicle_status');
-            $query->setParameter('vehicle_status', VehicleStatus::Active->value);
-        }
-
-        $query->andWhere('vehicle_id IN (' . $vehicles->getSQL() . ')')
-            ->setParameter('user', $userId, ParameterType::INTEGER);
+        $query->andWhere('vehicle_id IN (:vehicles)')->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER);
     }
 
     /**

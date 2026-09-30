@@ -171,7 +171,7 @@ final class BackupTest extends AppTestCase
         $response = $browser->post($confirm, []);
         self::assertSame(422, $response->getStatusCode());
         self::assertStringContainsString('Tick the box', self::body($response));
-        self::assertCount(2, $this->service($app, VehicleRepository::class)->listForUser($owner->id, true));
+        self::assertCount(2, $this->ownedVehicles($app, $owner->id));
 
         $response = $browser->post($confirm, ['confirm' => '1']);
         self::assertSame(303, $response->getStatusCode(), self::body($response));

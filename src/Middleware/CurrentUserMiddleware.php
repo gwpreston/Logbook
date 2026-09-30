@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Middleware;
 
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,12 +22,14 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
 {
     public const string ATTRIBUTE = 'user';
 
-    public function __construct(private UserRepository $users)
+    public function __construct(private UserRepository $users, private VehicleAccess $access)
     {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        // Access answers remembered by an earlier request (a long-lived container) are not this one's.
+        $this->access->forget();
         $session = RequestContext::session($request);
         $userId = $session->userId();
         $user = $userId === null ? null : $this->users->find($userId);

@@ -29,7 +29,7 @@ final readonly class DeleteVehicleAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
 
         if ($request->getMethod() !== 'POST') {
             return $this->view->render($request, $response, 'vehicles/delete.twig', ['vehicle' => $vehicle]);

@@ -137,7 +137,7 @@ final class FuelGradeTest extends AppTestCase
         $connection->update('vehicles', ['default_grade' => 'b7'], ['id' => $golf->id]);
 
         self::assertNull($this->service($app, FuelEntryRepository::class)->find($golf->id, $entry->id)?->data->grade);
-        self::assertNull($this->service($app, VehicleRepository::class)->find($golf->userId, $golf->id)?->data->defaultGrade);
+        self::assertNull($this->service($app, VehicleRepository::class)->findById($golf->id)?->data->defaultGrade);
 
         $page = $browser->get('/vehicles/' . $golf->id . '/fuel');
         self::assertSame(200, $page->getStatusCode());
@@ -157,7 +157,7 @@ final class FuelGradeTest extends AppTestCase
 
         $car = ['type' => 'car', 'make' => 'Toyota', 'model' => 'Prius', 'fuel_type' => 'hybrid', 'default_grade' => 'e5_97'];
         $browser->post('/vehicles/new', $car);
-        $vehicle = $this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, false)[0];
+        $vehicle = $this->ownedVehicles($app, $this->owner($app)->id, false)[0];
         self::assertSame(FuelGrade::E5_97, $vehicle->data->defaultGrade, 'a hybrid takes a petrol grade');
         self::assertStringContainsString('<option value="petrol:e5_97" selected>', self::body(
             $browser->get('/vehicles/' . $vehicle->id . '/fuel/new'),
@@ -166,12 +166,12 @@ final class FuelGradeTest extends AppTestCase
         // Switched to diesel without JS: the petrol default is dropped, not refused.
         $response = $browser->post('/vehicles/' . $vehicle->id . '/edit', ['fuel_type' => 'diesel'] + $car);
         self::assertSame(303, $response->getStatusCode());
-        $vehicle = $this->service($app, VehicleRepository::class)->find($this->owner($app)->id, $vehicle->id);
+        $vehicle = $this->service($app, VehicleRepository::class)->findById($vehicle->id);
         self::assertSame(FuelType::Diesel, $vehicle?->data->fuelType);
         self::assertNull($vehicle->data->defaultGrade);
 
         $browser->post('/vehicles/' . $vehicle->id . '/edit', ['fuel_type' => 'ev', 'default_grade' => 'home'] + $car);
-        $vehicle = $this->service($app, VehicleRepository::class)->find($this->owner($app)->id, $vehicle->id);
+        $vehicle = $this->service($app, VehicleRepository::class)->findById($vehicle->id);
         self::assertSame(FuelGrade::Home, $vehicle?->data->defaultGrade);
         $edit = self::body($browser->get('/vehicles/' . $vehicle->id . '/edit'));
         self::assertStringContainsString('value="home" selected', $edit);

@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Odometer;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Odometer\OdometerService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -22,7 +20,6 @@ use Slim\Exception\HttpNotFoundException;
 final readonly class DeleteOdometerReadingAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private OdometerService $odometer,
         private DisplayFormatter $formatter,
         private View $view,
@@ -35,7 +32,7 @@ final readonly class DeleteOdometerReadingAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $reading = OdometerRoute::reading($this->odometer, $vehicle, $request, $args);
         if (!$reading->isManual()) {
             throw new HttpNotFoundException($request);

@@ -117,17 +117,15 @@ final class VehicleDetailsTest extends AppTestCase
         $browser = $this->signedIn($app);
 
         $browser->get('/vehicles/new');
-        $vehicles = $this->service($app, VehicleRepository::class);
-
         // Control: without a starting reading the vehicle is saved as usual.
         $saved = $browser->post('/vehicles/new', ['current_odometer' => ''] + self::FOCUS);
         self::assertSame(303, $saved->getStatusCode());
-        self::assertCount(1, $vehicles->listForUser($this->owner($app)->id, true));
+        self::assertCount(1, $this->ownedVehicles($app, $this->owner($app)->id));
 
         $response = $browser->post('/vehicles/new', ['current_odometer' => '100', 'variant' => 'Doomed'] + self::FOCUS);
 
         self::assertSame(500, $response->getStatusCode());
-        self::assertCount(1, $vehicles->listForUser($this->owner($app)->id, true), 'the inserted vehicle was rolled back');
+        self::assertCount(1, $this->ownedVehicles($app, $this->owner($app)->id), 'the inserted vehicle was rolled back');
     }
 
     public function testEditingShowsTheCurrentReadingAndNeverWritesOne(): void
@@ -338,7 +336,7 @@ final class VehicleDetailsTest extends AppTestCase
         $other = $browser->post('/vehicles/new', ['make' => '', 'current_odometer_on' => '2026-01-05'] + self::FOCUS);
         self::assertSame(422, $other->getStatusCode());
         self::assertStringContainsString('value="2026-01-05"', self::body($other), 'kept on any validation error');
-        self::assertSame([], $this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, true));
+        self::assertSame([], $this->ownedVehicles($app, $this->owner($app)->id));
     }
 
     public function testAStartingReadingBeforeRegistrationIsSavedWithAWarning(): void
@@ -472,7 +470,7 @@ final class VehicleDetailsTest extends AppTestCase
      */
     private function onlyVehicle(App $app): Vehicle
     {
-        $vehicles = $this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, true);
+        $vehicles = $this->ownedVehicles($app, $this->owner($app)->id);
         self::assertCount(1, $vehicles);
 
         return $vehicles[0];
@@ -483,7 +481,7 @@ final class VehicleDetailsTest extends AppTestCase
      */
     private function vehicleWithVariant(App $app, string $variant): Vehicle
     {
-        foreach ($this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, true) as $vehicle) {
+        foreach ($this->ownedVehicles($app, $this->owner($app)->id) as $vehicle) {
             if ($vehicle->data->variant === $variant) {
                 return $vehicle;
             }

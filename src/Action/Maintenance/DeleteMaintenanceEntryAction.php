@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Maintenance\MaintenanceService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -21,7 +19,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class DeleteMaintenanceEntryAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private MaintenanceService $maintenance,
         private DisplayFormatter $formatter,
         private View $view,
@@ -34,7 +31,7 @@ final readonly class DeleteMaintenanceEntryAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $entry = MaintenanceRoute::entry($this->maintenance, $vehicle, $request, $args);
         $description = [
             'title' => $entry->data->title,

@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Odometer;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Vehicle\VehicleAge;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\Pagination;
 use Logbook\Support\View\View;
@@ -22,7 +20,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class OdometerLogAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private OdometerService $odometer,
         private AttachmentService $attachments,
         private OdometerChart $chart,
@@ -36,7 +33,7 @@ final readonly class OdometerLogAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $history = $this->odometer->history($vehicle);
         $rows = $history->newestFirst();

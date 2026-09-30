@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Compliance;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Compliance\ComplianceService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
@@ -21,7 +19,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class DeleteComplianceDocumentAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private ComplianceService $compliance,
         private TranslatorInterface $translator,
         private View $view,
@@ -34,7 +31,7 @@ final readonly class DeleteComplianceDocumentAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $document = ComplianceRoute::document($this->compliance, $vehicle, $request, $args);
         $data = $document->data;
         $description = ['name' => $data->title ?? $this->translator->trans('compliance.type.' . $data->type->value)];
