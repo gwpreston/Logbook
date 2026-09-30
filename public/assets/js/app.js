@@ -997,7 +997,34 @@
         });
     }
 
+    /*
+     * Copy buttons (the API key shown once, spec.md §7.20): hidden without
+     * JS or a clipboard, where the read-only field is selected by hand.
+     */
+    function enhanceCopy(button) {
+        var field = document.querySelector(button.getAttribute('data-copy'));
+        if (!field || !navigator.clipboard) {
+            return;
+        }
+        var label = button.querySelector('span');
+        var original = label ? label.textContent : '';
+        button.hidden = false;
+        button.addEventListener('click', function () {
+            navigator.clipboard.writeText(field.value).then(function () {
+                if (label) {
+                    label.textContent = button.getAttribute('data-copied-label') || original;
+                    window.setTimeout(function () {
+                        label.textContent = original;
+                    }, 2000);
+                }
+            }, function () {
+                field.select();
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('button[data-copy]').forEach(enhanceCopy);
         registerServiceWorker();
         modal.init();
         outboxBox = document.querySelector('[data-offline-outbox]');

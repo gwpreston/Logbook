@@ -6,6 +6,7 @@ namespace Logbook\Tests\Integration\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Api\ApiScope;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
@@ -21,6 +22,7 @@ use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Api\ApiKeyService;
 use Logbook\Service\Attachment\PendingUpload;
 use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Backup\BackupService;
@@ -44,6 +46,7 @@ use Logbook\Support\Number\Decimal;
 use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
 use Logbook\Support\Storage\UploadKind;
+use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\TestBrowser;
@@ -73,6 +76,9 @@ final class BackupTest extends AppTestCase
 
     /** @var list<string> */
     private array $tempFiles = [];
+
+    /** The API key populate() creates. */
+    private string $apiToken = '';
 
     protected function setUp(): void
     {
@@ -111,6 +117,7 @@ final class BackupTest extends AppTestCase
             $owners,
         );
         self::assertCount(1, $before['tables']['vehicle_valuations'], 'valuations travel too');
+        self::assertCount(1, $before['tables']['api_keys'], 'API keys too');
         self::assertContains('document', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertContains('tyre', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertCount(1, $before['tables']['tyre_sets']);
@@ -165,6 +172,7 @@ final class BackupTest extends AppTestCase
         self::assertMatchesRegularExpression('#^/settings/backup/restore/[a-f0-9]{32}$#', $confirm);
         $html = self::body($browser->get($confirm));
         self::assertStringContainsString('Restore this backup?', $html);
+        self::assertStringContainsString('This backup holds API keys.', $html);
         self::assertStringContainsString('name="confirm" value="1"', $html);
 
         // Step 2 needs the box ticked.
@@ -180,6 +188,11 @@ final class BackupTest extends AppTestCase
         self::assertSame(303, $browser->get('/')->getStatusCode(), 'everyone is signed out');
 
         self::assertEquals($before, $this->snapshot($app), 'every row and file as it was');
+        self::assertSame(
+            200,
+            (new ApiClient($app, $this->apiToken))->get('/me')->getStatusCode(),
+            'the same SESSION_SECRET: the key still works',
+        );
 
         // The data from before the restore was kept, just in case.
         $safety = glob($this->backupDir . '/pre-restore-*.zip') ?: [];
@@ -381,6 +394,8 @@ final class BackupTest extends AppTestCase
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));
         $this->service($app, FeatureToggles::class)->save([Feature::Fuel, Feature::Maintenance, Feature::Reminders]);
+        // API keys (Phase 18.2) travel too, as their keyed hashes.
+        $this->apiToken = $this->service($app, ApiKeyService::class)->create($owner, 'Home Assistant', ApiScope::Read)->token;
     }
 
     /**
