@@ -74,7 +74,8 @@ Switching the default would otherwise start monthly emails for every
 existing user who never touched the setting. This is drafted as: **new
 users** (setup and invitations) get it on. **Existing users** keep what they
 have, because the migration writes an explicit "off" for anyone without a
-stored choice. See *Open questions*.
+stored choice. See *Open questions*. (As built, there is no migration: see
+*Changed while building it*.)
 
 ### Tasks
 - [x] Change the default in the settings service and the Settings →
@@ -131,11 +132,13 @@ stored choice. See *Open questions*.
       and a highlight that doesn't depend on colour alone (dashed border
       plus text).
 - [x] Translations (en, de).
-- [x] Tests: server behaviour unchanged (the existing upload tests pass);
+- [ ] Tests: server behaviour unchanged (the existing upload tests pass);
       templates render the plain input inside the zone; a JS unit test (or
       a Playwright smoke test if the project gains one) covers merge,
       remove and the limit. Manual check list in the PR for Chrome, Firefox,
-      Safari and the modal path.
+      Safari and the modal path. *Done:* the server, template and JS unit
+      tests, and Chrome including the modal path. *Open:* Firefox and
+      Safari by hand, in the PR checklist.
 
 ---
 
@@ -215,7 +218,9 @@ as a *Registration* document. Decided 2026-09-30 (Phase 20 review): a hint.
   upgrade notes?
   *Decided 2026-09-30: keep them as they are (drafted). Anyone who has saved the
   Notifications card already has an explicit `digest: false`, so a
-  switch would have reached only some users anyway.*
+  switch would have reached only some users anyway. Built without the
+  drafted migration: new accounts store `digest: true`, a missing row
+  still reads as off.*
 - **Scope of the modal change:** tyre edit only, or every tyre form
   (drafted)?
   *Decided 2026-09-30: every tyre form (drafted).*

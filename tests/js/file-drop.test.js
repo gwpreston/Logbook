@@ -24,6 +24,8 @@ test('accepts MIME types, wildcards and extensions', () => {
     assert.equal(drop.accepts(file('csv', ''), '.csv'), false, 'a bare name is not an extension');
     assert.equal(drop.accepts(file('backup.zip', 'application/x-zip-compressed'), '.zip,application/zip'), true);
     assert.equal(drop.accepts(file('anything', ''), ''), true, 'no accept list takes anything');
+    assert.equal(drop.accepts(file('invoice.pdf', ''), ATTACHMENTS), true, 'no browser type: the server decides');
+    assert.equal(drop.accepts(file('notes.doc', ''), '.csv,.txt,text/csv,text/plain'), false, 'no type and no matching extension');
 });
 
 test('dropped files are added to the current selection', () => {

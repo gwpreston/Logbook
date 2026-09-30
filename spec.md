@@ -1672,9 +1672,12 @@ outside web root, served via an authenticated handler; type/size validated.
     chosen files (name and size), each with *Remove*; it highlights while
     files are dragged over it (dashed border and text, not colour alone)
     and announces changes through an `aria-live` region ("3 files added";
-    "receipt.heic: not a PDF, JPEG, PNG or WebP file"). The client applies
-    the same count, size and type limits before submitting; the server is
-    still the authority. A drop elsewhere on a page with a zone is ignored,
+    "receipt.heic: not a PDF, JPEG, PNG or WebP file"); a refused file's
+    message is also shown under the zone. The client applies the same
+    count, size and type limits before submitting (a file the browser gives
+    no type for is left to the server); the server is still the authority.
+    A file drop elsewhere on a page with a zone is ignored (dragging text
+    into a field is not affected),
     so the browser never navigates away from the form; pages without a
     zone are untouched. The same macro serves the vehicle form's purchase
     and sale inputs, the vehicle photo, CSV import's upload and backup

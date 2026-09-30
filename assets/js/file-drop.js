@@ -20,7 +20,9 @@
     /*
      * Whether a file matches an input's `accept` list: MIME types
      * ("image/png"), wildcards ("image/*") or extensions (".csv"). An empty
-     * list accepts anything, as the browser does.
+     * list accepts anything, as the browser does. A file the browser gives
+     * no type for is let through to the server (which checks the content)
+     * unless the list names extensions and none of them match.
      */
     function accepts(file, accept) {
         var entries = String(accept || '').split(',').map(function (entry) {
@@ -31,6 +33,10 @@
         }
         var name = String(file.name || '').toLowerCase();
         var type = String(file.type || '').toLowerCase();
+        var extensions = entries.filter(function (entry) { return entry.charAt(0) === '.'; });
+        if (type === '' && extensions.length === 0) {
+            return true;
+        }
 
         return entries.some(function (entry) {
             if (entry.charAt(0) === '.') {
@@ -132,6 +138,12 @@
         }
     }
 
+    /* Whether a drag carries files (not text or a link being dragged). */
+    function hasFiles(event) {
+        var types = event.dataTransfer ? event.dataTransfer.types : null;
+        return types !== null && types !== undefined && Array.prototype.indexOf.call(types, 'Files') !== -1;
+    }
+
     var supported = canBuildFileLists();
     var canDrag = !window.matchMedia || window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     var guarded = false;
@@ -178,6 +190,12 @@
         list.className = 'file-drop__list';
         list.hidden = true;
         zone.appendChild(list);
+
+        // Refused files, shown as well as announced.
+        var problem = document.createElement('p');
+        problem.className = 'field__error file-drop__error';
+        problem.hidden = true;
+        zone.appendChild(problem);
 
         var status = document.createElement('p');
         status.className = 'visually-hidden';
@@ -241,6 +259,8 @@
             current = result.files;
             update();
             var messages = rejectedMessages(result.rejected);
+            problem.textContent = messages.join(' ');
+            problem.hidden = messages.length === 0;
             if (result.added.length > 0) {
                 messages.unshift(multiple ? plural(result.added.length, strings, locale) : fill(strings.chosen, { name: result.added[0].name }));
             }
@@ -275,10 +295,6 @@
             zone.classList.toggle('file-drop--over', on);
             prompt.textContent = on ? strings.over : idle;
         }
-        function hasFiles(event) {
-            var types = event.dataTransfer ? event.dataTransfer.types : null;
-            return types !== null && Array.prototype.indexOf.call(types, 'Files') !== -1;
-        }
         zone.addEventListener('dragenter', function (event) {
             if (!hasFiles(event)) {
                 return;
@@ -301,6 +317,9 @@
             }
         });
         zone.addEventListener('drop', function (event) {
+            if (!hasFiles(event)) {
+                return;
+            }
             event.preventDefault();
             depth = 0;
             over(false);
@@ -315,8 +334,9 @@
 
     /*
      * A file dropped next to a zone would make the browser open it and lose
-     * the form. On a page (or dialog) with a zone, drops outside one are
-     * ignored; pages without a zone are untouched.
+     * the form. On a page (or dialog) with a zone, file drops outside one
+     * are ignored; dragging text or links (into a notes field, say) and
+     * pages without a zone are untouched.
      */
     function guardPage() {
         if (guarded) {
@@ -325,7 +345,7 @@
         guarded = true;
         ['dragover', 'drop'].forEach(function (name) {
             document.addEventListener(name, function (event) {
-                if (event.defaultPrevented || !document.querySelector('.file-drop--enhanced')) {
+                if (event.defaultPrevented || !hasFiles(event) || !document.querySelector('.file-drop--enhanced')) {
                     return;
                 }
                 if (event.target instanceof Element && event.target.closest('.file-drop--enhanced')) {
