@@ -27,6 +27,9 @@ final readonly class BackupRepository
     public const array TABLES = [
         'settings',
         'users',
+        // API keys (Phase 18.2): hashed with SESSION_SECRET, so they work only
+        // where it is the same (the restore page says so).
+        'api_keys',
         'vehicles',
         'fuel_entries',
         'maintenance_schedules',
