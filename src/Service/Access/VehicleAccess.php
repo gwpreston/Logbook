@@ -21,6 +21,7 @@ interface VehicleAccess
     /**
      * The ids of the vehicles the user can view, in creation order.
      *
+     * @phpstan-impure
      * @return list<int>
      */
     public function visibleVehicleIds(User $user, VehicleScope $scope): array;

@@ -33,6 +33,8 @@ final readonly class VehicleSources
         public ?float $kmPerDay = null,
         /** Null with `fuel` off: no estimate at all. */
         public ?FuelRate $fuel = null,
+        /** False when the user may not see this vehicle's costs: no amounts (spec.md §5 Costs). */
+        public bool $costs = true,
     ) {
     }
 }

@@ -157,6 +157,7 @@ final readonly class ComingUp
             fuel: $enabled[Feature::Fuel->value] && $costs
                 ? FuelRate::of($ledger, $history->readings, ReportPeriod::preset(ReportRange::TwelveMonths, $today), $zone)
                 : null,
+            costs: $costs,
         );
     }
 
