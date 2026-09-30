@@ -47,7 +47,8 @@ final readonly class ClaimTotals
             if ($currency === null || $unit === null || $trip->mileageAmount === null) {
                 continue;
             }
-            $group = $groups[$currency] ?? ['rates' => [], 'mileage' => '0', 'passengers' => '0', 'employer' => null, 'count' => 0];
+            $group = $groups[$currency]
+                ?? ['rates' => [], 'mileage' => '0', 'passengers' => '0', 'employer' => null, 'count' => 0];
             foreach ($trip->lines as $line) {
                 $key = $unit->value . '|' . Decimal::trim($line->rate);
                 $rate = $group['rates'][$key] ?? ['unit' => $unit, 'rate' => $line->rate, 'distance' => '0', 'amount' => '0'];

@@ -69,7 +69,10 @@ final readonly class SavedJourneyRepository
             'sort_order' => is_numeric($last) ? (int) $last + 1 : 0,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
-        ] + self::dataColumns($data), self::types() + ['user_id' => ParameterType::INTEGER, 'sort_order' => ParameterType::INTEGER]);
+        ] + self::dataColumns($data), self::types() + [
+            'user_id' => ParameterType::INTEGER,
+            'sort_order' => ParameterType::INTEGER,
+        ]);
 
         return (int) $this->connection->lastInsertId();
     }

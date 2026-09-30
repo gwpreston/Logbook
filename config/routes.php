@@ -264,7 +264,8 @@ return static function (App $app): void {
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
         $group->get('/log/new', LogEntryAction::class)->setName('log.chooser');
-        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule|tyre|tyre_check|trip}', LogPickVehicleAction::class)
+        $kinds = 'odometer|maintenance|expense|document|schedule|tyre|tyre_check|trip';
+        $group->get('/log/new/{kind:' . $kinds . '}', LogPickVehicleAction::class)
             ->setName('log.pick');
 
         $group->get('/garage', GarageAction::class)->setName('garage');

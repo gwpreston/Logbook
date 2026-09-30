@@ -8,10 +8,15 @@ use DateTimeImmutable;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\MileageRateSetRepository;
+use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\SavedJourneyRepository;
 use Logbook\Repository\TripRepository;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DistanceUnit;
+use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\View\View;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
@@ -55,11 +60,14 @@ final class TripsTest extends AppTestCase
         $golf = $this->vehicle($app);
         $id = (string) $golf->id;
 
-        foreach (['/vehicles/' . $id . '/trips', '/vehicles/' . $id . '/trips/new', '/trips/claim', '/settings/trips', '/log/new/trip'] as $path) {
+        $trips = '/vehicles/' . $id . '/trips';
+        $paths = [$trips, $trips . '/new', '/trips/claim', '/settings/trips', '/log/new/trip'];
+        foreach ($paths as $path) {
             self::assertSame(404, $browser->get($path)->getStatusCode(), $path);
         }
         $overview = self::body($browser->get('/vehicles/' . $id));
         self::assertStringNotContainsString('/trips', $overview, 'no tab');
+        self::assertStringNotContainsString('Business', self::body($browser->get('/vehicles/' . $id . '/odometer')), 'no split');
         self::assertStringNotContainsString('Log trip', self::body($browser->get('/log/new')));
         self::assertStringNotContainsString('Trips and mileage claims', self::body($browser->get('/settings')));
         $manifest = self::body($browser->get('/manifest.webmanifest'));
@@ -79,7 +87,7 @@ final class TripsTest extends AppTestCase
 
         // Settings → Modules: off keeps the data, on restores it.
         $browser->get('/settings/modules');
-        $modules = ['fuel' => '1', 'maintenance' => '1', 'compliance' => '1', 'reminders' => '1', 'reports' => '1', 'tyres' => '1'];
+        $modules = array_fill_keys(['fuel', 'maintenance', 'compliance', 'reminders', 'reports', 'tyres'], '1');
         $browser->post('/settings/modules', $modules);
         self::assertSame(404, $browser->get('/vehicles/' . $id . '/trips')->getStatusCode());
         self::assertCount(1, $this->service($app, TripRepository::class)->listForVehicle($golf->id));
@@ -100,7 +108,8 @@ final class TripsTest extends AppTestCase
         self::assertStringContainsString('commuting, not business mileage', $form, 'the GB hint');
         self::assertStringContainsString('name="attachments[]" type="file" multiple', $form);
 
-        $saved = $browser->post($base . '/new', self::fields(['distance' => '54']), ['attachments' => [$this->png('parking.png')]]);
+        $parking = ['attachments' => [$this->png('parking.png')]];
+        $saved = $browser->post($base . '/new', self::fields(['distance' => '54']), $parking);
         self::assertSame(303, $saved->getStatusCode(), self::body($saved));
         self::assertSame($base, $saved->getHeaderLine('Location'));
 
@@ -129,7 +138,8 @@ final class TripsTest extends AppTestCase
         $trip = $this->service($app, TripRepository::class)->listForVehicle($golf->id)[0];
         self::assertTrue($trip->data->isReturn);
         self::assertSame('86.905', $trip->data->distanceKm, 'the round trip: 54 mi');
-        self::assertStringContainsString('Ballymena → Client site → Ballymena', self::body($browser->get('/vehicles/' . $golf->id . '/trips')));
+        $list = self::body($browser->get('/vehicles/' . $golf->id . '/trips'));
+        self::assertStringContainsString('Ballymena → Client site → Ballymena', $list);
 
         $edit = self::body($browser->get('/vehicles/' . $golf->id . '/trips/' . $trip->id . '/edit'));
         self::assertStringContainsString('value="27"', $edit, 'the edit form shows one way again');
@@ -142,13 +152,15 @@ final class TripsTest extends AppTestCase
 
         $this->logTrip($browser, $golf, ['odometer_start' => '12000', 'odometer_end' => '12054.2']);
         $trip = $this->service($app, TripRepository::class)->listForVehicle($golf->id)[0];
-        self::assertSame('54.200', DistanceMiles::of($trip->data->distanceKm));
+        self::assertSame('54.200', DistanceUnit::Mile->fromKmDecimal($trip->data->distanceKm, 3));
         self::assertNotNull($trip->data->odometerStartKm);
-        self::assertSame([], $this->service($app, \Logbook\Repository\OdometerReadingRepository::class)->listForVehicle($golf->id), 'a trip writes no reading');
+        $readings = $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id);
+        self::assertSame([], $readings, 'a trip writes no reading');
 
         $base = '/vehicles/' . $golf->id . '/trips/new';
         $browser->get($base);
-        $refused = $browser->post($base, self::fields(['odometer_start' => '12000', 'odometer_end' => '12054.2', 'distance' => '60']));
+        $mismatch = ['odometer_start' => '12000', 'odometer_end' => '12054.2', 'distance' => '60'];
+        $refused = $browser->post($base, self::fields($mismatch));
         self::assertSame(422, $refused->getStatusCode());
         self::assertStringContainsString('The odometer says 54.2 mi; the distance says 60 mi.', self::body($refused));
 
@@ -233,7 +245,8 @@ final class TripsTest extends AppTestCase
         self::assertStringNotContainsString('name="odometer_start" type="number" value="1', $again);
 
         // Two taps: log it again as it is.
-        $this->logTrip($browser, $golf, ['to_place' => 'Client site', 'distance' => '27', 'is_return' => '1', 'purpose' => 'Site visit']);
+        $again = ['to_place' => 'Client site', 'distance' => '27', 'is_return' => '1', 'purpose' => 'Site visit'];
+        $this->logTrip($browser, $golf, $again);
         self::assertCount(2, $this->service($app, TripRepository::class)->listForVehicle($golf->id));
 
         // Settings → Trips: edit, reorder and delete; the trips stay.
@@ -252,11 +265,13 @@ final class TripsTest extends AppTestCase
         $this->reading($app, $golf, '16093.440', '2026-04-10T09:00:00Z');
         $this->reading($app, $golf, '17702.784', '2026-09-25T09:00:00Z');
         $this->logTrip($browser, $golf, ['distance' => '200', 'travelled_on' => '2026-06-01']);
-        $this->logTrip($browser, $golf, ['distance' => '50', 'travelled_on' => '2026-06-02', 'is_business' => '0', 'purpose' => '']);
+        $private = ['distance' => '50', 'travelled_on' => '2026-06-02', 'is_business' => '0', 'purpose' => ''];
+        $this->logTrip($browser, $golf, $private);
 
         $trips = self::body($browser->get('/vehicles/' . $golf->id . '/trips'));
         self::assertMatchesRegularExpression('/Business<\/dt>\s*<dd[^>]*>200 mi</', $trips);
-        self::assertMatchesRegularExpression('/Private<\/dt>\s*<dd[^>]*>800 mi</', $trips, 'logged private trips never change the split');
+        $private800 = '/Private<\/dt>\s*<dd[^>]*>800 mi</';
+        self::assertMatchesRegularExpression($private800, $trips, 'logged private trips never change the split');
 
         $mileage = self::body($browser->get('/vehicles/' . $golf->id . '/odometer'));
         self::assertMatchesRegularExpression('/Private<\/dt>\s*<dd[^>]*>800 mi</', $mileage);
@@ -286,8 +301,9 @@ final class TripsTest extends AppTestCase
         self::assertStringNotContainsString('Owners client', $mine, 'destinations are personal');
         self::assertStringContainsString('Only your own trips are shown', $mine);
         self::assertSame(404, $driver->get($base . '/' . $ownersTrip->id . '/edit')->getStatusCode());
-        self::assertSame(404, $driver->get('/vehicles/' . $golf->id . '/attachments/' . $file)->getStatusCode(), 'nor its receipt');
-        self::assertSame(200, $owner->get('/vehicles/' . $golf->id . '/attachments/' . $file)->getStatusCode());
+        $receipt = '/vehicles/' . $golf->id . '/attachments/' . $file;
+        self::assertSame(404, $driver->get($receipt)->getStatusCode(), 'nor its receipt');
+        self::assertSame(200, $owner->get($receipt)->getStatusCode());
         $history = self::body($driver->get('/vehicles/' . $golf->id . '/history?kind=trips'));
         self::assertStringContainsString('Drivers client', $history);
         self::assertStringNotContainsString('Owners client', $history, 'nor in the Trips chip');
@@ -317,17 +333,21 @@ final class TripsTest extends AppTestCase
     public function testTripsStayOutOfEverythingRecentActivityPrintAndTheSalePack(): void
     {
         [$app, $browser, $golf] = $this->golf();
-        $this->logTrip($browser, $golf, ['to_place' => 'Secret destination', 'distance' => '12'], [$this->png('toll-receipt.png')]);
+        $secret = ['to_place' => 'Secret destination', 'distance' => '12'];
+        $this->logTrip($browser, $golf, $secret, [$this->png('toll-receipt.png')]);
         $id = (string) $golf->id;
 
-        foreach (['/vehicles/' . $id . '/history', '/history', '/', '/vehicles/' . $id, '/vehicles/' . $id . '/history/print?costs=1', '/vehicles/' . $id . '/sale-pack'] as $page) {
+        $vehicle = '/vehicles/' . $id;
+        $pages = [$vehicle . '/history', '/history', '/', $vehicle, $vehicle . '/history/print?costs=1', $vehicle . '/sale-pack'];
+        foreach ($pages as $page) {
             $response = $browser->get($page);
             self::assertSame(200, $response->getStatusCode(), $page);
             $body = self::body($response);
             $at = strpos($body, 'Secret destination');
             self::assertFalse($at, $page . ': ' . ($at === false ? '' : substr($body, max(0, $at - 400), 500)));
         }
-        $zip = $browser->get('/vehicles/' . $id . '/sale-pack/paperwork.zip?options=1&kinds[]=service&kinds[]=inspection&kinds[]=photo&kinds[]=purchase');
+        $kinds = 'options=1&kinds[]=service&kinds[]=inspection&kinds[]=photo&kinds[]=purchase';
+        $zip = $browser->get('/vehicles/' . $id . '/sale-pack/paperwork.zip?' . $kinds);
         self::assertStringNotContainsString('toll-receipt', self::body($zip), 'nor its receipt in the ZIP');
         $print = self::body($browser->get('/vehicles/' . $id . '/history/print?options=1&kinds[]=trips'));
         self::assertStringNotContainsString('Secret destination', $print, 'not even when asked for');
@@ -342,7 +362,13 @@ final class TripsTest extends AppTestCase
         [$app, $browser, $golf] = $this->golf();
         $this->logTrip($browser, $golf, ['distance' => '54', 'passengers' => '2', 'travelled_on' => '2026-05-01']);
         $this->logTrip($browser, $golf, ['distance' => '20', 'travelled_on' => '2026-04-05', 'to_place' => 'Last year']);
-        $this->logTrip($browser, $golf, ['distance' => '15', 'travelled_on' => '2026-05-02', 'is_business' => '0', 'purpose' => '', 'to_place' => 'Private place']);
+        $this->logTrip($browser, $golf, [
+            'distance' => '15',
+            'travelled_on' => '2026-05-02',
+            'is_business' => '0',
+            'purpose' => '',
+            'to_place' => 'Private place',
+        ]);
 
         $claim = self::body($browser->get('/trips/claim'));
         self::assertStringContainsString('Mileage claim', $claim);
@@ -366,8 +392,10 @@ final class TripsTest extends AppTestCase
         self::assertSame(200, $csv->getStatusCode());
         self::assertStringContainsString('mileage-claim-2026-27.csv', $csv->getHeaderLine('Content-Disposition'));
         $lines = explode("\n", trim(self::body($csv)));
-        self::assertStringContainsString('Date,Vehicle,Registration,Journey,Purpose,Distance,Unit,Passengers,Rate,Passenger amount,Amount,Currency', $lines[0]);
-        self::assertStringContainsString('2026-05-01,Volkswagen Golf,GO19 ABC,Ballymena → Belfast,Client meeting,54,mi,2,0.55,5.40,35.10,GBP', $lines[1]);
+        $header = 'Date,Vehicle,Registration,Journey,Purpose,Distance,Unit,Passengers,Rate,Passenger amount,Amount,Currency';
+        self::assertStringContainsString($header, $lines[0]);
+        $row = '2026-05-01,Volkswagen Golf,GO19 ABC,Ballymena → Belfast,Client meeting,54,mi,2,0.55,5.40,35.10,GBP';
+        self::assertStringContainsString($row, $lines[1]);
     }
 
     public function testEmployerRatesShowTheDifference(): void
@@ -415,12 +443,12 @@ final class TripsTest extends AppTestCase
         $browser->get('/trips/claim');
         self::assertSame([], $rates->listForUser($owner->id), 'deleted rates never come back');
 
-        $member = $this->createMember($app, 'berlin', new \Logbook\Support\Display\DisplayPreferences(
+        $member = $this->createMember($app, 'berlin', new DisplayPreferences(
             'de_DE',
             'Europe/Berlin',
-            \Logbook\Support\Units\DistanceUnit::Kilometre,
-            \Logbook\Support\Units\VolumeUnit::Litre,
-            \Logbook\Support\Units\ConsumptionUnit::LitresPer100Km,
+            DistanceUnit::Kilometre,
+            VolumeUnit::Litre,
+            ConsumptionUnit::LitresPer100Km,
             'EUR',
         ));
         $german = $this->browserFor($app, 'berlin');
@@ -449,7 +477,11 @@ final class TripsTest extends AppTestCase
         [, $browser, $golf] = $this->golf();
         $this->logTrip($browser, $golf, ['distance' => '10', 'travelled_on' => '2026-02-01']);
         $browser->get('/settings/trips');
-        $saved = $browser->post('/settings/trips', ['tax_year_day' => '1', 'tax_year_month' => '1', 'declaration' => 'I confirm these journeys were for business.']);
+        $saved = $browser->post('/settings/trips', [
+            'tax_year_day' => '1',
+            'tax_year_month' => '1',
+            'declaration' => 'I confirm these journeys were for business.',
+        ]);
         self::assertSame(303, $saved->getStatusCode(), self::body($saved));
 
         $claim = self::body($browser->get('/trips/claim'));
@@ -470,8 +502,10 @@ final class TripsTest extends AppTestCase
         $export = $browser->get('/vehicles/' . $golf->id . '/export/trips.csv');
         self::assertSame(200, $export->getStatusCode());
         $csv = self::body($export);
-        self::assertStringContainsString('Date,From,To,Return,Distance (mi),Odometer start (mi),Odometer end (mi),Business,Purpose,Passengers,Notes', $csv);
-        self::assertStringContainsString('2026-09-30,Ballymena,Client site,yes,54,,,yes,Client meeting,0,', $csv, 'the whole trip');
+        $header = 'Date,From,To,Return,Distance (mi),Odometer start (mi),Odometer end (mi),Business,Purpose,Passengers,Notes';
+        self::assertStringContainsString($header, $csv);
+        $return = '2026-09-30,Ballymena,Client site,yes,54,,,yes,Client meeting,0,';
+        self::assertStringContainsString($return, $csv, 'the whole trip');
         self::assertStringContainsString('2026-09-30,Ballymena,Depot,no,54.2,12000,12054.2,yes,Client meeting,0,', $csv);
 
         // Into a second car: nothing doubled.
@@ -504,8 +538,9 @@ final class TripsTest extends AppTestCase
     private function shared(App $app, Vehicle $vehicle, ShareLevel $level, string $username): TestBrowser
     {
         $member = $this->createMember($app, $username, displayName: ucfirst($username));
+        $since = new DateTimeImmutable('2026-09-01T00:00:00Z');
         $this->service($app, VehicleShareRepository::class)
-            ->insert($vehicle->id, $member->id, $level, $level === ShareLevel::Manage, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+            ->insert($vehicle->id, $member->id, $level, $level === ShareLevel::Manage, false, $since);
 
         return $this->browserFor($app, $username);
     }
@@ -550,7 +585,9 @@ final class TripsTest extends AppTestCase
         $path = '/vehicles/' . $vehicle->id . '/import/trips';
         $browser->get($path);
         $file = $this->tempFile('trips.csv', $csv);
-        $upload = $browser->post($path, [], ['file' => new UploadedFile($file, 'trips.csv', 'text/csv', strlen($csv), UPLOAD_ERR_OK)]);
+        $upload = $browser->post($path, [], [
+            'file' => new UploadedFile($file, 'trips.csv', 'text/csv', strlen($csv), UPLOAD_ERR_OK),
+        ]);
         self::assertSame(303, $upload->getStatusCode(), self::body($upload));
         $map = $upload->getHeaderLine('Location');
 
@@ -583,16 +620,5 @@ final class TripsTest extends AppTestCase
         $this->tempFiles[] = $file;
 
         return $file;
-    }
-}
-
-/**
- * Kilometres → miles to 3 places, for asserting what was typed.
- */
-final class DistanceMiles
-{
-    public static function of(string $km): string
-    {
-        return \Logbook\Support\Units\DistanceUnit::Mile->fromKmDecimal($km, 3);
     }
 }

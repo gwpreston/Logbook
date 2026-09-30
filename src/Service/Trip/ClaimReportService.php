@@ -55,8 +55,7 @@ final readonly class ClaimReportService
             }
             $included[$row->trip->vehicleId] = $vehicles[$row->trip->vehicleId];
         }
-        $sets = array_values($used);
-        usort($sets, static fn (MileageRateSet $a, MileageRateSet $b): int => $a->data->effectiveFrom <=> $b->data->effectiveFrom);
+        $sets = ClaimCalculator::byEffectiveDate(array_values($used));
 
         return new ClaimReport(
             filter: $filter,

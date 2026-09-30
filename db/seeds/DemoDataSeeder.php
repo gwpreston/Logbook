@@ -153,6 +153,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedPaperwork($now);
         $this->seedValuations($now);
         $this->seedSalePack($now);
+        $this->seedTrips($now, $userId);
         $this->seedPartner($now, $userId);
 
         $this->getOutput()->writeln(sprintf(
@@ -754,6 +755,157 @@ final class DemoDataSeeder extends AbstractSeed
             'size' => strlen($png),
             'stored_path' => $stored,
             'uploaded_at' => $now,
+        ])->saveData();
+    }
+
+    /**
+     * Trips (Phase 22, spec.md §7.22, §7.23): the trips module switched on,
+     * three saved journeys, HMRC's rates with an employer paying 35p, and
+     * about sixty business trips on the Golf across 2025/26 and 2026/27, so
+     * the 45p → 55p change on 6 April 2026 shows in the claim. A few carry
+     * passengers, two are private (listed, never in the split) and one has
+     * its toll receipt.
+     */
+    private function seedTrips(string $now, int $userId): void
+    {
+        $golf = $this->vehicleIds()['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
+        $mile = 1.609344;
+        $km = static fn (float $miles): string => number_format($miles * $mile, 3, '.', '');
+
+        // Every module on, trips included (off by default).
+        $this->table('settings')->insert([
+            [
+                'scope' => 'global',
+                'owner_id' => 0,
+                'name' => 'features',
+                'value' => json_encode([
+                    'fuel' => true, 'maintenance' => true, 'compliance' => true, 'reminders' => true,
+                    'reports' => true, 'tyres' => true, 'trips' => true,
+                ], JSON_THROW_ON_ERROR),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'scope' => 'user',
+                'owner_id' => $userId,
+                'name' => 'trips',
+                'value' => json_encode([
+                    'tax_year_start' => '04-06',
+                    'declaration' => 'I confirm these journeys were made wholly for business.',
+                    'rates_provided' => true,
+                ], JSON_THROW_ON_ERROR),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ])->saveData();
+
+        $rates = static fn (string $from, string $car): array => [
+            'user_id' => $userId,
+            'effective_from' => $from,
+            'distance_unit' => 'mi',
+            'currency' => 'GBP',
+            'car_rate' => $car,
+            'car_threshold' => '10000.000',
+            'car_rate_after' => '0.2500',
+            'bike_rate' => '0.2400',
+            'passenger_rate' => '0.0500',
+            'employer_car_rate' => '0.3500',
+            'employer_bike_rate' => null,
+            'source' => 'HMRC approved mileage allowance payments',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+        $this->table('mileage_rate_sets')->insert([$rates('2011-04-06', '0.4500'), $rates('2026-04-06', '0.5500')])->saveData();
+
+        $journeys = [
+            ['Office', 'Client site', 27.0, true, 'Site visit', true],
+            ['Office', 'Head office, Belfast', 31.0, true, 'Team meeting', true],
+            ['Home', 'Airport', 22.0, true, null, false],
+        ];
+        foreach ($journeys as $order => [$from, $to, $miles, $return, $purpose, $business]) {
+            $this->table('saved_journeys')->insert([
+                'user_id' => $userId,
+                'from_place' => $from,
+                'to_place' => $to,
+                'distance_km' => $km($miles),
+                'is_return_default' => $return,
+                'purpose_default' => $purpose,
+                'is_business_default' => $business,
+                'sort_order' => $order,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->saveData();
+        }
+
+        // Every nine days from 15 April 2025 to late September 2026.
+        $purposes = ['Site visit', 'Client meeting', 'Supplier review', 'Site survey', 'Quarterly review'];
+        $trips = [];
+        $day = new DateTimeImmutable('2025-04-15');
+        $last = new DateTimeImmutable('2026-09-25');
+        for ($i = 0; $day <= $last; $i++, $day = $day->modify('+9 days')) {
+            [$from, $to, $miles, $return] = match ($i % 3) {
+                0 => ['Office', 'Client site', 54.0, true],
+                1 => ['Office', 'Head office, Belfast', 62.0, true],
+                default => ['Ballymena', 'Belfast', 54.0 + ($i % 5), false],
+            };
+            $trips[] = [
+                'vehicle_id' => $golf,
+                'created_by' => $userId,
+                'travelled_on' => $day->format('Y-m-d'),
+                'from_place' => $from,
+                'to_place' => $to,
+                'is_return' => $return,
+                'distance_km' => $km($miles),
+                'odometer_start_km' => null,
+                'odometer_end_km' => null,
+                'is_business' => true,
+                'purpose' => $purposes[$i % count($purposes)],
+                'passengers' => $i % 7 === 3 ? 2 : ($i % 7 === 5 ? 1 : 0),
+                'notes' => null,
+                'created_at' => $day->format('Y-m-d') . ' 18:00:00',
+                'updated_at' => $day->format('Y-m-d') . ' 18:00:00',
+            ];
+        }
+        foreach (['2025-08-02' => 'Portrush', '2026-07-18' => 'Newcastle'] as $on => $to) {
+            $trips[] = [
+                'vehicle_id' => $golf, 'created_by' => $userId, 'travelled_on' => $on, 'from_place' => 'Home',
+                'to_place' => $to, 'is_return' => true, 'distance_km' => $km(70.0), 'odometer_start_km' => null,
+                'odometer_end_km' => null, 'is_business' => false, 'purpose' => null, 'passengers' => 0,
+                'notes' => 'Day out', 'created_at' => $on . ' 20:00:00', 'updated_at' => $on . ' 20:00:00',
+            ];
+        }
+        $this->table('trips')->insert($trips)->saveData();
+
+        // A toll receipt on the latest Belfast trip.
+        $toll = null;
+        $belfast = "SELECT id FROM trips WHERE to_place = 'Belfast' ORDER BY travelled_on DESC";
+        foreach ($this->fetchAll($belfast) as $row) {
+            if (is_array($row)) {
+                $toll = self::intValue($row['id'] ?? null);
+                break;
+            }
+        }
+        $directory = Kernel::settings()->uploadPath . '/attachments';
+        if ($toll === null || (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory))) {
+            $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample toll receipt skipped.</comment>');
+
+            return;
+        }
+        $png = (string) base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        );
+        $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.png';
+        file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $png);
+        $this->table('attachments')->insert([
+            'vehicle_id' => $golf,
+            'owner_type' => 'trip',
+            'owner_id' => $toll,
+            'filename' => 'Toll receipt.png',
+            'mime' => 'image/png',
+            'size' => strlen($png),
+            'stored_path' => $stored,
+            'uploaded_at' => $now,
+            'uploaded_by' => $userId,
         ])->saveData();
     }
 

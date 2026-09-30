@@ -26,7 +26,14 @@ final class RateSetForm
     public const int RATE_WHOLE_DIGITS = 6;
     public const int SOURCE_MAX = 200;
 
-    private const array RATES = ['car_rate', 'car_rate_after', 'bike_rate', 'passenger_rate', 'employer_car_rate', 'employer_bike_rate'];
+    private const array RATES = [
+        'car_rate',
+        'car_rate_after',
+        'bike_rate',
+        'passenger_rate',
+        'employer_car_rate',
+        'employer_bike_rate',
+    ];
 
     /**
      * @return array<string, string>
@@ -84,7 +91,8 @@ final class RateSetForm
         $currency = $validator->choice('currency', Currency::SUPPORTED, true);
         $rates = [];
         foreach (self::RATES as $field) {
-            $rates[$field] = $validator->decimal($field, $field === 'car_rate', self::RATE_SCALE, '0', null, self::RATE_WHOLE_DIGITS);
+            $required = $field === 'car_rate';
+            $rates[$field] = $validator->decimal($field, $required, self::RATE_SCALE, '0', null, self::RATE_WHOLE_DIGITS);
         }
         $threshold = $validator->decimal('car_threshold', false, 3, '0', null, TripForm::WHOLE_DIGITS);
         if ($threshold !== null && $rates['car_rate_after'] === null && $validator->raw('car_rate_after') === '') {

@@ -1,15 +1,16 @@
 {
-    "css/app.css": "9995bdf2ffb4",
+    "css/app.css": "2ac4db8e97fa",
     "images/apple-touch-icon.png": "5d20e32cd66d",
     "images/icon-192.png": "4655ae88d21d",
     "images/icon-512.png": "c9e6d3a34934",
     "images/icon-maskable-512.png": "a4bb5e694ae9",
     "images/logbook-mark.png": "26fcc6f7ed96",
-    "js/app.js": "709bffa332f1",
+    "js/app.js": "d342514cc8ce",
     "js/file-drop.js": "788775bd1cca",
     "js/first-inspection.js": "ed3d5a7ddcde",
-    "js/service-worker.js": "1494e2b993d1",
+    "js/service-worker.js": "a2493a9adcf6",
     "js/theme.js": "effc85a28e76",
+    "js/trip-form.js": "3bdfa6acdffe",
     "vendor/THIRD-PARTY-NOTICES.txt": "95a5844d48b4",
     "vendor/alpine.min.js": "232519394c6c",
     "vendor/chart.umd.min.js": "48444a82d4ed",
@@ -17,6 +18,6 @@
     "vendor/fonts/outfit-latin-wght-normal.woff2": "6c18d579fd87",
     "vendor/fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2": "38e3b8fd8045",
     "vendor/fonts/plus-jakarta-sans-latin-wght-normal.woff2": "153fc85b7029",
-    "vendor/icons.svg": "b33247de2770",
+    "vendor/icons.svg": "222ca9828f71",
     "vendor/sortable.min.js": "bf4241bc73fe"
 }

@@ -68,7 +68,10 @@ final readonly class BusinessMileage
         $totalKm = null;
         foreach ($vehicles as $vehicle) {
             $split = $this->split->forVehicle($user, $vehicle, $from, $to);
-            $own = array_values(array_filter($claim->rows, static fn (ValuedTrip $row): bool => $row->trip->vehicleId === $vehicle->id));
+            $own = array_values(array_filter(
+                $claim->rows,
+                static fn (ValuedTrip $row): bool => $row->trip->vehicleId === $vehicle->id,
+            ));
             if (Decimal::compare($split->businessKm, '0') <= 0 && $own === []) {
                 continue;
             }
@@ -104,8 +107,13 @@ final readonly class BusinessMileage
      * @param list<Vehicle> $vehicles
      * @return array<int, array{perKm: string, runningOnly: bool}>
      */
-    private function costPerKm(User $user, array $vehicles, DateTimeImmutable $from, DateTimeImmutable $to, DateTimeImmutable $today): array
-    {
+    private function costPerKm(
+        User $user,
+        array $vehicles,
+        DateTimeImmutable $from,
+        DateTimeImmutable $to,
+        DateTimeImmutable $today,
+    ): array {
         $visible = array_values(array_filter(
             $vehicles,
             fn (Vehicle $vehicle): bool => $this->access->can($user, VehicleAbility::ViewCosts, $vehicle),

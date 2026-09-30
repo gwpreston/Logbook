@@ -55,7 +55,8 @@ final class BusinessMileageTest extends AppTestCase
 
         $report = self::body($browser->get('/reports'));
         self::assertStringContainsString('Business mileage', $report);
-        self::assertStringNotContainsString('/mi<br><span class="muted">running', $report, 'no cost per mile without distance or costs');
+        $cost = '/mi<br><span class="muted">running';
+        self::assertStringNotContainsString($cost, $report, 'no cost per mile without distance or costs');
     }
 
     public function testAKilometreOwnerSeesPerKm(): void
@@ -100,22 +101,27 @@ final class BusinessMileageTest extends AppTestCase
     public function testTheCommuteHintIsGbAndGerman(): void
     {
         [, $browser, $golf] = $this->golf();
-        self::assertStringContainsString('commuting, not business mileage', self::body($browser->get('/vehicles/' . $golf->id . '/trips/new')));
+        $form = self::body($browser->get('/vehicles/' . $golf->id . '/trips/new'));
+        self::assertStringContainsString('commuting, not business mileage', $form);
 
         $app = $this->createApp(['FEATURES_TRIPS' => 'true']);
         $this->pinClock($app, self::NOW);
         $this->resetDatabase($app);
         $preset = UnitPreset::Metric;
-        $this->createOwner($app, 'owner', new DisplayPreferences('de_DE', 'Europe/Berlin', $preset->distance(), $preset->volume(), $preset->consumption(), 'EUR'));
+        $metric = static fn (string $locale, string $zone, string $currency): DisplayPreferences
+            => new DisplayPreferences($locale, $zone, $preset->distance(), $preset->volume(), $preset->consumption(), $currency);
+        $this->createOwner($app, 'owner', $metric('de_DE', 'Europe/Berlin', 'EUR'));
         $german = $this->browserFor($app, 'owner');
         $car = $this->vehicle($app);
-        self::assertStringContainsString('erster Tätigkeitsstätte', self::body($german->get('/vehicles/' . $car->id . '/trips/new')));
+        $form = self::body($german->get('/vehicles/' . $car->id . '/trips/new'));
+        self::assertStringContainsString('erster Tätigkeitsstätte', $form);
 
         $this->resetDatabase($app);
-        $this->createOwner($app, 'owner', new DisplayPreferences('en_US', 'America/New_York', $preset->distance(), $preset->volume(), $preset->consumption(), 'USD'));
+        $this->createOwner($app, 'owner', $metric('en_US', 'America/New_York', 'USD'));
         $american = $this->browserFor($app, 'owner');
         $car = $this->vehicle($app);
-        self::assertStringNotContainsString('commuting', self::body($american->get('/vehicles/' . $car->id . '/trips/new')), 'the app never judges it elsewhere');
+        $form = self::body($american->get('/vehicles/' . $car->id . '/trips/new'));
+        self::assertStringNotContainsString('commuting', $form, 'the app never judges it elsewhere');
     }
 
     /**

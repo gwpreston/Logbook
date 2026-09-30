@@ -129,7 +129,10 @@ final class ClaimCalculator
      */
     public static function byEffectiveDate(array $rateSets): array
     {
-        usort($rateSets, static fn (MileageRateSet $a, MileageRateSet $b): int => $a->data->effectiveFrom <=> $b->data->effectiveFrom);
+        usort(
+            $rateSets,
+            static fn (MileageRateSet $a, MileageRateSet $b): int => $a->data->effectiveFrom <=> $b->data->effectiveFrom,
+        );
 
         return $rateSets;
     }

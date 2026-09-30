@@ -60,7 +60,9 @@ final readonly class CreateTripAction
         $files = $this->upload->fromRequest($request);
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {
-            return $this->page->render($request, $response, $user, $vehicle, RequestContext::formValues($request), null, $errors, 422);
+            $values = RequestContext::formValues($request);
+
+            return $this->page->render($request, $response, $user, $vehicle, $values, null, $errors, 422);
         }
 
         $saveJourney = (RequestContext::form($request)['save_journey'] ?? '') === '1';

@@ -638,7 +638,8 @@ final readonly class CsvExporter
             if ($row->isValued()) {
                 $rate = $row->isSplit()
                     ? implode('; ', array_map(
-                        static fn (ClaimLine $line): string => Decimal::trim($line->distance) . ' @ ' . Decimal::trim($line->rate),
+                        static fn (ClaimLine $line): string
+                            => Decimal::trim($line->distance) . ' @ ' . Decimal::trim($line->rate),
                         $row->lines,
                     ))
                     : Decimal::trim($row->lines[0]->rate);

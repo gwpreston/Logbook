@@ -60,7 +60,13 @@ final readonly class ReportAction
             'ownership_query' => OwnershipReportAction::query($filter),
             // Business mileage (Phase 22, spec.md §7.7), with trips on.
             'business' => $this->features->isEnabled(Feature::Trips)
-                ? $this->business->build($user, $report->vehicles, $report->period->from ?? $report->period->to, $report->period->to, $today)
+                ? $this->business->build(
+                    $user,
+                    $report->vehicles,
+                    $report->period->from ?? $report->period->to,
+                    $report->period->to,
+                    $today,
+                )
                 : null,
         ]);
     }

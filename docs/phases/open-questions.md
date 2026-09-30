@@ -70,6 +70,7 @@ Phase 22's on the same day before it started (#43–#47).
 | 45 | [22](phase-22.md) | `trips` on by default for GB-locale users? | Decided | No: off for everyone (`FEATURES_TRIPS=false`). | 2026-09-30 |
 | 46 | [22](phase-22.md) | A `van` vehicle type? | Parked | No: vans stay `car`, which has the same approved rates; a van type in spec §12. | 2026-09-30 |
 | 47 | [22](phase-22.md) | Cost per business mile: ownership cost or running costs only? | Answered | Cost of ownership per distance (#23; spec §7.7 falls back to running costs alone without a value). | 2026-09-30 |
+| 48 | [22](phase-22.md) | An API endpoint listing saved journeys (for Shortcuts)? | Needs a decision | Found while building: `journey_id` works, but its id comes from the edit link. | 2026-09-30 |
 
 ## Other loose ends found in the review
 

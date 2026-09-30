@@ -100,7 +100,13 @@ final class TripForm
             'journey_id' => (string) $journey->id,
             'distance' => self::inUnit($data->distanceKm, $preferences->distanceUnit),
             'passengers' => '0',
-        ] + self::journeyFields($data->fromPlace, $data->toPlace, $data->isReturnDefault, $data->isBusinessDefault, $data->purposeDefault);
+        ] + self::journeyFields(
+            $data->fromPlace,
+            $data->toPlace,
+            $data->isReturnDefault,
+            $data->isBusinessDefault,
+            $data->purposeDefault,
+        );
     }
 
     /**

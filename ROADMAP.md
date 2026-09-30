@@ -50,6 +50,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [20](docs/phases/phase-20.md) | Phase files into `docs/phases/`, open-questions review | ✅ |
 | [21.1](docs/phases/phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | ✅ |
 | [21.2](docs/phases/phase-21.2.md) | First MOT due + v2.1 release | ✅ |
+| [22](docs/phases/phase-22.md) | Trips and business mileage claims + v2.2 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -446,6 +447,22 @@ them.*
 - Release **v2.1.0** (Phases 20, 21.1 and 21.2).
 
 → [`docs/phases/phase-21.2.md`](docs/phases/phase-21.2.md)
+
+## Phase 22 — Trips and business mileage claims + v2.2 release
+*Log the journeys you claim for; Logbook works out the rest.*
+
+- A `trips` module, off until switched on: business trips per vehicle with
+  optional odometer, returns, passengers, saved journeys and *Log again*.
+- Private mileage from the mileage log, never from logged private trips.
+- Dated mileage rates per user, with HMRC's provided once for UK users.
+- A claim report by tax year: the 10,000-mile split, passengers, employer
+  payments and the difference, printed or as CSV; cost per business mile
+  beside the claim value.
+- Destinations stay with their driver: never in *Everything*, the print
+  view or the sale pack.
+- Release **v2.2.0**.
+
+→ [`docs/phases/phase-22.md`](docs/phases/phase-22.md)
 
 ## Phase 23.1 — Single sign-on with OpenID Connect
 *Sign in with the Authelia, Authentik or Keycloak you already run.*

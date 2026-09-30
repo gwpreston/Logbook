@@ -57,8 +57,9 @@ final class ExportUserTest extends AppTestCase
         $trip = new TripData(new DateTimeImmutable('2026-09-03'), 'Home', 'Office', purpose: 'Work');
         $this->service($app, TripRepository::class)->insert($mini->id, $trip, $at, $member->id);
         $this->service($app, TripRepository::class)->insert($golf->id, $trip, $at, $member->id);
-        $this->service($app, SavedJourneyRepository::class)->insert($member->id, new SavedJourneyData('Home', 'Office', '12.000'), $at);
-        $this->service($app, SavedJourneyRepository::class)->insert($this->owner($app)->id, new SavedJourneyData('A', 'B'), $at);
+        $journeys = $this->service($app, SavedJourneyRepository::class);
+        $journeys->insert($member->id, new SavedJourneyData('Home', 'Office', '12.000'), $at);
+        $journeys->insert($this->owner($app)->id, new SavedJourneyData('A', 'B'), $at);
         foreach (RateProvider::hmrc() as $set) {
             $this->service($app, MileageRateSetRepository::class)->insert($member->id, $set, $at);
         }

@@ -124,8 +124,12 @@ final class ClaimCalculatorTest extends TestCase
         self::assertSame('24.00', $onBike->mileageAmount);
         self::assertSame('0.2500', $this->find($valued, $carAfter)->lines[0]->rate, 'past the threshold, whatever the bike did');
 
-        $bikeUnderThreshold = $this->value([$this->trip('2026-05-01', '9990', self::BIKE), $this->trip('2026-05-02', '20')], [self::hmrc2026()]);
-        self::assertSame('0.5500', $bikeUnderThreshold->trips[1]->lines[0]->rate, 'bike miles never count towards the car threshold');
+        $bikeUnderThreshold = $this->value(
+            [$this->trip('2026-05-01', '9990', self::BIKE), $this->trip('2026-05-02', '20')],
+            [self::hmrc2026()],
+        );
+        $rate = $bikeUnderThreshold->trips[1]->lines[0]->rate;
+        self::assertSame('0.5500', $rate, 'bike miles never count towards the car threshold');
         self::assertFalse($bikeUnderThreshold->trips[1]->isSplit());
     }
 
@@ -154,7 +158,16 @@ final class ClaimCalculatorTest extends TestCase
 
     public function testKilometreRatesValueMileTripsExactly(): void
     {
-        $set = self::set('2026-01-01', unit: DistanceUnit::Kilometre, currency: 'EUR', car: '0.3000', threshold: null, after: null, bike: null, passenger: null);
+        $set = self::set(
+            '2026-01-01',
+            unit: DistanceUnit::Kilometre,
+            currency: 'EUR',
+            car: '0.3000',
+            threshold: null,
+            after: null,
+            bike: null,
+            passenger: null,
+        );
         $trip = $this->trip('2026-05-01', '10');
 
         $valued = $this->value([$trip], [$set]);
@@ -230,7 +243,7 @@ final class ClaimCalculatorTest extends TestCase
 
     public function testMixedCurrenciesAreTotalledSeparately(): void
     {
-        $euro = self::set('2026-07-01', unit: DistanceUnit::Kilometre, currency: 'EUR', car: '0.3000', threshold: null, after: null);
+        $euro = self::set('2026-07-01', DistanceUnit::Kilometre, 'EUR', '0.3000', threshold: null, after: null);
         $valued = $this->value([$this->trip('2026-05-01', '100'), $this->trip('2026-08-01', '10')], [self::hmrc2026(), $euro]);
 
         $totals = ClaimTotals::byCurrency($valued->trips);
@@ -281,8 +294,13 @@ final class ClaimCalculatorTest extends TestCase
         self::fail('Trip not valued.');
     }
 
-    private function trip(string $date, string $miles, int $vehicle = self::CAR, ?string $loggedAt = null, int $passengers = 0): Trip
-    {
+    private function trip(
+        string $date,
+        string $miles,
+        int $vehicle = self::CAR,
+        ?string $loggedAt = null,
+        int $passengers = 0,
+    ): Trip {
         $logged = new DateTimeImmutable($loggedAt ?? $date . ' 12:00', new DateTimeZone('UTC'));
 
         return new Trip(

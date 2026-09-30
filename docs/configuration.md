@@ -102,6 +102,7 @@ which configured channels to use in **Settings → Reminders**. See
 | `FEATURES_REMINDERS` | `true` | Reminder list, notifications, calendar feed. |
 | `FEATURES_REPORTS` | `true` | Reports and the spend widget. |
 | `FEATURES_TYRES` | `true` | Tyres: what is fitted and stored, tyre changes, distance per tyre, tread depth, the wear estimate, Settings → Tyres and tyre reminders. |
+| `FEATURES_TRIPS` | `false` | Trips and mileage claims: the Trips tab, saved journeys, mileage rates, the claim report, the business and private split, the *Business mileage* widget and report section, and the trip API. The one module that is off by default ([trips.md](trips.md)). |
 
 These are defaults: once an owner saves **Settings → Modules**, that choice
 wins. A switched-off module disappears from menus, pages (404), the dashboard,
