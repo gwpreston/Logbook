@@ -59,8 +59,9 @@ APP_TIMEZONE=Europe/London
 
 The database containers are not published on host ports; only the app is.
 
-On first visit Logbook asks you to **create the owner account** (first-run
-setup); until then every page redirects there. Do that straight after
+On first visit Logbook asks you to **create the first account**, an admin
+(first-run setup); until then every page redirects there. Admins invite
+everyone else from Settings → Users ([users-and-sharing.md](users-and-sharing.md)). Do that straight after
 deploying, before exposing the app publicly. Behind HTTPS, sessions use
 `Secure` cookies automatically when `APP_URL` starts with `https://` (or set
 `SESSION_SECURE=true`).

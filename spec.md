@@ -1600,7 +1600,7 @@ Extensible channel interface so more can be added.
   notifies each reminder once per status and recipient: when it becomes *due* and again
   when it becomes *overdue* (one that goes straight to overdue is sent
   once). Upcoming, dismissed, done and archived-vehicle reminders are never
-  sent. Everything newly due for one owner in a run goes out as one
+  sent. Everything newly due for one recipient in a run goes out as one
   notification.
 - **Idempotency:** before sending, each reminder is claimed for its
   recipient and status by inserting its `reminder_deliveries` row (unique
