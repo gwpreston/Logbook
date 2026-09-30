@@ -85,7 +85,8 @@ disagree):
 - Front controller (`public/index.php`) → Slim app → middleware stack → Action.
 - **Middleware order (outer→inner):** error handling → base-path → session →
   current user → locale + display preferences → routing → per route group:
-  auth guard → CSRF → vehicle access (see *Access policy*). The session is global but lazy (no cookie or database
+  auth guard → CSRF → vehicle access → instance access (see *Access
+  policy*). The session is global but lazy (no cookie or database
   row until something is stored in it). CSRF and the auth guard sit on route
   groups rather than globally so machine endpoints such as `/health` never
   create sessions; every HTML route is inside a CSRF-protected group.

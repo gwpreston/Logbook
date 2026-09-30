@@ -73,7 +73,7 @@ final class SecondOwnerTest extends AppTestCase
                 FuelType::Diesel,
                 registration: 'OC71 XYZ',
             ));
-        $this->fillUp($app, $theirs, '2026-09-12T08:00:00Z', '20000', '50', self::SECRET_AMOUNT);
+        $theirFill = $this->fillUp($app, $theirs, '2026-09-12T08:00:00Z', '20000', '50', self::SECRET_AMOUNT);
         $this->maintenance($app, $theirs, '2026-09-14', self::SECRET . ' cambelt', '1200.00');
         $reminder = $this->service($app, ReminderService::class)->createManual($other, new ManualReminderData(
             $theirs->id,
@@ -97,6 +97,10 @@ final class SecondOwnerTest extends AppTestCase
             self::assertSame(404, $response->getStatusCode(), $route->getPattern());
         }
         self::assertSame(404, $browser->get('/vehicles/' . $theirs->id . '/attachments/' . $attachmentId)->getStatusCode());
+        // Nor through the owner's own vehicle: an entry or file must belong to the vehicle in the URL.
+        self::assertSame(404, $browser->get('/vehicles/' . $golf->id . '/attachments/' . $attachmentId)->getStatusCode());
+        self::assertSame(404, $browser->get('/vehicles/' . $golf->id . '/fuel/' . $theirFill->id . '/edit')->getStatusCode());
+        self::assertSame(404, $browser->post('/vehicles/' . $golf->id . '/fuel/' . $theirFill->id . '/delete')->getStatusCode());
         self::assertSame(404, $browser->get('/reminders/' . $reminder->id . '/edit')->getStatusCode());
         self::assertSame(404, $browser->post('/reminders/' . $reminder->id . '/done')->getStatusCode());
         self::assertSame(404, $browser->post('/reminders/' . $reminder->id . '/delete')->getStatusCode());

@@ -21,7 +21,8 @@ use Slim\Middleware\ErrorMiddleware;
  *
  *   error handling → base path → session → current user
  *   → locale + display preferences → modal redirects → routing → body parsing
- *   → [route groups, config/routes.php: auth guard → CSRF] → Action
+ *   → [route groups, config/routes.php: auth guard → CSRF → vehicle access
+ *      → instance access → module gate] → Action
  */
 return static function (App $app): void {
     $container = $app->getContainer();

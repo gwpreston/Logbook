@@ -106,6 +106,21 @@ final class CostVisibilityTemplateTest extends TestCase
         ));
     }
 
+    /**
+     * A `costs` variable only counts as a guard because it comes from the policy.
+     */
+    #[DataProvider('templates')]
+    public function testACostsVariableComesFromCanSeeCosts(string $template): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 3) . '/templates/' . $template);
+        preg_match_all('/\{%-?\s*set\s+costs\s*=\s*(.*?)\s*-?%\}/s', $source, $sets);
+
+        foreach ($sets[1] as $value) {
+            self::assertStringContainsString('can_see_costs(', $value, $template . ': set costs = ' . $value);
+        }
+        $this->addToAssertionCount(1);
+    }
+
     public function testTheScannerFollowsNesting(): void
     {
         $source = <<<'TWIG'
