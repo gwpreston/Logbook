@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Domain\Trip\TripData;
+use Logbook\Service\Trip\RateProvider;
+use Logbook\Service\Trip\TripService;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Api\ApiScope;
@@ -109,13 +112,17 @@ final class BackupTest extends AppTestCase
         $browser = $this->signedIn($app);
         $this->populate($app);
         $before = $this->snapshot($app);
-        self::assertCount(9, $before['files'], 'the photo and eight attachments');
+        self::assertCount(10, $before['files'], 'the photo and nine attachments');
         $owners = array_column($before['tables']['attachments'], 'owner_type');
         sort($owners);
         self::assertSame(
-            ['compliance', 'expense', 'maintenance', 'maintenance', 'odometer', 'purchase', 'sale', 'valuation'],
+            ['compliance', 'expense', 'maintenance', 'maintenance', 'odometer', 'purchase', 'sale', 'trip', 'valuation'],
             $owners,
         );
+        self::assertCount(1, $before['tables']['trips'], 'trips travel too (Phase 22)');
+        self::assertCount(1, $before['tables']['saved_journeys']);
+        self::assertCount(2, $before['tables']['mileage_rate_sets']);
+        self::assertContains('trips', array_column($before['tables']['settings'], 'name'));
         self::assertCount(1, $before['tables']['vehicle_valuations'], 'valuations travel too');
         self::assertCount(1, $before['tables']['api_keys'], 'API keys too');
         self::assertContains('document', array_column($before['tables']['odometer_readings'], 'source'));
@@ -152,7 +159,7 @@ final class BackupTest extends AppTestCase
         $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
         self::assertSame('logbook-backup', $manifest['format']);
         self::assertSame(1, $manifest['tables']['vehicles']);
-        self::assertSame(9, $manifest['files']);
+        self::assertSame(10, $manifest['files']);
         self::assertFalse($zip->getFromName('database/sessions.json'), 'sessions are never backed up');
         $zip->close();
 
@@ -228,7 +235,7 @@ final class BackupTest extends AppTestCase
         $file = $this->backupDir . '/nightly.zip';
         mkdir($this->backupDir);
         $manifest = $backups->create($file);
-        self::assertSame(9, $manifest->files);
+        self::assertSame(10, $manifest->files);
 
         $this->resetDatabase($app);
         foreach ($this->service($app, FileStorage::class)->all() as $relative) {
@@ -390,6 +397,19 @@ final class BackupTest extends AppTestCase
             $zone,
             'en_GB',
         );
+        // Trips (Phase 22): a trip with its toll receipt, a saved journey and the GB rates.
+        $this->service($app, TripService::class)->create($golf, new TripData(
+            travelledOn: $day('2026-09-18'),
+            fromPlace: 'Ballymena',
+            toPlace: 'Belfast',
+            isReturn: true,
+            distanceKm: '173.810',
+            odometerStartKm: '1600.000',
+            odometerEndKm: '1773.810',
+            purpose: 'Client meeting',
+            passengers: 2,
+        ), $this->files([[(string) base64_decode(self::PNG), 'toll.png']]), saveJourney: true);
+        self::assertTrue($this->service($app, RateProvider::class)->ensure($owner));
         $due = LocalTime::parseDate('2026-10-01');
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));

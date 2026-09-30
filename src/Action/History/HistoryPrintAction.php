@@ -52,7 +52,8 @@ final readonly class HistoryPrintAction
         $user = RequestContext::requireUser($request);
         $available = array_values(array_filter(
             HistoryChip::available($this->features->all()),
-            static fn (HistoryChip $chip): bool => $chip !== HistoryChip::Everything,
+            // Trips are never printed (spec.md §7.22).
+            static fn (HistoryChip $chip): bool => $chip !== HistoryChip::Everything && $chip !== HistoryChip::Trips,
         ));
         $options = PrintOptions::fromQuery($request->getQueryParams(), $available);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());

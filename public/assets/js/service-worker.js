@@ -17,7 +17,7 @@
 var CONFIG = self.LOGBOOK;
 var STATIC = 'logbook-static-' + CONFIG.version;
 var PAGES = 'logbook-pages';
-var FORM = new RegExp('^' + CONFIG.base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(log/new|fuel/new|vehicles/[0-9]+/fuel/new)$');
+var FORM = new RegExp('^' + CONFIG.base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(log/new|fuel/new|vehicles/[0-9]+/fuel/new|log/new/trip|vehicles/[0-9]+/trips/new)$');
 
 self.addEventListener('install', function (event) {
     event.waitUntil(

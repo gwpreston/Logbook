@@ -131,6 +131,7 @@ final readonly class ActivityDateRepository
             DatedSource::Expense => 'expense_entries',
             DatedSource::TyreChange => 'tyre_changes',
             DatedSource::Valuation => 'vehicle_valuations',
+            DatedSource::Trip => 'trips',
         };
     }
 
@@ -143,6 +144,7 @@ final readonly class ActivityDateRepository
             DatedSource::Expense => 'spent_on',
             DatedSource::TyreChange => 'done_on',
             DatedSource::Valuation => 'valued_on',
+            DatedSource::Trip => 'travelled_on',
         };
     }
 }

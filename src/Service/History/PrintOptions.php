@@ -47,7 +47,8 @@ final readonly class PrintOptions
     /**
      * The feed kinds to list: milestones always, then the chosen chips'.
      * Never valuations (spec.md §7.16): a service history handed to a buyer
-     * must not carry the seller's own valuations.
+     * must not carry the seller's own valuations. Never trips (§7.22):
+     * they are where someone went.
      *
      * @return list<ActivityKind>
      */
@@ -58,6 +59,9 @@ final readonly class PrintOptions
             array_push($kinds, ...$chip->kinds());
         }
 
-        return array_values(array_filter($kinds, static fn (ActivityKind $kind): bool => $kind !== ActivityKind::Valuation));
+        return array_values(array_filter(
+            $kinds,
+            static fn (ActivityKind $kind): bool => $kind !== ActivityKind::Valuation && $kind !== ActivityKind::Trip,
+        ));
     }
 }

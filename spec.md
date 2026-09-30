@@ -492,12 +492,56 @@ MySQL only.
 - Upgrading to 1.6.0 creates the table; rolling it back drops it and the
   `valuation` attachment rows (the files stay under `UPLOAD_PATH`).
 
+**Trip** (Phase 22)
+- id, vehicle_id (`ON DELETE CASCADE`), created_by (user, Phase 19; the
+  driver and claimant), travelled_on (calendar date, never converted
+  through a time zone), from_place and to_place (free text, up to 100
+  characters each, trimmed, both required), is_return (bool: there and
+  back; the distance stored is the whole round trip), distance_km
+  (`decimal(12,3)`, ≥ 0; the whole trip), odometer_start_km and
+  odometer_end_km (optional `decimal(12,3)`; when both are given, the end
+  is after the start and the distance is end − start), is_business (bool,
+  default true), purpose (up to 200 characters; required when business),
+  passengers (0–8, default 0; business passengers for the passenger
+  rate), notes (optional, up to 500), created/updated (UTC). Index
+  `(vehicle_id, travelled_on)` and `(created_by, travelled_on)`.
+- A trip **writes no odometer reading**. Its odometer values are kept as
+  evidence on the trip. The mileage log stays the only distance series,
+  so readings, plausibility and every existing figure are unchanged.
+- Trips take attachments (owner type `trip`: a parking or toll receipt
+  for the journey).
+
+**SavedJourney** (Phase 22)
+- id, user_id (`ON DELETE CASCADE`), from_place, to_place, distance_km
+  (one way), is_return_default (bool), purpose_default (optional),
+  is_business_default (bool), sort_order, created/updated (UTC). A
+  journey belongs to a user, not a vehicle. Deleting it leaves the trips
+  logged from it.
+
+**MileageRateSet** (Phase 22)
+- id, user_id (`ON DELETE CASCADE`), effective_from (calendar date),
+  distance_unit (`mi`|`km`), currency (ISO 4217), car_rate (per unit),
+  car_threshold (optional: units per tax year at car_rate), car_rate_after
+  (optional; needed when a threshold is set), bike_rate (optional; null =
+  bikes use car_rate with no threshold), passenger_rate (optional, per
+  passenger per unit), employer_car_rate and employer_bike_rate (optional:
+  what the user's employer pays), source (optional free text, "HMRC
+  approved mileage allowance payments"), created/updated (UTC). All rates
+  are `decimal(10,4)`. `(user_id, effective_from)` is unique.
+- The set in effect on a trip's date is the latest `effective_from` on or
+  before it. A trip before the earliest set has no value.
+- Upgrading to 2.2.0 creates the three tables; rolling it back drops them,
+  the `trip` attachment rows (the files stay under `UPLOAD_PATH`) and the
+  `trips` user settings.
+
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
   (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`|`purchase`|
-  `sale`|`valuation`; `odometer` for manual readings only; `purchase` and
+  `sale`|`valuation`|`trip`; `odometer` for manual readings only;
+  `purchase` and
   `sale` for the vehicle's purchase and sale, Phase 12, with owner_id = the
-  vehicle's id; `valuation` for a valuation, Phase 14.1),
+  vehicle's id; `valuation` for a valuation, Phase 14.1; `trip` for a trip,
+  Phase 22),
   owner_id, filename (the uploaded name,
   sanitised, for display and downloads only), mime (detected from the
   content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
@@ -536,6 +580,9 @@ MySQL only.
   (there is one). Rolling the migration back is refused while more than
   one user exists, with a message naming `bin/export-user.php`, which
   exports one user's vehicles first.
+- **Trip settings** (Phase 22), stored as a user-scope setting `trips`:
+  tax year start (`MM-DD`; default `04-06` when the user's locale region is
+  GB, else `01-01`) and the claim report's declaration text (optional).
 
 **VehicleShare** (Phase 19, §7.21)
 - id, vehicle_id (`ON DELETE CASCADE`), user_id (`ON DELETE CASCADE`),
@@ -566,7 +613,8 @@ MySQL only.
 - created_by (user id, optional, `ON DELETE SET NULL`) on fuel_entries,
   odometer_readings (`manual` readings; a derived reading's author is its
   entry's), maintenance_entries, compliance_documents, expense_entries,
-  tyre_changes and vehicle_valuations, and uploaded_by on attachments.
+  tyre_changes, vehicle_valuations and trips (Phase 22; a trip's author is
+  its driver and claimant), and uploaded_by on attachments.
   Every create path sets it: forms, CSV import and the API take the
   signed-in or key's user; the command line and seeds, which have none,
   name the vehicle's owner. Upgrading to 2.0.0 names each vehicle's owner
@@ -1516,6 +1564,11 @@ toggles.
   same one the History pages use, with no milestones and no folding. The
   widget's title row links to the fleet history (*View all* →
   `/history`, keeping the dashboard's `?vehicle=`).
+- **Business mileage** (id `business_mileage`, Phase 22, with `trips` on;
+  last in the default order): the signed-in user's own business distance
+  this tax year, the claim value so far and the distance to the rate
+  threshold (§7.22); for the selected vehicle when one is chosen. The title
+  row links to the claim report.
 - **Vehicle filter:** with two or more active vehicles, a row of chips under
   the greeting — *All vehicles* and one per active vehicle with its type
   icon. Each chip is a link (`/?vehicle={id}`; the current one has
@@ -1622,10 +1675,11 @@ Global settings to enable/disable modules (e.g. hide compliance if not needed).
 Disabled modules are removed from nav, routes, and dashboard.
 
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`,
-  `tyres` (Phase 11.1). A
+  `tyres` (Phase 11.1), `trips` (Phase 22). A
   module is enabled unless the global setting `features` (a JSON object of
   module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
-  (default true). The garage, mileage log, expenses and history (§7.16) are
+  (default true, except `trips`: default false). The garage, mileage log,
+  expenses and history (§7.16) are
   core and cannot be switched off; a switched-off module's entries simply
   leave the history.
 - **Settings → Modules** (`/settings/modules`): one switch per module with
@@ -1658,6 +1712,11 @@ Disabled modules are removed from nav, routes, and dashboard.
     type check (§7.1) still applies, since the tyres are still fitted.
     Settings → Tyres is gone and tyre reminders are neither listed nor sent
     (kept, untouched, for when the module returns).
+  - `trips` off (the default): the Trips tab and its pages, the claim
+    report, Settings → Trips and the trip API routes (404); the chooser's
+    *Log trip*, the phone app's quick action, the *Business mileage*
+    widget, the Mileage tab's split, the Reports section and the *Trips*
+    chip. Trip CSV export and import go with it. The data is kept.
   - `maintenance` off leaves tyres working: the cost, garage and link fields
     are hidden on tyre forms, existing links are kept untouched, and a
     linked change is listed on its own in history (without a cost).
@@ -1905,6 +1964,18 @@ vehicles; a disabled module cannot be imported).
   settings are left out, and every entry names the exported user as its
   author (the new install's one user, an admin there, added everything).
   It restores like any backup of the same version.
+- **Trips** (Phase 22, §7.22):
+  - Trips join CSV export and import (`/vehicles/{id}/import/trips`), read
+    by the same parser as the form. The duplicate key is date, from, to and
+    distance. Import sets `created_by` to the importing user.
+  - API: `GET/POST /api/v1/vehicles/{id}/trips`, `GET /api/v1/trips/claim`
+    (the report's figures). A POST's duplicate key matches the import's, so
+    retries are safe. An iPhone Shortcut can log "Ballymena → Belfast" from
+    a saved journey (`journey_id`).
+  - Backups carry `trips`, `saved_journeys`, `mileage_rate_sets` and `trip`
+    attachments. The schema version moves.
+  - `bin/export-user.php` carries the user's trips, saved journeys and
+    rate sets.
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -2732,6 +2803,13 @@ PHP sees, which behind a proxy is the proxy's.
 --scope read|read_write` prints the token alone on stdout (for scripts);
 `list [--user <username>]` and `revoke <id>` for headless installs.
 
+**Trips** (Phase 22, §7.22, §7.23): `GET/POST /api/v1/vehicles/{id}/trips`
+(reading needs `View` and lists the trips the key's user may see; writing
+needs `Log` and a `read_write` key) and `GET /api/v1/trips/claim` (the
+claim report's figures for the key's user). A POST goes through the form's
+parser, takes `journey_id` for a saved journey, and is safe to retry by
+the import's duplicate key. With `trips` off, every trip path answers 404.
+
 **Not in this version:** editing or deleting through the API, other
 writes, attachments, OAuth or sessions, webhooks for new entries, reports
 and ownership figures beyond the summary, per-vehicle keys (Phase 19 lets
@@ -2812,6 +2890,149 @@ part of View.
 **Not in this version:** groups or households as an entity, per-entry
 permissions, public share links, approval flows, SSO and proxy sign-in,
 public sign-up, self-service password reset by email.
+
+### 7.22 Trips (Phase 22)
+
+- **Module** `trips`, switchable like the others (§7.10) and **off by
+  default** (`FEATURES_TRIPS`, default `false`). Most owners never claim
+  mileage, and a new tab on every vehicle would be clutter. Switching it
+  off hides the tab, chooser item, widget, report sections and API routes
+  (404), and keeps the data.
+- **Trips tab** (`/vehicles/{id}/trips`), after Mileage: this tax year's
+  business and private distance and claim value at the top, then trips
+  newest first (25 per page) with date, journey ("Ballymena → Belfast",
+  "Ballymena → Belfast → Ballymena" for a return), distance, purpose, a
+  business or private badge, a paperclip, and *Log again*. The shared
+  toolbar has *Export CSV*, *Import CSV* and *Log trip*.
+- **Trip form** (a page and a desktop modal, §5): date (default today),
+  *Saved journey* (a select that fills from, to, distance, return, purpose
+  and business; without JS, `?journey=<id>` pre-fills the page), from,
+  to, *Return journey*, distance **or** start and end odometer (both in
+  the owner's distance unit), *Business trip* (ticked by default),
+  purpose, passengers, notes, attachments, and *Save as a journey*.
+  - With return ticked, the distance field is labelled "one way" and the
+    stored distance is doubled. The list shows the round trip.
+  - With both odometers, the distance is end − start, which is already
+    the whole trip and is never doubled. A typed one-way distance on a
+    return is doubled before it is compared with the odometers.
+  - Validation: from and to are required; distance ≥ 0; with both
+    odometers, the end must be greater than the start, and a typed
+    distance that disagrees by more than 0.5 is refused ("The odometer
+    says 54.2 mi; the distance says 60 mi"); a business trip needs a
+    purpose; the date is not in the future; archived vehicles take no new
+    trips.
+  - **Hint** under *Business trip*: "Travel between home and your usual
+    workplace is normally commuting, not business mileage." It is shown
+    for GB, and in German with the equivalent wording. The app never
+    judges it.
+  - **Warning** (never blocking) when a trip's distance is more than the
+    vehicle's distance driven that day, if readings on both sides of the
+    day exist.
+- **Log again** opens the form with every field but the date and odometers
+  copied.
+- **Saved journeys** are managed under Settings → Trips: rename, reorder,
+  delete. They are also created by *Save as a journey*.
+- **Business and private split** for a vehicle and period:
+  - business = the sum of business trips;
+  - total = the period's *distance driven* (§7.7), per vehicle;
+  - private = total − business, and never below 0.
+  When business is more than the total (readings too sparse), private
+  shows "—" with "Your trips add up to more than the mileage log shows
+  for this period. Add an odometer reading to fix it." Logged private
+  trips are listed but never change the split, which always comes from
+  the mileage log.
+- **Mileage tab:** the summary gains *Business* and *Private* for this tax
+  year (module on).
+- **Reports** (§7.7): *Business mileage*: distance, claim value, and
+  business share of the total per vehicle for the period, and the fleet
+  total.
+- **Cost per business mile** (decided 2026-09-30, from Phase 14.2's open
+  question): the *Business mileage* report and the claim report show,
+  per vehicle, the vehicle's cost of ownership *Per distance* for the
+  period (§7.7, running costs plus depreciation, or running costs alone
+  when there is no value) beside the claim value per business mile, so
+  the owner can see whether the allowance covers what the car costs to
+  run. It is a figure, not advice, and is left out ("—") when either part
+  cannot be worked out.
+- **Dashboard widget** *Business mileage*: this tax year's business
+  distance, the value so far, and distance to the rate threshold ("6,418
+  mi until the 25p rate"), counted the same way as the claim report's
+  split.
+- **History** (§7.16): a *Trips* chip. Trips show under that chip only,
+  never under *Everything*, in *Recent activity*, the print view or the
+  sale pack. Frequent drivers would otherwise flood the history, and
+  trips are location history.
+- **Access** (Phase 19): logging needs `Log`. A user always sees their
+  own trips. Other people's trips on a vehicle are visible only with
+  `Manage` or `Own` (a new `ViewOthersTrips` ability in the Phase 18.1
+  policy), because destinations are personal. The split's business
+  figure counts every trip, and a user who cannot see some of them sees
+  the total only.
+
+### 7.23 Mileage rates and the claim report (Phase 22)
+
+- **Rates** (Settings → Trips → *Mileage rates*): the user's rate sets,
+  newest first, with add, edit and delete. The add form pre-fills from the
+  set in effect today.
+- **Provided for GB users.** When a user with a GB locale region first
+  switches trips on or opens the rates page with none, they get two sets
+  (`source` "HMRC approved mileage allowance payments", miles, GBP):
+  - from 6 Apr 2011: cars 0.45 for the first 10,000 miles in the tax year,
+    then 0.25; bikes 0.24; passengers 0.05;
+  - from 6 Apr 2026: cars 0.55 for the first 10,000, then 0.25; bikes
+    0.24; passengers 0.05.
+  These are ordinary rows the user can edit. No release ever changes a
+  user's rates silently; new official rates are added by the user or
+  announced in the changelog. Other regions start with none and the page
+  explains how to add one.
+- **Tax year:** from the user's tax year start. A GB tax year runs from
+  6 April to 5 April and is labelled "2026/27"; others are labelled by
+  their calendar years.
+- **Valuing trips** (derived on every read, never stored):
+  - Only business trips are valued, and only the claimant's own
+    (`created_by`).
+  - Each trip uses the rate set in effect on its date, in that set's unit
+    (km converted exactly, never through floats) and currency.
+  - **Threshold:** for `car` vehicles, the claimant's business distance is
+    accumulated across all their cars through the tax year, by date then
+    by when logged. The trip that crosses the threshold is split: the part
+    below at `car_rate`, the rest at `car_rate_after`. The accumulation
+    restarts each tax year. A rate change mid-year (as on 6 Apr 2026)
+    keeps the year's running total.
+  - `bike` vehicles use `bike_rate` with no threshold, and do not count
+    towards the car threshold.
+  - Passengers: `passengers × distance × passenger_rate`.
+  - Employer payments: `employer_car_rate` × distance for cars and
+    `employer_bike_rate` for bikes. A set with only an employer car rate
+    uses it for bikes too, as `bike_rate` falls back to `car_rate`. A set
+    with no employer rates has no employer payment.
+  - Amounts are rounded to the minor unit on every line, as a claim form
+    would be: each rate line of a trip (a split trip has two) and its
+    passenger amount. A trip's amount is the sum of its lines, and every
+    total is a sum of those, so the rate lines add up to the total.
+- **Claim report** (`/trips/claim`, module on): filters for tax year
+  (default the current one), or a custom date range, and vehicles (all by
+  default), as a plain GET form.
+  - Rows, oldest first: date, vehicle registration, journey, purpose,
+    distance, passengers, rate (two lines for a split trip), and amount.
+  - Totals: distance at each rate, passenger amount, total approved
+    amount. With employer rates set: *Paid by employer* (employer rate ×
+    distance) and *Difference*: the approved mileage amount, without
+    passengers, minus what the employer paid. Unpaid passenger payments
+    get no tax relief, so they never count towards the difference. Where the approved amount is higher, the
+    difference is labelled "Approved amount not paid (you may be able to
+    claim tax relief on this)". Where the employer pays more, "Paid above
+    the approved amount". The report shows figures, not advice.
+  - Private trips never appear.
+  - Mixed currencies (rate sets in different currencies) are totalled
+    separately, as reports already do.
+  - **Print** (Phase 17.2 conventions): the header gives the claimant's
+    display name, the vehicles with registrations, the period, the rate
+    sets used and their source, and the date printed. The optional
+    declaration text and a *Signed* / *Date* line print at the end.
+  - **CSV:** the same rows and columns, amounts as plain decimals, with a
+    header row in the user's language. The file name is
+    `mileage-claim-<tax year>.csv`.
 
 ---
 
@@ -2958,7 +3179,7 @@ Real environment variables override `.env`; an empty value counts as unset.
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES` (default true;
-  see §7.10)
+  see §7.10), `FEATURES_TRIPS` (default false)
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
   `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
   task inside the container; default `true`), `SCHEDULER_INTERVAL` (seconds
@@ -3009,8 +3230,7 @@ Real environment variables override `.env`; an empty value counts as unset.
 ## 12. Future / optional (not in core phases)
 
 - OIDC/SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
-- Trip/journey log (business vs personal for mileage claims),
-  personal fuel-tank entity, VIN decode/registration lookup,
+- Personal fuel-tank entity, VIN decode/registration lookup,
   OBD-II / vehicle-API mileage import.
 - Server-side PDF (emailed reports, one-file sale pack with invoices
   merged).
@@ -3024,6 +3244,11 @@ Real environment variables override `.env`; an empty value counts as unset.
   (#21).
 - Recurring expenses (road tax, permits) with a repeat interval, shown in
   *Coming up* (#24).
+- Trips (Phase 22): an *Employer* per trip with its own rates and mileage
+  threshold, for people with more than one employment (#43); a native
+  .xlsx claim export (#44).
+- A `van` vehicle type (#46). Vans are logged as `car`, which has the same
+  approved mileage rates.
 
 ---
 
@@ -3180,6 +3405,15 @@ task breakdowns live in the per-phase files; this is the map.
   done (§7.6); *Coming up*, the overview's documents card, the sale pack's
   *Inspection* line and the API (§7.18, §7.19, §7.20); a one-time prompt
   for vehicles already in the garage (§7.1); release v2.1.0.
+- **Phase 22 — Trips and business mileage claims + v2.2.0.** A switchable
+  `trips` module, off by default (§7.10): business trips per vehicle with
+  optional odometer, returns, passengers, saved journeys and *Log again*
+  (§7.22); private mileage derived from the mileage log; dated mileage
+  rates per user with HMRC's provided for GB users, and a claim report by
+  tax year with the threshold split, passengers, employer payments,
+  print and CSV (§7.23); the Mileage tab and Reports split, cost per
+  business mile, a dashboard widget, a *Trips* history chip only, CSV,
+  API and backup; one migration; release v2.2.0.
 
 ---
 

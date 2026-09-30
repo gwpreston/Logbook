@@ -16,7 +16,7 @@
         {{- costs ? 'history.valued_at'|trans({price: item.price|money(item.currency)}) : item.labelKey|trans -}}
     {%- elseif item.kind.value == 'document' -%}
         {{- item.label != '' ? item.label : item.labelKey|trans -}}
-    {%- elseif item.kind.value == 'maintenance' -%}
+    {%- elseif item.kind.value in ['maintenance', 'trip'] -%}
         {{- item.label -}}
     {%- else -%}
         {{- item.labelKey|trans -}}
@@ -31,6 +31,8 @@
         {%- set parts = parts|merge([item.labelKey|trans]|merge(item.vendor ? [item.vendor] : [])) -%}
     {%- elseif item.kind.value == 'valuation' -%}
         {%- if item.label != '' %}{% set parts = parts|merge([item.label]) %}{% endif -%}
+    {%- elseif item.kind.value == 'trip' -%}
+        {%- set parts = parts|merge([item.labelKey|trans]|merge(item.note ? [item.note] : [])) -%}
     {%- elseif item.kind.value == 'tyre' -%}
         {%- set parts = item.tyres|map(m => trans(m.message, m.parameters)) -%}
     {%- elseif item.kind.value == 'document' -%}
@@ -79,6 +81,7 @@
         </span>
         <span class="list__end">
             {% if item.odometerKm is not null %}<span class="list__delta tabular">{{ item.odometerKm|distance }}</span>{% endif %}
+            {% if item.distanceKm is not null %}<span class="list__delta tabular">{{ item.distanceKm|distance(1) }}</span>{% endif %}
             {{ paperclip.count(item.files) }}
             {% if own_amount and item.amount is not null %}<span class="list__amount tabular">{{ item.amount|money(item.currency) }}</span>{% endif %}
         </span>

@@ -35,6 +35,11 @@ final class FeatureToggleTest extends ReminderTestCase
 
         $html = self::body($browser->get('/settings/modules'));
         foreach (Feature::cases() as $feature) {
+            if ($feature === Feature::Trips) {
+                // Off until switched on (Phase 22).
+                self::assertStringNotContainsString('name="trips" value="1" checked', $html);
+                continue;
+            }
             self::assertStringContainsString('name="' . $feature->value . '" value="1" checked', $html);
         }
         self::assertStringContainsString('href="/settings/modules"', self::body($browser->get('/settings')));
@@ -49,6 +54,7 @@ final class FeatureToggleTest extends ReminderTestCase
                 'reminders' => true,
                 'reports' => false,
                 'tyres' => false,
+                'trips' => false,
             ],
             $this->service($app, FeatureToggles::class)->all(),
         );

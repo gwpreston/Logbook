@@ -16,6 +16,7 @@ use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\EntryAccess;
@@ -41,6 +42,9 @@ use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
+use Logbook\Service\Trip\ClaimFilter;
+use Logbook\Service\Trip\ClaimReportService;
+use Logbook\Service\Trip\TripService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Api\ListQuery;
@@ -69,6 +73,8 @@ final readonly class ApiReader
         private ComplianceService $compliance,
         private ExpenseService $expenses,
         private TyreService $tyres,
+        private TripService $trips,
+        private ClaimReportService $claims,
         private ComingUp $comingUp,
         private ForecastWording $forecastWording,
         private ReminderService $reminders,
@@ -271,6 +277,40 @@ final readonly class ApiReader
                 $page['items'],
             ),
             'cursor' => $page['cursor'],
+        ];
+    }
+
+    /**
+     * The trips the user may see on the vehicle (spec.md §7.22): their own,
+     * or everyone's with ViewOthersTrips.
+     *
+     * @return array{items: list<array<string, mixed>>, cursor: ?string}
+     */
+    public function trips(User $user, Vehicle $vehicle, ListQuery $query): array
+    {
+        $page = $query->page(
+            $this->trips->visible($user, $vehicle),
+            static fn (Trip $trip): array => [$trip->data->travelledOn, $trip->id],
+        );
+
+        return ['items' => array_map(Serializer::trip(...), $page['items']), 'cursor' => $page['cursor']];
+    }
+
+    /**
+     * The user's claim report's figures (spec.md §7.23): only their own
+     * business trips, valued at their rates.
+     *
+     * @return array<string, mixed>
+     */
+    public function claim(User $user, ClaimFilter $filter): array
+    {
+        $report = $this->claims->build($user, $filter);
+
+        return [
+            'period' => Serializer::claimPeriod($filter),
+            'trips' => array_map(Serializer::claimTrip(...), $report->rows),
+            'totals' => array_map(Serializer::claimTotals(...), $report->totals),
+            'unvalued' => $report->unvalued,
         ];
     }
 

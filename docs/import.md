@@ -1,6 +1,7 @@
 # Importing from CSV
 
-Each vehicle tab (Mileage, Fuel, Maintenance, Documents, Expenses) has an
+Each vehicle tab (Mileage, Fuel, Maintenance, Documents, Expenses, and Trips
+when the trips module is on) has an
 **Import CSV** button next to **Export CSV**. Use it to move records in from a
 spreadsheet, another app, or another Logbook.
 
@@ -78,6 +79,18 @@ same category, amount and note.
 | Maintenance | **Date**, Category, **Title**, Odometer, Cost, Currency, Garage, Details |
 | Documents | **Type**, Title (required for *Other*), Provider, Reference, Start, Expiry, Odometer (needs a start date), Cost, Currency, Notes |
 | Expenses | **Date**, Category, Amount, Currency, Note |
+| Trips | **Date**, **From**, **To**, Return, Distance, Odometer start, Odometer end, Business, Purpose (required for business trips), Passengers, Notes — a distance, or both odometers |
 
 Not imported: attachments, links between maintenance and schedules, and
 archived vehicles (restore the vehicle first).
+
+### Trips
+
+Trips (Phase 22, [trips.md](trips.md)) import the columns their export
+writes. The **distance is the whole trip**, even on a return: unlike the
+trip form, the import never doubles it, so a file exported from Logbook
+imports back unchanged. *Return* and *Business* are yes or no; a missing
+*Business* column means every trip is business. A trip with the same date,
+places and distance as one already on the vehicle is a duplicate and is
+skipped. Imported trips are the importing user's own trips, and count in
+their claim. Trips never write odometer readings.

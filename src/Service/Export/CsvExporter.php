@@ -27,6 +27,9 @@ use Logbook\Service\Report\OwnershipReport;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Repository\TripRepository;
+use Logbook\Service\Trip\ClaimLine;
+use Logbook\Service\Trip\ClaimReport;
 use Logbook\Support\Csv\CsvNumber;
 use Logbook\Support\Csv\CsvTable;
 use Logbook\Support\Date\LocalTime;
@@ -57,6 +60,7 @@ final readonly class CsvExporter
         private TyreService $tyres,
         private ValuationRepository $valuations,
         private ForecastWording $wording,
+        private TripRepository $trips,
     ) {
     }
 
@@ -71,6 +75,7 @@ final readonly class CsvExporter
             ExportModule::Tyres => $this->tyresTable($user, $vehicle),
             ExportModule::TyreChanges => $this->tyreChangesTable($user, $vehicle),
             ExportModule::Valuations => $this->valuationsTable($user, $vehicle),
+            ExportModule::Trips => $this->tripsTable($user, $vehicle),
         };
 
         return new CsvTable(
@@ -569,6 +574,112 @@ final readonly class CsvExporter
             'export.column.source',
             'export.column.notes',
         ]), $rows];
+    }
+
+    /**
+     * Every trip on the vehicle, oldest first (spec.md §7.13): the columns
+     * the import reads back. Distances are in the owner's unit; the
+     * distance is the whole trip.
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function tripsTable(User $user, Vehicle $vehicle): array
+    {
+        $unit = $user->preferences->distanceUnit;
+        $symbol = ['unit' => $this->t('units.symbol.' . $unit->value)];
+        // Stored to 3 places in km, so 3 places in the owner's unit give back what was typed.
+        $distance = static fn (string $km): string => Decimal::trim($unit->fromKmDecimal($km, 3));
+        $rows = [];
+        foreach (array_reverse($this->trips->listForVehicle($vehicle->id)) as $trip) {
+            $data = $trip->data;
+            $rows[] = [
+                $data->travelledOn->format('Y-m-d'),
+                $data->fromPlace,
+                $data->toPlace,
+                $this->yesNo($data->isReturn),
+                $distance($data->distanceKm),
+                $data->odometerStartKm === null ? null : $distance($data->odometerStartKm),
+                $data->odometerEndKm === null ? null : $distance($data->odometerEndKm),
+                $this->yesNo($data->isBusiness),
+                $data->purpose,
+                (string) $data->passengers,
+                $data->notes,
+            ];
+        }
+
+        return [$this->headers([
+            'export.column.date',
+            'export.column.from',
+            'export.column.to',
+            'export.column.return',
+            ['export.column.distance', $symbol],
+            ['export.column.odometer_start', $symbol],
+            ['export.column.odometer_end', $symbol],
+            'export.column.business',
+            'export.column.purpose',
+            'export.column.passengers',
+            'export.column.notes',
+        ]), $rows];
+    }
+
+    /**
+     * A claim report's rows, oldest first (spec.md §7.23): distances in each
+     * rate set's unit, amounts as plain decimals; a trip that crosses the
+     * threshold gives both rates ("100 @ 0.55; 50 @ 0.25").
+     */
+    public function claim(ClaimReport $report): CsvTable
+    {
+        $rows = [];
+        foreach ($report->rows as $row) {
+            $data = $row->trip->data;
+            $vehicle = $report->vehicle($row->trip->vehicleId);
+            $unit = $row->unit();
+            $rate = null;
+            if ($row->isValued()) {
+                $rate = $row->isSplit()
+                    ? implode('; ', array_map(
+                        static fn (ClaimLine $line): string
+                            => Decimal::trim($line->distance) . ' @ ' . Decimal::trim($line->rate),
+                        $row->lines,
+                    ))
+                    : Decimal::trim($row->lines[0]->rate);
+            }
+            $amount = $row->amount();
+            $currency = $row->currency();
+            $rows[] = [
+                $data->travelledOn->format('Y-m-d'),
+                $vehicle?->name(),
+                $vehicle?->data->registration,
+                $row->trip->journey(),
+                $data->purpose,
+                $row->distance === null ? null : Decimal::trim($row->distance),
+                $unit === null ? null : $this->t('units.symbol.' . $unit->value),
+                (string) $data->passengers,
+                $rate,
+                $row->passengerAmount === null || $currency === null ? null : CsvNumber::money($row->passengerAmount, $currency),
+                $amount === null || $currency === null ? null : CsvNumber::money($amount, $currency),
+                $currency,
+            ];
+        }
+
+        return new CsvTable(
+            sprintf('mileage-claim-%s.csv', $report->filter->slug()),
+            $this->headers([
+                'export.column.date',
+                'export.column.vehicle',
+                'export.column.registration',
+                'export.column.journey',
+                'export.column.purpose',
+                'export.column.distance_plain',
+                'export.column.unit',
+                'export.column.passengers',
+                'export.column.rate',
+                'export.column.passenger_amount',
+                'export.column.amount',
+                'export.column.currency',
+            ]),
+            $rows,
+        );
     }
 
     /**

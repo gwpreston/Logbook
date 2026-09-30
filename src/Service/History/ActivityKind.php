@@ -23,6 +23,12 @@ enum ActivityKind: string
     case Expense = 'expense';
     case Tyre = 'tyre';
     case Valuation = 'valuation';
+    /**
+     * Trips (Phase 22) are listed under their own chip only, never in
+     * entries(): not under *Everything*, in *Recent activity*, the print
+     * view or the sale pack (spec.md §7.22).
+     */
+    case Trip = 'trip';
     case Milestone = 'milestone';
 
     /**
@@ -51,6 +57,7 @@ enum ActivityKind: string
             self::Expense => ['expenses.edit', 'entry'],
             self::Tyre => ['tyres.changes.edit', 'change'],
             self::Valuation => ['valuations.edit', 'entry'],
+            self::Trip => ['trips.edit', 'entry'],
             self::Milestone => ['vehicles.edit', null],
         };
     }
@@ -65,6 +72,7 @@ enum ActivityKind: string
             self::Maintenance => Feature::Maintenance,
             self::Document => Feature::Compliance,
             self::Tyre => Feature::Tyres,
+            self::Trip => Feature::Trips,
             self::Odometer, self::Expense, self::Valuation, self::Milestone => null,
         };
     }
@@ -82,6 +90,7 @@ enum ActivityKind: string
             self::Document => AttachmentOwner::Compliance,
             self::Expense => AttachmentOwner::Expense,
             self::Valuation => AttachmentOwner::Valuation,
+            self::Trip => AttachmentOwner::Trip,
             self::Tyre, self::Milestone => null,
         };
     }
@@ -99,6 +108,7 @@ enum ActivityKind: string
             self::Expense => DatedSource::Expense,
             self::Tyre => DatedSource::TyreChange,
             self::Valuation => DatedSource::Valuation,
+            self::Trip => DatedSource::Trip,
             self::Document, self::Milestone => null,
         };
     }
@@ -110,7 +120,7 @@ enum ActivityKind: string
     {
         return match ($this) {
             self::Fuel => 'c-fuel',
-            self::Odometer, self::Valuation, self::Milestone => 'muted',
+            self::Odometer, self::Valuation, self::Milestone, self::Trip => 'muted',
             self::Maintenance, self::Tyre => 'c-maint',
             self::Document => 'c-ins',
             self::Expense => 'c-other',

@@ -1,0 +1,93 @@
+{#
+ # Trips (spec.md §7.22, §7.23).
+ #}
+
+{# The business and private split for a period, with the claim value
+   (one stat per currency). split: SplitFigures; totals: list<ClaimTotals>. #}
+{% macro split_stats(split, tax_year, totals) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set dash = '—' %}
+    <dl class="stats">
+        {% if split.totalOnly %}
+            {{ ui.stat('trip.stat.total'|trans, split.totalKm is null ? dash : split.totalKm|distance, 'trip.stat.total_only'|trans) }}
+        {% else %}
+            {{ ui.stat('trip.stat.business'|trans, split.businessKm|distance, 'trip.stat.tax_year'|trans({year: tax_year.label()})) }}
+            {{ ui.stat('trip.stat.private'|trans, split.privateKm is null ? dash : split.privateKm|distance, split.totalKm is null ? 'trip.stat.no_total'|trans : 'trip.stat.of_total'|trans({total: split.totalKm|distance})) }}
+        {% endif %}
+        {% for total in totals %}
+            {{ ui.stat('trip.stat.claim'|trans, total.approvedAmount()|money(total.currency), 'trip.stat.claim_hint'|trans) }}
+        {% else %}
+            {{ ui.stat('trip.stat.claim'|trans, dash, 'trip.stat.claim_none'|trans) }}
+        {% endfor %}
+    </dl>
+    {% if split.exceeds and not split.totalOnly %}
+        <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'trip.split.exceeds'|trans }}</span></p>
+    {% endif %}
+{%- endmacro %}
+
+{# A per-unit rate: "55p per mile"-style, from the rate set's currency and unit. #}
+{% macro rate(rate, currency, unit) -%}
+    {{ 'trip.rate_per'|trans({rate: rate|mileage_rate(currency), unit: unit}) }}
+{%- endmacro %}
+
+{# Business mileage per vehicle (spec.md §7.7, §7.22): distance, business
+   share, the viewer's claim, claim value per business distance and the
+   vehicle's cost of ownership per distance beside it, and the fleet total.
+   report: BusinessMileageReport. #}
+{% macro business_table(report, title) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set dash = '—' %}
+    <section class="card" aria-label="{{ title }}">
+        <h2 class="card__title">{{ title }}</h2>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'export.column.vehicle'|trans }}</th>
+                        <th scope="col" class="table__num">{{ 'trip.stat.business'|trans }}</th>
+                        <th scope="col" class="table__num">{{ 'trip.report.share'|trans }}</th>
+                        <th scope="col" class="table__num">{{ 'trip.stat.claim'|trans }}</th>
+                        <th scope="col" class="table__num">{{ 'trip.report.claim_per'|trans({unit: prefs().distanceUnit.value}) }}</th>
+                        <th scope="col" class="table__num">{{ 'trip.report.cost_per'|trans({unit: prefs().distanceUnit.value}) }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in report.rows %}
+                        {% set share = row.share() %}
+                        {% set per = row.claimPerKm() %}
+                        <tr>
+                            <th scope="row">{{ row.vehicle.name() }}{% if row.vehicle.data.registration %} <span class="muted">· {{ row.vehicle.data.registration }}</span>{% endif %}</th>
+                            <td class="table__num tabular">{{ row.split.totalOnly ? dash : row.split.businessKm|distance }}</td>
+                            <td class="table__num tabular">{{ share is null ? dash : (share / 100)|percent }}</td>
+                            <td class="table__num tabular">
+                                {%- for claim in row.claim -%}{{ claim.approvedAmount()|money(claim.currency) }}{% if not loop.last %}<br>{% endif %}{%- else -%}{{ dash }}{%- endfor -%}
+                            </td>
+                            <td class="table__num tabular">{{ per is null ? dash : per.perKm|per_distance(per.currency) }}</td>
+                            <td class="table__num tabular">
+                                {%- if row.costPerKm is not null -%}
+                                    {{ row.costPerKm|per_distance(row.currency) }}{% if row.costIsRunningOnly %}<br><span class="muted">{{ 'ownership.running_only'|trans }}</span>{% endif %}
+                                {%- else -%}{{ dash }}{%- endif -%}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                {% if report.rows|length > 1 %}
+                    {% set share = report.share() %}
+                    <tfoot>
+                        <tr>
+                            <th scope="row">{{ 'report.fleet'|trans }}</th>
+                            <td class="table__num tabular">{{ report.businessKm|distance }}</td>
+                            <td class="table__num tabular">{{ share is null ? dash : (share / 100)|percent }}</td>
+                            <td class="table__num tabular">
+                                {%- for claim in report.claim -%}{{ claim.approvedAmount()|money(claim.currency) }}{% if not loop.last %}<br>{% endif %}{%- else -%}{{ dash }}{%- endfor -%}
+                            </td>
+                            <td class="table__num tabular">{{ dash }}</td>
+                            <td class="table__num tabular">{{ dash }}</td>
+                        </tr>
+                    </tfoot>
+                {% endif %}
+            </table>
+        </div>
+        <p class="field__hint">{{ 'trip.report.cost_hint'|trans }}</p>
+    </section>
+{%- endmacro %}

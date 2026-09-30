@@ -11,6 +11,7 @@ use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Maintenance\MaintenanceEntryData;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ComplianceDocumentRepository;
@@ -18,6 +19,7 @@ use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Repository\TripRepository;
 use Logbook\Service\Compliance\ComplianceDocumentForm;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseEntryForm;
@@ -29,9 +31,12 @@ use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Trip\TripForm;
+use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvReader;
 use Logbook\Support\Database\Transaction;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Number\DecimalParser;
@@ -39,6 +44,7 @@ use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
 use LogicException;
+use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatableInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -67,6 +73,9 @@ final readonly class CsvImporter
         private ComplianceDocumentRepository $documents,
         private ExpenseEntryRepository $expenseEntries,
         private VehicleService $vehicles,
+        private TripService $trips,
+        private TripRepository $tripEntries,
+        private ClockInterface $clock,
         private Transaction $transaction,
         private TranslatorInterface $translator,
     ) {
@@ -152,6 +161,7 @@ final readonly class CsvImporter
                     $data instanceof MaintenanceEntryData => $this->maintenance->create($vehicle, $data, $zone),
                     $data instanceof ComplianceDocumentData => $this->compliance->create($vehicle, $data, $zone),
                     $data instanceof ExpenseEntryData => $this->expenses->create($vehicle, $data),
+                    $data instanceof TripData => $this->trips->create($vehicle, $data),
                     default => throw new LogicException('Unexpected import row.'),
                 };
             }
@@ -310,6 +320,12 @@ final readonly class CsvImporter
             ExportModule::Maintenance => MaintenanceEntryForm::parse($input, $preferences, []),
             ExportModule::Documents => ComplianceDocumentForm::parse($input, $preferences),
             ExportModule::Expenses => ExpenseEntryForm::parse($input, $preferences),
+            ExportModule::Trips => TripForm::parse(
+                $input,
+                $preferences,
+                LocalTime::today($this->clock, $owner->timeZone()),
+                wholeDistance: true,
+            ),
             ExportModule::Tyres, ExportModule::TyreChanges, ExportModule::Valuations
                 => throw new LogicException($module->value . ' are not imported.'),
         };
@@ -373,6 +389,10 @@ final readonly class CsvImporter
             ExportModule::Expenses => array_map(
                 static fn ($e): string => DuplicateKey::of($e->data),
                 $this->expenseEntries->listForVehicle($vehicle->id),
+            ),
+            ExportModule::Trips => array_map(
+                static fn ($t): string => DuplicateKey::of($t->data),
+                $this->tripEntries->listForVehicle($vehicle->id),
             ),
             ExportModule::Tyres, ExportModule::TyreChanges, ExportModule::Valuations
                 => throw new LogicException($module->value . ' are not imported.'),

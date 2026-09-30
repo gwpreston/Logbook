@@ -16,7 +16,8 @@
             </div>
         </header>
         {% block modal_body %}
-            {{ vehicle_ui.pick_list(vehicles, kind.createRoute(), false, kind.createParams()) }}
+            {# Trips are kept for offline use, like fill-ups (spec.md §7.15, §7.22). #}
+            {{ vehicle_ui.pick_list(vehicles, kind.createRoute(), kind.value == 'trip', kind.createParams()) }}
         {% endblock %}
     </div>
 {% endblock %}

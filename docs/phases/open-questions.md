@@ -18,7 +18,8 @@ The first review (Phase 20, 2026-09-30) covered Phases 0–19. Phases 0–8,
 9.2, 10.2, 17.2 and 18.1 have no *Open questions* section. Phase 8's intro
 promises one "at the end", but none was written and nothing in it was left
 undecided. The owner answered every *Needs a decision* item on 2026-09-30,
-together with the open questions of Phases 21.1 and 21.2 (#37–#42).
+together with the open questions of Phases 21.1 and 21.2 (#37–#42), and
+Phase 22's on the same day before it started (#43–#47).
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -64,6 +65,12 @@ together with the open questions of Phases 21.1 and 21.2 (#37–#42).
 | 40 | [21.2](phase-21.2.md) | Existing vehicles: a one-time prompt or a backfill? | Decided | A one-time, dismissible prompt per vehicle (option A). | 2026-09-30 |
 | 41 | [21.2](phase-21.2.md) | Northern Ireland: a hint, or a GB / NI choice? | Decided | The hint; the stored date can always be changed. | 2026-09-30 |
 | 42 | [21.2](phase-21.2.md) | More regions than GB and DE? | Decided | Add FR, IE, IT and ES at 48 months. A locale with no region gets no suggestion, and the hint says so. | 2026-09-30 |
+| 43 | [22](phase-22.md) | More than one employment: an *Employer* per trip with its own threshold? | Parked | One threshold per person across their cars; employers in spec §12. | 2026-09-30 |
+| 44 | [22](phase-22.md) | A native .xlsx claim export? | Parked | No: CSV only, which opens in Excel; .xlsx in spec §12. | 2026-09-30 |
+| 45 | [22](phase-22.md) | `trips` on by default for GB-locale users? | Decided | No: off for everyone (`FEATURES_TRIPS=false`). | 2026-09-30 |
+| 46 | [22](phase-22.md) | A `van` vehicle type? | Parked | No: vans stay `car`, which has the same approved rates; a van type in spec §12. | 2026-09-30 |
+| 47 | [22](phase-22.md) | Cost per business mile: ownership cost or running costs only? | Answered | Cost of ownership per distance (#23; spec §7.7 falls back to running costs alone without a value). | 2026-09-30 |
+| 48 | [22](phase-22.md) | An API endpoint listing saved journeys (for Shortcuts)? | Needs a decision | Found while building: `journey_id` works, but its id comes from the edit link. | 2026-09-30 |
 
 ## Other loose ends found in the review
 

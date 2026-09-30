@@ -22,6 +22,7 @@ final readonly class ShowAttachmentAction
 {
     public function __construct(
         private AttachmentService $attachments,
+        private TripFileGuard $tripFiles,
         private FileResponder $files,
     ) {
     }
@@ -33,6 +34,7 @@ final readonly class ShowAttachmentAction
     {
         $vehicle = RequestContext::vehicle($request);
         $attachment = AttachmentRoute::attachment($this->attachments, $vehicle, $request, $args);
+        $this->tripFiles->allow($request, $attachment);
         $path = $this->attachments->file($attachment);
         if ($path === null) {
             throw new HttpNotFoundException($request);

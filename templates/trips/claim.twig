@@ -1,0 +1,206 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/trips.twig' as trips_ui %}
+
+{#
+ # The mileage claim report (spec.md §7.23): the signed-in user's own
+ # business trips, oldest first, at the rates in effect on each date; totals
+ # per currency; employer payments and the difference. Figures, not advice.
+ # Printed through the browser (§8 *Printing reports*), with its own header:
+ # the claimant, the vehicles, the period, the rate sets and their source.
+ #}
+{% set active_nav = 'reports' %}
+{% set dash = '—' %}
+{% set period_label = filter.taxYear ? 'trip.claim.tax_year'|trans({year: filter.taxYear.label()}) : 'report.period'|trans({from: filter.from|local_date, to: filter.to|local_date}) %}
+
+{% block title %}{{ 'trip.claim.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack print-report">
+        <header class="print-header print-only">
+            <p class="print-header__eyebrow">{{ 'app.name'|trans }}</p>
+            <p class="print-header__title">{{ 'trip.claim.title'|trans }}</p>
+            <dl class="print-header__facts">
+                <div><dt>{{ 'trip.claim.claimant'|trans }}</dt><dd>{{ user.displayName }}</dd></div>
+                <div>
+                    <dt>{{ 'print.vehicles'|trans }}</dt>
+                    <dd>
+                        {%- for vehicle in report.included -%}
+                            {{ vehicle.name() }}{% if vehicle.data.registration %} ({{ vehicle.data.registration }}){% endif %}{% if not loop.last %}, {% endif %}
+                        {%- else -%}{{ dash }}{%- endfor -%}
+                    </dd>
+                </div>
+                <div><dt>{{ 'print.period'|trans }}</dt><dd>{{ period_label }}</dd></div>
+                <div>
+                    <dt>{{ 'trip.claim.rate_sets'|trans }}</dt>
+                    <dd>
+                        {%- for set in report.rateSets -%}
+                            {{ 'trip.claim.rate_set_from'|trans({date: set.data.effectiveFrom|local_date}) }}{% if set.data.source %}: {{ set.data.source }}{% endif %}{% if not loop.last %}; {% endif %}
+                        {%- else -%}{{ dash }}{%- endfor -%}
+                    </dd>
+                </div>
+                <div><dt>{{ 'print.printed'|trans }}</dt><dd>{{ today|local_date }}</dd></div>
+            </dl>
+        </header>
+
+        <a class="back-link" href="{{ url_for('settings.trips') }}">{{ ui.icon('chevron_left') }}{{ 'trip.settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'trip.claim.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'trip.claim.lead'|trans }}</p>
+            </div>
+            <div class="btn-row">
+                {{ ui.print_button() }}
+                <a class="btn" href="{{ url_for('trips.claim.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+            </div>
+        </header>
+
+        <form class="card report-filter" method="get" action="{{ url_for('trips.claim') }}">
+            <div class="form-row">
+                <div class="field">
+                    <label class="field__label" for="f-year">{{ 'trip.claim.field.year'|trans }}</label>
+                    <select class="select" id="f-year" name="year">
+                        {% for year in years %}
+                            <option value="{{ year.startYear() }}"{% if filter.taxYear and filter.taxYear.startYear() == year.startYear() %} selected{% endif %}>{{ year.label() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <label class="checkbox">
+                    <input type="checkbox" name="period" value="custom"{% if filter.isCustom() %} checked{% endif %}>
+                    <span>{{ 'trip.claim.field.custom'|trans }}</span>
+                </label>
+            </div>
+            <div class="form-row">
+                {{ ui.input('from', 'report.field.from'|trans, {from: filter.from|date('Y-m-d')}, {}, {type: 'date'}) }}
+                {{ ui.input('to', 'report.field.to'|trans, {to: filter.to|date('Y-m-d')}, {}, {type: 'date'}) }}
+            </div>
+            {% if report.vehicles|length > 1 %}
+                <fieldset class="field">
+                    <legend class="field__label">{{ 'trip.claim.field.vehicles'|trans }}</legend>
+                    {% for vehicle in report.vehicles %}
+                        <label class="checkbox">
+                            <input type="checkbox" name="vehicles[]" value="{{ vehicle.id }}"{% if vehicle.id in filter.vehicleIds %} checked{% endif %}>
+                            <span>{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</span>
+                        </label>
+                    {% endfor %}
+                    <p class="field__hint">{{ 'trip.claim.hint.vehicles'|trans }}</p>
+                </fieldset>
+            {% endif %}
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary">{{ ui.icon('check') }}{{ 'report.apply'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url_for('trips.claim') }}">{{ 'report.reset'|trans }}</a>
+            </div>
+        </form>
+
+        {% if report.rateSets is empty and report.unvalued > 0 %}
+            <p class="alert alert--info">{{ ui.icon('info') }}<span>{{ 'trip.claim.no_rates'|trans }} <a href="{{ url_for('settings.trips') }}">{{ 'trip.settings.link'|trans }}</a></span></p>
+        {% elseif report.unvalued > 0 %}
+            <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'trip.claim.unvalued'|trans({count: report.unvalued}) }}</span></p>
+        {% endif %}
+
+        {% if report.isEmpty() %}
+            <section class="card">
+                <div class="empty">
+                    {{ ui.icon('receipt_long') }}
+                    <p class="empty__title">{{ 'trip.claim.empty_title'|trans }}</p>
+                    <p>{{ 'trip.claim.empty_body'|trans({period: period_label}) }}</p>
+                </div>
+            </section>
+        {% else %}
+            <section class="card" aria-labelledby="claim-trips">
+                <h2 id="claim-trips" class="card__title">{{ 'trip.claim.trips'|trans({count: report.rows|length}) }}</h2>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ 'export.column.date'|trans }}</th>
+                                <th scope="col">{{ 'export.column.registration'|trans }}</th>
+                                <th scope="col">{{ 'export.column.journey'|trans }}</th>
+                                <th scope="col">{{ 'export.column.purpose'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'export.column.distance_plain'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'export.column.passengers'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'export.column.rate'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'export.column.amount'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in report.rows %}
+                                {% set data = row.trip.data %}
+                                {% set vehicle = report.vehicle(row.trip.vehicleId) %}
+                                <tr>
+                                    <td class="tabular">{{ data.travelledOn|local_date }}</td>
+                                    <td>{{ vehicle ? (vehicle.data.registration ?: vehicle.name()) : dash }}</td>
+                                    <td>{{ row.trip.journey() }}</td>
+                                    <td>{{ data.purpose }}</td>
+                                    <td class="table__num tabular">
+                                        {%- if row.isValued() -%}
+                                            {{ row.distance|number(1) }} {{ ('units.symbol.' ~ row.unit().value)|trans }}
+                                        {%- else -%}
+                                            {{ data.distanceKm|distance(1) }}
+                                        {%- endif -%}
+                                    </td>
+                                    <td class="table__num tabular">{{ data.passengers ?: '' }}</td>
+                                    <td class="table__num tabular">
+                                        {%- if row.isValued() -%}
+                                            {%- for line in row.lines -%}
+                                                {% if row.isSplit() %}{{ line.distance|number(1) }} × {% endif %}{{ line.rate|mileage_rate(row.currency()) }}{% if not loop.last %}<br>{% endif %}
+                                            {%- endfor -%}
+                                            {%- if row.passengerAmount is not null %}<br><span class="muted">{{ 'trip.claim.passenger_line'|trans({count: data.passengers, rate: row.passengerRate|mileage_rate(row.currency())}) }}</span>{% endif -%}
+                                        {%- else -%}{{ dash }}{%- endif -%}
+                                    </td>
+                                    <td class="table__num tabular">{{ row.isValued() ? row.amount()|money(row.currency()) : 'trip.claim.no_rate'|trans }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            {% for totals in report.totals %}
+                <section class="card" aria-labelledby="claim-totals-{{ totals.currency }}">
+                    <h2 id="claim-totals-{{ totals.currency }}" class="card__title">{{ report.totals|length > 1 ? 'trip.claim.totals_in'|trans({currency: totals.currency}) : 'trip.claim.totals'|trans }}</h2>
+                    <dl class="details">
+                        {% for rate in totals.rates %}
+                            <div>
+                                <dt>{{ 'trip.claim.at_rate'|trans({distance: rate.distance|number(1) ~ ' ' ~ ('units.symbol.' ~ rate.unit.value)|trans, rate: rate.rate|mileage_rate(totals.currency)}) }}</dt>
+                                <dd class="tabular">{{ rate.amount|money(totals.currency) }}</dd>
+                            </div>
+                        {% endfor %}
+                        {% if totals.passengerAmount != '0' %}
+                            <div><dt>{{ 'trip.claim.passengers_total'|trans }}</dt><dd class="tabular">{{ totals.passengerAmount|money(totals.currency) }}</dd></div>
+                        {% endif %}
+                        <div><dt>{{ 'trip.claim.approved'|trans }}</dt><dd class="tabular"><strong>{{ totals.approvedAmount()|money(totals.currency) }}</strong></dd></div>
+                        {% if totals.employerAmount is not null %}
+                            {% set difference = totals.difference() %}
+                            <div><dt>{{ 'trip.claim.employer_paid'|trans }}</dt><dd class="tabular">{{ totals.employerAmount|money(totals.currency) }}</dd></div>
+                            <div>
+                                <dt>{{ (difference starts with '-' ? 'trip.claim.paid_above' : 'trip.claim.not_paid')|trans }}</dt>
+                                <dd class="tabular">{{ (difference starts with '-' ? difference|slice(1) : difference)|money(totals.currency) }}</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                    {% if totals.employerAmount is not null %}<p class="field__hint">{{ 'trip.claim.difference_hint'|trans }}</p>{% endif %}
+                </section>
+            {% endfor %}
+
+            {% if not business.isEmpty() %}
+                {{ trips_ui.business_table(business, 'trip.claim.cost_title'|trans) }}
+            {% endif %}
+
+            <section class="card claim-declaration" aria-labelledby="claim-declaration">
+                <h2 id="claim-declaration" class="card__title">{{ 'trip.claim.declaration'|trans }}</h2>
+                {% if report.settings.declaration %}
+                    <p class="claim-declaration__text">{{ report.settings.declaration|nl2br }}</p>
+                {% else %}
+                    <p class="muted no-print">{{ 'trip.claim.declaration_none'|trans }} <a href="{{ url_for('settings.trips') }}">{{ 'trip.settings.link'|trans }}</a></p>
+                {% endif %}
+                <div class="claim-declaration__sign">
+                    <p>{{ 'trip.claim.signed'|trans }} <span class="claim-declaration__line"></span></p>
+                    <p>{{ 'trip.claim.date'|trans }} <span class="claim-declaration__line"></span></p>
+                </div>
+            </section>
+            <p class="muted">{{ 'trip.claim.not_advice'|trans }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

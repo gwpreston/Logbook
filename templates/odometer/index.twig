@@ -39,7 +39,15 @@
             {{ ui.stat('odometer.stat.logged'|trans,
                 total is null ? dash : total|distance,
                 history.first() and total is not null ? 'odometer.stat.since'|trans({date: history.first().recordedAt|instant_date}) : '') }}
+            {% if trips and not trips.split.totalOnly %}
+                {# Business and private this tax year (spec.md §7.22): private from this log, never from private trips. #}
+                {{ ui.stat('trip.stat.business'|trans, trips.split.businessKm|distance, 'trip.stat.tax_year'|trans({year: trips.tax_year.label()})) }}
+                {{ ui.stat('trip.stat.private'|trans, trips.split.privateKm is null ? dash : trips.split.privateKm|distance, trips.split.exceeds ? 'trip.stat.exceeds_short'|trans : 'trip.stat.tax_year'|trans({year: trips.tax_year.label()})) }}
+            {% endif %}
         </dl>
+        {% if trips and trips.split.exceeds and not trips.split.totalOnly %}
+            <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'trip.split.exceeds'|trans }}</span></p>
+        {% endif %}
 
         <section class="card" aria-labelledby="trend-heading">
             <div class="card__header">

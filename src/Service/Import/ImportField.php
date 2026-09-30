@@ -176,6 +176,28 @@ final readonly class ImportField
                 $currency,
                 new self('note', FieldKind::Text, 'export.column.note', false, ['notes', 'description', 'comment']),
             ],
+            ExportModule::Trips => [
+                new self('travelled_on', FieldKind::Date, 'export.column.date', true, ['travelled on', 'day']),
+                new self('from_place', FieldKind::Text, 'export.column.from', true, ['start', 'origin']),
+                new self('to_place', FieldKind::Text, 'export.column.to', true, ['destination', 'end']),
+                new self(
+                    'is_return',
+                    FieldKind::Flag,
+                    'export.column.return',
+                    false,
+                    ['return journey', 'round trip'],
+                    null,
+                    null,
+                    'no',
+                ),
+                new self('distance', FieldKind::Distance, 'export.column.distance', false, ['miles', 'kilometres', 'km']),
+                new self('odometer_start', FieldKind::Distance, 'export.column.odometer_start', false, ['start odometer']),
+                new self('odometer_end', FieldKind::Distance, 'export.column.odometer_end', false, ['end odometer']),
+                new self('is_business', FieldKind::Flag, 'export.column.business', false, ['business trip'], null, null, 'yes'),
+                new self('purpose', FieldKind::Text, 'export.column.purpose', false, ['reason', 'description']),
+                new self('passengers', FieldKind::Number, 'export.column.passengers', false, []),
+                new self('notes', FieldKind::Text, 'export.column.notes', false, ['note', 'comment']),
+            ],
             // Export only (spec.md §7.17).
             ExportModule::Tyres, ExportModule::TyreChanges, ExportModule::Valuations => [],
         };

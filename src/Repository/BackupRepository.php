@@ -51,6 +51,10 @@ final readonly class BackupRepository
         // reminder status (so a restore sends nothing again).
         'vehicle_shares',
         'reminder_deliveries',
+        // Phase 22: trips, and each user's saved journeys and mileage rates.
+        'trips',
+        'saved_journeys',
+        'mileage_rate_sets',
     ];
 
     /**

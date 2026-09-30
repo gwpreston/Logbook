@@ -8,14 +8,16 @@ use DateTimeImmutable;
 use JsonException;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
 
 /**
- * JSON request bodies → the form input the fill-up and reading forms parse
- * (spec.md §7.20). A new input adapter, like the CSV import's: the forms'
+ * JSON request bodies → the form input the fill-up, reading and trip forms
+ * parse (spec.md §7.20). A new input adapter, like the CSV import's: the forms'
  * parsers, validation and messages are unchanged.
  *
  * - Numbers are never floats: number tokens are turned into strings before
@@ -54,6 +56,22 @@ final class JsonInput
         'note' => 'note',
     ];
     private const array READING_EXTRA = ['distance_unit'];
+
+    /** API field → form field, for the trip form. */
+    public const array TRIP_FIELDS = [
+        'travelled_on' => 'travelled_on',
+        'from' => 'from_place',
+        'to' => 'to_place',
+        'is_return' => 'is_return',
+        'distance_km' => 'distance',
+        'odometer_start_km' => 'odometer_start',
+        'odometer_end_km' => 'odometer_end',
+        'is_business' => 'is_business',
+        'purpose' => 'purpose',
+        'passengers' => 'passengers',
+        'notes' => 'notes',
+    ];
+    private const array TRIP_EXTRA = ['journey_id'];
 
     /**
      * The body as an object, numbers as strings.
@@ -175,6 +193,65 @@ final class JsonInput
     }
 
     /**
+     * A trip body as the trip form's input, in kilometres (the whole trip,
+     * never doubled), and the preferences to parse it with. A saved
+     * journey (`journey_id`, looked up by the caller) fills the places,
+     * return, business and purpose, and the distance (one way, so doubled
+     * on a return) unless the body gives a distance or odometers; the
+     * body's own fields win.
+     *
+     * @param array<string, mixed> $body
+     * @param (callable(int): ?SavedJourney) $journey the key user's saved journey by id, or null
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function trip(
+        array $body,
+        DisplayPreferences $owner,
+        DateTimeImmutable $today,
+        callable $journey,
+    ): array|ValidationErrors {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::TRIP_FIELDS), ...self::TRIP_EXTRA], $errors);
+
+        $saved = null;
+        if (array_key_exists('journey_id', $body) && $body['journey_id'] !== null) {
+            $id = $body['journey_id'];
+            $saved = is_string($id) && ctype_digit($id) ? $journey((int) $id) : null;
+            if ($saved === null) {
+                $errors->add('journey_id', 'validation.choice');
+            }
+        }
+        $from = $saved?->data;
+
+        $input = [
+            'travelled_on' => self::text($body, 'travelled_on', $errors, $today->format('Y-m-d')),
+            'from_place' => self::text($body, 'from', $errors, $from?->fromPlace),
+            'to_place' => self::text($body, 'to', $errors, $from?->toPlace),
+            'is_return' => self::flag($body, 'is_return', $errors, $from->isReturnDefault ?? false),
+            'distance' => self::decimal($body, 'distance_km', $errors),
+            'odometer_start' => self::decimal($body, 'odometer_start_km', $errors),
+            'odometer_end' => self::decimal($body, 'odometer_end_km', $errors),
+            // Missing counts as business in the form; false must reach it as unticked.
+            'is_business' => self::flag($body, 'is_business', $errors, $from->isBusinessDefault ?? true),
+            'purpose' => self::text($body, 'purpose', $errors, $from?->purposeDefault),
+            'passengers' => self::decimal($body, 'passengers', $errors),
+            'notes' => self::text($body, 'notes', $errors),
+        ];
+        $measured = array_key_exists('distance_km', $body)
+            || array_key_exists('odometer_start_km', $body)
+            || array_key_exists('odometer_end_km', $body);
+        if ($from !== null && !$measured) {
+            $input['distance'] = $input['is_return'] === '1'
+                ? Decimal::add($from->distanceKm, $from->distanceKm)
+                : $from->distanceKm;
+        }
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, DistanceUnit::Kilometre, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
      * A form's errors under the API's field names.
      *
      * @param array<string, string> $fields API field → form field
@@ -255,9 +332,9 @@ final class JsonInput
     /**
      * @param array<string, mixed> $body
      */
-    private static function flag(array $body, string $name, ValidationErrors $errors): string
+    private static function flag(array $body, string $name, ValidationErrors $errors, bool $default = false): string
     {
-        $value = $body[$name] ?? false;
+        $value = $body[$name] ?? $default;
         if (!is_bool($value)) {
             $errors->add($name, 'api.validation.boolean');
 
@@ -270,11 +347,11 @@ final class JsonInput
     /**
      * @param array<string, mixed> $body
      */
-    private static function text(array $body, string $name, ValidationErrors $errors): string
+    private static function text(array $body, string $name, ValidationErrors $errors, ?string $default = null): string
     {
         $value = $body[$name] ?? null;
         if ($value === null) {
-            return '';
+            return $default ?? '';
         }
         if (!is_string($value)) {
             $errors->add($name, 'api.validation.string');

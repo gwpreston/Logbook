@@ -2,7 +2,7 @@
 
 *Log the journeys you claim for; Logbook works out the rest.*
 
-Status: 📋 planned · releases **v2.2.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.2.0**
 
 This is the first item in `spec.md` §12, "Trip/journey log (business vs
 personal for mileage claims)", given a phase.
@@ -76,14 +76,14 @@ questions*) and [`spec.md`](../../spec.md) §5, §6, §7.2, §7.7, §7.10, §7.1
   so readings, plausibility and every existing figure are unchanged.
 - Trips take attachments (owner type `trip`: a parking or toll receipt
   for the journey).
->
+
 **SavedJourney** (Phase 22)
 - id, user_id (`ON DELETE CASCADE`), from_place, to_place, distance_km
   (one way), is_return_default (bool), purpose_default (optional),
   is_business_default (bool), sort_order, created/updated (UTC). A
   journey belongs to a user, not a vehicle. Deleting it leaves the trips
   logged from it.
->
+
 **MileageRateSet** (Phase 22)
 - id, user_id (`ON DELETE CASCADE`), effective_from (calendar date),
   distance_unit (`mi`|`km`), currency (ISO 4217), car_rate (per unit),
@@ -96,7 +96,7 @@ questions*) and [`spec.md`](../../spec.md) §5, §6, §7.2, §7.7, §7.10, §7.1
   are `decimal(10,4)`. `(user_id, effective_from)` is unique.
 - The set in effect on a trip's date is the latest `effective_from` on or
   before it. A trip before the earliest set has no value.
->
+
 **User** gains trip settings, stored as a user-scope setting `trips`:
 tax year start (`MM-DD`; default `04-06` when the user's locale region is
 GB, else `01-01`) and the claim report's declaration text (optional).
@@ -275,50 +275,50 @@ Update §12: remove the trip-log line.
 ## Tasks
 
 ### Spec and docs
-- [ ] §6, §7.22, §7.23, §7.13, §7.20 and §12 in `spec.md`; the Phase 22
+- [x] §6, §7.22, §7.23, §7.13, §7.20 and §12 in `spec.md`; the Phase 22
       line in §13.
-- [ ] `docs/trips.md`: logging, saved journeys, the split, rates, the claim
+- [x] `docs/trips.md`: logging, saved journeys, the split, rates, the claim
       report, and what the figures do and don't mean.
-- [ ] `.env.example` and `docs/configuration.md`: `FEATURES_TRIPS` (default
+- [x] `.env.example` and `docs/configuration.md`: `FEATURES_TRIPS` (default
       `false`).
 
 ### Migrations (every engine, each reversible)
-- [ ] `trips`, `saved_journeys`, `mileage_rate_sets`; the `trip` attachment
+- [x] `trips`, `saved_journeys`, `mileage_rate_sets`; the `trip` attachment
       owner type. Rollback drops them and the `trip` attachment rows (files
       stay under `UPLOAD_PATH`, as earlier rollbacks do).
 
 ### Domain / Support
-- [ ] `Domain\Trip\Trip`, `SavedJourney`, `MileageRateSet`, `TaxYear` (value
+- [x] `Domain\Trip\Trip`, `SavedJourney`, `MileageRateSet`, `TaxYear` (value
       object from a start `MM-DD` and a date).
-- [ ] `Support\Money` and distance conversion reused for per-unit rates
+- [x] `Support\Money` and distance conversion reused for per-unit rates
       (km ↔ mi exact decimals).
 
 ### Services
-- [ ] `Service\Trip\TripService`: create and edit (same parser for form,
+- [x] `Service\Trip\TripService`: create and edit (same parser for form,
       import and API), validation, return doubling, odometer distance,
       *Log again*.
-- [ ] `Service\Trip\MileageSplit`: business, total and private per vehicle
+- [x] `Service\Trip\MileageSplit`: business, total and private per vehicle
       and period, reusing the reports' distance driven.
-- [ ] `Service\Trip\ClaimCalculator`: rate lookup, threshold accumulation
+- [x] `Service\Trip\ClaimCalculator`: rate lookup, threshold accumulation
       and splitting, bikes, passengers, rounding, employer difference, and
       currency grouping.
-- [ ] `Service\Trip\RateProvider`: seeds the GB sets once per user when
+- [x] `Service\Trip\RateProvider`: seeds the GB sets once per user when
       they first need them.
-- [ ] Access: `VehicleAbility::ViewOthersTrips` in the policy (Manage and
+- [x] Access: `VehicleAbility::ViewOthersTrips` in the policy (Manage and
       Own).
 
 ### Actions, templates, assets
-- [ ] Trips tab, trip form (page and modal), saved journeys and rates under
+- [x] Trips tab, trip form (page and modal), saved journeys and rates under
       Settings → Trips, claim report page, print and CSV.
-- [ ] Mileage tab split, Reports section, dashboard widget, the History
+- [x] Mileage tab split, Reports section, dashboard widget, the History
       chip, and the chooser item.
-- [ ] Phone app: *Log trip* in the quick actions, with saved journeys
+- [x] Phone app: *Log trip* in the quick actions, with saved journeys
       available offline (the fill-up queue's mechanism).
-- [ ] Translations (en, de): the GB wording for the commute hint and tax
+- [x] Translations (en, de): the GB wording for the commute hint and tax
       year labels; German with generic tax-year wording and no HMRC text.
 
 ### Tests
-- [ ] **Claim maths:** a year of trips crossing 10,000 miles, where the
+- [x] **Claim maths:** a year of trips crossing 10,000 miles, where the
       crossing trip is split exactly; a rate change on 6 Apr 2026 keeping
       the year's running total; a trip on 5 Apr and one on 6 Apr in
       different tax years (dates are calendar dates, not converted); bikes
@@ -326,39 +326,39 @@ Update §12: remove the trip-log line.
       mile trips; rounding per trip; employer higher and lower; a trip
       before the earliest rate set (no value, and the report says so);
       mixed currencies.
-- [ ] **Cost per business mile:** the period's cost per distance beside
+- [x] **Cost per business mile:** the period's cost per distance beside
       the claim value per business mile; "—" without a distance or with
       no running costs; km vehicles show per km.
-- [ ] **Split:** private = total − business; sparse readings → "—" with
+- [x] **Split:** private = total − business; sparse readings → "—" with
       the notice; logged private trips don't change it; module off → gone.
-- [ ] **Form:** return doubling; odometer distance; mismatch refused; a
+- [x] **Form:** return doubling; odometer distance; mismatch refused; a
       business trip without a purpose refused; saved journey pre-fill with
       and without JS; *Save as a journey*; *Log again*; archived vehicle
       refused.
-- [ ] **Access:** the owner sees everyone's trips; a Log-level user sees
+- [x] **Access:** the owner sees everyone's trips; a Log-level user sees
       only theirs; claims only ever include the claimant's own; a View user
       sees totals but no destinations.
-- [ ] **Privacy:** trips never appear under *Everything*, *Recent
+- [x] **Privacy:** trips never appear under *Everything*, *Recent
       activity*, the print view, the sale pack or its ZIP.
-- [ ] Import and API duplicates; attachments; backup round-trip.
-- [ ] The GB rates are provided once and never overwritten; non-GB users
+- [x] Import and API duplicates; attachments; backup round-trip.
+- [x] The GB rates are provided once and never overwritten; non-GB users
       get none.
-- [ ] Print header and CSV columns; translations suite (en, de).
-- [ ] Integration suite green on every engine; migrations roll back on every
+- [x] Print header and CSV columns; translations suite (en, de).
+- [x] Integration suite green on every engine; migrations roll back on every
       engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: the demo owner switches trips on, with saved
+- [x] `DemoDataSeeder`: the demo owner switches trips on, with saved
       journeys (for example "Office → Client site, 27 mi") and about 60
       business trips on the Golf across 2025/26 and 2026/27, so the rate
       change shows. Add a few trips with passengers, one with a toll
       receipt, and an employer rate of 0.35 so the difference shows.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.2.0**: trips, business mileage and claims. Upgrade
+- [x] `CHANGELOG.md` **2.2.0**: trips, business mileage and claims. Upgrade
       notes: migrations; the module is off until switched on; GB users get
       HMRC's rates to check and edit.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and
+- [x] Bump `VERSION`, rebuild assets, update the README status and
       documentation table.
 
 ---
@@ -384,11 +384,81 @@ Update §12: remove the trip-log line.
 - **More than one employment:** the 10,000-mile threshold applies per
   employment. Should a trip carry an optional *Employer* (with its own rate
   and threshold), or is one threshold per person enough for now?
+  *Decided 2026-09-30: one threshold per person, across all their cars.
+  Employers with their own threshold are parked in spec §12.*
 - **Excel:** is CSV enough, or should the claim export a real .xlsx
   (PhpSpreadsheet, pure PHP but large)?
+  *Decided 2026-09-30: CSV only. A native .xlsx is parked in spec §12.*
 - **Default off:** should `trips` be on by default for GB-locale users
   only, instead of off for everyone?
+  *Decided 2026-09-30: off for everyone (`FEATURES_TRIPS=false`).*
 - **Van type:** vans share the car rates. Is a `van` vehicle type wanted,
   or do vans stay as `car`?
+  *Decided 2026-09-30: vans stay as `car`. A `van` type is parked in spec
+  §12.*
 - **Cost per business mile:** cost of ownership per distance (drafted:
   running costs plus depreciation), or running costs only?
+  *Answered 2026-09-30: cost of ownership per distance, as decided for
+  Phase 14.2's question (log #23). Spec §7.7 already falls back to running
+  costs alone when a vehicle has no value.*
+- **Saved journeys in the API** (found while building): an iPhone Shortcut
+  logs a saved journey by `journey_id`, but no endpoint lists the journeys,
+  so the id comes from the journey's edit link. Add
+  `GET /api/v1/journeys`?
+
+## Changed while building it
+
+- **Employer payments for bikes** fall back to the employer's car rate when
+  a set has no employer bike rate, as `bike_rate` falls back to `car_rate`.
+  **The difference** compares the approved mileage amount *without*
+  passengers with what the employer paid: unpaid passenger payments get no
+  tax relief. Both are written into spec §7.23. Checked against HMRC on
+  2026-09-30: passenger payments are "an exemption only", with "no
+  corresponding relief or deduction" when the employer pays less than 5p a
+  mile per passenger or nothing (EIM31410); Mileage Allowance Relief is on
+  "the unused balance of the approved amount" for the vehicle
+  (gov.uk/expenses-and-benefits-business-travel-mileage/rules-for-tax,
+  which also confirms 55p from 6 April 2026, 45p before, 25p above
+  10,000 miles and 24p for motorcycles).
+- **The threshold count is one accumulation** (`ClaimValuation`), in each
+  rate set's own unit, from each trip's exact converted distance. The claim
+  report and the dashboard widget read the same count, and summing
+  kilometres cannot move the 10,000-mile boundary. A claim is always valued
+  on every vehicle the claimant can see from the start of the tax year its
+  period starts in, then filtered by vehicle and range, so a filtered or
+  mid-year report shows the same split as the full year.
+- **Import and the API read the whole trip's distance**, as it is stored and
+  exported (`TripForm::parse(..., wholeDistance: true)`); only the form
+  doubles a one-way distance. The export writes distances to 3 places in
+  the owner's unit, so a file exported from Logbook imports back unchanged
+  and is recognised as duplicates.
+- **The GB rates are provided once per user**, with a `rates_provided` flag
+  in the user's `trips` setting. The module is instance-wide and the rates
+  are per user, so they are provided when each GB user first opens Settings
+  → Trips, the claim, the Trips tab or the widget, not when an admin
+  switches the module on. A user who deletes them does not get them back.
+- **"Rename" a saved journey is editing it**: a saved journey has no name of
+  its own beyond its places. Reordering is with up and down buttons, which
+  work without JS.
+- **A claim's vehicles are the ones the claimant can View.** A driver whose
+  share is removed no longer sees that vehicle's trips in their claim.
+- **The longer-than-driven warning** compares each trip with the gap between
+  the last reading before its day and the first after it, trip by trip.
+- **Trip files are guarded** (`TripFileGuard`): a receipt is served and
+  deleted only for those who may see its trip, and not at all with the
+  module off.
+- **The phone app's offline "now"** also moves a date-only field (a trip's
+  date) to today, so a trip form cached yesterday is dated today.
+- **API** (spec §7.20): a POST's retry matches the key user's own trips only,
+  so a driver never gets another driver's hidden trip back; a bad claim
+  filter is a 400 and an unknown vehicle a 404, like every API parameter;
+  the first claim read provides the GB rates like the web page. Amounts are
+  3-place decimals, as elsewhere in the API.
+- **Every line is rounded**, not just each trip: a split trip's two rate
+  lines are each rounded to the penny, and the trip's amount is their sum.
+  Rounding only the trip left the claim's per-rate totals up to half a
+  penny a trip away from the total approved amount on a signed document;
+  now every figure on the claim adds up (spec §7.23).
+- **The *Business mileage* widget is last** in the default dashboard order,
+  so existing layouts keep theirs.
+- **Icons:** `route` and `replay` join the vendored sprite.

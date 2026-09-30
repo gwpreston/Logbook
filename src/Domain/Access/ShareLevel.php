@@ -24,7 +24,13 @@ enum ShareLevel: string
         return match ($this) {
             self::View => [VehicleAbility::View],
             self::Log => [VehicleAbility::View, VehicleAbility::Log],
-            self::Manage => [VehicleAbility::View, VehicleAbility::Log, VehicleAbility::Manage, VehicleAbility::ViewCosts],
+            self::Manage => [
+                VehicleAbility::View,
+                VehicleAbility::Log,
+                VehicleAbility::Manage,
+                VehicleAbility::ViewCosts,
+                VehicleAbility::ViewOthersTrips,
+            ],
         };
     }
 

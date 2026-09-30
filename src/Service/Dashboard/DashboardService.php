@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Dashboard;
 
+use Logbook\Service\Trip\ClaimReportService;
 use DateTimeImmutable;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
@@ -63,6 +64,7 @@ final readonly class DashboardService
         private ClockInterface $clock,
         private ComingUp $comingUp,
         private VehicleAccess $access,
+        private ClaimReportService $claims,
     ) {
     }
 
@@ -129,6 +131,9 @@ final readonly class DashboardService
             mileage: $show(DashboardWidget::Mileage) ? $this->mileage($user, $scope, $today) : null,
             activity: $show(DashboardWidget::RecentActivity) ? $this->activity->latest($user, $scope) : [],
             comingUp: $show(DashboardWidget::ComingUp) ? $this->comingUp->forecast($user, $scope) : null,
+            businessMileage: $show(DashboardWidget::BusinessMileage)
+                ? $this->claims->thisYear($user, $today, $selected !== null ? [$selected->id] : [])
+                : null,
         );
     }
 

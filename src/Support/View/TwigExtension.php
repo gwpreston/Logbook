@@ -74,6 +74,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('number', $this->formatter->number(...)),
             new TwigFilter('percent', $this->formatter->percent(...)),
             new TwigFilter('money', $this->formatter->money(...)),
+            new TwigFilter('mileage_rate', $this->formatter->rate(...)),
             new TwigFilter('chart_value', $this->formatter->chartValue(...)),
             new TwigFilter('distance', $this->formatter->distance(...)),
             new TwigFilter('volume', $this->formatter->volume(...)),

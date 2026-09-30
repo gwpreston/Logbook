@@ -54,11 +54,15 @@ final readonly class WebManifestAction
                 ],
             ],
         ];
+        $shortcuts = [];
         if ($this->features->isEnabled(Feature::Fuel)) {
-            $manifest['shortcuts'] = [[
-                'name' => $this->translator->trans('nav.log_fill_up'),
-                'url' => $base . '/fuel/new',
-            ]];
+            $shortcuts[] = ['name' => $this->translator->trans('nav.log_fill_up'), 'url' => $base . '/fuel/new'];
+        }
+        if ($this->features->isEnabled(Feature::Trips)) {
+            $shortcuts[] = ['name' => $this->translator->trans('nav.log_trip'), 'url' => $base . '/log/new/trip'];
+        }
+        if ($shortcuts !== []) {
+            $manifest['shortcuts'] = $shortcuts;
         }
 
         $flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;

@@ -21,4 +21,6 @@ enum VehicleAbility: string
     case Manage = 'manage';
     /** Archive, restore, delete, transfer, sharing. */
     case Own = 'own';
+    /** Other drivers' trips and their destinations (Phase 22; Manage and Own). */
+    case ViewOthersTrips = 'view_others_trips';
 }

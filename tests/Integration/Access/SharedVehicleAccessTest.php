@@ -76,7 +76,13 @@ final class SharedVehicleAccessTest extends AppTestCase
         yield 'manage (always with costs)' => [
             ShareLevel::Manage,
             false,
-            [VehicleAbility::View, VehicleAbility::Log, VehicleAbility::Manage, VehicleAbility::ViewCosts],
+            [
+                VehicleAbility::View,
+                VehicleAbility::Log,
+                VehicleAbility::Manage,
+                VehicleAbility::ViewCosts,
+                VehicleAbility::ViewOthersTrips,
+            ],
         ];
     }
 

@@ -686,8 +686,12 @@
                     timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit',
                     hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
                 }).formatToParts(new Date()).forEach(function (part) { parts[part.type] = part.value; });
-                var now = parts.year + '-' + parts.month + '-' + parts.day + 'T' + parts.hour + ':' + parts.minute;
-                if (Math.abs(Date.parse(now) - Date.parse(input.value)) > 10 * 60 * 1000) {
+                var today = parts.year + '-' + parts.month + '-' + parts.day;
+                var now = today + 'T' + parts.hour + ':' + parts.minute;
+                if (input.type === 'date') {
+                    // A day-only field (a trip's date, Phase 22): today.
+                    input.value = today;
+                } else if (Math.abs(Date.parse(now) - Date.parse(input.value)) > 10 * 60 * 1000) {
                     input.value = now;
                 }
             } catch (e) {
@@ -808,6 +812,9 @@
             body.querySelectorAll('[data-fuel-amounts]').forEach(enhanceFuelAmounts);
             if (window.LogbookFileDrop) {
                 window.LogbookFileDrop.enhance(body);
+            }
+            if (window.LogbookTripForm) {
+                window.LogbookTripForm.enhance(body);
             }
             if (window.LogbookFirstInspection) {
                 window.LogbookFirstInspection.enhance(body);

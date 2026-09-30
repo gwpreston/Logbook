@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.1.0.** First-run setup, secure sign-in, several people on one
+> **Status: v2.2.0.** First-run setup, secure sign-in, several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
 > Manage, costs shared or not, each person's own reminders and units, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), a *First MOT due* date suggested from it, purchase and sale paperwork and archiving, per-user units, currency,
 > language and time zone; a History tab per vehicle (and for the fleet) with a
@@ -28,12 +28,15 @@ your own server.
 > plus what it has lost in value, exact once sold), leases and finance
 > included; a *Coming up* view of the next 12 months (services, renewals,
 > tyres and reminders, each at what it cost last time, plus a fuel
-> estimate); fuel insights (whether a dearer grade is worth it, from fills
+> estimate); business trips and mileage claims (switched on when you need
+> them: private mileage worked out from the odometer, HMRC's approved rates
+> for UK users or your own, a printable claim with employer payments, and
+> whether the allowance covers what the car costs to run); fuel insights (whether a dearer grade is worth it, from fills
 > bought close together, cost per mile or km per tank and per charging
 > type, and economy by month to show what winter costs); a dashboard of widgets you can
 > rearrange; modules you can switch off; CSV import with a preview; one-click
 > backup and restore of everything; an installable phone app that logs
-> fill-ups offline; a REST API with keys, so Home Assistant, Shortcuts,
+> fill-ups and trips offline; a REST API with keys, so Home Assistant, Shortcuts,
 > Grafana and Node-RED can read your garage and log fill-ups; in English and
 > German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
@@ -73,6 +76,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
+| [docs/trips.md](docs/trips.md) | Trips and mileage claims: logging, saved journeys, the business and private split, mileage rates, the claim report and what the figures mean |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in each release, with upgrade notes |
@@ -211,6 +215,6 @@ translations/  message catalogues
 tests/         Unit/ and Integration/
 docker/        Apache vhost, PHP ini, entrypoint, nginx example, dev DB init
 bin/           CLI helpers (asset build, backup, API keys, dev router, wait-for-db, scheduler, test scripts)
-docs/          deployment, configuration, users and sharing, import, API (and its OpenAPI file), sale pack,
+docs/          deployment, configuration, users and sharing, import, API (and its OpenAPI file), sale pack, trips,
                notification and translation guides; build phases in docs/phases/
 ```

@@ -15,6 +15,8 @@ enum LogKind: string
 {
     case Fuel = 'fuel';
     case Odometer = 'odometer';
+    /** A business trip (Phase 22). */
+    case Trip = 'trip';
     case Maintenance = 'maintenance';
     case Expense = 'expense';
     case Document = 'document';
@@ -44,6 +46,7 @@ enum LogKind: string
             self::Document => 'compliance.create',
             self::Schedule => 'maintenance.schedules.create',
             self::Tyre, self::TyreCheck => 'tyres.change',
+            self::Trip => 'trips.create',
         };
     }
 
@@ -71,6 +74,7 @@ enum LogKind: string
             self::Maintenance, self::Schedule => Feature::Maintenance,
             self::Document => Feature::Compliance,
             self::Tyre, self::TyreCheck => Feature::Tyres,
+            self::Trip => Feature::Trips,
             self::Odometer, self::Expense => null,
         };
     }
@@ -86,6 +90,7 @@ enum LogKind: string
             self::Schedule => 'event_repeat',
             self::Tyre => 'tire_repair',
             self::TyreCheck => 'fact_check',
+            self::Trip => 'route',
         };
     }
 
@@ -96,7 +101,7 @@ enum LogKind: string
     {
         return match ($this) {
             self::Fuel => 'accent',
-            self::Odometer => 'text',
+            self::Odometer, self::Trip => 'text',
             self::Maintenance, self::Schedule, self::Tyre, self::TyreCheck => 'c-maint',
             self::Expense => 'c-other',
             self::Document => 'c-ins',

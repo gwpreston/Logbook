@@ -1,0 +1,77 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Add or edit a mileage rate set (spec.md §7.23): rates per unit of the
+ # set's own distance unit, in its currency. Changing a set changes the
+ # value of every trip it applies to.
+ #}
+{% set active_nav = 'settings' %}
+{% set editing = set is not null %}
+{% set heading = (editing ? 'trip.rates.edit_title' : 'trip.rates.add_title')|trans %}
+{% set rate = {type: 'number', step: 'any', min: 0, inputmode: 'decimal', optional: true} %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.trips') }}">{{ ui.icon('chevron_left') }}{{ 'trip.settings.title'|trans }}</a>
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'trip.rates.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        <form class="form" method="post" action="{{ editing ? url_for('settings.trips.rates.edit', {set: set.id}) : url_for('settings.trips.rates.create') }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+            <section class="card">
+                {{ ui.input('effective_from', 'trip.rates.field.effective_from'|trans, values, errors, {type: 'date', required: true, hint: 'trip.rates.hint.effective_from'|trans}) }}
+                <div class="form-row">
+                    {{ ui.select('distance_unit', 'trip.rates.field.unit'|trans, values, errors, [
+                        {value: 'mi', label: 'units.name.mi'|trans},
+                        {value: 'km', label: 'units.name.km'|trans},
+                    ]) }}
+                    {{ ui.select('currency', 'trip.rates.field.currency'|trans, values, errors, currencies|map(c => {value: c, label: c ~ ' · ' ~ currency_name(c)})) }}
+                </div>
+            </section>
+            <section class="card" aria-labelledby="rates-car">
+                <h2 id="rates-car" class="card__title">{{ ui.icon('directions_car') }}{{ 'trip.rates.car'|trans }}</h2>
+                {{ ui.input('car_rate', 'trip.rates.field.car_rate'|trans, values, errors, rate|merge({required: true, optional: false})) }}
+                <div class="form-row">
+                    {{ ui.input('car_threshold', 'trip.rates.field.car_threshold'|trans, values, errors, rate|merge({hint: 'trip.rates.hint.car_threshold'|trans})) }}
+                    {{ ui.input('car_rate_after', 'trip.rates.field.car_rate_after'|trans, values, errors, rate) }}
+                </div>
+            </section>
+            <section class="card" aria-labelledby="rates-other">
+                <h2 id="rates-other" class="card__title">{{ ui.icon('two_wheeler') }}{{ 'trip.rates.other'|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.input('bike_rate', 'trip.rates.field.bike_rate'|trans, values, errors, rate|merge({hint: 'trip.rates.hint.bike_rate'|trans})) }}
+                    {{ ui.input('passenger_rate', 'trip.rates.field.passenger_rate'|trans, values, errors, rate) }}
+                </div>
+            </section>
+            <section class="card" aria-labelledby="rates-employer">
+                <h2 id="rates-employer" class="card__title">{{ ui.icon('payments') }}{{ 'trip.rates.employer_title'|trans }}</h2>
+                <p class="field__hint">{{ 'trip.rates.hint.employer'|trans }}</p>
+                <div class="form-row">
+                    {{ ui.input('employer_car_rate', 'trip.rates.field.employer_car_rate'|trans, values, errors, rate) }}
+                    {{ ui.input('employer_bike_rate', 'trip.rates.field.employer_bike_rate'|trans, values, errors, rate) }}
+                </div>
+                {{ ui.input('source', 'trip.rates.field.source'|trans, values, errors, {maxlength: 200, optional: true, hint: 'trip.rates.hint.source'|trans}) }}
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'form.save'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('settings.trips') }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('settings.trips.rates.delete', {set: set.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

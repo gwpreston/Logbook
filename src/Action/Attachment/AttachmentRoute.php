@@ -53,6 +53,7 @@ final class AttachmentRoute
             AttachmentOwner::Odometer => ['odometer.edit', ['id' => $vehicle, 'reading' => $owner]],
             AttachmentOwner::Purchase, AttachmentOwner::Sale => ['vehicles.edit', ['id' => $vehicle]],
             AttachmentOwner::Valuation => ['valuations.edit', ['id' => $vehicle, 'entry' => $owner]],
+            AttachmentOwner::Trip => ['trips.edit', ['id' => $vehicle, 'entry' => $owner]],
         };
     }
 }

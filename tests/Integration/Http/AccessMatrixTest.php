@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Domain\Trip\TripData;
+use Logbook\Repository\TripRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
@@ -51,6 +53,14 @@ final class AccessMatrixTest extends AppTestCase
     /** Manage, and Log on someone else's entry (the own-entry rule). */
     private const string MANAGE = 'PPFFFNN';
     private const string OWN = 'PFFFFNN';
+    /**
+     * Another driver's trip (Phase 22): Manage and Own see it; a Log driver
+     * does not even find it (404), and View may not log at all.
+     */
+    private const string OTHERS_TRIP = 'PPNFNNN';
+
+    /** Every module on, trips included (Phase 22: off by default). */
+    private const array TRIPS_ON = ['FEATURES_TRIPS' => 'true'];
 
     /** @var array<string, string> route name => who may use it */
     private const array MATRIX = [
@@ -102,6 +112,10 @@ final class AccessMatrixTest extends AppTestCase
         'expenses.create' => self::LOG,
         'expenses.edit' => self::MANAGE,
         'expenses.delete' => self::MANAGE,
+        'trips.index' => self::VIEW,
+        'trips.create' => self::LOG,
+        'trips.edit' => self::OTHERS_TRIP,
+        'trips.delete' => self::OTHERS_TRIP,
         'valuations.index' => self::COSTS,
         'valuations.create' => self::MANAGE,
         'valuations.edit' => self::MANAGE,
@@ -120,7 +134,7 @@ final class AccessMatrixTest extends AppTestCase
     {
         $names = array_map(
             static fn (RouteInterface $route): string => (string) $route->getName(),
-            $this->routes($this->createApp()),
+            $this->routes($this->createApp(self::TRIPS_ON)),
         );
         sort($names);
         $listed = array_keys(self::MATRIX);
@@ -131,7 +145,7 @@ final class AccessMatrixTest extends AppTestCase
 
     public function testEachPersonGetsWhatTheirAccessAllows(): void
     {
-        $app = $this->createApp();
+        $app = $this->createApp(self::TRIPS_ON);
         $this->pinClock($app, '2026-09-30T12:00:00Z');
         [$vehicle, $ids, $browsers] = $this->fixture($app);
         $readOnly = [];
@@ -151,7 +165,7 @@ final class AccessMatrixTest extends AppTestCase
                 continue;
             }
             foreach (self::PEOPLE as $i => $person) {
-                $fresh = $this->createApp();
+                $fresh = $this->createApp(self::TRIPS_ON);
                 $this->pinClock($fresh, '2026-09-30T12:00:00Z');
                 [$v, $freshIds, $freshBrowsers] = $this->fixture($fresh);
                 $wrong = [...$wrong, ...$this->check($route, $v, $freshIds, [$person => $freshBrowsers[$person]], $i)];
@@ -217,6 +231,13 @@ final class AccessMatrixTest extends AppTestCase
         $expense = $this->expense($app, $vehicle, '2026-09-12', '12.00', ExpenseCategory::Parking);
         $valuation = $this->service($app, ValuationService::class)
             ->create($vehicle, new VehicleValuationData($day('2026-09-15'), '9000.00'));
+        $trip = $this->service($app, TripRepository::class)->insert($vehicle->id, new TripData(
+            travelledOn: $day('2026-09-10'),
+            fromPlace: 'Ballymena',
+            toPlace: 'Belfast',
+            distanceKm: '86.905',
+            purpose: 'Client meeting',
+        ), new DateTimeImmutable('2026-09-10T18:00:00Z'), $owner->id);
         $reminder = $this->service($app, ReminderService::class)
             ->createManual($owner, new ManualReminderData($vehicle->id, 'Wash', $day('2026-10-10'), 7));
         $now = '2026-09-01 00:00:00';
@@ -274,6 +295,7 @@ final class AccessMatrixTest extends AppTestCase
             'maintenance' => $service->id,
             'expenses' => $expense->id,
             'valuations' => $valuation->id,
+            'trips' => $trip,
         ];
 
         return [$vehicle, $ids, $browsers];

@@ -179,7 +179,8 @@ final class ApiAccessTest extends AppTestCase
      */
     private function appWithPolicy(): array
     {
-        $app = $this->createApp();
+        // Trips are off by default; their API routes are vehicle routes too.
+        $app = $this->createApp(['FEATURES_TRIPS' => 'true']);
         $container = $app->getContainer();
         self::assertInstanceOf(Container::class, $container);
         $access = new ConfigurableVehicleAccess($this->service($app, VehicleRepository::class));

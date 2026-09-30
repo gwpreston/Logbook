@@ -6,6 +6,94 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-09-30
+
+Phase 22: trips and business mileage claims. Log the business journeys you
+may claim for, and Logbook works out your private mileage, the claim at the
+approved rates, what your employer paid, and whether the allowance covers
+what the car costs to run. Guide: [docs/trips.md](docs/trips.md).
+
+### Added
+- **Trips** (a new module, **off until you switch it on** in Settings →
+  Modules or with `FEATURES_TRIPS=true`). Each vehicle gets a *Trips* tab
+  after *Mileage*. A trip has:
+  - a date, from, to, and *Return journey* (the distance one way is
+    doubled);
+  - a distance, or the odometer at the start and end, which must agree to
+    within 0.5;
+  - *Business trip* (ticked by default, and it needs a purpose),
+    passengers, notes and files (a toll receipt).
+
+  A trip adds no reading to the mileage log. A trip longer than the log says
+  the car drove that day gets a warning after saving, never a refusal. In
+  the UK and in German the form reminds you that commuting is not business
+  mileage.
+- **Saved journeys and *Log again*.** *Save as a journey* keeps the places
+  and distance. Choosing a saved journey fills the form in place (or
+  reloads it filled in without JS). *Log again* copies everything but the
+  date and odometers, so a regular journey takes two taps. Manage them in
+  **Settings → Trips**.
+- **Business and private mileage.** Business is the sum of your business
+  trips. Private is the rest of the mileage log's distance, so private
+  journeys never need logging. Both show on the Trips and Mileage tabs for
+  the tax year. When the readings are too far apart to tell, you see "—"
+  and a note.
+- **Mileage rates**, dated and yours. Each trip uses the set in effect on
+  its date: a car rate with a threshold and the rate after it, bike and
+  passenger rates, and optional employer rates. UK users are given HMRC's
+  approved rates once: 45p, then 25p after 10,000 miles, from 6 April 2011,
+  and 55p, then 25p, from 6 April 2026, with bikes at 24p and passengers at
+  5p. The tax year starts on 6 April in the UK and 1 January elsewhere, and
+  can be changed.
+- **The claim report** (`/trips/claim`): your own business trips for a tax
+  year or any dates, on all or some vehicles.
+  - Each trip has its rate. The trip that crosses the threshold is split
+    across both rates.
+  - Totals show the distance at each rate, passengers and the total
+    approved amount.
+  - With employer rates it shows *Paid by employer* and the difference.
+  - Beside each vehicle, what it costs to run per mile next to the claim
+    value per business mile.
+  - It prints with your name, the vehicles, the period, the rates and their
+    source, your declaration and a signature line. It exports as
+    `mileage-claim-2026-27.csv`.
+- **Business mileage** in Reports (distance, business share, claim value,
+  cost per business mile, the fleet total) and a dashboard widget (this tax
+  year so far, and "6,418 mi until the £0.25 rate").
+- **Log trip** in *Log entry* and in the phone app's quick actions. The
+  trip form and your saved journeys also work offline, like a fill-up.
+- **Trips in History** under their own *Trips* chip only.
+- **CSV export and import of trips**, with duplicates skipped by date,
+  places and distance.
+- **API:**
+  - `GET/POST /api/v1/vehicles/{id}/trips`: a POST is safe to retry, and
+    logs a saved journey with `journey_id`.
+  - `GET /api/v1/trips/claim`.
+  - `/me` lists the `trips` module.
+
+  See [docs/api.md](docs/api.md#trips).
+
+### Privacy
+- A trip belongs to its driver, who is the person claiming it. Drivers with
+  *Log* or *View* see only their own trips and receipts. The owner and
+  *Manage* see everyone's. A claim includes only your own trips.
+- Trips are never listed under *Everything*, in *Recent activity*, in the
+  printed history or in the sale pack and its ZIP.
+
+### Upgrade notes
+- **One migration** adds `trips`, `saved_journeys` and `mileage_rate_sets`.
+  It rolls back cleanly on every engine. Rolling back also deletes trip
+  attachments (the files stay under `UPLOAD_PATH`) and the trip settings.
+- **Nothing changes until an admin switches trips on.** The module is off
+  for everyone after upgrading, including installs that saved Settings →
+  Modules before.
+- **UK users get HMRC's rates to check and edit** the first time they open
+  Settings → Trips, the claim or the Trips tab. They are ordinary rows: no
+  release will change them. When HMRC announces new rates, add a set from
+  the date they apply.
+- **Backups move to a new schema version.** A 2.2.0 backup restores into
+  2.2.0. Restore an older backup with its own version, then upgrade.
+
 ## [2.1.0] — 2026-09-30
 
 Phases 20, 21.1 and 21.2: small things that make everyday use smoother, and
@@ -1159,7 +1247,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/gwpreston16/Logbook/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/gwpreston16/Logbook/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/gwpreston16/Logbook/compare/v1.10.0...v2.0.0
 [1.10.0]: https://github.com/gwpreston16/Logbook/compare/v1.9.0...v1.10.0
