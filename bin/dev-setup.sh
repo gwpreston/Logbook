@@ -77,7 +77,8 @@ Local development for Logbook: start it, or stop it again.
 
 Options
   --with-sample-data   A demo owner (demo / logbook-demo) and six vehicles with
-                       a year of fill-ups, EV charges and odometer readings.
+                       a year of fill-ups, EV charges and odometer readings, and
+                       a member (partner / logbook-demo) two of them are shared with.
   --postgres, --mysql, --mariadb, --sqlite
                        Which database engine to run. PostgreSQL is the default.
                        Each engine keeps its own data and photos.
@@ -430,7 +431,7 @@ if [ "$SAMPLE_DATA" -eq 1 ]; then
         info "start from an empty one with: ./bin/dev-setup.sh --reset --with-sample-data"
     else
         SAMPLE_LOADED=1
-        ok "a demo owner and six vehicles with a year of history"
+        ok "a demo owner and six vehicles with a year of history, and a partner they share two with"
     fi
 fi
 
@@ -453,7 +454,7 @@ printf '  %sDatabase%s     %s  %s(each engine keeps its own data)%s\n' \
     "$BOLD" "$RESET" "$ENGINE_NAME" "$DIM" "$RESET"
 
 if [ "$SAMPLE_LOADED" -eq 1 ]; then
-    printf '\n  %sSign in with%s  demo / logbook-demo\n' "$BOLD" "$RESET"
+    printf '\n  %sSign in with%s  demo / logbook-demo  (or partner / logbook-demo, a member)\n' "$BOLD" "$RESET"
 elif [ "$SETUP_NEEDED" -eq 1 ]; then
     printf '\n  %sOpen the app to create your account.%s\n' "$BOLD" "$RESET"
 fi

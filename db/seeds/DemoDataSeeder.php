@@ -16,20 +16,24 @@ use Logbook\Support\Number\Decimal;
 use Phinx\Seed\AbstractSeed;
 
 /**
- * Sample data for local development: a demo owner and a small garage (the
- * vehicles from the design mock-ups, one of them sold and archived).
+ * Sample data for local development: a demo owner (an admin) and a small
+ * garage (the vehicles from the design mock-ups, one of them sold and
+ * archived), and a second user the owner shares two vehicles with (Phase
+ * 19): Log without costs on the self-charging hybrid, whose fill-ups they
+ * partly logged, and View on the Golf.
  *
  *   ./bin/dev-setup.sh --with-sample-data
  *   vendor/bin/phinx seed:run -e development -s DemoDataSeeder
  *
- * Sign in as `demo` / `logbook-demo`. Refuses to run in production, and on a
- * database that already has an account (Logbook has a single owner): reset
- * first with `./bin/dev-setup.sh --reset`.
+ * Sign in as `demo` / `logbook-demo`, or `partner` / `logbook-demo`. Refuses
+ * to run in production, and on a database that already has an account:
+ * reset first with `./bin/dev-setup.sh --reset`.
  */
 final class DemoDataSeeder extends AbstractSeed
 {
     public const string USERNAME = 'demo';
     public const string PASSWORD = 'logbook-demo';
+    public const string PARTNER = 'partner';
 
     public function run(): void
     {
@@ -60,6 +64,7 @@ final class DemoDataSeeder extends AbstractSeed
             'consumption_unit' => 'mpg_uk',
             'currency' => 'GBP',
             'theme' => 'system',
+            'is_admin' => true,
             'created_at' => $now,
             'updated_at' => $now,
         ])->saveData();
@@ -144,11 +149,115 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedPaperwork($now);
         $this->seedValuations($now);
         $this->seedSalePack($now);
+        $this->seedPartner($now, $userId);
 
         $this->getOutput()->writeln(sprintf(
-            '<info>Sample data added. Sign in as "%s" with password "%s".</info>',
+            '<info>Sample data added. Sign in as "%s" (or "%s") with password "%s".</info>',
             self::USERNAME,
+            self::PARTNER,
             self::PASSWORD,
+        ));
+    }
+
+    /**
+     * Who added what (Phase 19): the owner everything, then a second user,
+     * a member, with Log access to the hybrid (no costs) and View access to
+     * the Golf, who fills the hybrid up in the middle of each of the last
+     * six months.
+     */
+    private function seedPartner(string $now, int $ownerId): void
+    {
+        $authored = [
+            'fuel_entries', 'maintenance_entries', 'compliance_documents',
+            'expense_entries', 'tyre_changes', 'vehicle_valuations',
+        ];
+        foreach ($authored as $table) {
+            $this->execute(sprintf('UPDATE %s SET created_by = %d WHERE created_by IS NULL', $table, $ownerId));
+        }
+        $this->execute(sprintf(
+            "UPDATE odometer_readings SET created_by = %d WHERE created_by IS NULL AND source = 'manual'",
+            $ownerId,
+        ));
+        $this->execute(sprintf('UPDATE attachments SET uploaded_by = %d WHERE uploaded_by IS NULL', $ownerId));
+
+        $this->table('users')->insert([
+            'username' => self::PARTNER,
+            'password_hash' => password_hash(self::PASSWORD, PASSWORD_ARGON2ID),
+            'display_name' => 'Sam Partner',
+            'locale' => 'en_GB',
+            'timezone' => 'Europe/London',
+            'distance_unit' => 'km',
+            'volume_unit' => 'l',
+            'consumption_unit' => 'l_per_100km',
+            'currency' => 'GBP',
+            'theme' => 'system',
+            'is_admin' => false,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->saveData();
+        $partner = $this->fetchRow("SELECT id FROM users WHERE username = '" . self::PARTNER . "'");
+        if (!is_array($partner)) {
+            throw new RuntimeException('Demo partner was not created.');
+        }
+        $partnerId = self::intValue($partner['id'] ?? $partner[0] ?? null);
+
+        $ids = $this->vehicleIds();
+        $hybrid = $ids['LK22 VXN'] ?? throw new RuntimeException('The demo hybrid is missing.');
+        $golf = $ids['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
+        $share = static fn (int $vehicle, string $level): array => [
+            'vehicle_id' => $vehicle,
+            'user_id' => $partnerId,
+            'level' => $level,
+            'can_see_costs' => false,
+            'notify' => $level === 'log',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+        $this->table('vehicle_shares')->insert([$share($hybrid, 'log'), $share($golf, 'view')])->saveData();
+
+        // The partner fills the hybrid up mid-month, between the owner's monthly readings.
+        $readings = array_values(array_filter(
+            $this->fetchAll(sprintf(
+                "SELECT reading_km, recorded_at FROM odometer_readings"
+                    . " WHERE vehicle_id = %d AND source = 'manual' ORDER BY recorded_at",
+                $hybrid,
+            )),
+            is_array(...),
+        ));
+        $fills = [];
+        for ($i = max(1, count($readings) - 6); $i < count($readings); $i++) {
+            $from = self::floatValue($readings[$i - 1]['reading_km'] ?? null);
+            $to = self::floatValue($readings[$i]['reading_km'] ?? null);
+            $recorded = $readings[$i - 1]['recorded_at'] ?? null;
+            $month = substr(is_string($recorded) ? $recorded : '', 0, 10);
+            $at = gmdate('Y-m-d H:i:s', (int) strtotime($month . ' +14 days 17:30'));
+            $litres = 30 + ($i % 4) * 2.5;
+            $price = 1.459 + ($i % 3) * 0.02;
+            $fills[] = [
+                'vehicle_id' => $hybrid,
+                'filled_at' => $at,
+                'odometer_km' => number_format(($from + $to) / 2, 3, '.', ''),
+                'fuel' => 'petrol',
+                'grade' => 'e10_95',
+                'volume' => number_format($litres, 3, '.', ''),
+                'price_per_unit' => number_format($price, 6, '.', ''),
+                'total_cost' => number_format(round($litres * $price, 2), 3, '.', ''),
+                'is_partial' => false,
+                'is_missed_previous' => false,
+                'station' => 'Tesco Extra',
+                'notes' => null,
+                'created_by' => $partnerId,
+                'created_at' => $at,
+                'updated_at' => $at,
+            ];
+        }
+        $this->table('fuel_entries')->insert($fills)->saveData();
+        $this->execute(sprintf(
+            'INSERT INTO odometer_readings'
+            . ' (vehicle_id, reading_km, recorded_at, source, note, fuel_entry_id, created_at, updated_at)'
+            . " SELECT vehicle_id, odometer_km, filled_at, 'fuel', NULL, id, created_at, updated_at FROM fuel_entries"
+            . ' WHERE created_by = %d',
+            $partnerId,
         ));
     }
 
@@ -1230,5 +1339,10 @@ final class DemoDataSeeder extends AbstractSeed
     private static function intValue(mixed $value): int
     {
         return is_numeric($value) ? (int) $value : 0;
+    }
+
+    private static function floatValue(mixed $value): float
+    {
+        return is_numeric($value) ? (float) $value : 0.0;
     }
 }
