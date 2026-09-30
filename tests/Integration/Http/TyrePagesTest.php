@@ -328,20 +328,21 @@ final class TyrePagesTest extends AppTestCase
         $this->startWithExistingTyres();
         $this->swapIntoANewSet();
         $service = $this->service($this->app, TyreService::class);
-        $tyre = array_values($service->tyres($this->car))[0];
+        $tyre = $service->tyres($this->car)[0];
         $change = $service->changes($this->car)[0];
         $set = $service->sets($this->car)[0];
 
         $pages = [
-            $this->base . '/' . $tyre->id . '/edit' => 'action="' . $this->base . '/' . $tyre->id . '/edit"',
-            $this->base . '/' . $tyre->id . '/delete' => 'action="' . $this->base . '/' . $tyre->id . '/delete"',
-            $this->base . '/changes/' . $change->id . '/edit' => 'action="' . $this->base . '/changes/' . $change->id . '/edit"',
-            $this->base . '/changes/' . $change->id . '/delete' => 'action="' . $this->base . '/changes/' . $change->id . '/delete"',
-            $this->base . '/sets/' . $set->id . '/edit' => 'action="' . $this->base . '/sets/' . $set->id . '/edit"',
+            $this->base . '/' . $tyre->id . '/edit',
+            $this->base . '/' . $tyre->id . '/delete',
+            $this->base . '/changes/' . $change->id . '/edit',
+            $this->base . '/changes/' . $change->id . '/delete',
+            $this->base . '/sets/' . $set->id . '/edit',
         ];
-        foreach ($pages as $url => $action) {
+        foreach ($pages as $url) {
+            $action = 'action="' . $url . '"';
             $page = self::body($this->browser->get($url));
-            self::assertStringContainsString('class="back-link"', $page, $url . ': the page is whole without the header');
+            self::assertStringContainsString('class="back-link"', $page, $url . ': the whole page without the header');
             self::assertStringContainsString($action, $page, $url);
 
             $modal = $this->browser->get($url, self::MODAL);
@@ -365,7 +366,8 @@ final class TyrePagesTest extends AppTestCase
         self::assertStringContainsString('href="' . $this->base . '/' . $tyre->id . '/edit" data-modal', $tab, 'the tyre cards');
 
         $edit = self::body($this->browser->get($this->base . '/' . $tyre->id . '/edit', self::MODAL));
-        self::assertStringContainsString('href="' . $this->base . '/' . $tyre->id . '/delete" data-modal', $edit, 'Delete loads into the dialog');
+        $delete = 'href="' . $this->base . '/' . $tyre->id . '/delete" data-modal';
+        self::assertStringContainsString($delete, $edit, 'Delete loads into the dialog');
         $changeEdit = self::body($this->browser->get($this->base . '/changes/' . $change->id . '/edit', self::MODAL));
         self::assertStringContainsString('href="' . $this->base . '/changes/' . $change->id . '/delete" data-modal', $changeEdit);
     }
@@ -375,7 +377,7 @@ final class TyrePagesTest extends AppTestCase
         $this->startWithExistingTyres();
         $this->swapIntoANewSet();
         $service = $this->service($this->app, TyreService::class);
-        $tyre = array_values($service->tyres($this->car))[0];
+        $tyre = $service->tyres($this->car)[0];
         $set = $service->sets($this->car)[0];
 
         $bad = $this->browser->post($this->base . '/' . $tyre->id . '/edit', ['dot' => '5423'], headers: self::MODAL);
@@ -387,7 +389,11 @@ final class TyrePagesTest extends AppTestCase
         self::assertSame(204, $saved->getStatusCode(), self::body($saved));
         self::assertSame($this->base, $saved->getHeaderLine('X-Logbook-Location'));
 
-        $renamed = $this->browser->post($this->base . '/sets/' . $set->id . '/edit', ['name' => 'Winter wheels', 'location' => '', 'notes' => ''], headers: self::MODAL);
+        $renamed = $this->browser->post(
+            $this->base . '/sets/' . $set->id . '/edit',
+            ['name' => 'Winter wheels', 'location' => '', 'notes' => ''],
+            headers: self::MODAL,
+        );
         self::assertSame(204, $renamed->getStatusCode(), self::body($renamed));
 
         $deleted = $this->browser->post($this->base . '/' . $tyre->id . '/delete', headers: self::MODAL);
@@ -408,7 +414,8 @@ final class TyrePagesTest extends AppTestCase
         $edit = $this->base . '/changes/' . $change->id . '/edit?return=' . urlencode($history);
 
         $page = self::body($this->browser->get('/vehicles/' . $this->car->id . '/history'));
-        self::assertMatchesRegularExpression('#href="' . preg_quote($this->base . '/changes/' . $change->id . '/edit?return=', '#') . '[^"]+" data-modal#', $page);
+        $link = preg_quote($this->base . '/changes/' . $change->id . '/edit?return=', '#');
+        self::assertMatchesRegularExpression('#href="' . $link . '[^"]+" data-modal#', $page);
 
         $form = self::body($this->browser->get($edit, self::MODAL));
         self::assertStringContainsString('name="return" value="' . htmlspecialchars($history) . '"', $form);

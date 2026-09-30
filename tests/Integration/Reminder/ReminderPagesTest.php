@@ -281,11 +281,13 @@ final class ReminderPagesTest extends ReminderTestCase
         self::assertStringContainsString('data-modal-fragment', $form);
         self::assertStringNotContainsString('class="back-link"', $form);
 
-        $invalid = $browser->post('/reminders/new', ['vehicle_id' => (string) $golf->id, 'title' => '', 'due_on' => '', 'lead_time_days' => '7'], headers: $modal);
+        $fields = ['vehicle_id' => (string) $golf->id, 'title' => '', 'due_on' => '', 'lead_time_days' => '7'];
+        $invalid = $browser->post('/reminders/new', $fields, headers: $modal);
         self::assertSame(422, $invalid->getStatusCode());
         self::assertStringContainsString('data-modal-fragment', self::body($invalid));
 
-        $created = $browser->post('/reminders/new', ['vehicle_id' => (string) $golf->id, 'title' => 'Pay road tax', 'due_on' => '2026-10-01', 'lead_time_days' => '7'], headers: $modal);
+        $fields = ['title' => 'Pay road tax', 'due_on' => '2026-10-01'] + $fields;
+        $created = $browser->post('/reminders/new', $fields, headers: $modal);
         self::assertSame(204, $created->getStatusCode());
         self::assertSame('/reminders', $created->getHeaderLine('X-Logbook-Location'));
     }

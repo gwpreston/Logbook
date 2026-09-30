@@ -1394,7 +1394,7 @@ return [
             'gotify_token_hint' => 'Optional. Dein eigenes Token auf dem Gotify des Servers ersetzt für dich GOTIFY_TOKEN.',
             'gotify_token_hint_member' => 'Ein Anwendungstoken auf dem Gotify dieses Servers. Das Token des Servers ist nur für Admins.',
             'digest' => 'Monatliche Übersicht',
-            'digest_hint' => 'Zu Monatsbeginn eine Zusammenfassung von allem, was in diesem Monat fällig ist.',
+            'digest_hint' => 'Zu Monatsbeginn eine Zusammenfassung von allem, was in diesem Monat fällig ist. Sie wird nur gesendet, wenn ein Kanal eingerichtet ist und etwas fällig ist.',
             'when_sent' => 'Der Server prüft alle 15 Minuten. Jede Erinnerung wird einmal gesendet, wenn sie fällig wird, und noch einmal, wenn sie überfällig ist.',
             'save' => 'Einstellungen speichern',
             'saved' => 'Deine Einstellungen für Erinnerungen wurden gespeichert.',

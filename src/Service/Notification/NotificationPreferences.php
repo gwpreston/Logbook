@@ -27,6 +27,16 @@ final readonly class NotificationPreferences
     ) {
     }
 
+    /**
+     * What a user created by setup or an invitation starts with (Phase
+     * 21.1): the digest on, everything else the default. Users from before
+     * 2.1.0 have no stored row or an explicit "off", and keep it.
+     */
+    public static function forNewUser(): self
+    {
+        return new self(digest: true);
+    }
+
     public function isEnabled(string $channelKey): bool
     {
         return $this->channels === null || in_array($channelKey, $this->channels, true);

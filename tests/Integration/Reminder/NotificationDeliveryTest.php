@@ -109,6 +109,7 @@ final class NotificationDeliveryTest extends ReminderTestCase
         $app = $this->createRecordingApp();
         $clock = $this->pinClock($app, self::NOW);
         $this->signedIn($app);
+        $this->ownerFromBefore21($app);
         $this->document($app, $this->vehicle($app), '2026-10-09');
 
         $this->runTasks($app);
@@ -135,6 +136,7 @@ final class NotificationDeliveryTest extends ReminderTestCase
         $app = $this->createRecordingApp();
         $this->pinClock($app, self::NOW);
         $this->signedIn($app);
+        $this->ownerFromBefore21($app);
         $golf = $this->vehicle($app);
         $this->document($app, $golf, '2026-10-09');
         $this->document($app, $golf, '2026-09-20', ComplianceType::Inspection, null, 'MOT');
@@ -283,11 +285,12 @@ final class NotificationDeliveryTest extends ReminderTestCase
         $app = $this->createRecordingApp();
         $clock = $this->pinClock($app, '2026-10-01T07:00:00Z');
         $browser = $this->signedIn($app);
+        $this->ownerFromBefore21($app);
         $golf = $this->vehicle($app);
         $this->document($app, $golf, '2026-10-25');
         $this->schedule($app, $golf, 'Annual service', '2025-12-15');
         $this->runTasks($app);
-        self::assertSame([], $this->digests(), 'off by default');
+        self::assertSame([], $this->digests(), 'off for a user from before 2.1.0 (new users: DigestDefaultTest)');
 
         $browser->post('/settings/reminders', [
             'schedule_days' => '30',

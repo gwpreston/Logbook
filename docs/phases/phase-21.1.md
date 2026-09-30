@@ -77,16 +77,17 @@ have, because the migration writes an explicit "off" for anyone without a
 stored choice. See *Open questions*.
 
 ### Tasks
-- [ ] Change the default in the settings service and the Settings →
+- [x] Change the default in the settings service and the Settings →
       Reminders and notifications → *Notifications* card.
-- [ ] Setup and invitation (Phase 19) create users with the digest on.
-- [ ] Migration: store `digest = false` for every existing user with no
+- [x] Setup and invitation (Phase 19) create users with the digest on.
+- [x] ~~Migration: store `digest = false` for every existing user with no
       stored value. Rollback leaves those rows alone: an explicit "off"
       behaves exactly like the old default, so nothing changes on the way
-      back.
-- [ ] The card's hint says the digest is only sent when a channel is set up
+      back.~~ Not needed; see *Changed while building it*.
+
+- [x] The card's hint says the digest is only sent when a channel is set up
       and something is due, as today.
-- [ ] Tests: a new user has it on; an upgraded user without a choice keeps
+- [x] Tests: a new user has it on; an upgraded user without a choice keeps
       it off; an explicit choice is never changed; a user with the digest on
       but no configured channel gets nothing and no error.
 
@@ -221,3 +222,16 @@ as a *Registration* document. Decided 2026-09-30 (Phase 20 review): a hint.
 - **Drop zones on CSV import and restore:** wanted, or attachments and the
   vehicle form only?
   *Decided 2026-09-30: yes, the same macro on both.*
+
+## Changed while building it
+
+- **The digest default has no migration.** Setup and invitations store
+  `digest: true` with each new account, and a missing row still reads as
+  "off". Existing users are untouched by construction, rollback has
+  nothing to undo, and restoring a pre-2.1 backup can't switch anyone's
+  digest on (a migration that wrote "off" wouldn't have covered that).
+  Tests that count messages start from a pre-2.1 owner
+  (`ReminderTestCase::ownerFromBefore21()`).
+- **The audit added the manual reminder form** to the modal forms (§5).
+  Every other form without `modal_body` stays a page, with the reason in
+  spec §5.

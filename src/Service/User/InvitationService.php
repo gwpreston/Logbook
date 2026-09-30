@@ -11,6 +11,7 @@ use Logbook\Repository\InvitationRepository;
 use Logbook\Repository\SessionRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Auth\SetupData;
+use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Security\PasswordHasher;
@@ -31,6 +32,7 @@ final readonly class InvitationService
         private Transaction $transaction,
         private ClockInterface $clock,
         private AppSettings $app,
+        private ReminderSettingsStore $settings,
     ) {
     }
 
@@ -72,7 +74,7 @@ final readonly class InvitationService
                 return null;
             }
 
-            return $this->users->insert(
+            $user = $this->users->insert(
                 $invitation->username,
                 $this->hasher->hash($data->password),
                 $data->displayName,
@@ -80,6 +82,9 @@ final readonly class InvitationService
                 $now,
                 $invitation->isAdmin,
             );
+            $this->settings->startNewUser($user->id);
+
+            return $user;
         });
     }
 

@@ -1395,7 +1395,7 @@ return [
             'gotify_token_hint' => 'Optional. Your own token on the server’s Gotify replaces GOTIFY_TOKEN for you.',
             'gotify_token_hint_member' => 'An application token on this server’s Gotify. The server’s token is for admins only.',
             'digest' => 'Monthly digest',
-            'digest_hint' => 'At the start of each month, a summary of everything due that month.',
+            'digest_hint' => 'At the start of each month, a summary of everything due that month. It is sent only when a channel is set up and something is due.',
             'when_sent' => 'The server checks every 15 minutes. Each reminder is sent once when it comes due and once more if it becomes overdue.',
             'save' => 'Save settings',
             'saved' => 'Your reminder settings were saved.',

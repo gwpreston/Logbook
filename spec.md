@@ -1621,11 +1621,13 @@ Extensible channel interface so more can be added.
   fails, that recipient's claims are deleted so the next run retries; a
   partial failure is logged and not retried (the channels that succeeded
   must not repeat). One recipient failing never affects another.
-- **Digest** (optional, per user; on by default from 2.1.0 for new users,
-  created by setup or invitation. Upgrading to 2.1.0 stores an explicit
-  "off" for every existing user with no stored choice, so nobody starts
-  getting a digest they didn't choose; rolling back leaves those rows,
-  which behave as the old default. It needs a channel set up, as today):
+- **Digest** (optional, per user; on by default from 2.1.0 for new users:
+  setup and accepting an invitation store `digest: true` with the new
+  account. The stored default for a missing row stays "off", so users from
+  before 2.1.0, and users restored from an older backup, keep what they
+  had and nobody starts getting a digest they didn't choose. No migration.
+  The card's hint says it is sent only when a channel is set up and
+  something is due):
   on the first run of each
   month in the user's time zone, covering their recipient vehicles, one summary of every open reminder due by the end
   of that month, overdue ones included. Nothing is sent when nothing is due.
