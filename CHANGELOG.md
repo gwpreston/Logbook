@@ -4,6 +4,8 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [Unreleased]
+
 ## [1.10.0] — 2026-09-30
 
 Phases 18.1 and 18.2: one access policy, and a REST API. Home Assistant,
@@ -1005,7 +1007,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/gwpreston16/Logbook/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/gwpreston16/Logbook/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/gwpreston16/Logbook/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/gwpreston16/Logbook/compare/v1.6.0...v1.7.0
