@@ -52,7 +52,7 @@
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'form.save'|trans }}</button>
                 <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
-                <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('tyres.delete', {id: vehicle.id, tyre: tyre.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('tyres.delete', {id: vehicle.id, tyre: tyre.id}) }}" data-modal>{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
             </div>
         </form>
         {% endblock %}

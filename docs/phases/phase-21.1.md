@@ -41,17 +41,17 @@ intervals, documents, expenses and the *Log entry* chooser. The tyre
 Add "tyres, tyre changes and tyre sets" to §5's list.
 
 ### Tasks
-- [ ] Add `modal_body` and `heading` blocks to the tyre edit, change edit,
+- [x] Add `modal_body` and `heading` blocks to the tyre edit, change edit,
       set edit and the three delete-confirmation templates.
-- [ ] Add `data-modal` to their links (Tyres tab cards and lists, History
+- [x] Add `data-modal` to their links (Tyres tab cards and lists, History
       rows, *Recent activity*); `return` from History.
-- [ ] Their Actions keep working unchanged under `ModalMiddleware`: 422
+- [x] Their Actions keep working unchanged under `ModalMiddleware`: 422
       re-renders inside the dialog, redirect → 204 with
       `X-Logbook-Location`.
-- [ ] **Audit:** list every form template without `modal_body` (settings
+- [x] **Audit:** list every form template without `modal_body` (settings
       pages excepted). Add each missing entry form here, or record why it
       is a page (for example CSV import's multi-step flow).
-- [ ] Tests: each route answers `X-Logbook-Modal: 1` with only the form;
+- [x] Tests: each route answers `X-Logbook-Modal: 1` with only the form;
       a validation error in the modal returns 422 with the form; a save
       returns 204 with the location; without the header, the full page
       renders as before. The History `return` round-trip works.

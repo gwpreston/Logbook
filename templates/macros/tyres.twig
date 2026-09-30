@@ -87,7 +87,7 @@
                 {%- if vehicle.isArchived() -%}
                     {{ tyres.name(tyre) }}
                 {%- else -%}
-                    <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}">{{ tyres.name(tyre) }}</a>
+                    <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}" data-modal>{{ tyres.name(tyre) }}</a>
                 {%- endif -%}
             </p>
             <p class="tyre-card__meta">
@@ -124,7 +124,7 @@
                 {%- if vehicle.isArchived() -%}
                     {{ tyres.name(tyre) }}
                 {%- else -%}
-                    <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}">{{ tyres.name(tyre) }}</a>
+                    <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}" data-modal>{{ tyres.name(tyre) }}</a>
                 {%- endif %}
                 {{ tyres.season(tyre) }}
             </span>

@@ -4,7 +4,8 @@
 
 {#
  # Confirm deleting a tyre change (works without JS), naming the tyres that
- # go with it; a refusal (later changes depend on it) is shown here.
+ # go with it; a refusal (later changes depend on it) is shown here. In the
+ # desktop modal (spec.md §5) only the text and the buttons are shown.
  #}
 {% set active_nav = 'garage' %}
 {% set heading = 'tyre.change.delete_title'|trans %}
@@ -17,6 +18,7 @@
 
         <section class="card" aria-labelledby="delete-heading">
             <h1 id="delete-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            {% block modal_body %}
             {% if error %}
                 <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ trans(error.key, error.params) }}</span></div>
             {% endif %}
@@ -34,8 +36,9 @@
                     {{ ui.csrf(csrf) }}
                     <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'form.delete_confirm'|trans }}</button>
                 </form>
-                <a class="btn btn--ghost" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--ghost" href="{{ url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
             </div>
+            {% endblock %}
         </section>
     </div>
 {% endblock %}

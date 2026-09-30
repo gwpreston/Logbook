@@ -217,8 +217,12 @@ disagree):
   with its own URL. The add / edit forms for vehicles, fill-ups, odometer
   readings, service records, service intervals, documents and expenses,
   tyres, tyre changes and tyre sets (with their delete confirmations,
-  Phase 21.1), and the *Log entry* chooser (§7.3), are reached by links
-  marked `data-modal`.
+  Phase 21.1), manual reminders (Phase 21.1), and the *Log entry* chooser
+  (§7.3), are reached by links marked `data-modal`. Pages that stay pages:
+  sign-in, setup and invitations; CSV import and backup restore (several
+  steps, each with a preview); deleting a vehicle (§7.1: its own page);
+  sharing and transfer (several forms on one page); and the GET filter
+  forms (reports, print options, sale pack options).
   With JS **and** a wide viewport (>= 960px, the sidebar breakpoint), such a
   link opens a native `<dialog>` instead: the page is fetched with the
   request header `X-Logbook-Modal: 1`, and the same Action and template

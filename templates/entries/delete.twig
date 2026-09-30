@@ -4,7 +4,8 @@
  # Confirmation page for deleting one log entry (works without JS).
  # Expects: vehicle (or back_label, a translation key), title/body
  # (translation keys), params (for both), action and cancel ([route name,
- # route params]); optionally nav (the active navigation entry).
+ # route params]); optionally nav (the active navigation entry). In the
+ # desktop modal (spec.md §5) only the text and the buttons are shown.
  #}
 
 {% set active_nav = nav|default('garage') %}
@@ -18,14 +19,16 @@
 
         <section class="card" aria-labelledby="delete-heading">
             <h1 id="delete-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            {% block modal_body %}
             <p>{{ body|trans(params) }}</p>
             <div class="btn-row">
                 <form method="post" action="{{ url_for(action[0], action[1]) }}">
                     {{ ui.csrf(csrf) }}
                     <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'form.delete_confirm'|trans }}</button>
                 </form>
-                <a class="btn btn--ghost" href="{{ url_for(cancel[0], cancel[1]) }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--ghost" href="{{ url_for(cancel[0], cancel[1]) }}">{{ 'form.cancel'|trans }}</a>
             </div>
+            {% endblock %}
         </section>
     </div>
 {% endblock %}

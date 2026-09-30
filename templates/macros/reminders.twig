@@ -85,7 +85,7 @@
                 </form>
             {% endif %}
             {% if reminder.source.value == 'manual' and can_vehicle(entry.vehicle, 'manage') %}
-                <a class="btn btn--ghost" href="{{ url_for('reminders.edit', {reminder: reminder.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}<span class="visually-hidden">: {{ name }}</span></a>
+                <a class="btn btn--ghost" href="{{ url_for('reminders.edit', {reminder: reminder.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}<span class="visually-hidden">: {{ name }}</span></a>
             {% endif %}
         </div>
         {% endif %}
