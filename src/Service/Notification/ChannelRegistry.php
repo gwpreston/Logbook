@@ -68,15 +68,16 @@ final readonly class ChannelRegistry
     }
 
     /**
-     * The channels to use for an owner: enabled by them AND configured here.
+     * The channels to use for a person: enabled by them AND able to reach
+     * them (configured here, with their own details or an admin's defaults).
      *
      * @return list<NotificationChannel>
      */
-    public function active(NotificationPreferences $preferences): array
+    public function active(NotificationPreferences $preferences, Recipient $recipient): array
     {
         return array_values(array_filter(
             $this->channels,
-            static fn (NotificationChannel $c): bool => $preferences->isEnabled($c->key()) && $c->isConfigured(),
+            static fn (NotificationChannel $c): bool => $preferences->isEnabled($c->key()) && $c->reaches($recipient),
         ));
     }
 }

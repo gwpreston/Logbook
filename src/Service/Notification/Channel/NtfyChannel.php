@@ -46,14 +46,21 @@ final readonly class NtfyChannel implements NotificationChannel
         return $this->server !== null && $this->topic !== null;
     }
 
+    public function reaches(Recipient $recipient): bool
+    {
+        return $this->target($recipient) !== null;
+    }
+
     public function send(Notification $notification, Recipient $recipient): DeliveryResult
     {
-        if ($this->server === null || $this->topic === null) {
-            return DeliveryResult::failed($this->key(), 'NTFY_URL is not a topic URL.');
+        $target = $this->target($recipient);
+        if ($target === null) {
+            return DeliveryResult::failed($this->key(), 'No ntfy topic (a personal one, or NTFY_URL for admins).');
         }
+        [$server, $topic, $token] = $target;
 
         $payload = [
-            'topic' => $this->topic,
+            'topic' => $topic,
             'title' => $notification->title,
             'message' => $notification->message,
             'priority' => $notification->urgent ? 4 : 3,
@@ -64,11 +71,37 @@ final readonly class NtfyChannel implements NotificationChannel
         }
 
         $options = ['json' => $payload];
-        if ($this->token !== null) {
-            $options['auth_bearer'] = $this->token;
+        if ($token !== null) {
+            $options['auth_bearer'] = $token;
         }
 
-        return HttpDelivery::post($this->http, $this->key(), $this->server . '/', $options);
+        return HttpDelivery::post($this->http, $this->key(), $server . '/', $options);
+    }
+
+    /**
+     * Where this person's messages go: their own topic URL, else the
+     * instance's for an admin (with NTFY_TOKEN, which belongs to it).
+     *
+     * @return array{string, string, string|null}|null server, topic, token
+     */
+    private function target(Recipient $recipient): ?array
+    {
+        [$server, $topic] = self::split($recipient->ntfyUrl);
+        if ($server !== null && $topic !== null) {
+            // The instance token only goes to the instance's own server.
+            return [$server, $topic, $server === $this->server ? $this->token : null];
+        }
+        if ($recipient->isAdmin && $this->server !== null && $this->topic !== null) {
+            return [$this->server, $this->topic, $this->token];
+        }
+
+        return null;
+    }
+
+    /** Whether a personal topic URL is one this channel can use (Settings checks it). */
+    public static function isTopicUrl(string $url): bool
+    {
+        return self::split($url)[0] !== null;
     }
 
     /**

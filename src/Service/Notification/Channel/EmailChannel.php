@@ -42,11 +42,16 @@ final readonly class EmailChannel implements NotificationChannel
         return $this->config->isConfigured();
     }
 
+    public function reaches(Recipient $recipient): bool
+    {
+        return $this->isConfigured() && $this->addressOf($recipient) !== null;
+    }
+
     public function send(Notification $notification, Recipient $recipient): DeliveryResult
     {
-        $to = $recipient->email ?? $this->config->to;
+        $to = $this->addressOf($recipient);
         if ($to === null) {
-            return DeliveryResult::failed($this->key(), 'No email address (set one in Settings or MAIL_TO).');
+            return DeliveryResult::failed($this->key(), 'No email address (set one in Settings, or MAIL_TO for admins).');
         }
 
         $email = (new Email())
@@ -63,5 +68,11 @@ final readonly class EmailChannel implements NotificationChannel
         }
 
         return DeliveryResult::delivered($this->key());
+    }
+
+    /** Their own address; MAIL_TO is an admin's default only (spec.md §7.11). */
+    private function addressOf(Recipient $recipient): ?string
+    {
+        return $recipient->email ?? ($recipient->isAdmin ? $this->config->to : null);
     }
 }

@@ -18,6 +18,7 @@ use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Tyre\TyreReminderTitle;
 use Logbook\Service\Tyre\TyreService;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
 
@@ -25,7 +26,9 @@ use Psr\Clock\ClockInterface;
  * Reconciles the stored reminders of the vehicles a user can see with their sources and with today
  * (spec.md §7.6 Sync): adds, updates and deletes generated reminders, and
  * moves every open reminder to the status today calls for. Writes only rows
- * that differ, so running it on every read is cheap.
+ * that differ, so running it on every read is cheap. Each vehicle is judged
+ * by its owner's lead times and today (Phase 19), so a shared vehicle's
+ * reminders never depend on who looked.
  */
 final readonly class ReminderSync
 {
@@ -41,14 +44,12 @@ final readonly class ReminderSync
         private TyreService $tyres,
         private TyreReminderTitle $tyreTitles,
         private VehicleAccess $access,
+        private UserDirectory $directory,
     ) {
     }
 
     public function sync(User $user): void
     {
-        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
-        $preferences = $this->settings->reminderPreferences($user->id);
-
         $all = $this->access->visibleVehicleIds($user, VehicleScope::All);
         $active = $this->access->visibleVehicleIds($user, VehicleScope::Active);
 
@@ -71,7 +72,12 @@ final readonly class ReminderSync
         }
 
         // Archived vehicles raise nothing, so their reminders fall out below.
+        $owners = [];
         foreach ($this->vehicles->listByIds($active) as $vehicle) {
+            $owner = $vehicle->userId === $user->id ? $user : $this->directory->find($vehicle->userId) ?? $user;
+            $owners[$vehicle->id] = $owner;
+            $today = LocalTime::today($this->clock, $owner->preferences->timeZone());
+            $preferences = $this->settings->reminderPreferences($owner->id);
             $wanted = [];
             if ($withSchedules) {
                 $schedules = $this->schedules->states(
@@ -88,12 +94,12 @@ final readonly class ReminderSync
                 $wanted = [...$wanted, ...ReminderGenerator::fromDocuments($vehicle->id, $documents, $today, $preferences)];
             }
             if ($withTyres) {
-                $verdict = $this->tyres->verdict($vehicle, $user);
+                $verdict = $this->tyres->verdict($vehicle, $owner);
                 $tyres = $verdict->isJudgeable() ? ReminderGenerator::fromTyres(
                     $vehicle->id,
                     $verdict,
                     $this->tyres->latestChangeId($vehicle),
-                    $this->tyreTitles->title($user, $vehicle, $verdict),
+                    $this->tyreTitles->title($owner, $vehicle, $verdict),
                     $preferences,
                 ) : null;
                 if ($tyres !== null) {
@@ -116,6 +122,8 @@ final readonly class ReminderSync
             if ($manual->dueOn === null) {
                 continue;
             }
+            $owner = $owners[$manual->vehicleId] ?? $user;
+            $today = LocalTime::today($this->clock, $owner->preferences->timeZone());
             $status = ReminderRules::statusForDate($manual->dueOn, $today, $manual->leadTimeDays);
             if ($status !== $manual->status) {
                 $this->reminders->setStatus($manual->id, $status, $this->clock->now());

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Reminder;
 
+use Logbook\Service\Notification\Channel\NtfyChannel;
 use Logbook\Service\Notification\NotificationPreferences;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
@@ -12,11 +13,14 @@ use Logbook\Support\Validation\Validator;
 
 /**
  * Settings → Reminders form: lead times (the distance in the owner's unit),
- * which channels to use, their email address and the digest.
+ * which channels to use, their email address, personal ntfy topic URL and
+ * Gotify token (Phase 19), and the digest.
  */
 final class ReminderSettingsForm
 {
     private const int EMAIL_MAX = 254;
+    private const int URL_MAX = 500;
+    private const int TOKEN_MAX = 200;
     private const int KM_SCALE = 3;
 
     /**
@@ -34,6 +38,8 @@ final class ReminderSettingsForm
             'document_days' => (string) $reminders->documentDays,
             'manual_days' => (string) $reminders->manualDays,
             'email' => $notifications->email ?? '',
+            'ntfy_url' => $notifications->ntfyUrl ?? '',
+            'gotify_token' => $notifications->gotifyToken ?? '',
         ];
     }
 
@@ -56,6 +62,11 @@ final class ReminderSettingsForm
         if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $validator->addError('email', 'validation.email');
         }
+        $ntfyUrl = $validator->string('ntfy_url', false, self::URL_MAX);
+        if ($ntfyUrl !== null && !NtfyChannel::isTopicUrl($ntfyUrl)) {
+            $validator->addError('ntfy_url', 'reminders.settings.ntfy_url_invalid');
+        }
+        $gotifyToken = $validator->string('gotify_token', false, self::TOKEN_MAX);
 
         $submitted = $input['channels'] ?? [];
         $channels = is_array($submitted)
@@ -82,7 +93,7 @@ final class ReminderSettingsForm
                 $documentDays,
                 $manualDays,
             ),
-            new NotificationPreferences($channels, $email, $validator->checkbox('digest')),
+            new NotificationPreferences($channels, $email, $validator->checkbox('digest'), $ntfyUrl, $gotifyToken),
         ];
     }
 }

@@ -45,8 +45,8 @@ final class NotificationDispatcherTest extends TestCase
         $gotify = new FakeChannel('gotify', configured: false);
         $registry = new ChannelRegistry([$email, $gotify]);
 
-        self::assertSame([$email], $registry->active(new NotificationPreferences()));
-        self::assertSame([], $registry->active(new NotificationPreferences([])), 'all turned off');
+        self::assertSame([$email], $registry->active(new NotificationPreferences(), self::recipient()));
+        self::assertSame([], $registry->active(new NotificationPreferences([]), self::recipient()), 'all turned off');
         self::assertSame(['email'], $registry->configuredKeys());
     }
 

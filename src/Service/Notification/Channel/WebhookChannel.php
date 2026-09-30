@@ -18,7 +18,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  *
  *   {"event": "reminders"|"digest"|"test", "title": …, "message": …,
  *    "url": …, "urgent": bool, "items": [{"reminder_id", "title",
- *    "detail", "status", "due_on"}]}
+ *    "detail", "status", "due_on"}], "user": {"id", "username",
+ *    "display_name"}}
  */
 final readonly class WebhookChannel implements NotificationChannel
 {
@@ -45,6 +46,12 @@ final readonly class WebhookChannel implements NotificationChannel
         return $this->url !== null;
     }
 
+    /** Instance-level: it receives every recipient's notifications, naming them. */
+    public function reaches(Recipient $recipient): bool
+    {
+        return $this->isConfigured();
+    }
+
     public function send(Notification $notification, Recipient $recipient): DeliveryResult
     {
         if ($this->url === null) {
@@ -59,6 +66,7 @@ final readonly class WebhookChannel implements NotificationChannel
                 'url' => $notification->url,
                 'urgent' => $notification->urgent,
                 'items' => array_map(static fn (NotificationItem $i): array => $i->toArray(), $notification->items),
+                'user' => ['id' => $recipient->userId, 'username' => $recipient->username, 'display_name' => $recipient->name],
             ],
         ]);
     }

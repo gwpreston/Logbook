@@ -20,6 +20,10 @@ final readonly class NotificationPreferences
         public ?string $email = null,
         /** Send the monthly "what's due this month" digest. */
         public bool $digest = false,
+        /** A personal ntfy topic URL (Phase 19); null = NTFY_URL, for admins. */
+        public ?string $ntfyUrl = null,
+        /** A personal Gotify application token (Phase 19); null = GOTIFY_TOKEN, for admins. */
+        public ?string $gotifyToken = null,
     ) {
     }
 
@@ -32,20 +36,34 @@ final readonly class NotificationPreferences
     {
         $value = is_array($value) ? $value : [];
         $channels = $value['channels'] ?? null;
-        $email = $value['email'] ?? null;
+        $text = static fn (string $key): ?string => is_string($value[$key] ?? null) && $value[$key] !== '' ? $value[$key] : null;
 
         return new self(
             is_array($channels) ? array_values(array_filter($channels, is_string(...))) : null,
-            is_string($email) && $email !== '' ? $email : null,
+            $text('email'),
             ($value['digest'] ?? false) === true,
+            $text('ntfy_url'),
+            $text('gotify_token'),
         );
     }
 
     /**
-     * @return array{channels: list<string>|null, email: string|null, digest: bool}
+     * @return array{
+     *     channels: list<string>|null,
+     *     email: string|null,
+     *     digest: bool,
+     *     ntfy_url: string|null,
+     *     gotify_token: string|null,
+     * }
      */
     public function toArray(): array
     {
-        return ['channels' => $this->channels, 'email' => $this->email, 'digest' => $this->digest];
+        return [
+            'channels' => $this->channels,
+            'email' => $this->email,
+            'digest' => $this->digest,
+            'ntfy_url' => $this->ntfyUrl,
+            'gotify_token' => $this->gotifyToken,
+        ];
     }
 }

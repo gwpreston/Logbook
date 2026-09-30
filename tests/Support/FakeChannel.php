@@ -44,6 +44,11 @@ final class FakeChannel implements NotificationChannel
         return $this->configured;
     }
 
+    public function reaches(Recipient $recipient): bool
+    {
+        return $this->configured;
+    }
+
     public function send(Notification $notification, Recipient $recipient): DeliveryResult
     {
         $this->sent[] = $notification;

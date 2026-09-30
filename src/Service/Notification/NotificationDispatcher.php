@@ -8,8 +8,8 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Sends a notification through every channel the owner has enabled and the
- * server has configured (spec.md §7.11). Works off the registry only: it
+ * Sends a notification through every channel the person has enabled and
+ * that can reach them (spec.md §7.11). Works off the registry only: it
  * never names a concrete channel, so adding one never touches this class.
  * One failing channel never stops the others.
  */
@@ -27,7 +27,7 @@ final readonly class NotificationDispatcher
         NotificationPreferences $preferences,
     ): DispatchReport {
         $results = [];
-        foreach ($this->channels->active($preferences) as $channel) {
+        foreach ($this->channels->active($preferences, $recipient) as $channel) {
             try {
                 $result = $channel->send($notification, $recipient);
             } catch (Throwable $e) {

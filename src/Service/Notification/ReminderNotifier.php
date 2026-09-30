@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Service\Notification;
 
 use DateTimeImmutable;
-use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
@@ -20,14 +19,18 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * The reminder part of the scheduled task (spec.md §7.11), for one owner:
- * sync their reminders, send whatever has newly become due or overdue, and
- * the monthly digest when it is time.
+ * The reminder part of the scheduled task (spec.md §7.11), for one user:
+ * sync the reminders they can see, send what has newly become due or
+ * overdue on the vehicles they receive reminders for (their own, and those
+ * shared with *Send me its reminders*), and the monthly digest when it is
+ * time. Each run is the user's alone, in their language, units and time
+ * zone, through the channels that reach them.
  *
- * Idempotent: each reminder is claimed (ReminderRepository::claim()) for
- * its current status before anything is sent, so a re-run — or a run
- * overlapping this one — never sends it again. If no channel delivers, the
- * claims are released for the next run to retry.
+ * Idempotent: each reminder is claimed for this user and its current
+ * status (ReminderRepository::claim(), a row in `reminder_deliveries`)
+ * before anything is sent, so a re-run, or a run overlapping this one,
+ * never sends it to them again. If no channel delivers, their claims are
+ * released for the next run to retry; other recipients are not affected.
  */
 final readonly class ReminderNotifier
 {
@@ -47,17 +50,20 @@ final readonly class ReminderNotifier
 
     public function run(User $user): NotifierReport
     {
+        if (!$user->isActive()) {
+            return new NotifierReport(0, false);
+        }
         $this->sync->sync($user);
 
         $preferences = $this->settings->notificationPreferences($user->id);
-        if ($this->channels->active($preferences) === []) {
-            // Nothing can be delivered. Leave everything unclaimed, so it is
+        $recipient = Recipient::of($user, $preferences);
+        if ($this->channels->active($preferences, $recipient) === []) {
+            // Nothing can reach them. Leave everything unclaimed, so it is
             // sent once a channel is set up (if it is still due then).
             return new NotifierReport(0, false);
         }
 
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
-        $recipient = new Recipient($user->id, $user->displayName, $preferences->email);
 
         return new NotifierReport(
             $this->sendDue($user, $recipient, $preferences, $today),
@@ -75,8 +81,8 @@ final readonly class ReminderNotifier
         DateTimeImmutable $today,
     ): int {
         $claimed = array_values(array_filter(
-            $this->reminders->listAwaitingNotification($this->access->visibleVehicleIds($user, VehicleScope::Active)),
-            fn (Reminder $r): bool => $this->reminders->claim($r, $this->clock->now()),
+            $this->reminders->listAwaitingNotification($this->access->recipientVehicleIds($user), $user->id),
+            fn (Reminder $r): bool => $this->reminders->claim($r, $user->id, $this->clock->now()),
         ));
         if ($claimed === []) {
             return 0;
@@ -86,7 +92,7 @@ final readonly class ReminderNotifier
         // switched-off module): release those claims straight away.
         $entries = $this->service->entries($user, $claimed)['open'];
         $sending = array_map(static fn (ReminderEntry $e): int => $e->reminder->id, $entries);
-        $this->release(array_values(array_filter(
+        $this->release($user, array_values(array_filter(
             $claimed,
             static fn (Reminder $r): bool => !in_array($r->id, $sending, true),
         )));
@@ -100,13 +106,13 @@ final readonly class ReminderNotifier
 
         $report = $this->dispatcher->dispatch($this->composer->reminders($user, $entries, $today), $recipient, $preferences);
         if (!$report->anyDelivered()) {
-            $this->release($claimed);
+            $this->release($user, $claimed);
 
             return 0;
         }
 
         foreach ($claimed as $reminder) {
-            $this->reminders->recordDelivery($reminder, $report->deliveredChannels());
+            $this->reminders->recordDelivery($reminder, $user->id, $report->deliveredChannels(), $this->clock->now());
         }
         if ($report->failures() !== []) {
             $this->logger->warning('Reminders for user {user} were only partly delivered; failed channels are not retried.', [
@@ -118,9 +124,10 @@ final readonly class ReminderNotifier
     }
 
     /**
-     * The monthly digest, on the first run of a month in the owner's time
-     * zone. A month with nothing due counts as done; one whose digest could
-     * not be delivered is retried on the next run.
+     * The monthly digest, on the first run of a month in the user's time
+     * zone, of the vehicles they receive reminders for. A month with nothing
+     * due counts as done; one whose digest could not be delivered is retried
+     * on the next run.
      */
     private function sendDigest(
         User $user,
@@ -134,9 +141,8 @@ final readonly class ReminderNotifier
         }
 
         $endOfMonth = $today->modify('last day of this month');
-        $active = $this->access->visibleVehicleIds($user, VehicleScope::Active);
         $entries = array_values(array_filter(
-            $this->service->entries($user, $this->reminders->listForVehicles($active))['open'],
+            $this->service->entries($user, $this->reminders->listForVehicles($this->access->recipientVehicleIds($user)))['open'],
             static fn (ReminderEntry $e): bool => $e->reminder->status === ReminderStatus::Overdue
                 || ($e->reminder->dueOn !== null && $e->reminder->dueOn <= $endOfMonth),
         ));
@@ -157,12 +163,12 @@ final readonly class ReminderNotifier
     }
 
     /**
-     * @param list<Reminder> $claimed as they were before claim()
+     * @param list<Reminder> $claimed
      */
-    private function release(array $claimed): void
+    private function release(User $user, array $claimed): void
     {
         foreach ($claimed as $reminder) {
-            $this->reminders->release($reminder);
+            $this->reminders->release($reminder, $user->id);
         }
     }
 }

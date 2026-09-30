@@ -48,12 +48,14 @@
                                 {%- if not channel.configured %} disabled{% endif %}>
                             <span class="toggle__text">
                                 <span class="toggle__title">{{ channel.label|trans }}</span>
-                                <span class="toggle__hint">{{ (channel.configured ? 'reminders.settings.configured' : 'reminders.settings.not_configured')|trans }}</span>
+                                <span class="toggle__hint">{{ (not channel.configured ? 'reminders.settings.not_configured' : (channel.reaches ? 'reminders.settings.configured' : 'reminders.settings.needs_personal'))|trans }}</span>
                             </span>
                         </label>
                     {% endfor %}
                 </fieldset>
-                {{ ui.input('email', 'reminders.settings.email'|trans, values, errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: 'reminders.settings.email_hint'|trans}) }}
+                {{ ui.input('email', 'reminders.settings.email'|trans, values, errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: (is_admin ? 'reminders.settings.email_hint' : 'reminders.settings.email_hint_member')|trans}) }}
+                {{ ui.input('ntfy_url', 'reminders.settings.ntfy_url'|trans, values, errors, {type: 'url', optional: true, maxlength: 500, autocomplete: 'off', placeholder: 'https://ntfy.sh/my-topic', hint: (is_admin ? 'reminders.settings.ntfy_url_hint' : 'reminders.settings.ntfy_url_hint_member')|trans}) }}
+                {{ ui.input('gotify_token', 'reminders.settings.gotify_token'|trans, values, errors, {optional: true, maxlength: 200, autocomplete: 'off', hint: (is_admin ? 'reminders.settings.gotify_token_hint' : 'reminders.settings.gotify_token_hint_member')|trans}) }}
                 <label class="toggle">
                     <input type="checkbox" name="digest" value="1"{% if digest %} checked{% endif %}>
                     <span class="toggle__text">

@@ -7,6 +7,7 @@ namespace Logbook\Repository;
 use DateTimeImmutable;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\DBAL\Types\Type;
@@ -32,6 +33,7 @@ use Logbook\Support\Database\UtcDateTime;
 final readonly class ReminderRepository
 {
     private const string TABLE = 'reminders';
+    private const string DELIVERIES = 'reminder_deliveries';
     private const int KM_SCALE = 3;
 
     public function __construct(private Connection $connection)
@@ -102,20 +104,25 @@ final readonly class ReminderRepository
     }
 
     /**
-     * Reminders of these vehicles whose current status has not been sent
-     * out yet.
+     * Reminders of these vehicles whose current status has not been sent to
+     * this user yet (spec.md §7.11: once per status and recipient).
      *
      * @param list<int> $vehicleIds
      * @return list<Reminder>
      */
-    public function listAwaitingNotification(array $vehicleIds): array
+    public function listAwaitingNotification(array $vehicleIds, int $userId): array
     {
         if ($vehicleIds === []) {
             return [];
         }
+        $sent = $this->connection->createQueryBuilder()
+            ->select('1')
+            ->from(self::DELIVERIES, 'd')
+            ->where('d.reminder_id = ' . self::TABLE . '.id', 'd.user_id = :user', 'd.status = ' . self::TABLE . '.status');
         $query = $this->select()
             ->where('status IN (:notifiable)')
-            ->andWhere('notified_status IS NULL OR notified_status <> status')
+            ->andWhere('NOT EXISTS (' . $sent->getSQL() . ')')
+            ->setParameter('user', $userId, ParameterType::INTEGER)
             ->setParameter(
                 'notifiable',
                 [ReminderStatus::Due->value, ReminderStatus::Overdue->value],
@@ -207,6 +214,7 @@ final readonly class ReminderRepository
         $columns = ['status' => $status->value, 'updated_at' => $this->timestamp($now)] + self::generatedColumns($reminder);
         if ($newOccurrence) {
             $columns += self::clearedNotification() + ['closed_at' => null];
+            $this->clearDeliveries($id);
         }
 
         $this->connection->update(self::TABLE, $columns, ['id' => $id], [
@@ -250,6 +258,7 @@ final readonly class ReminderRepository
         ] + self::manualColumns($data);
         if ($newOccurrence) {
             $columns += self::clearedNotification() + ['closed_at' => null];
+            $this->clearDeliveries($id);
         }
 
         $this->connection->update(self::TABLE, $columns, ['id' => $id], [
@@ -277,60 +286,101 @@ final readonly class ReminderRepository
     }
 
     /**
-     * Take a reminder for sending in its current status. Succeeds for one
-     * caller only, and only while the status still awaits notification.
+     * Take a reminder for sending to one user in its current status, by
+     * writing its delivery row: the unique (reminder, user, status) lets one
+     * caller win. Never inside a transaction (a failed insert would abort a
+     * PostgreSQL one).
      */
-    public function claim(Reminder $reminder, DateTimeImmutable $now): bool
+    public function claim(Reminder $reminder, int $userId, DateTimeImmutable $now): bool
     {
-        $affected = $this->connection->createQueryBuilder()
-            ->update(self::TABLE)
-            ->set('notified_status', ':status')
-            ->set('last_notified_at', ':now')
-            ->where('id = :id', 'status = :status')
-            ->andWhere('notified_status IS NULL OR notified_status <> :status')
-            ->setParameter('status', $reminder->status->value)
-            ->setParameter('now', $this->timestamp($now))
-            ->setParameter('id', $reminder->id, ParameterType::INTEGER)
-            ->executeStatement();
+        try {
+            $this->connection->insert(self::DELIVERIES, [
+                'reminder_id' => $reminder->id,
+                'user_id' => $userId,
+                'status' => $reminder->status->value,
+                'created_at' => $this->timestamp($now),
+            ], ['reminder_id' => ParameterType::INTEGER, 'user_id' => ParameterType::INTEGER]);
+        } catch (UniqueConstraintViolationException) {
+            return false;
+        }
 
-        return $affected === 1;
+        return true;
     }
 
     /**
      * Undo claim() after nothing could be delivered, so the next run retries.
      */
-    public function release(Reminder $reminder): void
+    public function release(Reminder $reminder, int $userId): void
     {
-        $previousAt = $reminder->lastNotifiedAt === null ? null : $this->timestamp($reminder->lastNotifiedAt);
-
         $this->connection->createQueryBuilder()
-            ->update(self::TABLE)
-            ->set('notified_status', ':previous')
-            ->set('last_notified_at', ':previous_at')
-            ->where('id = :id', 'notified_status = :claimed')
-            ->setParameter('previous', $reminder->notifiedStatus?->value)
-            ->setParameter('previous_at', $previousAt)
-            ->setParameter('id', $reminder->id, ParameterType::INTEGER)
-            ->setParameter('claimed', $reminder->status->value)
+            ->delete(self::DELIVERIES)
+            ->where('reminder_id = :reminder', 'user_id = :user', 'status = :status', 'sent_at IS NULL')
+            ->setParameter('reminder', $reminder->id, ParameterType::INTEGER)
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('status', $reminder->status->value)
             ->executeStatement();
     }
 
     /**
-     * Add the channels that delivered a claimed reminder.
+     * Record what reached one user for a claimed reminder, and on the
+     * reminder itself the latest delivery to anyone.
      *
      * @param list<string> $channels
      */
-    public function recordDelivery(Reminder $reminder, array $channels): void
+    public function recordDelivery(Reminder $reminder, int $userId, array $channels, DateTimeImmutable $now): void
     {
+        sort($channels);
+        $this->connection->createQueryBuilder()
+            ->update(self::DELIVERIES)
+            ->set('channels', ':channels')
+            ->set('sent_at', ':now')
+            ->where('reminder_id = :reminder', 'user_id = :user', 'status = :status')
+            ->setParameter('channels', $this->json($channels))
+            ->setParameter('now', $this->timestamp($now))
+            ->setParameter('reminder', $reminder->id, ParameterType::INTEGER)
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('status', $reminder->status->value)
+            ->executeStatement();
+
         $all = array_values(array_unique([...$reminder->channelsNotified, ...$channels]));
         sort($all);
+        $this->connection->update(self::TABLE, [
+            'notified_status' => $reminder->status->value,
+            'last_notified_at' => $this->timestamp($now),
+            'channels_notified' => $this->json($all),
+        ], ['id' => $reminder->id], ['id' => ParameterType::INTEGER]);
+    }
 
-        $this->connection->update(
-            self::TABLE,
-            ['channels_notified' => $this->json($all)],
-            ['id' => $reminder->id],
-            ['id' => ParameterType::INTEGER],
-        );
+    /**
+     * Who has been sent this reminder, in which status (for tests and the
+     * restore of old backups).
+     *
+     * @return list<array{user_id: int, status: string, sent: bool}>
+     */
+    public function deliveriesOf(int $reminderId): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('user_id', 'status', 'sent_at')
+            ->from(self::DELIVERIES)
+            ->where('reminder_id = :reminder')
+            ->setParameter('reminder', $reminderId, ParameterType::INTEGER)
+            ->orderBy('user_id')
+            ->addOrderBy('status')
+            ->fetchAllAssociative();
+
+        return array_values(array_map(static fn (array $row): array => [
+            'user_id' => Row::int($row, 'user_id'),
+            'status' => Row::string($row, 'status'),
+            'sent' => ($row['sent_at'] ?? null) !== null,
+        ], $rows));
+    }
+
+    /**
+     * A new occurrence starts afresh for every recipient.
+     */
+    private function clearDeliveries(int $reminderId): void
+    {
+        $this->connection->delete(self::DELIVERIES, ['reminder_id' => $reminderId], ['reminder_id' => ParameterType::INTEGER]);
     }
 
     private function select(): QueryBuilder

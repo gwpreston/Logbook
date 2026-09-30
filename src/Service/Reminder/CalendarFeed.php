@@ -94,7 +94,8 @@ final readonly class CalendarFeed
      */
     public function render(User $user): string
     {
-        $overview = $this->reminders->overview($user);
+        // Their own vehicles and those shared with "Send me its reminders" (Phase 19).
+        $overview = $this->reminders->overview($user, recipientOnly: true);
         $host = parse_url($this->app->url, PHP_URL_HOST);
         $domain = is_string($host) && $host !== '' ? $host : 'logbook.invalid';
 

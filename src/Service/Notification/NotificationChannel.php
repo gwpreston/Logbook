@@ -33,6 +33,13 @@ interface NotificationChannel
     public function isConfigured(): bool;
 
     /**
+     * Whether this channel can deliver to this person (Phase 19): their own
+     * address, topic or token, or the instance's for an admin. A channel
+     * that cannot reach them is not used for them, as if not configured.
+     */
+    public function reaches(Recipient $recipient): bool;
+
+    /**
      * Deliver one notification. Report failure through the result; any
      * exception thrown is also caught and logged by the dispatcher.
      */
