@@ -398,6 +398,24 @@ final class TripsTest extends AppTestCase
         self::assertStringContainsString($row, $lines[1]);
     }
 
+    public function testAClaimForOneCarOrPartOfTheYearKeepsTheYearsSplit(): void
+    {
+        [$app, $browser, $golf] = $this->golf();
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $this->logTrip($browser, $golf, ['distance' => '9990', 'travelled_on' => '2026-05-01', 'to_place' => 'Far away']);
+        $this->logTrip($browser, $polo, ['distance' => '20', 'travelled_on' => '2026-06-10', 'to_place' => 'Crossing']);
+
+        $split = '10 × £0.55<br>10 × £0.25';
+        $full = self::body($browser->get('/trips/claim'));
+        self::assertStringContainsString($split, $full);
+        $oneCar = self::body($browser->get('/trips/claim?vehicles[]=' . $polo->id));
+        self::assertStringContainsString($split, $oneCar, 'the other car still counts towards the threshold');
+        self::assertStringNotContainsString('Far away', $oneCar);
+        $june = self::body($browser->get('/trips/claim?period=custom&from=2026-06-01&to=2026-06-30'));
+        self::assertStringContainsString($split, $june, 'May still counts');
+        self::assertStringContainsString('£8.00', $june, '10 mi at 55p and 10 at 25p');
+    }
+
     public function testEmployerRatesShowTheDifference(): void
     {
         [$app, $browser, $golf] = $this->golf();

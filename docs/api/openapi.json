@@ -3596,7 +3596,7 @@
           "employer_amount",
           "difference"
         ],
-        "description": "One currency's totals. mileage_amount, passenger_amount and approved_amount are the sums of the trips' rounded amounts; each rate's amount is its distance × rate, before any rounding per trip.",
+        "description": "One currency's totals, each a sum of amounts rounded to the minor unit on every line: the rates' amounts add up to mileage_amount, and approved_amount is mileage_amount plus passenger_amount.",
         "properties": {
           "currency": {
             "type": "string",

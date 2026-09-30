@@ -190,6 +190,22 @@ final class ClaimCalculatorTest extends TestCase
         $totals = ClaimTotals::byCurrency($valued->trips);
         self::assertSame('1.77', $totals[0]->approvedAmount(), 'the sum of the rounded trips, not 1.76');
         self::assertSame('3.900', $totals[0]->totalDistance());
+        self::assertSame('1.77', $totals[0]->rates[0]['amount'], 'the rate line adds up to the total printed under it');
+    }
+
+    public function testEveryRateLineIsRoundedSoTheClaimAddsUp(): void
+    {
+        // 9,999.3 mi, then a trip of 1.3 mi that crosses at 0.7 mi: 0.7 × 55p = 38.5p, 0.6 × 25p = 15p.
+        $trips = [$this->trip('2026-05-01', '9999.3'), $this->trip('2026-05-02', '1.3'), $this->trip('2026-05-03', '1.3')];
+
+        $valued = $this->value($trips, [self::hmrc2026()]);
+
+        $split = $valued->trips[1];
+        self::assertSame(['0.39', '0.15'], [$split->lines[0]->amount, $split->lines[1]->amount]);
+        self::assertSame('0.54', $split->mileageAmount, 'the sum of its rounded lines');
+        $totals = ClaimTotals::byCurrency($valued->trips)[0];
+        $lines = array_sum(array_map(static fn (array $rate): float => (float) $rate['amount'], $totals->rates));
+        self::assertSame($totals->mileageAmount, number_format($lines, 2, '.', ''), 'rate lines add up to the mileage amount');
     }
 
     public function testAnEmployerPayingLessLeavesAPositiveDifference(): void

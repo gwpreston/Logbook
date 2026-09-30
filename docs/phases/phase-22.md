@@ -412,7 +412,14 @@ Update §12: remove the trip-log line.
   a set has no employer bike rate, as `bike_rate` falls back to `car_rate`.
   **The difference** compares the approved mileage amount *without*
   passengers with what the employer paid: unpaid passenger payments get no
-  tax relief. Both are written into spec §7.23.
+  tax relief. Both are written into spec §7.23. Checked against HMRC on
+  2026-09-30: passenger payments are "an exemption only", with "no
+  corresponding relief or deduction" when the employer pays less than 5p a
+  mile per passenger or nothing (EIM31410); Mileage Allowance Relief is on
+  "the unused balance of the approved amount" for the vehicle
+  (gov.uk/expenses-and-benefits-business-travel-mileage/rules-for-tax,
+  which also confirms 55p from 6 April 2026, 45p before, 25p above
+  10,000 miles and 24p for motorcycles).
 - **The threshold count is one accumulation** (`ClaimValuation`), in each
   rate set's own unit, from each trip's exact converted distance. The claim
   report and the dashboard widget read the same count, and summing
@@ -447,9 +454,11 @@ Update §12: remove the trip-log line.
   filter is a 400 and an unknown vehicle a 404, like every API parameter;
   the first claim read provides the GB rates like the web page. Amounts are
   3-place decimals, as elsewhere in the API.
-- **Per-rate lines in the totals** are the unrounded distance × rate shown
-  to the penny; the approved total is the sum of each trip's rounded
-  amount, as a claim form's is, so a line can differ by a penny.
+- **Every line is rounded**, not just each trip: a split trip's two rate
+  lines are each rounded to the penny, and the trip's amount is their sum.
+  Rounding only the trip left the claim's per-rate totals up to half a
+  penny a trip away from the total approved amount on a signed document;
+  now every figure on the claim adds up (spec §7.23).
 - **The *Business mileage* widget is last** in the default dashboard order,
   so existing layouts keep theirs.
 - **Icons:** `route` and `replay` join the vendored sprite.

@@ -11,7 +11,7 @@ use Logbook\Support\Units\DistanceUnit;
  * One currency's claim totals (spec.md §7.23): the distance at each rate,
  * the passenger amount, the approved amount and, with employer rates, what
  * the employer paid and the difference. Every total is the sum of the
- * trips' rounded amounts.
+ * trips' rounded amounts, and the rate lines add up to the mileage amount.
  */
 final readonly class ClaimTotals
 {
@@ -53,7 +53,7 @@ final readonly class ClaimTotals
                 $key = $unit->value . '|' . Decimal::trim($line->rate);
                 $rate = $group['rates'][$key] ?? ['unit' => $unit, 'rate' => $line->rate, 'distance' => '0', 'amount' => '0'];
                 $rate['distance'] = Decimal::add($rate['distance'], $line->distance);
-                $rate['amount'] = Decimal::add($rate['amount'], Decimal::multiply($line->distance, $line->rate, 8));
+                $rate['amount'] = Decimal::add($rate['amount'], $line->amount);
                 $group['rates'][$key] = $rate;
             }
             $group['mileage'] = Decimal::add($group['mileage'], $trip->mileageAmount);

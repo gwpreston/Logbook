@@ -3006,8 +3006,10 @@ public sign-up, self-service password reset by email.
     `employer_bike_rate` for bikes. A set with only an employer car rate
     uses it for bikes too, as `bike_rate` falls back to `car_rate`. A set
     with no employer rates has no employer payment.
-  - Amounts are rounded to the minor unit per trip, as a claim form would
-    be, and totals are the sums of those.
+  - Amounts are rounded to the minor unit on every line, as a claim form
+    would be: each rate line of a trip (a split trip has two) and its
+    passenger amount. A trip's amount is the sum of its lines, and every
+    total is a sum of those, so the rate lines add up to the total.
 - **Claim report** (`/trips/claim`, module on): filters for tax year
   (default the current one), or a custom date range, and vehicles (all by
   default), as a plain GET form.

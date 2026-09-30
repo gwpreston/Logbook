@@ -27,7 +27,8 @@ use Logbook\Support\Units\DistanceUnit;
  * - Bikes use the bike rate (or the car rate) with no threshold, and do not
  *   count towards the car threshold.
  * - Passengers are passengers × distance × passenger rate.
- * - Every amount is rounded to the currency's minor unit per trip.
+ * - Every amount is rounded to the currency's minor unit: each rate line of
+ *   a trip, and its passengers; the trip's amount is their sum.
  */
 final class ClaimCalculator
 {
@@ -76,8 +77,10 @@ final class ClaimCalculator
 
             $digits = Currency::fractionDigits($rates->currency);
             $mileage = '0';
-            foreach ($lines as $line) {
-                $mileage = Decimal::add($mileage, Decimal::multiply($line->distance, $line->rate, self::WORK_SCALE));
+            foreach ($lines as $i => $line) {
+                $amount = Decimal::round(Decimal::multiply($line->distance, $line->rate, self::WORK_SCALE), $digits);
+                $lines[$i] = new ClaimLine($line->distance, $line->rate, $amount);
+                $mileage = Decimal::add($mileage, $amount);
             }
 
             $passengerAmount = null;
@@ -101,7 +104,7 @@ final class ClaimCalculator
                 rateSet: $set,
                 distance: $distance,
                 lines: $lines,
-                mileageAmount: Decimal::round($mileage, $digits),
+                mileageAmount: $mileage,
                 passengerRate: $passengerAmount === null ? null : $rates->passengerRate,
                 passengerAmount: $passengerAmount,
                 employerAmount: $employerAmount,

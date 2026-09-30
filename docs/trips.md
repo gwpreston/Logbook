@@ -148,8 +148,10 @@ How trips are valued, each time you open a claim (nothing is stored):
 - **Passengers:** passengers × distance × passenger rate.
 - **Employer payments:** the employer's car rate × distance for cars, and
   the employer's bike rate for bikes (the car rate when there is none).
-- Each trip's amount is rounded to the penny, as a claim form would be. The
-  totals are the sums of those.
+- Every line is rounded to the penny, as a claim form would be: each rate
+  of a trip (two for a split trip) and its passengers. A trip's amount is
+  the sum of its lines, and the totals are sums of those, so everything on
+  the claim adds up.
 
 The **tax year** starts on 6 April for UK users and 1 January for everyone
 else; change it in Settings → Trips. A UK tax year is labelled "2026/27",
