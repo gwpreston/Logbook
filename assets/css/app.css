@@ -2654,13 +2654,26 @@ a.list__title:hover {
     font-size: var(--fs-sm);
 }
 
-.customise-bar {
+.customise-bar,
+.prompt-bar {
     flex-wrap: wrap;
 }
 
-.customise-bar > span {
+.customise-bar > span,
+.prompt-bar > span:not(.prompt-bar__actions) {
     flex: 1;
     min-width: 12rem;
+}
+
+/* The overview's one-time First MOT offer (Phase 21.2). */
+.prompt-bar {
+    margin-bottom: var(--space-3);
+}
+
+.prompt-bar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
 }
 
 .figure {

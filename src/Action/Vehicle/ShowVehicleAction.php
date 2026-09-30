@@ -11,6 +11,7 @@ use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Forecast\ForecastWording;
@@ -24,6 +25,7 @@ use Logbook\Service\Report\OwnershipService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
+use Logbook\Service\Vehicle\FirstInspectionPrompt;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -39,7 +41,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * stands, the tyres fitted, and the vehicle's details and ownership (with
  * paperclips for the purchase and sale paperwork, the latest value, the
  * depreciation and the value over time), its cost of ownership, and what
- * is coming up in the next 12 months.
+ * is coming up in the next 12 months. Before the first MOT certificate, the
+ * documents card shows the *First MOT due* date, or offers to set one.
  * Each area has its own tab.
  */
 final readonly class ShowVehicleAction
@@ -66,6 +69,8 @@ final readonly class ShowVehicleAction
         private OwnershipService $ownership,
         private ComingUp $comingUp,
         private ForecastWording $forecastWording,
+        private FirstInspection $firstInspection,
+        private FirstInspectionPrompt $firstInspectionPrompt,
     ) {
     }
 
@@ -86,6 +91,7 @@ final readonly class ShowVehicleAction
             $this->compliance->states($vehicle, $today, $lead->documentDays),
             static fn (DocumentState $s): bool => $s->status->isCurrent(),
         );
+        $compliance = $this->features->isEnabled(Feature::Compliance);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $valuations = $this->valuations->forVehicle($vehicle);
         $zone = $user->preferences->timeZone();
@@ -105,6 +111,8 @@ final readonly class ShowVehicleAction
                 self::SCHEDULES_SHOWN,
             ),
             'documents' => array_values($documents),
+            'first_inspection' => $compliance ? $this->firstInspection->due($vehicle, $today, $lead->documentDays) : null,
+            'first_inspection_prompt' => $this->firstInspectionPrompt->suggestion($user, $vehicle, $today),
             'age' => VehicleAge::of($vehicle, $today),
             'paperwork' => $this->attachments->countsFor([$vehicle->id], [
                 AttachmentOwner::Purchase->value => [$vehicle->id],

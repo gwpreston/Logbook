@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Logbook\Service\Reminder;
 
 use DateTimeImmutable;
+use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Maintenance\ScheduleState;
 use Logbook\Service\Tyre\TyreVerdict;
 
 /**
- * Which reminders a vehicle's schedules, documents and tyres call for today
+ * Which reminders a vehicle's schedules, documents, tyres and first MOT call for today
  * (spec.md §7.6). Pure: the states come in already judged against the
  * owner's today and lead times.
  */
@@ -126,6 +127,37 @@ final class ReminderGenerator
             dueKm: $verdict->dueKm,
             leadTimeDays: $preferences->scheduleDays,
             status: $status,
+        );
+    }
+
+    /**
+     * The vehicle's first MOT reminder (Phase 21.2), from its *First MOT
+     * due* date while it has no inspection document (FirstInspection). Its
+     * source id is the vehicle's own id; the occurrence is the date, so
+     * changing the date moves it. It uses the document lead time.
+     *
+     * @param DateTimeImmutable $dueOn FirstInspection::pending()
+     * @param DateTimeImmutable $today the owner's calendar date
+     * @param string $title already in the owner's language
+     */
+    public static function fromFirstInspection(
+        int $vehicleId,
+        DateTimeImmutable $dueOn,
+        DateTimeImmutable $today,
+        string $title,
+        ReminderPreferences $preferences,
+    ): GeneratedReminder {
+        return new GeneratedReminder(
+            vehicleId: $vehicleId,
+            source: ReminderSource::FirstInspection,
+            sourceId: $vehicleId,
+            occurrence: $dueOn->format('Y-m-d'),
+            category: ComplianceType::Inspection->value,
+            title: $title,
+            dueOn: $dueOn,
+            dueKm: null,
+            leadTimeDays: $preferences->documentDays,
+            status: ReminderRules::statusForDate($dueOn, $today, $preferences->documentDays),
         );
     }
 }

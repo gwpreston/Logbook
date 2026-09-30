@@ -20,6 +20,11 @@ enum ReminderSource: string
      * vehicle's own id: one tyre reminder per vehicle, never per tyre.
      */
     case Tyre = 'tyre';
+    /**
+     * A vehicle's *First MOT due* date, until its first inspection document
+     * (Phase 21.2). Its source id is the vehicle's own id, as for tyres.
+     */
+    case FirstInspection = 'first_inspection';
     /** Added by hand. */
     case Manual = 'manual';
 
@@ -39,7 +44,7 @@ enum ReminderSource: string
     {
         return match ($this) {
             self::Schedule => Feature::Maintenance,
-            self::Compliance => Feature::Compliance,
+            self::Compliance, self::FirstInspection => Feature::Compliance,
             self::Tyre => Feature::Tyres,
             self::Manual => null,
         };

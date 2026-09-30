@@ -2,7 +2,7 @@
 
 *A new car's first MOT is the one reminder nobody has paperwork for yet.*
 
-Status: 📋 planned · releases **v2.1.0** with Phase 21.1
+Status: ✅ complete · released as **v2.1.0** with Phases 20 and 21.1
 
 Today, MOT reminders come from an `inspection` document's expiry (§7.5). A
 car under three years old has no MOT certificate yet, so nothing reminds
@@ -148,66 +148,68 @@ The column arrives empty. Vehicles already in the garage get option A
 ## Tasks
 
 ### Spec and docs
-- [ ] §6, §7.1, §7.6, §7.18, §7.2, §7.19 and §7.20 in `spec.md`; the Phase
+- [x] §6, §7.1, §7.6, §7.18, §7.2, §7.19 and §7.20 in `spec.md`; the Phase
       21.2 line in §13.
-- [ ] `docs/configuration.md` needs nothing (no new variable). Mention the
+- [x] `docs/configuration.md` needs nothing (no new variable). Mention the
       field in the README status paragraph.
 
 ### Migration
-- [ ] `vehicles.first_inspection_due_on` (date, nullable). Applies and rolls
+- [x] `vehicles.first_inspection_due_on` (date, nullable). Applies and rolls
       back on every engine. The rollback deletes reminders with source
       `first_inspection`, then drops the column. Moves the schema version.
-- [ ] A setting (user scope) that records dismissed prompts per vehicle
-      (option A).
+- [x] ~~A setting (user scope) that records dismissed prompts per vehicle
+      (option A).~~ Not a migration: a row in `settings`; see *Changed while
+      building it*.
 
 ### Code
-- [ ] `Support\InspectionRules`: region → months, and the hint key.
+- [x] `Support\InspectionRules`: region → months, and the hint key.
       Constants only, with a test per row.
-- [ ] Vehicle form parser and validation; the add-only no-JS fill;
+- [x] Vehicle form parser and validation; the add-only no-JS fill;
       read-only state once a certificate exists.
-- [ ] `assets/js/first-inspection.js`: fills the date from *First
+- [x] `assets/js/first-inspection.js`: fills the date from *First
       registered* until the owner types in it.
-- [ ] Reminder sync: the `first_inspection` source, raised, moved, removed
+- [x] Reminder sync: the `first_inspection` source, raised, moved, removed
       and done as above. The unique key `(vehicle_id, source, source_id)`
       already fits.
-- [ ] Compliance document save: mark the vehicle's `first_inspection`
-      reminder done when an `inspection` document is saved.
-- [ ] `ComingUp` item, overview line, sale pack line, API serializer field.
-- [ ] The prompt card and its Action (option A).
-- [ ] Translations (en, de).
+- [x] Compliance document save: mark the vehicle's `first_inspection`
+      reminder done when an `inspection` document is saved. Built in
+      reminder sync rather than the save; see *Changed while building it*.
+- [x] `ComingUp` item, overview line, sale pack line, API serializer field.
+- [x] The prompt card and its Action (option A).
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] Suggestion: GB and DE give 36 months, FR, IE, IT and ES 48; 29 Feb
+- [x] Suggestion: GB and DE give 36 months, FR, IE, IT and ES 48; 29 Feb
       clamps; a locale with no region gives none; other regions
       give none; a past suggestion is never filled.
-- [ ] No JS: add with a blank field fills it and flashes; edit with a blank
+- [x] No JS: add with a blank field fills it and flashes; edit with a blank
       field stays blank; an explicit date is kept.
-- [ ] Validation: before *First registered* is refused.
-- [ ] Reminder: raised; lead time applied; status upcoming → due → overdue;
+- [x] Validation: before *First registered* is refused.
+- [x] Reminder: raised; lead time applied; status upcoming → due → overdue;
       moved when the date changes; removed when cleared; done when an
       `inspection` document is saved; not raised when one already exists,
       when archived, or with `compliance` off.
-- [ ] After the first certificate, only the certificate's reminder exists,
+- [x] After the first certificate, only the certificate's reminder exists,
       never two.
-- [ ] *Coming up*, overview, sale pack and API show it; the digest and
+- [x] *Coming up*, overview, sale pack and API show it; the digest and
       calendar feed include it.
-- [ ] Existing vehicles: option A's prompt appears only when it should and
+- [x] Existing vehicles: option A's prompt appears only when it should and
       never returns after *Not needed*.
-- [ ] Rollback removes the reminders and the column on every engine.
-- [ ] Integration suite green on every engine.
+- [x] Rollback removes the reminders and the column on every engine.
+- [x] Integration suite green on every engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: the electric car (leased, so young) gets a first
+- [x] `DemoDataSeeder`: the electric car (leased, so young) gets a first
       registration two and a half years ago and its first MOT due date, so
       the demo shows the reminder and the *Coming up* item.
 
 ### Release (with Phase 21.1)
-- [ ] `CHANGELOG.md` **2.1.0**: tyre modals, drag-and-drop files, the digest
+- [x] `CHANGELOG.md` **2.1.0**: tyre modals, drag-and-drop files, the digest
       default for new users, the sale pack cover page, *First MOT due*, and
       the phase files moved to `docs/phases/` (Phase 20). Upgrade notes: one
       migration; existing users keep their digest choice; existing vehicles
       (per the decision above).
-- [ ] Bump `VERSION`, rebuild assets, update the README status paragraph.
+- [x] Bump `VERSION`, rebuild assets, update the README status paragraph.
 
 ---
 
@@ -237,3 +239,49 @@ The column arrives empty. Vehicles already in the garage get option A
   at 4 years), or keep GB and DE only until someone asks?
   *Decided 2026-09-30: add them: `FR`, `IE`, `IT` and `ES` → 48 months. A locale
   with no region (`en`, `de`) gets no suggestion, and the hint says so.*
+
+## Changed while building it
+
+- **"Done" lives in reminder sync, not in the document save.** Sync deletes
+  any generated reminder its source no longer calls for, so a reminder
+  marked done by the save would have been deleted on the next page view.
+  Instead, when a vehicle has an `inspection` document, sync marks its
+  `first_inspection` reminder done, keeps it, and never raises a new one.
+  That also covers certificates that arrive through CSV import, the API
+  or a restore, which a save hook would miss. One helper,
+  `Service\Compliance\FirstInspection`, decides "has an inspection
+  document" (any, replaced and expired included) for sync, *Coming up*,
+  the overview, the Documents tab, the sale pack, the form and the prompt.
+- **The prompt setting needs no migration.** It is a user-scoped row of
+  the vehicle's owner in `settings` (`vehicles.first_inspection_prompted`,
+  a list of vehicle ids), so *Not needed* from a manager settles it for
+  the owner too. The migration's rollback deletes it.
+- **Saving the vehicle form settles the prompt.** Otherwise a date cleared
+  on the edit form (or cleared on the add form with JS on) would bring the
+  card straight back. So only vehicles from before 2.1.0 that nobody has
+  saved since get the card.
+- **The script leaves a marker.** The no-JS fallback fills a blank field
+  on add, so a date the owner cleared with JS on would have been filled in
+  again. `js/first-inspection.js` adds `first_inspection_js=1`, and the
+  server fills only without it.
+- **Off the form, the stored date is kept.** With `compliance` off the
+  field is hidden. After the first certificate it is read-only text. In
+  both cases an edit keeps the stored date whatever is posted.
+- **The suggestion follows the vehicle owner's locale.** A manager's own
+  locale is not used. It matters only for shared vehicles.
+- **The Documents tab lists it too**, with the overview's row. The
+  reminder and the *Coming up* item link to the vehicle's overview, which
+  a View or Log share can open. The row links to the edit form for those
+  who can manage the vehicle.
+- **Validation also refuses a date before 1885**, as *First registered*
+  does. A past date the owner types is accepted: it is theirs, and it
+  shows as overdue.
+- **Two older migration tests no longer assume they are the newest.**
+  `PlugInHybridMigrationTest` reads the fuel type with plain SQL after its
+  rollback, since `VehicleRepository` now selects the new column.
+  `UsersAndSharingMigrationTest` rolls back to its own target.
+- **The demo Kia** is first registered on 9 Feb 2024, the day before its
+  lease started, with its first MOT due on 9 Feb 2027.
+- **Known edge:** if the only certificate is deleted, the first MOT
+  reminder stays *done*, because its occurrence (the date) hasn't changed.
+  *Reopen* brings it back.

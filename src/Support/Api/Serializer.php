@@ -85,6 +85,7 @@ final class Serializer
             'capacity' => self::dec($data->capacity, self::QUANTITY_SCALE),
             'capacity_unit' => $data->fuelType === FuelType::Electric ? 'kwh' : 'l',
             'first_registered_on' => self::date($data->firstRegisteredOn),
+            'first_inspection_due_on' => self::date($data->firstInspectionDueOn),
             'purchase_date' => self::date($data->purchaseDate),
             'sale_date' => self::date($data->saleDate),
             'currency' => $currency,

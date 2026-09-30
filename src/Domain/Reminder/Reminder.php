@@ -56,6 +56,7 @@ final readonly class Reminder
             ReminderSource::Schedule => MaintenanceCategory::tryFrom($category)?->icon() ?? 'build',
             ReminderSource::Compliance => ComplianceType::tryFrom($category)?->icon() ?? 'description',
             ReminderSource::Tyre => 'tire_repair',
+            ReminderSource::FirstInspection => ComplianceType::Inspection->icon(),
             ReminderSource::Manual => 'notifications',
         };
     }

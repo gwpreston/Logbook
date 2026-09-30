@@ -315,6 +315,42 @@ final class ForecastCalculatorTest extends TestCase
         self::assertSame(ForecastSource::Reminder, $forecast->months[8]->items[0]->source);
     }
 
+    // --- First MOT (Phase 21.2) --------------------------------------------
+
+    public function testTheFirstMotIsOneItemOnItsDateWithoutRepeatsOrCost(): void
+    {
+        $forecast = self::forecast(new VehicleSources(
+            self::vehicle(1, 'EV6'),
+            'GBP',
+            firstInspection: self::date('2027-06-14'),
+        ));
+
+        self::assertSame(['2027-06-14'], self::dates($forecast), 'no repeats: later MOTs come from each certificate');
+        $item = $forecast->months[8]->items[0];
+        self::assertSame(ForecastSource::FirstInspection, $item->source);
+        self::assertSame(1, $item->sourceId, 'the vehicle');
+        self::assertSame('inspection', $item->category);
+        self::assertNull($item->cost, 'no "last time" cost');
+        self::assertFalse($item->projected);
+    }
+
+    public function testAPastFirstMotIsOverdue(): void
+    {
+        $forecast = self::forecast(new VehicleSources(self::vehicle(1, 'EV6'), 'GBP', firstInspection: self::date('2026-09-14')));
+
+        self::assertCount(1, $forecast->overdue);
+        self::assertSame(ForecastSource::FirstInspection, $forecast->overdue[0]->source);
+    }
+
+    public function testBeyondTheHorizonItIsLeftOut(): void
+    {
+        self::assertSame([], self::dates(self::forecast(new VehicleSources(
+            self::vehicle(1, 'EV6'),
+            'GBP',
+            firstInspection: self::date('2028-06-14'),
+        ))));
+    }
+
     // --- Costs -------------------------------------------------------------
 
     public function testTheLatestCompletingEntrySetsTheCost(): void

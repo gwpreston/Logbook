@@ -8,11 +8,15 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Reminder\Reminder;
+use Logbook\Domain\Reminder\ReminderSource;
+use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
+use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
@@ -20,7 +24,9 @@ use Logbook\Service\Tyre\TyreReminderTitle;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Display\UserDisplayScope;
 use Psr\Clock\ClockInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Reconciles the stored reminders of the vehicles a user can see with their sources and with today
@@ -45,6 +51,8 @@ final readonly class ReminderSync
         private TyreReminderTitle $tyreTitles,
         private VehicleAccess $access,
         private UserDirectory $directory,
+        private UserDisplayScope $scope,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -92,6 +100,19 @@ final readonly class ReminderSync
             if ($withDocuments) {
                 $documents = $this->compliance->states($vehicle, $today, $preferences->documentDays);
                 $wanted = [...$wanted, ...ReminderGenerator::fromDocuments($vehicle->id, $documents, $today, $preferences)];
+                $list = array_map(static fn (DocumentState $s) => $s->document, $documents);
+                $firstDue = FirstInspection::pending($vehicle, $list);
+                if ($firstDue !== null) {
+                    $wanted[] = ReminderGenerator::fromFirstInspection(
+                        $vehicle->id,
+                        $firstDue,
+                        $today,
+                        $this->firstInspectionTitle($owner),
+                        $preferences,
+                    );
+                } elseif (FirstInspection::hasCertificate($list)) {
+                    $this->closeFirstInspection($existing, $vehicle->id);
+                }
             }
             if ($withTyres) {
                 $verdict = $this->tyres->verdict($vehicle, $owner);
@@ -129,6 +150,34 @@ final readonly class ReminderSync
                 $this->reminders->setStatus($manual->id, $status, $this->clock->now());
             }
         }
+    }
+
+    /**
+     * The first certificate has been logged: the first MOT reminder is done
+     * and kept, not deleted as an orphan (spec.md §7.6 *First MOT*). The
+     * certificate's own expiry reminder takes over.
+     *
+     * @param array<string, Reminder> $existing taken out of, so it is not deleted
+     */
+    private function closeFirstInspection(array &$existing, int $vehicleId): void
+    {
+        $key = GeneratedReminder::keyOf($vehicleId, ReminderSource::FirstInspection, $vehicleId);
+        $stored = $existing[$key] ?? null;
+        if ($stored === null) {
+            return;
+        }
+        unset($existing[$key]);
+        if ($stored->status !== ReminderStatus::Done) {
+            $this->reminders->setStatus($stored->id, ReminderStatus::Done, $this->clock->now());
+        }
+    }
+
+    /**
+     * "First MOT", in the owner's language whoever asks.
+     */
+    private function firstInspectionTitle(User $owner): string
+    {
+        return $this->scope->run($owner, fn (): string => $this->translator->trans('compliance.first_inspection.title'));
     }
 
     private function insert(GeneratedReminder $generated): void

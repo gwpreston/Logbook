@@ -59,6 +59,8 @@ final readonly class SalePack
         public AttachmentIndex $attachments,
         public ?WorkCost $workCost,
         public string $currency,
+        /** *First MOT due* while there is no inspection document (Phase 21.2); null with `compliance` off. */
+        public ?DateTimeImmutable $firstInspection = null,
     ) {
     }
 

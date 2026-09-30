@@ -309,6 +309,13 @@ MySQL only.
   latest reading in the vehicle's one mileage series (OdometerReading).
   Vehicle age and the lifetime average are derived from
   first_registered_on on every read (§7.2).
+- first_inspection_due_on (optional calendar date, Phase 21.2; never
+  converted through a time zone): when the vehicle's first MOT, or the
+  local equivalent, is due. It is used only while the vehicle has no
+  `inspection` document (any, current, replaced or expired: one helper,
+  `FirstInspection`, decides this for every page). Upgrading to 2.1.0 adds
+  the column empty (§7.1 *First MOT prompt*); rolling it back drops it,
+  the reminders it raised and the prompt settings.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
@@ -629,6 +636,62 @@ from fleet totals unless "include archived" is toggled.
   or before 1 January 1885. A model year more than one year *after* the
   registration year is saved with a warning notice ("check both"); an older
   model year is normal (imports, late registration) and is not flagged.
+- **First MOT due** (Phase 21.2; add and edit forms, under *First
+  registered*, optional, a native date input). The label comes from the
+  `inspection` document type: "First MOT due" in English, "Erste HU fällig"
+  in German. It is shown only with the `compliance` module on; while the
+  field is not on the form (module off, or read-only below) an edit keeps
+  the stored date whatever is posted.
+  - **Suggestion:** from the rule table on `Support\InspectionRules`, keyed
+    by the region of the **vehicle owner's** locale (the editor's for a new
+    vehicle): `GB` and `DE` → 36 months after first registration; `FR`,
+    `IE`, `IT` and `ES` → 48 months. The table holds nothing else, and a
+    locale with no region (`en`, `de`) or another region gets no
+    suggestion. Months are added with end-of-month clamping, as
+    maintenance intervals are (29 Feb 2024 gives 28 Feb 2027). A suggestion
+    before the owner's today is never offered or filled in: that vehicle
+    has had its first MOT.
+  - With JS (`js/first-inspection.js`), entering or changing *First
+    registered* fills *First MOT due* while the owner hasn't typed in it;
+    once they edit it, or it had a value when the page loaded, it is
+    theirs. The script uses the owner's today and the months from the page,
+    never the browser's clock, and adds a hidden `first_inspection_js=1` so
+    the server knows a blank field was the owner's choice.
+  - Without JS, on **add** only: when the field is blank, the marker is
+    missing, *First registered* is set, a rule exists and the suggestion is
+    today or later, the saved vehicle gets the suggestion, and the flash
+    says so ("First MOT reminder set for 14 Jun 2027. Change it on the
+    vehicle's edit page."). On **edit**, a blank field stays blank, so
+    clearing it sticks.
+  - **Hint**, GB: "Usually 3 years after first registration in England,
+    Scotland and Wales; 4 years in Northern Ireland." DE: "Usually 3 years
+    after first registration." FR, IE, IT, ES: "Usually 4 years after first
+    registration." Others, and a locale with no region: "Check when the
+    first inspection is due where the vehicle is registered. Choose a
+    language with a country in Settings for a suggestion."
+  - Once the vehicle has an `inspection` document, the field shows as
+    read-only text ("Done: the MOT certificate from 12 Jun 2027 now sets the
+    next one", the current certificate's start date; without one, "Done:
+    the MOT certificate now sets the next one") and is not submitted.
+  - Validation: not before *First registered* when both are set ("The
+    first MOT can't be due before the vehicle was first registered"), and
+    not before 1 January 1885.
+- **First MOT prompt** (Phase 21.2, for vehicles already in the garage
+  before 2.1.0): the overview shows a dismissible card, "Set a reminder for
+  the first MOT? Suggested: 14 Jun 2027", with *Set it* and *Not needed*
+  (POST `/vehicles/{id}/first-inspection`, CSRF). It shows only when the
+  `compliance` module is on, the vehicle is active, the viewer can manage
+  it, *First MOT due* is blank, *First registered* is set, there is no
+  `inspection` document, a suggestion exists that is today or later, and
+  the prompt is not settled. *Set it* stores the suggestion worked out
+  again on the server (a posted date is never trusted); *Not needed*
+  stores nothing. Either one settles the prompt, and so does saving the
+  vehicle form with the field on it (add or edit), since the owner has
+  then seen the field: a deliberately cleared date never brings the card
+  back. Settled vehicles are a user-scoped setting of the vehicle's owner
+  (`vehicles.first_inspection_prompted`, a list of vehicle ids), so the
+  card is settled for everyone who manages that vehicle. Nothing is set
+  without the owner.
 - **Current odometer** (add form only, optional, in the owner's distance unit,
   parsed like a reading; 0 is valid for a new vehicle): when filled, saving
   writes an ordinary `manual` odometer reading in the same transaction as
@@ -1129,6 +1192,14 @@ documents. Create **and edit** must both work. Expiries feed reminders.
   start date; without one it is refused with "Add the date it was issued to
   record the odometer." When set it joins the mileage series (§7.2) and the
   documents list shows it.
+- **First MOT due** (Phase 21.2): while the vehicle has a *First MOT due*
+  date (§7.1) and no `inspection` document, the overview's documents card
+  and the Documents tab list "First MOT due 14 Jun 2027" with the due
+  badge rules of documents (overdue, due in N days within the document
+  lead time, else upcoming), linking to the vehicle's edit form for those
+  who may manage it. The card's
+  empty state is shown only when there is neither a document nor this
+  line.
 
 ### 7.6 Reminders
 Surface everything upcoming/due/overdue with configurable lead time. In-app list
@@ -1212,6 +1283,27 @@ iCal/webcal feed so items appear in the user's calendar.
     feed (when it has a date), archived vehicles raise none. With `tyres`
     off, tyre reminders are neither listed nor sent and are kept for when
     the module returns. The reminder links to the Tyres tab.
+- **First MOT** (Phase 21.2): source `first_inspection`, `source_id` = the
+  **vehicle's own id** (one per vehicle, like `tyre`). It is raised while
+  `first_inspection_due_on` is set, the vehicle is active and has no
+  `inspection` document, and the `compliance` module is on. Its due date is
+  that date, its lead time the owner's **document** lead time, and its
+  status follows §7.6 *Status* like a document's. Its title is stored in
+  the owner's language: "First MOT" (the type's label).
+  - **Occurrence = the due date**, so changing the date moves it: it opens
+    again for the new date and its notification state is cleared.
+    Clearing the date deletes it.
+  - **Done automatically:** once the vehicle has an `inspection` document
+    (from the form, an import or a restore), sync marks the reminder *done*
+    and keeps it, and never raises a new one. It is not an orphan: the
+    certificate's own expiry reminder (above) takes over, so there is only
+    ever one open MOT reminder.
+  - Dismiss, done and reopen work as for any reminder. Notifications, the
+    digest and the calendar feed treat it like the others, and it goes to
+    the owner and to shares with *Send me its reminders* (Phase 19). With
+    `compliance` off it is neither listed nor sent and is kept. The
+    reminder links to the vehicle's overview, which everyone it is shared
+    with can open (the date itself is changed on the edit form).
 
 ### 7.7 Expenses and reports
 Per-vehicle and fleet cost breakdowns over time (fuel vs maintenance vs
@@ -2278,6 +2370,10 @@ nothing about reminders (§7.6). Derived on every read
     soonest) and titled by the same helper ("Tyres: rear due in about
     800 mi", "Tyres: Winter wheels 6 years old on 7 Dec 2026"). No repeats:
     a new tyre's wear is unknown.
+  - **First MOT** (§7.1, Phase 21.2): the vehicle's *First MOT due* date
+    while it has no `inspection` document, titled "First MOT"; no repeats
+    and no "last time" cost. Only with the `compliance` module on. It links
+    to the vehicle's overview.
   - **Manual reminder** (§7.6): each open one with a due date, titled with
     its title; no repeats. Only with the `reminders` module on.
 - **Groups:** **Overdue** first, once each and without repeats (the next
@@ -2402,6 +2498,9 @@ available for active and archived vehicles.
     GB and a vehicle with a registration, the line "Check the full MOT
     history at gov.uk/check-mot-history" follows. The URL is plain printed
     text, a constant on the service, checked at release. Nothing is fetched.
+    A vehicle with no `inspection` document and a *First MOT due* date
+    (Phase 21.2) shows "First MOT due 14 Jun 2027" instead of a certificate
+    line; *Due next* includes it through *Coming up*.
   - *Tyres:* the fitted tyres with their latest **measured** tread and
     date, as the print view's *Tyres fitted* block. Estimates are never
     printed.
@@ -2564,8 +2663,8 @@ parameter answers 400 (`invalid_parameter`).
 | Endpoint | Returns |
 |---|---|
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default active) |
-| `GET /vehicles/{id}` | one vehicle, as the edit form holds it |
-| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it), next due item, open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
+| `GET /vehicles/{id}` | one vehicle, as the edit form holds it (with `first_inspection_due_on`, Phase 21.2) |
+| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it), next due item (a *First MOT* item can be it, source `first_inspection`), open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with its segment economy when it closes one and its economy-check flag |
 | `GET /vehicles/{id}/odometer` | readings with source |
 | `GET /vehicles/{id}/maintenance` | service records |
@@ -3073,6 +3172,14 @@ task breakdowns live in the per-phase files; this is the map.
   users unchanged (§7.11); an optional cover page with the vehicle photo
   in the sale pack (§7.19); the V5C hint on purchase paperwork (§7.1).
   Ships with Phase 21.2 as v2.1.0.
+- **Phase 21.2 — First MOT due + v2.1 release.** An optional, stored
+  *First MOT due* date on the vehicle, suggested from first registration by
+  the owner's locale region (`Support\InspectionRules`: GB and DE 36
+  months, FR, IE, IT and ES 48), with and without JS (§6, §7.1); a
+  `first_inspection` reminder until the first `inspection` document, then
+  done (§7.6); *Coming up*, the overview's documents card, the sale pack's
+  *Inspection* line and the API (§7.18, §7.19, §7.20); a one-time prompt
+  for vehicles already in the garage (§7.1); release v2.1.0.
 
 ---
 

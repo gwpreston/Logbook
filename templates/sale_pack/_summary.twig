@@ -57,13 +57,16 @@
             </dd></div>
         {% endif %}
 
-        {% if pack.compliance and (pack.inspections is not empty or pack.motHistory) %}
+        {% if pack.compliance and (pack.inspections is not empty or pack.firstInspection or pack.motHistory) %}
             <div><dt>{{ 'sale_pack.summary.inspection'|trans }}</dt><dd>
                 <ul class="plain-list">
                     {% for line in pack.inspections %}
                         {% set what = ('sale_pack.document.' ~ line.type.value)|trans %}
                         <li>{{ (line.expired ? 'sale_pack.summary.expired_on' : 'sale_pack.summary.valid_until')|trans({what: what, date: line.expiresOn|local_date}) }}</li>
                     {% endfor %}
+                    {% if pack.firstInspection %}
+                        <li>{{ 'sale_pack.summary.first_inspection_due'|trans({date: pack.firstInspection|local_date}) }}</li>
+                    {% endif %}
                     {% if pack.motHistory %}
                         {% set url = constant('Logbook\\Service\\SalePack\\SalePackBuilder::MOT_HISTORY_URL') %}
                         <li>{{ 'sale_pack.summary.mot_history'|trans({url: url|replace({'https://www.': '', 'https://': ''})}) }}</li>

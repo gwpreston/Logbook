@@ -339,6 +339,20 @@ return [
         'vin_invalid' => 'Eine FIN hat bis zu 17 Buchstaben und Ziffern.',
         'registered_in_future' => 'Die Erstzulassung kann nicht in der Zukunft liegen.',
         'registered_too_early' => 'Die Erstzulassung kann nicht vor 1885 liegen.',
+        'first_inspection_before_registration' => 'Die erste HU kann nicht vor der Erstzulassung fällig sein.',
+        'first_inspection_too_early' => 'Die erste HU kann nicht vor 1885 liegen.',
+        'first_inspection_set' => 'Erinnerung an die erste HU am {date} angelegt. Ändern kannst du sie beim Bearbeiten des Fahrzeugs.',
+        'first_inspection' => [
+            'done_on' => 'Erledigt: Der HU-Bericht vom {date} bestimmt jetzt die nächste.',
+            'done' => 'Erledigt: Der HU-Bericht bestimmt jetzt die nächste.',
+        ],
+        'first_inspection_prompt' => [
+            'title' => 'Eine Erinnerung an die erste HU anlegen?',
+            'suggested' => 'Vorschlag: {date}.',
+            'set' => 'Anlegen',
+            'dismiss' => 'Nicht nötig',
+            'saved' => 'Erinnerung an die erste HU am {date} angelegt.',
+        ],
         'model_year_warning' => 'Gespeichert, aber das Baujahr ist {year} und die Erstzulassung {registered}: bitte beides prüfen.',
         'reading_in_future' => 'Der Kilometerstand kann nicht in der Zukunft liegen.',
         'reading_too_early' => 'Der Kilometerstand kann nicht vor 1885 liegen.',
@@ -380,6 +394,7 @@ return [
             'nickname' => 'Spitzname',
             'year' => 'Baujahr',
             'first_registered_on' => 'Erstzulassung',
+            'first_inspection_due_on' => 'Erste HU fällig',
             'current_odometer' => 'Aktueller Kilometerstand',
             'current_odometer_on' => 'Stand vom',
             'purchase_paperwork' => 'Kaufunterlagen',
@@ -404,6 +419,12 @@ return [
             'variant' => 'Z. B. „1.5 EcoBoost ST-Line X“.',
             'year' => 'Das Modelljahr.',
             'first_registered_on' => 'Wie im Fahrzeugschein (Zulassungsbescheinigung Teil I), nicht das Baujahr oder das Kaufdatum.',
+            'first_inspection' => [
+                'gb' => 'Meist 3 Jahre nach der Erstzulassung in England, Schottland und Wales; 4 Jahre in Nordirland.',
+                'three_years' => 'Meist 3 Jahre nach der Erstzulassung.',
+                'four_years' => 'Meist 4 Jahre nach der Erstzulassung.',
+                'none' => 'Prüfe, wann die erste Hauptuntersuchung dort fällig ist, wo das Fahrzeug zugelassen ist. Wähle in den Einstellungen eine Sprache mit Land für einen Vorschlag.',
+            ],
             'current_odometer' => 'Leer lassen, wenn Sie ihn mit der ersten Tankfüllung erfassen. 0 ist für ein Neufahrzeug in Ordnung.',
             'current_odometer_on' => 'Wann der Stand abgelesen wurde, zum Beispiel auf der HU-Bescheinigung oder beim Kauf.',
             'paperwork' => 'Rechnung oder Beleg: PDF, JPEG, PNG oder WebP. Bis zu {files} Dateien pro Speichern für Kauf und Verkauf zusammen, je bis {max} MB. Braucht das Datum.',
@@ -1244,6 +1265,10 @@ return [
     // tyre:end
     'compliance' => [
         'title' => 'Dokumente',
+        'first_inspection' => [
+            'title' => 'Erste HU',
+            'due' => 'Erste HU fällig am {date}',
+        ],
         'add' => 'Dokument hinzufügen',
         'add_title' => 'Dokument hinzufügen',
         'add_submit' => 'Dokument speichern',
@@ -1333,6 +1358,7 @@ return [
             'closed' => '{count, plural, one {# verworfen oder erledigt} other {# verworfen oder erledigt}}',
         ],
         'source' => [
+            'first_inspection' => 'Erste HU',
             'schedule' => 'Wartung',
             'compliance' => 'Dokument',
             'manual' => 'Deine Erinnerung',
@@ -1721,6 +1747,7 @@ return [
             'total_sub' => 'geplant und Kraftstoff',
         ],
         'source' => [
+            'first_inspection' => 'Erste HU',
             'schedule' => 'Wartungsplan',
             'document' => 'Dokument',
             'tyres' => 'Reifen',
@@ -2290,6 +2317,7 @@ return [
             'with_paperwork' => '{count, plural, =0 {keiner mit Unterlagen} one {# mit Unterlagen} other {# mit Unterlagen}}',
             'inspection' => 'Prüfung',
             'valid_until' => '{what} gültig bis {date}',
+            'first_inspection_due' => 'Erste HU fällig am {date}',
             'expired_on' => '{what} abgelaufen am {date}',
             'mot_history' => 'Die vollständige MOT-Historie steht unter {url}',
             'due_next' => 'Als Nächstes fällig',

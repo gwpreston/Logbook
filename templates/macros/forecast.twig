@@ -12,6 +12,8 @@
         {{ url_for('compliance.edit', {id: item.vehicle.id, document: item.sourceId}) }}
     {%- elseif item.source.value == 'tyres' -%}
         {{ url_for('tyres.index', {id: item.vehicle.id}) }}
+    {%- elseif item.source.value == 'first_inspection' -%}
+        {{ url_for('vehicles.show', {id: item.vehicle.id}) }}
     {%- else -%}
         {{ url_for('reminders.edit', {reminder: item.sourceId}) }}
     {%- endif -%}

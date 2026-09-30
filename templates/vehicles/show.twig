@@ -148,7 +148,19 @@
                     <h2 id="documents-heading" class="card__title">{{ 'compliance.title'|trans }}</h2>
                     <a class="card__link" href="{{ url_for('compliance.index', {id: vehicle.id}) }}">{{ 'compliance.view_all'|trans }}</a>
                 </div>
-                {% if documents is empty %}
+                {% if first_inspection_prompt %}
+                    {# The one-time offer for vehicles from before 2.1.0 (spec.md §7.1). #}
+                    <form class="alert alert--info prompt-bar" method="post" action="{{ url_for('vehicles.first_inspection', {id: vehicle.id}) }}">
+                        {{ ui.csrf(csrf) }}
+                        {{ ui.icon('fact_check') }}
+                        <span>{{ 'vehicle.first_inspection_prompt.title'|trans }} {{ 'vehicle.first_inspection_prompt.suggested'|trans({date: first_inspection_prompt|local_date}) }}</span>
+                        <span class="prompt-bar__actions">
+                            <button class="btn btn--primary" type="submit" name="choice" value="set">{{ 'vehicle.first_inspection_prompt.set'|trans }}</button>
+                            <button class="btn btn--ghost" type="submit" name="choice" value="dismiss">{{ 'vehicle.first_inspection_prompt.dismiss'|trans }}</button>
+                        </span>
+                    </form>
+                {% endif %}
+                {% if documents is empty and first_inspection is null %}
                     <div class="empty">
                         {{ ui.icon('verified_user') }}
                         <p class="empty__title">{{ 'compliance.empty_title'|trans }}</p>
@@ -156,6 +168,7 @@
                     </div>
                 {% else %}
                     <ul class="list">
+                        {% if first_inspection %}{{ docs.first_inspection_row(first_inspection, vehicle) }}{% endif %}
                         {% for state in documents %}
                             {% set editable = can_change(vehicle, state.document.createdBy) %}
                             <li>

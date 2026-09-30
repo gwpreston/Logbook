@@ -56,6 +56,7 @@ final class AccessMatrixTest extends AppTestCase
     private const array MATRIX = [
         'vehicles.show' => self::VIEW,
         'vehicles.edit' => self::MANAGE,
+        'vehicles.first_inspection' => self::MANAGE,
         'vehicles.delete' => self::OWN,
         'vehicles.archive' => self::OWN,
         'vehicles.restore' => self::OWN,

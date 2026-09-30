@@ -61,6 +61,26 @@
                     {{ ui.input('year', 'vehicle.field.year'|trans, values, errors, {type: 'number', optional: true, inputmode: 'numeric', min: first_year, step: 1, hint: 'vehicle.hint.year'|trans}) }}
                     {{ ui.input('first_registered_on', 'vehicle.field.first_registered_on'|trans, values, errors, {type: 'date', optional: true, min: first_registration, max: last_registration, hint: 'vehicle.hint.first_registered_on'|trans}) }}
                 </div>
+                {# First MOT due (spec.md §7.1): js/first-inspection.js fills it from
+                   First registered until the owner types in it. Read-only once a
+                   certificate exists, and then not submitted. #}
+                {% if first_inspection.shown %}
+                    {% if first_inspection.editable %}
+                        <div class="form-row" data-first-inspection data-registered="f-first_registered_on"
+                             data-today="{{ last_registration }}" data-marker="{{ first_inspection.marker }}"
+                             {%- if first_inspection.months is not null %} data-months="{{ first_inspection.months }}"{% endif %}>
+                            {{ ui.input('first_inspection_due_on', 'vehicle.field.first_inspection_due_on'|trans, values, errors, {type: 'date', optional: true, min: first_registration, hint: first_inspection.hint|trans}) }}
+                        </div>
+                    {% else %}
+                        {% set certificate = first_inspection.certificate %}
+                        <dl class="field">
+                            <dt class="field__label">{{ 'vehicle.field.first_inspection_due_on'|trans }}</dt>
+                            <dd class="muted">{{ certificate and certificate.data.startOn
+                                ? 'vehicle.first_inspection.done_on'|trans({date: certificate.data.startOn|local_date})
+                                : 'vehicle.first_inspection.done'|trans }}</dd>
+                        </dl>
+                    {% endif %}
+                {% endif %}
                 <div class="form-row">
                     {{ ui.input('registration', 'vehicle.field.registration'|trans, values, errors, {optional: true, maxlength: 20, autocomplete: 'off'}) }}
                     {{ ui.input('vin', 'vehicle.field.vin'|trans, values, errors, {optional: true, maxlength: 40, autocomplete: 'off', hint: 'vehicle.hint.vin'|trans}) }}

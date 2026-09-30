@@ -113,9 +113,10 @@ final class PlugInHybridMigrationTest extends AppTestCase
      */
     private function assertFuelTypes(App $app, array $expected): void
     {
-        $vehicles = $this->service($app, VehicleRepository::class);
+        // Plain SQL: after the rollback the schema is older than VehicleRepository's.
+        $db = $this->connection($app);
         foreach ($expected as $label => [$vehicle, $type]) {
-            self::assertSame($type, $vehicles->findById($vehicle->id)?->data->fuelType, $label);
+            self::assertSame($type->value, $db->fetchOne('SELECT fuel_type FROM vehicles WHERE id = ?', [$vehicle->id]), $label);
         }
     }
 

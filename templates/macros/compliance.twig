@@ -25,6 +25,36 @@
     </span>
 {%- endmacro %}
 
+{# The vehicle's first MOT before its first certificate (a
+   Service\Compliance\FirstInspectionDue; spec.md §7.5), as a list row with
+   the due badge rules of documents, linking to the edit form for those who
+   may change it. #}
+{% macro first_inspection_row(due, vehicle) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set editable = can_vehicle(vehicle, 'manage') and not vehicle.isArchived() %}
+    {% set status = due.status.value %}
+    <li>
+        {% if editable %}<a class="list__item" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{% else %}<div class="list__item">{% endif %}
+            <span class="list__icon">{{ ui.icon('fact_check') }}</span>
+            <span class="list__body">
+                <span class="list__title">{{ 'compliance.first_inspection.title'|trans }}</span>
+                <span class="list__meta">{{ 'compliance.first_inspection.due'|trans({date: due.dueOn|local_date}) }}</span>
+            </span>
+            <span class="list__end">
+                <span class="pill{{ due.status.tone() ? ' pill--' ~ due.status.tone() }}">
+                    {%- if status == 'overdue' -%}
+                        {{ ui.icon('warning') }}{{ 'reminders.when.overdue'|trans({days: -due.daysLeft}) }}
+                    {%- elseif status == 'due' -%}
+                        {{ 'reminders.when.due_in'|trans({days: due.daysLeft}) }}
+                    {%- else -%}
+                        {{ 'reminders.status.upcoming'|trans }}
+                    {%- endif -%}
+                </span>
+            </span>
+        {% if editable %}</a>{% else %}</div>{% endif %}
+    </li>
+{%- endmacro %}
+
 {# The validity period: "1 Mar 2026 – 28 Feb 2027", "Expires 28 Feb 2027", … #}
 {% macro period(document) -%}
     {% set data = document.data %}

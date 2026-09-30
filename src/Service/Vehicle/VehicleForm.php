@@ -14,6 +14,7 @@ use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\InspectionRules;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\VolumeUnit;
@@ -28,6 +29,11 @@ use Logbook\Support\Validation\Validator;
  * The add form also takes an optional current odometer (parseNew()), typed in
  * the user's distance unit, with the date it was read (*As of*, default
  * today); the edit form never does.
+ *
+ * *First MOT due* (spec.md §7.1) is read only while the field is on the
+ * form ($firstInspectionOnForm): with `compliance` off, or read-only once a
+ * certificate exists, an edit keeps the stored date whatever is posted. On
+ * add, a blank field without the script's marker gets the suggestion.
  */
 final class VehicleForm
 {
@@ -35,6 +41,8 @@ final class VehicleForm
     public const string FIRST_REGISTRATION = '1885-01-01';
     private const int QUANTITY_SCALE = 3;
     private const int MONEY_SCALE = 3;
+    /** Posted by js/first-inspection.js: a blank *First MOT due* was the owner's choice. */
+    public const string FIRST_INSPECTION_JS = 'first_inspection_js';
 
     /**
      * Form values for an existing vehicle, converted to the user's units.
@@ -53,6 +61,7 @@ final class VehicleForm
             'variant' => $data->variant ?? '',
             'year' => $data->year === null ? '' : (string) $data->year,
             'first_registered_on' => $data->firstRegisteredOn?->format('Y-m-d') ?? '',
+            'first_inspection_due_on' => $data->firstInspectionDueOn?->format('Y-m-d') ?? '',
             'registration' => $data->registration ?? '',
             'vin' => $data->vin ?? '',
             'fuel_type' => $data->fuelType->value,
@@ -84,7 +93,8 @@ final class VehicleForm
 
     /**
      * The edit form. $today is today's date in the owner's time zone
-     * (LocalTime::today()).
+     * (LocalTime::today()). Without the *First MOT due* field on the form,
+     * $keptFirstInspection (the stored date) is kept.
      *
      * @param array<array-key, mixed> $input
      */
@@ -92,9 +102,11 @@ final class VehicleForm
         array $input,
         DisplayPreferences $preferences,
         DateTimeImmutable $today,
+        bool $firstInspectionOnForm = true,
+        ?DateTimeImmutable $keptFirstInspection = null,
     ): VehicleData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
-        $data = self::parseWith($validator, $preferences, $today);
+        $data = self::parseWith($validator, $preferences, $today, $firstInspectionOnForm, $keptFirstInspection);
 
         return $data ?? $validator->errors();
     }
@@ -103,6 +115,8 @@ final class VehicleForm
      * The add form: the vehicle plus its optional current odometer, converted
      * to km, and the date it was read. Blank means no starting reading (and
      * the date is ignored); 0 is a valid one. A blank date means today.
+     * A blank *First MOT due* gets the suggestion for the owner's locale
+     * (InspectionRules) unless the script says the owner cleared it.
      *
      * @param array<array-key, mixed> $input
      */
@@ -110,9 +124,10 @@ final class VehicleForm
         array $input,
         DisplayPreferences $preferences,
         DateTimeImmutable $today,
+        bool $firstInspectionOnForm = true,
     ): NewVehicle|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
-        $data = self::parseWith($validator, $preferences, $today);
+        $data = self::parseWith($validator, $preferences, $today, $firstInspectionOnForm);
         $odometer = $validator->decimal(
             'current_odometer',
             false,
@@ -128,12 +143,20 @@ final class VehicleForm
             return $validator->errors();
         }
 
+        $suggested = null;
+        $blank = $data->firstInspectionDueOn === null && ($input[self::FIRST_INSPECTION_JS] ?? '') !== '1';
+        if ($firstInspectionOnForm && $blank) {
+            $suggested = InspectionRules::suggest($preferences->locale, $data->firstRegisteredOn, $today);
+            $data = $data->withFirstInspectionDueOn($suggested);
+        }
+
         return new NewVehicle(
             $data,
             $odometer === null ? null : new StartingReading(
                 $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
                 $readOn,
             ),
+            $suggested,
         );
     }
 
@@ -171,6 +194,8 @@ final class VehicleForm
         Validator $validator,
         DisplayPreferences $preferences,
         DateTimeImmutable $today,
+        bool $firstInspectionOnForm,
+        ?DateTimeImmutable $keptFirstInspection = null,
     ): ?VehicleData {
         $currentYear = (int) $today->format('Y');
 
@@ -181,6 +206,9 @@ final class VehicleForm
         $variant = $validator->string('variant', false, 100);
         $year = $validator->integer('year', false, self::FIRST_YEAR, $currentYear + 1);
         $firstRegistered = self::firstRegistered($validator, $today);
+        $firstInspection = $firstInspectionOnForm
+            ? self::firstInspection($validator, $firstRegistered)
+            : $keptFirstInspection;
         $registration = $validator->string('registration', false, 20);
         $vin = self::vin($validator);
         $fuelType = $validator->enum('fuel_type', FuelType::class, true);
@@ -218,6 +246,7 @@ final class VehicleForm
             defaultGrade: self::fittingGrade($defaultGrade, $fuelType),
             variant: $variant,
             firstRegisteredOn: $firstRegistered,
+            firstInspectionDueOn: $firstInspection,
         );
     }
 
@@ -238,6 +267,31 @@ final class VehicleForm
         }
         if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
             $validator->addError('first_registered_on', 'vehicle.registered_too_early');
+
+            return null;
+        }
+
+        return $date;
+    }
+
+    /**
+     * *First MOT due*: a calendar date, not before first registration when
+     * both are set, and not before the first registered cars. Any later
+     * date is fine: it is a date the owner expects, not a record.
+     */
+    private static function firstInspection(Validator $validator, ?DateTimeImmutable $firstRegistered): ?DateTimeImmutable
+    {
+        $date = $validator->date('first_inspection_due_on');
+        if ($date === null) {
+            return null;
+        }
+        if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
+            $validator->addError('first_inspection_due_on', 'vehicle.first_inspection_too_early');
+
+            return null;
+        }
+        if ($firstRegistered !== null && $date < $firstRegistered) {
+            $validator->addError('first_inspection_due_on', 'vehicle.first_inspection_before_registration');
 
             return null;
         }
