@@ -4,7 +4,14 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Database;
 
+use DateTimeImmutable;
+use Logbook\Domain\Expense\ExpenseCategory;
+use Logbook\Service\Report\ReportFilter;
+use Logbook\Service\Report\ReportPeriod;
+use Logbook\Service\Report\ReportRange;
+use Logbook\Service\Report\ReportService;
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\Migrator;
 use RuntimeException;
 
@@ -15,6 +22,8 @@ use RuntimeException;
  */
 final class UsersAndSharingMigrationTest extends AppTestCase
 {
+    use CostFixtures;
+
     /** The migration before users and sharing (Phase 18.2's API keys). */
     private const string BEFORE = '20261011100000';
 
@@ -96,5 +105,57 @@ final class UsersAndSharingMigrationTest extends AppTestCase
         Migrator::run('rollback');
         self::assertFalse($schema->tablesExist(['vehicle_shares']));
         self::assertEquals(1, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM users'), 'the user stays');
+    }
+
+    public function testUpgradingARealGarageChangesNothingVisible(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, '2026-09-30T12:00:00Z');
+        $browser = $this->signedIn($app);
+        $owner = $this->owner($app);
+        $golf = $this->vehicle($app);
+        $this->fillUp($app, $golf, '2026-09-01T08:00:00Z', '10000', '40', '55.00');
+        $this->fillUp($app, $golf, '2026-09-10T08:00:00Z', '10500', '44.5', '61.37');
+        $this->maintenance($app, $golf, '2026-09-05', 'Annual service', '187.43', '10200');
+        $this->expense($app, $golf, '2026-09-12', '12.91', ExpenseCategory::Parking);
+        $id = (string) $golf->id;
+        $pages = ['/', '/garage', '/reports', '/vehicles/' . $id, '/vehicles/' . $id . '/fuel', '/vehicles/' . $id . '/history'];
+        $before = array_map(fn (string $page): string => self::figures(self::body($browser->get($page))), $pages);
+        self::assertStringContainsString('61.37', implode(' ', $before), 'the pages show the figures compared');
+        $filter = new ReportFilter(ReportPeriod::preset(ReportRange::AllTime, new DateTimeImmutable('2026-09-30')), $golf->id);
+        $total = $this->service($app, ReportService::class)->compare($owner, [$golf], [$filter])[0]->currencies[0]->total;
+
+        // Back to 1.10.0 (one user: allowed) and up again, as an upgrade does.
+        Migrator::run('rollback');
+        Migrator::run('migrate');
+
+        $again = $this->createApp();
+        $this->pinClock($again, '2026-09-30T12:00:00Z');
+        $browser = $this->browserFor($again, 'owner');
+        $after = array_map(fn (string $page): string => self::figures(self::body($browser->get($page))), $pages);
+        self::assertSame($before, $after, 'every figure on every page is as it was');
+        $upgraded = $this->owner($again);
+        self::assertTrue($upgraded->isAdmin);
+        $same = $this->service($again, ReportService::class)->compare($upgraded, [$golf], [$filter])[0]->currencies[0]->total;
+        self::assertTrue($total->equals($same));
+        self::assertStringNotContainsString('Added by', self::body($browser->get('/vehicles/' . $golf->id . '/fuel')));
+        self::assertEquals(
+            0,
+            $this->connection($again)->fetchOne('SELECT COUNT(*) FROM fuel_entries WHERE created_by IS NULL'),
+            'every fill-up is the owner\'s',
+        );
+    }
+
+    /**
+     * The numbers on a page (amounts, distances, economy), without the
+     * markup around them, the CSRF token and the asset versions.
+     */
+    private static function figures(string $html): string
+    {
+        $text = (string) preg_replace('/<(script|style)\b.*?<\/\1>/s', '', $html);
+        $text = strip_tags($text);
+        preg_match_all('/\d[\d,.]*/', $text, $m);
+
+        return implode(' ', $m[0]);
     }
 }
