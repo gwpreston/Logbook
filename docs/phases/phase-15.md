@@ -270,9 +270,11 @@ on a page, the overview and the dashboard. Released as Logbook v1.7.0.
 - **Recurring expenses.** Road tax and permits are ad-hoc expenses today.
   An optional "repeats every N months" on an expense (or logging road tax
   as a document) would bring them in.
+  *Parked 2026-09-30: recorded in spec §12; it would need its own phase.*
 - **Needs attention.** With economy flags (Phase 13), tyre flags and
   overdue items all in place, a short *Needs attention* list on the
   overview, each line linking to its cause. Deliberately not a score.
 - **Price drift.** Scaling last time's cost by elapsed time or fuel-price
   trend would be more realistic and less checkable; leave it out unless
   owners ask.
+  *Decided 2026-09-30: no. Forecasts keep "about £240 (last time)".*

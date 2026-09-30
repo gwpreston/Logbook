@@ -2,9 +2,9 @@
 
 *Small things that make everyday use smoother.*
 
-Status: 📋 planned · ships with Phase 21.2 as **v2.1.0**
+Status: 🚧 in progress · ships with Phase 21.2 as **v2.1.0**
 
-Four owner requests:
+Four owner requests, and one small item from the Phase 20 review (§5):
 
 1. Editing a tyre opens in a modal on desktop, like every other entry
    form. Today it opens a new page.
@@ -175,6 +175,24 @@ stored choice. See *Open questions*.
 
 ---
 
+## 5. Where the registration document goes
+
+Phase 12 asked whether owners would file the V5C under *Bought* instead of
+as a *Registration* document. Decided 2026-09-30 (Phase 20 review): a hint.
+
+### Spec change (§7.1)
+
+- The *Purchase paperwork* hint adds: "Keep the registration certificate
+  (V5C) as a *Registration* document instead, so it shows with the
+  vehicle's documents and reminders." German names the
+  *Zulassungsbescheinigung*. The sale paperwork hint is unchanged.
+
+### Tasks
+- [ ] The purchase input's hint, in en and de.
+- [ ] Test: the vehicle form shows it under *Purchase paperwork* only.
+
+---
+
 ## Acceptance criteria
 
 1. On desktop, editing a tyre (and a tyre change or set) opens a modal. On
@@ -194,7 +212,12 @@ stored choice. See *Open questions*.
 - **Digest for existing users:** keep them as they are (drafted), or
   switch it on for everyone who never made a choice, with a line in the
   upgrade notes?
+  *Decided 2026-09-30: keep them as they are (drafted). Anyone who has saved the
+  Notifications card already has an explicit `digest: false`, so a
+  switch would have reached only some users anyway.*
 - **Scope of the modal change:** tyre edit only, or every tyre form
   (drafted)?
+  *Decided 2026-09-30: every tyre form (drafted).*
 - **Drop zones on CSV import and restore:** wanted, or attachments and the
   vehicle form only?
+  *Decided 2026-09-30: yes, the same macro on both.*

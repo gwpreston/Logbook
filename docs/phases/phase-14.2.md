@@ -245,5 +245,8 @@ Decided while building and recorded in `spec.md` §7.7:
 - **Dashboard tile or widget** for cost of ownership. The pinned card has
   four tiles already; a fifth, or a switch on *Running cost*, needs a
   design look first.
+  *Parked 2026-09-30: recorded in spec §12, pending a design pass.*
 - **Business mileage.** Once a trip log exists (§12), cost per business
   mile would be the obvious next figure.
+  *Decided 2026-09-30: trips arrive in Phase 22, and cost per business mile is
+  added to it.*

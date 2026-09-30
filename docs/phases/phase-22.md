@@ -153,6 +153,14 @@ GB, else `01-01`) and the claim report's declaration text (optional).
 - **Reports** (§7.7): *Business mileage*: distance, claim value, and
   business share of the total per vehicle for the period, and the fleet
   total.
+- **Cost per business mile** (decided 2026-09-30, from Phase 14.2's open
+  question): the *Business mileage* report and the claim report show,
+  per vehicle, the vehicle's cost of ownership *Per distance* for the
+  period (§7.7, running costs plus depreciation, or running costs alone
+  when there is no value) beside the claim value per business mile, so
+  the owner can see whether the allowance covers what the car costs to
+  run. It is a figure, not advice, and is left out ("—") when either part
+  cannot be worked out.
 - **Dashboard widget** *Business mileage*: this tax year's business
   distance, the value so far, and distance to the rate threshold ("6,418
   mi until the 25p rate").
@@ -318,6 +326,9 @@ Update §12: remove the trip-log line.
       mile trips; rounding per trip; employer higher and lower; a trip
       before the earliest rate set (no value, and the report says so);
       mixed currencies.
+- [ ] **Cost per business mile:** the period's cost per distance beside
+      the claim value per business mile; "—" without a distance or with
+      no running costs; km vehicles show per km.
 - [ ] **Split:** private = total − business; sparse readings → "—" with
       the notice; logged private trips don't change it; module off → gone.
 - [ ] **Form:** return doubling; odometer distance; mismatch refused; a
@@ -379,3 +390,5 @@ Update §12: remove the trip-log line.
   only, instead of off for everyone?
 - **Van type:** vans share the car rates. Is a `van` vehicle type wanted,
   or do vans stay as `car`?
+- **Cost per business mile:** cost of ownership per distance (drafted:
+  running costs plus depreciation), or running costs only?

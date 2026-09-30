@@ -394,6 +394,8 @@ Phase 11.1 as Logbook v1.3.0.
   One set of defaults and a hint for now.
 - **Depth per zone** (inner / centre / outer) would reveal alignment
   problems. It triples the check form, so it waits for demand.
+  *Parked 2026-09-30: recorded in spec §12; not scheduled.*
 - **Rotation suggestion:** when the fronts wear much faster than the rears,
   suggest a rotation if the owner has no rotation schedule. This sits
   better with a later maintenance-insights phase.
+  *Parked 2026-09-30: with maintenance insights in spec §12.*

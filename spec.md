@@ -215,8 +215,10 @@ disagree):
   (§7.10).
 - **Modal forms (progressive enhancement).** Every entry form is a real page
   with its own URL. The add / edit forms for vehicles, fill-ups, odometer
-  readings, service records, service intervals, documents and expenses, and
-  the *Log entry* chooser (§7.3), are reached by links marked `data-modal`.
+  readings, service records, service intervals, documents and expenses,
+  tyres, tyre changes and tyre sets (with their delete confirmations,
+  Phase 21.1), and the *Log entry* chooser (§7.3), are reached by links
+  marked `data-modal`.
   With JS **and** a wide viewport (>= 960px, the sidebar breakpoint), such a
   link opens a native `<dialog>` instead: the page is fetched with the
   request header `X-Logbook-Modal: 1`, and the same Action and template
@@ -649,7 +651,10 @@ from fleet totals unless "include archived" is toggled.
   under the sale fields of the form (page and modal, add and edit), the
   shared attachment input (§7.12) with the files already attached and their
   delete links. The two inputs share one limit per save (PHP counts every
-  file in the request), and the hint says so. Sale files without a sale
+  file in the request), and the hint says so. The purchase input's hint
+  adds (Phase 21.1): "Keep the registration certificate (V5C) as a
+  *Registration* document instead, so it shows with the vehicle's
+  documents and reminders." Sale files without a sale
   date are refused ("Add the sale date to attach the sale paperwork"),
   likewise for the purchase; clearing a date while its files are attached
   is refused ("Remove the sale paperwork first, or keep the sale date"),
@@ -1612,7 +1617,12 @@ Extensible channel interface so more can be added.
   fails, that recipient's claims are deleted so the next run retries; a
   partial failure is logged and not retried (the channels that succeeded
   must not repeat). One recipient failing never affects another.
-- **Digest** (optional, off by default, per user): on the first run of each
+- **Digest** (optional, per user; on by default from 2.1.0 for new users,
+  created by setup or invitation. Upgrading to 2.1.0 stores an explicit
+  "off" for every existing user with no stored choice, so nobody starts
+  getting a digest they didn't choose; rolling back leaves those rows,
+  which behave as the old default. It needs a channel set up, as today):
+  on the first run of each
   month in the user's time zone, covering their recipient vehicles, one summary of every open reminder due by the end
   of that month, overdue ones included. Nothing is sent when nothing is due.
 - **Content** is translated into the recipient's language and formatted in their
@@ -1645,6 +1655,25 @@ outside web root, served via an authenticated handler; type/size validated.
     sits above it); each file within `MAX_UPLOAD_MB`. The hint states both
     ("Up to 10 files, each up to 10 MB"). With JS, choosing more than the
     limit is refused before submitting. No new configuration.
+  - **Dropping files** (Phase 21.1): the shared input is wrapped in a drop
+    zone ("Drag files here or choose files"). Progressive enhancement:
+    without JS it is the plain `<input type="file" multiple>`, and the
+    native input stays in the page, focusable and clickable. Dropped files
+    are **added to** the input's current selection (built with
+    `DataTransfer` and assigned to `input.files`), so the form, the modal
+    `FormData` submit and the one parser are unchanged. The zone lists the
+    chosen files (name and size), each with *Remove*; it highlights while
+    files are dragged over it (dashed border and text, not colour alone)
+    and announces changes through an `aria-live` region ("3 files added";
+    "receipt.heic: not a PDF, JPEG, PNG or WebP file"). The client applies
+    the same count, size and type limits before submitting; the server is
+    still the authority. A drop elsewhere on a page with a zone is ignored,
+    so the browser never navigates away from the form; pages without a
+    zone are untouched. The same macro serves the vehicle form's purchase
+    and sale inputs, the vehicle photo, CSV import's upload and backup
+    restore's upload; a single-file input's drop replaces its file. Where
+    dragging is unsupported (touch devices) the zone says only "Choose
+    files".
   - **All or nothing.** Every file is checked before any is stored; one
     rejected file fails the whole save with a message naming it
     ("receipt.heic: not a PDF, JPEG, PNG or WebP file"), nothing is written
@@ -2030,7 +2059,9 @@ the wear estimate and tyre reminders came with Phase 11.2 (below).
   change** deletes its lines and reading; a tyre left with no lines (one it
   created) is deleted with it, which the confirmation page says. Any linked
   service record is kept.
-- **Editing a tyre** (its own page) changes brand, model, size, season, DOT
+- **Editing a tyre** (its own page, and a desktop modal from Phase 21.1,
+  as are *Edit change*, *Edit set* and the three delete confirmations;
+  links from History carry `return`, §5) changes brand, model, size, season, DOT
   and notes, never status or position. Deleting a tyre deletes its lines; a
   change left with no lines is deleted with its reading (a linked service
   record is kept); then the replay runs.
@@ -2324,10 +2355,23 @@ available for active and archived vehicles.
     one total ("£3,240 spent on servicing and repairs since March 2021").
     Purchase and sale prices, fuel, expenses, valuations and ownership
     costs are **never** in the pack, whatever the options.
+  - *Include the vehicle photo* (Phase 21.1): off by default. Only
+    `photo=1` turns it on. Disabled, with the hint "Add a photo on the
+    vehicle's edit page" (a link), when the vehicle has none. With it on,
+    a screen-only notice says "The photo may show your number plate, house
+    or street. Check it before you share the pack." The photo is served by
+    the authenticated photo route and never goes in the ZIP.
   - Which kinds of paperwork go in the ZIP (below).
   The options panel and every seller notice are screen-only and are never
   printed.
-- **Summary** (the first printed page):
+- **Cover page** (Phase 21.1, only with the photo on): printed first and
+  shown the same on screen. The photo as large as fits the page
+  (`object-fit: contain`, never cropped or stretched; a tall photo shrinks
+  rather than pushing the text to another page), the vehicle's name, make,
+  model and variant, model year, registration, the title "Vehicle
+  history", and "Prepared {date}" in the owner's date format. A page break
+  follows, so the summary starts on page two.
+- **Summary** (the first printed page, or the second after a cover):
   - *Vehicle:* name, make, model and variant, model year, fuel type,
     registration, VIN, and first registered with age (as the print header
     shows them today).
@@ -2861,6 +2905,16 @@ Real environment variables override `.env`; an empty value counts as unset.
   OBD-II / vehicle-API mileage import.
 - Server-side PDF (emailed reports, one-file sale pack with invoices
   merged).
+- **Maintenance insights** (parked 2026-09-30, `docs/phases/open-questions.md`
+  #13, #16, #18): a tyre rotation suggestion when the fronts wear faster
+  than the rears; seasonal baselines for economy checks; detecting a
+  sudden, sustained change in economy.
+- Tread depth per zone (inner / centre / outer) (#12).
+- An insurance document's agreed value offered as a valuation (#19).
+- A cost-of-ownership tile or widget on the dashboard, after a design pass
+  (#21).
+- Recurring expenses (road tax, permits) with a repeat interval, shown in
+  *Coming up* (#24).
 
 ---
 
@@ -2999,6 +3053,16 @@ task breakdowns live in the per-phase files; this is the map.
   entry; reminders per recipient with `reminder_deliveries` and personal
   channels (§7.11); `bin/export-user.php`; the `SharedVehicleAccess`
   policy (§5); rollback refused with more than one user; release v2.0.0.
+- **Phase 20 — Phase files into `docs/phases/`, open-questions review.**
+  No app change: the phase files move with their history, a test checks
+  every Markdown link, `CLAUDE.md` §12 sets the rule for open questions,
+  and `docs/phases/open-questions.md` logs every one with its decision.
+- **Phase 21.1 — Tyre modals, drag-and-drop files, digest on by default,
+  sale pack cover.** Every tyre form as a desktop modal (§5, §7.17); a drop
+  zone on every file input (§7.12); the digest on for new users, existing
+  users unchanged (§7.11); an optional cover page with the vehicle photo
+  in the sale pack (§7.19); the V5C hint on purchase paperwork (§7.1).
+  Ships with Phase 21.2 as v2.1.0.
 
 ---
 
