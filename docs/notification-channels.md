@@ -1,8 +1,10 @@
 # Notification channels
 
 Reminders always appear in the app. When they come due (and again if they
-become overdue) the scheduled task also sends them through the owner's
-**notification channels** (spec.md §7.11). Logbook ships four:
+become overdue) the scheduled task also sends them through each recipient's
+**notification channels** (spec.md §7.11). A vehicle's recipients are its
+owner and anyone it is shared with who ticked *Send me its reminders*
+([users-and-sharing.md](users-and-sharing.md)). Logbook ships four:
 
 | Key | Channel | Configured by |
 |---|---|---|
@@ -12,10 +14,21 @@ become overdue) the scheduled task also sends them through the owner's
 | `webhook` | JSON `POST` to any URL | `WEBHOOK_URL` |
 
 A channel is **configured** when its environment variables are set, and
-**enabled** per owner in Settings → Reminders (until the owner chooses, every
-configured channel is on). Only channels that are both are used. Settings →
-Reminders → *Send a test* checks the ones in use; failures are logged at
-`warning` level.
+**enabled** per user in Settings → Reminders (until they choose, every
+configured channel is on). It is used for someone only when it is enabled
+and it **reaches** them:
+
+| Channel | Reaches an admin | Reaches a member |
+|---|---|---|
+| `email` | their own address, else `MAIL_TO` | their own address only |
+| `ntfy` | their own topic URL, else `NTFY_URL` | their own topic URL only |
+| `gotify` | their own application token, else `GOTIFY_TOKEN` (on `GOTIFY_URL`) | their own token on `GOTIFY_URL` only |
+| `webhook` | always, when `WEBHOOK_URL` is set | always; the payload names the `user` |
+
+So a household ntfy topic or a shared inbox gets the admins' reminders only,
+never everyone's cars. Each person sets their own address, topic and token in
+Settings → Reminders. *Send a test* checks the channels that reach you;
+failures are logged at `warning` level.
 
 ## How it fits together
 
@@ -24,7 +37,7 @@ bin/run-scheduled-tasks.php ─► ScheduledTasks ─► ReminderNotifier
                                                     │  sync, claim, compose
                                                     ▼
                                          NotificationDispatcher
-                                                    │  registry->active(preferences)
+                                                    │  registry->active(preferences, recipient)
                                                     ▼
                            ChannelRegistry ◄── 'notification.channels' (DI list)
                                                     │
@@ -58,6 +71,9 @@ dispatcher or the settings page changes:
        public function key(): string { return 'telegram'; }        // stored in settings; never change it
        public function label(): string { return 'Telegram'; }      // a product name, or a translation key
        public function isConfigured(): bool { return $this->token !== null && $this->chatId !== null; }
+       // Whether it can deliver to this person: here, one chat for everyone,
+       // so an instance-wide chat is an admin's (see the table above).
+       public function reaches(Recipient $recipient): bool { return $this->isConfigured() && $recipient->isAdmin; }
 
        public function send(Notification $notification, Recipient $recipient): DeliveryResult
        {
@@ -69,7 +85,9 @@ dispatcher or the settings page changes:
    ```
 
    `send()` gets a `Notification` that is already translated and formatted for
-   the owner: `title`, `message` (plain text), `url` (absolute link to the
+   the recipient (a `Recipient`: their id, name, username, whether they are an
+   admin, and their own email, ntfy topic and Gotify token), and a
+   `Notification`: `title`, `message` (plain text), `url` (absolute link to the
    reminders), `urgent` (something is overdue) and structured `items`. Report
    failure with `DeliveryResult::failed()`; exceptions are caught and logged by
    the dispatcher too, and one failing channel never stops the others.
@@ -92,7 +110,7 @@ dispatcher or the settings page changes:
 3. **Document its variables** in `.env.example` and spec.md §9 (and pass them
    through in the compose files if Docker users should set them in `.env`).
 
-That's all: it appears in Settings → Reminders, can be enabled per owner, is
+That's all: it appears in Settings → Reminders, can be enabled per user, is
 tested by *Send a test*, and receives reminders and digests. For tests, see
 `tests/Support/FakeChannel.php` and `tests/Unit/Service/Notification/NotificationDispatcherTest.php`;
 the shipped channels are exercised with recorded transports in
@@ -100,15 +118,17 @@ the shipped channels are exercised with recorded transports in
 
 ## What is sent, and when
 
-- Each reminder is sent **once when it becomes due** (enters its lead time)
-  and **once more if it becomes overdue**. Everything newly due for an owner in
-  one run goes out as one notification.
-- Before sending, each reminder is *claimed* (a conditional update of
-  `reminders.notified_status`), so overlapping or repeated runs never send it
-  twice. If no channel delivers, the claim is released and the next run
-  retries; channels that did deliver are recorded in
-  `reminders.channels_notified` and are not repeated.
-- With no channel enabled and configured, nothing is claimed: whatever is
-  still due is sent once a channel is set up.
-- The optional monthly digest goes out on the first run of each month (the
-  owner's time zone).
+- Each reminder is sent to each recipient **once when it becomes due**
+  (enters its lead time, the vehicle owner's) and **once more if it becomes
+  overdue**. Everything newly due for one person in a run goes out as one
+  notification, in their language, units and time zone.
+- Before sending, each reminder is *claimed* for that person and status (a
+  row in `reminder_deliveries`, unique per reminder, user and status), so
+  overlapping or repeated runs never send it to them twice. If no channel
+  delivers, their claims are released and the next run retries; channels
+  that did deliver are recorded and are not repeated. One person's failure
+  never resends to another.
+- With no channel reaching someone, nothing is claimed for them: whatever is
+  still due is sent once they set a channel up.
+- The optional monthly digest goes out on the first run of each month (each
+  user's time zone), covering the vehicles they receive reminders for.

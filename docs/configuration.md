@@ -41,7 +41,7 @@ which notification channels to use — are chosen in the app, not here. The
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SESSION_SECRET` | *(empty)* | Key for hashing session ids, calendar-feed tokens and API keys at rest. Generate with `openssl rand -hex 32`. Changing it signs everyone out, disables calendar feed links and disables every API key. |
+| `SESSION_SECRET` | *(empty)* | Key for hashing session ids, calendar-feed tokens, API keys and invitation links at rest. Generate with `openssl rand -hex 32`. Changing it signs everyone out, disables calendar feed links, open invitation and reset links, and every API key. |
 | `SESSION_SECURE` | true when `APP_URL` is `https://` | Send the session cookie over HTTPS only. |
 
 ## REST API
@@ -85,10 +85,10 @@ which configured channels to use in **Settings → Reminders**. See
 | `MAIL_USERNAME`, `MAIL_PASSWORD` | *(empty)* | SMTP credentials. |
 | `MAIL_ENCRYPTION` | `tls` | `tls` (STARTTLS, required), `ssl` (implicit TLS, usually port 465) or `none`. |
 | `MAIL_FROM` | `logbook@localhost` | Sender, `address` or `Name <address>`. |
-| `MAIL_TO` | *(empty)* | Default recipient; each owner can set their own. |
-| `NTFY_URL` | *(empty)* | ntfy topic URL, e.g. `https://ntfy.sh/my-garage`. |
+| `MAIL_TO` | *(empty)* | The admins' default recipient; each user can set their own, and members get email only at their own. |
+| `NTFY_URL` | *(empty)* | ntfy topic URL, e.g. `https://ntfy.sh/my-garage`: the admins' reminders; each user can set their own topic. |
 | `NTFY_TOKEN` | *(empty)* | Access token for a protected topic. |
-| `GOTIFY_URL`, `GOTIFY_TOKEN` | *(empty)* | Gotify server URL and application token. |
+| `GOTIFY_URL`, `GOTIFY_TOKEN` | *(empty)* | Gotify server URL and application token (the admins'; each user can set their own token on this server). |
 | `GOTIFY_PRIORITY` | `5` | 0–10; overdue reminders are sent at 8 or more. |
 | `WEBHOOK_URL` | *(empty)* | Receives each notification as a JSON POST. |
 

@@ -117,13 +117,18 @@ disagree):
   | `Manage` | editing the vehicle and editing or deleting any entry, schedules, reminders, valuations, import, sale pack |
   | `Own` | archive, restore, delete, transfer, sharing |
 
+  - `recipientVehicleIds(User): list<int>` (Phase 19): the active
+    vehicles whose reminders the user receives (see *Cross-vehicle reads*).
+
   Editing or deleting *one's own* entry under `Log` uses who logged it
-  (`created_by`, Phase 19): `VehicleAccess::canChangeEntry(User, Vehicle,
-  ?int $createdBy)` is true with `Manage`, or with `Log` when the entry
-  is the user's own. Entry edit and delete routes declare `Log` and the
-  Action asks `canChangeEntry()` for the entry it loaded (403 otherwise).
-  `canSeeAmount(User, Vehicle, ?int $createdBy)` is true with
-  `ViewCosts`, or for the user's own entry (they typed the amount).
+  (`created_by`, Phase 19), in `Service\Access\EntryAccess` on top of the
+  vehicle policy: `canChange(User, Vehicle, ?int $createdBy)` is true with
+  `Manage`, or with `Log` when the entry is the user's own;
+  `canSeeAmount(User, Vehicle, ?int $createdBy)` is true with `ViewCosts`,
+  or with `View` for the user's own entry (they typed the amount). Entry
+  edit and delete routes (fill-ups, readings, service records, documents,
+  expenses, tyre changes, attachments) declare `Log`, and the Action asks
+  `Action\EntryGuard` once it has loaded the entry (403 otherwise).
 
   `Service\Access\InstanceAccess::can(User, InstanceAbility)` covers
   `ManageModules`, `Backup`, `Restore`, `ManageNotifications` and
@@ -549,10 +554,12 @@ MySQL only.
   odometer_readings (`manual` readings; a derived reading's author is its
   entry's), maintenance_entries, compliance_documents, expense_entries,
   tyre_changes and vehicle_valuations, and uploaded_by on attachments.
-  Every create path sets it: forms, CSV import and the API. Existing rows
-  stay null, which reads as the vehicle's owner; so does the row of a
-  deleted user, shown as "a former user" when the vehicle has other
-  people on it. Editing never changes it.
+  Every create path sets it: forms, CSV import and the API take the
+  signed-in or key's user; the command line and seeds, which have none,
+  name the vehicle's owner. Upgrading to 2.0.0 names each vehicle's owner
+  on the rows already there (manual readings only), so null means only a
+  deleted user, shown as "a former user". Editing and transfers never
+  change it.
 
 **Session**
 - id (HMAC-SHA256 of the random cookie token, keyed with `SESSION_SECRET`; the
@@ -1489,7 +1496,10 @@ First-run setup creates the initial account. CSRF on all forms.
     new password only. There is no self-service reset by email.
   - *Revoke* an open link.
   - *Delete* (with a confirmation page): refused while the user owns
-    vehicles, listing them with a link to each one's *Transfer*. Their
+    vehicles, listing them, each with a transfer form for the admin
+    (`POST /settings/users/{member}/vehicles/{vehicle}/transfer`: the
+    owner's transfer without *Keep access*), so an account nobody can
+    sign in to can still be removed. Their
     shares, API keys, calendar feed, settings, dashboard layout and
     sessions go; entries they added to other people's vehicles stay, with
     `created_by` null (shown as "a former user").
@@ -1759,9 +1769,10 @@ vehicles; a disabled module cannot be imported).
 - **`php bin/export-user.php <username> [file]`** (Phase 19) writes a
   backup-format ZIP holding only that user, their vehicles (with every
   entry, schedule, reminder and file) and their own settings, for moving
-  someone to their own install. Shares, other users and entries' authors
-  are left out (`created_by` becomes null: the new install's one user owns
-  everything). It restores like any backup of the same version.
+  someone to their own install. Shares, other users and install-wide
+  settings are left out, and every entry names the exported user as its
+  author (the new install's one user, an admin there, added everything).
+  It restores like any backup of the same version.
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -2594,21 +2605,23 @@ their own and shared vehicles only (backup is how an admin sees
 everything). Documents, with their policy numbers and registration, are
 part of View.
 
-- **Share** (`/vehicles/{id}/sharing`, `Own`; *Sharing* in the vehicle
-  header menu): the current shares (user, level, *Can see costs*, *Send
-  me its reminders*) each with *Save* and *Remove*, and *Add* by username
-  with those three. Plain forms, working without JS. Adding refuses an
+- **Share** (`GET /vehicles/{id}/sharing`, `View`; *Sharing* in the
+  vehicle header): for the owner the current shares (user, level, *Can see
+  costs*, *Send them its reminders*) each with *Save* and *Remove*
+  (`POST …/sharing/{member}/save|remove`, `Own`), and *Add* by username
+  with those three (`POST …/sharing`, `Own`). Plain forms, working without JS. Adding refuses an
   unknown or disabled username, the owner, and a user who already has a
   share. A shared user sees the share's `notify` as their own choice:
-  they can switch it on the vehicle's *Sharing* page too (*Leave* and
-  *Send me its reminders* are the only things there for a non-owner).
+  they can switch it on the vehicle's *Sharing* page too (`POST
+  …/sharing/me/notify`; *Leave* and *Send me its reminders* are the only
+  things there for a non-owner).
 - **Transfer** (`/vehicles/{id}/transfer`, `Own`, with a confirmation
   page): to another active user, who becomes the owner (`vehicles.user_id`)
   and loses their share if they had one; everything stays attached to the
   vehicle (entries, schedules, reminders, files, shares). The old owner
   keeps a Manage share unless they untick *Keep access*. Reminder
   deliveries are kept, so nothing is sent again.
-- **Leave** (`POST /vehicles/{id}/sharing/leave`, `View`): a user with a
+- **Leave** (`POST /vehicles/{id}/sharing/me/leave`, `View`): a user with a
   share removes it themselves and goes to the garage.
 - **Garage** (`/vehicles`): *Your vehicles*, then *Shared with you* (each
   card naming the owner and your level); each group keeps its archived
@@ -2620,12 +2633,15 @@ part of View.
   without costs").
 - **Costs without `ViewCosts`:** amounts, prices, reports, the cost of
   ownership card, valuations and *Coming up* costs are hidden, and amount
-  columns show "—". The one exception is a user's **own entries**: they
-  see the amounts they typed (row amounts through `can_see_amount()`).
-  Figures derived from several entries (cost per distance, totals, price
-  trends) stay hidden even when some are theirs. Forms still take costs,
-  since a driver pays at the pump. CSV exports need `Manage`; print shows
-  costs only with `ViewCosts`.
+  columns show nothing. The one exception is a user's **own entries**:
+  they see the amounts they typed (row amounts through `can_see_amount()`,
+  and in the API). Figures derived from several entries (cost per
+  distance, totals, price trends, an economy segment's cost) stay hidden
+  even when some are theirs. Forms still take costs, since a driver pays
+  at the pump. The Expenses tab (`View`) lists the vehicle's ad-hoc
+  expenses without their amounts (their own excepted) and no totals or
+  chart; the API's expenses list still needs `ViewCosts`. CSV exports need
+  `Manage`; print shows costs only with `ViewCosts`.
 - **Log level:** the add forms for every kind; edit and delete only on
   entries whose `created_by` is them (403 otherwise). Others' entries show
   without edit or delete links. Import, schedules, valuations, the sale
