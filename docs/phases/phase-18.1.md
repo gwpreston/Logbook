@@ -13,7 +13,7 @@ question now, answers it with "yes, it's yours" for the single owner, and
 proves every route asks it. Behaviour does not change; no screen or figure
 moves.
 
-Read [`CLAUDE.md`](CLAUDE.md) §5 and [`spec.md`](spec.md) §5 first.
+Read [`CLAUDE.md`](../../CLAUDE.md) §5 and [`spec.md`](../../spec.md) §5 first.
 
 ---
 

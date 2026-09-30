@@ -13,7 +13,7 @@ fill-up, Grafana panels, Node-RED flows, and OBD tools posting the odometer.
 It is also the base for AI actions later (an MCP server on top of the
 OpenAPI description), which is not in this phase.
 
-Read [`CLAUDE.md`](CLAUDE.md), [`spec.md`](spec.md) §5 and the Phase 18.1
+Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5 and the Phase 18.1
 policy first.
 
 ---

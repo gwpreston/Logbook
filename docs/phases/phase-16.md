@@ -11,7 +11,7 @@ themselves, though. The *By grade* card shows E5's price and E5's economy
 side by side, but not whether E5 is cheaper to drive on. This phase works
 out the answer from data the app already stores, and stores nothing new.
 
-Read [`CLAUDE.md`](CLAUDE.md) and [`spec.md`](spec.md) §7.3 first. The spec
+Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.3 first. The spec
 text below goes into §7.3 **before** any code (CLAUDE.md §12).
 
 ---
