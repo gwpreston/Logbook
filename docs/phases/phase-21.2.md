@@ -247,8 +247,8 @@ The column arrives empty. Vehicles already in the garage get option A
   marked done by the save would have been deleted on the next page view.
   Instead, when a vehicle has an `inspection` document, sync marks its
   `first_inspection` reminder done, keeps it, and never raises a new one.
-  That also covers certificates that arrive through CSV import, the API
-  or a restore, which a save hook would miss. One helper,
+  That also covers certificates that arrive through CSV import or a
+  restore, which a save hook would miss. One helper,
   `Service\Compliance\FirstInspection`, decides "has an inspection
   document" (any, replaced and expired included) for sync, *Coming up*,
   the overview, the Documents tab, the sale pack, the form and the prompt.
