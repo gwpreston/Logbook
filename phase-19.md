@@ -68,101 +68,101 @@ multi-tenant: one install is one household.
 
 ### §6 Data model
 
-> **User** gains `is_admin` (bool, default false) and `disabled_at` (UTC,
-> nullable). Upgrading to 2.0.0 sets `is_admin = true` on every existing
-> user (there is one). Rolling back is refused while more than one user
-> exists, with a message naming the command that exports their data first.
->
-> **VehicleShare** (new): id, vehicle_id (`ON DELETE CASCADE`), user_id
-> (`ON DELETE CASCADE`), level (`view`|`log`|`manage`), can_see_costs
-> (bool), notify (bool, default false: whether this user gets the vehicle's
-> reminders), created_at, updated_at. The pair (vehicle_id, user_id) is
-> unique. The owner is `vehicles.user_id` and never has a share row.
->
-> **Invitation** (new): id, token_hash (HMAC-SHA256 with `SESSION_SECRET`,
-> like other tokens), created_by (user), username (reserved), display_name,
-> is_admin, expires_at (7 days), used_at, created_at.
->
-> **Entry authorship:** `created_by` (user id, nullable, `ON DELETE SET
-> NULL`) on fuel_entries, odometer_readings (manual only; derived readings
-> take their entry's), maintenance_entries, compliance_documents,
-> expense_entries, tyre_changes, vehicle_valuations and attachments
-> (`uploaded_by`). Existing rows stay null, which reads as the vehicle's
-> owner. Imported rows take the importing user.
->
-> Backups carry every new table and column. A 2.0.0 backup never restores
-> into 1.x (the schema version moves).
+**User** gains `is_admin` (bool, default false) and `disabled_at` (UTC,
+nullable). Upgrading to 2.0.0 sets `is_admin = true` on every existing
+user (there is one). Rolling back is refused while more than one user
+exists, with a message naming the command that exports their data first.
+
+**VehicleShare** (new): id, vehicle_id (`ON DELETE CASCADE`), user_id
+(`ON DELETE CASCADE`), level (`view`|`log`|`manage`), can_see_costs
+(bool), notify (bool, default false: whether this user gets the vehicle's
+reminders), created_at, updated_at. The pair (vehicle_id, user_id) is
+unique. The owner is `vehicles.user_id` and never has a share row.
+
+**Invitation** (new): id, token_hash (HMAC-SHA256 with `SESSION_SECRET`,
+like other tokens), created_by (user), username (reserved), display_name,
+is_admin, expires_at (7 days), used_at, created_at.
+
+**Entry authorship:** `created_by` (user id, nullable, `ON DELETE SET
+NULL`) on fuel_entries, odometer_readings (manual only; derived readings
+take their entry's), maintenance_entries, compliance_documents,
+expense_entries, tyre_changes, vehicle_valuations and attachments
+(`uploaded_by`). Existing rows stay null, which reads as the vehicle's
+owner. Imported rows take the importing user.
+
+Backups carry every new table and column. A 2.0.0 backup never restores
+into 1.x (the schema version moves).
 
 ### §7.9 Authentication, users and invitations
 
-> - **Setup** is unchanged: it creates the first user, an admin.
-> - **Users** (Settings → Users, admin only): list with role, last sign-in
->   and status; *Invite*; *Make admin* or *Remove admin* (never the last
->   one); *Disable*, which ends their sessions and API keys at once and
->   blocks sign-in; *Enable*; and *Delete* (below).
-> - **Invite:** the admin types a username, display name and whether they
->   are an admin. The app shows a one-time link
->   (`/invite/{token}`, 7 days) to copy. If email is configured, it can also
->   send it to an address typed then, which is not stored. Opening the link
->   asks for a password, locale, time zone, unit preset and currency, as
->   setup does, then signs the user in. Used, expired or revoked links
->   answer 404.
-> - **Password reset** by an admin: *Reset password* creates the same kind
->   of one-time link for an existing user and ends their sessions. There is
->   no self-service reset by email in this phase.
-> - **Deleting a user:** refused while they own vehicles, with a list of
->   those vehicles and *Transfer*. Their shares go. Entries they added to
->   other people's vehicles stay, with `created_by` null, shown as "a former
->   user". Their API keys, calendar feed and sessions go.
-> - Sign-in, sessions and CSRF are as before, per user.
+- **Setup** is unchanged: it creates the first user, an admin.
+- **Users** (Settings → Users, admin only): list with role, last sign-in
+  and status; *Invite*; *Make admin* or *Remove admin* (never the last
+  one); *Disable*, which ends their sessions and API keys at once and
+  blocks sign-in; *Enable*; and *Delete* (below).
+- **Invite:** the admin types a username, display name and whether they
+  are an admin. The app shows a one-time link
+  (`/invite/{token}`, 7 days) to copy. If email is configured, it can also
+  send it to an address typed then, which is not stored. Opening the link
+  asks for a password, locale, time zone, unit preset and currency, as
+  setup does, then signs the user in. Used, expired or revoked links
+  answer 404.
+- **Password reset** by an admin: *Reset password* creates the same kind
+  of one-time link for an existing user and ends their sessions. There is
+  no self-service reset by email in this phase.
+- **Deleting a user:** refused while they own vehicles, with a list of
+  those vehicles and *Transfer*. Their shares go. Entries they added to
+  other people's vehicles stay, with `created_by` null, shown as "a former
+  user". Their API keys, calendar feed and sessions go.
+- Sign-in, sessions and CSRF are as before, per user.
 
 ### §7.21 Sharing
 
-> - **Share** (vehicle header menu, `Own` only): add a user by username
->   with a level, *Can see costs* and *Send me its reminders*; change or
->   remove existing shares. Plain forms, working without JS. The owner can
->   also **transfer** the vehicle to another user, who becomes the owner;
->   the old owner keeps Manage unless they untick it.
-> - **Leave:** a user with a share can remove it themselves.
-> - **Garage:** two groups, *Your vehicles* and *Shared with you* (the
->   latter naming the owner and your level). The dashboard's vehicle chips,
->   fleet history, Reports and *Coming up* cover every vehicle you can see.
->   Cost figures leave out vehicles you cannot see costs for, and say so
->   ("Excludes 1 vehicle shared without costs").
-> - **Costs without `ViewCosts`:** amounts, prices, reports, the cost of
->   ownership card, valuations and the *Coming up* costs are hidden, and
->   amount columns show "—". The one exception is a user's **own entries**:
->   they see the amounts they typed, because they paid them. Forms still
->   take costs, since a driver pays at the pump.
-> - **Log level:** add forms for every kind; edit and delete only on
->   entries with `created_by` = themselves. Other entries show without edit
->   links. Import, schedules, valuations, the sale pack, CSV export and
->   vehicle edits are Manage.
-> - **"Added by":** when a vehicle has any shares, list rows and history
->   show a small "Added by {display name}" on entries not added by the
->   viewer. Entries with `created_by` null count as the owner's.
-> - **Per-user preferences** already exist: each user sees every vehicle in
->   their own units, language and time zone. Money stays in the vehicle's
->   currency.
-> - **Dashboard layouts** are per user already.
+- **Share** (vehicle header menu, `Own` only): add a user by username
+  with a level, *Can see costs* and *Send me its reminders*; change or
+  remove existing shares. Plain forms, working without JS. The owner can
+  also **transfer** the vehicle to another user, who becomes the owner;
+  the old owner keeps Manage unless they untick it.
+- **Leave:** a user with a share can remove it themselves.
+- **Garage:** two groups, *Your vehicles* and *Shared with you* (the
+  latter naming the owner and your level). The dashboard's vehicle chips,
+  fleet history, Reports and *Coming up* cover every vehicle you can see.
+  Cost figures leave out vehicles you cannot see costs for, and say so
+  ("Excludes 1 vehicle shared without costs").
+- **Costs without `ViewCosts`:** amounts, prices, reports, the cost of
+  ownership card, valuations and the *Coming up* costs are hidden, and
+  amount columns show "—". The one exception is a user's **own entries**:
+  they see the amounts they typed, because they paid them. Forms still
+  take costs, since a driver pays at the pump.
+- **Log level:** add forms for every kind; edit and delete only on
+  entries with `created_by` = themselves. Other entries show without edit
+  links. Import, schedules, valuations, the sale pack, CSV export and
+  vehicle edits are Manage.
+- **"Added by":** when a vehicle has any shares, list rows and history
+  show a small "Added by {display name}" on entries not added by the
+  viewer. Entries with `created_by` null count as the owner's.
+- **Per-user preferences** already exist: each user sees every vehicle in
+  their own units, language and time zone. Money stays in the vehicle's
+  currency.
+- **Dashboard layouts** are per user already.
 
 ### §7.11 Notifications
 
-> - A vehicle's reminders go to its **owner**, and to each shared user
->   whose share has `notify` on. Each user's run is separate, in their
->   language, units and time zone, with only the vehicles they can see.
->   `reminders.notified_status` stays per reminder (one status change, one
->   run), and each recipient is sent once per status. That needs
->   `reminder_deliveries` (reminder_id, user_id, status, sent_at, unique
->   triple) instead of the single `channels_notified` list.
-> - **Channels per user:** email goes to the user's own address (set in
->   their Settings → Reminders; `MAIL_TO` is the admin's default). ntfy and
->   Gotify accept a per-user topic URL or token that overrides the
->   instance's. Without one, only admins receive through the instance topic,
->   so a household topic is never flooded by everyone's cars. The webhook
->   stays instance-level, admin-configured, and its payload gains `user`.
-> - The digest and calendar feed are per user and cover their `notify`
->   vehicles plus their own.
+- A vehicle's reminders go to its **owner**, and to each shared user
+  whose share has `notify` on. Each user's run is separate, in their
+  language, units and time zone, with only the vehicles they can see.
+  `reminders.notified_status` stays per reminder (one status change, one
+  run), and each recipient is sent once per status. That needs
+  `reminder_deliveries` (reminder_id, user_id, status, sent_at, unique
+  triple) instead of the single `channels_notified` list.
+- **Channels per user:** email goes to the user's own address (set in
+  their Settings → Reminders; `MAIL_TO` is the admin's default). ntfy and
+  Gotify accept a per-user topic URL or token that overrides the
+  instance's. Without one, only admins receive through the instance topic,
+  so a household topic is never flooded by everyone's cars. The webhook
+  stays instance-level, admin-configured, and its payload gains `user`.
+- The digest and calendar feed are per user and cover their `notify`
+  vehicles plus their own.
 
 ### §7.20 API
 Keys already follow their user's access (Phase 18.2). Keys of a disabled or
