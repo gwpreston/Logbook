@@ -27,8 +27,18 @@ interface VehicleAccess
     public function visibleVehicleIds(User $user, VehicleScope $scope): array;
 
     /**
+     * The ids of the active vehicles whose reminders the user receives: the
+     * ones they own and those shared with *Send me its reminders* (Phase 19).
+     *
+     * @phpstan-impure
+     * @return list<int>
+     */
+    public function recipientVehicleIds(User $user): array;
+
+    /**
      * Drop remembered answers: called when a request starts and after a
-     * vehicle is added, archived, restored or deleted.
+     * vehicle is added, archived, restored, deleted, shared, transferred or
+     * left.
      */
     public function forget(): void;
 }

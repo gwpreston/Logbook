@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Attachment;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -21,6 +22,7 @@ final readonly class DeleteAttachmentAction
         private AttachmentService $attachments,
         private View $view,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -31,6 +33,7 @@ final readonly class DeleteAttachmentAction
     {
         $vehicle = RequestContext::vehicle($request);
         $attachment = AttachmentRoute::attachment($this->attachments, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $attachment->uploadedBy);
         [$route, $params] = AttachmentRoute::ownerPage($attachment);
         $description = ['name' => $attachment->filename];
 

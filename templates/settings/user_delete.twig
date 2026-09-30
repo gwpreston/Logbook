@@ -1,0 +1,54 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Confirmation before deleting a user (spec.md §7.9). While they own
+ # vehicles, those are listed with their Transfer and deleting is refused.
+ #}
+{% set active_nav = 'settings' %}
+{% set heading = 'users.delete_title'|trans({name: target.displayName}) %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.users') }}">{{ ui.icon('chevron_left') }}{{ 'users.title'|trans }}</a>
+
+        <section class="card" aria-labelledby="delete-heading">
+            <h1 id="delete-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            {% if self %}
+                <p>{{ 'users.refused.yourself'|trans }}</p>
+            {% elseif vehicles is not empty %}
+                <p>{{ 'users.delete_owns'|trans({name: target.displayName, count: vehicles|length}) }}</p>
+                <ul class="list">
+                    {% for vehicle in vehicles %}
+                        <li>
+                            <div class="list__item">
+                                <span class="list__icon">{{ ui.icon('directions_car') }}</span>
+                                <span class="list__body"><span class="list__title">{{ vehicle.name() }}</span></span>
+                            </div>
+                            <form class="form form--inline" method="post" action="{{ url_for('settings.users.transfer', {member: target.id, vehicle: vehicle.id}) }}">
+                                {{ ui.csrf(csrf) }}
+                                <div class="field">
+                                    <label class="field__label" for="f-transfer-{{ vehicle.id }}">{{ 'sharing.transfer_to'|trans }}</label>
+                                    <input class="input" id="f-transfer-{{ vehicle.id }}" name="username" required maxlength="64" autocomplete="off">
+                                </div>
+                                <button type="submit" class="btn btn--sm">{{ ui.icon('swap_horiz') }}{{ 'sharing.transfer_confirm'|trans }}<span class="visually-hidden">: {{ vehicle.name() }}</span></button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <p class="field__hint">{{ 'users.delete_transfer_hint'|trans }}</p>
+            {% else %}
+                <p>{{ 'users.delete_body'|trans({name: target.displayName}) }}</p>
+                <div class="btn-row">
+                    <form method="post" action="{{ url_for('settings.users.delete', {member: target.id}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'users.delete_confirm'|trans }}</button>
+                    </form>
+                    <a class="btn btn--ghost" href="{{ url_for('settings.users') }}">{{ 'form.cancel'|trans }}</a>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

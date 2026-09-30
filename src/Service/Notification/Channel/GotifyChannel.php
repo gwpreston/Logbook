@@ -52,10 +52,23 @@ final readonly class GotifyChannel implements NotificationChannel
         return $this->url !== null && $this->token !== null;
     }
 
+    /**
+     * The server is the instance's (GOTIFY_URL); the token is theirs, or
+     * GOTIFY_TOKEN for an admin.
+     */
+    public function reaches(Recipient $recipient): bool
+    {
+        return $this->url !== null && $this->tokenFor($recipient) !== null;
+    }
+
     public function send(Notification $notification, Recipient $recipient): DeliveryResult
     {
-        if ($this->url === null || $this->token === null) {
-            return DeliveryResult::failed($this->key(), 'GOTIFY_URL and GOTIFY_TOKEN are required.');
+        $token = $this->tokenFor($recipient);
+        if ($this->url === null || $token === null) {
+            return DeliveryResult::failed(
+                $this->key(),
+                'GOTIFY_URL and a token (their own, or GOTIFY_TOKEN for admins) are required.',
+            );
         }
 
         $extras = ['client::display' => ['contentType' => 'text/plain']];
@@ -64,7 +77,7 @@ final readonly class GotifyChannel implements NotificationChannel
         }
 
         return HttpDelivery::post($this->http, $this->key(), $this->url . '/message', [
-            'headers' => ['X-Gotify-Key' => $this->token],
+            'headers' => ['X-Gotify-Key' => $token],
             'json' => [
                 'title' => $notification->title,
                 'message' => $notification->textWithLink(),
@@ -72,5 +85,10 @@ final readonly class GotifyChannel implements NotificationChannel
                 'extras' => $extras,
             ],
         ]);
+    }
+
+    private function tokenFor(Recipient $recipient): ?string
+    {
+        return $recipient->gotifyToken ?? ($recipient->isAdmin ? $this->token : null);
     }
 }

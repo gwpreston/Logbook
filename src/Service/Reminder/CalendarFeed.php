@@ -70,6 +70,9 @@ final readonly class CalendarFeed
         }
 
         $user = $this->users->find((int) $m[1]);
+        if ($user !== null && !$user->isActive()) {
+            return null;
+        }
         $stored = $user === null ? null : $this->settings->calendarTokenHash($user->id);
 
         return $stored !== null && hash_equals($stored, $this->hash($token)) ? $user : null;
@@ -91,7 +94,8 @@ final readonly class CalendarFeed
      */
     public function render(User $user): string
     {
-        $overview = $this->reminders->overview($user);
+        // Their own vehicles and those shared with "Send me its reminders" (Phase 19).
+        $overview = $this->reminders->overview($user, recipientOnly: true);
         $host = parse_url($this->app->url, PHP_URL_HOST);
         $domain = is_string($host) && $host !== '' ? $host : 'logbook.invalid';
 

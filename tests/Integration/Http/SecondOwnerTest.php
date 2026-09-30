@@ -31,11 +31,11 @@ use Slim\Interfaces\RouteInterface;
 use Slim\Psr7\UploadedFile;
 
 /**
- * A second owner inserted straight into the database (there is no way to
- * add one yet: Phase 19) stays invisible under the single-owner policy
- * (spec.md §5 *Access policy*): none of their vehicles, entries, reminders
- * or files appear in any list, report, feed or widget of the first, and
- * their ids answer 404 on every vehicle and reminder route.
+ * A second user who shares nothing stays invisible (spec.md §5 *Access
+ * policy*, §7.21): none of their vehicles, entries, reminders or files
+ * appear in any list, report, feed or widget of the first, and their ids
+ * answer 404 on every vehicle and reminder route. Sharing is what makes a
+ * vehicle visible (SharingTest, AccessMatrixTest).
  */
 final class SecondOwnerTest extends AppTestCase
 {

@@ -49,89 +49,89 @@ earlier.
 
 ## Spec addition (§7.24 Needs attention)
 
-> ### 7.24 Needs attention (Phase 24)
-> Derived on every read (`Service\Attention\AttentionList`) from the same
-> services that own each fact, and never stored, apart from the user's hidden
-> items. Active vehicles only. A switched-off module's items leave the list.
-> The list is core.
->
-> **Items**, in this order:
->
-> *Now*: work or paperwork that is overdue.
-> 1. **Overdue items:** *Coming up*'s *Overdue* group for the vehicle
->    (§7.18). That is schedules past a limit, documents past expiry, tyres
->    past a wear or age limit, manual reminders past their date (reminders
->    on), and the first MOT (Phase 21.2). They are read from the sources, so
->    the list works with the `reminders` module off. With reminders on, an
->    item whose current reminder occurrence is dismissed or done is left
->    out. Titles use each source's own wording ("MOT expired 3 days ago",
->    "Annual service overdue by 400 mi", "Front tyres below 3 mm"), oldest
->    first. The action is *Log it* (the entry form for that work, prefilled
->    as the reminder's *Done* link is) and, with reminders on, *Dismiss*.
->
-> *Check*: the data looks wrong, so figures built on it may be too.
-> 2. **Implausible readings:** readings the Mileage tab flags (§7.2:
->    backwards, or a jump over 2,000 km a day), one item per reading:
->    "Reading on 12 Aug 2026 (48,120 mi) is lower than the one before". The
->    action is *Fix* (the reading's, or its owning entry's, edit form).
-> 3. **Economy flags:** the fill-ups the Fuel tab's economy check flags and
->    that are not confirmed (§7.3), as **one** item per vehicle: "3 fill-ups
->    look unusual", linking to `?check=1`. They are confirmed there with
->    *Looks right*, as now.
-> 4. **Mileage not updated:** the vehicle has a distance-based schedule, or a
->    fitted tyre with a wear estimate, and its latest reading is more than
->    **60 days** old: "No mileage logged since 2 May 2026. Distance-based
->    services can't be projected." The action is *Add reading*.
-> 5. **Trips exceed mileage** (Phase 22, `trips` on): the split's notice for
->    the current tax year, linking to the Trips tab.
-> 6. **Stale valuation:** the vehicle has valuations, is not sold, and the
->    latest is over 12 months old (§7.1's hint), linking to *Add valuation*.
->
-> **Hiding.** *Check* items 2, 4 and 6 have *Hide*. It is a POST with CSRF
-> that stores a row keyed by the item's kind and subject, with a
-> **fingerprint** of what it judged: the reading's value and its
-> neighbours; the latest reading's id; the latest valuation's id. The item
-> stays hidden only while the fingerprint matches, so an edit or a new entry
-> that changes the judgement brings it back. This is the same idea as
-> `economy_confirmed` (§6). Item 3 uses *Looks right* as today, and item 5
-> has no *Hide* (fix the readings instead). *Now* items are dismissed
-> through their reminder, never hidden here, so there is one place to
-> dismiss due work.
->
-> **Where it shows:**
-> - **Overview:** a *Needs attention* card first, above every other card,
->   showing up to five items plus *Show all (8)* (a `<details>`, working
->   without JS). Hidden entirely when there are no items. Each item has an
->   icon, its *Now* or *Check* label as text (never colour alone), the
->   title and its action links.
-> - **Dashboard widget** `needs_attention` (§7.8): the same items across the
->   visible active vehicles, each naming its vehicle, *Now* items first,
->   then *Check*. It shows up to eight, and follows the vehicle chip. When
->   there are none it shows "Nothing needs attention" (a widget keeps its
->   place). New layouts put it first. Existing layouts get it appended, as
->   with every new widget.
-> - **Garage cards and the fleet widget's tiles:** beside "N due", a
->   "Needs attention" marker (icon and text, with the count in its
->   accessible label) when the vehicle has any item.
-> - Not in History, print, the sale pack, notifications or the API in this
->   phase.
->
-> **Access** (Phase 19): users see the items of vehicles they can view.
-> *Check* items and *Hide* appear only to users who could fix them
-> (`Manage`, or `Log` for an item about their own entry). Hidden items are
-> per user.
->
-> **Cost:** the overview computes one vehicle's items. The widget computes
-> each visible vehicle's with the per-request memoisation that *Coming up*
-> and the fuel services already use. No item runs a query per row.
+### 7.24 Needs attention (Phase 24)
+Derived on every read (`Service\Attention\AttentionList`) from the same
+services that own each fact, and never stored, apart from the user's hidden
+items. Active vehicles only. A switched-off module's items leave the list.
+The list is core.
+
+**Items**, in this order:
+
+*Now*: work or paperwork that is overdue.
+1. **Overdue items:** *Coming up*'s *Overdue* group for the vehicle
+   (§7.18). That is schedules past a limit, documents past expiry, tyres
+   past a wear or age limit, manual reminders past their date (reminders
+   on), and the first MOT (Phase 21.2). They are read from the sources, so
+   the list works with the `reminders` module off. With reminders on, an
+   item whose current reminder occurrence is dismissed or done is left
+   out. Titles use each source's own wording ("MOT expired 3 days ago",
+   "Annual service overdue by 400 mi", "Front tyres below 3 mm"), oldest
+   first. The action is *Log it* (the entry form for that work, prefilled
+   as the reminder's *Done* link is) and, with reminders on, *Dismiss*.
+
+*Check*: the data looks wrong, so figures built on it may be too.
+2. **Implausible readings:** readings the Mileage tab flags (§7.2:
+   backwards, or a jump over 2,000 km a day), one item per reading:
+   "Reading on 12 Aug 2026 (48,120 mi) is lower than the one before". The
+   action is *Fix* (the reading's, or its owning entry's, edit form).
+3. **Economy flags:** the fill-ups the Fuel tab's economy check flags and
+   that are not confirmed (§7.3), as **one** item per vehicle: "3 fill-ups
+   look unusual", linking to `?check=1`. They are confirmed there with
+   *Looks right*, as now.
+4. **Mileage not updated:** the vehicle has a distance-based schedule, or a
+   fitted tyre with a wear estimate, and its latest reading is more than
+   **60 days** old: "No mileage logged since 2 May 2026. Distance-based
+   services can't be projected." The action is *Add reading*.
+5. **Trips exceed mileage** (Phase 22, `trips` on): the split's notice for
+   the current tax year, linking to the Trips tab.
+6. **Stale valuation:** the vehicle has valuations, is not sold, and the
+   latest is over 12 months old (§7.1's hint), linking to *Add valuation*.
+
+**Hiding.** *Check* items 2, 4 and 6 have *Hide*. It is a POST with CSRF
+that stores a row keyed by the item's kind and subject, with a
+**fingerprint** of what it judged: the reading's value and its
+neighbours; the latest reading's id; the latest valuation's id. The item
+stays hidden only while the fingerprint matches, so an edit or a new entry
+that changes the judgement brings it back. This is the same idea as
+`economy_confirmed` (§6). Item 3 uses *Looks right* as today, and item 5
+has no *Hide* (fix the readings instead). *Now* items are dismissed
+through their reminder, never hidden here, so there is one place to
+dismiss due work.
+
+**Where it shows:**
+- **Overview:** a *Needs attention* card first, above every other card,
+  showing up to five items plus *Show all (8)* (a `<details>`, working
+  without JS). Hidden entirely when there are no items. Each item has an
+  icon, its *Now* or *Check* label as text (never colour alone), the
+  title and its action links.
+- **Dashboard widget** `needs_attention` (§7.8): the same items across the
+  visible active vehicles, each naming its vehicle, *Now* items first,
+  then *Check*. It shows up to eight, and follows the vehicle chip. When
+  there are none it shows "Nothing needs attention" (a widget keeps its
+  place). New layouts put it first. Existing layouts get it appended, as
+  with every new widget.
+- **Garage cards and the fleet widget's tiles:** beside "N due", a
+  "Needs attention" marker (icon and text, with the count in its
+  accessible label) when the vehicle has any item.
+- Not in History, print, the sale pack, notifications or the API in this
+  phase.
+
+**Access** (Phase 19): users see the items of vehicles they can view.
+*Check* items and *Hide* appear only to users who could fix them
+(`Manage`, or `Log` for an item about their own entry). Hidden items are
+per user.
+
+**Cost:** the overview computes one vehicle's items. The widget computes
+each visible vehicle's with the per-request memoisation that *Coming up*
+and the fuel services already use. No item runs a query per row.
 
 ### §6 Data model
 
-> **AttentionHidden** (Phase 24): id, user_id (`ON DELETE CASCADE`),
-> vehicle_id (`ON DELETE CASCADE`), kind (`reading` | `mileage_stale` |
-> `valuation_stale`), subject_id (the reading or vehicle id), fingerprint
-> (SHA-256 hex of the judged state), hidden_at (UTC). `(user_id, kind,
-> subject_id)` is unique. It is in backups.
+**AttentionHidden** (Phase 24): id, user_id (`ON DELETE CASCADE`),
+vehicle_id (`ON DELETE CASCADE`), kind (`reading` | `mileage_stale` |
+`valuation_stale`), subject_id (the reading or vehicle id), fingerprint
+(SHA-256 hex of the judged state), hidden_at (UTC). `(user_id, kind,
+subject_id)` is unique. It is in backups.
 
 ---
 

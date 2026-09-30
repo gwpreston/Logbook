@@ -176,10 +176,22 @@
             </ul>
         </section>
 
-        {% if can_instance('manage_modules') or can_instance('backup') %}
+        {% if can_instance('manage_modules') or can_instance('backup') or can_instance('manage_users') %}
         <section class="card" aria-labelledby="data-heading">
             <h2 id="data-heading" class="card__title">{{ 'settings.data_heading'|trans }}</h2>
             <ul class="list">
+                {% if can_instance('manage_users') %}
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.users') }}">
+                        <span class="list__icon">{{ ui.icon('manage_accounts') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'users.link'|trans }}</span>
+                            <span class="list__meta">{{ 'users.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                {% endif %}
                 {% if can_instance('manage_modules') %}
                 <li>
                     <a class="list__item" href="{{ url_for('settings.modules') }}">

@@ -121,6 +121,7 @@ final readonly class AttachmentRepository
         int $size,
         string $storedPath,
         DateTimeImmutable $now,
+        ?int $uploadedBy = null,
     ): int {
         $this->connection->insert(self::TABLE, [
             'vehicle_id' => $vehicleId,
@@ -131,6 +132,7 @@ final readonly class AttachmentRepository
             'size' => $size,
             'stored_path' => $storedPath,
             'uploaded_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
+            'uploaded_by' => $uploadedBy,
         ], ['vehicle_id' => ParameterType::INTEGER, 'owner_id' => ParameterType::INTEGER, 'size' => ParameterType::INTEGER]);
 
         return (int) $this->connection->lastInsertId();
@@ -149,6 +151,7 @@ final readonly class AttachmentRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'owner_type', 'owner_id', 'filename', 'mime', 'size', 'stored_path', 'uploaded_at')
+            ->addSelect('uploaded_by')
             ->from(self::TABLE);
     }
 
@@ -167,6 +170,7 @@ final readonly class AttachmentRepository
             size: Row::int($row, 'size'),
             storedPath: Row::string($row, 'stored_path'),
             uploadedAt: UtcDateTime::fromDatabase($row['uploaded_at'] ?? null, $this->connection->getDatabasePlatform()),
+            uploadedBy: Row::nullableInt($row, 'uploaded_by'),
         );
     }
 }

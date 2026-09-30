@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Expense;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayFormatter;
@@ -25,6 +26,7 @@ final readonly class DeleteExpenseAction
         private DisplayFormatter $formatter,
         private View $view,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -35,6 +37,7 @@ final readonly class DeleteExpenseAction
     {
         $vehicle = RequestContext::vehicle($request);
         $entry = ExpenseRoute::entry($this->expenses, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $entry->createdBy);
         $user = RequestContext::requireUser($request);
         $description = [
             'date' => $this->formatter->date($entry->data->spentOn),

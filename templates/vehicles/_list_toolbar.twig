@@ -4,7 +4,7 @@
  # on every tab. Add buttons open in the modal on desktop (spec.md §5).
  #
  # Expects: vehicle, title, module (CSV module name),
- #          add: {route, label, icon?} or null,
+ #          add: {route, label, icon?, ability? (default 'log')} or null,
  #          print (optional, default false): a Print button (spec.md §8
  #          *Printing reports*; the Fuel and Mileage tabs).
  #}
@@ -15,7 +15,7 @@
     <div class="btn-row list-toolbar__actions">
         {% if print|default(false) %}{{ ui.print_button() }}{% endif %}
         {{ exp.export_link(vehicle, module) }}
-        {% if add|default(null) and not vehicle.isArchived() %}
+        {% if add|default(null) and not vehicle.isArchived() and can_vehicle(vehicle, add.ability ?? 'log') %}
             <a class="btn btn--primary" href="{{ url_for(add.route, {id: vehicle.id}) }}" data-modal>{{ ui.icon(add.icon ?? 'add') }}{{ add.label }}</a>
         {% endif %}
     </div>

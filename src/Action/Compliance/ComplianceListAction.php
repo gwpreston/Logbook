@@ -40,7 +40,8 @@ final readonly class ComplianceListAction
     {
         $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
-        $leadDays = $this->reminderSettings->reminderPreferences($user->id)->documentDays;
+        // The owner's lead time, as the vehicle's reminders use (Phase 19).
+        $leadDays = $this->reminderSettings->reminderPreferences($vehicle->userId)->documentDays;
         $states = $this->compliance->states($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone()), $leadDays);
 
         return $this->view->render($request, $response, 'compliance/index.twig', [

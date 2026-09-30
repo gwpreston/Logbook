@@ -27,6 +27,7 @@ final readonly class UserRepository
     private const array COLUMNS = [
         'id', 'username', 'password_hash', 'display_name', 'locale', 'timezone', 'distance_unit',
         'volume_unit', 'consumption_unit', 'depth_unit', 'currency', 'theme', 'accent', 'created_at', 'updated_at',
+        'is_admin', 'disabled_at',
     ];
 
     public function __construct(private Connection $connection)
@@ -91,6 +92,7 @@ final readonly class UserRepository
         string $displayName,
         DisplayPreferences $preferences,
         DateTimeImmutable $now,
+        bool $isAdmin = false,
     ): User {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
 
@@ -98,9 +100,10 @@ final readonly class UserRepository
             'username' => $username,
             'password_hash' => $passwordHash,
             'display_name' => $displayName,
+            'is_admin' => $isAdmin,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
-        ] + self::preferenceColumns($preferences));
+        ] + self::preferenceColumns($preferences), ['is_admin' => ParameterType::BOOLEAN]);
 
         $user = $this->find((int) $this->connection->lastInsertId());
         assert($user instanceof User);
@@ -130,6 +133,43 @@ final readonly class UserRepository
             'password_hash' => $passwordHash,
             'updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
         ], ['id' => $id], ['id' => ParameterType::INTEGER]);
+    }
+
+    public function setAdmin(int $id, bool $isAdmin, DateTimeImmutable $now): void
+    {
+        $this->connection->update(self::TABLE, [
+            'is_admin' => $isAdmin,
+            'updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
+        ], ['id' => $id], ['id' => ParameterType::INTEGER, 'is_admin' => ParameterType::BOOLEAN]);
+    }
+
+    public function setDisabledAt(int $id, ?DateTimeImmutable $disabledAt, DateTimeImmutable $now): void
+    {
+        $platform = $this->connection->getDatabasePlatform();
+        $this->connection->update(self::TABLE, [
+            'disabled_at' => $disabledAt === null ? null : UtcDateTime::toDatabase($disabledAt, $platform),
+            'updated_at' => UtcDateTime::toDatabase($now, $platform),
+        ], ['id' => $id], ['id' => ParameterType::INTEGER]);
+    }
+
+    /**
+     * Admins who can still sign in: there must always be one (spec.md §7.9).
+     */
+    public function countActiveAdmins(): int
+    {
+        $count = $this->connection->createQueryBuilder()
+            ->select('COUNT(*)')
+            ->from(self::TABLE)
+            ->where('is_admin = :admin', 'disabled_at IS NULL')
+            ->setParameter('admin', true, ParameterType::BOOLEAN)
+            ->fetchOne();
+
+        return is_numeric($count) ? (int) $count : 0;
+    }
+
+    public function delete(int $id): void
+    {
+        $this->connection->delete(self::TABLE, ['id' => $id], ['id' => ParameterType::INTEGER]);
     }
 
     /**
@@ -175,6 +215,8 @@ final readonly class UserRepository
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'], $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'], $platform),
+            isAdmin: Row::bool($row, 'is_admin'),
+            disabledAt: ($row['disabled_at'] ?? null) === null ? null : UtcDateTime::fromDatabase($row['disabled_at'], $platform),
         );
     }
 }

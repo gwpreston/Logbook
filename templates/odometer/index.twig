@@ -68,8 +68,10 @@
                     {% for reading in rows %}
                         {% set warning = warnings[reading.id] ?? null %}
                         {% set delta = deltas[reading.id] ?? null %}
+                        {% set manual = reading.source.value == 'manual' %}
+                        {% set editable = manual ? can_change(vehicle, reading.createdBy) : can_vehicle(vehicle, 'manage') %}
                         <li>
-                            <a class="list__item" href="{{ url_for('odometer.edit', {id: vehicle.id, reading: reading.id}) }}" data-modal>
+                            {% if editable %}<a class="list__item" href="{{ url_for('odometer.edit', {id: vehicle.id, reading: reading.id}) }}" data-modal>{% else %}<div class="list__item">{% endif %}
                                 <span class="list__icon{{ warning ? ' list__icon--warning' }}">{{ ui.icon(warning ? 'warning' : reading.source.icon()) }}</span>
                                 <span class="list__body">
                                     <span class="list__title tabular">{{ reading.readingKm|distance }}</span>
@@ -77,6 +79,7 @@
                                     {% if warning %}
                                         <span class="list__meta list__meta--warning">{{ ('odometer.warning.' ~ warning.type)|trans(warning.params) }}</span>
                                     {% endif %}
+                                    {% if manual %}{{ ui.added_by(vehicle, reading.createdBy) }}{% endif %}
                                 </span>
                                 <span class="list__end">
                                     {% if delta is not null %}
@@ -86,7 +89,7 @@
                                     {{ paperclip.count(attachment_counts.of(owner[0], owner[1])) }}
                                     <span class="pill">{{ ('odometer.source.' ~ reading.source.value)|trans }}</span>
                                 </span>
-                            </a>
+                            {% if editable %}</a>{% else %}</div>{% endif %}
                         </li>
                     {% endfor %}
                 </ul>

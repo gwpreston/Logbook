@@ -46,6 +46,7 @@ final readonly class AuthService
             $data->displayName,
             $data->preferences,
             $this->clock->now(),
+            isAdmin: true,
         );
     }
 
@@ -64,6 +65,10 @@ final readonly class AuthService
         }
 
         if (!$this->hasher->verify($password, $user->passwordHash)) {
+            return null;
+        }
+        if (!$user->isActive()) {
+            // Refused like a wrong password (spec.md §7.9), after the same work.
             return null;
         }
 

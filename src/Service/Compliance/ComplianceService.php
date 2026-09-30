@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Compliance;
 
+use Logbook\Service\Access\AccessContext;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
@@ -41,6 +42,7 @@ final readonly class ComplianceService
         private OdometerService $odometer,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private AccessContext $author,
     ) {
     }
 
@@ -84,7 +86,8 @@ final readonly class ComplianceService
         PendingUploads $files = new PendingUploads(),
     ): ComplianceDocument {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone): int {
-            $id = $this->documents->insert($vehicle->id, $data, $this->clock->now());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->documents->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->recordOdometer($vehicle, $id, $data, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Compliance, $id, $stored);
 

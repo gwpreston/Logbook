@@ -256,6 +256,7 @@ final readonly class ActivityFeed
                 grade: $data->grade,
                 volume: $data->volume,
                 files: $counts->of(AttachmentOwner::Fuel, $entry->id),
+                createdBy: $entry->createdBy,
             );
         }
         foreach ($readings as $reading) {
@@ -271,6 +272,7 @@ final readonly class ActivityFeed
                 odometerKm: $reading->readingKm,
                 note: $reading->note,
                 files: $counts->of(AttachmentOwner::Odometer, $reading->id),
+                createdBy: $reading->createdBy,
             );
         }
         foreach ($services as $entry) {
@@ -289,6 +291,7 @@ final readonly class ActivityFeed
                 odometerKm: $data->odometerKm,
                 vendor: $data->vendor,
                 files: $counts->of(AttachmentOwner::Maintenance, $entry->id),
+                createdBy: $entry->createdBy,
                 tyres: $tyresOn
                     ? array_map(static fn (TyreChange $c): TranslatableMessage => $summaries[$c->id], $linkedTo[$entry->id] ?? [])
                     : [],
@@ -307,6 +310,7 @@ final readonly class ActivityFeed
                 currency: $currencies[$change->vehicleId],
                 odometerKm: $change->data->odometerKm,
                 tyres: [$summaries[$change->id]],
+                createdBy: $change->createdBy,
             );
         }
         foreach ($documents as $document) {
@@ -325,6 +329,7 @@ final readonly class ActivityFeed
                 odometerKm: $data->odometerKm,
                 expiresOn: $data->expiryOn,
                 files: $counts->of(AttachmentOwner::Compliance, $document->id),
+                createdBy: $document->createdBy,
             );
         }
         foreach ($expenses as $expense) {
@@ -342,6 +347,7 @@ final readonly class ActivityFeed
                 currency: $currencies[$expense->vehicleId],
                 note: $data->note,
                 files: $counts->of(AttachmentOwner::Expense, $expense->id),
+                createdBy: $expense->createdBy,
             );
         }
         foreach ($valuations as $valuation) {
@@ -359,6 +365,7 @@ final readonly class ActivityFeed
                 currency: $currencies[$valuation->vehicleId],
                 price: $data->amount,
                 files: $counts->of(AttachmentOwner::Valuation, $valuation->id),
+                createdBy: $valuation->createdBy,
             );
         }
         foreach ($milestones as [$vehicle, $milestone, $date, $price]) {

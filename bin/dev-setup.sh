@@ -77,7 +77,8 @@ Local development for Logbook: start it, or stop it again.
 
 Options
   --with-sample-data   A demo owner (demo / logbook-demo) and six vehicles with
-                       a year of fill-ups, EV charges and odometer readings.
+                       a year of fill-ups, EV charges and odometer readings, and
+                       a member (partner / logbook-demo) two of them are shared with.
   --postgres, --mysql, --mariadb, --sqlite
                        Which database engine to run. PostgreSQL is the default.
                        Each engine keeps its own data and photos.
@@ -402,11 +403,14 @@ ok "the app responds on $BASE_URL (HTTP $code)"
 
 # ---------------------------------------------------------------------------
 # Optional: start over from an empty database. Rolled back and migrated again
-# rather than deleting a volume, so only the chosen engine is affected.
+# rather than deleting a volume, so only the chosen engine is affected. The
+# accounts go first: the 2.0.0 migration refuses to roll back past several
+# users (their vehicles and entries go with them).
 # ---------------------------------------------------------------------------
 if [ "$DO_RESET" -eq 1 ]; then
     step "Emptying the database"
     if ! run_logged exec -T app sh -c "
+        php -r 'require \"vendor/autoload.php\"; \$c = Logbook\\Kernel::createContainer(Logbook\\Kernel::settings()); \$c->get(Doctrine\\DBAL\\Connection::class)->executeStatement(\"DELETE FROM users\");' 2>/dev/null || true
         vendor/bin/phinx rollback -e development -t 0 -q &&
         vendor/bin/phinx migrate -e development -q &&
         rm -rf '$DEV_UPLOAD_PATH'"; then
@@ -430,7 +434,7 @@ if [ "$SAMPLE_DATA" -eq 1 ]; then
         info "start from an empty one with: ./bin/dev-setup.sh --reset --with-sample-data"
     else
         SAMPLE_LOADED=1
-        ok "a demo owner and six vehicles with a year of history"
+        ok "a demo owner and six vehicles with a year of history, and a partner they share two with"
     fi
 fi
 
@@ -453,7 +457,7 @@ printf '  %sDatabase%s     %s  %s(each engine keeps its own data)%s\n' \
     "$BOLD" "$RESET" "$ENGINE_NAME" "$DIM" "$RESET"
 
 if [ "$SAMPLE_LOADED" -eq 1 ]; then
-    printf '\n  %sSign in with%s  demo / logbook-demo\n' "$BOLD" "$RESET"
+    printf '\n  %sSign in with%s  demo / logbook-demo  (or partner / logbook-demo, a member)\n' "$BOLD" "$RESET"
 elif [ "$SETUP_NEEDED" -eq 1 ]; then
     printf '\n  %sOpen the app to create your account.%s\n' "$BOLD" "$RESET"
 fi

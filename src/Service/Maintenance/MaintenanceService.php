@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Maintenance;
 
+use Logbook\Service\Access\AccessContext;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
@@ -45,6 +46,7 @@ final readonly class MaintenanceService
         private Transaction $transaction,
         private ClockInterface $clock,
         private TyreSync $tyres,
+        private AccessContext $author,
     ) {
     }
 
@@ -78,7 +80,8 @@ final readonly class MaintenanceService
         PendingUploads $files = new PendingUploads(),
     ): MaintenanceEntry {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone): int {
-            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->recordOdometer($vehicle, $id, $data, $zone);
             $this->recomputeSchedules($vehicle, $data->scheduleId);
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $id, $stored);

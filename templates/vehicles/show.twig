@@ -89,10 +89,12 @@
                 {% if last_service %}
                     <p class="muted">{{ 'maintenance.last_logged'|trans({title: last_service.data.title, date: last_service.data.performedOn|local_date}) }}</p>
                 {% endif %}
-                {% if not vehicle.isArchived() %}
+                {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
                     <div class="btn-row">
                         <a class="btn btn--primary" href="{{ url_for('maintenance.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'maintenance.add'|trans }}</a>
-                        <a class="btn" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>
+                        {% if can_vehicle(vehicle, 'manage') %}
+                            <a class="btn" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>
+                        {% endif %}
                     </div>
                 {% endif %}
             </section>
@@ -155,20 +157,21 @@
                 {% else %}
                     <ul class="list">
                         {% for state in documents %}
+                            {% set editable = can_change(vehicle, state.document.createdBy) %}
                             <li>
-                                <a class="list__item" href="{{ url_for('compliance.edit', {id: vehicle.id, document: state.document.id}) }}" data-modal>
+                                {% if editable %}<a class="list__item" href="{{ url_for('compliance.edit', {id: vehicle.id, document: state.document.id}) }}" data-modal>{% else %}<div class="list__item">{% endif %}
                                     <span class="list__icon">{{ ui.icon(state.document.data.type.icon()) }}</span>
                                     <span class="list__body">
                                         <span class="list__title">{{ docs.name(state.document) }}</span>
                                         <span class="list__meta">{{ docs.period(state.document) }}</span>
                                     </span>
                                     <span class="list__end">{{ docs.status_pill(state) }}</span>
-                                </a>
+                                {% if editable %}</a>{% else %}</div>{% endif %}
                             </li>
                         {% endfor %}
                     </ul>
                 {% endif %}
-                {% if not vehicle.isArchived() %}
+                {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
                     <div class="btn-row">
                         <a class="btn" href="{{ url_for('compliance.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
                     </div>
@@ -261,7 +264,9 @@
                 {% endif %}
                 <div class="btn-row">
                     <a class="btn" href="{{ url_for('valuations.index', {id: vehicle.id}) }}">{{ 'valuation.link'|trans }}</a>
-                    <a class="btn" href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'valuation.add'|trans }}</a>
+                    {% if can_vehicle(vehicle, 'manage') %}
+                        <a class="btn" href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'valuation.add'|trans }}</a>
+                    {% endif %}
                 </div>
             </section>
             {% endif %}

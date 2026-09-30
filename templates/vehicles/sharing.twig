@@ -1,0 +1,134 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # A vehicle's Sharing page (spec.md §7.21). The owner sees each share with
+ # its level, Can see costs and Send me its reminders, and adds people by
+ # username; a shared user sees their own share, their reminder choice and
+ # Leave. Plain forms: everything works without JS.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'sharing.title'|trans({name: vehicle.name()}) %}
+
+{% macro share_fields(values, levels, notify_label) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <fieldset class="field fieldset">
+        <legend class="field__label">{{ 'sharing.level'|trans }}</legend>
+        <div class="chip-row">
+            {% for level in levels %}
+                <label class="chip">
+                    <input type="radio" name="level" value="{{ level.value }}"{% if level.value == values.level %} checked{% endif %} required>
+                    <span>{{ ('sharing.levels.' ~ level.value)|trans }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        <p class="field__hint">{{ 'sharing.level_hint'|trans }}</p>
+    </fieldset>
+    <label class="toggle">
+        <input type="checkbox" name="can_see_costs" value="1"{% if (values.can_see_costs ?? '') == '1' %} checked{% endif %}>
+        <span class="toggle__text">
+            <span class="toggle__title">{{ 'sharing.can_see_costs'|trans }}</span>
+            <span class="toggle__hint">{{ 'sharing.can_see_costs_hint'|trans }}</span>
+        </span>
+    </label>
+    <label class="toggle">
+        <input type="checkbox" name="notify" value="1"{% if (values.notify ?? '') == '1' %} checked{% endif %}>
+        <span class="toggle__text">
+            <span class="toggle__title">{{ notify_label }}</span>
+            <span class="toggle__hint">{{ 'sharing.notify_hint'|trans }}</span>
+        </span>
+    </label>
+{%- endmacro %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ (owns ? 'sharing.lead_owner' : 'sharing.lead_shared')|trans({owner: owner.displayName ?? ''}) }}</p>
+            </div>
+        </header>
+
+        {% if owns %}
+            <section class="card" aria-labelledby="shares-heading">
+                <h2 id="shares-heading" class="card__title">{{ ui.icon('group') }}{{ 'sharing.list_heading'|trans }}</h2>
+                {% if shares is empty %}
+                    <p class="field__hint">{{ 'sharing.none'|trans }}</p>
+                {% else %}
+                    <ul class="list">
+                        {% for row in shares %}
+                            {% set share = row.share %}
+                            <li class="share-row">
+                                <form class="form" method="post" action="{{ url_for('vehicles.sharing.change', {id: vehicle.id, member: row.user.id, action: 'save'}) }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <p class="list__title">{{ row.user.displayName }} <span class="muted">({{ row.user.username }})</span>
+                                        {% if not row.user.isActive() %}<span class="pill pill--soon">{{ 'users.status.disabled'|trans }}</span>{% endif %}</p>
+                                    {{ _self.share_fields({
+                                        level: share.level.value,
+                                        can_see_costs: share.canSeeCosts ? '1' : '',
+                                        notify: share.notify ? '1' : '',
+                                    }, levels, 'sharing.notify_other'|trans) }}
+                                    <div class="btn-row">
+                                        <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}<span class="visually-hidden">: {{ row.user.displayName }}</span></button>
+                                        <button type="submit" class="btn btn--ghost" formaction="{{ url_for('vehicles.sharing.change', {id: vehicle.id, member: row.user.id, action: 'remove'}) }}">{{ ui.icon('person_remove') }}{{ 'sharing.remove'|trans }}<span class="visually-hidden">: {{ row.user.displayName }}</span></button>
+                                    </div>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+
+            <section class="card" aria-labelledby="add-heading">
+                <h2 id="add-heading" class="card__title">{{ ui.icon('person_add') }}{{ 'sharing.add_heading'|trans }}</h2>
+                <form class="form" method="post" action="{{ url_for('vehicles.sharing.add', {id: vehicle.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    {{ ui.input('username', 'sharing.username'|trans, values, errors, {required: true, maxlength: 64, autocomplete: 'off', hint: 'sharing.username_hint'|trans}) }}
+                    {{ _self.share_fields(values, levels, 'sharing.notify_other'|trans) }}
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary">{{ ui.icon('person_add') }}{{ 'sharing.add'|trans }}</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card" aria-labelledby="transfer-heading">
+                <h2 id="transfer-heading" class="card__title">{{ ui.icon('swap_horiz') }}{{ 'sharing.transfer_heading'|trans }}</h2>
+                <p>{{ 'sharing.transfer_lead'|trans }}</p>
+                <div class="btn-row">
+                    <a class="btn" href="{{ url_for('vehicles.transfer', {id: vehicle.id}) }}">{{ ui.icon('swap_horiz') }}{{ 'sharing.transfer'|trans }}</a>
+                </div>
+            </section>
+        {% elseif mine %}
+            <section class="card" aria-labelledby="mine-heading">
+                <h2 id="mine-heading" class="card__title">{{ ui.icon('group') }}{{ 'sharing.your_access'|trans }}</h2>
+                <p>{{ 'sharing.your_level'|trans({level: ('sharing.levels.' ~ mine.level.value)|trans, owner: owner.displayName ?? ''}) }}</p>
+                <p class="muted">{{ (mine.canSeeCosts ? 'sharing.you_see_costs' : 'sharing.you_do_not_see_costs')|trans }}</p>
+                <form class="form" method="post" action="{{ url_for('vehicles.sharing.mine', {id: vehicle.id, action: 'notify'}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <label class="toggle">
+                        <input type="checkbox" name="notify" value="1"{% if mine.notify %} checked{% endif %}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'sharing.notify_me'|trans }}</span>
+                            <span class="toggle__hint">{{ 'sharing.notify_hint'|trans }}</span>
+                        </span>
+                    </label>
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                    </div>
+                </form>
+            </section>
+            <section class="card" aria-labelledby="leave-heading">
+                <h2 id="leave-heading" class="card__title">{{ ui.icon('logout') }}{{ 'sharing.leave_heading'|trans }}</h2>
+                <p>{{ 'sharing.leave_body'|trans({name: vehicle.name()}) }}</p>
+                <form method="post" action="{{ url_for('vehicles.sharing.mine', {id: vehicle.id, action: 'leave'}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--danger">{{ ui.icon('logout') }}{{ 'sharing.leave'|trans }}</button>
+                </form>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Transfer a vehicle to another user (spec.md §7.21): they become its
+ # owner; everything stays with the vehicle. The form is the confirmation.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'sharing.transfer_title'|trans({name: vehicle.name()}) %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('vehicles.sharing', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'sharing.title'|trans({name: vehicle.name()}) }}</a>
+
+        <section class="card" aria-labelledby="transfer-heading">
+            <h1 id="transfer-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            <p>{{ 'sharing.transfer_body'|trans }}</p>
+            <form class="form" method="post" action="{{ url_for('vehicles.transfer', {id: vehicle.id}) }}">
+                {{ ui.csrf(csrf) }}
+                {{ ui.input('username', 'sharing.transfer_to'|trans, values, errors, {required: true, maxlength: 64, autocomplete: 'off'}) }}
+                <label class="toggle">
+                    <input type="checkbox" name="keep_access" value="1"{% if (values.keep_access ?? '') == '1' %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'sharing.keep_access'|trans }}</span>
+                        <span class="toggle__hint">{{ 'sharing.keep_access_hint'|trans }}</span>
+                    </span>
+                </label>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--danger-solid">{{ ui.icon('swap_horiz') }}{{ 'sharing.transfer_confirm'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ url_for('vehicles.sharing', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+                </div>
+            </form>
+        </section>
+    </div>
+{% endblock %}

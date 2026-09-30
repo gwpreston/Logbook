@@ -110,6 +110,29 @@ final readonly class SessionRepository
         $query->executeStatement();
     }
 
+    /**
+     * Each user's latest session activity: their last sign-in, as far as
+     * the install knows (Settings → Users).
+     *
+     * @return array<int, DateTimeImmutable> user id => when
+     */
+    public function lastActivityByUser(): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('user_id', 'MAX(last_activity_at) AS last_activity')
+            ->from(self::TABLE)
+            ->where('user_id IS NOT NULL')
+            ->groupBy('user_id')
+            ->fetchAllAssociative();
+        $platform = $this->connection->getDatabasePlatform();
+        $last = [];
+        foreach ($rows as $row) {
+            $last[Row::int($row, 'user_id')] = UtcDateTime::fromDatabase($row['last_activity'] ?? null, $platform);
+        }
+
+        return $last;
+    }
+
     public function deleteInactiveSince(DateTimeImmutable $cutoff): int
     {
         return (int) $this->connection->createQueryBuilder()

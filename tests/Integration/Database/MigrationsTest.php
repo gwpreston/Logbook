@@ -42,6 +42,20 @@ final class MigrationsTest extends AppTestCase
         'tyre_change_lines',
         'vehicle_valuations',
         'api_keys',
+        'vehicle_shares',
+        'invitations',
+        'reminder_deliveries',
+    ];
+
+    /** Tables with a Phase 19 created_by column. */
+    private const array AUTHORED = [
+        'fuel_entries',
+        'odometer_readings',
+        'maintenance_entries',
+        'compliance_documents',
+        'expense_entries',
+        'tyre_changes',
+        'vehicle_valuations',
     ];
 
     protected function tearDown(): void
@@ -70,7 +84,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 18.2 API keys, the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
+        // Newest first: the Phase 19 users and sharing, the Phase 18.2 API
+        // keys, the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
         // purchase and sale paperwork (no schema change), the Phase 11.2
         // tread depth, the Phase 11.1 tyre tables, the Phase 10 document odometer, the Phase 9.2
         // plug-in hybrid data migration (no schema change), the Phase 9.1
@@ -78,6 +93,19 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($schema->tablesExist(['vehicle_shares', 'invitations', 'reminder_deliveries']));
+        self::assertTrue($this->hasColumn('fuel_entries', 'created_by'));
+        Migrator::run('rollback');
+        foreach (['vehicle_shares', 'invitations', 'reminder_deliveries'] as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+        foreach (self::AUTHORED as $table) {
+            self::assertFalse($this->hasColumn($table, 'created_by'), sprintf('rollback must drop %s.created_by', $table));
+        }
+        self::assertFalse($this->hasColumn('attachments', 'uploaded_by'), 'and attachments.uploaded_by');
+        self::assertFalse($this->hasColumn('users', 'is_admin'), 'and the admin flag');
+        self::assertFalse($this->hasColumn('users', 'disabled_at'), 'and the disabled time');
+
         self::assertTrue($schema->tablesExist(['api_keys']));
         Migrator::run('rollback');
         self::assertFalse($schema->tablesExist(['api_keys']), 'rollback must drop the API keys');
@@ -257,6 +285,39 @@ final class MigrationsTest extends AppTestCase
         }
         self::assertFalse($expenses['note']->getNotnull());
         self::assertInstanceOf(DateTimeType::class, $expenses['created_at']->getType());
+    }
+
+    public function testUserAndSharingColumns(): void
+    {
+        $users = $this->columnsOrSkip('users');
+        self::assertInstanceOf(BooleanType::class, $users['is_admin']->getType());
+        self::assertTrue($users['is_admin']->getNotnull());
+        self::assertInstanceOf(DateTimeType::class, $users['disabled_at']->getType());
+        self::assertFalse($users['disabled_at']->getNotnull());
+
+        $shares = $this->columnsOrSkip('vehicle_shares');
+        foreach (['can_see_costs', 'notify'] as $flag) {
+            self::assertInstanceOf(BooleanType::class, $shares[$flag]->getType(), $flag);
+        }
+        foreach (['vehicle_id', 'user_id', 'level', 'can_see_costs', 'notify', 'created_at', 'updated_at'] as $required) {
+            self::assertTrue($shares[$required]->getNotnull(), sprintf('vehicle_shares.%s must be NOT NULL', $required));
+        }
+
+        $invitations = $this->columnsOrSkip('invitations');
+        foreach (['expires_at', 'used_at', 'revoked_at', 'created_at'] as $instant) {
+            self::assertInstanceOf(DateTimeType::class, $invitations[$instant]->getType(), $instant);
+        }
+        self::assertFalse($invitations['user_id']->getNotnull(), 'an invite is for nobody yet');
+
+        $deliveries = $this->columnsOrSkip('reminder_deliveries');
+        self::assertInstanceOf(JsonType::class, $deliveries['channels']->getType());
+        self::assertFalse($deliveries['sent_at']->getNotnull(), 'null while a run holds the claim');
+
+        foreach (self::AUTHORED as $table) {
+            $createdBy = $this->columnsOrSkip($table)['created_by'];
+            self::assertFalse($createdBy->getNotnull(), sprintf('%s.created_by is optional', $table));
+        }
+        self::assertFalse($this->columnsOrSkip('attachments')['uploaded_by']->getNotnull());
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Service\Tyre\TyreChangeRefused;
 use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreService;
@@ -29,6 +30,7 @@ final readonly class DeleteTyreChangeAction
         private DisplayFormatter $formatter,
         private View $view,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -39,6 +41,7 @@ final readonly class DeleteTyreChangeAction
     {
         $vehicle = RequestContext::vehicle($request);
         $change = TyreRoute::change($this->changes, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $change->createdBy);
         $byId = [];
         foreach ($this->tyres->tyres($vehicle) as $tyre) {
             $byId[$tyre->id] = $tyre;

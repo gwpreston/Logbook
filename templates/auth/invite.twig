@@ -1,0 +1,59 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # A one-time link (spec.md §7.9): an invite asks for what setup asks (the
+ # username is the invite's); a reset asks for a new password only.
+ #}
+{% set reset = invitation.kind.value == 'reset' %}
+
+{% block title %}{{ (reset ? 'invite.reset_title' : 'invite.title')|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="auth{{ reset ? '' : ' auth--wide' }}">
+        <section class="card auth__card" aria-labelledby="invite-heading">
+            <header class="auth__header">
+                <h1 id="invite-heading">{{ (reset ? 'invite.reset_title' : 'invite.title')|trans }}</h1>
+                <p class="muted">{{ (reset ? 'invite.reset_lead' : 'invite.lead')|trans({username: invitation.username}) }}</p>
+            </header>
+
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+
+            <form class="form" method="post" action="{{ url_for('invite.accept', {token: token}) }}">
+                {{ ui.csrf(csrf) }}
+                <input type="hidden" name="username" value="{{ invitation.username }}" autocomplete="username">
+
+                {% if not reset %}
+                    <h2 class="form__section">{{ 'setup.account'|trans }}</h2>
+                    {{ ui.input('display_name', 'prefs.display_name'|trans, values, errors, {optional: true, autocomplete: 'name', maxlength: 100}) }}
+                {% endif %}
+                <div class="form-row">
+                    {{ ui.input('password', 'auth.password'|trans, values, errors, {
+                        type: 'password', required: true, autocomplete: 'new-password', hint: 'auth.password_hint'|trans,
+                    }) }}
+                    {{ ui.input('password_confirm', 'auth.password_confirm'|trans, values, errors, {
+                        type: 'password', required: true, autocomplete: 'new-password',
+                    }) }}
+                </div>
+
+                {% if not reset %}
+                    <h2 class="form__section">{{ 'setup.preferences'|trans }}</h2>
+                    {% set preset_options = [] %}
+                    {% for preset in unit_presets %}
+                        {% set preset_options = preset_options|merge([{value: preset.value, label: ('units.preset.' ~ preset.value)|trans}]) %}
+                    {% endfor %}
+                    {{ ui.chips('units', 'prefs.units'|trans, values, errors, preset_options, {required: true, hint: 'setup.units_hint'|trans}) }}
+                    <div class="form-row">
+                        {{ ui.select('currency', 'prefs.currency'|trans, values, errors, currency_options, {required: true}) }}
+                        {{ ui.select('locale', 'prefs.locale'|trans, values, errors, locale_options, {required: true}) }}
+                    </div>
+                    {{ ui.timezone_select(values, errors, timezone_options, errors is empty) }}
+                {% endif %}
+
+                <button type="submit" class="btn btn--primary btn--lg btn--block">{{ ui.icon('check_circle') }}{{ (reset ? 'invite.reset_submit' : 'invite.submit')|trans }}</button>
+            </form>
+        </section>
+    </div>
+{% endblock %}

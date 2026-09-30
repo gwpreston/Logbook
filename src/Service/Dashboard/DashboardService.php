@@ -300,12 +300,16 @@ final readonly class DashboardService
      */
     private function compliance(User $user, array $vehicles, DateTimeImmutable $today): array
     {
-        $lead = $this->reminderSettings->reminderPreferences($user->id)->documentDays;
+        // Each vehicle's owner's lead time, as its reminders use (Phase 19).
+        $leads = [];
+        foreach ($vehicles as $vehicle) {
+            $leads[$vehicle->userId] ??= $this->reminderSettings->reminderPreferences($vehicle->userId)->documentDays;
+        }
 
         return array_map(fn (Vehicle $v): VehicleCompliance => new VehicleCompliance(
             $v,
             array_values(array_filter(
-                $this->compliance->states($v, $today, $lead),
+                $this->compliance->states($v, $today, $leads[$v->userId] ?? 0),
                 static fn (DocumentState $s): bool => $s->status->isCurrent(),
             )),
         ), $vehicles);

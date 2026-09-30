@@ -337,11 +337,13 @@ final readonly class TyreRepository
         TyreChangeData $data,
         array $lines,
         DateTimeImmutable $now,
+        ?int $createdBy = null,
     ): int {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
         $this->connection->insert(self::CHANGES, [
             'vehicle_id' => $vehicleId,
             'kind' => $kind->value,
+            'created_by' => $createdBy,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
         ] + self::changeColumns($data), ['vehicle_id' => ParameterType::INTEGER] + self::changeTypes($data));
@@ -391,7 +393,7 @@ final readonly class TyreRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'kind', 'done_on', 'odometer_km', 'maintenance_entry_id', 'note')
-            ->addSelect('created_at', 'updated_at')
+            ->addSelect('created_at', 'updated_at', 'created_by')
             ->from(self::CHANGES)
             ->orderBy('id');
     }
@@ -444,6 +446,7 @@ final readonly class TyreRepository
             lines: $lines[Row::int($row, 'id')] ?? [],
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
+            createdBy: Row::nullableInt($row, 'created_by'),
         ), $rows);
     }
 

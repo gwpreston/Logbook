@@ -29,6 +29,8 @@
             </div>
         </header>
 
+        {{ ui.costs_excluded_note() }}
+
         <form class="card report-filter" method="get" action="{{ url_for('reports.ownership') }}" data-auto-submit>
             <div class="form-row">
                 <div class="field">

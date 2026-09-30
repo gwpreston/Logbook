@@ -4,7 +4,9 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v1.10.0.** First-run setup, secure sign-in, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), purchase and sale paperwork and archiving, per-user units, currency,
+> **Status: v2.0.0.** First-run setup, secure sign-in, several people on one
+> install (admins invite the others) with vehicles shared at View, Log or
+> Manage, costs shared or not, each person's own reminders and units, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), purchase and sale paperwork and archiving, per-user units, currency,
 > language and time zone; a History tab per vehicle (and for the fleet) with a
 > printable service history that leaves costs off unless asked, and a sale pack for a buyer (summary, checkable mileage record, the paperwork as a ZIP); a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
@@ -32,7 +34,8 @@ your own server.
 > backup and restore of everything; an installable phone app that logs
 > fill-ups offline; a REST API with keys, so Home Assistant, Shortcuts,
 > Grafana and Node-RED can read your garage and log fill-ups; in English and
-> German. See [`ROADMAP.md`](ROADMAP.md) for
+> German. 2.0.0 is a major version: read its upgrade notes in
+> [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
 ## Quick start
@@ -65,6 +68,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 |---|---|
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
+| [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
@@ -82,8 +86,10 @@ documented in [`.env.example`](.env.example) and
 notification channels you configure (`MAIL_*`, `NTFY_*`, `GOTIFY_*`,
 `WEBHOOK_URL`; see [docs/notification-channels.md](docs/notification-channels.md)).
 
-On first visit you create the owner account; after that, units, currency,
-language and time zone are per-user settings in the app. **Settings → Modules**
+On first visit you create the first admin account; after that, units,
+currency, language and time zone are per-user settings in the app, and
+**Settings → Users** invites the rest of the household
+([docs/users-and-sharing.md](docs/users-and-sharing.md)). **Settings → Modules**
 switches off what you don't use (fuel, maintenance, documents, reminders,
 reports), and **Settings → Backup and restore** downloads or restores
 everything in one file (`php bin/backup.php` does the same from cron).
@@ -120,7 +126,7 @@ start if something else already holds the app port. On Windows run it from
 
 ```bash
 ./bin/dev-setup.sh                     # set up and start on PostgreSQL → http://localhost:8090
-./bin/dev-setup.sh --with-sample-data  # ...and add sample data (sign in as demo / logbook-demo)
+./bin/dev-setup.sh --with-sample-data  # ...and add sample data (sign in as demo / logbook-demo, or partner / logbook-demo)
 ./bin/dev-setup.sh --mysql             # use MySQL instead (or --mariadb, --sqlite)
 ./bin/dev-setup.sh --port 8081         # serve on another port
 ./bin/dev-setup.sh --reset             # start over from an empty database
@@ -130,7 +136,7 @@ start if something else already holds the app port. On Windows run it from
 
 | Option | What it does |
 |---|---|
-| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since. Skipped if an account already exists. |
+| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since; and a member (`partner` / `logbook-demo`) with Log access to the self-charging hybrid without costs, whose recent fill-ups they logged, and View access to the Golf. Skipped if an account already exists. |
 | `--postgres`, `--mysql`, `--mariadb`, `--sqlite` | Which database engine to run. PostgreSQL is the default. Each engine keeps its own data and photos, so you can switch back and forth. |
 | `--reset` | Empty the chosen engine's database (full rollback + migrate) and delete its uploads. With `--stop`, delete every dev database, the uploads and the `vendor/` volume instead. Asks first unless `--yes`. |
 | `--stop`, `--down` | Stop the containers instead of starting them. |

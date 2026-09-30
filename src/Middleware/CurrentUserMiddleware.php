@@ -7,6 +7,8 @@ namespace Logbook\Middleware;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Access\AccessContext;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Sharing\AuthorLabels;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -27,6 +29,8 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
         private UserRepository $users,
         private VehicleAccess $access,
         private AccessContext $context,
+        private UserDirectory $directory,
+        private AuthorLabels $authors,
     ) {
     }
 
@@ -34,13 +38,16 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
     {
         // Access answers remembered by an earlier request (a long-lived container) are not this one's.
         $this->access->forget();
+        $this->directory->forget();
+        $this->authors->forget();
         $session = RequestContext::session($request);
         $userId = $session->userId();
         $user = $userId === null ? null : $this->users->find($userId);
 
-        if ($userId !== null && $user === null) {
-            // The account no longer exists: drop the stale sign-in.
+        if ($userId !== null && ($user === null || !$user->isActive())) {
+            // The account no longer exists or was disabled (Phase 19): drop the stale sign-in.
             $session->destroy();
+            $user = null;
         }
 
         $this->context->apply($user);

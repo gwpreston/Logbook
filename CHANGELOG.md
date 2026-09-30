@@ -6,6 +6,95 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-09-30
+
+Phase 19: multiple users and vehicle sharing. A household on one install:
+everyone has their own account, vehicles, units, language and reminders,
+and a vehicle can be shared at a level its owner chooses. Your partner can
+log fill-ups on the Mini without seeing its running costs or being able to
+delete its service history. Guide: [docs/users-and-sharing.md](docs/users-and-sharing.md).
+
+**Read the upgrade notes below before upgrading.** Nothing you use today
+changes, but backups, notifications and what an install can hold do, so
+this is a major version.
+
+### Added
+- **Users.** Admins and members. **Settings → Users** (admins) lists
+  everyone with their role, last sign-in and status, and can *invite*
+  someone (a one-time link shown once, valid for 7 days, which can also be
+  emailed to an address that is not kept), *make* or *remove* an admin,
+  *disable* (signed out everywhere, keys and calendar feed stop at once) and
+  *enable*, *reset a password* (a one-time link), *revoke* open links, and
+  *delete* (refused while they own vehicles, which an admin can transfer
+  from the same page). There is always an active admin. Opening an
+  invitation asks for a password, units, currency, language and time zone
+  and signs the new user in.
+- **Sharing.** On a vehicle, **Sharing** adds people by username at
+  **View**, **Log** (also add entries and change their own) or **Manage**
+  (also edit the vehicle and every entry, schedules, valuations, import,
+  export, the sale pack), with **Can see costs** (always on for Manage) and
+  **Send them its reminders**. The owner can also **transfer** the vehicle,
+  keeping Manage access unless they untick it; anyone with a share can
+  **leave**. Shared vehicles appear under **Shared with you** in the garage,
+  naming the owner and your level, and join your dashboard, History,
+  Reports and *Coming up*.
+- **Who added what:** every fill-up, reading, service record, document,
+  expense, tyre change, valuation and file records who added it; once a
+  vehicle is shared, lists and history say **Added by …** (a deleted user's
+  entries show as *a former user*).
+- **Your own amounts:** someone who may not see a vehicle's costs still sees
+  the amounts of the entries they added, on the pages and in the API, and
+  nothing else. Fleet figures say how many vehicles they leave out
+  ("Excludes 1 vehicle shared without costs").
+- **Reminders per person:** a vehicle's reminders go to its owner and to
+  those it is shared with who asked for them, each in their own language,
+  units and time zone, once per status. Settings → Reminders takes your own
+  **ntfy topic URL** and **Gotify token** as well as your email address.
+  The webhook's payload names the `user`.
+- **`php bin/export-user.php <username>`**: a backup-format ZIP of one
+  user's vehicles and settings, which restores as an install of their own.
+- Sample data (`bin/dev-setup.sh --with-sample-data`) has a second user,
+  `partner` / `logbook-demo`, with Log access to the self-charging hybrid
+  (without costs, logging its fill-ups) and View access to the Golf.
+
+### Changed
+- Entry edit and delete pages are open to Log access for one's own entries;
+  others' entries show without edit links. CSV export and import need
+  Manage. The Expenses tab is open to anyone who can see the vehicle, with
+  the amounts hidden from those who may not see its costs.
+- Buttons and links on a vehicle's pages show only what you may do.
+- A shared vehicle's reminders are always judged by its owner's lead times
+  and time zone, and its money stays in the owner's currency.
+- The calendar feed and the monthly digest cover your own vehicles and those
+  you asked to be reminded about.
+- `MAIL_TO`, and the instance's ntfy topic and Gotify token, are the
+  **admins'** defaults only; members receive email, ntfy and Gotify at their
+  own address, topic or token.
+
+### Upgrade notes
+- **Take a backup first** (Settings → Backup, or `php bin/backup.php
+  create`).
+- **One migration**, applied on start in Docker or with
+  `vendor/bin/phinx migrate -e production` on bare PHP. It adds the admin
+  and disabled flags, the shares, invitation links, reminder deliveries and
+  who added each entry.
+- **Your existing account becomes an admin** and is named as the author of
+  everything already there. What 1.x already notified is recorded as sent,
+  so nothing is sent again. Nothing else changes until you invite someone.
+- **`MAIL_TO` is now the admins' default only.** With one account (an
+  admin) nothing changes. Members you invite need their own address (or
+  ntfy topic, or Gotify token) in Settings → Reminders.
+- **Rolling back is refused once a second user exists**, with a message
+  naming `php bin/export-user.php`: export and delete the others first.
+  With one user it rolls back cleanly.
+- **2.0.0 backups do not restore into 1.x** (the schema version moves).
+  Invitation links are not in backups.
+- `SESSION_SECRET` also keys invitation links: changing it disables open
+  ones.
+- **Custom notification channels** need one new method,
+  `reaches(Recipient $recipient): bool` (can it deliver to this person?);
+  see [docs/notification-channels.md](docs/notification-channels.md).
+
 ## [1.10.0] — 2026-09-30
 
 Phases 18.1 and 18.2: one access policy, and a REST API. Home Assistant,
@@ -1007,7 +1096,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/gwpreston16/Logbook/compare/v1.10.0...v2.0.0
 [1.10.0]: https://github.com/gwpreston16/Logbook/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/gwpreston16/Logbook/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/gwpreston16/Logbook/compare/v1.7.0...v1.8.0

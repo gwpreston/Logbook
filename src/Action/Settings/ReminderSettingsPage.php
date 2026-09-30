@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Settings;
 
 use Logbook\Service\Notification\ChannelRegistry;
+use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Notification\NotificationChannel;
 use Logbook\Service\Reminder\CalendarFeed;
 use Logbook\Service\Reminder\ReminderSettingsForm;
@@ -47,10 +48,13 @@ final readonly class ReminderSettingsPage
         $user = RequestContext::requireUser($request);
         $notifications = $this->settings->notificationPreferences($user->id);
 
+        $recipient = Recipient::of($user, $notifications);
         $channels = array_map(static fn (NotificationChannel $c): array => [
             'key' => $c->key(),
             'label' => $c->label(),
-            'configured' => $c->isConfigured(),
+            'configured' => $c->isConfigured() || $c->reaches($recipient),
+            // Configured here but not for them: a member needs their own address, topic or token (Phase 19).
+            'reaches' => $c->reaches($recipient),
             'enabled' => $enabled === null ? $notifications->isEnabled($c->key()) : in_array($c->key(), $enabled, true),
         ], $this->channels->all());
 
@@ -67,7 +71,8 @@ final readonly class ReminderSettingsPage
             'digest' => $values === null ? $notifications->digest : ($values['digest'] ?? '') !== '',
             'errors' => $errors?->all() ?? [],
             'channels' => $channels,
-            'any_active' => $this->channels->active($notifications) !== [],
+            'any_active' => $this->channels->active($notifications, $recipient) !== [],
+            'is_admin' => $user->isAdmin,
             'feed_enabled' => $this->feed->isEnabled($user),
             'new_feed' => is_array($newFeed) ? $newFeed : null,
         ], $status);

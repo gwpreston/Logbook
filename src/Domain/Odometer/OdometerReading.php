@@ -30,6 +30,8 @@ final readonly class OdometerReading
         public ?int $maintenanceEntryId = null,
         public ?int $complianceDocumentId = null,
         public ?int $tyreChangeId = null,
+        /** Who added a manual reading (Phase 19); a derived one's author is its entry's. */
+        public ?int $createdBy = null,
     ) {
     }
 

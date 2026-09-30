@@ -4,8 +4,9 @@
 
 {# Garage card (spec.md §7.1): photo with the due badge, plate, fuel type,
    name, and a footer with the odometer and average economy. The whole card
-   is one link. `snapshot` is a Service\Vehicle\VehicleSnapshot. #}
-{% macro card(snapshot) -%}
+   is one link. `snapshot` is a Service\Vehicle\VehicleSnapshot; `shared`
+   ({owner, level}) names the owner of a vehicle shared with the viewer. #}
+{% macro card(snapshot, shared = null) -%}
     {% import 'macros/ui.twig' as ui %}
     {% set vehicle = snapshot.vehicle %}
     <a class="vehicle-card{{ vehicle.isArchived() ? ' vehicle-card--archived' : '' }}" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
@@ -25,6 +26,9 @@
             <div>
                 <h2 class="vehicle-card__name">{{ vehicle.name() }}</h2>
                 <p class="vehicle-card__sub truncate" title="{{ vehicle.description() }}">{{ vehicle.description() }}</p>
+                {% if shared %}
+                    <p class="vehicle-card__sub truncate">{{ ui.icon('group') }}{{ 'sharing.shared_by'|trans({owner: shared.owner, level: ('sharing.levels.' ~ shared.level.value)|trans}) }}</p>
+                {% endif %}
             </div>
             <dl class="vehicle-card__stats">
                 <div>

@@ -32,9 +32,9 @@ each vehicle costs.*
 **Non-goals (initially)**
 - Live GPS / real-time telematics.
 - Fleet-management for commercial operators (dispatch, driver assignment).
-- A hosted multi-tenant SaaS. Single owner per instance to start; multi-user is
-  a considered future phase (§13), not assumed in the core data model beyond a
-  clean seam.
+- A hosted multi-tenant SaaS. One or more users per instance, sharing
+  vehicles (Phase 19, §7.21); still self-hosted and not multi-tenant: one
+  install is one household.
 
 ---
 
@@ -42,8 +42,9 @@ each vehicle costs.*
 
 - Individuals with 1–10 personal vehicles (mixed cars and motorbikes).
 - Home-lab / self-hosting enthusiasts who want control of their data.
-- Households sharing a small set of vehicles (drives the eventual multi-user
-  seam, not day-one roles).
+- Households sharing a small set of vehicles: each person has their own
+  account and vehicles, and a vehicle can be shared with others at a chosen
+  level (Phase 19, §7.21).
 
 ---
 
@@ -116,17 +117,34 @@ disagree):
   | `Manage` | editing the vehicle and editing or deleting any entry, schedules, reminders, valuations, import, sale pack |
   | `Own` | archive, restore, delete, transfer, sharing |
 
-  Editing or deleting *one's own* entry under `Log` needs to know who
-  logged it, which Phase 19 records; until then every entry edit and
-  delete asks for `Manage`.
+  - `recipientVehicleIds(User): list<int>` (Phase 19): the active
+    vehicles whose reminders the user receives (see *Cross-vehicle reads*).
+
+  Editing or deleting *one's own* entry under `Log` uses who logged it
+  (`created_by`, Phase 19), in `Service\Access\EntryAccess` on top of the
+  vehicle policy: `canChange(User, Vehicle, ?int $createdBy)` is true with
+  `Manage`, or with `Log` when the entry is the user's own;
+  `canSeeAmount(User, Vehicle, ?int $createdBy)` is true with `ViewCosts`,
+  or with `View` for the user's own entry (they typed the amount). Entry
+  edit and delete routes (fill-ups, readings, service records, documents,
+  expenses, tyre changes, attachments) declare `Log`, and the Action asks
+  `Action\EntryGuard` once it has loaded the entry (403 otherwise).
 
   `Service\Access\InstanceAccess::can(User, InstanceAbility)` covers
-  `ManageModules`, `Backup`, `Restore`, `ManageNotifications` and later
+  `ManageModules`, `Backup`, `Restore`, `ManageNotifications` and
   `ManageUsers`.
 
-  **Phase 18.1 policy:** a user has every vehicle ability on the vehicles
-  whose `user_id` is theirs and none on any other, and every instance
-  ability. With one owner, that is today's behaviour exactly.
+  **Phase 19 policy** (`SharedVehicleAccess`, `AdminInstanceAccess`): the
+  owner (`vehicles.user_id`) has every vehicle ability; a user with a
+  share (§6 VehicleShare) has its level's abilities (`view`: `View`;
+  `log`: `View`, `Log`; `manage`: `View`, `Log`, `Manage`, `ViewCosts`),
+  plus `ViewCosts` when the share's *can see costs* is on; anyone else
+  has none. Admins are not owners: they see their own and shared vehicles
+  only. Ownership and shares are read in one query per user and request,
+  remembered until `forget()` (called when a request starts and after a
+  vehicle is added, archived, restored, deleted, shared, transferred or
+  left). Every instance ability is the admins'. A disabled user has
+  nothing (the auth guard never lets them in).
 - **Vehicle routes.** Each route with `{id}` declares its ability (the
   route argument `ability`, read by `Middleware\VehicleAccessMiddleware`,
   which sits on the whole signed-in group). The middleware loads the
@@ -143,23 +161,28 @@ disagree):
   vehicles) are taken only from the policy's visible ids, so an id outside
   them is ignored or answers 404 like a missing one.
 - **Cross-vehicle reads** (garage, sidebar, dashboard widgets, fleet
-  history, Reports, the Ownership report, *Coming up*, reminders, the
-  calendar feed, the scheduler's reminder sync and notifications) take
-  their vehicle ids from `visibleVehicleIds()`. No repository lists "all
+  history, Reports, the Ownership report, *Coming up*, reminders and the
+  scheduler's reminder sync) take their vehicle ids from
+  `visibleVehicleIds()`. Notifications, the digest and the calendar feed
+  take theirs from `recipientVehicleIds(User)`: the active vehicles one
+  owns plus those whose share has `notify` on (Phase 19), since seeing a
+  car is not asking to be told about it. No repository lists "all
   of a user's vehicles" except the one query behind the policy. The
   scheduler runs per user, as it already notifies per owner. Pickers that
   lead to a log form (*Log entry*, quick fill-up) list only vehicles with
   `Log`.
 - **Costs.** Templates show a vehicle's amounts only inside a
   `can_see_costs(vehicle)` check (a Twig function backed by `ViewCosts`),
-  charts of amounts included. Fleet figures need no check of their own:
+  charts of amounts included; an entry row's own amount may instead sit
+  inside `can_see_amount(vehicle, entry)`, which is also true for the
+  viewer's own entry (Phase 19). Fleet figures need no check of their own:
   Reports, the Ownership report, their CSVs and the dashboard's spend count
   only vehicles with `ViewCosts` (and list only those in their vehicle
   filter), and *Coming up* leaves out the amounts of the others. A test
   scans the templates and fails on an amount outside a check, bar the
   exceptions it lists with their reason (fleet figures, pages whose route
-  already needs `ViewCosts`, entry forms). Under the Phase 18.1 policy the
-  check is always true.
+  already needs `ViewCosts`, entry forms). Fleet figures that leave out
+  vehicles say so ("Excludes 1 vehicle shared without costs").
 - **Attachments** are served after a `View` check on their vehicle. Their
   lookup is already scoped by `vehicle_id` (§7.12).
 - **Instance pages** (Settings → Modules, Backup and restore) declare
@@ -167,10 +190,11 @@ disagree):
   `Middleware\InstanceAccessMiddleware` (403 without it); their links on
   Settings use `can_instance()`. Personal settings (units, language, theme,
   password, tyre limits, and all of Settings → Reminders: lead times, the
-  channels one is notified on, email, digest, the test message and the
-  calendar feed, each stored per user) need only a signed-in user.
-  `ManageNotifications` is reserved for when the channels' servers, set by
-  environment variables today, can be set in the app.
+  channels one is notified on, email, the personal ntfy topic and Gotify
+  token, digest, the test message and the calendar feed, each stored per
+  user) need only a signed-in user. Settings → Users declares
+  `ManageUsers`. `ManageNotifications` is reserved for when the channels'
+  servers, set by environment variables today, can be set in the app.
 - **Reminder routes** (`/reminders/{reminder}`) declare a vehicle ability
   too (`Log` to mark done, dismiss or reopen; `Manage` to edit or delete);
   the reminder's vehicle must be visible (404) and allow it (403).
@@ -492,13 +516,57 @@ MySQL only.
   default `blue`; §8); created/updated (UTC). "Metric", "UK" and "US"
   are presets that fill in the four unit preferences (Metric and UK set
   `mm`, US sets `in32`). Upgrading to 1.3.0 sets `in32` for owners whose
-  volume unit is `gal_us` and `mm` for everyone else. (Single row day-one;
-  table shaped for multi-user later.)
+  volume unit is `gal_us` and `mm` for everyone else.
+- is_admin (bool, default false) and disabled_at (UTC, optional) (Phase
+  19). Setup creates an admin; there is always at least one admin who is
+  not disabled. Upgrading to 2.0.0 makes every existing user an admin
+  (there is one). Rolling the migration back is refused while more than
+  one user exists, with a message naming `bin/export-user.php`, which
+  exports one user's vehicles first.
+
+**VehicleShare** (Phase 19, §7.21)
+- id, vehicle_id (`ON DELETE CASCADE`), user_id (`ON DELETE CASCADE`),
+  level (`view`|`log`|`manage`), can_see_costs (bool; always stored true
+  for `manage`), notify (bool, default false: whether this user gets the
+  vehicle's reminders), created/updated (UTC). Unique `(vehicle_id,
+  user_id)`; index on user_id. The owner is `vehicles.user_id` and never
+  has a share row.
+
+**Invitation** (Phase 19, §7.9)
+- id, token_hash (HMAC-SHA256 of the token, keyed with `SESSION_SECRET`;
+  unique), kind (`invite`|`reset`), created_by (user, `ON DELETE
+  CASCADE`), user_id (the user a `reset` is for, `ON DELETE CASCADE`;
+  null for an invite), username (reserved by an open invite),
+  display_name, is_admin, expires_at (7 days), used_at, revoked_at,
+  created_at (UTC). Not in backups: links are for this install, now.
+
+**ReminderDelivery** (Phase 19, §7.11)
+- id, reminder_id (`ON DELETE CASCADE`), user_id (`ON DELETE CASCADE`),
+  status (`due`|`overdue`), channels (JSON list of channel keys),
+  sent_at (UTC; null while a run holds the claim), created_at. Unique
+  `(reminder_id, user_id, status)`: each recipient is sent each status
+  once. A reminder's new occurrence deletes its rows. Upgrading to 2.0.0
+  writes one row for the owner of every reminder already notified, so
+  nothing is sent again.
+
+**Entry authorship** (Phase 19)
+- created_by (user id, optional, `ON DELETE SET NULL`) on fuel_entries,
+  odometer_readings (`manual` readings; a derived reading's author is its
+  entry's), maintenance_entries, compliance_documents, expense_entries,
+  tyre_changes and vehicle_valuations, and uploaded_by on attachments.
+  Every create path sets it: forms, CSV import and the API take the
+  signed-in or key's user; the command line and seeds, which have none,
+  name the vehicle's owner. Upgrading to 2.0.0 names each vehicle's owner
+  on the rows already there (manual readings only), so null means only a
+  deleted user, shown as "a former user". Editing and transfers never
+  change it.
 
 **Session**
 - id (HMAC-SHA256 of the random cookie token, keyed with `SESSION_SECRET`; the
   token itself is never stored), user_id (optional), data (JSON), created_at,
   last_activity_at (UTC). Expires after 30 days without activity.
+  Disabling or deleting a user, or an admin's password reset, deletes
+  their sessions (Phase 19).
 
 **ApiKey** (Phase 18.2)
 - id, user_id (`ON DELETE CASCADE`), name (up to 100), token_hash
@@ -1070,7 +1138,10 @@ iCal/webcal feed so items appear in the user's calendar.
   typed in the owner's distance unit), days before a document expires
   (default 30), and the default for new manual reminders (default 7); days
   0–365. The vehicle tabs use the same lead times, so their badges and the
-  reminders always agree.
+  reminders always agree. A shared vehicle's reminders use its **owner's**
+  lead times and time zone for everyone (Phase 19), so a status never
+  depends on who looked; its tabs' badges, the dashboard's documents and
+  the API use the owner's lead times too (*Coming up* keeps the viewer's).
 - **Status**, judged against the owner's *today* (in their time zone):
   *overdue* once the due date (or, for a schedule, either limit) has passed;
   *due* within the lead time (a document expiring today is due, not yet
@@ -1095,7 +1166,9 @@ iCal/webcal feed so items appear in the user's calendar.
   a keyed hash of the token is stored. The feed is an iCalendar (RFC 5545)
   file of the open reminders that have a date, as all-day events with an
   alarm at the lead time. It needs no session (calendar apps cannot sign
-  in); an unknown or revoked token gets a 404.
+  in); an unknown or revoked token, or a disabled user's, gets a 404. It
+  covers the user's recipient vehicles (their own and those shared with
+  *Send me its reminders*; Phase 19).
 - **Tyre reminders** (Phase 11.2): source `tyre`, `source_id` = the
   vehicle's id, so one reminder per vehicle: four tyres wearing together
   are one nudge, not four pushes.
@@ -1382,9 +1455,10 @@ Username/password login, Argon2id, secure sessions, logout, change password.
 First-run setup creates the initial account. CSRF on all forms.
 
 - **First run:** while no user exists every page redirects to `/setup`, which
-  creates the account (username, password, display name, locale, time zone,
-  unit preset, currency) and signs it in. Once a user exists `/setup` redirects
-  to sign-in; it can never create a second account.
+  creates the first account, an **admin** (username, password, display
+  name, locale, time zone, unit preset, currency) and signs it in. Once a
+  user exists `/setup` redirects to sign-in; it can never create a second
+  account (admins invite the others).
 - **Passwords:** 8–1024 characters, no other composition rules; hashed with
   Argon2id and transparently re-hashed when PHP's defaults change.
 - **Sessions:** stored in the database (see §6 Session); cookie `HttpOnly`,
@@ -1399,6 +1473,48 @@ First-run setup creates the initial account. CSRF on all forms.
   forged or stale post gets a friendly 400 page, never a state change. A post
   that exceeds PHP's `post_max_size` is reported as "too large" rather than as
   a CSRF failure.
+
+**Users and invitations** (Phase 19)
+
+- **Settings → Users** (`/settings/users`, `ManageUsers`: admins only)
+  lists every user with their role (admin or member), last sign-in (the
+  latest session activity) and status (active or disabled), and the open
+  links. Actions, each a plain POST form:
+  - *Invite* (`/settings/users/invite`): username (the same rules as
+    setup; one taken by a user or an open invite is refused), display name
+    and *Admin*. The answering page shows the one-time link
+    (`{APP_URL}{APP_BASE_PATH}/invite/{token}`, valid 7 days) with a copy
+    button, once (the token is never stored or flashed). When email is
+    configured it can also be sent to an address typed on that form, in
+    the admin's language; the address is not stored.
+  - *Make admin* / *Remove admin*, and *Disable*: never on the last active
+    admin (refused with a message). *Disable* sets disabled_at, deletes
+    their sessions and blocks sign-in; their API keys stop working at once
+    (verification checks the user). *Enable* clears it. An admin cannot
+    disable or delete themselves.
+  - *Reset password*: a one-time link of the same kind (`reset`), 7 days,
+    that deletes the user's sessions when created. Opening it asks for the
+    new password only. There is no self-service reset by email.
+  - *Revoke* an open link.
+  - *Delete* (with a confirmation page): refused while the user owns
+    vehicles, listing them, each with a transfer form for the admin
+    (`POST /settings/users/{member}/vehicles/{vehicle}/transfer`: the
+    owner's transfer without *Keep access*), so an account nobody can
+    sign in to can still be removed. Their
+    shares, API keys, calendar feed, settings, dashboard layout and
+    sessions go; entries they added to other people's vehicles stay, with
+    `created_by` null (shown as "a former user").
+- **`/invite/{token}`** (public): an open link shows a form like setup's
+  (password, locale, time zone, unit preset, currency; the username and
+  display name are the invite's, the display name editable), creates the
+  user and signs them in, marking the link used in the same transaction. A
+  reset link asks for the new password and signs that user in. A used,
+  expired, revoked or unknown link answers **404**, as does a reset link
+  for a disabled user.
+- **Sign-in:** a disabled user's correct password is refused with the same
+  message as a wrong one. The auth guard and the current-user middleware
+  treat a disabled user's session as signed out. Last sign-in is shown
+  from sessions; nothing else is recorded.
 
 ### 7.10 Feature toggles
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
@@ -1465,22 +1581,41 @@ Extensible channel interface so more can be added.
   channels are used. Adding a channel means implementing the interface,
   adding it to the list and reading its own environment variables — nothing
   else changes (`docs/notification-channels.md`).
-- **When:** the scheduled task (§10) syncs every owner's reminders and
-  notifies each reminder once per status: when it becomes *due* and again
+- **Recipients** (Phase 19): a vehicle's reminders go to its owner, and to
+  each user whose share on it has `notify` on; nobody else, whatever they
+  can see. The scheduled task runs once per active user: each run covers
+  only their recipient vehicles, in their language, units and time zone.
+  A recipient without `ViewCosts` on a vehicle never gets its amounts
+  (a reminder carries none today; *Coming up* costs are not sent).
+- **Channels per user** (Phase 19): email goes to the user's own address
+  (Settings → Reminders; `MAIL_TO` is the default for admins only, so a
+  member without an address gets no email). ntfy and Gotify take a
+  personal topic URL / application token there, which replaces the
+  instance's for that user; without one, only admins receive through the
+  instance topic or token, so a household topic is never flooded by
+  everyone's cars. The webhook stays instance-level and its payload gains
+  `user` (`{"id", "username", "display_name"}`); it receives every
+  recipient's notifications. A channel a user cannot use (no address, no
+  topic) counts as not configured for them.
+- **When:** the scheduled task (§10) syncs every user's reminders and
+  notifies each reminder once per status and recipient: when it becomes *due* and again
   when it becomes *overdue* (one that goes straight to overdue is sent
   once). Upcoming, dismissed, done and archived-vehicle reminders are never
-  sent. Everything newly due for one owner in a run goes out as one
+  sent. Everything newly due for one recipient in a run goes out as one
   notification.
-- **Idempotency:** before sending, each reminder is claimed with a
-  conditional update of `notified_status` (only one run can win), and
-  `last_notified_at` / `channels_notified` record what went out. If every
-  channel fails, the claims are released so the next run retries; a
+- **Idempotency:** before sending, each reminder is claimed for its
+  recipient and status by inserting its `reminder_deliveries` row (unique
+  `(reminder, user, status)`: only one run can win, and a claim is never
+  inside a transaction), and the row's `channels` / `sent_at` record what
+  went out; the reminder's `notified_status`, `last_notified_at` and
+  `channels_notified` keep the latest delivery to anyone. If every channel
+  fails, that recipient's claims are deleted so the next run retries; a
   partial failure is logged and not retried (the channels that succeeded
-  must not repeat).
-- **Digest** (optional, off by default): on the first run of each month in
-  the owner's time zone, one summary of every open reminder due by the end
+  must not repeat). One recipient failing never affects another.
+- **Digest** (optional, off by default, per user): on the first run of each
+  month in the user's time zone, covering their recipient vehicles, one summary of every open reminder due by the end
   of that month, overdue ones included. Nothing is sent when nothing is due.
-- **Content** is translated into the owner's language and formatted in their
+- **Content** is translated into the recipient's language and formatted in their
   units and time zone, and links to the reminder list (absolute URL from
   `APP_URL` and `APP_BASE_PATH`).
 - Settings → Reminders can send a **test notification** through the enabled
@@ -1602,8 +1737,9 @@ vehicles; a disabled module cannot be imported).
   row count per table, file count), `database/<table>.json` for every data
   table (rows as JSON lists of column → string/null, so a backup restores
   onto any supported engine: SQLite → PostgreSQL works) and `uploads/…`
-  (every file under `UPLOAD_PATH`: photos and attachments). Sessions are
-  not included.
+  (every file under `UPLOAD_PATH`: photos and attachments). Sessions and
+  invitation links are not included (Phase 19: a link is for this install,
+  now).
 - **Restore** (upload a backup, then confirm on a second page that shows
   what the archive contains and requires ticking "replace all data") is
   destructive and so: the archive is fully validated first (format, same
@@ -1625,7 +1761,19 @@ vehicles; a disabled module cannot be imported).
   `expense` / `odometer` attachments and the four tyre tables — `tyre_sets`,
   `tyres`, `tyre_changes`, `tyre_change_lines` — and the valuations with
   their `valuation` attachments like any other rows; the
-  `tyres.thresholds` setting travels in `settings`.)
+  `tyres.thresholds` setting travels in `settings`. Phase 19's 2.0.0
+  backups carry `vehicle_shares`, `reminder_deliveries`, the admin and
+  disabled columns and every `created_by`, and never restore into 1.x.)
+- **Restore and users** (Phase 19): the backup replaces every user with
+  its own. A 1.x backup is refused like any other schema; restored into
+  1.10.0 and upgraded, its user becomes an admin as any upgrade does.
+- **`php bin/export-user.php <username> [file]`** (Phase 19) writes a
+  backup-format ZIP holding only that user, their vehicles (with every
+  entry, schedule, reminder and file) and their own settings, for moving
+  someone to their own install. Shares, other users and install-wide
+  settings are left out, and every entry names the exported user as its
+  author (the new install's one user, an admin there, added everything).
+  It restores like any backup of the same version.
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -2310,6 +2458,11 @@ whole group off: every API path answers 404.
   `Authorization: Bearer lbk_…`. A missing, malformed, unknown or revoked
   key answers 401 with `WWW-Authenticate: Bearer`; a `read` key on a write
   answers 403 (`insufficient_scope`).
+- A key of a disabled or deleted user stops working at once: 401, as for a
+  revoked key (Phase 19). Vehicles shared with the key's user are listed
+  and read at their share's level; amounts follow the same rule as the
+  pages (`ViewCosts`, or the user's own entry). Writes need `Log` and
+  record the key's user as the entry's `created_by`.
 - Failed attempts are logged with the client address, never the token.
   After 20 failures from one address in 10 minutes, that address gets 429
   (with `Retry-After`) for 10 minutes, even with a good key (a small
@@ -2430,6 +2583,82 @@ PHP sees, which behind a proxy is the proxy's.
 writes, attachments, OAuth or sessions, webhooks for new entries, reports
 and ownership figures beyond the summary, per-vehicle keys (Phase 19 lets
 a device have its own user instead).
+
+### 7.21 Sharing (Phase 19)
+
+A household on one install: each person has their own account, vehicles,
+preferences and reminders, and a vehicle can be shared with others at a
+chosen level. Guide: `docs/users-and-sharing.md`.
+
+**Levels** (per vehicle; the abilities are §5's):
+
+| Level | Can | Abilities |
+|---|---|---|
+| Owner | everything, including sharing, archiving, deleting and transferring | all |
+| Manage | edit the vehicle and any entry, schedules, reminders, valuations, import, sale pack, CSV exports | `View`, `Log`, `Manage`, `ViewCosts` |
+| Log | see it, add entries, edit or delete their own entries, mark reminders done | `View`, `Log` |
+| View | see it | `View` |
+
+Each share has **Can see costs** (`ViewCosts`), always on for Manage and
+off by default for Log and View, and **Send me its reminders** (`notify`,
+off by default). Instance admins are not vehicle owners: an admin sees
+their own and shared vehicles only (backup is how an admin sees
+everything). Documents, with their policy numbers and registration, are
+part of View.
+
+- **Share** (`GET /vehicles/{id}/sharing`, `View`; *Sharing* in the
+  vehicle header): for the owner the current shares (user, level, *Can see
+  costs*, *Send them its reminders*) each with *Save* and *Remove*
+  (`POST …/sharing/{member}/save|remove`, `Own`), and *Add* by username
+  with those three (`POST …/sharing`, `Own`). Plain forms, working without JS. Adding refuses an
+  unknown or disabled username, the owner, and a user who already has a
+  share. A shared user sees the share's `notify` as their own choice:
+  they can switch it on the vehicle's *Sharing* page too (`POST
+  …/sharing/me/notify`; *Leave* and *Send me its reminders* are the only
+  things there for a non-owner).
+- **Transfer** (`/vehicles/{id}/transfer`, `Own`, with a confirmation
+  page): to another active user, who becomes the owner (`vehicles.user_id`)
+  and loses their share if they had one; everything stays attached to the
+  vehicle (entries, schedules, reminders, files, shares). The old owner
+  keeps a Manage share unless they untick *Keep access*. Reminder
+  deliveries are kept, so nothing is sent again.
+- **Leave** (`POST /vehicles/{id}/sharing/me/leave`, `View`): a user with a
+  share removes it themselves and goes to the garage.
+- **Garage** (`/vehicles`): *Your vehicles*, then *Shared with you* (each
+  card naming the owner and your level); each group keeps its archived
+  vehicles below as before. The sidebar list, dashboard vehicle chips,
+  fleet history, Reports, the Ownership report and *Coming up* cover
+  every vehicle you can see. Fleet cost figures (Reports, Ownership, the
+  spend widget, *Coming up* totals) leave out vehicles without
+  `ViewCosts` and say so under the figure ("Excludes 1 vehicle shared
+  without costs").
+- **Costs without `ViewCosts`:** amounts, prices, reports, the cost of
+  ownership card, valuations and *Coming up* costs are hidden, and amount
+  columns show nothing. The one exception is a user's **own entries**:
+  they see the amounts they typed (row amounts through `can_see_amount()`,
+  and in the API). Figures derived from several entries (cost per
+  distance, totals, price trends, an economy segment's cost) stay hidden
+  even when some are theirs. Forms still take costs, since a driver pays
+  at the pump. The Expenses tab (`View`) lists the vehicle's ad-hoc
+  expenses without their amounts (their own excepted) and no totals or
+  chart; the API's expenses list still needs `ViewCosts`. CSV exports need
+  `Manage`; print shows costs only with `ViewCosts`.
+- **Log level:** the add forms for every kind; edit and delete only on
+  entries whose `created_by` is them (403 otherwise). Others' entries show
+  without edit or delete links. Import, schedules, valuations, the sale
+  pack, CSV export, manual reminders' edit and delete, and vehicle edits
+  are Manage; marking a reminder done, dismissing and reopening are Log.
+- **"Added by":** when a vehicle has any shares, list rows and history
+  show a small "Added by {display name}" on entries not added by the
+  viewer. `created_by` null reads as the owner.
+- **Per-user preferences:** each user sees every vehicle in their own
+  units, language and time zone; money stays in the vehicle's currency.
+  Dashboard layouts are per user.
+- **Deleting a vehicle** (owner only) removes its shares with it.
+
+**Not in this version:** groups or households as an entity, per-entry
+permissions, public share links, approval flows, SSO and proxy sign-in,
+public sign-up, self-service password reset by email.
 
 ---
 
@@ -2569,9 +2798,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   `MAIL_PORT` (default 587), `MAIL_USERNAME`, `MAIL_PASSWORD`,
   `MAIL_ENCRYPTION` (`tls` = STARTTLS required, `ssl` = implicit TLS,
   `none`; default `tls`), `MAIL_FROM` (default `logbook@localhost`),
-  `MAIL_TO` (default recipient; each owner can set their own); `NTFY_URL`
-  (topic URL), `NTFY_TOKEN`; `GOTIFY_URL` (server URL), `GOTIFY_TOKEN`
-  (application token), `GOTIFY_PRIORITY` (0–10, default 5; overdue
+  `MAIL_TO` (the admins' default recipient; each user can set their own);
+  `NTFY_URL` (topic URL; admins' default, members need their own topic),
+  `NTFY_TOKEN`; `GOTIFY_URL` (server URL), `GOTIFY_TOKEN` (application
+  token; admins' default, a user can set their own), `GOTIFY_PRIORITY` (0–10, default 5; overdue
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES` (default true;
@@ -2625,7 +2855,6 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
-- Multi-user with roles (admin/editor/viewer) and per-vehicle sharing.
 - OIDC/SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
 - Trip/journey log (business vs personal for mileage claims),
   personal fuel-tank entity, VIN decode/registration lookup,
@@ -2762,6 +2991,14 @@ task breakdowns live in the per-phase files; this is the map.
   strings, problem details, cursor paging, CORS by allow-list, an OpenAPI
   3.1 description validated in the tests, and guides for Home Assistant,
   Shortcuts, Grafana and Node-RED (§7.20); one migration; release v1.10.0.
+- **Phase 19 — Multiple users and vehicle sharing + v2.0.0.** Admins and
+  members, invitations and admin password-reset links, disable and delete
+  (§7.9); per-vehicle shares at View, Log or Manage with *Can see costs*
+  and *Send me its reminders*, transfer and leave, the garage's *Shared
+  with you*, "Added by", own entries' amounts (§7.21); who added each
+  entry; reminders per recipient with `reminder_deliveries` and personal
+  channels (§7.11); `bin/export-user.php`; the `SharedVehicleAccess`
+  policy (§5); rollback refused with more than one user; release v2.0.0.
 
 ---
 

@@ -31,12 +31,12 @@ intervals, documents, expenses and the *Log entry* chooser. The tyre
 
 ### Spec change (§7.17 and §5)
 
-> - **Editing a tyre** opens as a desktop modal (§5), as do *Edit change*,
->   *Edit set*, and the delete confirmations for a tyre, a change and a set.
->   Each is still its own page with its own URL, so it works without JS, on
->   narrow screens, and by deep link. Links from the Tyres tab, History and
->   *Recent activity* carry `data-modal` and, from History, `return`
->   (§5).
+- **Editing a tyre** opens as a desktop modal (§5), as do *Edit change*,
+  *Edit set*, and the delete confirmations for a tyre, a change and a set.
+  Each is still its own page with its own URL, so it works without JS, on
+  narrow screens, and by deep link. Links from the Tyres tab, History and
+  *Recent activity* carry `data-modal` and, from History, `return`
+  (§5).
 
 Add "tyres, tyre changes and tyre sets" to §5's list.
 
@@ -96,29 +96,29 @@ stored choice. See *Open questions*.
 
 ### Spec change (§7.12)
 
-> - **Dropping files** (Phase 21.1): the shared attachment input is wrapped
->   in a drop zone ("Drag files here or choose files"). It is progressive
->   enhancement: without JS it is the plain `<input type="file" multiple>`,
->   and the native input stays in the page, focusable and clickable.
->   - Dropped files are **added to** the input's current selection (built
->     with `DataTransfer` and assigned to `input.files`). The form, the modal
->     `FormData` submit and the one parser are unchanged, so there is still
->     no second upload path.
->   - The zone lists the chosen files (name and size), each with a *Remove*
->     button. It highlights while files are dragged over it and announces
->     changes through an `aria-live` region ("3 files added"; "receipt.heic:
->     not a PDF, JPEG, PNG or WebP file").
->   - The client applies the same limits as today (count, `MAX_UPLOAD_MB`,
->     the four types) before submitting. The server is still the authority,
->     and its all-or-nothing check is unchanged.
->   - A drop anywhere else on a page that has a drop zone is ignored, so the
->     browser never navigates away and loses the form. Pages without a zone
->     are untouched.
->   - The same macro serves the vehicle form's purchase and sale inputs, the
->     vehicle photo (single file: a drop replaces it), CSV import's upload
->     and backup restore's upload (single file each).
->   - Touch devices keep the file picker. The zone shows only "Choose
->     files" where dragging is unsupported.
+- **Dropping files** (Phase 21.1): the shared attachment input is wrapped
+  in a drop zone ("Drag files here or choose files"). It is progressive
+  enhancement: without JS it is the plain `<input type="file" multiple>`,
+  and the native input stays in the page, focusable and clickable.
+  - Dropped files are **added to** the input's current selection (built
+    with `DataTransfer` and assigned to `input.files`). The form, the modal
+    `FormData` submit and the one parser are unchanged, so there is still
+    no second upload path.
+  - The zone lists the chosen files (name and size), each with a *Remove*
+    button. It highlights while files are dragged over it and announces
+    changes through an `aria-live` region ("3 files added"; "receipt.heic:
+    not a PDF, JPEG, PNG or WebP file").
+  - The client applies the same limits as today (count, `MAX_UPLOAD_MB`,
+    the four types) before submitting. The server is still the authority,
+    and its all-or-nothing check is unchanged.
+  - A drop anywhere else on a page that has a drop zone is ignored, so the
+    browser never navigates away and loses the form. Pages without a zone
+    are untouched.
+  - The same macro serves the vehicle form's purchase and sale inputs, the
+    vehicle photo (single file: a drop replaces it), CSV import's upload
+    and backup restore's upload (single file each).
+  - Touch devices keep the file picker. The zone shows only "Choose
+    files" where dragging is unsupported.
 
 ### Tasks
 - [ ] `ui.file_drop()` macro in `templates/macros/ui.twig` wrapping the
@@ -142,21 +142,21 @@ stored choice. See *Open questions*.
 
 ### Spec change (§7.19)
 
-> - **Options** gain *Include the vehicle photo*, **off by default**. Only
->   `photo=1` turns it on. It is disabled with the hint "Add a photo on the
->   vehicle's edit page" (a link) when the vehicle has none.
-> - **Cover page** (only with the photo on): printed first, before the
->   summary, and shown the same on screen. It holds the photo (as large as
->   fits the page, `object-fit: contain`, never cropped or stretched); the
->   vehicle's name, and make, model and variant; the model year; the
->   registration; the title "Vehicle history"; and "Prepared {date}" in the
->   owner's date format. A page break follows, so the summary starts on page
->   two. The summary is unchanged.
-> - The photo is served by the existing authenticated photo route, and only
->   to users who can see the sale pack (`Manage`, Phase 19). It is never
->   added to the paperwork ZIP.
-> - Screen-only notice with the option on: "The photo may show your
->   number plate, house or street. Check it before you share the pack."
+- **Options** gain *Include the vehicle photo*, **off by default**. Only
+  `photo=1` turns it on. It is disabled with the hint "Add a photo on the
+  vehicle's edit page" (a link) when the vehicle has none.
+- **Cover page** (only with the photo on): printed first, before the
+  summary, and shown the same on screen. It holds the photo (as large as
+  fits the page, `object-fit: contain`, never cropped or stretched); the
+  vehicle's name, and make, model and variant; the model year; the
+  registration; the title "Vehicle history"; and "Prepared {date}" in the
+  owner's date format. A page break follows, so the summary starts on page
+  two. The summary is unchanged.
+- The photo is served by the existing authenticated photo route, and only
+  to users who can see the sale pack (`Manage`, Phase 19). It is never
+  added to the paperwork ZIP.
+- Screen-only notice with the option on: "The photo may show your
+  number plate, house or street. Check it before you share the pack."
 
 ### Tasks
 - [ ] Option parsing (`photo=1` only), with the disabled state when there

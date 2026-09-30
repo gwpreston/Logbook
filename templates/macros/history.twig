@@ -58,8 +58,11 @@
     {% import 'macros/attachments.twig' as paperclip %}
     {% import _self as history %}
     {% set costs = (opts.costs ?? true) and can_see_costs(item.vehicle) %}
+    {% set own_amount = (opts.costs ?? true) and can_see_amount(item.vehicle, item.createdBy) %}
     {% set summary = history.summary(item) %}
-    {% set tag = (opts.link ?? true) ? 'a' : 'div' %}
+    {# A milestone opens the vehicle, a valuation its page: both Manage; entries their own rule (spec.md §7.21). #}
+    {% set editable = item.kind.value in ['milestone', 'valuation'] ? can_vehicle(item.vehicle, 'manage') : can_change(item.vehicle, item.createdBy) %}
+    {% set tag = (opts.link ?? true) and editable ? 'a' : 'div' %}
     <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}" data-modal{% endif %}>
         <span class="list__icon" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
         <span class="list__body">
@@ -72,11 +75,12 @@
             {%- if item.kind.value == 'maintenance' and item.tyres is not empty %}
                 <span class="list__meta history-row__tyres">{{ ui.icon('tire_repair') }}{{ item.tyres|map(m => trans(m.message, m.parameters))|join(' · ') }}</span>
             {%- endif %}
+            {%- if item.kind.value != 'milestone' and (opts.link ?? true) %}{{ ui.added_by(item.vehicle, item.createdBy) }}{% endif %}
         </span>
         <span class="list__end">
             {% if item.odometerKm is not null %}<span class="list__delta tabular">{{ item.odometerKm|distance }}</span>{% endif %}
             {{ paperclip.count(item.files) }}
-            {% if costs and item.amount is not null %}<span class="list__amount tabular">{{ item.amount|money(item.currency) }}</span>{% endif %}
+            {% if own_amount and item.amount is not null %}<span class="list__amount tabular">{{ item.amount|money(item.currency) }}</span>{% endif %}
         </span>
     </{{ tag }}>
 {%- endmacro %}

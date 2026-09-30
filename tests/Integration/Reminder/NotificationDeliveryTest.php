@@ -93,6 +93,7 @@ final class NotificationDeliveryTest extends ReminderTestCase
                 'status' => 'due',
                 'due_on' => '2026-10-09',
             ]],
+            'user' => ['id' => $this->owner($app)->id, 'username' => 'owner', 'display_name' => 'Pat Owner'],
         ], $hook[0]['json']);
 
         self::assertSame(ReminderStatus::Due, $reminder->notifiedStatus);
@@ -271,9 +272,10 @@ final class NotificationDeliveryTest extends ReminderTestCase
         $repository = $this->service($app, ReminderRepository::class);
 
         self::assertTrue($reminder->awaitsNotification());
-        self::assertTrue($repository->claim($reminder, new DateTimeImmutable(self::NOW)));
-        self::assertFalse($repository->claim($reminder, new DateTimeImmutable(self::NOW)), 'already taken');
-        self::assertFalse($this->onlyReminder($app)->awaitsNotification());
+        $owner = $this->owner($app)->id;
+        self::assertTrue($repository->claim($reminder, $owner, new DateTimeImmutable(self::NOW)));
+        self::assertFalse($repository->claim($reminder, $owner, new DateTimeImmutable(self::NOW)), 'already taken');
+        self::assertSame([], $repository->listAwaitingNotification([$reminder->vehicleId], $owner));
     }
 
     public function testMonthlyDigestOncePerMonth(): void

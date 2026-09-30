@@ -54,93 +54,93 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§9 Security, §12 open questions) and
 
 ### §6 Data model
 
-> **UserIdentity** (Phase 23.1): id, user_id (`ON DELETE CASCADE`),
-> provider (`oidc`; `proxy` from Phase 23.2), issuer (the `iss` URL, up to
-> 255), subject (the `sub`, up to 255), last_login_at (UTC), created_at.
-> `(provider, issuer, subject)` is unique, so a provider account links to
-> at most one user. A user may have several identities.
+**UserIdentity** (Phase 23.1): id, user_id (`ON DELETE CASCADE`),
+provider (`oidc`; `proxy` from Phase 23.2), issuer (the `iss` URL, up to
+255), subject (the `sub`, up to 255), last_login_at (UTC), created_at.
+`(provider, issuer, subject)` is unique, so a provider account links to
+at most one user. A user may have several identities.
 >
-> **User:** password_hash becomes nullable. A user created through SSO has
-> none until they set one, and cannot sign in locally until then.
+**User:** password_hash becomes nullable. A user created through SSO has
+none until they set one, and cannot sign in locally until then.
 
 ### §7.9 Authentication: single sign-on
 
-> - **Configuration** (§9): `OIDC_ISSUER` (the issuer URL; setting it
->   switches SSO on), `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`,
->   `OIDC_PROVIDER_NAME` (button text, default "SSO"), `OIDC_SCOPES`
->   (default `openid profile email`), `OIDC_USERNAME_CLAIM` (default
->   `preferred_username`), `OIDC_GROUPS_CLAIM` (default `groups`),
->   `OIDC_LINK` (`explicit` | `username`, default `explicit`),
->   `OIDC_AUTO_CREATE` (default `false`), `OIDC_ALLOWED_GROUPS` and
->   `OIDC_ADMIN_GROUPS` (comma-separated, optional), `OIDC_LOGOUT` (default
->   `false`), `AUTH_LOCAL_LOGIN` (default `true`). The redirect URI to
->   register at the provider is `{APP_URL}{APP_BASE_PATH}/auth/oidc/callback`.
->   Settings → Users shows it with a copy button, and the admin sees
->   whether SSO is configured.
-> - **Discovery** is fetched from `{OIDC_ISSUER}/.well-known/openid-configuration`
->   on first use and cached under `var/cache` for 24 hours. The JWKS is
->   cached likewise and re-fetched once when a token's `kid` is unknown.
->   The discovered `issuer` must equal `OIDC_ISSUER` exactly, or SSO is
->   refused and the reason logged. This is the only outbound request the
->   app makes, and only when an admin configures it.
-> - **Sign-in page:** with SSO configured, a *Sign in with {name}* button
->   above the password form. With `AUTH_LOCAL_LOGIN=false` the password
->   form is gone, and the page shows only the button.
-> - **Flow:** `GET /auth/oidc/start?return=…` creates a pre-sign-in session
->   holding `state`, `nonce`, the PKCE verifier and the checked `return`
->   (local paths only, as §7.9's sign-in redirect). It then redirects to the
->   authorization endpoint (`response_type=code`, S256 challenge).
->   `GET /auth/oidc/callback` checks `state` (single use, 10 minutes),
->   exchanges the code at the token endpoint with the client secret and
->   verifier, and validates the ID token:
->   - the signature uses a key from the JWKS, with algorithms RS256, PS256,
->     ES256 or EdDSA only (`none` and HS* are refused);
->   - `iss` equals the issuer; `aud` contains the client id; `azp` equals it
->     when present; `exp` is in the future and `iat` not in the future, with
->     60 seconds of leeway; `nonce` matches.
->   Any failure shows "Sign-in with {name} didn't work. Try again, or sign
->   in with your password" (the password option only when local sign-in is
->   on), and the specific reason is logged, never shown.
-> - **Finding the user:**
->   1. An identity with this issuer and `sub` → that user.
->   2. Else, with `OIDC_LINK=username`: a user whose username equals the
->      username claim (lower-cased) and who has **no** OIDC identity yet is
->      linked. Only use this with a provider whose usernames only admins can
->      set, as the docs say.
->   3. Else, with `OIDC_AUTO_CREATE=true`: a new member is created (username
->      from the claim, sanitised, suffixed if taken; display name from
->      `name`; locale from `locale` when supported, else `APP_LOCALE`). They
->      land on a short welcome form (time zone, unit preset, currency), as
->      invitations do.
->   4. Else: "Your {name} account isn't linked to Logbook. Ask an admin to
->      invite you, then link it from Settings → Account."
-> - **Groups:** with `OIDC_ALLOWED_GROUPS`, a user outside them is refused
->   (message as 4). With `OIDC_ADMIN_GROUPS`, `is_admin` is set from them at
->   every SSO sign-in, both ways, except that the last admin is never
->   demoted (logged). Without these variables, groups are ignored and admin
->   stays as set in the app.
-> - **After sign-in:** exactly as a password sign-in. The session is
->   regenerated, CSRF rotated, it returns to `return`, and a disabled user
->   is refused. The session remembers that it came from SSO, and keeps the
->   ID token only for logout when `OIDC_LOGOUT` is on.
-> - **Linking** (Settings → Account → *Single sign-on*): *Link {name}
->   account* runs the flow for the signed-in user and stores the identity.
->   It is refused if that identity belongs to someone else. *Unlink* is
->   refused while it is the user's only way in (no password and local
->   sign-in on, or local sign-in off).
-> - **Passwords for SSO users:** *Set a password* appears when local sign-in
->   is on. Changing it signs out other sessions, as today.
-> - **Sign-out:** local sign-out as today. With `OIDC_LOGOUT=true` and an
->   `end_session_endpoint`, the browser then goes there with `id_token_hint`
->   and `post_logout_redirect_uri` = the sign-in page.
-> - **Break-glass:** `php bin/auth.php login-link <username>` prints a
->   one-time sign-in link (10 minutes, keyed hash stored, as invitations
->   are). It works even with `AUTH_LOCAL_LOGIN=false` and SSO down. Its use
->   is logged.
-> - **Setup** (first run) is unchanged: it always creates a local admin with
->   a password, whatever the SSO settings.
-> - **Admin view:** Settings → Users shows each user's sign-in methods
->   (*Password*, *{name}*), and an admin can remove an identity.
+- **Configuration** (§9): `OIDC_ISSUER` (the issuer URL; setting it
+  switches SSO on), `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`,
+  `OIDC_PROVIDER_NAME` (button text, default "SSO"), `OIDC_SCOPES`
+  (default `openid profile email`), `OIDC_USERNAME_CLAIM` (default
+  `preferred_username`), `OIDC_GROUPS_CLAIM` (default `groups`),
+  `OIDC_LINK` (`explicit` | `username`, default `explicit`),
+  `OIDC_AUTO_CREATE` (default `false`), `OIDC_ALLOWED_GROUPS` and
+  `OIDC_ADMIN_GROUPS` (comma-separated, optional), `OIDC_LOGOUT` (default
+  `false`), `AUTH_LOCAL_LOGIN` (default `true`). The redirect URI to
+  register at the provider is `{APP_URL}{APP_BASE_PATH}/auth/oidc/callback`.
+  Settings → Users shows it with a copy button, and the admin sees
+  whether SSO is configured.
+- **Discovery** is fetched from `{OIDC_ISSUER}/.well-known/openid-configuration`
+  on first use and cached under `var/cache` for 24 hours. The JWKS is
+  cached likewise and re-fetched once when a token's `kid` is unknown.
+  The discovered `issuer` must equal `OIDC_ISSUER` exactly, or SSO is
+  refused and the reason logged. This is the only outbound request the
+  app makes, and only when an admin configures it.
+- **Sign-in page:** with SSO configured, a *Sign in with {name}* button
+  above the password form. With `AUTH_LOCAL_LOGIN=false` the password
+  form is gone, and the page shows only the button.
+- **Flow:** `GET /auth/oidc/start?return=…` creates a pre-sign-in session
+  holding `state`, `nonce`, the PKCE verifier and the checked `return`
+  (local paths only, as §7.9's sign-in redirect). It then redirects to the
+  authorization endpoint (`response_type=code`, S256 challenge).
+  `GET /auth/oidc/callback` checks `state` (single use, 10 minutes),
+  exchanges the code at the token endpoint with the client secret and
+  verifier, and validates the ID token:
+  - the signature uses a key from the JWKS, with algorithms RS256, PS256,
+    ES256 or EdDSA only (`none` and HS* are refused);
+  - `iss` equals the issuer; `aud` contains the client id; `azp` equals it
+    when present; `exp` is in the future and `iat` not in the future, with
+    60 seconds of leeway; `nonce` matches.
+  Any failure shows "Sign-in with {name} didn't work. Try again, or sign
+  in with your password" (the password option only when local sign-in is
+  on), and the specific reason is logged, never shown.
+- **Finding the user:**
+  1. An identity with this issuer and `sub` → that user.
+  2. Else, with `OIDC_LINK=username`: a user whose username equals the
+     username claim (lower-cased) and who has **no** OIDC identity yet is
+     linked. Only use this with a provider whose usernames only admins can
+     set, as the docs say.
+  3. Else, with `OIDC_AUTO_CREATE=true`: a new member is created (username
+     from the claim, sanitised, suffixed if taken; display name from
+     `name`; locale from `locale` when supported, else `APP_LOCALE`). They
+     land on a short welcome form (time zone, unit preset, currency), as
+     invitations do.
+  4. Else: "Your {name} account isn't linked to Logbook. Ask an admin to
+     invite you, then link it from Settings → Account."
+- **Groups:** with `OIDC_ALLOWED_GROUPS`, a user outside them is refused
+  (message as 4). With `OIDC_ADMIN_GROUPS`, `is_admin` is set from them at
+  every SSO sign-in, both ways, except that the last admin is never
+  demoted (logged). Without these variables, groups are ignored and admin
+  stays as set in the app.
+- **After sign-in:** exactly as a password sign-in. The session is
+  regenerated, CSRF rotated, it returns to `return`, and a disabled user
+  is refused. The session remembers that it came from SSO, and keeps the
+  ID token only for logout when `OIDC_LOGOUT` is on.
+- **Linking** (Settings → Account → *Single sign-on*): *Link {name}
+  account* runs the flow for the signed-in user and stores the identity.
+  It is refused if that identity belongs to someone else. *Unlink* is
+  refused while it is the user's only way in (no password and local
+  sign-in on, or local sign-in off).
+- **Passwords for SSO users:** *Set a password* appears when local sign-in
+  is on. Changing it signs out other sessions, as today.
+- **Sign-out:** local sign-out as today. With `OIDC_LOGOUT=true` and an
+  `end_session_endpoint`, the browser then goes there with `id_token_hint`
+  and `post_logout_redirect_uri` = the sign-in page.
+- **Break-glass:** `php bin/auth.php login-link <username>` prints a
+  one-time sign-in link (10 minutes, keyed hash stored, as invitations
+  are). It works even with `AUTH_LOCAL_LOGIN=false` and SSO down. Its use
+  is logged.
+- **Setup** (first run) is unchanged: it always creates a local admin with
+  a password, whatever the SSO settings.
+- **Admin view:** Settings → Users shows each user's sign-in methods
+  (*Password*, *{name}*), and an admin can remove an identity.
 
 ---
 

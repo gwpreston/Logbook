@@ -35,7 +35,7 @@
             <div class="card__header">
                 <h2 id="schedules-heading" class="card__title">{{ 'maintenance.schedule.title'|trans }}</h2>
                 {% if not vehicle.isArchived() %}
-                    <a class="btn btn--soft" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>
+                    {% if can_vehicle(vehicle, 'manage') %}<a class="btn btn--soft" href="{{ url_for('maintenance.schedules.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('event_repeat') }}{{ 'maintenance.schedule.add'|trans }}</a>{% endif %}
                 {% endif %}
             </div>
             {% if schedules is empty %}

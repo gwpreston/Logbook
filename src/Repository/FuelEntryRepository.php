@@ -87,7 +87,7 @@ final readonly class FuelEntryRepository
         return $row === false ? null : $this->hydrate($row);
     }
 
-    public function insert(int $vehicleId, FuelEntryData $data, DateTimeImmutable $now): int
+    public function insert(int $vehicleId, FuelEntryData $data, DateTimeImmutable $now, ?int $createdBy = null): int
     {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
 
@@ -95,6 +95,7 @@ final readonly class FuelEntryRepository
             'vehicle_id' => $vehicleId,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
+            'created_by' => $createdBy,
         ] + $this->dataColumns($data), ['vehicle_id' => ParameterType::INTEGER] + self::types());
 
         return (int) $this->connection->lastInsertId();
@@ -153,6 +154,7 @@ final readonly class FuelEntryRepository
                 'economy_confirmed',
                 'created_at',
                 'updated_at',
+                'created_by',
             )
             ->from(self::TABLE);
     }
@@ -212,6 +214,7 @@ final readonly class FuelEntryRepository
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
+            createdBy: Row::nullableInt($row, 'created_by'),
             economyConfirmed: Row::nullableDecimal($row, 'economy_confirmed', self::CONSUMPTION_SCALE),
         );
     }

@@ -6,6 +6,7 @@ namespace Logbook\Tests\Integration\Http;
 
 use DI\Container;
 use Doctrine\DBAL\DriverManager;
+use Logbook\Service\Access\AccessContext;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\User\User;
@@ -113,6 +114,7 @@ final class VehicleDetailsTest extends AppTestCase
             new OdometerReadingRepository($broken),
             $this->service($app, AttachmentService::class),
             $this->service($app, ClockInterface::class),
+            $this->service($app, AccessContext::class),
         ));
         $browser = $this->signedIn($app);
 

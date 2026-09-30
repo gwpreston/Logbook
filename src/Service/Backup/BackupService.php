@@ -6,6 +6,7 @@ namespace Logbook\Service\Backup;
 
 use FilesystemIterator;
 use JsonException;
+use Logbook\Domain\User\User;
 use Logbook\Kernel;
 use Logbook\Repository\BackupRepository;
 use Logbook\Support\Config\AppSettings;
@@ -66,6 +67,36 @@ final readonly class BackupService
      */
     public function create(string $path): BackupManifest
     {
+        $tables = [];
+        foreach (BackupRepository::TABLES as $table) {
+            $tables[$table] = $this->repository->rows($table);
+        }
+
+        return $this->write($path, $tables, $this->files->all());
+    }
+
+    /**
+     * Write one user's part of the data (spec.md §7.13 bin/export-user.php):
+     * a backup of the same format and version holding only them, their
+     * vehicles and their files.
+     */
+    public function createForUser(string $path, User $user): BackupManifest
+    {
+        $tables = [];
+        foreach (BackupRepository::TABLES as $table) {
+            $tables[$table] = $this->repository->rows($table);
+        }
+        $export = UserExport::of($tables, $user->id);
+
+        return $this->write($path, $export['tables'], array_values(array_intersect($this->files->all(), $export['files'])));
+    }
+
+    /**
+     * @param array<string, list<array<string, string|null>>> $tables every table in TABLES => its rows
+     * @param list<string> $stored files under UPLOAD_PATH to include
+     */
+    private function write(string $path, array $tables, array $stored): BackupManifest
+    {
         self::requireZip();
 
         $zip = new ZipArchive();
@@ -78,7 +109,7 @@ final readonly class BackupService
             $columns = $this->repository->columns($table);
             $rows = array_map(
                 static fn (array $row): array => array_map(static fn (string $c): ?string => $row[$c] ?? null, $columns),
-                $this->repository->rows($table),
+                $tables[$table] ?? [],
             );
             $counts[$table] = count($rows);
             $zip->addFromString(
@@ -90,7 +121,6 @@ final readonly class BackupService
             );
         }
 
-        $stored = $this->files->all();
         foreach ($stored as $relative) {
             $name = 'uploads/' . $relative;
             $zip->addFile($this->files->root() . '/' . $relative, $name);

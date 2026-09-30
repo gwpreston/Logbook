@@ -40,7 +40,8 @@
 {%- endmacro %}
 
 {# One attached file: opens it (images in the browser, PDFs download), with
-   its size and upload date; `deletable` adds a delete link. #}
+   its size and upload date; `deletable` adds a delete link, for those who
+   may change it (their own upload under Log, any under Manage). #}
 {% macro item(vehicle, attachment, deletable = false) -%}
     {% import 'macros/ui.twig' as ui %}
     <li class="attachment">
@@ -48,7 +49,7 @@
             {{- ui.icon(attachment.icon()) }}<span class="attachment__name">{{ attachment.filename }}</span>
         </a>
         <span class="attachment__meta">{{ attachment.size|file_size }} · {{ attachment.uploadedAt|instant_date }}</span>
-        {% if deletable %}
+        {% if deletable and can_change(vehicle, attachment.uploadedBy) %}
             <a class="icon-btn attachment__delete" href="{{ url_for('attachments.delete', {id: vehicle.id, attachment: attachment.id}) }}">
                 {{- ui.icon('delete') }}<span class="visually-hidden">{{ 'attachment.delete_named'|trans({name: attachment.filename}) }}</span>
             </a>

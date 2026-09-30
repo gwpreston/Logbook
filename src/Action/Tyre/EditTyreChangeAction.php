@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Tyre\TyreChange;
@@ -38,6 +39,7 @@ final readonly class EditTyreChangeAction
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
         private ClockInterface $clock,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -48,6 +50,7 @@ final readonly class EditTyreChangeAction
     {
         $vehicle = RequestContext::vehicle($request);
         $change = TyreRoute::change($this->changes, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $change->createdBy);
         $user = RequestContext::requireUser($request);
         $preferences = $user->preferences;
         $today = LocalTime::today($this->clock, $preferences->timeZone());

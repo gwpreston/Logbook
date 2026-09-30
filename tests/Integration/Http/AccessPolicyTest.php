@@ -110,9 +110,10 @@ final class AccessPolicyTest extends AppTestCase
             }
         }
         self::assertSame([], $leaks);
-        foreach (['/expenses', '/valuations', '/export/fuel.csv'] as $costPage) {
-            self::assertSame(403, $browser->get('/vehicles/' . $golf->id . $costPage)->getStatusCode(), $costPage);
-        }
+        // CSV exports need Manage (spec.md §7.21), which always sees costs; the
+        // Expenses tab lists the expenses without amounts.
+        self::assertSame(403, $browser->get('/vehicles/' . $golf->id . '/valuations')->getStatusCode());
+        self::assertStringNotContainsString('12.91', $this->page($browser, '/vehicles/' . $golf->id . '/expenses'));
         self::assertStringContainsString('Golf', $this->page($browser, '/vehicles/' . $golf->id), 'the vehicle still shows');
     }
 
@@ -194,6 +195,11 @@ final class AccessPolicyTest extends AppTestCase
         $this->maintenance($app, $golf, '2026-09-05', 'Annual service', '187.43', '10200');
         $this->document($app, $golf, ComplianceType::Insurance, '2026-09-01', '2027-08-31', '243.19');
         $this->expense($app, $golf, '2026-09-12', '12.91', ExpenseCategory::Parking);
+        // Added by someone else: one's own entries always show their amounts (Phase 19).
+        $other = $this->otherOwner($app);
+        foreach (['fuel_entries', 'maintenance_entries', 'compliance_documents', 'expense_entries'] as $table) {
+            $this->connection($app)->update($table, ['created_by' => $other->id], ['vehicle_id' => $golf->id]);
+        }
 
         return $golf;
     }

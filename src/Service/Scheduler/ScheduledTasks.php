@@ -46,6 +46,9 @@ final readonly class ScheduledTasks
         $failures = 0;
 
         foreach ($this->users->listAll() as $user) {
+            if (!$user->isActive()) {
+                continue;
+            }
             $users++;
             try {
                 $report = $this->notifier->run($user);

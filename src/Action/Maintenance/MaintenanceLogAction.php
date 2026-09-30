@@ -47,7 +47,8 @@ final readonly class MaintenanceLogAction
         $user = RequestContext::requireUser($request);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $history = $this->maintenance->history($vehicle);
-        $lead = $this->reminderSettings->reminderPreferences($user->id);
+        // The owner's lead times, as the vehicle's reminders use (Phase 19).
+        $lead = $this->reminderSettings->reminderPreferences($vehicle->userId);
 
         $query = $request->getQueryParams();
         $category = is_string($query['category'] ?? null) ? MaintenanceCategory::tryFrom($query['category']) : null;

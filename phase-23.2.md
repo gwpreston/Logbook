@@ -48,63 +48,63 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
 
 ### §9 Configuration
 
-> - `AUTH_PROXY_HEADER`: the username header (for example `Remote-User`,
->   `X-authentik-username`). Empty (the default) means header sign-in is
->   off.
-> - `AUTH_PROXY_TRUSTED`: comma-separated IP addresses and CIDR ranges of
->   the proxy (for example `172.18.0.0/16`, `10.0.0.5`). **Required** when
->   the header is set. With the header set and this empty, the app refuses
->   to boot and names both variables, rather than trusting everyone.
-> - `AUTH_PROXY_NAME_HEADER`, `AUTH_PROXY_EMAIL_HEADER` (optional; used only
->   when creating a user), `AUTH_PROXY_GROUPS_HEADER` (optional,
->   comma-separated values).
-> - `AUTH_PROXY_LINK` (`identity` | `username`, default `username`). With a
->   proxy, the username is the proxy's decision; `identity` requires an
->   explicit link first, as OIDC's `explicit` does.
-> - `AUTH_PROXY_AUTO_CREATE` (default `false`), `AUTH_PROXY_ALLOWED_GROUPS`,
->   `AUTH_PROXY_ADMIN_GROUPS` (as Phase 23.1's).
-> - `AUTH_PROXY_LOGOUT_URL` (optional): where *Sign out* sends the browser,
->   for example Authelia's logout page.
+- `AUTH_PROXY_HEADER`: the username header (for example `Remote-User`,
+  `X-authentik-username`). Empty (the default) means header sign-in is
+  off.
+- `AUTH_PROXY_TRUSTED`: comma-separated IP addresses and CIDR ranges of
+  the proxy (for example `172.18.0.0/16`, `10.0.0.5`). **Required** when
+  the header is set. With the header set and this empty, the app refuses
+  to boot and names both variables, rather than trusting everyone.
+- `AUTH_PROXY_NAME_HEADER`, `AUTH_PROXY_EMAIL_HEADER` (optional; used only
+  when creating a user), `AUTH_PROXY_GROUPS_HEADER` (optional,
+  comma-separated values).
+- `AUTH_PROXY_LINK` (`identity` | `username`, default `username`). With a
+  proxy, the username is the proxy's decision; `identity` requires an
+  explicit link first, as OIDC's `explicit` does.
+- `AUTH_PROXY_AUTO_CREATE` (default `false`), `AUTH_PROXY_ALLOWED_GROUPS`,
+  `AUTH_PROXY_ADMIN_GROUPS` (as Phase 23.1's).
+- `AUTH_PROXY_LOGOUT_URL` (optional): where *Sign out* sends the browser,
+  for example Authelia's logout page.
 
 ### §7.9 Authentication: header sign-in
 
-> - **Where it runs:** a middleware in the page (session) route group,
->   before the auth guard. It never runs for the API, calendar feed,
->   `/health` or assets.
-> - **Trust check:** the connecting address (`REMOTE_ADDR`, as PHP sees
->   it) must be in `AUTH_PROXY_TRUSTED`. From any other address the header
->   is **ignored**, and the request goes through normal sign-in. A warning is
->   logged at most once per address per hour: "Header Remote-User from
->   203.0.113.9 ignored: not a trusted proxy". Behind Docker, the proxy's
->   container network is the trusted range.
-> - **Resolving the user:** the header value is trimmed and lower-cased.
->   Then:
->   1. a `proxy` identity (Phase 23.1's table: provider `proxy`, issuer =
->      the header name, subject = the value) → that user;
->   2. else, with `AUTH_PROXY_LINK=username`, the user with that username is
->      linked (an identity row is written);
->   3. else, with `AUTH_PROXY_AUTO_CREATE=true`, a new member (display name
->      and email from their headers when present), sent to the welcome form;
->   4. else the "not linked" page (Phase 23.1's wording).
->   Allowed and admin groups apply as in Phase 23.1, read from
->   `AUTH_PROXY_GROUPS_HEADER`. A disabled user is refused.
-> - **Session follows the header:**
->   - no Logbook session, or one for another user → sign in as the header's
->     user (session regenerated, CSRF rotated), marked as header-based;
->   - a header-based session and the header now missing or different → the
->     session ends, and then the new user (if any) is signed in;
->   - a session from a password or OIDC sign-in is kept while no header
->     arrives, so mixed access (LAN direct, internet through the proxy)
->     still works; a header for another user replaces it.
-> - **Sign-in page:** with header sign-in on and the request from a trusted
->   proxy without the header, the page says "Your sign-in proxy didn't send
->   a user. Check its configuration", besides the usual methods.
-> - **Sign-out:** ends the session. For header-based sessions it then goes
->   to `AUTH_PROXY_LOGOUT_URL` when set. Without one, the next request
->   would sign straight back in, so the page explains that sign-out happens
->   at the proxy.
-> - **Settings → Users:** shows *Proxy* as a sign-in method; an admin can
->   remove the identity.
+- **Where it runs:** a middleware in the page (session) route group,
+  before the auth guard. It never runs for the API, calendar feed,
+  `/health` or assets.
+- **Trust check:** the connecting address (`REMOTE_ADDR`, as PHP sees
+  it) must be in `AUTH_PROXY_TRUSTED`. From any other address the header
+  is **ignored**, and the request goes through normal sign-in. A warning is
+  logged at most once per address per hour: "Header Remote-User from
+  203.0.113.9 ignored: not a trusted proxy". Behind Docker, the proxy's
+  container network is the trusted range.
+- **Resolving the user:** the header value is trimmed and lower-cased.
+  Then:
+  1. a `proxy` identity (Phase 23.1's table: provider `proxy`, issuer =
+     the header name, subject = the value) → that user;
+  2. else, with `AUTH_PROXY_LINK=username`, the user with that username is
+     linked (an identity row is written);
+  3. else, with `AUTH_PROXY_AUTO_CREATE=true`, a new member (display name
+     and email from their headers when present), sent to the welcome form;
+  4. else the "not linked" page (Phase 23.1's wording).
+  Allowed and admin groups apply as in Phase 23.1, read from
+  `AUTH_PROXY_GROUPS_HEADER`. A disabled user is refused.
+- **Session follows the header:**
+  - no Logbook session, or one for another user → sign in as the header's
+    user (session regenerated, CSRF rotated), marked as header-based;
+  - a header-based session and the header now missing or different → the
+    session ends, and then the new user (if any) is signed in;
+  - a session from a password or OIDC sign-in is kept while no header
+    arrives, so mixed access (LAN direct, internet through the proxy)
+    still works; a header for another user replaces it.
+- **Sign-in page:** with header sign-in on and the request from a trusted
+  proxy without the header, the page says "Your sign-in proxy didn't send
+  a user. Check its configuration", besides the usual methods.
+- **Sign-out:** ends the session. For header-based sessions it then goes
+  to `AUTH_PROXY_LOGOUT_URL` when set. Without one, the next request
+  would sign straight back in, so the page explains that sign-out happens
+  at the proxy.
+- **Settings → Users:** shows *Proxy* as a sign-in method; an admin can
+  remove the identity.
 
 ---
 

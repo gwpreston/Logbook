@@ -72,7 +72,11 @@
     <li class="list__item schedule">
         <span class="list__icon">{{ ui.icon(schedule.data.category.icon()) }}</span>
         <span class="list__body">
-            <a class="list__title" href="{{ url_for('maintenance.schedules.edit', {id: vehicle.id, schedule: schedule.id}) }}" data-modal>{{ schedule.data.title }}</a>
+            {% if can_vehicle(vehicle, 'manage') %}
+                <a class="list__title" href="{{ url_for('maintenance.schedules.edit', {id: vehicle.id, schedule: schedule.id}) }}" data-modal>{{ schedule.data.title }}</a>
+            {% else %}
+                <span class="list__title">{{ schedule.data.title }}</span>
+            {% endif %}
             <span class="list__meta">{{ maint.interval(schedule) }}</span>
             <span class="list__meta">{{ maint.next_due(schedule) }}</span>
             <span class="list__meta">{{ maint.last_done(schedule) }}</span>
@@ -86,13 +90,15 @@
     </li>
 {%- endmacro %}
 
-{# One maintenance entry as a list row linking to its edit page. #}
+{# One maintenance entry as a list row linking to its edit page (when the
+   viewer may change it, spec.md §7.21). #}
 {% macro entry_row(entry, vehicle, currency, files = 0) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import 'macros/attachments.twig' as paperclip %}
     {% set data = entry.data %}
+    {% set editable = can_change(vehicle, entry.createdBy) %}
     <li>
-        <a class="list__item" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>
+        {% if editable %}<a class="list__item" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>{% else %}<div class="list__item">{% endif %}
             <span class="list__icon">{{ ui.icon(data.category.icon()) }}</span>
             <span class="list__body">
                 <span class="list__title">{{ data.title }}</span>
@@ -101,11 +107,12 @@
                     {%- if data.odometerKm is not null %} · <span class="tabular">{{ data.odometerKm|distance }}</span>{% endif -%}
                     {%- if data.vendor %} · {{ data.vendor }}{% endif -%}
                 </span>
+                {{ ui.added_by(vehicle, entry.createdBy) }}
             </span>
             <span class="list__end">
-                {% if can_see_costs(vehicle) %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
+                {% if can_see_amount(vehicle, entry.createdBy) %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
                 {{ paperclip.count(files) }}
             </span>
-        </a>
+        {% if editable %}</a>{% else %}</div>{% endif %}
     </li>
 {%- endmacro %}

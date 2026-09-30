@@ -39,10 +39,16 @@ final readonly class ReminderService
     ) {
     }
 
-    public function overview(User $user): ReminderOverview
+    /**
+     * @param bool $recipientOnly only the vehicles whose reminders the user
+     *                            receives (the calendar feed, spec.md §7.6)
+     */
+    public function overview(User $user, bool $recipientOnly = false): ReminderOverview
     {
         $this->sync->sync($user);
-        $active = $this->access->visibleVehicleIds($user, VehicleScope::Active);
+        $active = $recipientOnly
+            ? $this->access->recipientVehicleIds($user)
+            : $this->access->visibleVehicleIds($user, VehicleScope::Active);
         $entries = $this->entries($user, $this->reminders->listForVehicles($active));
 
         return new ReminderOverview(

@@ -8,7 +8,8 @@ use DateTimeImmutable;
 use Logbook\Support\Display\DisplayPreferences;
 
 /**
- * An account. One owner per instance today; the table is shaped for more.
+ * An account (spec.md §6 User). Admins run the install (§7.9); a disabled
+ * user cannot sign in and their keys and feed stop working.
  */
 final readonly class User
 {
@@ -21,6 +22,13 @@ final readonly class User
         public DisplayPreferences $preferences,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
+        public bool $isAdmin = false,
+        public ?DateTimeImmutable $disabledAt = null,
     ) {
+    }
+
+    public function isActive(): bool
+    {
+        return $this->disabledAt === null;
     }
 }

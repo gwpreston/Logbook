@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Http\Redirector;
@@ -23,6 +24,7 @@ final readonly class DeleteMaintenanceEntryAction
         private DisplayFormatter $formatter,
         private View $view,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -33,6 +35,7 @@ final readonly class DeleteMaintenanceEntryAction
     {
         $vehicle = RequestContext::vehicle($request);
         $entry = MaintenanceRoute::entry($this->maintenance, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $entry->createdBy);
         $description = [
             'title' => $entry->data->title,
             'date' => $this->formatter->date($entry->data->performedOn),

@@ -13,8 +13,10 @@ use RecursiveIteratorIterator;
  * Every amount a template shows sits inside a cost-visibility check
  * (spec.md §5 *Costs*): an `{% if %}` whose condition names `costs` (a
  * variable set from can_see_costs()) or calls can_see_costs(), or an
- * expression guarded the same way (`costs ? x|money : dash`). A later
- * policy can then hide costs without touching templates again.
+ * expression guarded the same way (`costs ? x|money : dash`). One entry's
+ * own amount may instead be guarded by `own_amount` (set from
+ * can_see_amount()) or can_see_amount(), which also shows a user the
+ * amounts of their own entries (Phase 19).
  *
  * Fleet-wide figures come from services that already drop vehicles
  * without ViewCosts, so those templates are listed below with the reason.
@@ -22,7 +24,7 @@ use RecursiveIteratorIterator;
 final class CostVisibilityTemplateTest extends TestCase
 {
     private const string AMOUNT = '/\|\s*(money|unit_price|per_distance|per_thousand_distance)\b/';
-    private const string GUARD = '/(?<![\w.])costs\b|can_see_costs\(/';
+    private const string GUARD = '/(?<![\w.])(costs|own_amount)\b|can_see_costs\(|can_see_amount\(/';
 
     /**
      * Templates allowed to show amounts unguarded, with the reason.
@@ -43,7 +45,7 @@ final class CostVisibilityTemplateTest extends TestCase
         'tyres/form.twig' => 'the linked service record picker on a Manage form',
         'tyres/change_edit.twig' => 'the linked service record picker on a Manage form',
         // Pages whose route itself needs ViewCosts (config/routes.php).
-        'expenses/index.twig' => 'the Expenses tab: its route needs ViewCosts',
+        'expenses/index.twig' => 'the Expenses tab with costs: without ViewCosts the Action renders expenses/without_costs.twig',
         'valuations/index.twig' => 'the Valuations page: its route needs ViewCosts',
     ];
 
@@ -117,6 +119,10 @@ final class CostVisibilityTemplateTest extends TestCase
 
         foreach ($sets[1] as $value) {
             self::assertStringContainsString('can_see_costs(', $value, $template . ': set costs = ' . $value);
+        }
+        preg_match_all('/\{%-?\s*set\s+own_amount\s*=\s*(.*?)\s*-?%\}/s', $source, $own);
+        foreach ($own[1] as $value) {
+            self::assertStringContainsString('can_see_amount(', $value, $template . ': set own_amount = ' . $value);
         }
         $this->addToAssertionCount(1);
     }

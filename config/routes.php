@@ -19,6 +19,7 @@ use Logbook\Action\Api\UpcomingAction as ApiUpcomingAction;
 use Logbook\Action\Api\VehicleSummaryAction as ApiSummaryAction;
 use Logbook\Action\Attachment\DeleteAttachmentAction;
 use Logbook\Action\Attachment\ShowAttachmentAction;
+use Logbook\Action\Auth\InviteAction;
 use Logbook\Action\Auth\LoginAction;
 use Logbook\Action\Auth\LogoutAction;
 use Logbook\Action\Auth\SetupAction;
@@ -37,6 +38,8 @@ use Logbook\Action\Expense\DeleteExpenseAction;
 use Logbook\Action\Expense\EditExpenseAction;
 use Logbook\Action\Expense\VehicleExpensesAction;
 use Logbook\Action\Export\ExportModuleAction;
+use Logbook\Action\Forecast\ComingUpAction;
+use Logbook\Action\Forecast\ComingUpExportAction;
 use Logbook\Action\Fuel\ConfirmEconomyAction;
 use Logbook\Action\Fuel\CreateFuelEntryAction;
 use Logbook\Action\Fuel\DeleteFuelEntryAction;
@@ -45,8 +48,6 @@ use Logbook\Action\Fuel\FuelLogAction;
 use Logbook\Action\Fuel\QuickFuelAction;
 use Logbook\Action\Garage\GarageAction;
 use Logbook\Action\HealthAction;
-use Logbook\Action\Forecast\ComingUpAction;
-use Logbook\Action\Forecast\ComingUpExportAction;
 use Logbook\Action\History\FleetHistoryAction;
 use Logbook\Action\History\HistoryPrintAction;
 use Logbook\Action\History\VehicleHistoryAction;
@@ -81,17 +82,26 @@ use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\SalePack\DownloadPaperworkAction;
 use Logbook\Action\SalePack\ShowSalePackAction;
+use Logbook\Action\Settings\AdminTransferAction;
 use Logbook\Action\Settings\ApiKeysAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
+use Logbook\Action\Settings\DeleteUserAction;
 use Logbook\Action\Settings\ModuleSettingsAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\RevokeApiKeyAction;
+use Logbook\Action\Settings\RevokeInvitationAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
 use Logbook\Action\Settings\SetThemeAction;
-use Logbook\Action\Settings\TyreSettingsAction;
 use Logbook\Action\Settings\SettingsAction;
+use Logbook\Action\Settings\TyreSettingsAction;
+use Logbook\Action\Settings\UserAction;
+use Logbook\Action\Settings\UsersAction;
+use Logbook\Action\Sharing\ChangeShareAction;
+use Logbook\Action\Sharing\MyShareAction;
+use Logbook\Action\Sharing\SharingAction;
+use Logbook\Action\Sharing\TransferVehicleAction;
 use Logbook\Action\Tyre\DeleteTyreAction;
 use Logbook\Action\Tyre\DeleteTyreChangeAction;
 use Logbook\Action\Tyre\DeleteTyreSetAction;
@@ -136,7 +146,9 @@ use Slim\Interfaces\RouteCollectorProxyInterface as Group;
  * last-added first: auth guard, then CSRF, then (module groups) the feature
  * gate, so a switched-off module's pages answer 404 (spec.md §7.10). In
  * between, the access middlewares check each route's declared vehicle or
- * instance ability (spec.md §5 Access policy). Group closures must not be
+ * instance ability (spec.md §5 Access policy). Entry edit and delete routes
+ * declare Log: their Actions then allow only one's own entry without Manage
+ * (Action\EntryGuard). Group closures must not be
  * static: Slim binds them to the container.
  */
 return static function (App $app): void {
@@ -215,6 +227,8 @@ return static function (App $app): void {
     $app->group('', function (Group $group): void {
         $group->map(['GET', 'POST'], '/setup', SetupAction::class)->setName('setup');
         $group->map(['GET', 'POST'], '/login', LoginAction::class)->setName('login');
+        // One-time invitation and password-reset links (spec.md §7.9): the token is the authentication.
+        $group->map(['GET', 'POST'], '/invite/{token:[A-Za-z0-9_-]{43}}', InviteAction::class)->setName('invite.accept');
         $group->get('/diagnostics/deep/link', DeepLinkCheckAction::class)->setName('diagnostics.deep-link');
     })->add(CsrfMiddleware::class);
 
@@ -244,6 +258,22 @@ return static function (App $app): void {
         $group->get('/vehicles/{id:[0-9]+}/photo', VehiclePhotoAction::class)->setName('vehicles.photo')
             ->setArgument($ability, VehicleAbility::View->value);
 
+        // Sharing (spec.md §7.21): the page for anyone on the vehicle, adding and changing shares
+        // for the owner, a shared user's own choices, and transfer.
+        $group->get('/vehicles/{id:[0-9]+}/sharing', SharingAction::class)->setName('vehicles.sharing')
+            ->setArgument($ability, VehicleAbility::View->value);
+        $group->post('/vehicles/{id:[0-9]+}/sharing', SharingAction::class)->setName('vehicles.sharing.add')
+            ->setArgument($ability, VehicleAbility::Own->value);
+        $group->post('/vehicles/{id:[0-9]+}/sharing/{member:[0-9]+}/{action:save|remove}', ChangeShareAction::class)
+            ->setName('vehicles.sharing.change')
+            ->setArgument($ability, VehicleAbility::Own->value);
+        $group->post('/vehicles/{id:[0-9]+}/sharing/me/{action:notify|leave}', MyShareAction::class)
+            ->setName('vehicles.sharing.mine')
+            ->setArgument($ability, VehicleAbility::View->value);
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/transfer', TransferVehicleAction::class)
+            ->setName('vehicles.transfer')
+            ->setArgument($ability, VehicleAbility::Own->value);
+
         // History (spec.md §7.16): core, so no feature gate; the feed leaves
         // switched-off modules out itself.
         $group->get('/history', FleetHistoryAction::class)->setName('history.fleet');
@@ -272,10 +302,10 @@ return static function (App $app): void {
             ->setArgument($ability, VehicleAbility::Log->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/{reading:[0-9]+}/edit', EditOdometerReadingAction::class)
             ->setName('odometer.edit')
-            ->setArgument($ability, VehicleAbility::Manage->value);
+            ->setArgument($ability, VehicleAbility::Log->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/{reading:[0-9]+}/delete', DeleteOdometerReadingAction::class)
             ->setName('odometer.delete')
-            ->setArgument($ability, VehicleAbility::Manage->value);
+            ->setArgument($ability, VehicleAbility::Log->value);
 
         $group->group('', function (Group $fuel) use ($ability): void {
             $fuel->get('/fuel/new', QuickFuelAction::class)->setName('fuel.quick');
@@ -285,10 +315,10 @@ return static function (App $app): void {
                 ->setArgument($ability, VehicleAbility::Log->value);
             $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/edit', EditFuelEntryAction::class)
                 ->setName('fuel.edit')
-                ->setArgument($ability, VehicleAbility::Manage->value);
+                ->setArgument($ability, VehicleAbility::Log->value);
             $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/delete', DeleteFuelEntryAction::class)
                 ->setName('fuel.delete')
-                ->setArgument($ability, VehicleAbility::Manage->value);
+                ->setArgument($ability, VehicleAbility::Log->value);
             $fuel->post('/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/economy', ConfirmEconomyAction::class)
                 ->setName('fuel.economy')
                 ->setArgument($ability, VehicleAbility::Log->value);
@@ -303,10 +333,10 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/edit', EditMaintenanceEntryAction::class)
                     ->setName('maintenance.edit')
-                    ->setArgument($ability, VehicleAbility::Manage->value);
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/delete', DeleteMaintenanceEntryAction::class)
                     ->setName('maintenance.delete')
-                    ->setArgument($ability, VehicleAbility::Manage->value);
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/schedules/new', CreateScheduleAction::class)
                     ->setName('maintenance.schedules.create')
                     ->setArgument($ability, VehicleAbility::Manage->value);
@@ -327,10 +357,10 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $tyres->map(['GET', 'POST'], '/changes/{change:[0-9]+}/edit', EditTyreChangeAction::class)
                     ->setName('tyres.changes.edit')
-                    ->setArgument($ability, VehicleAbility::Manage->value);
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $tyres->map(['GET', 'POST'], '/changes/{change:[0-9]+}/delete', DeleteTyreChangeAction::class)
                     ->setName('tyres.changes.delete')
-                    ->setArgument($ability, VehicleAbility::Manage->value);
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $tyres->map(['GET', 'POST'], '/sets/{set:[0-9]+}/edit', EditTyreSetAction::class)->setName('tyres.sets.edit')
                     ->setArgument($ability, VehicleAbility::Manage->value);
                 $tyres->map(['GET', 'POST'], '/sets/{set:[0-9]+}/delete', DeleteTyreSetAction::class)
@@ -350,22 +380,23 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $documents->map(['GET', 'POST'], '/documents/{document:[0-9]+}/edit', EditComplianceDocumentAction::class)
                     ->setName('compliance.edit')
-                    ->setArgument($ability, VehicleAbility::Manage->value);
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $documents->map(['GET', 'POST'], '/documents/{document:[0-9]+}/delete', DeleteComplianceDocumentAction::class)
                     ->setName('compliance.delete')
-                    ->setArgument($ability, VehicleAbility::Manage->value);
+                    ->setArgument($ability, VehicleAbility::Log->value);
             })->add($module(Feature::Compliance));
 
+            // Without ViewCosts the tab lists the ad-hoc expenses only (spec.md §7.21).
             $vehicle->get('/expenses', VehicleExpensesAction::class)->setName('expenses.index')
-                ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                ->setArgument($ability, VehicleAbility::View->value);
             $vehicle->map(['GET', 'POST'], '/expenses/new', CreateExpenseAction::class)->setName('expenses.create')
                 ->setArgument($ability, VehicleAbility::Log->value);
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/edit', EditExpenseAction::class)
                 ->setName('expenses.edit')
-                ->setArgument($ability, VehicleAbility::Manage->value);
+                ->setArgument($ability, VehicleAbility::Log->value);
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/delete', DeleteExpenseAction::class)
                 ->setName('expenses.delete')
-                ->setArgument($ability, VehicleAbility::Manage->value);
+                ->setArgument($ability, VehicleAbility::Log->value);
 
             // Valuations (Phase 14.1) are core: no module toggle.
             $vehicle->get('/valuations', VehicleValuationsAction::class)->setName('valuations.index')
@@ -383,7 +414,7 @@ return static function (App $app): void {
             $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module')
-                ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $csvModule = '{module:fuel|odometer|maintenance|documents|expenses}';
             $vehicle->map(['GET', 'POST'], '/import/' . $csvModule, ImportUploadAction::class)
                 ->setName('import.upload')
@@ -396,7 +427,7 @@ return static function (App $app): void {
                 ->setArgument($ability, VehicleAbility::View->value);
             $vehicle->map(['GET', 'POST'], '/attachments/{attachment:[0-9]+}/delete', DeleteAttachmentAction::class)
                 ->setName('attachments.delete')
-                ->setArgument($ability, VehicleAbility::Manage->value);
+                ->setArgument($ability, VehicleAbility::Log->value);
         });
 
         $group->group('', function (Group $reminders) use ($ability): void {
@@ -440,6 +471,21 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/backup/restore/{token:[a-f0-9]{32}}', ConfirmRestoreAction::class)
             ->setName('backup.restore.confirm')
             ->setArgument($instance, InstanceAbility::Restore->value);
+        // Users and their one-time links (spec.md §7.9): admins only.
+        $group->map(['GET', 'POST'], '/settings/users', UsersAction::class)->setName('settings.users')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->post('/settings/users/{member:[0-9]+}/{action:admin|member|disable|enable|reset}', UserAction::class)
+            ->setName('settings.users.change')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->map(['GET', 'POST'], '/settings/users/{member:[0-9]+}/delete', DeleteUserAction::class)
+            ->setName('settings.users.delete')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->post('/settings/users/{member:[0-9]+}/vehicles/{vehicle:[0-9]+}/transfer', AdminTransferAction::class)
+            ->setName('settings.users.transfer')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->post('/settings/users/links/{invitation:[0-9]+}/revoke', RevokeInvitationAction::class)
+            ->setName('settings.users.revoke')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
         // One's own API keys (spec.md §7.20); kept when the API is off, so keys can be prepared.
         $group->map(['GET', 'POST'], '/settings/api-keys', ApiKeysAction::class)->setName('settings.api_keys');
         $group->map(['GET', 'POST'], '/settings/api-keys/{key:[0-9]+}/revoke', RevokeApiKeyAction::class)

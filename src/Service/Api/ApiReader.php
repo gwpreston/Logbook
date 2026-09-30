@@ -18,6 +18,7 @@ use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Access\EntryAccess;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
@@ -154,6 +155,7 @@ final readonly class ApiReader
                     $checks->for($fill->entry->id),
                     $currency,
                     $costs,
+                    EntryAccess::isOwn($user, $fill->entry->createdBy),
                 ),
                 $page['items'],
             ),
@@ -182,6 +184,7 @@ final readonly class ApiReader
             $this->fuel->checks($history)->for($entry->id),
             $this->vehicles->currencyFor($user, $vehicle),
             $this->costs($user, $vehicle),
+            EntryAccess::isOwn($user, $entry->createdBy),
         );
     }
 
@@ -212,7 +215,11 @@ final readonly class ApiReader
 
         return [
             'items' => array_map(
-                static fn (MaintenanceEntry $entry): array => Serializer::maintenanceEntry($entry, $currency, $costs),
+                static fn (MaintenanceEntry $entry): array => Serializer::maintenanceEntry(
+                    $entry,
+                    $currency,
+                    $costs || EntryAccess::isOwn($user, $entry->createdBy),
+                ),
                 $page['items'],
             ),
             'cursor' => $page['cursor'],
@@ -236,7 +243,11 @@ final readonly class ApiReader
 
         return [
             'items' => array_map(
-                static fn (DocumentState $state): array => Serializer::document($state, $currency, $costs),
+                static fn (DocumentState $state): array => Serializer::document(
+                    $state,
+                    $currency,
+                    $costs || EntryAccess::isOwn($user, $state->document->createdBy),
+                ),
                 $page['items'],
             ),
             'cursor' => $page['cursor'],
@@ -457,7 +468,10 @@ final readonly class ApiReader
     {
         $today ??= LocalTime::today($this->clock, $user->preferences->timeZone());
 
-        return $this->compliance->states($vehicle, $today, $this->reminderSettings->reminderPreferences($user->id)->documentDays);
+        // The owner's lead time, as the vehicle's reminders use (Phase 19).
+        $lead = $this->reminderSettings->reminderPreferences($vehicle->userId)->documentDays;
+
+        return $this->compliance->states($vehicle, $today, $lead);
     }
 
     public function costs(User $user, Vehicle $vehicle): bool

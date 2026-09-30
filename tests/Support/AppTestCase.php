@@ -12,6 +12,7 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Kernel;
+use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Auth\AuthService;
 use Logbook\Service\Auth\SetupData;
@@ -127,6 +128,9 @@ abstract class AppTestCase extends TestCase
         $connection = $this->connection($app);
         $tables = [
             'sessions',
+            'invitations',
+            'reminder_deliveries',
+            'vehicle_shares',
             'vehicle_valuations',
             'reminders',
             'expense_entries',
@@ -172,6 +176,39 @@ abstract class AppTestCase extends TestCase
     }
 
     /**
+     * A second, non-admin user (Phase 19), as an admin's invitation would
+     * create, with the same password as the owner.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function createMember(
+        App $app,
+        string $username = 'partner',
+        ?DisplayPreferences $preferences = null,
+        bool $isAdmin = false,
+        string $displayName = 'Sam Partner',
+    ): User {
+        $preset = UnitPreset::Uk;
+        $preferences ??= new DisplayPreferences(
+            'en_GB',
+            'Europe/London',
+            $preset->distance(),
+            $preset->volume(),
+            $preset->consumption(),
+            'GBP',
+        );
+
+        return $this->service($app, UserRepository::class)->insert(
+            $username,
+            $this->service($app, PasswordHasher::class)->hash(self::PASSWORD),
+            $displayName,
+            $preferences,
+            new DateTimeImmutable('2026-01-01T00:00:00Z'),
+            $isAdmin,
+        );
+    }
+
+    /**
      * A browser signed in as a freshly created owner (the database is reset first).
      *
      * @param App<ContainerInterface> $app
@@ -185,6 +222,22 @@ abstract class AppTestCase extends TestCase
         $browser->get('/login');
         $response = $browser->post('/login', ['username' => 'owner', 'password' => self::PASSWORD]);
         self::assertSame(303, $response->getStatusCode(), 'sign-in failed');
+
+        return $browser;
+    }
+
+    /**
+     * A new browser signed in as an existing user (Phase 19: several users
+     * on one install), with the test password.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function browserFor(App $app, string $username): TestBrowser
+    {
+        $browser = new TestBrowser($app);
+        $browser->get('/login');
+        $response = $browser->post('/login', ['username' => $username, 'password' => self::PASSWORD]);
+        self::assertSame(303, $response->getStatusCode(), 'sign-in failed for ' . $username);
 
         return $browser;
     }

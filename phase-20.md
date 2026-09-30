@@ -93,26 +93,26 @@ docs/
 
 Add as a new section after §11, renumbering *Do not* to §13:
 
-> ## 12. Phases and open questions
->
-> - Phase files live in `docs/phases/` (`phase-<n>.md`). `ROADMAP.md` lists
->   them; `spec.md` §13 summarises them. A new phase gets its file there
->   before any code.
-> - **Before starting a phase**, read `docs/phases/open-questions.md` and the
->   *Open questions* of every earlier phase file. For each one still open:
->   1. Check whether the app already answers it (spec, code, tests). If it
->      does, record that in the log with where, and move on.
->   2. If it doesn't and the answer would change behaviour, data, UI or
->      configuration, **ask the owner** before acting. Give the options and a
->      recommendation, then wait for the decision.
->   3. Once decided, update `spec.md` first, add the work to the current or a
->      new phase, mark the question *Decided* in its phase file (with the
->      date and the decision) and in the log.
-> - Do not guess an answer to an open question, and do not silently drop
->   one. A question that no longer applies is marked *Obsolete* with the
->   reason.
-> - When writing a phase file, anything not yet decided goes under *Open
->   questions* rather than into the tasks.
+## 12. Phases and open questions
+
+- Phase files live in `docs/phases/` (`phase-<n>.md`). `ROADMAP.md` lists
+  them; `spec.md` §13 summarises them. A new phase gets its file there
+  before any code.
+- **Before starting a phase**, read `docs/phases/open-questions.md` and the
+  *Open questions* of every earlier phase file. For each one still open:
+  1. Check whether the app already answers it (spec, code, tests). If it
+     does, record that in the log with where, and move on.
+  2. If it doesn't and the answer would change behaviour, data, UI or
+     configuration, **ask the owner** before acting. Give the options and a
+     recommendation, then wait for the decision.
+  3. Once decided, update `spec.md` first, add the work to the current or a
+     new phase, mark the question *Decided* in its phase file (with the
+     date and the decision) and in the log.
+- Do not guess an answer to an open question, and do not silently drop
+  one. A question that no longer applies is marked *Obsolete* with the
+  reason.
+- When writing a phase file, anything not yet decided goes under *Open
+  questions* rather than into the tasks.
 
 And in §11 *Definition of done*, add: "8. The phase's open questions are
 decided, or carried into `docs/phases/open-questions.md`."

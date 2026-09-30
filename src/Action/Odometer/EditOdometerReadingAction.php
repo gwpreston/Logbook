@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Odometer;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -29,6 +30,7 @@ final readonly class EditOdometerReadingAction
         private AttachmentUpload $upload,
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -39,6 +41,7 @@ final readonly class EditOdometerReadingAction
     {
         $vehicle = RequestContext::vehicle($request);
         $reading = OdometerRoute::reading($this->odometer, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $reading->createdBy);
         if (!$reading->isManual()) {
             return $this->ownerOf($request, $vehicle, $reading);
         }

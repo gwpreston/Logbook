@@ -43,9 +43,13 @@ Every call needs an API key, except `openapi.json`.
 
 - **Send it** with every request: `Authorization: Bearer lbk_…`.
 - A key sees **exactly what its user sees** and can do only what its user
-  can (with the multi-user phases, a partner's key sees only the partner's
-  vehicles). Cost figures follow the user's access to costs: without it,
-  amount fields are **left out**, not zeroed.
+  can: their own vehicles and those shared with them, at the share's level
+  ([users-and-sharing.md](users-and-sharing.md)). Logging needs Log access.
+  Cost figures follow the user's access to costs: without it, amount fields
+  are **left out**, not zeroed, except on the entries the user added
+  themselves (a driver sees what they paid). Each logged fill-up or reading
+  records the key's user as who added it.
+- A key of a **disabled or deleted** user stops working at once (`401`).
 - **Revoke** a key in Settings → API keys (or `bin/api-key.php revoke`). It
   stops working at once and for good. The list shows when each key was last
   used (to the minute).

@@ -8,6 +8,7 @@ use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
 
@@ -64,6 +65,11 @@ final class ConfigurableVehicleAccess implements VehicleAccess
         );
 
         return array_values(array_map(static fn (Vehicle $vehicle): int => $vehicle->id, $visible));
+    }
+
+    public function recipientVehicleIds(User $user): array
+    {
+        return $this->vehicles->idsOwnedBy($user->id, VehicleStatus::Active);
     }
 
     public function forget(): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Valuation;
 
+use Logbook\Service\Access\AccessContext;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Valuation\VehicleValuationData;
@@ -24,6 +25,7 @@ final readonly class ValuationService
         private ValuationRepository $valuations,
         private AttachmentService $attachments,
         private ClockInterface $clock,
+        private AccessContext $author,
     ) {
     }
 
@@ -50,7 +52,8 @@ final readonly class ValuationService
         PendingUploads $files = new PendingUploads(),
     ): VehicleValuation {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->valuations->insert($vehicle->id, $data, $this->clock->now());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->valuations->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->attachments->record($vehicle, AttachmentOwner::Valuation, $id, $stored);
 
             return $id;

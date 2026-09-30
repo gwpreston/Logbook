@@ -29,15 +29,19 @@
     <li class="list__item">
         <span class="list__icon swatch-icon" style="--swatch: var(--{{ item.group().color() }})">{{ ui.icon(item.icon) }}</span>
         <span class="list__body">
-            <span class="list__title"><a href="{{ exp.source_url(item) }}" data-modal>{{ title }}</a>{% if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif %}</span>
+            <span class="list__title">
+                {%- if can_change(item.vehicle, item.createdBy) %}<a href="{{ exp.source_url(item) }}" data-modal>{{ title }}</a>{% else %}{{ title }}{% endif -%}
+                {%- if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif -%}
+            </span>
             <span class="list__meta">
                 {{- item.date|local_date }}
                 {%- if show_vehicle %} · {{ item.vehicle.name() }}{% endif %}
                 {%- if title != kind %} · {{ kind }}{% endif %}
                 {%- if item.quantity %} · {{ item.quantity|quantity(item.electric) }}{% endif -%}
             </span>
+            {{ ui.added_by(item.vehicle, item.createdBy) }}
         </span>
-        <span class="list__end">{{ paperclip.count(files) }}{% if can_see_costs(item.vehicle) %}<span class="list__amount tabular">{{ item.amount|money }}</span>{% endif %}</span>
+        <span class="list__end">{{ paperclip.count(files) }}{% if can_see_amount(item.vehicle, item.createdBy) %}<span class="list__amount tabular">{{ item.amount|money }}</span>{% endif %}</span>
     </li>
 {%- endmacro %}
 
@@ -76,8 +80,11 @@
    one of a vehicle's lists (spec.md §7.7, §7.13). #}
 {% macro export_link(vehicle, module) -%}
     {% import 'macros/ui.twig' as ui %}
+    {# CSV export and import are Manage (spec.md §7.21). #}
+    {% if can_vehicle(vehicle, 'manage') %}
     <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: module}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
-    {% if not vehicle.isArchived() %}
+    {% endif %}
+    {% if not vehicle.isArchived() and can_vehicle(vehicle, 'manage') %}
         <a class="btn btn--ghost" href="{{ url_for('import.upload', {id: vehicle.id, module: module}) }}">{{ ui.icon('upload_file') }}{{ 'import.csv'|trans }}</a>
     {% endif %}
 {%- endmacro %}

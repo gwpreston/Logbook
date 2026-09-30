@@ -26,7 +26,7 @@ final class RouteInventoryTest extends AppTestCase
 {
     /**
      * No sign-in: machine endpoints, the installable app, setup and sign-in, the
-     * calendar feed by token, the API's own description.
+     * calendar feed and one-time links by token, the API's own description.
      */
     private const array PUBLIC = [
         'health',
@@ -37,6 +37,7 @@ final class RouteInventoryTest extends AppTestCase
         'calendar.feed',
         'setup',
         'login',
+        'invite.accept',
         'diagnostics.deep-link',
     ];
 
@@ -120,11 +121,14 @@ final class RouteInventoryTest extends AppTestCase
         // The spec's reading of the abilities (spec.md §5), spot-checked.
         self::assertSame(VehicleAbility::View, $declared['vehicles.show']);
         self::assertSame(VehicleAbility::View, $declared['attachments.show']);
-        self::assertSame(VehicleAbility::ViewCosts, $declared['expenses.index']);
+        self::assertSame(VehicleAbility::View, $declared['expenses.index'], 'without ViewCosts it lists expenses only');
         self::assertSame(VehicleAbility::ViewCosts, $declared['valuations.index']);
-        self::assertSame(VehicleAbility::ViewCosts, $declared['export.module']);
+        self::assertSame(VehicleAbility::Manage, $declared['export.module']);
         self::assertSame(VehicleAbility::Log, $declared['fuel.create']);
-        self::assertSame(VehicleAbility::Manage, $declared['fuel.edit']);
+        // Entry edits declare Log; the Action allows only one's own without Manage (Phase 19).
+        self::assertSame(VehicleAbility::Log, $declared['fuel.edit']);
+        self::assertSame(VehicleAbility::Log, $declared['attachments.delete']);
+        self::assertSame(VehicleAbility::Manage, $declared['valuations.edit']);
         self::assertSame(VehicleAbility::Manage, $declared['vehicles.edit']);
         self::assertSame(VehicleAbility::Manage, $declared['import.upload']);
         self::assertSame(VehicleAbility::Manage, $declared['sale_pack.show']);
@@ -177,6 +181,11 @@ final class RouteInventoryTest extends AppTestCase
             'backup.download' => InstanceAbility::Backup,
             'backup.restore' => InstanceAbility::Restore,
             'backup.restore.confirm' => InstanceAbility::Restore,
+            'settings.users' => InstanceAbility::ManageUsers,
+            'settings.users.change' => InstanceAbility::ManageUsers,
+            'settings.users.delete' => InstanceAbility::ManageUsers,
+            'settings.users.transfer' => InstanceAbility::ManageUsers,
+            'settings.users.revoke' => InstanceAbility::ManageUsers,
         ], $declared);
     }
 

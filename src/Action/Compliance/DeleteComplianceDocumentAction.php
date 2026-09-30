@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Compliance;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -23,6 +24,7 @@ final readonly class DeleteComplianceDocumentAction
         private TranslatorInterface $translator,
         private View $view,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -33,6 +35,7 @@ final readonly class DeleteComplianceDocumentAction
     {
         $vehicle = RequestContext::vehicle($request);
         $document = ComplianceRoute::document($this->compliance, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $document->createdBy);
         $data = $document->data;
         $description = ['name' => $data->title ?? $this->translator->trans('compliance.type.' . $data->type->value)];
 

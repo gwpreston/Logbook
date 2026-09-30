@@ -153,12 +153,19 @@
     <li class="list__item">
         <span class="list__icon" style="--tone: var(--c-maint)">{{ ui.icon(change.kind.icon()) }}</span>
         <span class="list__body">
-            <span class="list__title"><a href="{{ url_for('tyres.changes.edit', {id: vehicle.id, change: change.id}, return_to ? {return: return_to} : {}) }}" data-modal>{{ ('tyre.kind_short.' ~ change.kind.value)|trans }}</a></span>
+            <span class="list__title">
+                {%- if can_change(vehicle, change.createdBy) -%}
+                    <a href="{{ url_for('tyres.changes.edit', {id: vehicle.id, change: change.id}, return_to ? {return: return_to} : {}) }}" data-modal>{{ ('tyre.kind_short.' ~ change.kind.value)|trans }}</a>
+                {%- else -%}
+                    {{ ('tyre.kind_short.' ~ change.kind.value)|trans }}
+                {%- endif -%}
+            </span>
             <span class="list__meta"><time datetime="{{ change.data.doneOn|date('Y-m-d', 'UTC') }}">{{ change.data.doneOn|local_date }}</time> · {{ trans(item.summary.message, item.summary.parameters) }}</span>
+            {{ ui.added_by(vehicle, change.createdBy) }}
         </span>
         <span class="list__end">
             {% if change.data.odometerKm is not null %}<span class="list__delta tabular">{{ change.data.odometerKm|distance }}</span>{% endif %}
-            {% if item.record and can_see_costs(vehicle) %}
+            {% if item.record and can_see_amount(vehicle, item.record.createdBy) %}
                 <a class="list__amount tabular" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: item.record.id}) }}" data-modal title="{{ 'tyre.record'|trans }}: {{ item.record.data.title }}">{{ item.record.data.cost|money(currency) }}</a>
             {% endif %}
         </span>
