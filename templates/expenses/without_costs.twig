@@ -1,0 +1,42 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/expenses.twig' as exp %}
+
+{#
+ # The Expenses tab for someone the vehicle is shared with without costs
+ # (spec.md §7.21): the ad-hoc expenses only, newest first, with the amounts
+ # of their own; no totals, breakdown or chart.
+ #}
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'expense.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'expenses'} %}
+
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'expense.title'|trans, module: 'expenses', add: {route: 'expenses.create', label: 'expense.add'|trans}} %}
+
+        <div class="alert" role="note">{{ ui.icon('info') }}<span>{{ 'expense.without_costs'|trans }}</span></div>
+
+        <section class="card" aria-labelledby="costs-heading">
+            <div class="card__header">
+                <h2 id="costs-heading" class="card__title">{{ 'expense.costs'|trans }}</h2>
+            </div>
+            {% if rows is empty %}
+                <div class="empty">
+                    {{ ui.icon('payments') }}
+                    <p class="empty__title">{{ 'expense.empty_title'|trans }}</p>
+                    <p>{{ 'expense.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for item in rows %}
+                        {{ exp.cost_row(item, false, attachment_counts.of(item.source.value, item.sourceId)) }}
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'expenses.index', {id: vehicle.id}) }}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

@@ -56,7 +56,8 @@ final readonly class OdometerService
     ): OdometerReading {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
             $now = $this->clock->now();
-            $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $now, $this->author->authorId());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $now, $by);
             $this->attachments->record($vehicle, AttachmentOwner::Odometer, $id, $stored);
 
             return $id;

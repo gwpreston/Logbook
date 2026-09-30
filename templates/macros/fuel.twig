@@ -170,10 +170,10 @@
         {% endif %}
         <div class="economy-check__actions">
             {% if check.isFlagged() %}
-                {% if not (opts.on_edit ?? false) %}
+                {% if not (opts.on_edit ?? false) and can_change(vehicle, entry.createdBy) %}
                     <a class="btn btn--sm" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'fuel.check.edit_this'|trans }}</a>
                 {% endif %}
-                {% if other %}
+                {% if other and can_change(vehicle, other.createdBy) %}
                     <a class="btn btn--sm" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: other.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'fuel.check.edit_other'|trans({date: other.data.filledAt|instant_date}) }}</a>
                 {% endif %}
             {% endif %}
@@ -208,23 +208,25 @@
     {% set check = opts.check ?? null %}
     {% set shown = check and (check.isFlagged() or check.isConfirmedFlag()) %}
     {% set check_id = 'check-' ~ fill.entry.id %}
-    {% set costs = can_see_costs(vehicle) %}
+    {% set own_amount = can_see_amount(vehicle, fill.entry.createdBy) %}
+    {% set editable = can_change(vehicle, fill.entry.createdBy) %}
     <li{% if shown %} class="list__group"{% endif %}>
-        <a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}" data-modal>
+        {% if editable %}<a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}" data-modal>{% else %}<div class="list__item">{% endif %}
             <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
             <span class="list__body">
                 <span class="list__title">{{ data.filledAt|local_datetime }} {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
                 <span class="list__meta tabular">
                     {{- data.odometerKm|distance }} · {{ data.volume|quantity(electric) -}}
-                    {%- if costs %} · {{ data.pricePerUnit|unit_price(currency, electric) }}{% endif -%}
+                    {%- if own_amount %} · {{ data.pricePerUnit|unit_price(currency, electric) }}{% endif -%}
                     {%- if data.station %} · {{ data.station }}{% endif -%}
                 </span>
+                {{ ui.added_by(vehicle, fill.entry.createdBy) }}
                 {% if fill.followsGap() %}
                     <span class="list__meta list__meta--note">{{ ui.icon('info') }}{{ 'fuel.status.after_gap'|trans }}</span>
                 {% endif %}
             </span>
             <span class="list__end">
-                {% if costs %}<span class="list__amount tabular">{{ data.totalCost|money(currency) }}</span>{% endif %}
+                {% if own_amount %}<span class="list__amount tabular">{{ data.totalCost|money(currency) }}</span>{% endif %}
                 {% if fill.segment %}
                     <span class="economy tabular"{% if shown %} aria-describedby="{{ check_id }}"{% endif %}>{{ fill.segment.distanceKm|economy(fill.segment.volume, electric) }}</span>
                     {% if shown %}{{ fuel_ui.check_mark(check) }}{% endif %}
@@ -233,7 +235,7 @@
                 {% endif %}
                 {{ paperclip.count(files) }}
             </span>
-        </a>
+        {% if editable %}</a>{% else %}</div>{% endif %}
         {% if shown %}
             <details class="economy-check__details"{% if opts.open ?? false %} open{% endif %}>
                 <summary>{{ (check.isFlagged() ? 'fuel.check.what_to_check' : 'fuel.check.checked_summary')|trans }}</summary>

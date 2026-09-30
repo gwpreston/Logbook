@@ -120,7 +120,7 @@ final class RouteInventoryTest extends AppTestCase
         // The spec's reading of the abilities (spec.md §5), spot-checked.
         self::assertSame(VehicleAbility::View, $declared['vehicles.show']);
         self::assertSame(VehicleAbility::View, $declared['attachments.show']);
-        self::assertSame(VehicleAbility::ViewCosts, $declared['expenses.index']);
+        self::assertSame(VehicleAbility::View, $declared['expenses.index'], 'without ViewCosts it lists expenses only');
         self::assertSame(VehicleAbility::ViewCosts, $declared['valuations.index']);
         self::assertSame(VehicleAbility::Manage, $declared['export.module']);
         self::assertSame(VehicleAbility::Log, $declared['fuel.create']);

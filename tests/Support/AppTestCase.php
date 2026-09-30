@@ -227,6 +227,22 @@ abstract class AppTestCase extends TestCase
     }
 
     /**
+     * A new browser signed in as an existing user (Phase 19: several users
+     * on one install), with the test password.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function browserFor(App $app, string $username): TestBrowser
+    {
+        $browser = new TestBrowser($app);
+        $browser->get('/login');
+        $response = $browser->post('/login', ['username' => $username, 'password' => self::PASSWORD]);
+        self::assertSame(303, $response->getStatusCode(), 'sign-in failed for ' . $username);
+
+        return $browser;
+    }
+
+    /**
      * One owner's vehicles straight from the repository, in creation order
      * (archived ones too unless $includeArchived is false).
      *

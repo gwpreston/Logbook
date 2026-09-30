@@ -16,16 +16,27 @@
             <a class="btn btn--primary" href="{{ url_for('vehicles.create') }}" data-modal>{{ ui.icon('add') }}{{ 'garage.add_vehicle'|trans }}</a>
         </header>
 
-        {% if vehicles is empty %}
+        {% if vehicles is empty and shared is not empty %}
+        {% elseif vehicles is empty %}
             <div class="empty">
                 {{ ui.icon('garage') }}
                 <p class="empty__title">{{ (counts.archived > 0 ? 'garage.empty_active_title' : 'garage.empty_title')|trans }}</p>
                 <p>{{ 'garage.empty_body'|trans }}</p>
             </div>
         {% else %}
+            {% if shared is not empty %}<h2 class="section-title">{{ 'sharing.your_vehicles'|trans }}</h2>{% endif %}
             <div class="vehicle-grid">
                 {% for snapshot in vehicles %}
                     {{ vehicle_ui.card(snapshot) }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if shared is not empty %}
+            <h2 class="section-title">{{ 'sharing.shared_with_you'|trans }}</h2>
+            <div class="vehicle-grid">
+                {% for item in shared %}
+                    {{ vehicle_ui.card(item.snapshot, {owner: item.owner, level: item.level}) }}
                 {% endfor %}
             </div>
         {% endif %}

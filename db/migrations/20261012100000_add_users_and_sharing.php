@@ -12,7 +12,8 @@ use Phinx\Migration\AbstractMigration;
  *   becomes an admin, so nothing changes for them.
  * - `vehicle_shares`, `invitations`, `reminder_deliveries`.
  * - `created_by` on every kind of entry and `uploaded_by` on attachments,
- *   null for everything already there (null reads as the vehicle's owner).
+ *   set to the vehicle's owner for everything already there, so that null
+ *   only ever means a user who has since been deleted ("a former user").
  * - Each reminder already notified gets a delivery row for its owner and
  *   that status, so the first run after the upgrade sends nothing again.
  *
@@ -121,6 +122,15 @@ final class AddUsersAndSharing extends AbstractMigration
                     'constraint' => $table . '_' . $column . '_fk',
                 ])
                 ->update();
+        }
+
+        // Everything 1.x recorded was the owner's (a correlated subquery, portable to every engine).
+        foreach (self::AUTHORED as $table => $column) {
+            $this->execute(sprintf(
+                'UPDATE %1$s SET %2$s = (SELECT v.user_id FROM vehicles v WHERE v.id = %1$s.vehicle_id) WHERE %2$s IS NULL',
+                $table,
+                $column,
+            ));
         }
 
         // What 1.x already sent went to the owner: record it as theirs.

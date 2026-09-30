@@ -157,7 +157,7 @@ final readonly class AttachmentService
     public function record(Vehicle $vehicle, AttachmentOwner $type, int $ownerId, array $stored): void
     {
         $now = $this->clock->now();
-        $by = $this->author->authorId();
+        $by = $this->author->authorId() ?? $vehicle->userId;
         foreach ($stored as $file) {
             $this->attachments->insert(
                 $vehicle->id,

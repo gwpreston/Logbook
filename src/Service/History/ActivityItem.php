@@ -59,6 +59,8 @@ final readonly class ActivityItem
          * @var list<TranslatableMessage>
          */
         public array $tyres = [],
+        /** Who added the entry (Phase 19); null = a former user, or a milestone. */
+        public ?int $createdBy = null,
     ) {
     }
 

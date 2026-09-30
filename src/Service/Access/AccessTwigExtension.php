@@ -7,17 +7,23 @@ namespace Logbook\Service\Access;
 use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Sharing\AuthorLabels;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 /**
- * The access policy for templates (spec.md §5 *Access policy*):
+ * The access policy for templates (spec.md §5 *Access policy*, §7.21):
  *
  * - `can_see_costs(vehicle)`: every amount shown for a vehicle sits inside
- *   this check (ViewCosts); a test keeps it so.
+ *   this check (ViewCosts), or, for one entry's own amount, inside
+ *   `can_see_amount(vehicle, entry.createdBy)` (also true for one's own
+ *   entry); a test keeps it so.
+ * - `can_vehicle(vehicle, 'manage')`: links and buttons that need an ability.
+ * - `can_change(vehicle, entry.createdBy)`: an entry's edit and delete links.
+ * - `added_by(vehicle, entry.createdBy)`: who to name, or null (see AuthorLabels).
  * - `can_instance('backup')`: links to install-wide pages.
  *
- * Both are false when nobody is signed in.
+ * All are false (added_by null) when nobody is signed in.
  */
 final class AccessTwigExtension extends AbstractExtension
 {
@@ -25,6 +31,8 @@ final class AccessTwigExtension extends AbstractExtension
         private readonly AccessContext $context,
         private readonly VehicleAccess $vehicles,
         private readonly InstanceAccess $instance,
+        private readonly EntryAccess $entries,
+        private readonly AuthorLabels $authors,
     ) {
     }
 
@@ -35,6 +43,26 @@ final class AccessTwigExtension extends AbstractExtension
                 $user = $this->context->user();
 
                 return $user !== null && $this->vehicles->can($user, VehicleAbility::ViewCosts, $vehicle);
+            }),
+            new TwigFunction('can_see_amount', function (Vehicle $vehicle, ?int $createdBy): bool {
+                $user = $this->context->user();
+
+                return $user !== null && $this->entries->canSeeAmount($user, $vehicle, $createdBy);
+            }),
+            new TwigFunction('can_vehicle', function (Vehicle $vehicle, string $ability): bool {
+                $user = $this->context->user();
+
+                return $user !== null && $this->vehicles->can($user, VehicleAbility::from($ability), $vehicle);
+            }),
+            new TwigFunction('can_change', function (Vehicle $vehicle, ?int $createdBy): bool {
+                $user = $this->context->user();
+
+                return $user !== null && $this->entries->canChange($user, $vehicle, $createdBy);
+            }),
+            new TwigFunction('added_by', function (Vehicle $vehicle, ?int $createdBy): ?string {
+                $user = $this->context->user();
+
+                return $user === null ? null : $this->authors->label($user, $vehicle, $createdBy);
             }),
             new TwigFunction('can_instance', function (string $ability): bool {
                 $user = $this->context->user();

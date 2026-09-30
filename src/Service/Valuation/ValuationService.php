@@ -52,7 +52,8 @@ final readonly class ValuationService
         PendingUploads $files = new PendingUploads(),
     ): VehicleValuation {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->valuations->insert($vehicle->id, $data, $this->clock->now(), $this->author->authorId());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->valuations->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->attachments->record($vehicle, AttachmentOwner::Valuation, $id, $stored);
 
             return $id;

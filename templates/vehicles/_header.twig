@@ -1,7 +1,8 @@
 {#
  # Vehicle page header shared by the vehicle's tabs (spec.md §7.2): back
- # link and the Edit / Prepare for sale (§7.19) / Archive (Restore) / Delete
- # actions, in the same place on every tab; the hero; and the tab bar. Each
+ # link and the Edit / Prepare for sale (§7.19) / Sharing (§7.21) / Archive
+ # (Restore) / Delete actions, in the same place on every tab, each only for
+ # those allowed it; the hero; and the tab bar. Each
  # tab is its own URL, so tabs work without JS and survive a hard refresh.
  #
  # Expects: vehicle, active_tab ('overview' | 'history' | 'odometer' | 'fuel' |
@@ -23,9 +24,13 @@
 <div class="toolbar">
     <a class="back-link" href="{{ url_for('garage', {}, vehicle.isArchived() ? {archived: '1'} : {}) }}">{{ ui.icon('chevron_left') }}{{ 'garage.title'|trans }}</a>
     <div class="btn-row vehicle-actions">
-        <a class="btn" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
-        <a class="btn" href="{{ url_for('sale_pack.show', {id: vehicle.id}) }}">{{ ui.icon('sell') }}{{ 'sale_pack.prepare'|trans }}</a>
-        {% if vehicle.isArchived() %}
+        {% if can_vehicle(vehicle, 'manage') %}
+            <a class="btn" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+            <a class="btn" href="{{ url_for('sale_pack.show', {id: vehicle.id}) }}">{{ ui.icon('sell') }}{{ 'sale_pack.prepare'|trans }}</a>
+        {% endif %}
+        <a class="btn" href="{{ url_for('vehicles.sharing', {id: vehicle.id}) }}">{{ ui.icon('group') }}{{ 'sharing.menu'|trans }}</a>
+        {% if not can_vehicle(vehicle, 'own') %}
+        {% elseif vehicle.isArchived() %}
             <form method="post" action="{{ url_for('vehicles.restore', {id: vehicle.id}) }}">
                 {{ ui.csrf(csrf) }}
                 <button type="submit" class="btn">{{ ui.icon('unarchive') }}{{ 'vehicle.restore'|trans }}</button>
@@ -36,7 +41,9 @@
                 <button type="submit" class="btn">{{ ui.icon('archive') }}{{ 'vehicle.archive'|trans }}</button>
             </form>
         {% endif %}
-        <a class="btn btn--danger" href="{{ url_for('vehicles.delete', {id: vehicle.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+        {% if can_vehicle(vehicle, 'own') %}
+            <a class="btn btn--danger" href="{{ url_for('vehicles.delete', {id: vehicle.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+        {% endif %}
     </div>
 </div>
 

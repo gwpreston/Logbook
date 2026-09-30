@@ -55,6 +55,10 @@ final class UsersAndSharingMigrationTest extends AppTestCase
         $db->insert('reminders', $reminder('Tax', 'overdue', 'due'));
         $dueOnly = (int) $db->lastInsertId();
         $db->insert('reminders', $reminder('Wash', 'upcoming', null));
+        $db->insert('odometer_readings', [
+            'vehicle_id' => $vehicle, 'reading_km' => '1000.000', 'recorded_at' => '2026-09-01 07:00:00', 'source' => 'manual',
+            'created_at' => '2026-09-01 07:00:00', 'updated_at' => '2026-09-01 07:00:00',
+        ]);
 
         Migrator::run('migrate');
 
@@ -68,6 +72,7 @@ final class UsersAndSharingMigrationTest extends AppTestCase
         self::assertEquals([$sent, $user, 'overdue'], [$rows[0]['reminder_id'], $rows[0]['user_id'], $rows[0]['status']]);
         self::assertEquals([$dueOnly, $user, 'due'], [$rows[1]['reminder_id'], $rows[1]['user_id'], $rows[1]['status']]);
         self::assertNotNull($rows[0]['sent_at']);
+        self::assertEquals($user, $db->fetchOne('SELECT created_by FROM odometer_readings'), 'what was there is the owner\'s');
     }
 
     public function testRollingBackWorksWithOneUserAndIsRefusedWithTwo(): void

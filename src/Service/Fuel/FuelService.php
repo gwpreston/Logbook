@@ -155,7 +155,8 @@ final readonly class FuelService
     public function create(Vehicle $vehicle, FuelEntryData $data, PendingUploads $files = new PendingUploads()): FuelEntry
     {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $this->author->authorId());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $id, $data->odometerKm, $data->filledAt);
             $this->attachments->record($vehicle, AttachmentOwner::Fuel, $id, $stored);
 

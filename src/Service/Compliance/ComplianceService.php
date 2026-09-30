@@ -86,7 +86,8 @@ final readonly class ComplianceService
         PendingUploads $files = new PendingUploads(),
     ): ComplianceDocument {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone): int {
-            $id = $this->documents->insert($vehicle->id, $data, $this->clock->now(), $this->author->authorId());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->documents->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->recordOdometer($vehicle, $id, $data, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Compliance, $id, $stored);
 

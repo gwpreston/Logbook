@@ -92,6 +92,10 @@ use Logbook\Action\Settings\SendTestNotificationAction;
 use Logbook\Action\Settings\SetThemeAction;
 use Logbook\Action\Settings\TyreSettingsAction;
 use Logbook\Action\Settings\SettingsAction;
+use Logbook\Action\Sharing\ChangeShareAction;
+use Logbook\Action\Sharing\MyShareAction;
+use Logbook\Action\Sharing\SharingAction;
+use Logbook\Action\Sharing\TransferVehicleAction;
 use Logbook\Action\Tyre\DeleteTyreAction;
 use Logbook\Action\Tyre\DeleteTyreChangeAction;
 use Logbook\Action\Tyre\DeleteTyreSetAction;
@@ -246,6 +250,22 @@ return static function (App $app): void {
         $group->get('/vehicles/{id:[0-9]+}/photo', VehiclePhotoAction::class)->setName('vehicles.photo')
             ->setArgument($ability, VehicleAbility::View->value);
 
+        // Sharing (spec.md §7.21): the page for anyone on the vehicle, adding and changing shares
+        // for the owner, a shared user's own choices, and transfer.
+        $group->get('/vehicles/{id:[0-9]+}/sharing', SharingAction::class)->setName('vehicles.sharing')
+            ->setArgument($ability, VehicleAbility::View->value);
+        $group->post('/vehicles/{id:[0-9]+}/sharing', SharingAction::class)->setName('vehicles.sharing.add')
+            ->setArgument($ability, VehicleAbility::Own->value);
+        $group->post('/vehicles/{id:[0-9]+}/sharing/{user:[0-9]+}/{action:save|remove}', ChangeShareAction::class)
+            ->setName('vehicles.sharing.change')
+            ->setArgument($ability, VehicleAbility::Own->value);
+        $group->post('/vehicles/{id:[0-9]+}/sharing/me/{action:notify|leave}', MyShareAction::class)
+            ->setName('vehicles.sharing.mine')
+            ->setArgument($ability, VehicleAbility::View->value);
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/transfer', TransferVehicleAction::class)
+            ->setName('vehicles.transfer')
+            ->setArgument($ability, VehicleAbility::Own->value);
+
         // History (spec.md §7.16): core, so no feature gate; the feed leaves
         // switched-off modules out itself.
         $group->get('/history', FleetHistoryAction::class)->setName('history.fleet');
@@ -358,8 +378,9 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
             })->add($module(Feature::Compliance));
 
+            // Without ViewCosts the tab lists the ad-hoc expenses only (spec.md §7.21).
             $vehicle->get('/expenses', VehicleExpensesAction::class)->setName('expenses.index')
-                ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                ->setArgument($ability, VehicleAbility::View->value);
             $vehicle->map(['GET', 'POST'], '/expenses/new', CreateExpenseAction::class)->setName('expenses.create')
                 ->setArgument($ability, VehicleAbility::Log->value);
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/edit', EditExpenseAction::class)

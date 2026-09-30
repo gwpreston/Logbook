@@ -43,6 +43,8 @@ final readonly class CostItem
         /** For a fill-up: its fuel and grade, for the grade badge. */
         public ?Fuel $fuel = null,
         public ?FuelGrade $grade = null,
+        /** Who added the source entry (Phase 19); null = a former user. */
+        public ?int $createdBy = null,
     ) {
     }
 
@@ -68,6 +70,7 @@ final readonly class CostItem
             electric: $electric,
             fuel: $data->fuel,
             grade: $data->grade,
+            createdBy: $entry->createdBy,
         );
     }
 
@@ -90,6 +93,7 @@ final readonly class CostItem
             kindKey: 'maintenance.category.' . $entry->data->category->value,
             icon: $entry->data->category->icon(),
             title: $entry->data->title,
+            createdBy: $entry->createdBy,
         );
     }
 
@@ -118,6 +122,7 @@ final readonly class CostItem
             kindKey: 'compliance.type.' . $data->type->value,
             icon: $data->type->icon(),
             title: $data->title ?? $data->provider,
+            createdBy: $document->createdBy,
         );
     }
 
@@ -135,6 +140,7 @@ final readonly class CostItem
             kindKey: 'expense.category.' . $entry->data->category->value,
             icon: $entry->data->category->icon(),
             title: $entry->data->note,
+            createdBy: $entry->createdBy,
         );
     }
 

@@ -152,6 +152,14 @@
     </fieldset>
 {%- endmacro %}
 
+{# "Added by" (spec.md §7.21) under an entry someone else added, once the
+   vehicle has anyone on it but its owner; nothing otherwise. #}
+{% macro added_by(vehicle, created_by) -%}
+    {% import _self as ui %}
+    {% set by = added_by(vehicle, created_by) %}
+    {% if by is not null %}<span class="list__meta added-by">{{ ui.icon('person') }}{{ by == '' ? 'sharing.added_by_former'|trans : 'sharing.added_by'|trans({name: by}) }}</span>{% endif %}
+{%- endmacro %}
+
 {# Flash messages queued with Session::flash(). #}
 {% macro flashes(flashes) -%}
     {% import _self as ui %}

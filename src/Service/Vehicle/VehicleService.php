@@ -20,6 +20,7 @@ use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\StoredFile;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Storage\FileStorage;
@@ -47,6 +48,7 @@ final readonly class VehicleService
         private OdometerService $odometer,
         private TyreRepository $tyres,
         private VehicleAccess $access,
+        private UserDirectory $directory,
     ) {
     }
 
@@ -261,7 +263,10 @@ final readonly class VehicleService
      */
     public function currencyFor(User $user, Vehicle $vehicle): string
     {
-        return Currency::resolve($vehicle->data->currency, $user->preferences->currency, $this->settings->currency);
+        // A shared vehicle's money stays in its owner's currency (spec.md §7.21).
+        $owner = $vehicle->userId === $user->id ? $user : $this->directory->find($vehicle->userId) ?? $user;
+
+        return Currency::resolve($vehicle->data->currency, $owner->preferences->currency, $this->settings->currency);
     }
 
     public function maxPhotoMegabytes(): int

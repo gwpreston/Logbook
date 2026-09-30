@@ -527,7 +527,8 @@ final readonly class TyreChangeService
             }
             $data = $cost === null ? $this->linked($vehicle, $data, $zone) : $data;
             $this->assertOdometer($kind, $data);
-            $id = $this->tyres->insertChange($vehicle->id, $kind, $data, $lines, $now, $this->author->authorId());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->tyres->insertChange($vehicle->id, $kind, $data, $lines, $now, $by);
 
             $setId = $into->setId ?? ($into->newSet === null ? null : $this->tyres->insertSet($vehicle->id, $into->newSet, $now));
             if ($setId !== null) {

@@ -49,7 +49,8 @@ final readonly class ExpenseService
     public function create(Vehicle $vehicle, ExpenseEntryData $data, PendingUploads $files = new PendingUploads()): ExpenseEntry
     {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $this->author->authorId());
+            $by = $this->author->authorId() ?? $vehicle->userId;
+            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->attachments->record($vehicle, AttachmentOwner::Expense, $id, $stored);
 
             return $id;
