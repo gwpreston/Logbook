@@ -16,7 +16,7 @@ It stays with the app's print approach: the pack is a page the browser
 saves as a PDF. The paperwork comes as a ZIP beside it. Nothing new is
 stored, there is no PDF library and there are no third-party requests.
 
-Read [`CLAUDE.md`](CLAUDE.md) and [`spec.md`](spec.md) §7.16 first. The spec
+Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.16 first. The spec
 text below goes in as §7.19 **before** any code.
 
 ---

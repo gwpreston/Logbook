@@ -6,6 +6,13 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Changed
+- **Phase files moved to `docs/phases/`** (Phase 20), beside a log of every
+  phase's open questions and what was decided
+  ([docs/phases/open-questions.md](docs/phases/open-questions.md)). The test
+  suite now checks that every link in the repository's Markdown resolves.
+  No change to the app.
+
 ## [2.0.0] — 2026-09-30
 
 Phase 19: multiple users and vehicle sharing. A household on one install:

@@ -67,6 +67,8 @@ than guessing an API.
 /translations      # <locale>.xlf or .php message catalogues
 /tests             # Unit + Integration (run against both DBs in CI)
 /docker            # Dockerfile bits, entrypoint, compose files
+/docs              # user guides (deployment, configuration, API, ...)
+  /phases          # one file per build phase, plus the open-questions log
 ```
 
 Keep `public/` tiny: it exposes only the front controller and built static
@@ -195,10 +197,35 @@ Sensible defaults so `docker compose up` works with zero edits.
 5. New config is in `.env.example` and documented.
 6. Works behind a reverse proxy at a subpath; deep-link hard refresh works.
 7. Docker image builds (multi-arch incl. ARM) and the bare-PHP path still works.
+8. The phase's open questions are decided, or carried into
+   `docs/phases/open-questions.md`.
 
 ---
 
-## 12. Do not
+## 12. Phases and open questions
+
+- Phase files live in `docs/phases/` (`phase-<n>.md`). `ROADMAP.md` lists
+  them; `spec.md` §13 summarises them. A new phase gets its file there
+  before any code.
+- **Before starting a phase**, read `docs/phases/open-questions.md` and the
+  *Open questions* of every earlier phase file. For each one still open:
+  1. Check whether the app already answers it (spec, code, tests). If it
+     does, record that in the log with where, and move on.
+  2. If it doesn't and the answer would change behaviour, data, UI or
+     configuration, **ask the owner** before acting. Give the options and a
+     recommendation, then wait for the decision.
+  3. Once decided, update `spec.md` first, add the work to the current or a
+     new phase, mark the question *Decided* in its phase file (with the
+     date and the decision) and in the log.
+- Do not guess an answer to an open question, and do not silently drop
+  one. A question that no longer applies is marked *Obsolete* with the
+  reason.
+- When writing a phase file, anything not yet decided goes under *Open
+  questions* rather than into the tasks.
+
+---
+
+## 13. Do not
 
 - Do not introduce an SPA framework or a runtime Node dependency.
 - Do not write DB-engine-specific SQL outside a documented abstraction.

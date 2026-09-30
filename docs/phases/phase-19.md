@@ -16,7 +16,7 @@ access policy. This phase gives that policy real data: a sharing table, an
 admin flag and a record of who added each entry. The rest of the work is the
 screens around it, notifications, and the rules for leaving and deleting.
 
-Read [`CLAUDE.md`](CLAUDE.md), [`spec.md`](spec.md) §5, §6 and §7.9, and
+Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §6 and §7.9, and
 Phase 18.1 first.
 
 ---

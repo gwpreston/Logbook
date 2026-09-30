@@ -210,5 +210,6 @@ translations/  message catalogues
 tests/         Unit/ and Integration/
 docker/        Apache vhost, PHP ini, entrypoint, nginx example, dev DB init
 bin/           CLI helpers (asset build, backup, API keys, dev router, wait-for-db, scheduler, test scripts)
-docs/          deployment, configuration, import, API (and its OpenAPI file), sale pack, notification and translation guides
+docs/          deployment, configuration, users and sharing, import, API (and its OpenAPI file), sale pack,
+               notification and translation guides; build phases in docs/phases/
 ```
