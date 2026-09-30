@@ -82,7 +82,7 @@ final readonly class ExpenseEntryRepository
         return $row === false ? null : $this->hydrate($row);
     }
 
-    public function insert(int $vehicleId, ExpenseEntryData $data, DateTimeImmutable $now): int
+    public function insert(int $vehicleId, ExpenseEntryData $data, DateTimeImmutable $now, ?int $createdBy = null): int
     {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
 
@@ -90,6 +90,7 @@ final readonly class ExpenseEntryRepository
             'vehicle_id' => $vehicleId,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
+            'created_by' => $createdBy,
         ] + self::dataColumns($data), ['vehicle_id' => ParameterType::INTEGER]);
 
         return (int) $this->connection->lastInsertId();
@@ -117,7 +118,7 @@ final readonly class ExpenseEntryRepository
     private function select(): QueryBuilder
     {
         return $this->connection->createQueryBuilder()
-            ->select('id', 'vehicle_id', 'spent_on', 'category', 'amount', 'note', 'created_at', 'updated_at')
+            ->select('id', 'vehicle_id', 'spent_on', 'category', 'amount', 'note', 'created_at', 'updated_at', 'created_by')
             ->from(self::TABLE);
     }
 
@@ -153,6 +154,7 @@ final readonly class ExpenseEntryRepository
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
+            createdBy: Row::nullableInt($row, 'created_by'),
         );
     }
 }

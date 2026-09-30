@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Action\Tyre\TyreFormPage;
@@ -32,6 +33,7 @@ final readonly class EditMaintenanceEntryAction
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
         private TyreFormPage $tyreErrors,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -42,6 +44,7 @@ final readonly class EditMaintenanceEntryAction
     {
         $vehicle = RequestContext::vehicle($request);
         $entry = MaintenanceRoute::entry($this->maintenance, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $entry->createdBy);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 

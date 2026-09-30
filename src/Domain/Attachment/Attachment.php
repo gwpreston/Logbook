@@ -26,6 +26,8 @@ final readonly class Attachment
         /** Relative to UPLOAD_PATH. */
         public string $storedPath,
         public DateTimeImmutable $uploadedAt,
+        /** Who uploaded it (Phase 19); null = the vehicle's owner, or a former user. */
+        public ?int $uploadedBy = null,
     ) {
     }
 

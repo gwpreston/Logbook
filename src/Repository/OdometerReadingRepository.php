@@ -119,6 +119,7 @@ final readonly class OdometerReadingRepository
         OdometerSource $source,
         ?int $entryId,
         DateTimeImmutable $now,
+        ?int $createdBy = null,
     ): int {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
         $owner = $source === OdometerSource::Manual ? [] : [self::entryColumn($source) => $entryId];
@@ -126,6 +127,8 @@ final readonly class OdometerReadingRepository
         $this->connection->insert(self::TABLE, [
             'vehicle_id' => $vehicleId,
             'source' => $source->value,
+            // Only a manual reading has an author of its own (spec.md §6).
+            'created_by' => $source === OdometerSource::Manual ? $createdBy : null,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
         ] + $owner + $this->dataColumns($data), [
@@ -163,7 +166,7 @@ final readonly class OdometerReadingRepository
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'reading_km', 'recorded_at', 'source', 'note', 'fuel_entry_id')
             ->addSelect('maintenance_entry_id', 'compliance_document_id', 'tyre_change_id')
-            ->addSelect('created_at', 'updated_at')
+            ->addSelect('created_at', 'updated_at', 'created_by')
             ->from(self::TABLE);
     }
 
@@ -210,6 +213,7 @@ final readonly class OdometerReadingRepository
             maintenanceEntryId: Row::nullableInt($row, 'maintenance_entry_id'),
             complianceDocumentId: Row::nullableInt($row, 'compliance_document_id'),
             tyreChangeId: Row::nullableInt($row, 'tyre_change_id'),
+            createdBy: Row::nullableInt($row, 'created_by'),
         );
     }
 }

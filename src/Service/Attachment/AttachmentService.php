@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Attachment;
 
+use Logbook\Service\Access\AccessContext;
 use Closure;
 use InvalidArgumentException;
 use Logbook\Domain\Attachment\Attachment;
@@ -53,6 +54,7 @@ final readonly class AttachmentService
         private Transaction $transaction,
         /** PHP's max_file_uploads: files past it are dropped silently. */
         private int $phpMaxFileUploads,
+        private AccessContext $author,
     ) {
     }
 
@@ -156,7 +158,7 @@ final readonly class AttachmentService
     {
         $now = $this->clock->now();
         foreach ($stored as $file) {
-            $this->attachments->insert($vehicle->id, $type, $ownerId, $file->name, $file->mime, $file->size, $file->path, $now);
+            $this->attachments->insert($vehicle->id, $type, $ownerId, $file->name, $file->mime, $file->size, $file->path, $now, $this->author->authorId());
         }
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
@@ -28,6 +29,7 @@ final readonly class EditFuelEntryAction
         private FuelSavedFlash $flash,
         private AttachmentUpload $upload,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -38,6 +40,7 @@ final readonly class EditFuelEntryAction
     {
         $vehicle = RequestContext::vehicle($request);
         $entry = FuelRoute::entry($this->fuel, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $entry->createdBy);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 

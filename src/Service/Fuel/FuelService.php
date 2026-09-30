@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Fuel;
 
+use Logbook\Service\Access\AccessContext;
 use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Fuel\EnergyKind;
@@ -38,6 +39,7 @@ final readonly class FuelService
         private AttachmentService $attachments,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private AccessContext $author,
     ) {
     }
 
@@ -153,7 +155,7 @@ final readonly class FuelService
     public function create(Vehicle $vehicle, FuelEntryData $data, PendingUploads $files = new PendingUploads()): FuelEntry
     {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now());
+            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $this->author->authorId());
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $id, $data->odometerKm, $data->filledAt);
             $this->attachments->record($vehicle, AttachmentOwner::Fuel, $id, $stored);
 

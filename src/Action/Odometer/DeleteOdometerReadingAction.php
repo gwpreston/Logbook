@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Odometer;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Http\Redirector;
@@ -24,6 +25,7 @@ final readonly class DeleteOdometerReadingAction
         private DisplayFormatter $formatter,
         private View $view,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -34,6 +36,7 @@ final readonly class DeleteOdometerReadingAction
     {
         $vehicle = RequestContext::vehicle($request);
         $reading = OdometerRoute::reading($this->odometer, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $reading->createdBy);
         if (!$reading->isManual()) {
             throw new HttpNotFoundException($request);
         }

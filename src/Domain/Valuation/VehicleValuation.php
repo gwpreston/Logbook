@@ -19,6 +19,8 @@ final readonly class VehicleValuation
         public VehicleValuationData $data,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
+        /** Who added it (Phase 19); null = the vehicle's owner, or a former user. */
+        public ?int $createdBy = null,
     ) {
     }
 }

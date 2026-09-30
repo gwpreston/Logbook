@@ -24,6 +24,8 @@ final readonly class FuelEntry
          * when never confirmed. Not part of the form data: editing keeps it.
          */
         public ?string $economyConfirmed = null,
+        /** Who added it (Phase 19); null = the vehicle's owner, or a former user. */
+        public ?int $createdBy = null,
     ) {
     }
 

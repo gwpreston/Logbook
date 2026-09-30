@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayFormatter;
@@ -25,6 +26,7 @@ final readonly class DeleteFuelEntryAction
         private DisplayFormatter $formatter,
         private View $view,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -35,6 +37,7 @@ final readonly class DeleteFuelEntryAction
     {
         $vehicle = RequestContext::vehicle($request);
         $entry = FuelRoute::entry($this->fuel, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $entry->createdBy);
         $currency = $this->vehicles->currencyFor(RequestContext::requireUser($request), $vehicle);
         $description = [
             'date' => $this->formatter->instantDate($entry->data->filledAt),

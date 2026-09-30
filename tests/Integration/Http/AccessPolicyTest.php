@@ -110,7 +110,8 @@ final class AccessPolicyTest extends AppTestCase
             }
         }
         self::assertSame([], $leaks);
-        foreach (['/expenses', '/valuations', '/export/fuel.csv'] as $costPage) {
+        // CSV exports need Manage (spec.md §7.21), which always sees costs.
+        foreach (['/expenses', '/valuations'] as $costPage) {
             self::assertSame(403, $browser->get('/vehicles/' . $golf->id . $costPage)->getStatusCode(), $costPage);
         }
         self::assertStringContainsString('Golf', $this->page($browser, '/vehicles/' . $golf->id), 'the vehicle still shows');

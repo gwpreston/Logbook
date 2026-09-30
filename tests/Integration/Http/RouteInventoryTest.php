@@ -122,9 +122,12 @@ final class RouteInventoryTest extends AppTestCase
         self::assertSame(VehicleAbility::View, $declared['attachments.show']);
         self::assertSame(VehicleAbility::ViewCosts, $declared['expenses.index']);
         self::assertSame(VehicleAbility::ViewCosts, $declared['valuations.index']);
-        self::assertSame(VehicleAbility::ViewCosts, $declared['export.module']);
+        self::assertSame(VehicleAbility::Manage, $declared['export.module']);
         self::assertSame(VehicleAbility::Log, $declared['fuel.create']);
-        self::assertSame(VehicleAbility::Manage, $declared['fuel.edit']);
+        // Entry edits declare Log; the Action allows only one's own without Manage (Phase 19).
+        self::assertSame(VehicleAbility::Log, $declared['fuel.edit']);
+        self::assertSame(VehicleAbility::Log, $declared['attachments.delete']);
+        self::assertSame(VehicleAbility::Manage, $declared['valuations.edit']);
         self::assertSame(VehicleAbility::Manage, $declared['vehicles.edit']);
         self::assertSame(VehicleAbility::Manage, $declared['import.upload']);
         self::assertSame(VehicleAbility::Manage, $declared['sale_pack.show']);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Tyre;
 
+use Logbook\Service\Access\AccessContext;
 use DateTimeZone;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceEntryData;
@@ -49,6 +50,7 @@ final readonly class TyreChangeService
         private Transaction $transaction,
         private TranslatorInterface $translator,
         private ClockInterface $clock,
+        private AccessContext $author,
     ) {
     }
 
@@ -525,7 +527,7 @@ final readonly class TyreChangeService
             }
             $data = $cost === null ? $this->linked($vehicle, $data, $zone) : $data;
             $this->assertOdometer($kind, $data);
-            $id = $this->tyres->insertChange($vehicle->id, $kind, $data, $lines, $now);
+            $id = $this->tyres->insertChange($vehicle->id, $kind, $data, $lines, $now, $this->author->authorId());
 
             $setId = $into->setId ?? ($into->newSet === null ? null : $this->tyres->insertSet($vehicle->id, $into->newSet, $now));
             if ($setId !== null) {

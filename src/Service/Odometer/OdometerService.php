@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Odometer;
 
+use Logbook\Service\Access\AccessContext;
 use DateTimeImmutable;
 use LogicException;
 use Logbook\Domain\Attachment\AttachmentOwner;
@@ -30,6 +31,7 @@ final readonly class OdometerService
         private OdometerReadingRepository $readings,
         private AttachmentService $attachments,
         private ClockInterface $clock,
+        private AccessContext $author,
     ) {
     }
 
@@ -53,7 +55,7 @@ final readonly class OdometerService
         PendingUploads $files = new PendingUploads(),
     ): OdometerReading {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $this->clock->now());
+            $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $this->clock->now(), $this->author->authorId());
             $this->attachments->record($vehicle, AttachmentOwner::Odometer, $id, $stored);
 
             return $id;

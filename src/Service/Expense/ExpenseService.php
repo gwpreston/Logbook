@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Expense;
 
+use Logbook\Service\Access\AccessContext;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Expense\ExpenseEntry;
 use Logbook\Domain\Expense\ExpenseEntryData;
@@ -24,6 +25,7 @@ final readonly class ExpenseService
         private ExpenseEntryRepository $entries,
         private AttachmentService $attachments,
         private ClockInterface $clock,
+        private AccessContext $author,
     ) {
     }
 
@@ -47,7 +49,7 @@ final readonly class ExpenseService
     public function create(Vehicle $vehicle, ExpenseEntryData $data, PendingUploads $files = new PendingUploads()): ExpenseEntry
     {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now());
+            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $this->author->authorId());
             $this->attachments->record($vehicle, AttachmentOwner::Expense, $id, $stored);
 
             return $id;

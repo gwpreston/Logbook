@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Compliance;
 
+use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Service\Compliance\ComplianceDocumentForm;
@@ -30,6 +31,7 @@ final readonly class EditComplianceDocumentAction
         private AttachmentUpload $upload,
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
+        private EntryGuard $guard,
     ) {
     }
 
@@ -40,6 +42,7 @@ final readonly class EditComplianceDocumentAction
     {
         $vehicle = RequestContext::vehicle($request);
         $document = ComplianceRoute::document($this->compliance, $vehicle, $request, $args);
+        $this->guard->allowChange($request, $vehicle, $document->createdBy);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 
