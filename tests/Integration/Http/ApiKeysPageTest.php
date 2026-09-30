@@ -30,7 +30,7 @@ final class ApiKeysPageTest extends AppTestCase
 
     public function testCreatingAKeyShowsItsTokenOnceAndItWorks(): void
     {
-        $app = $this->createApp();
+        $app = $this->createApp(['APP_URL' => 'http://localhost:8080']);
         $browser = $this->signedIn($app);
 
         $settings = self::body($browser->get('/settings'));

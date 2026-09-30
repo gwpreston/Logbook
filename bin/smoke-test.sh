@@ -115,7 +115,7 @@ api() { # api <path> <status> [body-substring] [token]
     status="$(curl -s -o /tmp/smoke.body -w '%{http_code}' ${4:+-H "Authorization: Bearer $4"} "$base/api/v1$1")" \
         || fail "request to $base/api/v1$1 failed"
     [ "$status" = "$2" ] || fail "$base/api/v1$1 returned $status, expected $2: $(cat /tmp/smoke.body)"
-    if [ -n "${3:-}" ]; then grep -q -- "$3" /tmp/smoke.body || fail "$base/api/v1$1 body lacks: $3"; fi
+    if [ -n "${3:-}" ]; then grep -qF -- "$3" /tmp/smoke.body || fail "$base/api/v1$1 body lacks: $3"; fi
     echo "ok  $2  API $1"
 }
 api /vehicles 200 '"items":[]' "$token"

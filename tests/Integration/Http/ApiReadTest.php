@@ -52,7 +52,7 @@ final class ApiReadTest extends AppTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = $this->createApp();
+        $this->app = $this->createApp(['APP_URL' => 'http://localhost:8080']);
         $this->pinClock($this->app, '2026-09-29T10:00:00Z');
         $this->browser = $this->signedIn($this->app);
         $this->owner = $this->owner($this->app);
