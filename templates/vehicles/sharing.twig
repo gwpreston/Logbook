@@ -63,7 +63,7 @@
                         {% for row in shares %}
                             {% set share = row.share %}
                             <li class="share-row">
-                                <form class="form" method="post" action="{{ url_for('vehicles.sharing.change', {id: vehicle.id, user: row.user.id, action: 'save'}) }}">
+                                <form class="form" method="post" action="{{ url_for('vehicles.sharing.change', {id: vehicle.id, member: row.user.id, action: 'save'}) }}">
                                     {{ ui.csrf(csrf) }}
                                     <p class="list__title">{{ row.user.displayName }} <span class="muted">({{ row.user.username }})</span>
                                         {% if not row.user.isActive() %}<span class="pill pill--soon">{{ 'users.status.disabled'|trans }}</span>{% endif %}</p>
@@ -74,7 +74,7 @@
                                     }, levels, 'sharing.notify_other'|trans) }}
                                     <div class="btn-row">
                                         <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}<span class="visually-hidden">: {{ row.user.displayName }}</span></button>
-                                        <button type="submit" class="btn btn--ghost" formaction="{{ url_for('vehicles.sharing.change', {id: vehicle.id, user: row.user.id, action: 'remove'}) }}">{{ ui.icon('person_remove') }}{{ 'sharing.remove'|trans }}<span class="visually-hidden">: {{ row.user.displayName }}</span></button>
+                                        <button type="submit" class="btn btn--ghost" formaction="{{ url_for('vehicles.sharing.change', {id: vehicle.id, member: row.user.id, action: 'remove'}) }}">{{ ui.icon('person_remove') }}{{ 'sharing.remove'|trans }}<span class="visually-hidden">: {{ row.user.displayName }}</span></button>
                                     </div>
                                 </form>
                             </li>

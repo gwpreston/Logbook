@@ -135,6 +135,43 @@ final readonly class UserRepository
         ], ['id' => $id], ['id' => ParameterType::INTEGER]);
     }
 
+    public function setAdmin(int $id, bool $isAdmin, DateTimeImmutable $now): void
+    {
+        $this->connection->update(self::TABLE, [
+            'is_admin' => $isAdmin,
+            'updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
+        ], ['id' => $id], ['id' => ParameterType::INTEGER, 'is_admin' => ParameterType::BOOLEAN]);
+    }
+
+    public function setDisabledAt(int $id, ?DateTimeImmutable $disabledAt, DateTimeImmutable $now): void
+    {
+        $platform = $this->connection->getDatabasePlatform();
+        $this->connection->update(self::TABLE, [
+            'disabled_at' => $disabledAt === null ? null : UtcDateTime::toDatabase($disabledAt, $platform),
+            'updated_at' => UtcDateTime::toDatabase($now, $platform),
+        ], ['id' => $id], ['id' => ParameterType::INTEGER]);
+    }
+
+    /**
+     * Admins who can still sign in: there must always be one (spec.md §7.9).
+     */
+    public function countActiveAdmins(): int
+    {
+        $count = $this->connection->createQueryBuilder()
+            ->select('COUNT(*)')
+            ->from(self::TABLE)
+            ->where('is_admin = :admin', 'disabled_at IS NULL')
+            ->setParameter('admin', true, ParameterType::BOOLEAN)
+            ->fetchOne();
+
+        return is_numeric($count) ? (int) $count : 0;
+    }
+
+    public function delete(int $id): void
+    {
+        $this->connection->delete(self::TABLE, ['id' => $id], ['id' => ParameterType::INTEGER]);
+    }
+
     /**
      * @return array<string, string>
      */

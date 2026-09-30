@@ -26,7 +26,7 @@ final class RouteInventoryTest extends AppTestCase
 {
     /**
      * No sign-in: machine endpoints, the installable app, setup and sign-in, the
-     * calendar feed by token, the API's own description.
+     * calendar feed and one-time links by token, the API's own description.
      */
     private const array PUBLIC = [
         'health',
@@ -37,6 +37,7 @@ final class RouteInventoryTest extends AppTestCase
         'calendar.feed',
         'setup',
         'login',
+        'invite.accept',
         'diagnostics.deep-link',
     ];
 
@@ -180,6 +181,11 @@ final class RouteInventoryTest extends AppTestCase
             'backup.download' => InstanceAbility::Backup,
             'backup.restore' => InstanceAbility::Restore,
             'backup.restore.confirm' => InstanceAbility::Restore,
+            'settings.users' => InstanceAbility::ManageUsers,
+            'settings.users.change' => InstanceAbility::ManageUsers,
+            'settings.users.delete' => InstanceAbility::ManageUsers,
+            'settings.users.transfer' => InstanceAbility::ManageUsers,
+            'settings.users.revoke' => InstanceAbility::ManageUsers,
         ], $declared);
     }
 

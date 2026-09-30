@@ -1,0 +1,131 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Settings → Users (spec.md §7.9; admins only): every user with their role,
+ # last sign-in and status and the changes an admin can make; the open
+ # links; the invite form. A link just made (an invite or a reset) is shown
+ # once, on the page that answers its POST, which is not cached.
+ #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'users.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'users.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'users.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if created %}
+            {% set reset = created.invitation.kind.value == 'reset' %}
+            <section class="card" aria-labelledby="link-heading" data-invite-created>
+                <h2 id="link-heading" class="card__title">{{ ui.icon('link') }}{{ (reset ? 'users.reset_heading' : 'users.invite_heading_done')|trans({name: created.invitation.displayName}) }}</h2>
+                <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ 'users.copy_now'|trans({days: 7}) }}</span></div>
+                {% if emailed_to %}
+                    <p class="muted">{{ 'users.emailed'|trans({address: emailed_to}) }}</p>
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-invite-link">{{ 'users.link_label'|trans }}</label>
+                    <div class="input-group">
+                        <input class="input" id="f-invite-link" type="text" readonly value="{{ created.url }}" autocomplete="off" spellcheck="false">
+                        <button type="button" class="btn btn--soft" data-copy="#f-invite-link" data-copied-label="{{ 'api_keys.copied'|trans }}" hidden>{{ ui.icon('content_copy') }}<span>{{ 'api_keys.copy'|trans }}</span></button>
+                    </div>
+                    <p class="field__hint">{{ (reset ? 'users.reset_hint' : 'users.invite_hint')|trans }}</p>
+                </div>
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="users-heading">
+            <h2 id="users-heading" class="card__title">{{ ui.icon('group') }}{{ 'users.list_heading'|trans }}</h2>
+            <ul class="list">
+                {% for row in users %}
+                    {% set member = row.user %}
+                    {% set is_me = member.id == user.id %}
+                    <li class="user-row">
+                        <div class="list__item">
+                            <span class="list__icon">{{ ui.icon(member.isActive() ? (member.isAdmin ? 'admin_panel_settings' : 'person') : 'person_off') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ member.displayName }} <span class="muted">({{ member.username }})</span>{% if is_me %} · {{ 'users.you'|trans }}{% endif %}</span>
+                                <span class="list__meta">
+                                    {{- (member.isAdmin ? 'users.role.admin' : 'users.role.member')|trans }} ·
+                                    {{ (member.isActive() ? 'users.status.active' : 'users.status.disabled')|trans }} ·
+                                    {{ row.lastSeenAt ? 'users.last_seen'|trans({when: row.lastSeenAt|local_datetime}) : 'users.never_seen'|trans -}}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="btn-row user-row__actions">
+                            <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: member.isAdmin ? 'member' : 'admin'}) }}">
+                                {{ ui.csrf(csrf) }}
+                                <button type="submit" class="btn btn--sm">{{ ui.icon('admin_panel_settings') }}{{ (member.isAdmin ? 'users.remove_admin' : 'users.make_admin')|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                            </form>
+                            <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: 'reset'}) }}">
+                                {{ ui.csrf(csrf) }}
+                                <button type="submit" class="btn btn--sm">{{ ui.icon('lock_reset') }}{{ 'users.reset'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                            </form>
+                            {% if not is_me %}
+                                <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: member.isActive() ? 'disable' : 'enable'}) }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <button type="submit" class="btn btn--sm">{{ ui.icon(member.isActive() ? 'person_off' : 'person_check') }}{{ (member.isActive() ? 'users.disable' : 'users.enable')|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                                </form>
+                                <a class="btn btn--sm btn--danger" href="{{ url_for('settings.users.delete', {member: member.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></a>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        {% if links is not empty %}
+            <section class="card" aria-labelledby="links-heading">
+                <h2 id="links-heading" class="card__title">{{ ui.icon('link') }}{{ 'users.links_heading'|trans }}</h2>
+                <ul class="list">
+                    {% for link in links %}
+                        <li>
+                            <div class="list__item">
+                                <span class="list__icon">{{ ui.icon(link.kind.value == 'reset' ? 'lock_reset' : 'mail') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ link.displayName }} <span class="muted">({{ link.username }})</span></span>
+                                    <span class="list__meta">{{ ('users.link_kind.' ~ link.kind.value)|trans }} · {{ 'users.expires'|trans({when: link.expiresAt|local_datetime}) }}</span>
+                                </span>
+                                <span class="list__end">
+                                    <form method="post" action="{{ url_for('settings.users.revoke', {invitation: link.id}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('block') }}{{ 'users.revoke'|trans }}<span class="visually-hidden">: {{ link.username }}</span></button>
+                                    </form>
+                                </span>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="invite-heading">
+            <h2 id="invite-heading" class="card__title">{{ ui.icon('person_add') }}{{ 'users.invite_heading'|trans }}</h2>
+            <form class="form" method="post" action="{{ url_for('settings.users') }}">
+                {{ ui.csrf(csrf) }}
+                {{ ui.input('username', 'auth.username'|trans, values, errors, {required: true, maxlength: 64, autocomplete: 'off', hint: 'auth.username_hint'|trans({min: 3, max: 64})}) }}
+                {{ ui.input('display_name', 'prefs.display_name'|trans, values, errors, {optional: true, maxlength: 100, autocomplete: 'off'}) }}
+                {% if mail_configured %}
+                    {{ ui.input('email', 'users.email_to'|trans, values, errors, {optional: true, type: 'email', maxlength: 254, autocomplete: 'off', hint: 'users.email_hint'|trans}) }}
+                {% endif %}
+                <label class="toggle">
+                    <input type="checkbox" name="is_admin" value="1"{% if (values.is_admin ?? '') == '1' %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'users.role.admin'|trans }}</span>
+                        <span class="toggle__hint">{{ 'users.admin_hint'|trans }}</span>
+                    </span>
+                </label>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary">{{ ui.icon('link') }}{{ 'users.invite'|trans }}</button>
+                </div>
+            </form>
+        </section>
+    </div>
+{% endblock %}

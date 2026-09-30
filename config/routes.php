@@ -19,6 +19,7 @@ use Logbook\Action\Api\UpcomingAction as ApiUpcomingAction;
 use Logbook\Action\Api\VehicleSummaryAction as ApiSummaryAction;
 use Logbook\Action\Attachment\DeleteAttachmentAction;
 use Logbook\Action\Attachment\ShowAttachmentAction;
+use Logbook\Action\Auth\InviteAction;
 use Logbook\Action\Auth\LoginAction;
 use Logbook\Action\Auth\LogoutAction;
 use Logbook\Action\Auth\SetupAction;
@@ -37,6 +38,8 @@ use Logbook\Action\Expense\DeleteExpenseAction;
 use Logbook\Action\Expense\EditExpenseAction;
 use Logbook\Action\Expense\VehicleExpensesAction;
 use Logbook\Action\Export\ExportModuleAction;
+use Logbook\Action\Forecast\ComingUpAction;
+use Logbook\Action\Forecast\ComingUpExportAction;
 use Logbook\Action\Fuel\ConfirmEconomyAction;
 use Logbook\Action\Fuel\CreateFuelEntryAction;
 use Logbook\Action\Fuel\DeleteFuelEntryAction;
@@ -45,8 +48,6 @@ use Logbook\Action\Fuel\FuelLogAction;
 use Logbook\Action\Fuel\QuickFuelAction;
 use Logbook\Action\Garage\GarageAction;
 use Logbook\Action\HealthAction;
-use Logbook\Action\Forecast\ComingUpAction;
-use Logbook\Action\Forecast\ComingUpExportAction;
 use Logbook\Action\History\FleetHistoryAction;
 use Logbook\Action\History\HistoryPrintAction;
 use Logbook\Action\History\VehicleHistoryAction;
@@ -81,17 +82,22 @@ use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\SalePack\DownloadPaperworkAction;
 use Logbook\Action\SalePack\ShowSalePackAction;
+use Logbook\Action\Settings\AdminTransferAction;
 use Logbook\Action\Settings\ApiKeysAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
+use Logbook\Action\Settings\DeleteUserAction;
 use Logbook\Action\Settings\ModuleSettingsAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\RevokeApiKeyAction;
+use Logbook\Action\Settings\RevokeInvitationAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
 use Logbook\Action\Settings\SetThemeAction;
-use Logbook\Action\Settings\TyreSettingsAction;
 use Logbook\Action\Settings\SettingsAction;
+use Logbook\Action\Settings\TyreSettingsAction;
+use Logbook\Action\Settings\UserAction;
+use Logbook\Action\Settings\UsersAction;
 use Logbook\Action\Sharing\ChangeShareAction;
 use Logbook\Action\Sharing\MyShareAction;
 use Logbook\Action\Sharing\SharingAction;
@@ -221,6 +227,8 @@ return static function (App $app): void {
     $app->group('', function (Group $group): void {
         $group->map(['GET', 'POST'], '/setup', SetupAction::class)->setName('setup');
         $group->map(['GET', 'POST'], '/login', LoginAction::class)->setName('login');
+        // One-time invitation and password-reset links (spec.md §7.9): the token is the authentication.
+        $group->map(['GET', 'POST'], '/invite/{token:[A-Za-z0-9_-]{43}}', InviteAction::class)->setName('invite.accept');
         $group->get('/diagnostics/deep/link', DeepLinkCheckAction::class)->setName('diagnostics.deep-link');
     })->add(CsrfMiddleware::class);
 
@@ -256,7 +264,7 @@ return static function (App $app): void {
             ->setArgument($ability, VehicleAbility::View->value);
         $group->post('/vehicles/{id:[0-9]+}/sharing', SharingAction::class)->setName('vehicles.sharing.add')
             ->setArgument($ability, VehicleAbility::Own->value);
-        $group->post('/vehicles/{id:[0-9]+}/sharing/{user:[0-9]+}/{action:save|remove}', ChangeShareAction::class)
+        $group->post('/vehicles/{id:[0-9]+}/sharing/{member:[0-9]+}/{action:save|remove}', ChangeShareAction::class)
             ->setName('vehicles.sharing.change')
             ->setArgument($ability, VehicleAbility::Own->value);
         $group->post('/vehicles/{id:[0-9]+}/sharing/me/{action:notify|leave}', MyShareAction::class)
@@ -463,6 +471,21 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/backup/restore/{token:[a-f0-9]{32}}', ConfirmRestoreAction::class)
             ->setName('backup.restore.confirm')
             ->setArgument($instance, InstanceAbility::Restore->value);
+        // Users and their one-time links (spec.md §7.9): admins only.
+        $group->map(['GET', 'POST'], '/settings/users', UsersAction::class)->setName('settings.users')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->post('/settings/users/{member:[0-9]+}/{action:admin|member|disable|enable|reset}', UserAction::class)
+            ->setName('settings.users.change')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->map(['GET', 'POST'], '/settings/users/{member:[0-9]+}/delete', DeleteUserAction::class)
+            ->setName('settings.users.delete')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->post('/settings/users/{member:[0-9]+}/vehicles/{vehicle:[0-9]+}/transfer', AdminTransferAction::class)
+            ->setName('settings.users.transfer')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->post('/settings/users/links/{invitation:[0-9]+}/revoke', RevokeInvitationAction::class)
+            ->setName('settings.users.revoke')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
         // One's own API keys (spec.md §7.20); kept when the API is off, so keys can be prepared.
         $group->map(['GET', 'POST'], '/settings/api-keys', ApiKeysAction::class)->setName('settings.api_keys');
         $group->map(['GET', 'POST'], '/settings/api-keys/{key:[0-9]+}/revoke', RevokeApiKeyAction::class)

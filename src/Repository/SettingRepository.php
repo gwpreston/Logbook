@@ -94,6 +94,16 @@ final readonly class SettingRepository
         return $saved;
     }
 
+    /**
+     * Every setting of one user (their account is being deleted).
+     */
+    public function deleteAllOf(int $userId): void
+    {
+        $this->connection->delete(self::TABLE, ['scope' => SettingScope::User->value, 'owner_id' => $userId], [
+            'owner_id' => ParameterType::INTEGER,
+        ]);
+    }
+
     public function delete(string $name, SettingScope $scope = SettingScope::Global, int $ownerId = 0): void
     {
         $this->connection->createQueryBuilder()
