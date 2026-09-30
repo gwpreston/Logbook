@@ -35,6 +35,11 @@ jobs:
       - run: composer analyse
       - name: Built assets are committed and current
         run: php bin/build-assets.php --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: JavaScript unit tests (no npm install)
+        run: node --test tests/js/*.test.js
 
   tests:
     name: Tests (PHP ${{ matrix.php }}, ${{ matrix.db }})

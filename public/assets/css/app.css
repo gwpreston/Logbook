@@ -2200,6 +2200,77 @@ a.list__title:hover {
     list-style: none;
 }
 
+/* Drop zones (spec.md §7.12, Phase 21.1): only styled once js/file-drop.js
+   has enhanced them; without JS the input is left as it is. Dragging over
+   changes the border and the text, not only the colour. */
+.file-drop--enhanced {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+}
+
+.file-drop--enhanced:focus-within {
+    border-color: var(--accent);
+}
+
+.file-drop--over {
+    border-style: solid;
+    border-color: var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    background: var(--accent-soft);
+}
+
+.file-drop__prompt {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.file-drop--over .file-drop__prompt {
+    color: var(--text);
+}
+
+.file-drop__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.file-drop__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-height: 2.375rem;
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.file-drop__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-drop__size {
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+}
+
 .attachment-list--inset {
     margin: 0;
     padding: 0 var(--space-2) var(--space-2) calc(2.375rem + var(--space-3) + var(--space-2));

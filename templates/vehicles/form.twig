@@ -141,7 +141,8 @@
                     {% if editing %}{{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}{% endif %}
                     <div class="field">
                         <label class="field__label" for="f-photo">{{ (editing and vehicle.hasPhoto() ? 'vehicle.field.photo_replace' : 'vehicle.field.photo')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-                        <input class="input input--file" id="f-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"{{ ui.described_by('photo', errors, true) }}>
+                        {% set native %}<input class="input input--file" id="f-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"{{ ui.described_by('photo', errors, true) }}>{% endset %}
+                        {{ ui.file_drop(native, {max_mb: max_upload_mb, type_message: 'not_an_image'}) }}
                         <p class="field__hint" id="f-photo-hint">{{ 'vehicle.hint.photo'|trans({max: max_upload_mb}) }}</p>
                         {{ ui.field_error(errors, 'photo') }}
                     </div>

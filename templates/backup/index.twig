@@ -43,7 +43,8 @@
                     {{ ui.csrf(csrf) }}
                     <div class="field">
                         <label class="field__label" for="f-backup">{{ 'backup.file'|trans }}</label>
-                        <input class="input input--file" id="f-backup" name="backup" type="file" accept=".zip,application/zip" required aria-describedby="f-backup-hint{{ error ? ' f-backup-error' }}"{% if error %} aria-invalid="true"{% endif %}>
+                        {% set native %}<input class="input input--file" id="f-backup" name="backup" type="file" accept=".zip,application/zip" required aria-describedby="f-backup-hint{{ error ? ' f-backup-error' }}"{% if error %} aria-invalid="true"{% endif %}>{% endset %}
+                        {{ ui.file_drop(native, {max_mb: max_restore_mb, type_message: 'not_zip'}) }}
                         <p class="field__hint" id="f-backup-hint">{{ 'backup.file_hint'|trans({max: max_restore_mb}) }}</p>
                     </div>
                     <div class="btn-row">

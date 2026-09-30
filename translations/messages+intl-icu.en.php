@@ -130,6 +130,22 @@ return [
             'empty' => '{name}: the file is empty',
             'not_an_image' => '{name}: not a JPEG, PNG or WebP image',
             'not_a_document' => '{name}: not a PDF, JPEG, PNG or WebP file',
+            'not_csv' => '{name}: not a CSV file',
+            'not_zip' => '{name}: not a ZIP file',
+        ],
+        // Drop zones (Phase 21.1). {name} and {count} are filled in by js/file-drop.js.
+        'drop' => [
+            'prompt' => 'Drag files here or choose files',
+            'prompt_one' => 'Drag a file here or choose one',
+            'choose' => 'Choose files',
+            'choose_one' => 'Choose a file',
+            'over' => 'Drop to add',
+            'remove_label' => 'Remove',
+            'remove' => 'Remove {name}',
+            'removed' => '{name} removed',
+            'added_one' => '{count} file added',
+            'added_other' => '{count} files added',
+            'chosen' => '{name} chosen',
         ],
     ],
     'attachment' => [

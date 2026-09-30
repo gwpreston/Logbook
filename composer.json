@@ -61,6 +61,7 @@
         "test": "phpunit",
         "test:unit": "phpunit --testsuite unit",
         "test:integration": "phpunit --testsuite integration",
+        "test:js": "node --test tests/js/*.test.js",
         "lint": "phpcs",
         "cs-fix": "phpcbf",
         "analyse": "phpstan analyse --memory-limit=1G --no-progress",
@@ -77,6 +78,7 @@
     "scripts-descriptions": {
         "start": "Run the PHP built-in dev server on http://localhost:8090",
         "test": "Run the PHPUnit suite (TEST_DB_* selects the database; default SQLite)",
+        "test:js": "Run the JavaScript unit tests with Node (maintainers and CI only; not needed to run Logbook)",
         "lint": "Check coding style (PSR-12)",
         "cs-fix": "Fix coding style automatically",
         "analyse": "Run PHPStan static analysis",
