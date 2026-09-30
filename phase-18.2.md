@@ -2,7 +2,7 @@
 
 *Let Home Assistant, Shortcuts, Grafana and OBD tools read and log.*
 
-Status: 📋 planned · releases **v1.10.0** with Phase 18.1
+Status: ✅ complete · released as **v1.10.0** together with Phase 18.1
 
 A small, documented JSON API, authorised by API keys that belong to a user
 and go through the Phase 18.1 access policy. This version reads everything a
@@ -167,75 +167,75 @@ disables API keys) and §12 (remove the REST API line).
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.20, §9 and §12 in `spec.md`; the Phase 18 line in §13.
-- [ ] `docs/api.md`: keys, values, paging and errors, with worked examples
+- [x] §7.20, §9 and §12 in `spec.md`; the Phase 18 line in §13.
+- [x] `docs/api.md`: keys, values, paging and errors, with worked examples
       for Home Assistant (a REST sensor on `/summary`), Apple Shortcuts
       ("Log fill-up" with Ask for Input), Grafana (Infinity data source on
       `/fuel`) and Node-RED (http request node). Link it from the README
       documentation table.
-- [ ] `docs/api/openapi.json` as the single source, served at
+- [x] `docs/api/openapi.json` as the single source, served at
       `/api/v1/openapi.json`.
 
 ### Migration
-- [ ] `api_keys` table (Phinx, applies and rolls back on every engine;
+- [x] `api_keys` table (Phinx, applies and rolls back on every engine;
       unique index on token_hash, index on user_id). This moves the schema
       version.
-- [ ] Backup and restore include `api_keys`. The restore page gets a
+- [x] Backup and restore include `api_keys`. The restore page gets a
       notice about `SESSION_SECRET`.
 
 ### Code
-- [ ] `Domain\Api\ApiKey`, `ApiScope` enum; `Repository\ApiKeyRepository`.
-- [ ] `Service\Api\ApiKeyService`: create (returns the token once), verify
+- [x] `Domain\Api\ApiKey`, `ApiScope` enum; `Repository\ApiKeyRepository`.
+- [x] `Service\Api\ApiKeyService`: create (returns the token once), verify
       (constant-time compare of the hash), revoke, touch last-used
       (throttled).
-- [ ] `Middleware\ApiAuthMiddleware` (bearer → user and scope on the
+- [x] `Middleware\ApiAuthMiddleware` (bearer → user and scope on the
       request), `ApiErrorMiddleware` (exceptions and validation →
       problem+json), `ApiThrottle`, and a CORS middleware (only when
       configured).
-- [ ] Reuse `VehicleAccessMiddleware` for `{id}` API routes. The route
+- [x] Reuse `VehicleAccessMiddleware` for `{id}` API routes. The route
       inventory test gains the API group.
-- [ ] `Action\Api\…`: one invokable class per endpoint.
-- [ ] `Support\Api\Serializer`: typed domain objects → arrays, with decimal
+- [x] `Action\Api\…`: one invokable class per endpoint.
+- [x] `Support\Api\Serializer`: typed domain objects → arrays, with decimal
       strings, units and costs gated by `ViewCosts`.
-- [ ] `Support\Api\JsonInput`: JSON → the existing fill-up and reading
+- [x] `Support\Api\JsonInput`: JSON → the existing fill-up and reading
       commands. It is a new input adapter; the services are unchanged.
-- [ ] Settings → API keys pages (list, create, created-once, revoke), with
+- [x] Settings → API keys pages (list, create, created-once, revoke), with
       CSRF and translations.
-- [ ] `config/routes.php` API group; `.env.example` entries.
+- [x] `config/routes.php` API group; `.env.example` entries.
 
 ### Tests
-- [ ] Contract tests: every endpoint's responses validated against
+- [x] Contract tests: every endpoint's responses validated against
       `openapi.json` (`league/openapi-psr7-validator`, dev only).
-- [ ] Auth: missing, malformed, unknown and revoked keys → 401; read key on
+- [x] Auth: missing, malformed, unknown and revoked keys → 401; read key on
       POST → 403; throttle after 20 failures; the token never appears in
       logs.
-- [ ] Access: with the Phase 18.1 test policy, another user's vehicle →
+- [x] Access: with the Phase 18.1 test policy, another user's vehicle →
       404; no `ViewCosts` → amounts omitted from every response.
-- [ ] Values: decimal strings round-trip exactly; UTC instants; `display`
+- [x] Values: decimal strings round-trip exactly; UTC instants; `display`
       in the owner's units (km, UK and US preferences).
-- [ ] Writes: any two of volume / price / total derive the third as the
+- [x] Writes: any two of volume / price / total derive the third as the
       form does; gallons and miles convert exactly; a duplicate returns 200
       with `duplicate: true` and writes nothing; validation errors carry the
       same keys as the form's; plausibility and economy warnings are
       returned and never block; an archived vehicle → 409.
-- [ ] Module toggles: fuel off → `/fuel` 404, and fuel fields are gone from
+- [x] Module toggles: fuel off → `/fuel` 404, and fuel fields are gone from
       the summary.
-- [ ] No API request creates a session row.
-- [ ] Works under `APP_BASE_PATH`; `API_ENABLED=false` → 404.
-- [ ] Integration suite green on every engine; migration rolls back on
+- [x] No API request creates a session row.
+- [x] Works under `APP_BASE_PATH`; `API_ENABLED=false` → 404.
+- [x] Integration suite green on every engine; migration rolls back on
       every engine.
-- [ ] `bin/smoke-test.sh` gains an API check: create a key via the CLI
+- [x] `bin/smoke-test.sh` gains an API check: create a key via the CLI
       helper, then `GET /vehicles`.
 
 ### CLI
-- [ ] `php bin/api-key.php create --user <username> --name <n> --scope
+- [x] `php bin/api-key.php create --user <username> --name <n> --scope
       read|read_write` and `revoke <id>`, for headless installs.
 
 ### Release
-- [ ] `CHANGELOG.md` **1.10.0**: the access policy (no visible change) and
+- [x] `CHANGELOG.md` **1.10.0**: the access policy (no visible change) and
       the API. Upgrade notes: one migration; new optional variables; a note
       on `SESSION_SECRET`.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and
+- [x] Bump `VERSION`, rebuild assets, update the README status and
       documentation table.
 
 ---
@@ -252,11 +252,84 @@ disables API keys) and §12 (remove the REST API line).
 6. Definition of done (CLAUDE.md §11) holds, including the migration on
    every engine and the multi-arch image.
 
-## Open questions
+## Open questions (answered)
 
-- Should `API_ENABLED` default to `false` for a fresh install, so the
-  attack surface is off until someone wants it? Keys are required anyway,
-  so `true` is drafted.
-- Is a per-vehicle key restriction worth adding now (a key for the OBD
-  dongle that can only log to one car), or is it enough once Phase 19
-  exists and the dongle can have its own user?
+- **`API_ENABLED` defaults to `true`.** Nothing is reachable without a key,
+  and a fresh install has none; the description (`openapi.json`) is the
+  only open address. `false` still switches it all off.
+- **No per-vehicle keys yet.** Phase 19 lets a device have its own user
+  with access to one car, which covers the OBD dongle without a second
+  access model.
+
+---
+
+## Changed while building it
+
+spec.md §7.20 is the current text.
+
+- **CORS is global, not in the API group.** An `OPTIONS` catch-all route in
+  the group would have made every unknown API path a 405 instead of a 404,
+  so `ApiCorsMiddleware` sits outermost on the whole app, acts on API paths
+  only, answers preflights before routing (204 for a listed origin, 403
+  `cors_not_allowed` otherwise) and adds the header to errors too. The
+  router's own errors under `/api/` (unknown path, wrong method, the API
+  off) are problem details from the global error handler.
+- **The throttle is a service, not a middleware.** `FailedKeyThrottle`
+  (one JSON counter per address hash under `var/cache/api-throttle`, with a
+  lock) is asked by `ApiAuthMiddleware`, which knows when a key failed. A
+  missing key is not counted as a guess.
+- **The key's user replaces any session user** and the formatting context:
+  `ApiAuthMiddleware` sets the `user` attribute, `AccessContext`, and runs
+  the rest of the request in the owner's language and units
+  (`UserDisplayScope`), so `display` and names need nothing of their own.
+  A signed-in browser with no key gets 401 even on a POST (no CSRF group
+  here, so this matters), and a test proves it.
+- **Only the entry lists are paged.** `/vehicles`, `/tyres`, `/upcoming`
+  and `/reminders` are short and in their own order (urgency, position),
+  so they come whole. Paging is in PHP over what the service reads (the
+  economy of a fill-up needs the whole history anyway); the cursor names
+  the last item's time and id.
+- **Writes let the form convert.** `JsonInput` puts the request's units into
+  the preferences the form parses with (locale `en`, UTC), rather than
+  converting first as the CSV import does, so "derives the third as the
+  form does" and "converts exactly" hold by construction. Instants are
+  taken to the minute, as the forms keep them. Number tokens are turned
+  into strings before `json_decode`, so a JSON number never becomes a
+  float (a test uses `40123.4565`, which rounds the other way as a float).
+- **Unknown fields are refused** (`api.validation.unknown_field`), and the
+  API's own input rules have `api.validation.*` keys (en + de), so a typo
+  such as `price` for `price_per_unit` is caught instead of meaning "only
+  one amount".
+- **Retries need the time.** The duplicate key is time plus odometer, so a
+  retry without `filled_at` is a new "now"; the spec and the Shortcuts
+  guide say to send it. The key itself moved from `CsvImporter` to
+  `Service\Import\DuplicateKey`, shared by both. A reading that repeats
+  any existing reading (a fill-up's included) is a duplicate.
+- **Archived vehicles:** the forms never refused a write to one; they only
+  never offered it. The API refuses (409) anyway, as planned.
+- **The summary syncs reminders first**, as the Reminders page does, so its
+  counts are not those of the last scheduler run. Its cost per distance is
+  the running cost over the last 12 months as Reports counts it.
+- **`/me` also lists the modules**, so a client knows which endpoints exist.
+- **Settings → API keys stays when the API is off** (keys can be prepared;
+  the page says so) and revoking has its own confirmation page. The new
+  token is on the page that answers the POST (`Cache-Control: no-store`),
+  never flashed through the session.
+- **OpenAPI validation:** `league/openapi-psr7-validator` 0.24 (on
+  `devizzent/cebe-php-openapi`) reads 3.1 type arrays, so the description
+  is real 3.1. Every API test goes through `tests/Support/ApiClient`,
+  which validates each response, errors included; preflights are not
+  operations and are checked on their own. `tests/Support/JsonDoc` gives
+  the tests typed access to responses for PHPStan.
+- **Access tests:** `VehicleRoutes` leaves the API routes out of the
+  session-driven loops, and `ApiAccessTest` runs the same no-access, view
+  only and no-costs checks over every API vehicle route with a key. The
+  route inventory classifies the API routes, and a new test proves every
+  API route but the description answers 401 without a key.
+- **Deployment:** `.dockerignore` excluded `docs`, so it now re-includes
+  `docs/api` for the served description; `public/.htaccess` and the image's
+  vhost hand the `Authorization` header to PHP-FPM (mod_php passes it
+  already). `docs/deployment.md` explains both and the throttle behind a
+  proxy.
+- `ExpenseService::entries()` was added for the expenses list (repositories
+  stay behind services).

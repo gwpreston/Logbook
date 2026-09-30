@@ -91,9 +91,12 @@ disagree):
   groups rather than globally so machine endpoints such as `/health` never
   create sessions; every HTML route is inside a CSRF-protected group.
   The REST API (§7.20) is its own group under `/api/v1`, outer→inner:
-  CORS → problem-details errors → failed-key throttle → API key
-  (the key's user replaces any session user) → vehicle access → module
-  gate. `openapi.json` sits outside the key check.
+  problem-details errors → API key (with the failed-key throttle; the
+  key's user replaces any session user) → vehicle access → module gate.
+  `openapi.json` sits outside the key check. API CORS is a global
+  middleware, outermost, acting on API paths only, so it answers
+  preflights before routing; the error handler answers the router's own
+  errors under `/api/` as problem details.
 - **Current user:** resolved once per request from the session by middleware
   and exposed as the `user` request attribute. Actions never read the session
   to find the user, so multi-user can slot in without touching them.
@@ -2327,7 +2330,10 @@ whole group off: every API path answers 404.
   no value is `null`, never left out, except the amounts below.
 - The summary also carries `display`: its figures formatted in the key
   owner's units, locale and currency ("48,730 mi", "52.1 mpg"), for
-  sensors that just show text.
+  sensors that just show text: `odometer`, `economy` (the vehicle's
+  usual kind of energy), `last_fill_up`, `cost_per_distance` and
+  `next_due`. Names in the API (a *Coming up* item's `name`) are in the
+  owner's language too; problem details are always English.
 - Costs follow `ViewCosts`. Without it, amount fields are **omitted**,
   not zeroed or nulled.
 - Module toggles apply: a switched-off module's endpoints answer 404, and
@@ -2335,17 +2341,24 @@ whole group off: every API path answers 404.
   is off, its documents when Compliance is off, and so on).
 
 **Read endpoints** (scope `read`). Vehicle ids come from the policy: one
-the key's user cannot view answers 404 (§5). Lists are newest first and
-paged by an opaque cursor (`limit` 1–200, default 50; `next` is the URL of
-the next page, or `null`); `since` / `until` filter on the entry's date or
-instant (a date, or an instant; `until` of a date includes that whole day
-in UTC). An invalid parameter answers 400 (`invalid_parameter`).
+the key's user cannot view answers 404 (§5), and so does a `?vehicle=`
+filter naming one. The entry lists (fuel, odometer, maintenance,
+documents, expenses) are newest first (by the entry's date or instant,
+then id) and paged by an opaque cursor naming the last item seen, so an
+entry added meanwhile never shifts a page (`limit` 1–200, default 50;
+`next` is the URL of the next page, or `null`); `since` / `until` filter
+on the entry's date or instant (a date, or an instant; both inclusive, a
+date covering that whole day in UTC). Each list is read whole by its
+service, as the pages read it (a fill-up's economy needs the full
+history), and paged in PHP. The vehicles, tyres, *Coming up* and
+reminders lists are short, in their own order, and not paged. An invalid
+parameter answers 400 (`invalid_parameter`).
 
 | Endpoint | Returns |
 |---|---|
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default active) |
 | `GET /vehicles/{id}` | one vehicle, as the edit form holds it |
-| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, cost per distance (last 12 months), next due item, open reminder counts, current documents' expiry, tyre status |
+| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it), next due item, open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with its segment economy when it closes one and its economy-check flag |
 | `GET /vehicles/{id}/odometer` | readings with source |
 | `GET /vehicles/{id}/maintenance` | service records |
@@ -2354,7 +2367,7 @@ in UTC). An invalid parameter answers 400 (`invalid_parameter`).
 | `GET /vehicles/{id}/tyres` | tyres with status, position, latest measured tread |
 | `GET /upcoming` | *Coming up* items (§7.18), `?vehicle=` optional |
 | `GET /reminders` | open reminders, `?vehicle=`, `?status=due\|overdue\|upcoming` |
-| `GET /me` | the key's user (display name, units, locale, time zone) and the key's name and scope |
+| `GET /me` | the key's user (display name, units, locale, time zone), the key's name and scope, and which modules are on |
 | `GET /openapi.json` | the OpenAPI description, its `servers` set to this install (no key needed) |
 
 **Write endpoints** (scope `read_write`, ability `Log`).
@@ -2366,8 +2379,13 @@ in UTC). An invalid parameter answers 400 (`invalid_parameter`).
   owner's, or `kwh` for electricity; `price_per_unit` is per that unit)
   / `price_per_unit` / `total_cost`, `is_partial`, `is_missed_previous`
   (booleans), `station`, `notes`. Numbers are decimal strings or JSON
-  numbers and are read as decimals, never floats, with `.` as the
-  decimal point.
+  numbers and are read as decimals, never floats (number tokens are
+  turned into strings before the body is decoded), with `.` as the
+  decimal point; an exponent or a comma is a `validation.number` error.
+  Unknown fields are refused (`api.validation.unknown_field`), so a
+  misspelt field is caught rather than ignored; the API's own input rules
+  have `api.validation.*` keys (an instant without a zone, a flag that is
+  not a boolean, kWh for a liquid fuel).
 - `POST /vehicles/{id}/odometer`: `recorded_at` (default now),
   `odometer`, `distance_unit`, `note`.
 - Both go through the **same form parsers and services** as the forms
@@ -2385,11 +2403,24 @@ in UTC). An invalid parameter answers 400 (`invalid_parameter`).
   automation that retries after a timeout never doubles a fill-up, as
   long as it sends the time (a retry without `filled_at` is a new "now").
 - Archived vehicles refuse writes (409, `vehicle_archived`). The forms
-  never offer them; the API says so.
+  never offer them (the pickers leave them out); the API says so.
 
 **CORS** is off by default. `API_CORS_ORIGINS` (comma-separated origins)
 allows browser dashboards: those origins get `Access-Control-Allow-Origin`
-on API responses, and a preflight (`OPTIONS`) answers 204 only for them.
+on API responses, errors included, and a preflight (`OPTIONS`) answers 204
+for them (methods `GET, POST`, headers `Authorization, Content-Type`); any
+other preflight answers 403 (`cors_not_allowed`). Credentials are never
+allowed: the key travels in a header the page sets.
+
+**Settings → API keys** stays when `API_ENABLED` is `false` (keys can be
+prepared; the page says the API is off). Revoking asks for confirmation on
+its own page, like deleting an entry. The page with a new token is sent
+`Cache-Control: no-store`.
+
+**Deployment.** The `Authorization` header must reach PHP: `public/.htaccess`
+and the image's vhost hand it over for PHP-FPM; the Docker image ships
+`docs/api/openapi.json`. Failed keys are counted by the client address
+PHP sees, which behind a proxy is the proxy's.
 
 **CLI.** `php bin/api-key.php create --user <username> --name <name>
 --scope read|read_write` prints the token alone on stdout (for scripts);
