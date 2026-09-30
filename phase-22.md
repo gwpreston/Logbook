@@ -58,183 +58,183 @@ questions*) and [`spec.md`](../../spec.md) §5, §6, §7.2, §7.7, §7.10, §7.1
 
 ### §6 Data model
 
-> **Trip** (Phase 22)
-> - id, vehicle_id (`ON DELETE CASCADE`), created_by (user, Phase 19; the
->   driver and claimant), travelled_on (calendar date, never converted
->   through a time zone), from_place and to_place (free text, up to 100
->   characters each, trimmed, both required), is_return (bool: there and
->   back; the distance stored is the whole round trip), distance_km
->   (`decimal(12,3)`, > 0; the whole trip), odometer_start_km and
->   odometer_end_km (optional `decimal(12,3)`; when both are given, the end
->   is after the start and the distance is end − start), is_business (bool,
->   default true), purpose (up to 200 characters; required when business),
->   passengers (0–8, default 0; business passengers for the passenger
->   rate), notes (optional, up to 500), created/updated (UTC). Index
->   `(vehicle_id, travelled_on)` and `(created_by, travelled_on)`.
-> - A trip **writes no odometer reading**. Its odometer values are kept as
->   evidence on the trip. The mileage log stays the only distance series,
->   so readings, plausibility and every existing figure are unchanged.
-> - Trips take attachments (owner type `trip`: a parking or toll receipt
->   for the journey).
+**Trip** (Phase 22)
+- id, vehicle_id (`ON DELETE CASCADE`), created_by (user, Phase 19; the
+  driver and claimant), travelled_on (calendar date, never converted
+  through a time zone), from_place and to_place (free text, up to 100
+  characters each, trimmed, both required), is_return (bool: there and
+  back; the distance stored is the whole round trip), distance_km
+  (`decimal(12,3)`, 0; the whole trip), odometer_start_km and
+  odometer_end_km (optional `decimal(12,3)`; when both are given, the end
+  is after the start and the distance is end − start), is_business (bool,
+  default true), purpose (up to 200 characters; required when business),
+  passengers (0–8, default 0; business passengers for the passenger
+  rate), notes (optional, up to 500), created/updated (UTC). Index
+  `(vehicle_id, travelled_on)` and `(created_by, travelled_on)`.
+- A trip **writes no odometer reading**. Its odometer values are kept as
+  evidence on the trip. The mileage log stays the only distance series,
+  so readings, plausibility and every existing figure are unchanged.
+- Trips take attachments (owner type `trip`: a parking or toll receipt
+  for the journey).
 >
-> **SavedJourney** (Phase 22)
-> - id, user_id (`ON DELETE CASCADE`), from_place, to_place, distance_km
->   (one way), is_return_default (bool), purpose_default (optional),
->   is_business_default (bool), sort_order, created/updated (UTC). A
->   journey belongs to a user, not a vehicle. Deleting it leaves the trips
->   logged from it.
+**SavedJourney** (Phase 22)
+- id, user_id (`ON DELETE CASCADE`), from_place, to_place, distance_km
+  (one way), is_return_default (bool), purpose_default (optional),
+  is_business_default (bool), sort_order, created/updated (UTC). A
+  journey belongs to a user, not a vehicle. Deleting it leaves the trips
+  logged from it.
 >
-> **MileageRateSet** (Phase 22)
-> - id, user_id (`ON DELETE CASCADE`), effective_from (calendar date),
->   distance_unit (`mi`|`km`), currency (ISO 4217), car_rate (per unit),
->   car_threshold (optional: units per tax year at car_rate), car_rate_after
->   (optional; needed when a threshold is set), bike_rate (optional; null =
->   bikes use car_rate with no threshold), passenger_rate (optional, per
->   passenger per unit), employer_car_rate and employer_bike_rate (optional:
->   what the user's employer pays), source (optional free text, "HMRC
->   approved mileage allowance payments"), created/updated (UTC). All rates
->   are `decimal(10,4)`. `(user_id, effective_from)` is unique.
-> - The set in effect on a trip's date is the latest `effective_from` on or
->   before it. A trip before the earliest set has no value.
+**MileageRateSet** (Phase 22)
+- id, user_id (`ON DELETE CASCADE`), effective_from (calendar date),
+  distance_unit (`mi`|`km`), currency (ISO 4217), car_rate (per unit),
+  car_threshold (optional: units per tax year at car_rate), car_rate_after
+  (optional; needed when a threshold is set), bike_rate (optional; null =
+  bikes use car_rate with no threshold), passenger_rate (optional, per
+  passenger per unit), employer_car_rate and employer_bike_rate (optional:
+  what the user's employer pays), source (optional free text, "HMRC
+  approved mileage allowance payments"), created/updated (UTC). All rates
+  are `decimal(10,4)`. `(user_id, effective_from)` is unique.
+- The set in effect on a trip's date is the latest `effective_from` on or
+  before it. A trip before the earliest set has no value.
 >
-> **User** gains trip settings, stored as a user-scope setting `trips`:
-> tax year start (`MM-DD`; default `04-06` when the user's locale region is
-> GB, else `01-01`) and the claim report's declaration text (optional).
+**User** gains trip settings, stored as a user-scope setting `trips`:
+tax year start (`MM-DD`; default `04-06` when the user's locale region is
+GB, else `01-01`) and the claim report's declaration text (optional).
 
 ### §7.22 Trips (new)
 
-> - **Module** `trips`, switchable like the others (§7.10) and **off by
->   default** (`FEATURES_TRIPS`, default `false`). Most owners never claim
->   mileage, and a new tab on every vehicle would be clutter. Switching it
->   off hides the tab, chooser item, widget, report sections and API routes
->   (404), and keeps the data.
-> - **Trips tab** (`/vehicles/{id}/trips`), after Mileage: this tax year's
->   business and private distance and claim value at the top, then trips
->   newest first (25 per page) with date, journey ("Ballymena → Belfast",
->   "Ballymena → Belfast → Ballymena" for a return), distance, purpose, a
->   business or private badge, a paperclip, and *Log again*. The shared
->   toolbar has *Export CSV*, *Import CSV* and *Log trip*.
-> - **Trip form** (a page and a desktop modal, §5): date (default today),
->   *Saved journey* (a select that fills from, to, distance, return, purpose
->   and business; without JS, `?journey=<id>` pre-fills the page), from,
->   to, *Return journey*, distance **or** start and end odometer (both in
->   the owner's distance unit), *Business trip* (ticked by default),
->   purpose, passengers, notes, attachments, and *Save as a journey*.
->   - With return ticked, the distance field is labelled "one way" and the
->     stored distance is doubled. The list shows the round trip.
->   - Validation: from and to are required; distance > 0; with both
->     odometers, the end must be greater than the start, and a typed
->     distance that disagrees by more than 0.5 is refused ("The odometer
->     says 54.2 mi; the distance says 60 mi"); a business trip needs a
->     purpose; the date is not in the future; archived vehicles take no new
->     trips.
->   - **Hint** under *Business trip*: "Travel between home and your usual
->     workplace is normally commuting, not business mileage." It is shown
->     for GB, and in German with the equivalent wording. The app never
->     judges it.
->   - **Warning** (never blocking) when a trip's distance is more than the
->     vehicle's distance driven that day, if readings on both sides of the
->     day exist.
-> - **Log again** opens the form with every field but the date and odometers
->   copied.
-> - **Saved journeys** are managed under Settings → Trips: rename, reorder,
->   delete. They are also created by *Save as a journey*.
-> - **Business and private split** for a vehicle and period:
->   - business = the sum of business trips;
->   - total = the period's *distance driven* (§7.7), per vehicle;
->   - private = total − business, and never below 0.
->   When business is more than the total (readings too sparse), private
->   shows "—" with "Your trips add up to more than the mileage log shows
->   for this period. Add an odometer reading to fix it." Logged private
->   trips are listed but never change the split, which always comes from
->   the mileage log.
-> - **Mileage tab:** the summary gains *Business* and *Private* for this tax
->   year (module on).
-> - **Reports** (§7.7): *Business mileage*: distance, claim value, and
->   business share of the total per vehicle for the period, and the fleet
->   total.
-> - **Dashboard widget** *Business mileage*: this tax year's business
->   distance, the value so far, and distance to the rate threshold ("6,418
->   mi until the 25p rate").
-> - **History** (§7.16): a *Trips* chip. Trips show under that chip only,
->   never under *Everything*, in *Recent activity*, the print view or the
->   sale pack. Frequent drivers would otherwise flood the history, and
->   trips are location history.
-> - **Access** (Phase 19): logging needs `Log`. A user always sees their
->   own trips. Other people's trips on a vehicle are visible only with
->   `Manage` or `Own` (a new `ViewOthersTrips` ability in the Phase 18.1
->   policy), because destinations are personal. The split's business
->   figure counts every trip, and a user who cannot see some of them sees
->   the total only.
+- **Module** `trips`, switchable like the others (§7.10) and **off by
+  default** (`FEATURES_TRIPS`, default `false`). Most owners never claim
+  mileage, and a new tab on every vehicle would be clutter. Switching it
+  off hides the tab, chooser item, widget, report sections and API routes
+  (404), and keeps the data.
+- **Trips tab** (`/vehicles/{id}/trips`), after Mileage: this tax year's
+  business and private distance and claim value at the top, then trips
+  newest first (25 per page) with date, journey ("Ballymena → Belfast",
+  "Ballymena → Belfast → Ballymena" for a return), distance, purpose, a
+  business or private badge, a paperclip, and *Log again*. The shared
+  toolbar has *Export CSV*, *Import CSV* and *Log trip*.
+- **Trip form** (a page and a desktop modal, §5): date (default today),
+  *Saved journey* (a select that fills from, to, distance, return, purpose
+  and business; without JS, `?journey=<id>` pre-fills the page), from,
+  to, *Return journey*, distance **or** start and end odometer (both in
+  the owner's distance unit), *Business trip* (ticked by default),
+  purpose, passengers, notes, attachments, and *Save as a journey*.
+  - With return ticked, the distance field is labelled "one way" and the
+    stored distance is doubled. The list shows the round trip.
+  - Validation: from and to are required; distance 0; with both
+    odometers, the end must be greater than the start, and a typed
+    distance that disagrees by more than 0.5 is refused ("The odometer
+    says 54.2 mi; the distance says 60 mi"); a business trip needs a
+    purpose; the date is not in the future; archived vehicles take no new
+    trips.
+  - **Hint** under *Business trip*: "Travel between home and your usual
+    workplace is normally commuting, not business mileage." It is shown
+    for GB, and in German with the equivalent wording. The app never
+    judges it.
+  - **Warning** (never blocking) when a trip's distance is more than the
+    vehicle's distance driven that day, if readings on both sides of the
+    day exist.
+- **Log again** opens the form with every field but the date and odometers
+  copied.
+- **Saved journeys** are managed under Settings → Trips: rename, reorder,
+  delete. They are also created by *Save as a journey*.
+- **Business and private split** for a vehicle and period:
+  - business = the sum of business trips;
+  - total = the period's *distance driven* (§7.7), per vehicle;
+  - private = total − business, and never below 0.
+  When business is more than the total (readings too sparse), private
+  shows "—" with "Your trips add up to more than the mileage log shows
+  for this period. Add an odometer reading to fix it." Logged private
+  trips are listed but never change the split, which always comes from
+  the mileage log.
+- **Mileage tab:** the summary gains *Business* and *Private* for this tax
+  year (module on).
+- **Reports** (§7.7): *Business mileage*: distance, claim value, and
+  business share of the total per vehicle for the period, and the fleet
+  total.
+- **Dashboard widget** *Business mileage*: this tax year's business
+  distance, the value so far, and distance to the rate threshold ("6,418
+  mi until the 25p rate").
+- **History** (§7.16): a *Trips* chip. Trips show under that chip only,
+  never under *Everything*, in *Recent activity*, the print view or the
+  sale pack. Frequent drivers would otherwise flood the history, and
+  trips are location history.
+- **Access** (Phase 19): logging needs `Log`. A user always sees their
+  own trips. Other people's trips on a vehicle are visible only with
+  `Manage` or `Own` (a new `ViewOthersTrips` ability in the Phase 18.1
+  policy), because destinations are personal. The split's business
+  figure counts every trip, and a user who cannot see some of them sees
+  the total only.
 
 ### §7.23 Mileage rates and the claim report (new)
 
-> - **Rates** (Settings → Trips → *Mileage rates*): the user's rate sets,
->   newest first, with add, edit and delete. The add form pre-fills from the
->   set in effect today.
-> - **Provided for GB users.** When a user with a GB locale region first
->   switches trips on or opens the rates page with none, they get two sets
->   (`source` "HMRC approved mileage allowance payments", miles, GBP):
->   - from 6 Apr 2011: cars 0.45 for the first 10,000 miles in the tax year,
->     then 0.25; bikes 0.24; passengers 0.05;
->   - from 6 Apr 2026: cars 0.55 for the first 10,000, then 0.25; bikes
->     0.24; passengers 0.05.
->   These are ordinary rows the user can edit. No release ever changes a
->   user's rates silently; new official rates are added by the user or
->   announced in the changelog. Other regions start with none and the page
->   explains how to add one.
-> - **Tax year:** from the user's tax year start. A GB tax year runs from
->   6 April to 5 April and is labelled "2026/27"; others are labelled by
->   their calendar years.
-> - **Valuing trips** (derived on every read, never stored):
->   - Only business trips are valued, and only the claimant's own
->     (`created_by`).
->   - Each trip uses the rate set in effect on its date, in that set's unit
->     (km converted exactly, never through floats) and currency.
->   - **Threshold:** for `car` vehicles, the claimant's business distance is
->     accumulated across all their cars through the tax year, by date then
->     by when logged. The trip that crosses the threshold is split: the part
->     below at `car_rate`, the rest at `car_rate_after`. The accumulation
->     restarts each tax year. A rate change mid-year (as on 6 Apr 2026)
->     keeps the year's running total.
->   - `bike` vehicles use `bike_rate` with no threshold, and do not count
->     towards the car threshold.
->   - Passengers: `passengers × distance × passenger_rate`.
->   - Amounts are rounded to the minor unit per trip, as a claim form would
->     be, and totals are the sums of those.
-> - **Claim report** (`/trips/claim`, module on): filters for tax year
->   (default the current one), or a custom date range, and vehicles (all by
->   default), as a plain GET form.
->   - Rows, oldest first: date, vehicle registration, journey, purpose,
->     distance, passengers, rate (two lines for a split trip), and amount.
->   - Totals: distance at each rate, passenger amount, total approved
->     amount. With employer rates set: *Paid by employer* (employer rate ×
->     distance) and *Difference*. Where the approved amount is higher, the
->     difference is labelled "Approved amount not paid (you may be able to
->     claim tax relief on this)". Where the employer pays more, "Paid above
->     the approved amount". The report shows figures, not advice.
->   - Private trips never appear.
->   - Mixed currencies (rate sets in different currencies) are totalled
->     separately, as reports already do.
->   - **Print** (Phase 17.2 conventions): the header gives the claimant's
->     display name, the vehicles with registrations, the period, the rate
->     sets used and their source, and the date printed. The optional
->     declaration text and a *Signed* / *Date* line print at the end.
->   - **CSV:** the same rows and columns, amounts as plain decimals, with a
->     header row in the user's language. The file name is
->     `mileage-claim-<tax year>.csv`.
+- **Rates** (Settings → Trips → *Mileage rates*): the user's rate sets,
+  newest first, with add, edit and delete. The add form pre-fills from the
+  set in effect today.
+- **Provided for GB users.** When a user with a GB locale region first
+  switches trips on or opens the rates page with none, they get two sets
+  (`source` "HMRC approved mileage allowance payments", miles, GBP):
+  - from 6 Apr 2011: cars 0.45 for the first 10,000 miles in the tax year,
+    then 0.25; bikes 0.24; passengers 0.05;
+  - from 6 Apr 2026: cars 0.55 for the first 10,000, then 0.25; bikes
+    0.24; passengers 0.05.
+  These are ordinary rows the user can edit. No release ever changes a
+  user's rates silently; new official rates are added by the user or
+  announced in the changelog. Other regions start with none and the page
+  explains how to add one.
+- **Tax year:** from the user's tax year start. A GB tax year runs from
+  6 April to 5 April and is labelled "2026/27"; others are labelled by
+  their calendar years.
+- **Valuing trips** (derived on every read, never stored):
+  - Only business trips are valued, and only the claimant's own
+    (`created_by`).
+  - Each trip uses the rate set in effect on its date, in that set's unit
+    (km converted exactly, never through floats) and currency.
+  - **Threshold:** for `car` vehicles, the claimant's business distance is
+    accumulated across all their cars through the tax year, by date then
+    by when logged. The trip that crosses the threshold is split: the part
+    below at `car_rate`, the rest at `car_rate_after`. The accumulation
+    restarts each tax year. A rate change mid-year (as on 6 Apr 2026)
+    keeps the year's running total.
+  - `bike` vehicles use `bike_rate` with no threshold, and do not count
+    towards the car threshold.
+  - Passengers: `passengers × distance × passenger_rate`.
+  - Amounts are rounded to the minor unit per trip, as a claim form would
+    be, and totals are the sums of those.
+- **Claim report** (`/trips/claim`, module on): filters for tax year
+  (default the current one), or a custom date range, and vehicles (all by
+  default), as a plain GET form.
+  - Rows, oldest first: date, vehicle registration, journey, purpose,
+    distance, passengers, rate (two lines for a split trip), and amount.
+  - Totals: distance at each rate, passenger amount, total approved
+    amount. With employer rates set: *Paid by employer* (employer rate ×
+    distance) and *Difference*. Where the approved amount is higher, the
+    difference is labelled "Approved amount not paid (you may be able to
+    claim tax relief on this)". Where the employer pays more, "Paid above
+    the approved amount". The report shows figures, not advice.
+  - Private trips never appear.
+  - Mixed currencies (rate sets in different currencies) are totalled
+    separately, as reports already do.
+  - **Print** (Phase 17.2 conventions): the header gives the claimant's
+    display name, the vehicles with registrations, the period, the rate
+    sets used and their source, and the date printed. The optional
+    declaration text and a *Signed* / *Date* line print at the end.
+  - **CSV:** the same rows and columns, amounts as plain decimals, with a
+    header row in the user's language. The file name is
+    `mileage-claim-<tax year>.csv`.
 
 ### §7.13 Import and export, §7.20 API, backup
 
-> - Trips join CSV export and import (`/vehicles/{id}/import/trips`), read
->   by the same parser as the form. The duplicate key is date, from, to and
->   distance. Import sets `created_by` to the importing user.
-> - API: `GET/POST /api/v1/vehicles/{id}/trips`, `GET /api/v1/trips/claim`
->   (the report's figures). A POST's duplicate key matches the import's, so
->   retries are safe. An iPhone Shortcut can log "Ballymena → Belfast" from
->   a saved journey (`journey_id`).
-> - Backups carry `trips`, `saved_journeys`, `mileage_rate_sets` and `trip`
->   attachments. The schema version moves.
+- Trips join CSV export and import (`/vehicles/{id}/import/trips`), read
+  by the same parser as the form. The duplicate key is date, from, to and
+  distance. Import sets `created_by` to the importing user.
+- API: `GET/POST /api/v1/vehicles/{id}/trips`, `GET /api/v1/trips/claim`
+  (the report's figures). A POST's duplicate key matches the import's, so
+  retries are safe. An iPhone Shortcut can log "Ballymena → Belfast" from
+  a saved journey (`journey_id`).
+- Backups carry `trips`, `saved_journeys`, `mileage_rate_sets` and `trip`
+  attachments. The schema version moves.
 
 Update §12: remove the trip-log line.
 
