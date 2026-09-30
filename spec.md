@@ -3024,6 +3024,11 @@ Real environment variables override `.env`; an empty value counts as unset.
   (#21).
 - Recurring expenses (road tax, permits) with a repeat interval, shown in
   *Coming up* (#24).
+- Trips (Phase 22): an *Employer* per trip with its own rates and mileage
+  threshold, for people with more than one employment (#43); a native
+  .xlsx claim export (#44).
+- A `van` vehicle type (#46). Vans are logged as `car`, which has the same
+  approved mileage rates.
 
 ---
 

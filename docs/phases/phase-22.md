@@ -76,14 +76,14 @@ questions*) and [`spec.md`](../../spec.md) §5, §6, §7.2, §7.7, §7.10, §7.1
   so readings, plausibility and every existing figure are unchanged.
 - Trips take attachments (owner type `trip`: a parking or toll receipt
   for the journey).
->
+
 **SavedJourney** (Phase 22)
 - id, user_id (`ON DELETE CASCADE`), from_place, to_place, distance_km
   (one way), is_return_default (bool), purpose_default (optional),
   is_business_default (bool), sort_order, created/updated (UTC). A
   journey belongs to a user, not a vehicle. Deleting it leaves the trips
   logged from it.
->
+
 **MileageRateSet** (Phase 22)
 - id, user_id (`ON DELETE CASCADE`), effective_from (calendar date),
   distance_unit (`mi`|`km`), currency (ISO 4217), car_rate (per unit),
@@ -96,7 +96,7 @@ questions*) and [`spec.md`](../../spec.md) §5, §6, §7.2, §7.7, §7.10, §7.1
   are `decimal(10,4)`. `(user_id, effective_from)` is unique.
 - The set in effect on a trip's date is the latest `effective_from` on or
   before it. A trip before the earliest set has no value.
->
+
 **User** gains trip settings, stored as a user-scope setting `trips`:
 tax year start (`MM-DD`; default `04-06` when the user's locale region is
 GB, else `01-01`) and the claim report's declaration text (optional).
@@ -384,11 +384,20 @@ Update §12: remove the trip-log line.
 - **More than one employment:** the 10,000-mile threshold applies per
   employment. Should a trip carry an optional *Employer* (with its own rate
   and threshold), or is one threshold per person enough for now?
+  *Decided 2026-09-30: one threshold per person, across all their cars.
+  Employers with their own threshold are parked in spec §12.*
 - **Excel:** is CSV enough, or should the claim export a real .xlsx
   (PhpSpreadsheet, pure PHP but large)?
+  *Decided 2026-09-30: CSV only. A native .xlsx is parked in spec §12.*
 - **Default off:** should `trips` be on by default for GB-locale users
   only, instead of off for everyone?
+  *Decided 2026-09-30: off for everyone (`FEATURES_TRIPS=false`).*
 - **Van type:** vans share the car rates. Is a `van` vehicle type wanted,
   or do vans stay as `car`?
+  *Decided 2026-09-30: vans stay as `car`. A `van` type is parked in spec
+  §12.*
 - **Cost per business mile:** cost of ownership per distance (drafted:
   running costs plus depreciation), or running costs only?
+  *Answered 2026-09-30: cost of ownership per distance, as decided for
+  Phase 14.2's question (log #23). Spec §7.7 already falls back to running
+  costs alone when a vehicle has no value.*
