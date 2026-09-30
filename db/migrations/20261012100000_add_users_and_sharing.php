@@ -125,11 +125,13 @@ final class AddUsersAndSharing extends AbstractMigration
         }
 
         // Everything 1.x recorded was the owner's (a correlated subquery, portable to every engine).
+        // A derived odometer reading has no author of its own: its entry's is.
         foreach (self::AUTHORED as $table => $column) {
             $this->execute(sprintf(
-                'UPDATE %1$s SET %2$s = (SELECT v.user_id FROM vehicles v WHERE v.id = %1$s.vehicle_id) WHERE %2$s IS NULL',
+                'UPDATE %1$s SET %2$s = (SELECT v.user_id FROM vehicles v WHERE v.id = %1$s.vehicle_id) WHERE %2$s IS NULL%3$s',
                 $table,
                 $column,
+                $table === 'odometer_readings' ? " AND source = 'manual'" : '',
             ));
         }
 
