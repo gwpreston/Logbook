@@ -36,6 +36,8 @@
             </div>
         </header>
 
+        {{ ui.costs_excluded_note() }}
+
         {# The dashboard's vehicle chips (spec.md §7.8): plain links. #}
         {% if vehicles|length > 1 %}
             <nav class="vehicle-filter" aria-label="{{ 'dashboard.filter.label'|trans }}">

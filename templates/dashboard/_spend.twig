@@ -1,5 +1,6 @@
 {# Spend this month, per currency and group, against last month. #}
 {% import 'macros/expenses.twig' as exp %}
+{% import 'macros/ui.twig' as ui %}
 {% set current = dashboard.spendThisMonth %}
 {% set previous = dashboard.spendLastMonth %}
 {% for section in current ? current.currencies : [] %}
@@ -26,3 +27,4 @@
         {% endif %}
     </div>
 {% endfor %}
+{{ ui.costs_excluded_note() }}

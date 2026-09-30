@@ -24,7 +24,7 @@
                 {% if valuations is not empty %}
                     <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'valuations'}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
                 {% endif %}
-                <a class="btn btn--primary" href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'valuation.add'|trans }}</a>
+                {% if can_vehicle(vehicle, 'manage') %}<a class="btn btn--primary" href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'valuation.add'|trans }}</a>{% endif %}
             </div>
         </div>
 
@@ -41,7 +41,13 @@
                         <li class="list__item">
                             <span class="list__icon">{{ ui.icon('price_check') }}</span>
                             <span class="list__body">
-                                <span class="list__title"><a href="{{ url_for('valuations.edit', {id: vehicle.id, entry: valuation.id}) }}" data-modal>{{ valuation.data.source ?: 'valuation.untitled'|trans }}</a></span>
+                                <span class="list__title">
+                                    {%- if can_vehicle(vehicle, 'manage') -%}
+                                        <a href="{{ url_for('valuations.edit', {id: vehicle.id, entry: valuation.id}) }}" data-modal>{{ valuation.data.source ?: 'valuation.untitled'|trans }}</a>
+                                    {%- else -%}
+                                        {{ valuation.data.source ?: 'valuation.untitled'|trans }}
+                                    {%- endif -%}
+                                </span>
                                 <span class="list__meta truncate"{% if valuation.data.notes %} title="{{ valuation.data.notes }}"{% endif %}>
                                     {{- valuation.data.valuedOn|local_date }}
                                     {%- if valuation.data.notes %} · {{ valuation.data.notes }}{% endif -%}

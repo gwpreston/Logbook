@@ -72,7 +72,11 @@
     <li class="list__item schedule">
         <span class="list__icon">{{ ui.icon(schedule.data.category.icon()) }}</span>
         <span class="list__body">
-            <a class="list__title" href="{{ url_for('maintenance.schedules.edit', {id: vehicle.id, schedule: schedule.id}) }}" data-modal>{{ schedule.data.title }}</a>
+            {% if can_vehicle(vehicle, 'manage') %}
+                <a class="list__title" href="{{ url_for('maintenance.schedules.edit', {id: vehicle.id, schedule: schedule.id}) }}" data-modal>{{ schedule.data.title }}</a>
+            {% else %}
+                <span class="list__title">{{ schedule.data.title }}</span>
+            {% endif %}
             <span class="list__meta">{{ maint.interval(schedule) }}</span>
             <span class="list__meta">{{ maint.next_due(schedule) }}</span>
             <span class="list__meta">{{ maint.last_done(schedule) }}</span>

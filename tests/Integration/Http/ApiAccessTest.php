@@ -216,6 +216,11 @@ final class ApiAccessTest extends AppTestCase
         $this->maintenance($app, $golf, '2026-09-05', 'Annual service', '187.43', '10200');
         $this->document($app, $golf, ComplianceType::Insurance, '2026-09-01', '2027-08-31', '243.19');
         $this->expense($app, $golf, '2026-09-12', '12.91', ExpenseCategory::Parking);
+        // Added by someone else: a user's own entries always carry their amounts (Phase 19).
+        $author = $this->createMember($app, 'author');
+        foreach (['fuel_entries', 'maintenance_entries', 'compliance_documents', 'expense_entries'] as $table) {
+            $this->connection($app)->update($table, ['created_by' => $author->id], ['vehicle_id' => $golf->id]);
+        }
 
         return $golf;
     }

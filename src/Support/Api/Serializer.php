@@ -114,6 +114,7 @@ final class Serializer
         ?SegmentCheck $check,
         string $currency,
         bool $costs,
+        bool $ownAmount = false,
     ): array {
         $data = $entry->data;
         $electric = $data->fuel->isElectric();
@@ -141,7 +142,8 @@ final class Serializer
             'created_at' => self::instant($entry->createdAt),
             'updated_at' => self::instant($entry->updatedAt),
         ];
-        if ($costs) {
+        // The fill-up's own amounts also for whoever added it (spec.md §7.21); the segment's cost is ViewCosts only.
+        if ($costs || $ownAmount) {
             $out['currency'] = $currency;
             $out['price_per_unit'] = self::dec($data->pricePerUnit, self::PRICE_SCALE);
             $out['total_cost'] = self::dec($data->totalCost, self::QUANTITY_SCALE);

@@ -6,7 +6,9 @@ namespace Logbook\Service\Access;
 
 use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
+use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Sharing\AuthorLabels;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -21,6 +23,8 @@ use Twig\TwigFunction;
  * - `can_vehicle(vehicle, 'manage')`: links and buttons that need an ability.
  * - `can_change(vehicle, entry.createdBy)`: an entry's edit and delete links.
  * - `added_by(vehicle, entry.createdBy)`: who to name, or null (see AuthorLabels).
+ * - `costs_excluded()`: how many of one's active vehicles fleet cost figures
+ *   leave out for want of ViewCosts ("Excludes 1 vehicle shared without costs").
  * - `can_instance('backup')`: links to install-wide pages.
  *
  * All are false (added_by null) when nobody is signed in.
@@ -33,6 +37,7 @@ final class AccessTwigExtension extends AbstractExtension
         private readonly InstanceAccess $instance,
         private readonly EntryAccess $entries,
         private readonly AuthorLabels $authors,
+        private readonly VehicleRepository $repository,
     ) {
     }
 
@@ -63,6 +68,18 @@ final class AccessTwigExtension extends AbstractExtension
                 $user = $this->context->user();
 
                 return $user === null ? null : $this->authors->label($user, $vehicle, $createdBy);
+            }),
+            new TwigFunction('costs_excluded', function (): int {
+                $user = $this->context->user();
+                if ($user === null) {
+                    return 0;
+                }
+                $vehicles = $this->repository->listByIds($this->vehicles->visibleVehicleIds($user, VehicleScope::Active));
+
+                return count(array_filter(
+                    $vehicles,
+                    fn (Vehicle $vehicle): bool => !$this->vehicles->can($user, VehicleAbility::ViewCosts, $vehicle),
+                ));
             }),
             new TwigFunction('can_instance', function (string $ability): bool {
                 $user = $this->context->user();

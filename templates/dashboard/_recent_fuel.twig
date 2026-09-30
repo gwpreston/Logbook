@@ -14,14 +14,19 @@
             <li class="list__item">
                 <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
                 <span class="list__body">
-                    <span class="list__title"><a href="{{ url_for('fuel.edit', {id: row.vehicle.id, entry: fill.entry.id}) }}" data-modal>{{ row.vehicle.name() }}</a> {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
+                    <span class="list__title">
+                        {%- if can_change(row.vehicle, fill.entry.createdBy) -%}
+                            <a href="{{ url_for('fuel.edit', {id: row.vehicle.id, entry: fill.entry.id}) }}" data-modal>{{ row.vehicle.name() }}</a>
+                        {%- else -%}
+                            {{ row.vehicle.name() }}
+                        {%- endif %} {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
                     <span class="list__meta">
                         {{- data.filledAt|instant_date }} · {{ data.volume|quantity(electric) -}}
                         {%- if segment %} · {{ segment.distanceKm|economy(segment.volume, electric) }}{% endif -%}
                         {%- if row.check %} {{ fuel_ui.check_mark(row.check) }}{% endif -%}
                     </span>
                 </span>
-                {% if can_see_costs(row.vehicle) %}<span class="list__end"><span class="list__amount tabular">{{ data.totalCost|money(row.currency) }}</span></span>{% endif %}
+                {% if can_see_amount(row.vehicle, fill.entry.createdBy) %}<span class="list__end"><span class="list__amount tabular">{{ data.totalCost|money(row.currency) }}</span></span>{% endif %}
             </li>
         {% endfor %}
     </ul>
