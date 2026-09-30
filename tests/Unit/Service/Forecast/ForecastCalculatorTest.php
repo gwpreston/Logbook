@@ -51,7 +51,7 @@ use Logbook\Tests\Support\MutableClock;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Coming up (phase-15.md §15.7): schedules with repeats, documents at their
+ * Coming up (docs/phases/phase-15.md §15.7): schedules with repeats, documents at their
  * term, tyres and manual reminders, last time's costs, the fuel estimate and
  * the horizon. Today is 1 Oct 2026 throughout unless a test says otherwise.
  */

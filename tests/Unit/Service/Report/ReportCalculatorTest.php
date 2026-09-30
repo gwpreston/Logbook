@@ -46,7 +46,7 @@ use Logbook\Support\Units\UnitPreset;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Aggregation is where wrong totals hide (phase-5.md): exact sums per
+ * Aggregation is where wrong totals hide (docs/phases/phase-5.md): exact sums per
  * currency, costs dated on the owner's calendar (across DST changes), the
  * per-month series, distance from the mileage log, and archived vehicles
  * left out unless asked for.

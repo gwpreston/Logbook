@@ -1,7 +1,7 @@
 # Logbook Vehicle Tracker — Specification (`spec.md`)
 
 Source of truth for what the app does and how it is structured. Companion:
-`CLAUDE.md` (how to work in the repo) and the `phase-*.md` files (build order).
+`CLAUDE.md` (how to work in the repo) and the files in `docs/phases/` (build order).
 Update this document before adding or changing a feature.
 
 ---
@@ -2864,7 +2864,7 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ---
 
-## 13. Build phases (each becomes a `phase-*.md`)
+## 13. Build phases (each becomes a `docs/phases/phase-*.md`)
 
 Each phase must be independently runnable and leave the app working. Detailed
 task breakdowns live in the per-phase files; this is the map.

@@ -7,9 +7,9 @@ reports, on a rearrangeable dashboard).
 
 The work is split into **independently runnable phases**: each phase leaves the
 app working, tested on both MySQL and PostgreSQL, and deployable via Docker or a
-bare PHP 8.4 server. Detailed task breakdowns live in the `phase-*.md` files;
-the *what* and *why* live in [`spec.md`](spec.md); repo conventions live in
-[`CLAUDE.md`](CLAUDE.md).
+bare PHP 8.4 server. Detailed task breakdowns live in
+[`docs/phases/`](docs/phases/); the *what* and *why* live in
+[`spec.md`](spec.md); repo conventions live in [`CLAUDE.md`](CLAUDE.md).
 
 **Stack:** PHP 8.4 · Slim 4 · PHP-DI · Doctrine DBAL · Phinx · Twig ·
 symfony/translation · Monolog · Alpine.js / Chart.js / SortableJS. Server-
@@ -21,35 +21,35 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 
 | Phase | Theme | Status |
 |------:|-------|:------:|
-| [0](phase-0.md) | Foundations | ✅ |
-| [1](phase-1.md) | Authentication + Garage | ✅ |
-| [2](phase-2.md) | Odometer + Fuel | ✅ |
-| [3](phase-3.md) | Maintenance + Compliance | ✅ |
-| [4](phase-4.md) | Reminders + Notifications | ✅ |
-| [5](phase-5.md) | Expenses + Reports + Dashboard | ✅ |
-| [6](phase-6.md) | Feature toggles + Import/backup + polish | ✅ |
-| [7](phase-7.md) | Design alignment + dashboard enhancements | ✅ |
-| [8](phase-8.md) | Fuel grades + v1.0 release | ✅ |
-| [9.1](phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | ✅ |
-| [9.2](phase-9.2.md) | Plug-in hybrids + v1.1 release | ✅ |
-| [10](phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
-| [10.2](phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
-| [11.1](phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
-| [11.2](phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
-| [12](phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | ✅ |
-| [13](phase-13.md) | Economy checks + v1.5 release | ✅ |
-| [14.1](phase-14.1.md) | Valuations and depreciation | ✅ |
-| [14.2](phase-14.2.md) | Total cost of ownership + v1.6 release | ✅ |
-| [15](phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | ✅ |
-| [16](phase-16.md) | Fuel insights + v1.8 release | ✅ |
-| [17.1](phase-17.1.md) | Sale pack | ✅ |
-| [17.2](phase-17.2.md) | Printable reports + v1.9 release | ✅ |
-| [18.1](phase-18.1.md) | Access policy | ✅ |
-| [18.2](phase-18.2.md) | REST API v1 + v1.10 release | ✅ |
-| [19](phase-19.md) | Multiple users and vehicle sharing + v2.0 release | ✅ |
-| [20](phase-20.md) | Phase files into `docs/phases/`, open-questions review | 📋 |
-| [21.1](phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | 📋 |
-| [21.2](phase-21.2.md) | First MOT due + v2.1 release | 📋 |
+| [0](docs/phases/phase-0.md) | Foundations | ✅ |
+| [1](docs/phases/phase-1.md) | Authentication + Garage | ✅ |
+| [2](docs/phases/phase-2.md) | Odometer + Fuel | ✅ |
+| [3](docs/phases/phase-3.md) | Maintenance + Compliance | ✅ |
+| [4](docs/phases/phase-4.md) | Reminders + Notifications | ✅ |
+| [5](docs/phases/phase-5.md) | Expenses + Reports + Dashboard | ✅ |
+| [6](docs/phases/phase-6.md) | Feature toggles + Import/backup + polish | ✅ |
+| [7](docs/phases/phase-7.md) | Design alignment + dashboard enhancements | ✅ |
+| [8](docs/phases/phase-8.md) | Fuel grades + v1.0 release | ✅ |
+| [9.1](docs/phases/phase-9.1.md) | Vehicle details: variant, first registration, starting mileage | ✅ |
+| [9.2](docs/phases/phase-9.2.md) | Plug-in hybrids + v1.1 release | ✅ |
+| [10](docs/phases/phase-10.md) | Vehicle history + multiple attachments + v1.2 release | ✅ |
+| [10.2](docs/phases/phase-10.2.md) | Tall vehicle photos keep the layout + v1.2.1 | ✅ |
+| [11.1](docs/phases/phase-11.1.md) | Tyres: fitted, stored, distance per tyre | ✅ |
+| [11.2](docs/phases/phase-11.2.md) | Tread depth, wear and age reminders + v1.3 release | ✅ |
+| [12](docs/phases/phase-12.md) | Buyer-first print, ownership paperwork, dated starting mileage + v1.4 release | ✅ |
+| [13](docs/phases/phase-13.md) | Economy checks + v1.5 release | ✅ |
+| [14.1](docs/phases/phase-14.1.md) | Valuations and depreciation | ✅ |
+| [14.2](docs/phases/phase-14.2.md) | Total cost of ownership + v1.6 release | ✅ |
+| [15](docs/phases/phase-15.md) | Coming up: maintenance and cost forecast + v1.7 release | ✅ |
+| [16](docs/phases/phase-16.md) | Fuel insights + v1.8 release | ✅ |
+| [17.1](docs/phases/phase-17.1.md) | Sale pack | ✅ |
+| [17.2](docs/phases/phase-17.2.md) | Printable reports + v1.9 release | ✅ |
+| [18.1](docs/phases/phase-18.1.md) | Access policy | ✅ |
+| [18.2](docs/phases/phase-18.2.md) | REST API v1 + v1.10 release | ✅ |
+| [19](docs/phases/phase-19.md) | Multiple users and vehicle sharing + v2.0 release | ✅ |
+| [20](docs/phases/phase-20.md) | Phase files into `docs/phases/`, open-questions review | 📋 |
+| [21.1](docs/phases/phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | 📋 |
+| [21.2](docs/phases/phase-21.2.md) | First MOT due + v2.1 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -66,7 +66,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - `GET /health`, Docker (multi-arch incl. ARM) + bare-PHP run paths, CI on both
   databases.
 
-→ [`phase-0.md`](phase-0.md)
+→ [`docs/phases/phase-0.md`](docs/phases/phase-0.md)
 
 ## Phase 1 — Authentication + Garage
 *A real single-owner app: set up an account, sign in securely, manage vehicles.*
@@ -78,7 +78,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   (SI storage, conversion at the edges, UK **and** US mpg, zero-cost valid).
 - Per-user preferences: unit system, currency, timezone, locale.
 
-→ [`phase-1.md`](phase-1.md)
+→ [`docs/phases/phase-1.md`](docs/phases/phase-1.md)
 
 ## Phase 2 — Odometer + Fuel
 *Mileage as one coherent series, and fuel logging with trustworthy math.*
@@ -90,7 +90,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   as L/100km, mpg UK, mpg US, and km/L.
 - EV support (kWh + efficiency) via the same entry shape.
 
-→ [`phase-2.md`](phase-2.md)
+→ [`docs/phases/phase-2.md`](docs/phases/phase-2.md)
 
 ## Phase 3 — Maintenance + Compliance
 *Service history with recurring schedules, and compliance documents.*
@@ -105,7 +105,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   maintenance, and compliance, stored outside the web root and served only to
   the owner.
 
-→ [`phase-3.md`](phase-3.md)
+→ [`docs/phases/phase-3.md`](docs/phases/phase-3.md)
 
 ## Phase 4 — Reminders + Notifications
 *Nothing gets missed: reminders that reach you, not just sit in the app.*
@@ -119,7 +119,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   Docker) so re-runs don't spam.
 - Optional monthly digest and an optional authenticated iCal/webcal feed.
 
-→ [`phase-4.md`](phase-4.md)
+→ [`docs/phases/phase-4.md`](docs/phases/phase-4.md)
 
 ## Phase 5 — Expenses + Reports + Dashboard
 *Understand what each vehicle costs, at a glance.*
@@ -132,7 +132,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   user): fleet summary, upcoming reminders, recent fuel, spend this month,
   efficiency trend, compliance status.
 
-→ [`phase-5.md`](phase-5.md)
+→ [`docs/phases/phase-5.md`](docs/phases/phase-5.md)
 
 ## Phase 6 — Feature toggles + Import/backup + polish
 *Finish the self-host story and harden the app.*
@@ -144,7 +144,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Accessibility pass, translation completeness with a second locale shipped, and
   full deployment/upgrade docs.
 
-→ [`phase-6.md`](phase-6.md)
+→ [`docs/phases/phase-6.md`](docs/phases/phase-6.md)
 
 ## Phase 7 — Design alignment + dashboard enhancements
 *Match the design handoff, and make the dashboard answer "how is this car doing?"*
@@ -161,7 +161,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Accent colour setting (Blue, Teal, Indigo, Purple) and the app version in
   the sidebar, Settings and `/health`.
 
-→ [`phase-7.md`](phase-7.md)
+→ [`docs/phases/phase-7.md`](docs/phases/phase-7.md)
 
 ## Phase 8 — Fuel grades + v1.0 release
 *Record which fuel went in, compare what it costs, and cut 1.0.*
@@ -176,7 +176,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Grade in CSV export / import and backups; English and German.
 - Release **v1.0.0**.
 
-→ [`phase-8.md`](phase-8.md)
+→ [`docs/phases/phase-8.md`](docs/phases/phase-8.md)
 
 ## Phase 9.1 — Vehicle details
 *Describe a vehicle precisely and give it a mileage figure from day one.*
@@ -188,7 +188,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Vehicle age and average mileage per year since first registration.
 - No release of its own: ships with Phase 9.2 as **v1.1.0**.
 
-→ [`phase-9.1.md`](phase-9.1.md)
+→ [`docs/phases/phase-9.1.md`](docs/phases/phase-9.1.md)
 
 ## Phase 9.2 — Plug-in hybrids + v1.1 release
 *Only offer charging where it makes sense.*
@@ -201,7 +201,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   stays reachable under *Other fuels*.
 - Release **v1.1.0** (Phases 9.1 and 9.2).
 
-→ [`phase-9.2.md`](phase-9.2.md)
+→ [`docs/phases/phase-9.2.md`](docs/phases/phase-9.2.md)
 
 ## Phase 10 — Vehicle history + multiple attachments + v1.2 release
 *What has happened to this car?*
@@ -218,7 +218,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
   joins the mileage series.
 - Release **v1.2.0**.
 
-→ [`phase-10.md`](phase-10.md)
+→ [`docs/phases/phase-10.md`](docs/phases/phase-10.md)
 
 ## Phase 10.2 — Tall vehicle photos + v1.2.1
 *A portrait photo shouldn't stretch the card.*
@@ -228,7 +228,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 - Every other photo frame checked with tall and very wide photos.
 - Release **v1.2.1**.
 
-→ [`phase-10.2.md`](phase-10.2.md)
+→ [`docs/phases/phase-10.2.md`](docs/phases/phase-10.2.md)
 
 ## Phase 11.1 — Tyres
 *Which tyres are on it, which are in the garage, and how far did the last
@@ -246,7 +246,7 @@ ones go?*
   twice. A Tyres tab, an overview card, history, print and CSV.
 - No release of its own: ships with Phase 11.2 as **v1.3.0**.
 
-→ [`phase-11.1.md`](phase-11.1.md)
+→ [`docs/phases/phase-11.1.md`](docs/phases/phase-11.1.md)
 
 ## Phase 11.2 — Tread depth, wear and age reminders
 *When do these tyres need replacing, before an MOT tester or a wet roundabout
@@ -262,7 +262,7 @@ says so?*
   quiet across fill-ups and reopened by a new check.
 - Released with Phase 11.1 as **v1.3.0**.
 
-→ [`phase-11.2.md`](phase-11.2.md)
+→ [`docs/phases/phase-11.2.md`](docs/phases/phase-11.2.md)
 
 ## Phase 12 — Buyer-first print, ownership paperwork, dated starting mileage
 *Hand the printout to a buyer without thinking twice, and keep the purchase
@@ -278,7 +278,7 @@ invoice with the purchase.*
   Fuel tab cover it).
 - Release **v1.4.0**.
 
-→ [`phase-12.md`](phase-12.md)
+→ [`docs/phases/phase-12.md`](docs/phases/phase-12.md)
 
 ## Phase 13 — Economy checks + v1.5 release
 *Is that tank really that bad, or was the odometer mistyped?*
@@ -292,7 +292,7 @@ invoice with the purchase.*
   are never altered and nothing is sent as a notification.
 - Release **v1.5.0**.
 
-→ [`phase-13.md`](phase-13.md)
+→ [`docs/phases/phase-13.md`](docs/phases/phase-13.md)
 
 ## Phase 14.1 — Valuations and depreciation
 *What is it worth, and what has it lost?*
@@ -306,7 +306,7 @@ invoice with the purchase.*
   the cost ledger.
 - No release of its own: ships with Phase 14.2 as **v1.6.0**.
 
-→ [`phase-14.1.md`](phase-14.1.md)
+→ [`docs/phases/phase-14.1.md`](docs/phases/phase-14.1.md)
 
 ## Phase 14.2 — Total cost of ownership + v1.6 release
 *What has this car really cost?*
@@ -318,7 +318,7 @@ invoice with the purchase.*
 - A *Finance and lease* expense category.
 - Release **v1.6.0** (Phases 14.1 and 14.2).
 
-→ [`phase-14.2.md`](phase-14.2.md)
+→ [`docs/phases/phase-14.2.md`](docs/phases/phase-14.2.md)
 
 ## Phase 15 — Coming up + v1.7 release
 *What is due in the next year, and roughly what will it cost?*
@@ -330,7 +330,7 @@ invoice with the purchase.*
 - A fleet page, an overview card and a dashboard widget; CSV export.
 - Release **v1.7.0**.
 
-→ [`phase-15.md`](phase-15.md)
+→ [`docs/phases/phase-15.md`](docs/phases/phase-15.md)
 
 ## Phase 16 — Fuel insights + v1.8 release
 *Is the dearer fuel worth it, what does a mile really cost, and how much does
@@ -344,7 +344,7 @@ winter take?*
 - *Economy by month*: the seasonal effect, per year and averaged.
 - Nothing new is stored; release **v1.8.0**.
 
-→ [`phase-16.md`](phase-16.md)
+→ [`docs/phases/phase-16.md`](docs/phases/phase-16.md)
 
 ## Phase 17.1 — Sale pack
 *Everything a buyer wants to see, and nothing they shouldn't.*
@@ -358,7 +358,7 @@ winter take?*
   valuations or ownership costs, ever; work costs only on request.
 - No release of its own: ships with Phase 17.2 as **v1.9.0**.
 
-→ [`phase-17.1.md`](phase-17.1.md)
+→ [`docs/phases/phase-17.1.md`](docs/phases/phase-17.1.md)
 
 ## Phase 17.2 — Printable reports + v1.9 release
 *A clean paper or PDF copy of any report, without a PDF library.*
@@ -369,7 +369,7 @@ winter take?*
   charts in a print palette with their tables.
 - Release **v1.9.0** (Phases 17.1 and 17.2).
 
-→ [`phase-17.2.md`](phase-17.2.md)
+→ [`docs/phases/phase-17.2.md`](docs/phases/phase-17.2.md)
 
 ## Phase 18.1 — Access policy
 *One place that decides who may do what, before anyone else can sign in.*
@@ -379,7 +379,7 @@ winter take?*
 - A route inventory test that fails the build for any unclassified route.
 - No visible change and no migration. Ships with Phase 18.2 as **v1.10.0**.
 
-→ [`phase-18.1.md`](phase-18.1.md)
+→ [`docs/phases/phase-18.1.md`](docs/phases/phase-18.1.md)
 
 ## Phase 18.2 — REST API v1 + v1.10 release
 *Let Home Assistant, Shortcuts, Grafana and OBD tools read and log.*
@@ -392,7 +392,7 @@ winter take?*
   Grafana and Node-RED.
 - Release **v1.10.0** (Phases 18.1 and 18.2).
 
-→ [`phase-18.2.md`](phase-18.2.md)
+→ [`docs/phases/phase-18.2.md`](docs/phases/phase-18.2.md)
 
 ## Phase 19 — Multiple users and vehicle sharing + v2.0 release
 *A family garage: everyone sees their own cars and the ones shared with
@@ -406,7 +406,7 @@ them.*
   language and units.
 - Release **v2.0.0**.
 
-→ [`phase-19.md`](phase-19.md)
+→ [`docs/phases/phase-19.md`](docs/phases/phase-19.md)
 
 ## Phase 20 — Phase files into `docs/phases/`, open-questions review
 *A tidier repository, and nothing left undecided by accident.*
@@ -419,7 +419,7 @@ them.*
 - A one-off review of Phases 1–19 into `docs/phases/open-questions.md`.
 - No app change; noted in the 2.1.0 changelog.
 
-→ [`phase-20.md`](phase-20.md)
+→ [`docs/phases/phase-20.md`](docs/phases/phase-20.md)
 
 ## Phase 21.1 — Tyre modals, drag-and-drop files, digest on by default, sale pack cover
 *Small things that make everyday use smoother.*
@@ -432,7 +432,7 @@ them.*
   (off by default).
 - Ships with Phase 21.2 as **v2.1.0**.
 
-→ [`phase-21.1.md`](phase-21.1.md)
+→ [`docs/phases/phase-21.1.md`](docs/phases/phase-21.1.md)
 
 ## Phase 21.2 — First MOT due + v2.1 release
 *A new car's first MOT is the one reminder nobody has paperwork for yet.*
@@ -444,7 +444,7 @@ them.*
   MOT certificate is logged; then the certificate's expiry takes over.
 - Release **v2.1.0** (Phases 20, 21.1 and 21.2).
 
-→ [`phase-21.2.md`](phase-21.2.md)
+→ [`docs/phases/phase-21.2.md`](docs/phases/phase-21.2.md)
 
 ## Phase 23.1 — Single sign-on with OpenID Connect
 *Sign in with the Authelia, Authentik or Keycloak you already run.*
@@ -456,7 +456,7 @@ them.*
 - Local sign-in can be switched off; a CLI break-glass link always works.
 - Ships with Phase 23.2 as **v2.3.0**.
 
-→ [`phase-23.1.md`](phase-23.1.md)
+→ [`docs/phases/phase-23.1.md`](docs/phases/phase-23.1.md)
 
 ## Phase 23.2 — Reverse-proxy header sign-in + v2.3 release
 *When Authelia or Authentik already guards the door, don't ask twice.*
@@ -467,7 +467,7 @@ them.*
   Caddy) and Authentik outposts.
 - Release **v2.3.0** (Phases 23.1 and 23.2).
 
-→ [`phase-23.2.md`](phase-23.2.md)
+→ [`docs/phases/phase-23.2.md`](docs/phases/phase-23.2.md)
 
 ## Phase 24 — Needs attention + v2.4 release
 *What is wrong right now, on one short list, with the fix one tap away.*
@@ -479,7 +479,7 @@ them.*
   health score.
 - Release **v2.4.0**.
 
-→ [`phase-24.md`](phase-24.md)
+→ [`docs/phases/phase-24.md`](docs/phases/phase-24.md)
 
 ---
 

@@ -28,7 +28,7 @@ use Slim\App;
 use Slim\Psr7\UploadedFile;
 
 /**
- * Cost of ownership end to end (phase-14.2.md): the overview card, the
+ * Cost of ownership end to end (docs/phases/phase-14.2.md): the overview card, the
  * ownership report and its CSV, the finance category, modules, and every
  * existing report figure left as it was. The owner uses UK units and GBP;
  * "today" is 1 Sep 2026.

@@ -47,7 +47,7 @@ use Psr\Container\ContainerInterface;
 use Slim\App;
 
 /**
- * Coming up end to end (phase-15.md §15.7): the page with and without JS,
+ * Coming up end to end (docs/phases/phase-15.md §15.7): the page with and without JS,
  * the chips, the CSV, the overview card and the dashboard widget; each
  * module off removes its items; archived vehicles raise nothing; currencies
  * stay apart; and reminders and notifications are left exactly as they

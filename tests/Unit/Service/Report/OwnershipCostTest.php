@@ -48,7 +48,7 @@ use Logbook\Support\Units\UnitPreset;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Cost of ownership (phase-14.2.md): the ownership period, running costs
+ * Cost of ownership (docs/phases/phase-14.2.md): the ownership period, running costs
  * plus depreciation each over its own period, and nothing shown as complete
  * when a part is missing.
  */
