@@ -31,6 +31,7 @@
             <p class="field__hint">{{ 'backup.download_hint'|trans }}</p>
         </section>
 
+        {% if can_instance('restore') %}
         <section class="card" aria-labelledby="restore-heading">
             <h2 id="restore-heading" class="card__title">{{ 'backup.restore_heading'|trans }}</h2>
             <div class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'backup.restore_warning'|trans }}</span></div>
@@ -52,6 +53,7 @@
             {% endif %}
             <p class="field__hint">{{ 'backup.safety_note'|trans({path: backup_path}) }}</p>
         </section>
+        {% endif %}
 
         <section class="card card--quiet" aria-labelledby="cli-heading">
             <h2 id="cli-heading" class="card__title">{{ 'backup.cli_heading'|trans }}</h2>

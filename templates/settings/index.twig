@@ -166,9 +166,11 @@
             </ul>
         </section>
 
+        {% if can_instance('manage_modules') or can_instance('backup') %}
         <section class="card" aria-labelledby="data-heading">
             <h2 id="data-heading" class="card__title">{{ 'settings.data_heading'|trans }}</h2>
             <ul class="list">
+                {% if can_instance('manage_modules') %}
                 <li>
                     <a class="list__item" href="{{ url_for('settings.modules') }}">
                         <span class="list__icon">{{ ui.icon('tune') }}</span>
@@ -179,6 +181,8 @@
                         {{ ui.icon('arrow_forward', 'list__trail') }}
                     </a>
                 </li>
+                {% endif %}
+                {% if can_instance('backup') %}
                 <li>
                     <a class="list__item" href="{{ url_for('backup.index') }}">
                         <span class="list__icon">{{ ui.icon('backup') }}</span>
@@ -189,8 +193,10 @@
                         {{ ui.icon('arrow_forward', 'list__trail') }}
                     </a>
                 </li>
+                {% endif %}
             </ul>
         </section>
+        {% endif %}
 
         <section class="card" aria-labelledby="installation-heading">
             <h2 id="installation-heading" class="card__title">{{ 'settings.installation'|trans }}</h2>

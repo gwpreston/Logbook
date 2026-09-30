@@ -4,8 +4,10 @@
  #}
 
 {# What an activity feed line was: its title and its one-line summary
-   (a Service\History\ActivityItem). `costs` off also hides milestone prices. #}
+   (a Service\History\ActivityItem). `costs` off also hides milestone prices,
+   and so does a vehicle whose costs the user may not see. #}
 {% macro title(item, costs = true) -%}
+    {%- set costs = costs and can_see_costs(item.vehicle) -%}
     {%- if item.milestone -%}
         {{- (item.price is not null and costs
             ? ('history.milestone.' ~ item.milestone.value ~ '_for')|trans({price: item.price|money(item.currency)})
@@ -55,7 +57,7 @@
     {% import 'macros/fuel.twig' as fuel_ui %}
     {% import 'macros/attachments.twig' as paperclip %}
     {% import _self as history %}
-    {% set costs = opts.costs ?? true %}
+    {% set costs = (opts.costs ?? true) and can_see_costs(item.vehicle) %}
     {% set summary = history.summary(item) %}
     {% set tag = (opts.link ?? true) ? 'a' : 'div' %}
     <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}" data-modal{% endif %}>
@@ -102,7 +104,7 @@
             </span>
             <span class="list__end">
                 {{ paperclip.count(run.files()) }}
-                <span class="list__amount tabular">{{ run.total()|money(run.currency()) }}</span>
+                {% if (opts.costs ?? true) and can_see_costs(run.vehicle()) %}<span class="list__amount tabular">{{ run.total()|money(run.currency()) }}</span>{% endif %}
                 <span class="history-run__toggle" aria-hidden="true">{{ ui.icon('chevron_right') }}</span>
             </span>
         </summary>

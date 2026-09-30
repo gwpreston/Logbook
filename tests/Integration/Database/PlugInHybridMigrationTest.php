@@ -115,7 +115,7 @@ final class PlugInHybridMigrationTest extends AppTestCase
     {
         $vehicles = $this->service($app, VehicleRepository::class);
         foreach ($expected as $label => [$vehicle, $type]) {
-            self::assertSame($type, $vehicles->find($vehicle->userId, $vehicle->id)?->data->fuelType, $label);
+            self::assertSame($type, $vehicles->findById($vehicle->id)?->data->fuelType, $label);
         }
     }
 
@@ -128,7 +128,7 @@ final class PlugInHybridMigrationTest extends AppTestCase
     private function figures(App $app, Vehicle $vehicle): array
     {
         $fuel = $this->service($app, FuelService::class);
-        $current = $this->service($app, VehicleRepository::class)->find($vehicle->userId, $vehicle->id);
+        $current = $this->service($app, VehicleRepository::class)->findById($vehicle->id);
         self::assertNotNull($current);
         $history = $fuel->history($current);
 

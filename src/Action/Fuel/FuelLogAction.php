@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Attachment\AttachmentService;
@@ -43,7 +42,7 @@ final readonly class FuelLogAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $history = $this->fuel->history($vehicle);

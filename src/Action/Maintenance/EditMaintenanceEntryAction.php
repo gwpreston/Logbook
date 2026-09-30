@@ -7,7 +7,6 @@ namespace Logbook\Action\Maintenance;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Action\Tyre\TyreFormPage;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Tyre\TyreChangeRefused;
@@ -41,7 +40,7 @@ final readonly class EditMaintenanceEntryAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $entry = MaintenanceRoute::entry($this->maintenance, $vehicle, $request, $args);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Log;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
 
 /**
@@ -25,6 +26,14 @@ enum LogKind: string
     /**
      * The vehicle's add form (route name; takes the vehicle `id`).
      */
+    /**
+     * What the create form's route needs on the vehicle (config/routes.php).
+     */
+    public function ability(): VehicleAbility
+    {
+        return $this === self::Schedule ? VehicleAbility::Manage : VehicleAbility::Log;
+    }
+
     public function createRoute(): string
     {
         return match ($this) {

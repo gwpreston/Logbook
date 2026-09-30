@@ -7,7 +7,7 @@
 {% set snapshot = pinned.snapshot %}
 {% set vehicle = snapshot.vehicle %}
 {% set economy = pinned.economy %}
-{% set costs = pinned.lastTwelveMonths %}
+{% set spent = pinned.lastTwelveMonths %}
 {% set next = pinned.next ? pinned.next.reminder : null %}
 {% set dash = '—' %}
 <section class="card pinned" aria-labelledby="pinned-title" data-pinned-vehicle>
@@ -27,16 +27,18 @@
                 <dd class="pinned__value tabular">{{ economy and economy.hasEconomy() ? economy.distanceKm()|economy(economy.volume(), economy.isElectric()) : dash }}</dd>
                 <dd class="pinned__sub">{{ 'dashboard.pinned.twelve_month_average'|trans }}</dd>
             </div>
+            {% if can_see_costs(vehicle) %}
             <div class="pinned__tile">
                 <dt>{{ 'dashboard.pinned.running_cost'|trans }}</dt>
-                <dd class="pinned__value tabular">{{ costs and costs.costPerKm is not null ? costs.costPerKm|per_distance(costs.currency) : dash }}</dd>
+                <dd class="pinned__value tabular">{{ spent and spent.costPerKm is not null ? spent.costPerKm|per_distance(spent.currency) : dash }}</dd>
                 <dd class="pinned__sub">{{ 'dashboard.pinned.last_twelve_months'|trans }}</dd>
             </div>
             <div class="pinned__tile">
                 <dt>{{ 'dashboard.pinned.spent'|trans }}</dt>
-                <dd class="pinned__value tabular">{{ costs ? costs.total|money : dash }}</dd>
+                <dd class="pinned__value tabular">{{ spent ? spent.total|money : dash }}</dd>
                 <dd class="pinned__sub">{{ 'dashboard.pinned.last_twelve_months'|trans }}</dd>
             </div>
+            {% endif %}
             <div class="pinned__tile">
                 <dt>{{ 'dashboard.pinned.next_due'|trans }}</dt>
                 {% if next %}

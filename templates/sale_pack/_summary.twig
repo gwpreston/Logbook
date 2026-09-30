@@ -93,7 +93,7 @@
             <div><dt>{{ 'sale_pack.summary.paperwork'|trans }}</dt><dd>{{ 'sale_pack.summary.paperwork_count'|trans({count: pack.paperwork.count()}) }}</dd></div>
         {% endif %}
 
-        {% if pack.workCost %}
+        {% if pack.workCost and can_see_costs(vehicle) %}
             <div><dt>{{ 'sale_pack.summary.work_cost'|trans }}</dt><dd>{{ 'sale_pack.summary.work_cost_since'|trans({amount: pack.workCost.total|money, month: pack.workCost.since|local_month(false)}) }}</dd></div>
         {% endif %}
     </dl>

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Valuation;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayFormatter;
@@ -34,7 +33,7 @@ final readonly class DeleteValuationAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $valuation = ValuationRoute::valuation($this->valuations, $vehicle, $request, $args);
         $user = RequestContext::requireUser($request);
         $description = [

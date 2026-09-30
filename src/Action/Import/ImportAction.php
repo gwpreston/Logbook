@@ -53,7 +53,7 @@ final readonly class ImportAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        [$vehicle, $module] = ImportRoute::resolve($this->vehicles, $this->features, $request, $args);
+        [$vehicle, $module] = ImportRoute::resolve($this->features, $request, $args);
         $user = RequestContext::requireUser($request);
         $session = RequestContext::session($request);
 

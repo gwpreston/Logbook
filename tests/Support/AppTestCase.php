@@ -9,7 +9,10 @@ use DateTimeZone;
 use DI\Container;
 use Doctrine\DBAL\Connection;
 use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Kernel;
+use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Auth\AuthService;
 use Logbook\Service\Auth\SetupData;
 use Logbook\Support\Display\DisplayPreferences;
@@ -183,6 +186,20 @@ abstract class AppTestCase extends TestCase
         self::assertSame(303, $response->getStatusCode(), 'sign-in failed');
 
         return $browser;
+    }
+
+    /**
+     * One owner's vehicles straight from the repository, in creation order
+     * (archived ones too unless $includeArchived is false).
+     *
+     * @param App<ContainerInterface> $app
+     * @return list<Vehicle>
+     */
+    protected function ownedVehicles(App $app, int $userId, bool $includeArchived = true): array
+    {
+        $vehicles = $this->service($app, VehicleRepository::class);
+
+        return $vehicles->listByIds($vehicles->idsOwnedBy($userId, $includeArchived ? null : VehicleStatus::Active));
     }
 
     protected function uploadDir(): string

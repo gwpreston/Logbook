@@ -238,7 +238,7 @@ final class VehicleTest extends AppTestCase
      */
     private function onlyVehicle(App $app): Vehicle
     {
-        $vehicles = $this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, true);
+        $vehicles = $this->ownedVehicles($app, $this->owner($app)->id);
         self::assertCount(1, $vehicles);
 
         return $vehicles[0];
@@ -249,7 +249,7 @@ final class VehicleTest extends AppTestCase
      */
     private function vehicleNamed(App $app, string $name): Vehicle
     {
-        foreach ($this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, true) as $vehicle) {
+        foreach ($this->ownedVehicles($app, $this->owner($app)->id) as $vehicle) {
             if ($vehicle->name() === $name) {
                 return $vehicle;
             }

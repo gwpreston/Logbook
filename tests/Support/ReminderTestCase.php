@@ -149,7 +149,10 @@ abstract class ReminderTestCase extends AppTestCase
      */
     protected function reminders(App $app): array
     {
-        return $this->service($app, ReminderRepository::class)->listForUser($this->owner($app)->id, false);
+        return $this->service($app, ReminderRepository::class)->listForVehicles(array_map(
+            static fn (Vehicle $vehicle): int => $vehicle->id,
+            $this->ownedVehicles($app, $this->owner($app)->id),
+        ));
     }
 
     /**

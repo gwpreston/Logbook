@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\SalePack;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Forecast\ForecastWording;
 use Logbook\Service\SalePack\SalePackBuilder;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
@@ -23,7 +21,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class ShowSalePackAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private SalePackRequest $options,
         private SalePackBuilder $builder,
         private SalePackChart $chart,
@@ -37,7 +34,7 @@ final readonly class ShowSalePackAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $options = $this->options->options($request);
         $pack = $this->builder->build($user, $vehicle, $options);

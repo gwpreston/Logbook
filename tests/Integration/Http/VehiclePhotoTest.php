@@ -181,7 +181,7 @@ final class VehiclePhotoTest extends AppTestCase
         $owner = $this->service($app, UserRepository::class)->findByUsername('owner');
         self::assertNotNull($owner);
 
-        return $this->service($app, VehicleRepository::class)->listForUser($owner->id, true);
+        return $this->ownedVehicles($app, $owner->id);
     }
 
     /**

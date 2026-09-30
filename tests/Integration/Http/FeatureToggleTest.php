@@ -7,6 +7,7 @@ namespace Logbook\Tests\Integration\Http;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Reminder\CalendarFeed;
@@ -246,7 +247,9 @@ final class FeatureToggleTest extends ReminderTestCase
      */
     private function reminderFrom(App $app, ReminderSource $source): \Logbook\Domain\Reminder\Reminder
     {
-        foreach ($this->service($app, ReminderRepository::class)->listForUser($this->owner($app)->id, false) as $reminder) {
+        $vehicles = $this->ownedVehicles($app, $this->owner($app)->id);
+        $vehicleIds = array_map(static fn (Vehicle $vehicle): int => $vehicle->id, $vehicles);
+        foreach ($this->service($app, ReminderRepository::class)->listForVehicles($vehicleIds) as $reminder) {
             if ($reminder->source === $source) {
                 return $reminder;
             }

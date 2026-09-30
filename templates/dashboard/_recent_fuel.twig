@@ -21,7 +21,7 @@
                         {%- if row.check %} {{ fuel_ui.check_mark(row.check) }}{% endif -%}
                     </span>
                 </span>
-                <span class="list__end"><span class="list__amount tabular">{{ data.totalCost|money(row.currency) }}</span></span>
+                {% if can_see_costs(row.vehicle) %}<span class="list__end"><span class="list__amount tabular">{{ data.totalCost|money(row.currency) }}</span></span>{% endif %}
             </li>
         {% endfor %}
     </ul>

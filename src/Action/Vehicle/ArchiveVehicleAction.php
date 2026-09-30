@@ -27,7 +27,7 @@ final readonly class ArchiveVehicleAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
 
         $this->vehicles->archive(RequestContext::requireUser($request), $vehicle);
         RequestContext::session($request)->flash('success', 'vehicle.archived', ['name' => $vehicle->name()]);

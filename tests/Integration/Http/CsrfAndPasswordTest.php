@@ -183,6 +183,6 @@ final class CsrfAndPasswordTest extends AppTestCase
         $user = $this->service($app, UserRepository::class)->findByUsername('owner');
         self::assertNotNull($user);
 
-        return count($this->service($app, VehicleRepository::class)->listForUser($user->id, true));
+        return count($this->ownedVehicles($app, $user->id));
     }
 }

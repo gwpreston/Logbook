@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Tyre\TyreChangeRefused;
 use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Tyre\TyreSummary;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -25,7 +23,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class DeleteTyreChangeAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private TyreChangeService $changes,
         private TyreService $tyres,
         private TyreFormPage $page,
@@ -40,7 +37,7 @@ final readonly class DeleteTyreChangeAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $change = TyreRoute::change($this->changes, $vehicle, $request, $args);
         $byId = [];
         foreach ($this->tyres->tyres($vehicle) as $tyre) {

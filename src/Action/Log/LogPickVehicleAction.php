@@ -38,7 +38,7 @@ final readonly class LogPickVehicleAction
             throw new HttpNotFoundException($request);
         }
 
-        $vehicles = $this->vehicles->listFleet(RequestContext::requireUser($request));
+        $vehicles = $this->vehicles->listWith(RequestContext::requireUser($request), $kind->ability());
         if ($vehicles === []) {
             RequestContext::session($request)->flash('info', 'log.no_vehicles');
 

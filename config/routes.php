@@ -94,10 +94,14 @@ use Logbook\Action\Vehicle\EditVehicleAction;
 use Logbook\Action\Vehicle\RestoreVehicleAction;
 use Logbook\Action\Vehicle\ShowVehicleAction;
 use Logbook\Action\Vehicle\VehiclePhotoAction;
+use Logbook\Domain\Access\InstanceAbility;
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Middleware\AuthGuardMiddleware;
 use Logbook\Middleware\CsrfMiddleware;
 use Logbook\Middleware\FeatureGateMiddleware;
+use Logbook\Middleware\InstanceAccessMiddleware;
+use Logbook\Middleware\VehicleAccessMiddleware;
 use Logbook\Service\Feature\FeatureToggles;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -110,8 +114,10 @@ use Slim\Interfaces\RouteCollectorProxyInterface as Group;
  * Every HTML route sits in a CSRF-protected group; machine endpoints such as
  * /health stay outside so they never create sessions. Group middleware runs
  * last-added first: auth guard, then CSRF, then (module groups) the feature
- * gate, so a switched-off module's pages answer 404 (spec.md §7.10). Group
- * closures must not be static: Slim binds them to the container.
+ * gate, so a switched-off module's pages answer 404 (spec.md §7.10). In
+ * between, the access middlewares check each route's declared vehicle or
+ * instance ability (spec.md §5 Access policy). Group closures must not be
+ * static: Slim binds them to the container.
  */
 return static function (App $app): void {
     $container = $app->getContainer();
@@ -119,6 +125,10 @@ return static function (App $app): void {
     $toggles = $container->get(FeatureToggles::class);
     assert($toggles instanceof FeatureToggles);
     $module = static fn (Feature $feature): FeatureGateMiddleware => new FeatureGateMiddleware($feature, $toggles);
+    // What each /vehicles/{id} route and each install-wide page needs (spec.md §5
+    // Access policy); the route inventory test checks that every route is classified.
+    $ability = VehicleAccessMiddleware::ABILITY;
+    $instance = InstanceAccessMiddleware::ABILITY;
 
     $app->get('/health', HealthAction::class)->setName('health');
 
@@ -142,7 +152,7 @@ return static function (App $app): void {
     })->add(CsrfMiddleware::class);
 
     // Signed-in pages.
-    $app->group('', function (Group $group) use ($module): void {
+    $app->group('', function (Group $group) use ($module, $ability, $instance): void {
         $group->get('/', HomeAction::class)->setName('home');
         $group->post('/logout', LogoutAction::class)->setName('logout');
         $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
@@ -154,132 +164,186 @@ return static function (App $app): void {
 
         $group->get('/garage', GarageAction::class)->setName('garage');
         $group->map(['GET', 'POST'], '/vehicles/new', CreateVehicleAction::class)->setName('vehicles.create');
-        $group->get('/vehicles/{id:[0-9]+}', ShowVehicleAction::class)->setName('vehicles.show');
-        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/edit', EditVehicleAction::class)->setName('vehicles.edit');
-        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/delete', DeleteVehicleAction::class)->setName('vehicles.delete');
-        $group->post('/vehicles/{id:[0-9]+}/archive', ArchiveVehicleAction::class)->setName('vehicles.archive');
-        $group->post('/vehicles/{id:[0-9]+}/restore', RestoreVehicleAction::class)->setName('vehicles.restore');
-        $group->get('/vehicles/{id:[0-9]+}/photo', VehiclePhotoAction::class)->setName('vehicles.photo');
+        $group->get('/vehicles/{id:[0-9]+}', ShowVehicleAction::class)->setName('vehicles.show')
+            ->setArgument($ability, VehicleAbility::View->value);
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/edit', EditVehicleAction::class)->setName('vehicles.edit')
+            ->setArgument($ability, VehicleAbility::Manage->value);
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/delete', DeleteVehicleAction::class)->setName('vehicles.delete')
+            ->setArgument($ability, VehicleAbility::Own->value);
+        $group->post('/vehicles/{id:[0-9]+}/archive', ArchiveVehicleAction::class)->setName('vehicles.archive')
+            ->setArgument($ability, VehicleAbility::Own->value);
+        $group->post('/vehicles/{id:[0-9]+}/restore', RestoreVehicleAction::class)->setName('vehicles.restore')
+            ->setArgument($ability, VehicleAbility::Own->value);
+        $group->get('/vehicles/{id:[0-9]+}/photo', VehiclePhotoAction::class)->setName('vehicles.photo')
+            ->setArgument($ability, VehicleAbility::View->value);
 
         // History (spec.md §7.16): core, so no feature gate; the feed leaves
         // switched-off modules out itself.
         $group->get('/history', FleetHistoryAction::class)->setName('history.fleet');
-        $group->get('/vehicles/{id:[0-9]+}/history', VehicleHistoryAction::class)->setName('history.vehicle');
-        $group->get('/vehicles/{id:[0-9]+}/history/print', HistoryPrintAction::class)->setName('history.print');
+        $group->get('/vehicles/{id:[0-9]+}/history', VehicleHistoryAction::class)->setName('history.vehicle')
+            ->setArgument($ability, VehicleAbility::View->value);
+        $group->get('/vehicles/{id:[0-9]+}/history/print', HistoryPrintAction::class)->setName('history.print')
+            ->setArgument($ability, VehicleAbility::View->value);
 
         // Sale pack (spec.md §7.19): core, for active and archived vehicles;
         // each module's parts leave it when that module is off.
-        $group->get('/vehicles/{id:[0-9]+}/sale-pack', ShowSalePackAction::class)->setName('sale_pack.show');
+        $group->get('/vehicles/{id:[0-9]+}/sale-pack', ShowSalePackAction::class)->setName('sale_pack.show')
+            ->setArgument($ability, VehicleAbility::Manage->value);
         $group->get('/vehicles/{id:[0-9]+}/sale-pack/paperwork.zip', DownloadPaperworkAction::class)
-            ->setName('sale_pack.paperwork');
+            ->setName('sale_pack.paperwork')
+            ->setArgument($ability, VehicleAbility::Manage->value);
 
         // Coming up (spec.md §7.18): core too; each module's items leave it
         // when that module is off.
         $group->get('/upcoming', ComingUpAction::class)->setName('upcoming');
         $group->get('/upcoming.csv', ComingUpExportAction::class)->setName('upcoming.export');
 
-        $group->get('/vehicles/{id:[0-9]+}/odometer', OdometerLogAction::class)->setName('odometer.index');
+        $group->get('/vehicles/{id:[0-9]+}/odometer', OdometerLogAction::class)->setName('odometer.index')
+            ->setArgument($ability, VehicleAbility::View->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/new', CreateOdometerReadingAction::class)
-            ->setName('odometer.create');
+            ->setName('odometer.create')
+            ->setArgument($ability, VehicleAbility::Log->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/{reading:[0-9]+}/edit', EditOdometerReadingAction::class)
-            ->setName('odometer.edit');
+            ->setName('odometer.edit')
+            ->setArgument($ability, VehicleAbility::Manage->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/odometer/{reading:[0-9]+}/delete', DeleteOdometerReadingAction::class)
-            ->setName('odometer.delete');
+            ->setName('odometer.delete')
+            ->setArgument($ability, VehicleAbility::Manage->value);
 
-        $group->group('', function (Group $fuel): void {
+        $group->group('', function (Group $fuel) use ($ability): void {
             $fuel->get('/fuel/new', QuickFuelAction::class)->setName('fuel.quick');
-            $fuel->get('/vehicles/{id:[0-9]+}/fuel', FuelLogAction::class)->setName('fuel.index');
-            $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/new', CreateFuelEntryAction::class)->setName('fuel.create');
+            $fuel->get('/vehicles/{id:[0-9]+}/fuel', FuelLogAction::class)->setName('fuel.index')
+                ->setArgument($ability, VehicleAbility::View->value);
+            $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/new', CreateFuelEntryAction::class)->setName('fuel.create')
+                ->setArgument($ability, VehicleAbility::Log->value);
             $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/edit', EditFuelEntryAction::class)
-                ->setName('fuel.edit');
+                ->setName('fuel.edit')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $fuel->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/delete', DeleteFuelEntryAction::class)
-                ->setName('fuel.delete');
+                ->setName('fuel.delete')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $fuel->post('/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/economy', ConfirmEconomyAction::class)
-                ->setName('fuel.economy');
+                ->setName('fuel.economy')
+                ->setArgument($ability, VehicleAbility::Log->value);
         })->add($module(Feature::Fuel));
 
-        $group->group('/vehicles/{id:[0-9]+}', function (Group $vehicle) use ($module): void {
-            $vehicle->group('', function (Group $maintenance): void {
-                $maintenance->get('/maintenance', MaintenanceLogAction::class)->setName('maintenance.index');
+        $group->group('/vehicles/{id:[0-9]+}', function (Group $vehicle) use ($module, $ability): void {
+            $vehicle->group('', function (Group $maintenance) use ($ability): void {
+                $maintenance->get('/maintenance', MaintenanceLogAction::class)->setName('maintenance.index')
+                    ->setArgument($ability, VehicleAbility::View->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/new', CreateMaintenanceEntryAction::class)
-                    ->setName('maintenance.create');
+                    ->setName('maintenance.create')
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/edit', EditMaintenanceEntryAction::class)
-                    ->setName('maintenance.edit');
+                    ->setName('maintenance.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/delete', DeleteMaintenanceEntryAction::class)
-                    ->setName('maintenance.delete');
+                    ->setName('maintenance.delete')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/schedules/new', CreateScheduleAction::class)
-                    ->setName('maintenance.schedules.create');
+                    ->setName('maintenance.schedules.create')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/edit', EditScheduleAction::class)
-                    ->setName('maintenance.schedules.edit');
+                    ->setName('maintenance.schedules.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $maintenance->map(['GET', 'POST'], '/maintenance/schedules/{schedule:[0-9]+}/delete', DeleteScheduleAction::class)
-                    ->setName('maintenance.schedules.delete');
+                    ->setName('maintenance.schedules.delete')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
             })->add($module(Feature::Maintenance));
 
             // Tyres (spec.md §7.17).
-            $vehicle->group('/tyres', function (Group $tyres): void {
-                $tyres->get('', TyreListAction::class)->setName('tyres.index');
+            $vehicle->group('/tyres', function (Group $tyres) use ($ability): void {
+                $tyres->get('', TyreListAction::class)->setName('tyres.index')
+                    ->setArgument($ability, VehicleAbility::View->value);
                 $tyres->map(['GET', 'POST'], '/{kind:existing|fit|swap|rotate|repair|remove|check}', TyreChangeFormAction::class)
-                    ->setName('tyres.change');
+                    ->setName('tyres.change')
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $tyres->map(['GET', 'POST'], '/changes/{change:[0-9]+}/edit', EditTyreChangeAction::class)
-                    ->setName('tyres.changes.edit');
+                    ->setName('tyres.changes.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $tyres->map(['GET', 'POST'], '/changes/{change:[0-9]+}/delete', DeleteTyreChangeAction::class)
-                    ->setName('tyres.changes.delete');
-                $tyres->map(['GET', 'POST'], '/sets/{set:[0-9]+}/edit', EditTyreSetAction::class)->setName('tyres.sets.edit');
+                    ->setName('tyres.changes.delete')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+                $tyres->map(['GET', 'POST'], '/sets/{set:[0-9]+}/edit', EditTyreSetAction::class)->setName('tyres.sets.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $tyres->map(['GET', 'POST'], '/sets/{set:[0-9]+}/delete', DeleteTyreSetAction::class)
-                    ->setName('tyres.sets.delete');
-                $tyres->map(['GET', 'POST'], '/{tyre:[0-9]+}/edit', EditTyreAction::class)->setName('tyres.edit');
-                $tyres->map(['GET', 'POST'], '/{tyre:[0-9]+}/delete', DeleteTyreAction::class)->setName('tyres.delete');
+                    ->setName('tyres.sets.delete')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+                $tyres->map(['GET', 'POST'], '/{tyre:[0-9]+}/edit', EditTyreAction::class)->setName('tyres.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+                $tyres->map(['GET', 'POST'], '/{tyre:[0-9]+}/delete', DeleteTyreAction::class)->setName('tyres.delete')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
             })->add($module(Feature::Tyres));
 
-            $vehicle->group('', function (Group $documents): void {
-                $documents->get('/documents', ComplianceListAction::class)->setName('compliance.index');
+            $vehicle->group('', function (Group $documents) use ($ability): void {
+                $documents->get('/documents', ComplianceListAction::class)->setName('compliance.index')
+                    ->setArgument($ability, VehicleAbility::View->value);
                 $documents->map(['GET', 'POST'], '/documents/new', CreateComplianceDocumentAction::class)
-                    ->setName('compliance.create');
+                    ->setName('compliance.create')
+                    ->setArgument($ability, VehicleAbility::Log->value);
                 $documents->map(['GET', 'POST'], '/documents/{document:[0-9]+}/edit', EditComplianceDocumentAction::class)
-                    ->setName('compliance.edit');
+                    ->setName('compliance.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $documents->map(['GET', 'POST'], '/documents/{document:[0-9]+}/delete', DeleteComplianceDocumentAction::class)
-                    ->setName('compliance.delete');
+                    ->setName('compliance.delete')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
             })->add($module(Feature::Compliance));
 
-            $vehicle->get('/expenses', VehicleExpensesAction::class)->setName('expenses.index');
-            $vehicle->map(['GET', 'POST'], '/expenses/new', CreateExpenseAction::class)->setName('expenses.create');
+            $vehicle->get('/expenses', VehicleExpensesAction::class)->setName('expenses.index')
+                ->setArgument($ability, VehicleAbility::ViewCosts->value);
+            $vehicle->map(['GET', 'POST'], '/expenses/new', CreateExpenseAction::class)->setName('expenses.create')
+                ->setArgument($ability, VehicleAbility::Log->value);
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/edit', EditExpenseAction::class)
-                ->setName('expenses.edit');
+                ->setName('expenses.edit')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/delete', DeleteExpenseAction::class)
-                ->setName('expenses.delete');
+                ->setName('expenses.delete')
+                ->setArgument($ability, VehicleAbility::Manage->value);
 
             // Valuations (Phase 14.1) are core: no module toggle.
-            $vehicle->get('/valuations', VehicleValuationsAction::class)->setName('valuations.index');
-            $vehicle->map(['GET', 'POST'], '/valuations/new', CreateValuationAction::class)->setName('valuations.create');
+            $vehicle->get('/valuations', VehicleValuationsAction::class)->setName('valuations.index')
+                ->setArgument($ability, VehicleAbility::ViewCosts->value);
+            $vehicle->map(['GET', 'POST'], '/valuations/new', CreateValuationAction::class)->setName('valuations.create')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $vehicle->map(['GET', 'POST'], '/valuations/{entry:[0-9]+}/edit', EditValuationAction::class)
-                ->setName('valuations.edit');
+                ->setName('valuations.edit')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $vehicle->map(['GET', 'POST'], '/valuations/{entry:[0-9]+}/delete', DeleteValuationAction::class)
-                ->setName('valuations.delete');
+                ->setName('valuations.delete')
+                ->setArgument($ability, VehicleAbility::Manage->value);
 
             // Export and import check the module's toggle themselves (one route, several modules).
             $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
-                ->setName('export.module');
+                ->setName('export.module')
+                ->setArgument($ability, VehicleAbility::ViewCosts->value);
             $csvModule = '{module:fuel|odometer|maintenance|documents|expenses}';
             $vehicle->map(['GET', 'POST'], '/import/' . $csvModule, ImportUploadAction::class)
-                ->setName('import.upload');
+                ->setName('import.upload')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $vehicle->map(['GET', 'POST'], '/import/' . $csvModule . '/{token:[a-f0-9]{32}}', ImportAction::class)
-                ->setName('import.map');
+                ->setName('import.map')
+                ->setArgument($ability, VehicleAbility::Manage->value);
 
-            $vehicle->get('/attachments/{attachment:[0-9]+}', ShowAttachmentAction::class)->setName('attachments.show');
+            $vehicle->get('/attachments/{attachment:[0-9]+}', ShowAttachmentAction::class)->setName('attachments.show')
+                ->setArgument($ability, VehicleAbility::View->value);
             $vehicle->map(['GET', 'POST'], '/attachments/{attachment:[0-9]+}/delete', DeleteAttachmentAction::class)
-                ->setName('attachments.delete');
+                ->setName('attachments.delete')
+                ->setArgument($ability, VehicleAbility::Manage->value);
         });
 
-        $group->group('', function (Group $reminders): void {
+        $group->group('', function (Group $reminders) use ($ability): void {
             $reminders->get('/reminders', ReminderListAction::class)->setName('reminders.index');
             $reminders->map(['GET', 'POST'], '/reminders/new', CreateReminderAction::class)->setName('reminders.create');
             $reminders->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/edit', EditReminderAction::class)
-                ->setName('reminders.edit');
+                ->setName('reminders.edit')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $reminders->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/delete', DeleteReminderAction::class)
-                ->setName('reminders.delete');
+                ->setName('reminders.delete')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $reminders->post('/reminders/{reminder:[0-9]+}/{action:done|dismiss|reopen}', ReminderStatusAction::class)
-                ->setName('reminders.status');
+                ->setName('reminders.status')
+                ->setArgument($ability, VehicleAbility::Log->value);
             $reminders->post('/settings/reminders/test', SendTestNotificationAction::class)->setName('settings.reminders.test');
             $reminders->post('/settings/reminders/calendar', CalendarFeedSettingsAction::class)
                 ->setName('settings.reminders.calendar');
@@ -295,17 +359,25 @@ return static function (App $app): void {
         $group->get('/settings', SettingsAction::class)->setName('settings');
         // Lead times also drive the vehicle tabs' due badges, so this page stays when reminders are off.
         $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');
-        $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules');
+        $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules')
+            ->setArgument($instance, InstanceAbility::ManageModules->value);
         $group->map(['GET', 'POST'], '/settings/tyres', TyreSettingsAction::class)
             ->setName('settings.tyres')
             ->add($module(Feature::Tyres));
-        $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index');
-        $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download');
-        $group->post('/settings/backup/restore', UploadRestoreAction::class)->setName('backup.restore');
+        $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index')
+            ->setArgument($instance, InstanceAbility::Backup->value);
+        $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download')
+            ->setArgument($instance, InstanceAbility::Backup->value);
+        $group->post('/settings/backup/restore', UploadRestoreAction::class)->setName('backup.restore')
+            ->setArgument($instance, InstanceAbility::Restore->value);
         $group->map(['GET', 'POST'], '/settings/backup/restore/{token:[a-f0-9]{32}}', ConfirmRestoreAction::class)
-            ->setName('backup.restore.confirm');
+            ->setName('backup.restore.confirm')
+            ->setArgument($instance, InstanceAbility::Restore->value);
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');
-    })->add(CsrfMiddleware::class)->add(AuthGuardMiddleware::class);
+    })->add(InstanceAccessMiddleware::class)
+        ->add(VehicleAccessMiddleware::class)
+        ->add(CsrfMiddleware::class)
+        ->add(AuthGuardMiddleware::class);
 };

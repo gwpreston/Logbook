@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Action\Expense;
 
 use Logbook\Action\Report\ReportCharts;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
@@ -43,7 +42,7 @@ final readonly class VehicleExpensesAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $query = $request->getQueryParams();

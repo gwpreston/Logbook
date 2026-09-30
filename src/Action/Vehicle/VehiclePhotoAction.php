@@ -6,6 +6,7 @@ namespace Logbook\Action\Vehicle;
 
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\FileResponder;
+use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -28,7 +29,7 @@ final readonly class VehiclePhotoAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $path = $this->vehicles->photoFile($vehicle);
         if ($path === null || $vehicle->photoMime === null) {
             throw new HttpNotFoundException($request);

@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use Logbook\Service\Access\AccessTwigExtension;
+use Logbook\Service\Access\InstanceAccess;
+use Logbook\Service\Access\SingleOwnerInstanceAccess;
+use Logbook\Service\Access\SingleOwnerVehicleAccess;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Feature\FeatureTwigExtension;
 use Logbook\Service\Navigation\SidebarTwigExtension;
@@ -80,6 +85,10 @@ return [
     },
 
     ClockInterface::class => static fn (): ClockInterface => new UtcClock(),
+
+    // Who may do what (spec.md §5 Access policy). Phase 19 binds its own policy here.
+    VehicleAccess::class => get(SingleOwnerVehicleAccess::class),
+    InstanceAccess::class => get(SingleOwnerInstanceAccess::class),
 
     LoggerInterface::class => static function (ContainerInterface $c) use ($settingsOf): LoggerInterface {
         $config = $settingsOf($c);
@@ -162,6 +171,9 @@ return [
         $sidebar = $c->get(SidebarTwigExtension::class);
         assert($sidebar instanceof SidebarTwigExtension);
         $twig->addExtension($sidebar);
+        $access = $c->get(AccessTwigExtension::class);
+        assert($access instanceof AccessTwigExtension);
+        $twig->addExtension($access);
 
         return $twig;
     },

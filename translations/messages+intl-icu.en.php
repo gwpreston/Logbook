@@ -2156,6 +2156,7 @@ return [
         'status_code' => 'Error {status}',
         '400' => ['title' => 'Bad request', 'body' => 'The request could not be understood. Please check it and try again.'],
         '403' => ['title' => 'Access denied', 'body' => 'You do not have permission to view this page.'],
+        'access_denied' => ['title' => 'Not allowed', 'body' => 'You can open this, but you are not allowed to make this change.'],
         '404' => ['title' => 'Page not found', 'body' => 'The page you asked for does not exist or has moved.'],
         '405' => ['title' => 'Method not allowed', 'body' => 'This page cannot be used that way.'],
         '413' => ['title' => 'Too large', 'body' => 'What you sent was larger than this server accepts. Try a smaller file.'],

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Logbook\Service\Notification;
 
 use DateTimeImmutable;
+use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Repository\ReminderRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
@@ -39,6 +41,7 @@ final readonly class ReminderNotifier
         private ChannelRegistry $channels,
         private ClockInterface $clock,
         private LoggerInterface $logger,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -72,7 +75,7 @@ final readonly class ReminderNotifier
         DateTimeImmutable $today,
     ): int {
         $claimed = array_values(array_filter(
-            $this->reminders->listAwaitingNotification($user->id),
+            $this->reminders->listAwaitingNotification($this->access->visibleVehicleIds($user, VehicleScope::Active)),
             fn (Reminder $r): bool => $this->reminders->claim($r, $this->clock->now()),
         ));
         if ($claimed === []) {
@@ -131,8 +134,9 @@ final readonly class ReminderNotifier
         }
 
         $endOfMonth = $today->modify('last day of this month');
+        $active = $this->access->visibleVehicleIds($user, VehicleScope::Active);
         $entries = array_values(array_filter(
-            $this->service->entries($user, $this->reminders->listForUser($user->id))['open'],
+            $this->service->entries($user, $this->reminders->listForVehicles($active))['open'],
             static fn (ReminderEntry $e): bool => $e->reminder->status === ReminderStatus::Overdue
                 || ($e->reminder->dueOn !== null && $e->reminder->dueOn <= $endOfMonth),
         ));

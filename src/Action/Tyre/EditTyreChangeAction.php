@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Action\Tyre;
 
 use Logbook\Action\Odometer\OdometerWarningFlash;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -47,7 +46,7 @@ final readonly class EditTyreChangeAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $change = TyreRoute::change($this->changes, $vehicle, $request, $args);
         $user = RequestContext::requireUser($request);
         $preferences = $user->preferences;

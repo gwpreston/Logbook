@@ -139,7 +139,7 @@ final class PlugInHybridTest extends AppTestCase
      */
     private function vehicles(App $app): array
     {
-        $vehicles = $this->service($app, VehicleRepository::class)->listForUser($this->owner($app)->id, false);
+        $vehicles = $this->ownedVehicles($app, $this->owner($app)->id, false);
         usort($vehicles, static fn (Vehicle $a, Vehicle $b): int => $a->id <=> $b->id);
 
         return $vehicles;
@@ -150,7 +150,7 @@ final class PlugInHybridTest extends AppTestCase
      */
     private function find(App $app, Vehicle $vehicle): Vehicle
     {
-        $found = $this->service($app, VehicleRepository::class)->find($vehicle->userId, $vehicle->id);
+        $found = $this->service($app, VehicleRepository::class)->findById($vehicle->id);
         self::assertNotNull($found);
 
         return $found;

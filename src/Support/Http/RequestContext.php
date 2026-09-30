@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Logbook\Support\Http;
 
 use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Middleware\CurrentUserMiddleware;
 use Logbook\Middleware\SessionMiddleware;
+use Logbook\Middleware\VehicleAccessMiddleware;
 use Logbook\Support\Session\Session;
 use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
@@ -39,6 +41,21 @@ final class RequestContext
     public static function requireUser(ServerRequestInterface $request): User
     {
         return self::user($request) ?? throw new LogicException('Route requires AuthGuardMiddleware.');
+    }
+
+    /**
+     * The vehicle named by a `/vehicles/{id}` route, already loaded and
+     * checked against the route's ability by VehicleAccessMiddleware.
+     * Actions take it from here and never reload it by id.
+     */
+    public static function vehicle(ServerRequestInterface $request): Vehicle
+    {
+        $vehicle = $request->getAttribute(VehicleAccessMiddleware::ATTRIBUTE);
+        if (!$vehicle instanceof Vehicle) {
+            throw new LogicException('No vehicle on the request: does the route have {id} and an ability?');
+        }
+
+        return $vehicle;
     }
 
     /**

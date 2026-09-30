@@ -8,7 +8,6 @@ use Logbook\Service\Export\ExportModule;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Import\CsvImporter;
 use Logbook\Service\Import\ImportField;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Csv\CsvReader;
@@ -30,7 +29,6 @@ use Psr\Http\Message\UploadedFileInterface;
 final readonly class ImportUploadAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private FeatureToggles $features,
         private StagedFiles $staged,
         private AppSettings $settings,
@@ -44,7 +42,7 @@ final readonly class ImportUploadAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        [$vehicle, $module] = ImportRoute::resolve($this->vehicles, $this->features, $request, $args);
+        [$vehicle, $module] = ImportRoute::resolve($this->features, $request, $args);
 
         if ($request->getMethod() !== 'POST') {
             return $this->render($request, $response, $vehicle, $module);

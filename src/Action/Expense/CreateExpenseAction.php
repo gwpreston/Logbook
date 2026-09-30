@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Action\Expense;
 
 use Logbook\Action\Attachment\AttachmentUpload;
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Expense\ExpenseEntryForm;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -38,7 +37,7 @@ final readonly class CreateExpenseAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 

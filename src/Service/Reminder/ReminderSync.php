@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Logbook\Service\Reminder;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\User\User;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Maintenance\ScheduleService;
@@ -20,7 +22,7 @@ use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
 
 /**
- * Reconciles an owner's stored reminders with their sources and with today
+ * Reconciles the stored reminders of the vehicles a user can see with their sources and with today
  * (spec.md §7.6 Sync): adds, updates and deletes generated reminders, and
  * moves every open reminder to the status today calls for. Writes only rows
  * that differ, so running it on every read is cheap.
@@ -38,6 +40,7 @@ final readonly class ReminderSync
         private FeatureToggles $features,
         private TyreService $tyres,
         private TyreReminderTitle $tyreTitles,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -46,8 +49,11 @@ final readonly class ReminderSync
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $preferences = $this->settings->reminderPreferences($user->id);
 
+        $all = $this->access->visibleVehicleIds($user, VehicleScope::All);
+        $active = $this->access->visibleVehicleIds($user, VehicleScope::Active);
+
         $existing = [];
-        foreach ($this->reminders->listGeneratedForUser($user->id) as $reminder) {
+        foreach ($this->reminders->listGeneratedForVehicles($all) as $reminder) {
             $existing[GeneratedReminder::keyOf($reminder->vehicleId, $reminder->source, $reminder->sourceId)] = $reminder;
         }
 
@@ -65,7 +71,7 @@ final readonly class ReminderSync
         }
 
         // Archived vehicles raise nothing, so their reminders fall out below.
-        foreach ($this->vehicles->listForUser($user->id, false) as $vehicle) {
+        foreach ($this->vehicles->listByIds($active) as $vehicle) {
             $wanted = [];
             if ($withSchedules) {
                 $schedules = $this->schedules->states(
@@ -106,7 +112,7 @@ final readonly class ReminderSync
             $this->reminders->delete($orphan->id);
         }
 
-        foreach ($this->reminders->listOpenManualForUser($user->id) as $manual) {
+        foreach ($this->reminders->listOpenManualForVehicles($active) as $manual) {
             if ($manual->dueOn === null) {
                 continue;
             }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Maintenance\MaintenanceService;
@@ -44,7 +43,7 @@ final readonly class MaintenanceLogAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $history = $this->maintenance->history($vehicle);

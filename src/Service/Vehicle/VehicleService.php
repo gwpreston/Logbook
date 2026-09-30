@@ -6,6 +6,8 @@ namespace Logbook\Service\Vehicle;
 
 use Collator;
 use InvalidArgumentException;
+use Logbook\Domain\Access\VehicleAbility;
+use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\User\User;
@@ -14,6 +16,7 @@ use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Repository\TyreRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\StoredFile;
 use Logbook\Service\Odometer\OdometerService;
@@ -25,8 +28,8 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
- * The garage: vehicles of one owner, their photos, purchase and sale
- * paperwork and archive state (spec.md §7.1).
+ * The garage: the vehicles a user can see (the access policy, spec.md §5),
+ * their photos, purchase and sale paperwork and archive state (spec.md §7.1).
  *
  * "Fleet scope" for later phases' totals is listFleet(): active vehicles
  * only, unless archived ones are explicitly included.
@@ -43,18 +46,20 @@ final readonly class VehicleService
         private AppSettings $settings,
         private OdometerService $odometer,
         private TyreRepository $tyres,
+        private VehicleAccess $access,
     ) {
     }
 
     /**
-     * Vehicles sorted for display: active first, then by name in the
-     * owner's language.
+     * The vehicles the user can see (the access policy's visible ids),
+     * sorted for display: active first, then by name in the owner's
+     * language.
      *
      * @return list<Vehicle>
      */
     public function listFleet(User $user, bool $includeArchived = false): array
     {
-        $vehicles = $this->vehicles->listForUser($user->id, $includeArchived);
+        $vehicles = $this->vehicles->listByIds($this->access->visibleVehicleIds($user, VehicleScope::of($includeArchived)));
         $collator = new Collator($user->preferences->locale);
 
         usort($vehicles, static fn (Vehicle $a, Vehicle $b): int => ($a->isArchived() <=> $b->isArchived())
@@ -64,22 +69,43 @@ final readonly class VehicleService
     }
 
     /**
+     * listFleet() narrowed to the vehicles the user may do this with, e.g.
+     * the pickers in front of a log form.
+     *
+     * @return list<Vehicle>
+     */
+    public function listWith(User $user, VehicleAbility $ability, bool $includeArchived = false): array
+    {
+        return array_values(array_filter(
+            $this->listFleet($user, $includeArchived),
+            fn (Vehicle $vehicle): bool => $this->access->can($user, $ability, $vehicle),
+        ));
+    }
+
+    /**
      * @return array{active: int, archived: int}
      */
     public function counts(User $user): array
     {
         return [
-            'active' => $this->vehicles->countByStatus($user->id, VehicleStatus::Active),
-            'archived' => $this->vehicles->countByStatus($user->id, VehicleStatus::Archived),
+            'active' => count($this->access->visibleVehicleIds($user, VehicleScope::Active)),
+            'archived' => count($this->access->visibleVehicleIds($user, VehicleScope::Archived)),
         ];
     }
 
     /**
-     * @throws VehicleNotFound
+     * A vehicle the user can view, by id.
+     *
+     * @throws VehicleNotFound also for one they cannot view, so ids reveal nothing
      */
     public function get(User $user, int $id): Vehicle
     {
-        return $this->vehicles->find($user->id, $id) ?? throw new VehicleNotFound(sprintf('Vehicle %d not found.', $id));
+        $vehicle = $this->vehicles->findById($id);
+        if ($vehicle === null || !$this->access->can($user, VehicleAbility::View, $vehicle)) {
+            throw new VehicleNotFound(sprintf('Vehicle %d not found.', $id));
+        }
+
+        return $vehicle;
     }
 
     /**
@@ -111,7 +137,9 @@ final readonly class VehicleService
             $files,
         ): Vehicle {
             $now = $this->clock->now();
-            $vehicle = $this->get($user, $this->vehicles->insert($user->id, $data, $now));
+            $id = $this->vehicles->insert($user->id, $data, $now);
+            $this->access->forget();
+            $vehicle = $this->get($user, $id);
             if ($starting !== null) {
                 $at = $starting->recordedAt($now, $user->preferences->timeZone());
                 $this->odometer->create($vehicle, new OdometerReadingData($starting->km, $at));
@@ -150,8 +178,8 @@ final readonly class VehicleService
             throw $refusal;
         }
 
-        $this->attachments->saveWithFiles($files->all(), function (array $stored) use ($user, $vehicle, $data, $files): void {
-            $this->vehicles->update($user->id, $vehicle->id, $data, $this->clock->now());
+        $this->attachments->saveWithFiles($files->all(), function (array $stored) use ($vehicle, $data, $files): void {
+            $this->vehicles->update($vehicle->userId, $vehicle->id, $data, $this->clock->now());
             $this->recordPaperwork($vehicle, $files, $stored);
         });
 
@@ -164,18 +192,21 @@ final readonly class VehicleService
     public function delete(User $user, Vehicle $vehicle): void
     {
         $this->attachments->deleteFilesForVehicle($vehicle);
-        $this->vehicles->delete($user->id, $vehicle->id);
+        $this->vehicles->delete($vehicle->userId, $vehicle->id);
+        $this->access->forget();
         $this->files->delete($vehicle->photoPath);
     }
 
     public function archive(User $user, Vehicle $vehicle): void
     {
-        $this->vehicles->setStatus($user->id, $vehicle->id, VehicleStatus::Archived, $this->clock->now());
+        $this->vehicles->setStatus($vehicle->userId, $vehicle->id, VehicleStatus::Archived, $this->clock->now());
+        $this->access->forget();
     }
 
     public function restore(User $user, Vehicle $vehicle): void
     {
-        $this->vehicles->setStatus($user->id, $vehicle->id, VehicleStatus::Active, $this->clock->now());
+        $this->vehicles->setStatus($vehicle->userId, $vehicle->id, VehicleStatus::Active, $this->clock->now());
+        $this->access->forget();
     }
 
     /**
@@ -188,13 +219,13 @@ final readonly class VehicleService
         }
 
         $path = $this->files->store($file, self::PHOTO_DIRECTORY, $checked->extension);
-        $this->vehicles->setPhoto($user->id, $vehicle->id, $path, $checked->mime, $this->clock->now());
+        $this->vehicles->setPhoto($vehicle->userId, $vehicle->id, $path, $checked->mime, $this->clock->now());
         $this->files->delete($vehicle->photoPath);
     }
 
     public function removePhoto(User $user, Vehicle $vehicle): void
     {
-        $this->vehicles->setPhoto($user->id, $vehicle->id, null, null, $this->clock->now());
+        $this->vehicles->setPhoto($vehicle->userId, $vehicle->id, null, null, $this->clock->now());
         $this->files->delete($vehicle->photoPath);
     }
 

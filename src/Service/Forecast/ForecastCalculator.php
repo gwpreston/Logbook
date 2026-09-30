@@ -195,7 +195,7 @@ final class ForecastCalculator
             dueKm: null,
             projected: false,
             overdue: $overdue,
-            cost: self::positive($data->cost, $vehicle->currency),
+            cost: $vehicle->costs ? self::positive($data->cost, $vehicle->currency) : null,
             currency: $vehicle->currency,
             occurrence: $n,
         );

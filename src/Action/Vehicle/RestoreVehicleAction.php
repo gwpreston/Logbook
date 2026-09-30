@@ -26,7 +26,7 @@ final readonly class RestoreVehicleAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
 
         $this->vehicles->restore(RequestContext::requireUser($request), $vehicle);
         RequestContext::session($request)->flash('success', 'vehicle.restored', ['name' => $vehicle->name()]);

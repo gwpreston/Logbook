@@ -103,7 +103,7 @@
                 </span>
             </span>
             <span class="list__end">
-                <span class="list__amount tabular">{{ data.cost|money(currency) }}</span>
+                {% if can_see_costs(vehicle) %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
                 {{ paperclip.count(files) }}
             </span>
         </a>

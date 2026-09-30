@@ -334,7 +334,7 @@ final class ValuationsTest extends AppTestCase
 
         $owner = $this->service($app, UserRepository::class)->findByUsername('owner');
         self::assertNotNull($owner);
-        $vehicles = $this->service($app, VehicleRepository::class)->listForUser($owner->id, true);
+        $vehicles = $this->ownedVehicles($app, $owner->id);
         self::assertCount(1, $vehicles);
 
         return [$app, $browser, $vehicles[0]];
@@ -360,7 +360,7 @@ final class ValuationsTest extends AppTestCase
     {
         $owner = $this->service($app, UserRepository::class)->findByUsername('owner');
         self::assertNotNull($owner);
-        $vehicle = $this->service($app, VehicleRepository::class)->find($owner->id, $id);
+        $vehicle = $this->service($app, VehicleRepository::class)->findById($id);
         self::assertNotNull($vehicle);
 
         return $vehicle;

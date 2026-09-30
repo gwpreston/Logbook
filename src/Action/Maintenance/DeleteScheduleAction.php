@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Maintenance\ScheduleService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
@@ -20,7 +18,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class DeleteScheduleAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private ScheduleService $schedules,
         private View $view,
         private Redirector $redirect,
@@ -32,7 +29,7 @@ final readonly class DeleteScheduleAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $schedule = MaintenanceRoute::schedule($this->schedules, $vehicle, $request, $args);
         $description = ['title' => $schedule->data->title];
 

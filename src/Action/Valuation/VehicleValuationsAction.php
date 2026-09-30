@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Valuation;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -33,7 +32,7 @@ final readonly class VehicleValuationsAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
 
         return $this->view->render($request, $response, 'valuations/index.twig', [

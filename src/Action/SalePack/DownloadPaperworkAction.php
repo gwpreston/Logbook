@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\SalePack;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\SalePack\PaperworkArchive;
 use Logbook\Service\SalePack\PaperworkSelector;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\FileResponder;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -23,7 +21,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class DownloadPaperworkAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private SalePackRequest $options,
         private PaperworkSelector $paperwork,
         private PaperworkArchive $archive,
@@ -35,7 +32,7 @@ final readonly class DownloadPaperworkAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $selection = $this->paperwork->select($user, $vehicle, $this->options->options($request));
         $body = $this->archive->stream($user, $vehicle, $selection);

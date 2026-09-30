@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Attachment;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Attachment\AttachmentService;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\FileResponder;
+use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -22,7 +21,6 @@ use Slim\Exception\HttpNotFoundException;
 final readonly class ShowAttachmentAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private AttachmentService $attachments,
         private FileResponder $files,
     ) {
@@ -33,7 +31,7 @@ final readonly class ShowAttachmentAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $attachment = AttachmentRoute::attachment($this->attachments, $vehicle, $request, $args);
         $path = $this->attachments->file($attachment);
         if ($path === null) {

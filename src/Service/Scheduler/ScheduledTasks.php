@@ -6,6 +6,7 @@ namespace Logbook\Service\Scheduler;
 
 use Logbook\Domain\Feature\Feature;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Notification\ReminderNotifier;
 use Psr\Log\LoggerInterface;
@@ -24,6 +25,7 @@ final readonly class ScheduledTasks
         private ReminderNotifier $notifier,
         private FeatureToggles $features,
         private LoggerInterface $logger,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -36,6 +38,8 @@ final readonly class ScheduledTasks
             return $summary;
         }
 
+        // Each run sees the vehicles as they are now, even in a long-lived process.
+        $this->access->forget();
         $users = 0;
         $reminders = 0;
         $digests = 0;

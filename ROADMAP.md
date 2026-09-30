@@ -44,9 +44,12 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [16](phase-16.md) | Fuel insights + v1.8 release | ✅ |
 | [17.1](phase-17.1.md) | Sale pack | ✅ |
 | [17.2](phase-17.2.md) | Printable reports + v1.9 release | ✅ |
-| [18.1](phase-18.1.md) | Access policy | 📋 |
+| [18.1](phase-18.1.md) | Access policy | ✅ |
 | [18.2](phase-18.2.md) | REST API v1 + v1.10 release | 📋 |
 | [19](phase-19.md) | Multiple users and vehicle sharing + v2.0 release | 📋 |
+| [20](phase-20.md) | Phase files into `docs/phases/`, open-questions review | 📋 |
+| [21.1](phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | 📋 |
+| [21.2](phase-21.2.md) | First MOT due + v2.1 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -405,6 +408,79 @@ them.*
 
 → [`phase-19.md`](phase-19.md)
 
+## Phase 20 — Phase files into `docs/phases/`, open-questions review
+*A tidier repository, and nothing left undecided by accident.*
+
+- Every `phase-*.md` moves to `docs/phases/` with its history; every link to
+  and from them is fixed, and a test keeps Markdown links resolving.
+- `CLAUDE.md` gains a standing rule: before a phase, review earlier phases'
+  open questions, check what the app already does, and ask the owner before
+  acting on anything undecided.
+- A one-off review of Phases 1–19 into `docs/phases/open-questions.md`.
+- No app change; noted in the 2.1.0 changelog.
+
+→ [`phase-20.md`](phase-20.md)
+
+## Phase 21.1 — Tyre modals, drag-and-drop files, digest on by default, sale pack cover
+*Small things that make everyday use smoother.*
+
+- Tyre, tyre change and tyre set edit forms open as desktop modals.
+- The monthly digest is on for new users; existing users keep their choice.
+- Drag-and-drop onto every file input, added to what is already chosen,
+  with the same limits and one parser.
+- An optional vehicle photo on a cover page before the sale pack's summary
+  (off by default).
+- Ships with Phase 21.2 as **v2.1.0**.
+
+→ [`phase-21.1.md`](phase-21.1.md)
+
+## Phase 21.2 — First MOT due + v2.1 release
+*A new car's first MOT is the one reminder nobody has paperwork for yet.*
+
+- An optional *First MOT due* date on the vehicle, suggested from the first
+  registration date (3 years in GB and DE) and stored, so owners in
+  Northern Ireland or elsewhere can set their own.
+- It drives a reminder, a *Coming up* item and the overview until the first
+  MOT certificate is logged; then the certificate's expiry takes over.
+- Release **v2.1.0** (Phases 20, 21.1 and 21.2).
+
+→ [`phase-21.2.md`](phase-21.2.md)
+
+## Phase 23.1 — Single sign-on with OpenID Connect
+*Sign in with the Authelia, Authentik or Keycloak you already run.*
+
+- One OIDC provider by environment variables: discovery, code flow with
+  PKCE, and full ID token validation.
+- Explicit account linking by default (username linking, automatic
+  creation and admin-from-groups optional).
+- Local sign-in can be switched off; a CLI break-glass link always works.
+- Ships with Phase 23.2 as **v2.3.0**.
+
+→ [`phase-23.1.md`](phase-23.1.md)
+
+## Phase 23.2 — Reverse-proxy header sign-in + v2.3 release
+*When Authelia or Authentik already guards the door, don't ask twice.*
+
+- Trust a username header (`Remote-User`, …) only from listed proxy
+  addresses; refuse to start half-configured.
+- The session follows the header; guides for Authelia (nginx, Traefik,
+  Caddy) and Authentik outposts.
+- Release **v2.3.0** (Phases 23.1 and 23.2).
+
+→ [`phase-23.2.md`](phase-23.2.md)
+
+## Phase 24 — Needs attention + v2.4 release
+*What is wrong right now, on one short list, with the fix one tap away.*
+
+- Overdue work (from *Coming up*), implausible readings, unusual fill-ups,
+  stale mileage and stale valuations, in a fixed order on the overview and
+  a dashboard widget.
+- Data checks can be hidden until their data changes. Deliberately not a
+  health score.
+- Release **v2.4.0**.
+
+→ [`phase-24.md`](phase-24.md)
+
 ---
 
 ## After 1.0
@@ -412,22 +488,12 @@ them.*
 Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 §12):
 
-- OIDC / SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth,
-  once Phase 19 has users to attach them to.
 - Server-side PDF: emailed or scheduled reports, and a one-file sale pack
   with the invoices merged in.
 - An MCP server on the REST API, for AI actions.
-- Trip/journey log (business vs personal mileage),
-  personal fuel-tank entity, VIN decode / registration lookup,
+- Personal fuel-tank entity, VIN decode / registration lookup,
   OBD-II / vehicle-API mileage import (through the REST API, Phase 18.2).
-- A *Needs attention* list on the overview (overdue items, economy and tyre
-  flags), once Phases 13–15 are in. Deliberately not a health score.
 
 Not planned: automatic vehicle valuation from online services (third-party
 lookups and paid APIs, against keeping data local) and generic depreciation
 curves (invented figures beside real ones).
-
----
-
-*This roadmap is a plan, not a promise — phases and priorities may shift. The
-`phase-*.md` files and [`spec.md`](spec.md) are the working source of truth.*

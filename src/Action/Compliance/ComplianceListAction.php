@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Compliance;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Compliance\ComplianceService;
@@ -39,7 +38,7 @@ final readonly class ComplianceListAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $leadDays = $this->reminderSettings->reminderPreferences($user->id)->documentDays;
         $states = $this->compliance->states($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone()), $leadDays);

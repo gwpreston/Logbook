@@ -8,6 +8,7 @@
 {% set data = vehicle.data %}
 {% set dash = '—' %}
 {% set latest = odometer.latest() %}
+{% set costs = can_see_costs(vehicle) %}
 
 {% block title %}{{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
@@ -28,10 +29,12 @@
                 fuel_summary and fuel_summary.hasEconomy() ? fuel_summary.measuredDistanceKm|economy(fuel_summary.measuredVolume, electric) : dash,
                 fuel_summary and fuel_summary.hasEconomy() ? 'fuel.stat.all_time'|trans : 'fuel.stat.need_two_full'|trans,
                 fuel_summary and fuel_summary.hasEconomy() ? 'good' : '') }}
+            {% if costs %}
             {{ ui.stat((electric ? 'fuel.stat.cost_per_distance_ev' : 'fuel.stat.cost_per_distance')|trans,
                 fuel_summary and fuel_summary.costPerKm() is not null ? fuel_summary.costPerKm()|per_distance(currency) : dash,
                 (electric ? 'fuel.stat.charging_only' : 'fuel.stat.fuel_only')|trans) }}
             {{ ui.stat((electric ? 'fuel.stat.spend_ev' : 'fuel.stat.spend')|trans, fuel.isEmpty() ? dash : fuel.totalCost()|money(currency), 'fuel.stat.all_time'|trans) }}
+            {% endif %}
             {% endif %}
         </dl>
 
@@ -199,20 +202,21 @@
                 </dl>
             </section>
 
-            {# Ownership (spec.md §7.1): hidden until there is a purchase, a sale or a valuation. #}
-            {% if data.purchaseDate or data.purchasePrice is not null or data.saleDate or data.salePrice is not null or has_valuations %}
+            {# Ownership (spec.md §7.1): hidden until there is a purchase, a sale or a valuation,
+               and for someone who may not see the vehicle's costs. #}
+            {% if costs and (data.purchaseDate or data.purchasePrice is not null or data.saleDate or data.salePrice is not null or has_valuations) %}
             {% set value = depreciation.current %}
             <section class="card" aria-labelledby="ownership-heading">
                 <h2 id="ownership-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>
                 <dl class="details">
                     {% if data.purchaseDate or data.purchasePrice is not null %}
-                        <div><dt>{{ 'valuation.row.bought'|trans }}</dt><dd>{{ _self.dated(data.purchaseDate, data.purchasePrice, currency) }}{{ _self.paperwork(vehicle, 'purchase', paperwork) }}</dd></div>
+                        <div><dt>{{ 'valuation.row.bought'|trans }}</dt><dd>{{ _self.dated(data.purchaseDate, data.purchasePrice, currency, costs) }}{{ _self.paperwork(vehicle, 'purchase', paperwork) }}</dd></div>
                     {% endif %}
                     {% if value and value.kind.value == 'valuation' %}
-                        <div><dt>{{ 'valuation.row.latest'|trans }}</dt><dd>{{ _self.dated(value.date, value.amount, currency) }}{% if value.source %} <span class="muted">· {{ value.source }}</span>{% endif %}</dd></div>
+                        <div><dt>{{ 'valuation.row.latest'|trans }}</dt><dd>{{ _self.dated(value.date, value.amount, currency, costs) }}{% if value.source %} <span class="muted">· {{ value.source }}</span>{% endif %}</dd></div>
                     {% endif %}
                     {% if data.saleDate or data.salePrice is not null %}
-                        <div><dt>{{ 'valuation.row.sold'|trans }}</dt><dd>{{ _self.dated(data.saleDate, data.salePrice, currency) }}{{ _self.paperwork(vehicle, 'sale', paperwork) }}</dd></div>
+                        <div><dt>{{ 'valuation.row.sold'|trans }}</dt><dd>{{ _self.dated(data.saleDate, data.salePrice, currency, costs) }}{{ _self.paperwork(vehicle, 'sale', paperwork) }}</dd></div>
                     {% endif %}
                     {% if depreciation.change is not null %}
                         {% set change_amount = depreciation.change|trim('-', 'left')|money(currency) %}
@@ -262,8 +266,8 @@
             </section>
             {% endif %}
 
-            {# Cost of ownership (spec.md §7.1, §7.7): core, hidden only without an ownership period. #}
-            {% if ownership_cost %}
+            {# Cost of ownership (spec.md §7.1, §7.7): core, hidden only without an ownership period (or cost access). #}
+            {% if costs and ownership_cost %}
             {% import 'macros/ownership.twig' as own %}
             {% set cost = ownership_cost %}
             <section class="card" aria-labelledby="cost-heading">
@@ -328,10 +332,10 @@
 {% endblock %}
 
 {# A date and an amount, either of which may be missing: "14 Mar 2021 · £14,250". #}
-{% macro dated(date, amount, currency) -%}
+{% macro dated(date, amount, currency, costs = false) -%}
     {{- date ? date|local_date -}}
-    {{- date and amount is not null ? ' · ' -}}
-    {%- if amount is not null %}<span class="tabular">{{ amount|money(currency) }}</span>{% endif -%}
+    {{- date and amount is not null and costs ? ' · ' -}}
+    {%- if amount is not null and costs %}<span class="tabular">{{ amount|money(currency) }}</span>{% endif -%}
 {%- endmacro %}
 
 {# The purchase or sale paperwork beside its date: a paperclip with the count,

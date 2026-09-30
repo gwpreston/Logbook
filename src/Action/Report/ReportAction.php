@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Report;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
@@ -48,7 +49,7 @@ final readonly class ReportAction
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,
             'ranges' => ReportRange::cases(),
-            'all_vehicles' => $this->vehicles->listFleet($user, true),
+            'all_vehicles' => $this->vehicles->listWith($user, VehicleAbility::ViewCosts, true),
             'charts' => array_map($this->charts->monthly(...), $report->currencies),
             'filter_query' => $filter->toQuery(),
             'ownership_query' => OwnershipReportAction::query($filter),

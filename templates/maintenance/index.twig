@@ -24,9 +24,11 @@
             {{ ui.stat('maintenance.stat.last'|trans,
                 last ? last.data.performedOn|local_date : dash,
                 last ? last.data.title : 'maintenance.stat.none'|trans) }}
+            {% if can_see_costs(vehicle) %}
             {{ ui.stat('maintenance.stat.spend'|trans,
                 history.isEmpty() ? dash : history.totalCost()|money(currency),
                 'maintenance.stat.entries'|trans({count: history.count()})) }}
+            {% endif %}
         </dl>
 
         <section class="card" aria-labelledby="schedules-heading">

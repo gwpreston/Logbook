@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Tyre\TyreSync;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
@@ -22,7 +20,6 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class DeleteTyreAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private TyreService $tyres,
         private TyreChangeService $changes,
         private View $view,
@@ -35,7 +32,7 @@ final readonly class DeleteTyreAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $tyre = TyreRoute::tyre($this->tyres, $vehicle, $request, $args);
 
         if ($request->getMethod() !== 'POST') {

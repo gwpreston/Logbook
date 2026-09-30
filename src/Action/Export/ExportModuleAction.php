@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Export;
 
-use Logbook\Action\Vehicle\VehicleRoute;
 use Logbook\Service\Export\CsvExporter;
 use Logbook\Service\Export\ExportModule;
 use Logbook\Service\Feature\FeatureToggles;
-use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\CsvResponder;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -23,7 +21,6 @@ use Slim\Exception\HttpNotFoundException;
 final readonly class ExportModuleAction
 {
     public function __construct(
-        private VehicleService $vehicles,
         private CsvExporter $exporter,
         private FeatureToggles $features,
     ) {
@@ -34,7 +31,7 @@ final readonly class ExportModuleAction
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehicle = VehicleRoute::vehicle($this->vehicles, $request, $args);
+        $vehicle = RequestContext::vehicle($request);
         $module = ExportModule::tryFrom($args['module'] ?? '') ?? throw new HttpNotFoundException($request);
         $feature = $module->feature();
         if ($feature !== null && !$this->features->isEnabled($feature)) {
