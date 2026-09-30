@@ -6,6 +6,24 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 18.1: one access policy, ahead of the REST API (18.2) and more users
+(19). Nothing visible changes for the single owner; no migrations.
+
+### Changed
+- **Access policy:** who may do what with a vehicle (view, see costs, log,
+  manage, own) and with the install (modules, backup, restore) is decided in
+  one place. Every `/vehicles/{id}` and `/reminders/{id}` route declares what
+  it needs; a vehicle you cannot see answers 404, one you can see but not
+  change this way a 403 page that says so. The garage, dashboard, History,
+  *Coming up*, Reports, reminders, the calendar feed and the scheduler all
+  take their vehicles from it.
+- Every amount shown for a vehicle sits behind a cost-visibility check, and
+  Reports, the Ownership report and *Coming up* count only vehicles whose
+  costs can be seen, so a later policy can hide costs without touching the
+  pages again.
+- A test fails the build for any route that does not say what access it
+  needs, and another for any amount a template shows outside a cost check.
+
 ## [1.9.0] — 2026-09-29
 
 Phases 17.1 and 17.2: the sale pack, and printable reports. A buyer's view

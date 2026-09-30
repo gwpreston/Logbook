@@ -142,18 +142,30 @@ disagree):
   scheduler runs per user, as it already notifies per owner. Pickers that
   lead to a log form (*Log entry*, quick fill-up) list only vehicles with
   `Log`.
-- **Costs.** Templates show an amount only inside a
-  `can_see_costs(vehicle)` check (a Twig function backed by `ViewCosts`;
-  `can_see_costs()` with no vehicle means "every visible vehicle"). Report,
-  ownership and *Coming up* services drop vehicles without `ViewCosts`
-  from their figures. Under the Phase 18.1 policy this is always true.
+- **Costs.** Templates show a vehicle's amounts only inside a
+  `can_see_costs(vehicle)` check (a Twig function backed by `ViewCosts`),
+  charts of amounts included. Fleet figures need no check of their own:
+  Reports, the Ownership report, their CSVs and the dashboard's spend count
+  only vehicles with `ViewCosts` (and list only those in their vehicle
+  filter), and *Coming up* leaves out the amounts of the others. A test
+  scans the templates and fails on an amount outside a check, bar the
+  exceptions it lists with their reason (fleet figures, pages whose route
+  already needs `ViewCosts`, entry forms). Under the Phase 18.1 policy the
+  check is always true.
 - **Attachments** are served after a `View` check on their vehicle. Their
   lookup is already scoped by `vehicle_id` (§7.12).
-- **Instance pages** (Settings → Modules, Backup and restore, the
-  notification channels on Settings → Reminders and their test message)
-  check `InstanceAccess`. Personal settings (units, language, theme,
-  password, reminder lead times, calendar feed) need only a signed-in
-  user.
+- **Instance pages** (Settings → Modules, Backup and restore) declare
+  their `InstanceAbility` as the route argument `instance`, checked by
+  `Middleware\InstanceAccessMiddleware` (403 without it); their links on
+  Settings use `can_instance()`. Personal settings (units, language, theme,
+  password, tyre limits, and all of Settings → Reminders: lead times, the
+  channels one is notified on, email, digest, the test message and the
+  calendar feed, each stored per user) need only a signed-in user.
+  `ManageNotifications` is reserved for when the channels' servers, set by
+  environment variables today, can be set in the app.
+- **Reminder routes** (`/reminders/{reminder}`) declare a vehicle ability
+  too (`Log` to mark done, dismiss or reopen; `Manage` to edit or delete);
+  the reminder's vehicle must be visible (404) and allow it (403).
 - **Route inventory.** A test loads every route and classifies it as
   public, signed-in (personal), fleet (policy-filtered lists), instance
   (an `InstanceAbility`), or vehicle (a declared `VehicleAbility`). An
