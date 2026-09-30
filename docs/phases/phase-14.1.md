@@ -271,5 +271,8 @@ value-over-time chart. Released with Phase 14.2 as Logbook v1.6.0.
 - **Insurer's agreed value.** An insurance document could carry the value
   it insures for and offer it as a valuation. Small, but it touches
   compliance; wait for demand.
+  *Parked 2026-09-30: recorded in spec §12. Until then, log it as a
+  valuation with the source "Insurer".*
 - **A valuation's mileage** as context (not a reading). Left out to keep
   one mileage series.
+  *Decided 2026-09-30: no. Valuations keep no mileage.*

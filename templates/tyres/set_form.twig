@@ -44,7 +44,7 @@
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'form.save'|trans }}</button>
                 <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('tyres.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
                 {% if not in_use %}
-                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('tyres.sets.delete', {id: vehicle.id, set: set.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('tyres.sets.delete', {id: vehicle.id, set: set.id}) }}" data-modal>{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}
             </div>
             {% if in_use %}<p class="field__hint">{{ 'tyre.set.in_use'|trans }}</p>{% endif %}

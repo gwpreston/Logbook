@@ -19,7 +19,9 @@ use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Domain\Setting\SettingScope;
 use Logbook\Repository\ReminderRepository;
+use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Maintenance\ScheduleService;
@@ -91,6 +93,17 @@ abstract class ReminderTestCase extends AppTestCase
         self::assertNotNull($owner);
 
         return $owner;
+    }
+
+    /**
+     * Make the owner one from before 2.1.0 who never saved the Notifications
+     * card (no stored row, so no digest), for tests that count what is sent.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function ownerFromBefore21(App $app): void
+    {
+        $this->service($app, SettingRepository::class)->delete('notifications', SettingScope::User, $this->owner($app)->id);
     }
 
     /**

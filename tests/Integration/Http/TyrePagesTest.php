@@ -319,6 +319,131 @@ final class TyrePagesTest extends AppTestCase
         self::assertSame(TyreStatus::Fitted, $edited->status, 'the state is not the edit form\'s');
     }
 
+    /**
+     * Phase 21.1: every tyre edit form and delete confirmation answers the
+     * modal header with the form alone; without it, the full page renders.
+     */
+    public function testEveryTyreFormAndConfirmationRendersInTheModal(): void
+    {
+        $this->startWithExistingTyres();
+        $this->swapIntoANewSet();
+        $service = $this->service($this->app, TyreService::class);
+        $tyre = $service->tyres($this->car)[0];
+        $change = $service->changes($this->car)[0];
+        $set = $service->sets($this->car)[0];
+
+        $pages = [
+            $this->base . '/' . $tyre->id . '/edit',
+            $this->base . '/' . $tyre->id . '/delete',
+            $this->base . '/changes/' . $change->id . '/edit',
+            $this->base . '/changes/' . $change->id . '/delete',
+            $this->base . '/sets/' . $set->id . '/edit',
+        ];
+        foreach ($pages as $url) {
+            $action = 'action="' . $url . '"';
+            $page = self::body($this->browser->get($url));
+            self::assertStringContainsString('class="back-link"', $page, $url . ': the whole page without the header');
+            self::assertStringContainsString($action, $page, $url);
+
+            $modal = $this->browser->get($url, self::MODAL);
+            self::assertSame(200, $modal->getStatusCode(), $url);
+            $html = self::body($modal);
+            self::assertStringContainsString('data-modal-fragment', $html, $url);
+            self::assertStringNotContainsString('class="back-link"', $html, $url . ': the modal renders only the form');
+            self::assertStringContainsString($action, $html, $url);
+            self::assertStringContainsString('data-modal-cancel', $html, $url . ': Cancel closes the dialog');
+        }
+    }
+
+    public function testTyreLinksOpenTheModal(): void
+    {
+        $this->startWithExistingTyres();
+        $service = $this->service($this->app, TyreService::class);
+        $tyre = $this->fitted()['fl'];
+        $change = $service->changes($this->car)[0];
+
+        $tab = self::body($this->browser->get($this->base));
+        self::assertStringContainsString('href="' . $this->base . '/' . $tyre->id . '/edit" data-modal', $tab, 'the tyre cards');
+
+        $edit = self::body($this->browser->get($this->base . '/' . $tyre->id . '/edit', self::MODAL));
+        $delete = 'href="' . $this->base . '/' . $tyre->id . '/delete" data-modal';
+        self::assertStringContainsString($delete, $edit, 'Delete loads into the dialog');
+        $changeEdit = self::body($this->browser->get($this->base . '/changes/' . $change->id . '/edit', self::MODAL));
+        self::assertStringContainsString('href="' . $this->base . '/changes/' . $change->id . '/delete" data-modal', $changeEdit);
+    }
+
+    public function testModalSavesAndDeletesAnswerWithTheLocation(): void
+    {
+        $this->startWithExistingTyres();
+        $this->swapIntoANewSet();
+        $service = $this->service($this->app, TyreService::class);
+        $tyre = $service->tyres($this->car)[0];
+        $set = $service->sets($this->car)[0];
+
+        $bad = $this->browser->post($this->base . '/' . $tyre->id . '/edit', ['dot' => '5423'], headers: self::MODAL);
+        self::assertSame(422, $bad->getStatusCode());
+        self::assertStringContainsString('data-modal-fragment', self::body($bad), 'the error re-renders inside the dialog');
+        self::assertStringContainsString('That week does not exist', self::body($bad));
+
+        $saved = $this->browser->post($this->base . '/' . $tyre->id . '/edit', ['brand' => 'Michelin'], headers: self::MODAL);
+        self::assertSame(204, $saved->getStatusCode(), self::body($saved));
+        self::assertSame($this->base, $saved->getHeaderLine('X-Logbook-Location'));
+
+        $renamed = $this->browser->post(
+            $this->base . '/sets/' . $set->id . '/edit',
+            ['name' => 'Winter wheels', 'location' => '', 'notes' => ''],
+            headers: self::MODAL,
+        );
+        self::assertSame(204, $renamed->getStatusCode(), self::body($renamed));
+
+        $deleted = $this->browser->post($this->base . '/' . $tyre->id . '/delete', headers: self::MODAL);
+        self::assertSame(204, $deleted->getStatusCode());
+        self::assertSame($this->base, $deleted->getHeaderLine('X-Logbook-Location'));
+    }
+
+    public function testEditingAChangeFromHistoryReturnsThere(): void
+    {
+        $this->startWithExistingTyres();
+        $this->swapIntoANewSet();
+        $swaps = array_filter(
+            $this->service($this->app, TyreService::class)->changes($this->car),
+            static fn ($change): bool => $change->kind->value === 'swap',
+        );
+        $change = array_values($swaps)[0];
+        $history = '/vehicles/' . $this->car->id . '/history';
+        $edit = $this->base . '/changes/' . $change->id . '/edit?return=' . urlencode($history);
+
+        $page = self::body($this->browser->get('/vehicles/' . $this->car->id . '/history'));
+        $link = preg_quote($this->base . '/changes/' . $change->id . '/edit?return=', '#');
+        self::assertMatchesRegularExpression('#href="' . $link . '[^"]+" data-modal#', $page);
+
+        $form = self::body($this->browser->get($edit, self::MODAL));
+        self::assertStringContainsString('name="return" value="' . htmlspecialchars($history) . '"', $form);
+        $saved = $this->browser->post($this->base . '/changes/' . $change->id . '/edit', [
+            'done_on' => '2026-03-01',
+            'odometer' => '20800',
+            'note' => 'From history',
+            'return' => $history,
+        ], headers: self::MODAL);
+        self::assertSame(204, $saved->getStatusCode(), self::body($saved));
+        self::assertSame($history, $saved->getHeaderLine('X-Logbook-Location'));
+    }
+
+    /**
+     * Take the road tyres off into a new set, so there is a set to edit.
+     */
+    private function swapIntoANewSet(): void
+    {
+        $swap = $this->browser->post($this->base . '/swap', [
+            'done_on' => '2026-03-01',
+            'odometer' => '20800',
+            'set' => 'new',
+            'set_name' => 'Summer wheels',
+            'set_location' => 'Garage loft',
+        ]);
+        self::assertSame(303, $swap->getStatusCode(), self::body($swap));
+    }
+
     public function testTheTyresModuleOffRemovesItEverywhereAndKeepsTheReadings(): void
     {
         $this->startWithExistingTyres();

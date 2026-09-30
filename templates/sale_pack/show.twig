@@ -6,7 +6,8 @@
  # options, the paperwork panel and every seller notice are for the screen
  # only; print CSS prints the sheet black on white, the summary on a page of
  # its own. Nothing here shows a price paid, fuel, expenses, valuations or
- # ownership costs; work costs only with `costs=1`.
+ # ownership costs; work costs only with `costs=1`. With `photo=1` and a
+ # photo, a cover page comes first (Phase 21.1).
  #}
 
 {% set active_nav = 'garage' %}
@@ -25,11 +26,18 @@
             {% include 'sale_pack/_paperwork.twig' %}
         </div>
 
+        {% if pack.hasCover() %}
+            <div class="alert alert--warning no-print sale-pack__notice" role="note">{{ ui.icon('warning') }}<span>{{ 'sale_pack.cover.notice'|trans }}</span></div>
+        {% endif %}
+
         {% if pack.hasMileageWarnings() %}
             {% include 'sale_pack/_mileage_notice.twig' %}
         {% endif %}
 
         <article class="card history-print__sheet sale-pack__sheet">
+            {% if pack.hasCover() %}
+                {% include 'sale_pack/_cover.twig' %}
+            {% endif %}
             {% include 'sale_pack/_summary.twig' %}
             {% include 'sale_pack/_mileage.twig' %}
             {% include 'sale_pack/_history.twig' %}

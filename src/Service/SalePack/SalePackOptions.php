@@ -12,8 +12,8 @@ namespace Logbook\Service\SalePack;
  *
  * Parsing is strict: a box is on only at `1`. Before the form is sent, a
  * link's `timeline=1` still turns that box on, and anything else (absent or
- * unknown) falls back to the default; once sent, anything else is off. `costs` is off
- * unless it is exactly `1`, sent or not. Paperwork kinds are read only from
+ * unknown) falls back to the default; once sent, anything else is off. `costs` and
+ * `photo` (the cover page, Phase 21.1) are off unless exactly `1`, sent or not. Paperwork kinds are read only from
  * the kinds offered, so a forged `kinds[]=registration` names nothing;
  * `exclude[]` keeps positive integer ids only, and only ever takes files
  * away (PaperworkSelector). The *Choose files* form sends the files still
@@ -35,6 +35,7 @@ final readonly class SalePackOptions
         public array $kinds = [],
         public array $exclude = [],
         public ?array $keep = null,
+        public bool $photo = false,
     ) {
     }
 
@@ -61,6 +62,7 @@ final readonly class SalePackOptions
             kinds: $kinds,
             exclude: self::ids($query['exclude'] ?? null),
             keep: ($query['choose'] ?? '') === '1' ? self::ids($query['keep'] ?? null) : null,
+            photo: ($query['photo'] ?? '') === '1',
         );
     }
 
@@ -88,7 +90,15 @@ final readonly class SalePackOptions
      */
     public function excluding(array $exclude): self
     {
-        return new self($this->dueNext, $this->descriptions, $this->timeline, $this->costs, $this->kinds, $exclude);
+        return new self(
+            $this->dueNext,
+            $this->descriptions,
+            $this->timeline,
+            $this->costs,
+            $this->kinds,
+            $exclude,
+            photo: $this->photo,
+        );
     }
 
     /**
@@ -122,6 +132,7 @@ final readonly class SalePackOptions
             'descriptions' => $this->descriptions ? '1' : '',
             'timeline' => $this->timeline ? '1' : '',
             'costs' => $this->costs ? '1' : '',
+            'photo' => $this->photo ? '1' : '',
             'kinds' => array_map(static fn (PaperworkKind $kind): string => $kind->value, $this->kinds),
             'exclude' => array_map(strval(...), $this->exclude),
         ], static fn (string|array $value): bool => $value !== '' && $value !== []);

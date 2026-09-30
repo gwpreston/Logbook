@@ -2200,6 +2200,77 @@ a.list__title:hover {
     list-style: none;
 }
 
+/* Drop zones (spec.md §7.12, Phase 21.1): only styled once js/file-drop.js
+   has enhanced them; without JS the input is left as it is. Dragging over
+   changes the border and the text, not only the colour. */
+.file-drop--enhanced {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+}
+
+.file-drop--enhanced:focus-within {
+    border-color: var(--accent);
+}
+
+.file-drop--over {
+    border-style: solid;
+    border-color: var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    background: var(--accent-soft);
+}
+
+.file-drop__prompt {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.file-drop--over .file-drop__prompt {
+    color: var(--text);
+}
+
+.file-drop__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.file-drop__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-height: 2.375rem;
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.file-drop__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-drop__size {
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+}
+
 .attachment-list--inset {
     margin: 0;
     padding: 0 var(--space-2) var(--space-2) calc(2.375rem + var(--space-3) + var(--space-2));
@@ -3757,11 +3828,89 @@ a.list__title:hover {
     white-space: nowrap;
 }
 
+/* The cover page (Phase 21.1): the photo as large as fits, never cropped
+   or stretched, above what the vehicle is. */
+.sale-pack__cover {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--border);
+}
+
+.sale-pack__cover-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+.sale-pack__cover-photo img {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+}
+
+.sale-pack__cover-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    text-align: center;
+    align-items: center;
+}
+
+.sale-pack__cover-text > * {
+    margin: 0;
+}
+
+.sale-pack__cover-name {
+    font-family: var(--font-display);
+    font-size: var(--fs-3xl);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: 1.15;
+}
+
+.sale-pack__cover-line {
+    font-size: var(--fs-lg);
+}
+
 @media print {
     /* The summary is a page of its own; the rest follows. */
     .sale-pack__summary {
         break-after: page;
         page-break-after: always;
+    }
+
+    /* A page of its own, sized to fit A4 and Letter inside the page margins
+       (15 mm top and bottom): the photo takes what the text leaves, so a
+       tall photo shrinks instead of pushing the text onto another page. */
+    .sale-pack__cover {
+        height: 245mm;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        break-after: page;
+        page-break-after: always;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .sale-pack__cover-photo {
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    .sale-pack__cover-photo img {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+    }
+
+    .sale-pack__cover-text {
+        flex: none;
     }
 
     .sale-pack__section:first-of-type {

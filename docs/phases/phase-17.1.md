@@ -302,5 +302,10 @@ with invoices merged)".
 - Should the pack include the vehicle photo on the summary page? It helps
   a buyer, but the photo may show the seller's house or a plate the seller
   wants hidden. Off by default, or not at all?
+  *Decided 2026-09-30: optional and off by default, on a cover page before the
+  summary, with a screen-only warning about plates and houses. Phase
+  21.1.*
 - Is 31 days the right tolerance between purchase and first reading, or
   should the line say "since the first reading on …" instead of hiding?
+  *Decided 2026-09-30: keep 31 days. Past it, *Owned since* stays and only the
+  distance is left out (`OwnershipSpan::MAX_DAYS`).*

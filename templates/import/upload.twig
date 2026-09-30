@@ -30,7 +30,8 @@
                 {% endif %}
                 <div class="field">
                     <label class="field__label" for="f-file">{{ 'import.file'|trans }}</label>
-                    <input class="input input--file" id="f-file" name="file" type="file" accept=".csv,.txt,text/csv,text/plain" required aria-describedby="f-file-hint{{ error ? ' f-file-error' }}"{% if error %} aria-invalid="true"{% endif %}>
+                    {% set native %}<input class="input input--file" id="f-file" name="file" type="file" accept=".csv,.txt,text/csv,text/plain" required aria-describedby="f-file-hint{{ error ? ' f-file-error' }}"{% if error %} aria-invalid="true"{% endif %}>{% endset %}
+                    {{ ui.file_drop(native, {max_mb: max_upload_mb, type_message: 'not_csv'}) }}
                     <p class="field__hint" id="f-file-hint">{{ 'import.file_hint'|trans({max: max_upload_mb, rows: max_rows}) }}</p>
                 </div>
                 <div class="btn-row">

@@ -2,9 +2,9 @@
 
 *Small things that make everyday use smoother.*
 
-Status: 📋 planned · ships with Phase 21.2 as **v2.1.0**
+Status: ✅ complete · ships with Phase 21.2 as **v2.1.0**
 
-Four owner requests:
+Four owner requests, and one small item from the Phase 20 review (§5):
 
 1. Editing a tyre opens in a modal on desktop, like every other entry
    form. Today it opens a new page.
@@ -41,17 +41,17 @@ intervals, documents, expenses and the *Log entry* chooser. The tyre
 Add "tyres, tyre changes and tyre sets" to §5's list.
 
 ### Tasks
-- [ ] Add `modal_body` and `heading` blocks to the tyre edit, change edit,
+- [x] Add `modal_body` and `heading` blocks to the tyre edit, change edit,
       set edit and the three delete-confirmation templates.
-- [ ] Add `data-modal` to their links (Tyres tab cards and lists, History
+- [x] Add `data-modal` to their links (Tyres tab cards and lists, History
       rows, *Recent activity*); `return` from History.
-- [ ] Their Actions keep working unchanged under `ModalMiddleware`: 422
+- [x] Their Actions keep working unchanged under `ModalMiddleware`: 422
       re-renders inside the dialog, redirect → 204 with
       `X-Logbook-Location`.
-- [ ] **Audit:** list every form template without `modal_body` (settings
+- [x] **Audit:** list every form template without `modal_body` (settings
       pages excepted). Add each missing entry form here, or record why it
       is a page (for example CSV import's multi-step flow).
-- [ ] Tests: each route answers `X-Logbook-Modal: 1` with only the form;
+- [x] Tests: each route answers `X-Logbook-Modal: 1` with only the form;
       a validation error in the modal returns 422 with the form; a save
       returns 204 with the location; without the header, the full page
       renders as before. The History `return` round-trip works.
@@ -74,19 +74,21 @@ Switching the default would otherwise start monthly emails for every
 existing user who never touched the setting. This is drafted as: **new
 users** (setup and invitations) get it on. **Existing users** keep what they
 have, because the migration writes an explicit "off" for anyone without a
-stored choice. See *Open questions*.
+stored choice. See *Open questions*. (As built, there is no migration: see
+*Changed while building it*.)
 
 ### Tasks
-- [ ] Change the default in the settings service and the Settings →
+- [x] Change the default in the settings service and the Settings →
       Reminders and notifications → *Notifications* card.
-- [ ] Setup and invitation (Phase 19) create users with the digest on.
-- [ ] Migration: store `digest = false` for every existing user with no
+- [x] Setup and invitation (Phase 19) create users with the digest on.
+- [x] ~~Migration: store `digest = false` for every existing user with no
       stored value. Rollback leaves those rows alone: an explicit "off"
       behaves exactly like the old default, so nothing changes on the way
-      back.
-- [ ] The card's hint says the digest is only sent when a channel is set up
+      back.~~ Not needed; see *Changed while building it*.
+
+- [x] The card's hint says the digest is only sent when a channel is set up
       and something is due, as today.
-- [ ] Tests: a new user has it on; an upgraded user without a choice keeps
+- [x] Tests: a new user has it on; an upgraded user without a choice keeps
       it off; an explicit choice is never changed; a user with the digest on
       but no configured channel gets nothing and no error.
 
@@ -121,20 +123,22 @@ stored choice. See *Open questions*.
     files" where dragging is unsupported.
 
 ### Tasks
-- [ ] `ui.file_drop()` macro in `templates/macros/ui.twig` wrapping the
+- [x] `ui.file_drop()` macro in `templates/macros/ui.twig` wrapping the
       existing input (name, `multiple`, accepted types, hint), used by the
       shared attachment partial and the single-file inputs listed.
-- [ ] `assets/js/file-drop.js`: enhancement, merge, remove, limits,
+- [x] `assets/js/file-drop.js`: enhancement, merge, remove, limits,
       announcements, and the page-level drop guard. No new library.
-- [ ] Styles from the design tokens (light and dark), a visible focus ring,
+- [x] Styles from the design tokens (light and dark), a visible focus ring,
       and a highlight that doesn't depend on colour alone (dashed border
       plus text).
-- [ ] Translations (en, de).
+- [x] Translations (en, de).
 - [ ] Tests: server behaviour unchanged (the existing upload tests pass);
       templates render the plain input inside the zone; a JS unit test (or
       a Playwright smoke test if the project gains one) covers merge,
       remove and the limit. Manual check list in the PR for Chrome, Firefox,
-      Safari and the modal path.
+      Safari and the modal path. *Done:* the server, template and JS unit
+      tests, and Chrome including the modal path. *Open:* Firefox and
+      Safari by hand, in the PR checklist.
 
 ---
 
@@ -159,19 +163,37 @@ stored choice. See *Open questions*.
   number plate, house or street. Check it before you share the pack."
 
 ### Tasks
-- [ ] Option parsing (`photo=1` only), with the disabled state when there
+- [x] Option parsing (`photo=1` only), with the disabled state when there
       is no photo.
-- [ ] `templates/sale_pack/_cover.twig` and print CSS: a full-page layout,
+- [x] `templates/sale_pack/_cover.twig` and print CSS: a full-page layout,
       `break-after: page`, image sized to fit A4 and Letter with the text
       block. A tall photo shrinks and never pushes the text onto another
       page.
-- [ ] Translations (en, de).
-- [ ] Tests: off by default (no cover, no image request in the HTML);
+- [x] Translations (en, de).
+- [x] Tests: off by default (no cover, no image request in the HTML);
       `photo=1` with a photo → the cover comes before the summary; `photo=1`
       without a photo → no cover and the option disabled; the ZIP never
       contains the photo; values other than `1` → off.
-- [ ] Mark Phase 17.1's photo question *Decided* in its file and in
+- [x] Mark Phase 17.1's photo question *Decided* in its file and in
       `open-questions.md`.
+
+---
+
+## 5. Where the registration document goes
+
+Phase 12 asked whether owners would file the V5C under *Bought* instead of
+as a *Registration* document. Decided 2026-09-30 (Phase 20 review): a hint.
+
+### Spec change (§7.1)
+
+- The *Purchase paperwork* hint adds: "Keep the registration certificate
+  (V5C) as a *Registration* document instead, so it shows with the
+  vehicle's documents and reminders." German names the
+  *Zulassungsbescheinigung*. The sale paperwork hint is unchanged.
+
+### Tasks
+- [x] The purchase input's hint, in en and de.
+- [x] Test: the vehicle form shows it under *Purchase paperwork* only.
 
 ---
 
@@ -194,7 +216,42 @@ stored choice. See *Open questions*.
 - **Digest for existing users:** keep them as they are (drafted), or
   switch it on for everyone who never made a choice, with a line in the
   upgrade notes?
+  *Decided 2026-09-30: keep them as they are (drafted). Anyone who has saved the
+  Notifications card already has an explicit `digest: false`, so a
+  switch would have reached only some users anyway. Built without the
+  drafted migration: new accounts store `digest: true`, a missing row
+  still reads as off.*
 - **Scope of the modal change:** tyre edit only, or every tyre form
   (drafted)?
+  *Decided 2026-09-30: every tyre form (drafted).*
 - **Drop zones on CSV import and restore:** wanted, or attachments and the
   vehicle form only?
+  *Decided 2026-09-30: yes, the same macro on both.*
+
+## Changed while building it
+
+- **The digest default has no migration.** Setup and invitations store
+  `digest: true` with each new account, and a missing row still reads as
+  "off". Existing users are untouched by construction, rollback has
+  nothing to undo, and restoring a pre-2.1 backup can't switch anyone's
+  digest on (a migration that wrote "off" wouldn't have covered that).
+  Tests that count messages start from a pre-2.1 owner
+  (`ReminderTestCase::ownerFromBefore21()`).
+- **Picking with the file browser also adds** to a zone's selection, as a
+  drop does (the list's *Remove* takes files out), so the zone's list is
+  always what will be sent. A single-file input's pick still replaces.
+- **The drop zone macro wraps the input** (`ui.file_drop(markup, opts)`)
+  rather than rebuilding it, so each input keeps its own attributes (the
+  shared paperwork limit, `required`, `aria-describedby`). Its strings
+  travel as one JSON attribute with `{name}` and `{count}` left for the
+  script.
+- **JS unit tests run with `node --test`** (`composer test:js`,
+  `tests/js/`), in the lint job of CI. Node needs no install step and is
+  never needed to run Logbook.
+- **Checked in Chrome** (scratch server): drop, merge, remove, a refused
+  type, the announcements, the page-level guard, and a dropped file saved
+  through the modal. Still to check by hand: Firefox and Safari, and the
+  cover page in print preview (A4 and Letter, a tall photo).
+- **The audit added the manual reminder form** to the modal forms (§5).
+  Every other form without `modal_body` stays a page, with the reason in
+  spec §5.

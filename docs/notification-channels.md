@@ -131,4 +131,7 @@ the shipped channels are exercised with recorded transports in
 - With no channel reaching someone, nothing is claimed for them: whatever is
   still due is sent once they set a channel up.
 - The optional monthly digest goes out on the first run of each month (each
-  user's time zone), covering the vehicles they receive reminders for.
+  user's time zone), covering the vehicles they receive reminders for. It is
+  on for users created from 2.1.0 on (setup and invitations); users from
+  before keep whatever they had, which is off unless they turned it on.
+  Everyone can change it under Settings → Reminders.

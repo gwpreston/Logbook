@@ -54,6 +54,36 @@
     {% if return_to %}<input type="hidden" name="return" value="{{ return_to }}">{% endif %}
 {%- endmacro %}
 
+{# A drop zone around a file input (spec.md §7.12, Phase 21.1): `input` is
+   the plain <input type="file"> markup, which stays as it is and works
+   without JS; js/file-drop.js adds the drop target, the list of chosen
+   files and the announcements. opts: max_mb (the size limit checked before
+   submitting), type_message (the `upload.file.*` key for a wrong type,
+   default not_a_document). Whether it takes several files comes from the
+   input's own `multiple`. #}
+{% macro file_drop(input, opts = {}) -%}
+    {% set multiple = ' multiple' in (input ~ '') %}
+    {% set strings = {
+        prompt: (multiple ? 'upload.drop.prompt' : 'upload.drop.prompt_one')|trans,
+        choose: (multiple ? 'upload.drop.choose' : 'upload.drop.choose_one')|trans,
+        over: 'upload.drop.over'|trans,
+        remove_label: 'upload.drop.remove_label'|trans,
+        remove: 'upload.drop.remove'|trans({name: '{name}'}),
+        removed: 'upload.drop.removed'|trans({name: '{name}'}),
+        added_one: 'upload.drop.added_one'|trans({count: '{count}'}),
+        added_other: 'upload.drop.added_other'|trans({count: '{count}'}),
+        chosen: 'upload.drop.chosen'|trans({name: '{name}'}),
+        type: ('upload.file.' ~ (opts.type_message ?? 'not_a_document'))|trans({name: '{name}'}),
+        size: 'upload.file.too_large'|trans({name: '{name}', max: opts.max_mb ?? 0}),
+        b: 'units.file.b'|trans({value: '{value}'}),
+        kb: 'units.file.kb'|trans({value: '{value}'}),
+        mb: 'units.file.mb'|trans({value: '{value}'}),
+    } %}
+    <div class="file-drop" data-file-drop data-file-drop-max-mb="{{ opts.max_mb ?? 0 }}" data-file-drop-strings="{{ strings|json_encode }}">
+        {{- input -}}
+    </div>
+{%- endmacro %}
+
 {# Error message for a field, from the `errors` map a form Action passes in. #}
 {% macro field_error(errors, name) -%}
     {% set error = errors[name] ?? null %}

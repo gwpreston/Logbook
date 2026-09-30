@@ -20,7 +20,7 @@
             <div class="btn-row">
                 <a class="btn" href="{{ url_for('settings.reminders') }}">{{ ui.icon('settings') }}{{ 'reminders.settings_link'|trans }}</a>
                 {% if has_vehicles %}
-                    <a class="btn btn--primary" href="{{ url_for('reminders.create') }}">{{ ui.icon('add') }}{{ 'reminders.add'|trans }}</a>
+                    <a class="btn btn--primary" href="{{ url_for('reminders.create') }}" data-modal>{{ ui.icon('add') }}{{ 'reminders.add'|trans }}</a>
                 {% endif %}
             </div>
         </div>

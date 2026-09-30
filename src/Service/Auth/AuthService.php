@@ -8,6 +8,8 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\User\Username;
 use Logbook\Repository\SessionRepository;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Support\Database\Transaction;
 use Logbook\Support\Security\PasswordHasher;
 use Psr\Clock\ClockInterface;
 use SensitiveParameter;
@@ -23,6 +25,8 @@ final readonly class AuthService
         private SessionRepository $sessions,
         private PasswordHasher $hasher,
         private ClockInterface $clock,
+        private ReminderSettingsStore $settings,
+        private Transaction $transaction,
     ) {
     }
 
@@ -40,14 +44,21 @@ final readonly class AuthService
             throw new SetupAlreadyCompleted('An account already exists.');
         }
 
-        return $this->users->insert(
-            Username::normalise($data->username),
-            $this->hasher->hash($data->password),
-            $data->displayName,
-            $data->preferences,
-            $this->clock->now(),
-            isAdmin: true,
-        );
+        $hash = $this->hasher->hash($data->password);
+
+        return $this->transaction->run(function () use ($data, $hash): User {
+            $user = $this->users->insert(
+                Username::normalise($data->username),
+                $hash,
+                $data->displayName,
+                $data->preferences,
+                $this->clock->now(),
+                isAdmin: true,
+            );
+            $this->settings->startNewUser($user->id);
+
+            return $user;
+        });
     }
 
     /**

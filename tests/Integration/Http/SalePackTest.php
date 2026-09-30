@@ -38,6 +38,7 @@ use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
+use Logbook\Repository\VehicleRepository;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -70,6 +71,9 @@ final class SalePackTest extends AppTestCase
         'Cost of ownership' => 'ownership costs',
         'Depreciation' => 'depreciation',
     ];
+
+    /** A 1 × 1 PNG, for the vehicle photo. */
+    private const string PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
     /** @var App<ContainerInterface> */
     private App $app;
@@ -297,6 +301,69 @@ final class SalePackTest extends AppTestCase
         self::assertStringContainsString('Annual service', $timeline);
         self::assertStringNotContainsString('Fill-up', $timeline);
         self::assertStringNotContainsString('Insurance', $timeline);
+    }
+
+    public function testThePhotoCoverIsOffByDefault(): void
+    {
+        $golf = $this->withPhoto($this->garage());
+        $photo = '/vehicles/' . $golf->id . '/photo';
+
+        $queries = [[], ['options' => '1'], ['photo' => 'yes'], ['photo' => 'on'], ['options' => '1', 'photo' => 'true']];
+        foreach ($queries as $query) {
+            $html = $this->page($golf, $query);
+            self::assertStringNotContainsString('sale-pack__cover', $html, http_build_query($query));
+            self::assertStringNotContainsString($photo, $html, 'no image request at all: ' . http_build_query($query));
+            self::assertStringNotContainsString('may show your number plate', $html);
+            self::assertMatchesRegularExpression('#name="photo" value="1">#', $html, 'offered, unticked');
+        }
+    }
+
+    public function testPhotoOneStartsThePackWithTheCover(): void
+    {
+        $golf = $this->withPhoto($this->garage());
+        $html = $this->page($golf, ['options' => '1', 'photo' => '1']);
+
+        $cover = strpos($html, 'class="sale-pack__cover"');
+        $summary = strpos($html, 'class="sale-pack__summary"');
+        self::assertNotFalse($cover);
+        self::assertNotFalse($summary);
+        self::assertLessThan($summary, $cover, 'the cover comes before the summary');
+        $section = substr($html, $cover, $summary - $cover);
+        self::assertStringContainsString('src="/vehicles/' . $golf->id . '/photo?v=' . $golf->photoVersion() . '"', $section);
+        self::assertStringContainsString('Vehicle history', $section);
+        self::assertStringContainsString('Volkswagen Golf', $section);
+        self::assertStringContainsString('GO19 ABC', $section);
+        self::assertStringContainsString('Prepared 27 Sept 2026', $section);
+        self::assertStringContainsString('The photo may show your number plate, house or street.', $html);
+        self::assertMatchesRegularExpression('#name="photo" value="1" checked>#', $html);
+        self::assertStringContainsString('photo=1', $html, 'the pack\'s own links keep the choice');
+
+        $image = $this->browser->get('/vehicles/' . $golf->id . '/photo?v=' . $golf->photoVersion());
+        self::assertSame(200, $image->getStatusCode(), 'served by the authenticated photo route');
+        $visitor = (new TestBrowser($this->app))->get('/vehicles/' . $golf->id . '/photo');
+        self::assertSame(303, $visitor->getStatusCode(), 'a visitor is sent to sign in');
+    }
+
+    public function testPhotoOneWithoutAPhotoHasNoCoverAndTheOptionIsDisabled(): void
+    {
+        $golf = $this->garage();
+        $html = $this->page($golf, ['options' => '1', 'photo' => '1']);
+
+        self::assertStringNotContainsString('sale-pack__cover', $html);
+        self::assertStringNotContainsString('may show your number plate', $html);
+        self::assertMatchesRegularExpression('#name="photo" value="1" disabled#', $html);
+        self::assertStringContainsString('href="/vehicles/' . $golf->id . '/edit">Add a photo on the vehicle’s edit page', $html);
+    }
+
+    public function testTheZipNeverHoldsThePhoto(): void
+    {
+        $golf = $this->withPhoto($this->garage());
+        $zip = $this->zip($golf, ['options' => '1', 'photo' => '1', 'kinds' => ['service', 'inspection', 'photo', 'purchase']]);
+
+        foreach ($zip['files'] as $name => $contents) {
+            self::assertNotSame(base64_decode(self::PNG), $contents, $name . ' is the vehicle photo');
+        }
+        self::assertNotContains('photo.png', $zip['names']);
     }
 
     public function testTheZipHoldsTheDefaultKindsReadablyNamed(): void
@@ -607,6 +674,22 @@ final class SalePackTest extends AppTestCase
         file_put_contents($path, $contents);
         $this->service($this->app, AttachmentService::class)
             ->record($vehicle, $owner, $ownerId, [new StoredFile($relative, $name, $mime, strlen($contents))]);
+    }
+
+    /**
+     * The vehicle with a photo, stored as an upload would store it.
+     */
+    private function withPhoto(Vehicle $vehicle): Vehicle
+    {
+        $path = 'vehicles/' . bin2hex(random_bytes(16)) . '.png';
+        @mkdir($this->uploadDir() . '/vehicles', 0777, true);
+        file_put_contents($this->uploadDir() . '/' . $path, base64_decode(self::PNG));
+        $vehicles = $this->service($this->app, VehicleRepository::class);
+        $vehicles->setPhoto($vehicle->userId, $vehicle->id, $path, 'image/png', new DateTimeImmutable(self::NOW));
+        $withPhoto = $vehicles->findById($vehicle->id);
+        self::assertNotNull($withPhoto);
+
+        return $withPhoto;
     }
 
     /**

@@ -12,6 +12,7 @@ use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Support\View\View;
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\Html;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -66,6 +67,13 @@ final class VehiclePaperworkTest extends AppTestCase
         self::assertStringContainsString('Purchase paperwork', $form);
         self::assertStringContainsString('Sale paperwork', $form);
         self::assertStringNotContainsString('id="f-attachments"', $form, 'no second generic input');
+
+        // Phase 21.1: the V5C belongs with the documents, said under Purchase paperwork only.
+        $document = Html::document($form);
+        $v5c = 'Keep the registration certificate (V5C) as a Registration document instead';
+        self::assertStringContainsString($v5c, Html::element($document, '#f-purchase_attachments-hint')->textContent ?? '');
+        self::assertStringNotContainsString($v5c, Html::element($document, '#f-sale_attachments-hint')->textContent ?? '');
+        self::assertSame(1, substr_count($form, $v5c));
 
         $created = $browser->post('/vehicles/new', self::GOLF, [
             'purchase_attachments' => [$this->pdf('invoice.pdf'), $this->pdf('v5c-slip.pdf')],

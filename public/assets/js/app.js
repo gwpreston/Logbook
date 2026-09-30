@@ -806,6 +806,9 @@
             title.textContent = fragment.getAttribute('data-modal-title') || '';
             body.innerHTML = fragment.innerHTML;
             body.querySelectorAll('[data-fuel-amounts]').forEach(enhanceFuelAmounts);
+            if (window.LogbookFileDrop) {
+                window.LogbookFileDrop.enhance(body);
+            }
             if (!dialog.open) {
                 dialog.showModal();
             }

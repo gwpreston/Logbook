@@ -6,7 +6,8 @@
    attached (open, delete) and one input that takes several files at once.
    The form must be multipart. The files are checked with the rest of the
    form and saved with it, all or nothing; with JS, choosing more than
-   `max_files` is refused before submitting (js/app.js). #}
+   `max_files` is refused before submitting (js/app.js), and files can be
+   dropped onto the input (ui.file_drop, js/file-drop.js). #}
 {% macro card(vehicle, attachments, errors, max_mb, max_files) -%}
     {% import _self as files %}
     <section class="card" aria-labelledby="attachments-heading">
@@ -33,7 +34,8 @@
     {% endif %}
     <div class="field">
         <label class="field__label" for="f-{{ field }}">{{ opts.label ?? (attachments is empty ? 'attachment.field.add' : 'attachment.field.add_another')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-        <input class="input input--file" id="f-{{ field }}" name="{{ field }}[]" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-max-files="{{ max_files }}" data-max-files-message="{{ 'upload.too_many'|trans({max: max_files}) }}"{% if opts.group is defined %} data-max-files-group="{{ opts.group }}"{% endif %}{{ ui.described_by(field, errors, true) }}>
+        {% set native %}<input class="input input--file" id="f-{{ field }}" name="{{ field }}[]" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-max-files="{{ max_files }}" data-max-files-message="{{ 'upload.too_many'|trans({max: max_files}) }}"{% if opts.group is defined %} data-max-files-group="{{ opts.group }}"{% endif %}{{ ui.described_by(field, errors, true) }}>{% endset %}
+        {{ ui.file_drop(native, {max_mb: max_mb}) }}
         <p class="field__hint" id="f-{{ field }}-hint">{{ opts.hint ?? 'attachment.hint'|trans({files: max_files, max: max_mb}) }}</p>
         {{ ui.field_error(errors, field) }}
     </div>

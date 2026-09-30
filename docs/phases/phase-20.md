@@ -2,7 +2,7 @@
 
 *A tidier repository, and nothing left undecided by accident.*
 
-Status: 🚧 in progress · no app release (repository and docs only; noted in
+Status: ✅ complete · no app release (repository and docs only; noted in
 the 2.1.0 changelog)
 
 There are now more than twenty `phase-*.md` files in the root of the
@@ -135,10 +135,10 @@ decided, or carried into `docs/phases/open-questions.md`."
   | # | Phase | Question | Status | Decision or where answered | Date |
   |---|---|---|---|---|---|
 
-- [ ] **Ask the owner** about every *Needs a decision* item in one message,
+- [x] **Ask the owner** about every *Needs a decision* item in one message,
       grouped by area, each with options and a recommendation. Do not act
       until answered.
-- [ ] Record each answer in the log and in its phase file. Where work is
+- [x] Record each answer in the log and in its phase file. Where work is
       needed, update `spec.md` and add tasks to Phase 21.1 or 21.2 if they
       are small and fit, otherwise draft a new phase.
 
@@ -195,3 +195,8 @@ from them:
 - **Unticked boxes** in finished phases (manual browser checks in 7 and
   17.2; release tags in 9.2–13, which exist) are listed at the end of the
   log rather than ticked.
+- **The owner answered on 2026-09-30,** in one message together with the
+  open questions of Phases 21.1 and 21.2. Nine items were parked in spec
+  §12 or declined, #15 (the V5C hint) went into Phase 21.1, and #23 (cost
+  per business mile) into Phase 22. `open-questions.md` gains a *Decided*
+  status for answers that need no work.

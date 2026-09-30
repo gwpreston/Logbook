@@ -47,8 +47,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [18.1](docs/phases/phase-18.1.md) | Access policy | ✅ |
 | [18.2](docs/phases/phase-18.2.md) | REST API v1 + v1.10 release | ✅ |
 | [19](docs/phases/phase-19.md) | Multiple users and vehicle sharing + v2.0 release | ✅ |
-| [20](docs/phases/phase-20.md) | Phase files into `docs/phases/`, open-questions review | 🚧 |
-| [21.1](docs/phases/phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | 📋 |
+| [20](docs/phases/phase-20.md) | Phase files into `docs/phases/`, open-questions review | ✅ |
+| [21.1](docs/phases/phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | ✅ |
 | [21.2](docs/phases/phase-21.2.md) | First MOT due + v2.1 release | 📋 |
 
 *Update the status column as each phase lands.*

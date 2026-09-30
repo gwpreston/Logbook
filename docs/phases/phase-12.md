@@ -282,6 +282,9 @@ released as Logbook v1.4.0.
 - **Remember the last print choice?** An owner who always prints their own
   copy ticks *Show costs* every time. A per-user setting would cover it, at
   the cost of the safe default. Wait and see whether anyone asks.
+  *Decided 2026-09-30: no. *Show costs* stays a per-print choice, so every print
+  starts as the copy a buyer can be handed.*
 - **Paperwork on documents vs purchase.** Some owners will file the V5C as a
   *Registration* document and the purchase invoice under *Bought*. A hint
   may be enough; leave it until the form is in use.
+  *Decided 2026-09-30: a hint on the purchase paperwork input, Phase 21.1.*

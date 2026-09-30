@@ -261,6 +261,37 @@ final class ReminderPagesTest extends ReminderTestCase
         self::assertSame([], $this->reminders($app));
     }
 
+    /**
+     * The manual reminder form opens as a desktop modal (spec.md §5, Phase
+     * 21.1): the form alone with the header, errors inside the dialog, a
+     * save answered with the location.
+     */
+    public function testTheManualReminderFormRendersInTheModal(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $bike = $this->vehicle($app, 'Bike');
+
+        $modal = ['X-Logbook-Modal' => '1'];
+        self::assertStringContainsString('href="/reminders/new" data-modal', self::body($browser->get('/reminders')));
+
+        $form = self::body($browser->get('/reminders/new', $modal));
+        self::assertStringContainsString('data-modal-fragment', $form);
+        self::assertStringNotContainsString('class="back-link"', $form);
+
+        $fields = ['vehicle_id' => (string) $golf->id, 'title' => '', 'due_on' => '', 'lead_time_days' => '7'];
+        $invalid = $browser->post('/reminders/new', $fields, headers: $modal);
+        self::assertSame(422, $invalid->getStatusCode());
+        self::assertStringContainsString('data-modal-fragment', self::body($invalid));
+
+        $fields = ['title' => 'Pay road tax', 'due_on' => '2026-10-01'] + $fields;
+        $created = $browser->post('/reminders/new', $fields, headers: $modal);
+        self::assertSame(204, $created->getStatusCode());
+        self::assertSame('/reminders', $created->getHeaderLine('X-Logbook-Location'));
+    }
+
     public function testGeneratedRemindersAreNotEditedDirectly(): void
     {
         $app = $this->createApp();

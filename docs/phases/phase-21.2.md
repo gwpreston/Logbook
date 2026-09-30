@@ -73,7 +73,9 @@ always change it.
   optional, a date.
   - **Suggestion:** from a rule table on `Support\InspectionRules`, keyed
     by the owner's locale region: `GB` → 36 months after first
-    registration, `DE` → 36 months. The table holds nothing else. Months
+    registration, `DE` → 36 months, `FR`, `IE`, `IT` and `ES` → 48 months
+    (decided 2026-09-30). The table holds nothing else, and a locale with
+    no region (`en`, `de`) gets no suggestion. Months
     are added with end-of-month clamping, as maintenance intervals are, so
     29 Feb 2024 gives 28 Feb 2027.
   - With JS, entering or changing *First registered* fills *First MOT due*
@@ -88,8 +90,10 @@ always change it.
     first MOT.
   - **Hint**, GB: "Usually 3 years after first registration in England,
     Scotland and Wales; 4 years in Northern Ireland." DE: "Usually 3 years
-    after first registration." Others: "Check when the first inspection is
-    due where the vehicle is registered."
+    after first registration." FR, IE, IT, ES: "Usually 4 years after
+    first registration." Others, and a locale with no region: "Check when
+    the first inspection is due where the vehicle is registered. Choose a
+    language with a country in Settings for a suggestion."
   - Once the vehicle has an `inspection` document, the field shows as
     read-only text ("Done: the MOT certificate from 12 Jun 2027 now sets
     the next one") and is not submitted.
@@ -128,16 +132,16 @@ always change it.
 
 ## Existing vehicles
 
-The column arrives empty. Two options for vehicles already in the garage
-(see *Open questions*):
+The column arrives empty. Vehicles already in the garage get option A
+(decided 2026-09-30):
 
-- **A (drafted): a one-time prompt.** Each vehicle that has *First
+- **A (chosen): a one-time prompt.** Each vehicle that has *First
   registered* set, no `inspection` document, and a suggestion today or
   later shows a dismissible card on its overview: "Set a reminder for the
   first MOT? Suggested: 14 Jun 2027", with *Set it* (a POST with CSRF) and
   *Not needed*. Nothing is set without the owner.
-- **B: backfill.** The migration sets the suggestion for those vehicles,
-  and the upgrade notes say so.
+- **B (not chosen): backfill.** The migration would have set the
+  suggestion for those vehicles.
 
 ---
 
@@ -153,8 +157,8 @@ The column arrives empty. Two options for vehicles already in the garage
 - [ ] `vehicles.first_inspection_due_on` (date, nullable). Applies and rolls
       back on every engine. The rollback deletes reminders with source
       `first_inspection`, then drops the column. Moves the schema version.
-- [ ] Option A: a setting (user scope) that records dismissed prompts per
-      vehicle. Option B: the backfill in the migration.
+- [ ] A setting (user scope) that records dismissed prompts per vehicle
+      (option A).
 
 ### Code
 - [ ] `Support\InspectionRules`: region → months, and the hint key.
@@ -173,7 +177,8 @@ The column arrives empty. Two options for vehicles already in the garage
 - [ ] Translations (en, de).
 
 ### Tests
-- [ ] Suggestion: GB and DE give 36 months; 29 Feb clamps; other regions
+- [ ] Suggestion: GB and DE give 36 months, FR, IE, IT and ES 48; 29 Feb
+      clamps; a locale with no region gives none; other regions
       give none; a past suggestion is never filled.
 - [ ] No JS: add with a blank field fills it and flashes; edit with a blank
       field stays blank; an explicit date is kept.
@@ -187,8 +192,7 @@ The column arrives empty. Two options for vehicles already in the garage
 - [ ] *Coming up*, overview, sale pack and API show it; the digest and
       calendar feed include it.
 - [ ] Existing vehicles: option A's prompt appears only when it should and
-      never returns after *Not needed*; or option B's backfill sets only
-      future dates and only for GB and DE owners.
+      never returns after *Not needed*.
 - [ ] Rollback removes the reminders and the column on every engine.
 - [ ] Integration suite green on every engine.
 
@@ -224,8 +228,12 @@ The column arrives empty. Two options for vehicles already in the garage
 
 - **Existing vehicles:** a one-time prompt per vehicle (option A, drafted)
   or a backfill (option B)?
+  *Decided 2026-09-30: option A, the one-time prompt.*
 - **Northern Ireland:** GB-locale owners get the 3-year suggestion with an
   NI hint. Is that enough, or should the form offer a GB / NI choice when
   the locale is `en_GB`?
+  *Decided 2026-09-30: the hint is enough; the date can always be changed.*
 - **Other regions:** add more rules now (France, Ireland, Italy and Spain
   at 4 years), or keep GB and DE only until someone asks?
+  *Decided 2026-09-30: add them: `FR`, `IE`, `IT` and `ES` → 48 months. A locale
+  with no region (`en`, `de`) gets no suggestion, and the hint says so.*

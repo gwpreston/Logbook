@@ -141,7 +141,8 @@
                     {% if editing %}{{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}{% endif %}
                     <div class="field">
                         <label class="field__label" for="f-photo">{{ (editing and vehicle.hasPhoto() ? 'vehicle.field.photo_replace' : 'vehicle.field.photo')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-                        <input class="input input--file" id="f-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"{{ ui.described_by('photo', errors, true) }}>
+                        {% set native %}<input class="input input--file" id="f-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"{{ ui.described_by('photo', errors, true) }}>{% endset %}
+                        {{ ui.file_drop(native, {max_mb: max_upload_mb, type_message: 'not_an_image'}) }}
                         <p class="field__hint" id="f-photo-hint">{{ 'vehicle.hint.photo'|trans({max: max_upload_mb}) }}</p>
                         {{ ui.field_error(errors, 'photo') }}
                     </div>
@@ -168,7 +169,7 @@
                    their milestones, so it needs their dates (spec.md §7.12).
                    Both inputs share one limit per save. #}
                 {% set paperwork_hint = 'vehicle.hint.paperwork'|trans({files: max_upload_files, max: max_upload_mb}) %}
-                {{ files.input(vehicle, purchase_files, errors, max_upload_mb, max_upload_files, {field: 'purchase_attachments', label: 'vehicle.field.purchase_paperwork'|trans, hint: paperwork_hint, group: 'paperwork'}) }}
+                {{ files.input(vehicle, purchase_files, errors, max_upload_mb, max_upload_files, {field: 'purchase_attachments', label: 'vehicle.field.purchase_paperwork'|trans, hint: paperwork_hint ~ ' ' ~ 'vehicle.hint.purchase_registration'|trans, group: 'paperwork'}) }}
                 {% if editing %}
                     <p class="field__hint">{{ 'valuation.form_link_hint'|trans }} <a href="{{ url_for('valuations.index', {id: vehicle.id}) }}">{{ 'valuation.link'|trans }}</a></p>
                 {% endif %}

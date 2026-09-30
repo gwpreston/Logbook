@@ -40,6 +40,14 @@ final readonly class ReminderSettingsStore
         return NotificationPreferences::fromArray($stored?->value);
     }
 
+    /**
+     * Store a new user's starting delivery choices (the digest on, §7.11).
+     */
+    public function startNewUser(int $userId): void
+    {
+        $this->saveNotificationPreferences($userId, NotificationPreferences::forNewUser());
+    }
+
     public function saveNotificationPreferences(int $userId, NotificationPreferences $preferences): void
     {
         $this->settings->save(self::NOTIFICATIONS, $preferences->toArray(), SettingScope::User, $userId);

@@ -1,0 +1,19 @@
+{#
+ # The cover page (spec.md §7.19, Phase 21.1), only with `photo=1` and a
+ # photo: the photo as large as fits, never cropped or stretched, and what
+ # the vehicle is. Printed first, on a page of its own. The photo comes
+ # from the authenticated photo route, like everywhere else.
+ #}
+{% set data = vehicle.data %}
+<section class="sale-pack__cover" aria-labelledby="sale-pack-cover-title">
+    <div class="sale-pack__cover-photo">
+        <img src="{{ url_for('vehicles.photo', {id: vehicle.id}, {v: vehicle.photoVersion()}) }}" alt="{{ 'vehicle.photo_alt'|trans({name: vehicle.name()}) }}">
+    </div>
+    <div class="sale-pack__cover-text">
+        <p class="history-print__eyebrow" id="sale-pack-cover-title">{{ 'sale_pack.cover.title'|trans }}</p>
+        <p class="sale-pack__cover-name">{{ vehicle.name() }}</p>
+        {% if vehicle.description() %}<p class="sale-pack__cover-line">{{ vehicle.description() }}</p>{% endif %}
+        {% if data.registration %}<p class="sale-pack__cover-line"><span class="plate">{{ data.registration }}</span></p>{% endif %}
+        <p class="muted">{{ 'sale_pack.cover.prepared'|trans({date: pack.today|local_date}) }}</p>
+    </div>
+</section>

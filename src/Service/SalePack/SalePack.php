@@ -62,6 +62,15 @@ final readonly class SalePack
     ) {
     }
 
+    /**
+     * The cover page with the vehicle photo (Phase 21.1): only when asked
+     * for with `photo=1`, and only when there is a photo.
+     */
+    public function hasCover(): bool
+    {
+        return $this->options->photo && $this->vehicle->hasPhoto();
+    }
+
     public function hasMileageWarnings(): bool
     {
         return MileageEvidence::hasWarnings($this->mileage);
