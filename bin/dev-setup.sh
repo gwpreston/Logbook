@@ -403,11 +403,14 @@ ok "the app responds on $BASE_URL (HTTP $code)"
 
 # ---------------------------------------------------------------------------
 # Optional: start over from an empty database. Rolled back and migrated again
-# rather than deleting a volume, so only the chosen engine is affected.
+# rather than deleting a volume, so only the chosen engine is affected. The
+# accounts go first: the 2.0.0 migration refuses to roll back past several
+# users (their vehicles and entries go with them).
 # ---------------------------------------------------------------------------
 if [ "$DO_RESET" -eq 1 ]; then
     step "Emptying the database"
     if ! run_logged exec -T app sh -c "
+        php -r 'require \"vendor/autoload.php\"; \$c = Logbook\\Kernel::createContainer(Logbook\\Kernel::settings()); \$c->get(Doctrine\\DBAL\\Connection::class)->executeStatement(\"DELETE FROM users\");' 2>/dev/null || true
         vendor/bin/phinx rollback -e development -t 0 -q &&
         vendor/bin/phinx migrate -e development -q &&
         rm -rf '$DEV_UPLOAD_PATH'"; then
