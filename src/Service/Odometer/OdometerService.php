@@ -55,7 +55,8 @@ final readonly class OdometerService
         PendingUploads $files = new PendingUploads(),
     ): OdometerReading {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
-            $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $this->clock->now(), $this->author->authorId());
+            $now = $this->clock->now();
+            $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $now, $this->author->authorId());
             $this->attachments->record($vehicle, AttachmentOwner::Odometer, $id, $stored);
 
             return $id;
