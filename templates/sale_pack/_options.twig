@@ -26,6 +26,19 @@
                 </span>
             </label>
         {% endfor %}
+        {# The cover page (Phase 21.1): off unless ticked; without a photo there is nothing to show. #}
+        {% set has_photo = vehicle.hasPhoto() %}
+        <label class="toggle">
+            <input type="checkbox" name="photo" value="1"{% if options.photo and has_photo %} checked{% endif %}{% if not has_photo %} disabled aria-describedby="sale-pack-photo-hint"{% endif %}>
+            <span class="toggle__text">
+                <span class="toggle__title">{{ 'sale_pack.options.photo'|trans }}</span>
+                {% if has_photo %}
+                    <span class="toggle__hint">{{ 'sale_pack.options.photo_hint'|trans }}</span>
+                {% else %}
+                    <span class="toggle__hint" id="sale-pack-photo-hint"><a href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{{ 'sale_pack.options.photo_missing'|trans }}</a></span>
+                {% endif %}
+            </span>
+        </label>
     </fieldset>
     <fieldset class="field">
         <legend class="field__label">{{ 'sale_pack.paperwork.kinds'|trans }}</legend>

@@ -1664,8 +1664,9 @@ outside web root, served via an authenticated handler; type/size validated.
   - **Dropping files** (Phase 21.1): the shared input is wrapped in a drop
     zone ("Drag files here or choose files"). Progressive enhancement:
     without JS it is the plain `<input type="file" multiple>`, and the
-    native input stays in the page, focusable and clickable. Dropped files
-    are **added to** the input's current selection (built with
+    native input stays in the page, focusable and clickable. Dropped files,
+    and files picked with the file browser, are **added to** the input's
+    current selection (built with
     `DataTransfer` and assigned to `input.files`), so the form, the modal
     `FormData` submit and the one parser are unchanged. The zone lists the
     chosen files (name and size), each with *Remove*; it highlights while

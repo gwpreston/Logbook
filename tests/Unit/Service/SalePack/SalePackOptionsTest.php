@@ -49,6 +49,19 @@ final class SalePackOptionsTest extends TestCase
         self::assertTrue(SalePackOptions::fromQuery(['options' => '1', 'costs' => '1'], [])->costs);
     }
 
+    public function testOnlyPhotoOneAddsTheCover(): void
+    {
+        foreach ([null, '0', 'true', 'yes', 'on', ' 1', ['1']] as $value) {
+            $query = $value === null ? [] : ['photo' => $value];
+            self::assertFalse(SalePackOptions::fromQuery($query, [])->photo, var_export($value, true));
+            self::assertFalse(SalePackOptions::fromQuery(['options' => '1'] + $query, [])->photo, var_export($value, true));
+        }
+        self::assertTrue(SalePackOptions::fromQuery(['photo' => '1'], [])->photo);
+        $options = SalePackOptions::fromQuery(['options' => '1', 'photo' => '1'], []);
+        self::assertSame('1', $options->query()['photo'] ?? null, 'the links keep it');
+        self::assertTrue($options->excluding([3])->photo);
+    }
+
     public function testUnknownValuesFallBackToTheDefaults(): void
     {
         $query = ['due' => 'no', 'timeline' => 'yes', 'descriptions' => ['1']];

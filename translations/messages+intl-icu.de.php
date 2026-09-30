@@ -407,6 +407,7 @@ return [
             'current_odometer' => 'Leer lassen, wenn Sie ihn mit der ersten Tankfüllung erfassen. 0 ist für ein Neufahrzeug in Ordnung.',
             'current_odometer_on' => 'Wann der Stand abgelesen wurde, zum Beispiel auf der HU-Bescheinigung oder beim Kauf.',
             'paperwork' => 'Rechnung oder Beleg: PDF, JPEG, PNG oder WebP. Bis zu {files} Dateien pro Speichern für Kauf und Verkauf zusammen, je bis {max} MB. Braucht das Datum.',
+            'purchase_registration' => 'Die Zulassungsbescheinigung besser als Dokument vom Typ Zulassung ablegen, damit sie bei den Dokumenten und Erinnerungen des Fahrzeugs erscheint.',
             'current_odometer_edit' => 'Der neueste Stand im Fahrtenbuch. Einen falschen korrigieren Sie im Tab Kilometerstand.',
             'capacity' => 'In {unit}, bei Elektrofahrzeugen in kWh.',
             'default_grade' => 'Wird beim Erfassen einer Tankfüllung vorausgewählt, bis du eine mit Sorte erfasst hast.',
@@ -2254,6 +2255,11 @@ return [
         'prepare' => 'Verkauf vorbereiten',
         'intro' => 'Eine Übersicht für Käufer, ein nachprüfbarer Kilometernachweis und die Historie nach Art. Drucken oder als PDF speichern, die Unterlagen als ZIP-Datei senden. Kaufpreise, Kraftstoff, Ausgaben und Bewertungen sind nie enthalten.',
         'eyebrow' => 'Fahrzeugübersicht',
+        'cover' => [
+            'title' => 'Fahrzeughistorie',
+            'prepared' => 'Erstellt am {date}',
+            'notice' => 'Das Foto kann dein Kennzeichen, dein Haus oder deine Straße zeigen. Prüfe es, bevor du die Mappe weitergibst.',
+        ],
         'options' => [
             'legend' => 'Einschließen',
             'due' => 'Anstehendes zeigen',
@@ -2264,6 +2270,9 @@ return [
             'timeline_hint' => 'Alle Einträge nach Datum, nach den Gruppen.',
             'costs' => 'Kosten der Arbeiten zeigen',
             'costs_hint' => 'Nur Inspektionen, Reparaturen und Prüfungen. Kaufpreise, Kraftstoff und Ausgaben werden nie gezeigt.',
+            'photo' => 'Fahrzeugfoto einschließen',
+            'photo_hint' => 'Auf einem Deckblatt vor der Übersicht.',
+            'photo_missing' => 'Füge auf der Bearbeiten-Seite des Fahrzeugs ein Foto hinzu',
         ],
         'summary' => [
             'model_year' => 'Modelljahr',

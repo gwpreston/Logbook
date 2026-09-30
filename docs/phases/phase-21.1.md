@@ -2,7 +2,7 @@
 
 *Small things that make everyday use smoother.*
 
-Status: 🚧 in progress · ships with Phase 21.2 as **v2.1.0**
+Status: ✅ complete · ships with Phase 21.2 as **v2.1.0**
 
 Four owner requests, and one small item from the Phase 20 review (§5):
 
@@ -122,16 +122,16 @@ stored choice. See *Open questions*.
     files" where dragging is unsupported.
 
 ### Tasks
-- [ ] `ui.file_drop()` macro in `templates/macros/ui.twig` wrapping the
+- [x] `ui.file_drop()` macro in `templates/macros/ui.twig` wrapping the
       existing input (name, `multiple`, accepted types, hint), used by the
       shared attachment partial and the single-file inputs listed.
-- [ ] `assets/js/file-drop.js`: enhancement, merge, remove, limits,
+- [x] `assets/js/file-drop.js`: enhancement, merge, remove, limits,
       announcements, and the page-level drop guard. No new library.
-- [ ] Styles from the design tokens (light and dark), a visible focus ring,
+- [x] Styles from the design tokens (light and dark), a visible focus ring,
       and a highlight that doesn't depend on colour alone (dashed border
       plus text).
-- [ ] Translations (en, de).
-- [ ] Tests: server behaviour unchanged (the existing upload tests pass);
+- [x] Translations (en, de).
+- [x] Tests: server behaviour unchanged (the existing upload tests pass);
       templates render the plain input inside the zone; a JS unit test (or
       a Playwright smoke test if the project gains one) covers merge,
       remove and the limit. Manual check list in the PR for Chrome, Firefox,
@@ -160,18 +160,18 @@ stored choice. See *Open questions*.
   number plate, house or street. Check it before you share the pack."
 
 ### Tasks
-- [ ] Option parsing (`photo=1` only), with the disabled state when there
+- [x] Option parsing (`photo=1` only), with the disabled state when there
       is no photo.
-- [ ] `templates/sale_pack/_cover.twig` and print CSS: a full-page layout,
+- [x] `templates/sale_pack/_cover.twig` and print CSS: a full-page layout,
       `break-after: page`, image sized to fit A4 and Letter with the text
       block. A tall photo shrinks and never pushes the text onto another
       page.
-- [ ] Translations (en, de).
-- [ ] Tests: off by default (no cover, no image request in the HTML);
+- [x] Translations (en, de).
+- [x] Tests: off by default (no cover, no image request in the HTML);
       `photo=1` with a photo → the cover comes before the summary; `photo=1`
       without a photo → no cover and the option disabled; the ZIP never
       contains the photo; values other than `1` → off.
-- [ ] Mark Phase 17.1's photo question *Decided* in its file and in
+- [x] Mark Phase 17.1's photo question *Decided* in its file and in
       `open-questions.md`.
 
 ---
@@ -189,8 +189,8 @@ as a *Registration* document. Decided 2026-09-30 (Phase 20 review): a hint.
   *Zulassungsbescheinigung*. The sale paperwork hint is unchanged.
 
 ### Tasks
-- [ ] The purchase input's hint, in en and de.
-- [ ] Test: the vehicle form shows it under *Purchase paperwork* only.
+- [x] The purchase input's hint, in en and de.
+- [x] Test: the vehicle form shows it under *Purchase paperwork* only.
 
 ---
 
@@ -232,6 +232,21 @@ as a *Registration* document. Decided 2026-09-30 (Phase 20 review): a hint.
   digest on (a migration that wrote "off" wouldn't have covered that).
   Tests that count messages start from a pre-2.1 owner
   (`ReminderTestCase::ownerFromBefore21()`).
+- **Picking with the file browser also adds** to a zone's selection, as a
+  drop does (the list's *Remove* takes files out), so the zone's list is
+  always what will be sent. A single-file input's pick still replaces.
+- **The drop zone macro wraps the input** (`ui.file_drop(markup, opts)`)
+  rather than rebuilding it, so each input keeps its own attributes (the
+  shared paperwork limit, `required`, `aria-describedby`). Its strings
+  travel as one JSON attribute with `{name}` and `{count}` left for the
+  script.
+- **JS unit tests run with `node --test`** (`composer test:js`,
+  `tests/js/`), in the lint job of CI. Node needs no install step and is
+  never needed to run Logbook.
+- **Checked in Chrome** (scratch server): drop, merge, remove, a refused
+  type, the announcements, the page-level guard, and a dropped file saved
+  through the modal. Still to check by hand: Firefox and Safari, and the
+  cover page in print preview (A4 and Letter, a tall photo).
 - **The audit added the manual reminder form** to the modal forms (§5).
   Every other form without `modal_body` stays a page, with the reason in
   spec §5.

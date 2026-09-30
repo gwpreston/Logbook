@@ -3828,11 +3828,89 @@ a.list__title:hover {
     white-space: nowrap;
 }
 
+/* The cover page (Phase 21.1): the photo as large as fits, never cropped
+   or stretched, above what the vehicle is. */
+.sale-pack__cover {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--border);
+}
+
+.sale-pack__cover-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+.sale-pack__cover-photo img {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+}
+
+.sale-pack__cover-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    text-align: center;
+    align-items: center;
+}
+
+.sale-pack__cover-text > * {
+    margin: 0;
+}
+
+.sale-pack__cover-name {
+    font-family: var(--font-display);
+    font-size: var(--fs-3xl);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: 1.15;
+}
+
+.sale-pack__cover-line {
+    font-size: var(--fs-lg);
+}
+
 @media print {
     /* The summary is a page of its own; the rest follows. */
     .sale-pack__summary {
         break-after: page;
         page-break-after: always;
+    }
+
+    /* A page of its own, sized to fit A4 and Letter inside the page margins
+       (15 mm top and bottom): the photo takes what the text leaves, so a
+       tall photo shrinks instead of pushing the text onto another page. */
+    .sale-pack__cover {
+        height: 245mm;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        break-after: page;
+        page-break-after: always;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .sale-pack__cover-photo {
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    .sale-pack__cover-photo img {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+    }
+
+    .sale-pack__cover-text {
+        flex: none;
     }
 
     .sale-pack__section:first-of-type {

@@ -408,6 +408,7 @@ return [
             'current_odometer' => 'Leave blank if you’ll log it with your first fill-up. 0 is fine for a new vehicle.',
             'current_odometer_on' => 'When the figure was read, for example on the MOT certificate or at the sale.',
             'paperwork' => 'The invoice or receipt: PDF, JPEG, PNG or WebP. Up to {files} files per save for purchase and sale together, each up to {max} MB. Needs its date.',
+            'purchase_registration' => 'Keep the registration certificate (V5C) as a Registration document instead, so it shows with the vehicle’s documents and reminders.',
             'current_odometer_edit' => 'The latest reading in the mileage log. Correct a wrong one on the Mileage tab.',
             'capacity' => 'In {unit}, or kWh for an electric vehicle.',
             'default_grade' => 'Preselected when you log a fill-up, until you have logged one with a grade.',
@@ -2256,6 +2257,11 @@ return [
         'prepare' => 'Prepare for sale',
         'intro' => 'A summary for a buyer, a mileage record they can check and the history by type. Print it or save it as a PDF, and send the paperwork as a ZIP. Prices paid, fuel, expenses and valuations are never included.',
         'eyebrow' => 'Vehicle summary',
+        'cover' => [
+            'title' => 'Vehicle history',
+            'prepared' => 'Prepared {date}',
+            'notice' => 'The photo may show your number plate, house or street. Check it before you share the pack.',
+        ],
         'options' => [
             'legend' => 'Include',
             'due' => 'Show what’s due next',
@@ -2266,6 +2272,9 @@ return [
             'timeline_hint' => 'Every entry in date order, after the groups.',
             'costs' => 'Show the cost of work',
             'costs_hint' => 'Services, repairs and inspections only. Prices paid, fuel and expenses are never shown.',
+            'photo' => 'Include the vehicle photo',
+            'photo_hint' => 'On a cover page before the summary.',
+            'photo_missing' => 'Add a photo on the vehicle’s edit page',
         ],
         'summary' => [
             'model_year' => 'Model year',
