@@ -85,13 +85,79 @@ disagree):
 - Front controller (`public/index.php`) → Slim app → middleware stack → Action.
 - **Middleware order (outer→inner):** error handling → base-path → session →
   current user → locale + display preferences → routing → per route group:
-  auth guard → CSRF. The session is global but lazy (no cookie or database
+  auth guard → CSRF → vehicle access (see *Access policy*). The session is global but lazy (no cookie or database
   row until something is stored in it). CSRF and the auth guard sit on route
   groups rather than globally so machine endpoints such as `/health` never
   create sessions; every HTML route is inside a CSRF-protected group.
 - **Current user:** resolved once per request from the session by middleware
   and exposed as the `user` request attribute. Actions never read the session
   to find the user, so multi-user can slot in without touching them.
+- **Access policy** (Phase 18.1). Actions and services never decide
+  access themselves. They ask `Service\Access\VehicleAccess`:
+  - `can(User $user, VehicleAbility $ability, Vehicle $vehicle): bool`
+  - `visibleVehicleIds(User $user, VehicleScope $scope): list<int>`,
+    where the scope is `Active`, `Archived` or `All`.
+
+  `VehicleAbility` is an enum. The Phase 19 levels map onto it:
+
+  | Ability | Covers |
+  |---|---|
+  | `View` | reading the vehicle, its entries, history and files |
+  | `ViewCosts` | amounts, prices, reports, cost of ownership, valuations, CSV exports |
+  | `Log` | adding fill-ups, readings, service records, documents, expenses and tyre changes; marking reminders done |
+  | `Manage` | editing the vehicle and editing or deleting any entry, schedules, reminders, valuations, import, sale pack |
+  | `Own` | archive, restore, delete, transfer, sharing |
+
+  Editing or deleting *one's own* entry under `Log` needs to know who
+  logged it, which Phase 19 records; until then every entry edit and
+  delete asks for `Manage`.
+
+  `Service\Access\InstanceAccess::can(User, InstanceAbility)` covers
+  `ManageModules`, `Backup`, `Restore`, `ManageNotifications` and later
+  `ManageUsers`.
+
+  **Phase 18.1 policy:** a user has every vehicle ability on the vehicles
+  whose `user_id` is theirs and none on any other, and every instance
+  ability. With one owner, that is today's behaviour exactly.
+- **Vehicle routes.** Each route with `{id}` declares its ability (the
+  route argument `ability`, read by `Middleware\VehicleAccessMiddleware`,
+  which sits on the whole signed-in group). The middleware loads the
+  vehicle once by id alone, asks the policy, and puts the vehicle on the
+  request as the `vehicle` attribute. Actions take it from there and never
+  reload it by id. A vehicle the user cannot `View`, or that does not
+  exist, answers **404**, so its existence is never revealed. One the user
+  can view but lacks the ability for answers **403** with a friendly page.
+  A route with `{id}` and no ability is a programming error (500), never
+  an open door. Entry routes (`/vehicles/{id}/fuel/{entry}`) also check
+  that the entry belongs to that vehicle (404 otherwise), as they do
+  today. Vehicle ids that arrive another way (a reminder's vehicle, the
+  vehicle chosen in a form, `?vehicle=` filters, pinned dashboard
+  vehicles) are taken only from the policy's visible ids, so an id outside
+  them is ignored or answers 404 like a missing one.
+- **Cross-vehicle reads** (garage, sidebar, dashboard widgets, fleet
+  history, Reports, the Ownership report, *Coming up*, reminders, the
+  calendar feed, the scheduler's reminder sync and notifications) take
+  their vehicle ids from `visibleVehicleIds()`. No repository lists "all
+  of a user's vehicles" except the one query behind the policy. The
+  scheduler runs per user, as it already notifies per owner. Pickers that
+  lead to a log form (*Log entry*, quick fill-up) list only vehicles with
+  `Log`.
+- **Costs.** Templates show an amount only inside a
+  `can_see_costs(vehicle)` check (a Twig function backed by `ViewCosts`;
+  `can_see_costs()` with no vehicle means "every visible vehicle"). Report,
+  ownership and *Coming up* services drop vehicles without `ViewCosts`
+  from their figures. Under the Phase 18.1 policy this is always true.
+- **Attachments** are served after a `View` check on their vehicle. Their
+  lookup is already scoped by `vehicle_id` (§7.12).
+- **Instance pages** (Settings → Modules, Backup and restore, the
+  notification channels on Settings → Reminders and their test message)
+  check `InstanceAccess`. Personal settings (units, language, theme,
+  password, reminder lead times, calendar feed) need only a signed-in
+  user.
+- **Route inventory.** A test loads every route and classifies it as
+  public, signed-in (personal), fleet (policy-filtered lists), instance
+  (an `InstanceAbility`), or vehicle (a declared `VehicleAbility`). An
+  unclassified route fails the build and names itself.
 - **Base path:** Slim's router is configured with `APP_BASE_PATH`; the
   base-path middleware restores the prefix when a reverse proxy has stripped
   it, so both proxy styles route identically. All URLs come from `url_for()`,
