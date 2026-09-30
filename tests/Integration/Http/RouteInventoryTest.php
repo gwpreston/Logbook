@@ -24,9 +24,13 @@ use Slim\Interfaces\RouteInterface;
  */
 final class RouteInventoryTest extends AppTestCase
 {
-    /** No sign-in: machine endpoints, the installable app, setup and sign-in, the calendar feed by token. */
+    /**
+     * No sign-in: machine endpoints, the installable app, setup and sign-in, the
+     * calendar feed by token, the API's own description.
+     */
     private const array PUBLIC = [
         'health',
+        'api.openapi',
         'pwa.manifest',
         'pwa.worker',
         'pwa.offline',
@@ -36,9 +40,15 @@ final class RouteInventoryTest extends AppTestCase
         'diagnostics.deep-link',
     ];
 
-    /** Signed in, nothing but one's own account and settings (or a form that names no vehicle yet). */
+    /**
+     * Signed in (or an API key), nothing but one's own account and settings (or a
+     * form that names no vehicle yet).
+     */
     private const array PERSONAL = [
         'logout',
+        'api.me',
+        'settings.api_keys',
+        'settings.api_keys.revoke',
         'dashboard.layout',
         'log.chooser',
         'vehicles.create',
@@ -67,6 +77,9 @@ final class RouteInventoryTest extends AppTestCase
         'reports.export',
         'reports.ownership',
         'reports.ownership.export',
+        'api.vehicles',
+        'api.upcoming',
+        'api.reminders',
     ];
 
     public function testEveryRouteIsClassified(): void
@@ -119,6 +132,33 @@ final class RouteInventoryTest extends AppTestCase
         self::assertSame(VehicleAbility::Own, $declared['vehicles.delete']);
         self::assertSame(VehicleAbility::Log, $declared['reminders.status']);
         self::assertSame(VehicleAbility::Manage, $declared['reminders.edit']);
+        // The API's vehicle routes are checked by the same middleware (spec.md §7.20).
+        self::assertSame(VehicleAbility::View, $declared['api.vehicles.summary']);
+        self::assertSame(VehicleAbility::View, $declared['api.fuel.index']);
+        self::assertSame(VehicleAbility::Log, $declared['api.fuel.create']);
+        self::assertSame(VehicleAbility::Log, $declared['api.odometer.create']);
+        self::assertSame(VehicleAbility::ViewCosts, $declared['api.expenses.index']);
+    }
+
+    public function testEveryApiRouteButItsDescriptionNeedsAKey(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $apiRoutes = array_filter(
+            $this->routes($app),
+            static fn (RouteInterface $route): bool => str_starts_with($route->getPattern(), '/api/'),
+        );
+        self::assertNotEmpty($apiRoutes);
+
+        foreach ($apiRoutes as $route) {
+            $path = (string) preg_replace('/\{id:[^}]+\}/', '1', $route->getPattern());
+            foreach ($route->getMethods() as $method) {
+                // Signed in, but no key: a session never opens the API.
+                $response = $method === 'GET' ? $browser->get($path) : $browser->post($path, [], [], false);
+                $expected = $route->getName() === 'api.openapi' ? 200 : 401;
+                self::assertSame($expected, $response->getStatusCode(), $method . ' ' . $path);
+            }
+        }
     }
 
     public function testInstancePagesDeclareTheirAbility(): void

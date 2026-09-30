@@ -75,4 +75,31 @@ final class AppSettingsTest extends TestCase
         self::assertSame(DatabaseDriver::Sqlite, $settings->database->driver);
         self::assertSame('/app/var/testing.sqlite', $settings->database->name);
     }
+
+    public function testTheApiIsOnAndCorsOffByDefault(): void
+    {
+        $settings = AppSettings::fromEnv(new Env([]), '/app');
+
+        self::assertTrue($settings->apiEnabled);
+        self::assertSame([], $settings->apiCorsOrigins);
+        self::assertFalse(AppSettings::fromEnv(new Env(['API_ENABLED' => 'false']), '/app')->apiEnabled);
+    }
+
+    public function testCorsOriginsAreExactOrigins(): void
+    {
+        $settings = AppSettings::fromEnv(
+            new Env(['API_CORS_ORIGINS' => ' https://HA.example:8123/ ,http://grafana.lan,,https://ha.example:8123']),
+            '/app',
+        );
+
+        self::assertSame(['https://ha.example:8123', 'http://grafana.lan'], $settings->apiCorsOrigins);
+    }
+
+    public function testACorsEntryThatIsNotAnOriginIsRefused(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('API_CORS_ORIGINS');
+
+        AppSettings::fromEnv(new Env(['API_CORS_ORIGINS' => 'https://ha.example/lovelace']), '/app');
+    }
 }

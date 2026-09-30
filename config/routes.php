@@ -2,6 +2,21 @@
 
 declare(strict_types=1);
 
+use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
+use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
+use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
+use Logbook\Action\Api\ListMaintenanceAction as ApiMaintenanceAction;
+use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
+use Logbook\Action\Api\ListTyresAction as ApiTyresAction;
+use Logbook\Action\Api\ListVehiclesAction as ApiVehiclesAction;
+use Logbook\Action\Api\LogFuelAction as ApiLogFuelAction;
+use Logbook\Action\Api\LogReadingAction as ApiLogReadingAction;
+use Logbook\Action\Api\MeAction as ApiMeAction;
+use Logbook\Action\Api\OpenApiAction;
+use Logbook\Action\Api\RemindersAction as ApiRemindersAction;
+use Logbook\Action\Api\ShowVehicleAction as ApiVehicleAction;
+use Logbook\Action\Api\UpcomingAction as ApiUpcomingAction;
+use Logbook\Action\Api\VehicleSummaryAction as ApiSummaryAction;
 use Logbook\Action\Attachment\DeleteAttachmentAction;
 use Logbook\Action\Attachment\ShowAttachmentAction;
 use Logbook\Action\Auth\LoginAction;
@@ -66,10 +81,12 @@ use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\SalePack\DownloadPaperworkAction;
 use Logbook\Action\SalePack\ShowSalePackAction;
+use Logbook\Action\Settings\ApiKeysAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
 use Logbook\Action\Settings\ModuleSettingsAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
+use Logbook\Action\Settings\RevokeApiKeyAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
 use Logbook\Action\Settings\SetThemeAction;
@@ -97,12 +114,15 @@ use Logbook\Action\Vehicle\VehiclePhotoAction;
 use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Middleware\ApiAuthMiddleware;
+use Logbook\Middleware\ApiErrorMiddleware;
 use Logbook\Middleware\AuthGuardMiddleware;
 use Logbook\Middleware\CsrfMiddleware;
 use Logbook\Middleware\FeatureGateMiddleware;
 use Logbook\Middleware\InstanceAccessMiddleware;
 use Logbook\Middleware\VehicleAccessMiddleware;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Support\Config\AppSettings;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 use Slim\Interfaces\RouteCollectorProxyInterface as Group;
@@ -129,6 +149,8 @@ return static function (App $app): void {
     // Access policy); the route inventory test checks that every route is classified.
     $ability = VehicleAccessMiddleware::ABILITY;
     $instance = InstanceAccessMiddleware::ABILITY;
+    $settings = $container->get(AppSettings::class);
+    assert($settings instanceof AppSettings);
 
     $app->get('/health', HealthAction::class)->setName('health');
 
@@ -143,6 +165,51 @@ return static function (App $app): void {
     $app->get('/calendar/{token:[0-9]+-[a-f0-9]{64}}.ics', CalendarFeedAction::class)
         ->setName('calendar.feed')
         ->add($module(Feature::Reminders));
+
+    // REST API (spec.md §7.20): outside the session and CSRF groups; the
+    // key is the only way in, and a session user is never used. Problem
+    // details for every error; openapi.json needs no key. API_ENABLED=false
+    // leaves every path unrouted (404). CORS is global (config/middleware.php).
+    if ($settings->apiEnabled) {
+        $app->group('/api/v1', function (Group $api) use ($module, $ability): void {
+            $api->get('/openapi.json', OpenApiAction::class)->setName('api.openapi');
+
+            $api->group('', function (Group $keyed) use ($module, $ability): void {
+                $keyed->get('/me', ApiMeAction::class)->setName('api.me');
+                $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
+                $keyed->get('/upcoming', ApiUpcomingAction::class)->setName('api.upcoming');
+                $keyed->get('/reminders', ApiRemindersAction::class)->setName('api.reminders')
+                    ->add($module(Feature::Reminders));
+
+                $keyed->get('/vehicles/{id:[0-9]+}', ApiVehicleAction::class)->setName('api.vehicles.show')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $keyed->get('/vehicles/{id:[0-9]+}/summary', ApiSummaryAction::class)->setName('api.vehicles.summary')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $keyed->get('/vehicles/{id:[0-9]+}/odometer', ApiOdometerAction::class)->setName('api.odometer.index')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $keyed->post('/vehicles/{id:[0-9]+}/odometer', ApiLogReadingAction::class)->setName('api.odometer.create')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                $keyed->get('/vehicles/{id:[0-9]+}/expenses', ApiExpensesAction::class)->setName('api.expenses.index')
+                    ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                $keyed->group('', function (Group $fuel) use ($ability): void {
+                    $fuel->get('/vehicles/{id:[0-9]+}/fuel', ApiFuelAction::class)->setName('api.fuel.index')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $fuel->post('/vehicles/{id:[0-9]+}/fuel', ApiLogFuelAction::class)->setName('api.fuel.create')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                })->add($module(Feature::Fuel));
+                $keyed->get('/vehicles/{id:[0-9]+}/maintenance', ApiMaintenanceAction::class)->setName('api.maintenance.index')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Maintenance));
+                $keyed->get('/vehicles/{id:[0-9]+}/documents', ApiDocumentsAction::class)->setName('api.documents.index')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Compliance));
+                $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Tyres));
+            })->add(VehicleAccessMiddleware::class)
+                ->add(ApiAuthMiddleware::class);
+        })->add(ApiErrorMiddleware::class);
+    }
 
     // Signed-out pages.
     $app->group('', function (Group $group): void {
@@ -373,6 +440,10 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/backup/restore/{token:[a-f0-9]{32}}', ConfirmRestoreAction::class)
             ->setName('backup.restore.confirm')
             ->setArgument($instance, InstanceAbility::Restore->value);
+        // One's own API keys (spec.md §7.20); kept when the API is off, so keys can be prepared.
+        $group->map(['GET', 'POST'], '/settings/api-keys', ApiKeysAction::class)->setName('settings.api_keys');
+        $group->map(['GET', 'POST'], '/settings/api-keys/{key:[0-9]+}/revoke', RevokeApiKeyAction::class)
+            ->setName('settings.api_keys.revoke');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');

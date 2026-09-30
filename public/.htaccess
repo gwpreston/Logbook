@@ -5,6 +5,10 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # API keys arrive as "Authorization: Bearer …" (spec.md §7.20). mod_php
+    # passes the header on; PHP-FPM needs it handed over explicitly.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [QSA,L]
 </IfModule>

@@ -48,6 +48,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require-dev": {
+        "league/openapi-psr7-validator": "^0.24",
         "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^12.5",
         "squizlabs/php_codesniffer": "^4.0"
