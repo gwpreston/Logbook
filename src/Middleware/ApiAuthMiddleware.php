@@ -61,7 +61,7 @@ final readonly class ApiAuthMiddleware implements MiddlewareInterface
         $token = preg_match('/^Bearer\s+(\S+)$/i', trim($header), $m) === 1 ? $m[1] : '';
         $key = $token === '' ? null : $this->keys->verify($token);
         $user = $key === null ? null : $this->users->find($key->userId);
-        if ($key === null || $user === null) {
+        if ($key === null || $user === null || !$user->isActive()) {
             $reason = $token === '' || !ApiKeyService::isWellFormed($token) ? 'malformed' : 'unknown or revoked';
             $this->fail($request, $address, $reason);
 

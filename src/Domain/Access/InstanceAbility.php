@@ -6,7 +6,7 @@ namespace Logbook\Domain\Access;
 
 /**
  * Install-wide settings and tools, as opposed to one's own preferences
- * (spec.md §5 *Access policy*). Phase 19 adds ManageUsers.
+ * (spec.md §5 *Access policy*).
  */
 enum InstanceAbility: string
 {
@@ -14,4 +14,6 @@ enum InstanceAbility: string
     case Backup = 'backup';
     case Restore = 'restore';
     case ManageNotifications = 'manage_notifications';
+    /** Settings → Users: invitations, admins, disabling and deleting (Phase 19). */
+    case ManageUsers = 'manage_users';
 }

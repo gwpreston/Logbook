@@ -67,6 +67,10 @@ final readonly class AuthService
         if (!$this->hasher->verify($password, $user->passwordHash)) {
             return null;
         }
+        if (!$user->isActive()) {
+            // Refused like a wrong password (spec.md §7.9), after the same work.
+            return null;
+        }
 
         if ($this->hasher->needsRehash($user->passwordHash)) {
             $this->users->updatePasswordHash($user->id, $this->hasher->hash($password), $this->clock->now());

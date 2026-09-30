@@ -70,6 +70,9 @@ final readonly class CalendarFeed
         }
 
         $user = $this->users->find((int) $m[1]);
+        if ($user !== null && !$user->isActive()) {
+            return null;
+        }
         $stored = $user === null ? null : $this->settings->calendarTokenHash($user->id);
 
         return $stored !== null && hash_equals($stored, $this->hash($token)) ? $user : null;

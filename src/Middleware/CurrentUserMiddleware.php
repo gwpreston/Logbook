@@ -38,9 +38,10 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
         $userId = $session->userId();
         $user = $userId === null ? null : $this->users->find($userId);
 
-        if ($userId !== null && $user === null) {
-            // The account no longer exists: drop the stale sign-in.
+        if ($userId !== null && ($user === null || !$user->isActive())) {
+            // The account no longer exists or was disabled (Phase 19): drop the stale sign-in.
             $session->destroy();
+            $user = null;
         }
 
         $this->context->apply($user);
