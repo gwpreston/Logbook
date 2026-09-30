@@ -29,7 +29,7 @@ Every call needs an API key, except `openapi.json`.
 
 - **Create one** in **Settings → API keys**: give it a name ("Home
   Assistant") and choose **Read only** or **Read and write** (read, plus
-  logging fill-ups and odometer readings; a key never edits or deletes).
+  logging fill-ups, odometer readings and trips; a key never edits or deletes).
   The key (`lbk_` and 43 characters) is shown **once**. Copy it then; it
   cannot be shown again, only replaced.
 - On a headless install use the command line (Docker: prefix with
@@ -111,6 +111,9 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/tyres` | tyres: fitted, stored, retired, with tread and what is due |
 | `GET /upcoming` | *Coming up* over the next 12 months (`?vehicle=`) |
 | `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`) |
+| `GET /vehicles/{id}/trips` | trips: your own, or every driver's when you manage or own the vehicle (paged; trips module) |
+| `POST /vehicles/{id}/trips` | log a trip, or one from a saved journey (read and write key; trips module) |
+| `GET /trips/claim` | your mileage claim's figures for a tax year or date range (trips module) |
 | `GET /openapi.json` | the OpenAPI description (no key) |
 
 A vehicle id the key's user cannot see answers `404`, like one that does
@@ -118,7 +121,7 @@ not exist.
 
 ## Lists: paging and dates
 
-The `fuel`, `odometer`, `maintenance`, `documents` and `expenses` lists are
+The `fuel`, `odometer`, `maintenance`, `documents`, `expenses` and `trips` lists are
 **newest first** and paged:
 
 - `?limit=` 1–200, default 50.
@@ -170,6 +173,84 @@ automation that retries after a timeout never doubles a fill-up, **as long
 as it sends `filled_at`** (a retry without it is a new "now").
 
 An archived vehicle refuses writes (`409 vehicle_archived`).
+
+## Trips
+
+The trips module is off by default (*Settings → Modules*, or
+`FEATURES_TRIPS=true`); with it off every trip path answers `404`. Trips
+are personal: a list shows the key user's own trips, and other drivers'
+only to someone who manages or owns the vehicle. The claim is always the
+key user's own.
+
+`POST /vehicles/{id}/trips` goes through the trip form's checks. Distances
+are in **km** and are **the whole trip**: a return's `distance_km` is both
+ways, never doubled.
+
+| Field | |
+|---|---|
+| `travelled_on` | date (`2026-09-29`); default today in your time zone |
+| `from`, `to` | places (required unless `journey_id` gives them) |
+| `is_return` | `true` / `false`; default `false` |
+| `distance_km` | the whole trip, or leave it out and send both odometers |
+| `odometer_start_km`, `odometer_end_km` | both or neither; the distance is end − start (a `distance_km` more than 0.5 away from it is refused) |
+| `is_business` | default `true`; a business trip needs a `purpose` |
+| `purpose`, `notes` | text |
+| `passengers` | business passengers, 0–8 |
+| `journey_id` | one of your saved journeys (*Settings → Trips*; the id is in its edit link) |
+
+A saved journey fills `from`, `to`, `is_return`, `is_business`, `purpose`
+and the distance: the journey's one-way distance, doubled for a return,
+unless you send `distance_km` or odometers. Anything you send wins over the
+journey. A `journey_id` that is not yours is a `422` on `journey_id`.
+
+The answer is `201` with the trip (as the list shows it) and `warnings`
+(`trip_longer_than_driven`: the odometer readings either side of that day
+allow less than this distance; it never blocks). **Retries are safe:** a
+trip of yours on the vehicle with the same date, places and distance (the
+CSV import's rule) answers `200` with it and `"duplicate": true`; nothing is
+written. Send `travelled_on`, so a retry just after midnight is recognised.
+Archived vehicles refuse trips (`409`).
+
+`GET /trips/claim` is the claim report's figures: your business trips on
+every vehicle you can see, at your mileage rates (UK users get HMRC's
+automatically). `?year=2026` is the tax year starting in 2026 (default the
+current one); `?period=custom&from=2026-01-01&to=2026-12-31` a date range;
+`vehicles[]=1&vehicles[]=2` narrows it. Each trip has its `distance` in the
+rate set's `unit`, its `lines` (two for the trip that crosses a threshold),
+`passenger_amount` and `amount`; `totals` has one entry per currency with
+the distance at each rate, `mileage_amount`, `passenger_amount`,
+`approved_amount` and, with employer rates, `employer_amount` and
+`difference` (approved mileage minus what the employer paid). `unvalued`
+counts trips with no rate set in effect on their date.
+
+```sh
+# A 45.2 km return trip (90.4 km in all), and this tax year's claim.
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"travelled_on": "2026-09-29", "from": "Ballymena", "to": "Belfast", "is_return": true,
+          "distance_km": 90.4, "purpose": "Client visit"}' \
+     "$BASE/vehicles/1/trips"
+curl -H "Authorization: Bearer $KEY" "$BASE/trips/claim"
+
+# The same from saved journey 3.
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"journey_id": 3, "travelled_on": "2026-09-29"}' "$BASE/vehicles/1/trips"
+```
+
+"Ballymena → Belfast" as an iPhone Shortcut, from saved journey `3`, with a
+**read and write** key:
+
+1. **Current Date**, then **Format Date**: *Custom*, `yyyy-MM-dd`.
+2. **Get Contents of URL**: `https://garage.example.com/api/v1/vehicles/1/trips`
+   - Method **POST**
+   - Headers: `Authorization` = `Bearer lbk_…`
+   - Request Body **JSON**: `journey_id` (Number) = `3`,
+     `travelled_on` (Text) = *Formatted Date*.
+3. **Get Dictionary Value** `duplicate`; **If** it is *1*, **Show Result**
+   "Already logged today". Otherwise **Get Dictionary Value**
+   `entry.journey` and show "Logged " with it.
+
+Add it to the Home Screen or ask Siri by the shortcut's name. For a one-way
+trip on a return journey add `is_return` (Boolean) = *false*.
 
 ## Errors
 

@@ -9,6 +9,7 @@ use Logbook\Domain\Expense\ExpenseEntryData;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Maintenance\MaintenanceEntryData;
 use Logbook\Domain\Odometer\OdometerReadingData;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Support\Number\Decimal;
 use LogicException;
 
@@ -53,6 +54,14 @@ final class DuplicateKey
                 $data->category->value,
                 Decimal::trim($data->amount),
                 $lower($data->note),
+            ]),
+            // Phase 22: the same day, places and whole distance (spec.md §7.13).
+            $data instanceof TripData => implode('|', [
+                'trip',
+                $data->travelledOn->format('Y-m-d'),
+                $lower($data->fromPlace),
+                $lower($data->toPlace),
+                Decimal::trim($data->distanceKm),
             ]),
             default => throw new LogicException('Unexpected entry data.'),
         };

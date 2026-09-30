@@ -20,6 +20,8 @@ enum HistoryChip: string
     case Documents = 'documents';
     case Expenses = 'expenses';
     case Mileage = 'mileage';
+    /** The only place trips are listed (Phase 22, spec.md §7.22). */
+    case Trips = 'trips';
 
     /**
      * The chosen chip; unknown values and switched-off modules fall back to
@@ -64,6 +66,7 @@ enum HistoryChip: string
             self::Documents => [ActivityKind::Document],
             self::Expenses => [ActivityKind::Expense],
             self::Mileage => [ActivityKind::Odometer],
+            self::Trips => [ActivityKind::Trip],
         };
     }
 
@@ -74,6 +77,7 @@ enum HistoryChip: string
             self::Fuel => Feature::Fuel,
             self::Documents => Feature::Compliance,
             self::Tyres => Feature::Tyres,
+            self::Trips => Feature::Trips,
             self::Everything, self::Expenses, self::Mileage => null,
         };
     }
@@ -96,6 +100,7 @@ enum HistoryChip: string
             self::Documents => 'verified_user',
             self::Expenses => 'payments',
             self::Mileage => 'speed',
+            self::Trips => 'route',
         };
     }
 }

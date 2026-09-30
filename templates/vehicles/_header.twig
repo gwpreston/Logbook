@@ -5,7 +5,7 @@
  # those allowed it; the hero; and the tab bar. Each
  # tab is its own URL, so tabs work without JS and survive a hard refresh.
  #
- # Expects: vehicle, active_tab ('overview' | 'history' | 'odometer' | 'fuel' |
+ # Expects: vehicle, active_tab ('overview' | 'history' | 'odometer' | 'trips' | 'fuel' |
  # 'maintenance' | 'tyres' | 'compliance' | 'expenses').
  #}
 {% import 'macros/ui.twig' as ui %}
@@ -14,6 +14,7 @@
     {route: 'vehicles.show', key: 'overview', icon: 'space_dashboard', label: 'vehicle.tab.overview'},
     {route: 'history.vehicle', key: 'history', icon: 'history', label: 'vehicle.tab.history'},
     {route: 'odometer.index', key: 'odometer', icon: 'speed', label: 'vehicle.tab.odometer'},
+    {route: 'trips.index', key: 'trips', icon: 'route', label: 'vehicle.tab.trips', feature: 'trips'},
     {route: 'fuel.index', key: 'fuel', icon: data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station', label: 'vehicle.tab.fuel', feature: 'fuel'},
     {route: 'maintenance.index', key: 'maintenance', icon: 'build', label: 'vehicle.tab.maintenance', feature: 'maintenance'},
     {route: 'tyres.index', key: 'tyres', icon: 'tire_repair', label: 'vehicle.tab.tyres', feature: 'tyres'},

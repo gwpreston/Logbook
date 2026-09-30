@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Domain\Trip\SavedJourneyData;
+use Logbook\Domain\Trip\TripData;
+use Logbook\Repository\MileageRateSetRepository;
+use Logbook\Repository\SavedJourneyRepository;
+use Logbook\Repository\TripRepository;
+use Logbook\Service\Trip\RateProvider;
 use DateTimeImmutable;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Kernel;
@@ -46,6 +52,16 @@ final class ExportUserTest extends AppTestCase
         $mini = $this->vehicle($app, 'Mini', 'Cooper');
         $this->connection($app)->update('vehicles', ['user_id' => $member->id], ['id' => $mini->id]);
         $this->fillUp($app, $mini, '2026-09-02T08:00:00Z', '5000', '30', '44.44');
+        // Trips (Phase 22): their trip, their saved journey and rates; not the owner's.
+        $at = new DateTimeImmutable('2026-09-03T08:00:00Z');
+        $trip = new TripData(new DateTimeImmutable('2026-09-03'), 'Home', 'Office', purpose: 'Work');
+        $this->service($app, TripRepository::class)->insert($mini->id, $trip, $at, $member->id);
+        $this->service($app, TripRepository::class)->insert($golf->id, $trip, $at, $member->id);
+        $this->service($app, SavedJourneyRepository::class)->insert($member->id, new SavedJourneyData('Home', 'Office', '12.000'), $at);
+        $this->service($app, SavedJourneyRepository::class)->insert($this->owner($app)->id, new SavedJourneyData('A', 'B'), $at);
+        foreach (RateProvider::hmrc() as $set) {
+            $this->service($app, MileageRateSetRepository::class)->insert($member->id, $set, $at);
+        }
         $this->service($app, VehicleShareRepository::class)
             ->insert($golf->id, $member->id, ShareLevel::Log, false, true, new DateTimeImmutable('2026-09-01T00:00:00Z'));
 
@@ -70,6 +86,9 @@ final class ExportUserTest extends AppTestCase
         self::assertCount(1, $rows('vehicles'), 'only their vehicle');
         self::assertSame([], $rows('vehicle_shares'), 'no shares');
         self::assertCount(1, $rows('fuel_entries'), 'only their vehicle\'s entries');
+        self::assertCount(1, $rows('trips'), 'the trips on their vehicle');
+        self::assertCount(1, $rows('saved_journeys'), 'their saved journeys');
+        self::assertCount(2, $rows('mileage_rate_sets'), 'their rates');
         $zip->close();
 
         // Restored, it is an install of their own: they are its admin and own everything.

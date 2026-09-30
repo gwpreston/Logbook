@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Dashboard;
 
+use Logbook\Service\Trip\ClaimReport;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\History\ActivityItem;
@@ -44,6 +45,8 @@ final readonly class Dashboard
         public ?MileageSummary $mileage = null,
         public array $activity = [],
         public ?Forecast $comingUp = null,
+        /** The signed-in user's claim for this tax year (Phase 22). */
+        public ?ClaimReport $businessMileage = null,
     ) {
     }
 

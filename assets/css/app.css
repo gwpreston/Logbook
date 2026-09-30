@@ -1088,6 +1088,39 @@ a.segmented__option {
     color: var(--red);
 }
 
+/* The claim report's declaration and signature lines (Phase 22). */
+.claim-declaration__text {
+    white-space: normal;
+}
+
+.claim-declaration__sign {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-6);
+    margin-top: var(--space-4);
+}
+
+.claim-declaration__sign p {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
+    flex: 1 1 14rem;
+    margin: 0;
+}
+
+.claim-declaration__line {
+    flex: 1;
+    min-width: 8rem;
+    border-bottom: 1px solid currentColor;
+    height: 1.5rem;
+}
+
+/* A business trip (Phase 22). */
+.pill--accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
 /* Registration plate. */
 .plate {
     display: inline-flex;

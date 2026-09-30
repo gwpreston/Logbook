@@ -29,6 +29,7 @@ final class UserExport
         'reminders',
         'expense_entries',
         'vehicle_valuations',
+        'trips',
     ];
 
     /** Author columns, set to the exported user. */
@@ -82,6 +83,9 @@ final class UserExport
             static fn (array $row): bool => $row['user_id'] === $user && in_array($row['reminder_id'], $reminders, true),
         );
         $out['vehicle_shares'] = [];
+        // Phase 22: the user's own saved journeys and mileage rates.
+        $out['saved_journeys'] = $keep('saved_journeys', static fn (array $row): bool => $row['user_id'] === $user);
+        $out['mileage_rate_sets'] = $keep('mileage_rate_sets', static fn (array $row): bool => $row['user_id'] === $user);
 
         $files = array_values(array_filter([
             ...array_column($out['vehicles'], 'photo_path'),

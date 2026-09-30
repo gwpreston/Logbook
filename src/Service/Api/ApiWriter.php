@@ -8,23 +8,32 @@ use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerReadingData;
+use Logbook\Domain\Trip\SavedJourney;
+use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Repository\TripRepository;
 use Logbook\Service\Import\DuplicateKey;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
+use Logbook\Service\Trip\SavedJourneyService;
+use Logbook\Service\Trip\TripForm;
+use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Api\ApiProblem;
 use Logbook\Support\Api\JsonInput;
 use Logbook\Support\Api\ValidationProblem;
+use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Number\Decimal;
 use Logbook\Support\Validation\ValidationErrors;
 use Psr\Clock\ClockInterface;
 
 /**
- * The API's two writes (spec.md §7.20): a fill-up and an odometer reading.
+ * The API's writes (spec.md §7.20): a fill-up, an odometer reading and a
+ * trip (Phase 22).
  * Each goes through its form's parser and its service, exactly as the
  * forms and the CSV import do, so validation, the derived amount, the
  * odometer reading, schedules, reminders and the economy check all apply.
@@ -37,6 +46,9 @@ final readonly class ApiWriter
         private FuelService $fuel,
         private OdometerService $odometer,
         private VehicleService $vehicles,
+        private TripService $trips,
+        private TripRepository $tripEntries,
+        private SavedJourneyService $journeys,
         private ValidationProblem $validation,
         private ClockInterface $clock,
     ) {
@@ -111,6 +123,58 @@ final readonly class ApiWriter
             'duplicate' => false,
             'warnings' => self::odometerWarnings($this->odometer->warningFor($vehicle, $reading->id)),
         ];
+    }
+
+    /**
+     * A trip, in kilometres, the whole trip's distance (spec.md §7.22):
+     * the key's user is its driver. A retry matches only their own trips
+     * on the vehicle, by the import's key, so another driver's trip is
+     * never returned (destinations are personal).
+     *
+     * @param array<string, mixed> $body
+     * @return array{trip: Trip, duplicate: bool, warnings: list<array{code: string, detail: string}>}
+     * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
+     */
+    public function logTrip(User $user, Vehicle $vehicle, array $body): array
+    {
+        self::assertActive($vehicle);
+        $zone = $user->preferences->timeZone();
+        $today = LocalTime::today($this->clock, $zone);
+        $mapped = JsonInput::trip(
+            $body,
+            $user->preferences,
+            $today,
+            fn (int $id): ?SavedJourney => $this->journeys->find($user, $id),
+        );
+        if ($mapped instanceof ValidationErrors) {
+            throw $this->validation->of($mapped);
+        }
+        $data = TripForm::parse($mapped['input'], $mapped['preferences'], $today, wholeDistance: true);
+        if ($data instanceof ValidationErrors) {
+            throw $this->validation->of(JsonInput::renamed($data, JsonInput::TRIP_FIELDS));
+        }
+
+        $key = DuplicateKey::of($data);
+        foreach ($this->tripEntries->listForVehicle($vehicle->id, $user->id) as $trip) {
+            if (DuplicateKey::of($trip->data) === $key) {
+                return ['trip' => $trip, 'duplicate' => true, 'warnings' => []];
+            }
+        }
+
+        $trip = $this->trips->create($vehicle, $data);
+        $warnings = [];
+        $driven = $this->trips->longerThanDriven($vehicle, $data, $zone);
+        if ($driven !== null) {
+            $warnings[] = [
+                'code' => 'trip_longer_than_driven',
+                'detail' => sprintf(
+                    'The odometer readings around this day allow at most %s km; check the distance.',
+                    Decimal::trim($driven),
+                ),
+            ];
+        }
+
+        return ['trip' => $trip, 'duplicate' => false, 'warnings' => $warnings];
     }
 
     private function existingFill(Vehicle $vehicle, FuelEntryData $data): ?FuelEntry

@@ -1,0 +1,128 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/trips.twig' as trips_ui %}
+
+{#
+ # Settings → Trips (spec.md §7.22, §7.23): the tax year and the claim's
+ # declaration, saved journeys (edit, reorder, delete) and mileage rates.
+ #}
+{% set active_nav = 'settings' %}
+{% set dash = '—' %}
+{% set months = range(1, 12) %}
+
+{% block title %}{{ 'trip.settings.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'trip.settings.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'trip.settings.lead'|trans }}</p>
+            </div>
+            <div class="btn-row">
+                <a class="btn" href="{{ url_for('trips.claim') }}">{{ ui.icon('receipt_long') }}{{ 'trip.claim.title'|trans }}</a>
+            </div>
+        </header>
+
+        <form class="form" method="post" action="{{ url_for('settings.trips') }}">
+            {{ ui.csrf(csrf) }}
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+            <section class="card" aria-labelledby="trips-year-heading">
+                <h2 id="trips-year-heading" class="card__title">{{ 'trip.settings.tax_year'|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.input('tax_year_day', 'trip.settings.day'|trans, values, errors, {type: 'number', min: 1, max: 31, step: 1, inputmode: 'numeric', required: true}) }}
+                    {{ ui.select('tax_year_month', 'trip.settings.month'|trans, values, errors, months|map(m => {value: m, label: m|month_name})) }}
+                </div>
+                <p class="field__hint">{{ 'trip.settings.tax_year_hint'|trans }}</p>
+                <div class="field">
+                    <label class="field__label" for="f-declaration">{{ 'trip.settings.declaration'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-declaration" name="declaration" rows="3" maxlength="1000"{{ ui.described_by('declaration', errors, true) }}>{{ values.declaration ?? '' }}</textarea>
+                    <p class="field__hint" id="f-declaration-hint">{{ 'trip.settings.declaration_hint'|trans }}</p>
+                    {{ ui.field_error(errors, 'declaration') }}
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                </div>
+            </section>
+        </form>
+
+        <section class="card" aria-labelledby="trips-journeys-heading">
+            <div class="card__header">
+                <h2 id="trips-journeys-heading" class="card__title">{{ 'trip.journeys.title'|trans }}</h2>
+                <a class="card__link" href="{{ url_for('settings.trips.journeys.create') }}" data-modal>{{ ui.icon('add') }}{{ 'trip.journeys.add'|trans }}</a>
+            </div>
+            {% if journeys is empty %}
+                <p class="muted">{{ 'trip.journeys.empty'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for journey in journeys %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon('route') }}</span>
+                            <span class="list__body">
+                                <span class="list__title"><a href="{{ url_for('settings.trips.journeys.edit', {journey: journey.id}) }}" data-modal>{{ journey.journey() }}</a></span>
+                                <span class="list__meta">
+                                    {{- journey.data.distanceKm|distance(1) }} {{ 'trip.journeys.one_way'|trans -}}
+                                    {%- if journey.data.purposeDefault %} · {{ journey.data.purposeDefault }}{% endif %} · {{ (journey.data.isBusinessDefault ? 'trip.business' : 'trip.private')|trans -}}
+                                </span>
+                            </span>
+                            <span class="list__end btn-row">
+                                {% if not loop.first %}
+                                    <form method="post" action="{{ url_for('settings.trips.journeys.move', {journey: journey.id, direction: 'up'}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <button type="submit" class="btn btn--ghost" aria-label="{{ 'trip.journeys.move_up'|trans({journey: journey.journey()}) }}">{{ ui.icon('arrow_upward') }}</button>
+                                    </form>
+                                {% endif %}
+                                {% if not loop.last %}
+                                    <form method="post" action="{{ url_for('settings.trips.journeys.move', {journey: journey.id, direction: 'down'}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <button type="submit" class="btn btn--ghost" aria-label="{{ 'trip.journeys.move_down'|trans({journey: journey.journey()}) }}">{{ ui.icon('arrow_downward') }}</button>
+                                    </form>
+                                {% endif %}
+                                <a class="btn btn--ghost" href="{{ url_for('settings.trips.journeys.delete', {journey: journey.id}) }}" data-modal aria-label="{{ 'trip.journeys.delete_label'|trans({journey: journey.journey()}) }}">{{ ui.icon('delete') }}</a>
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="trips-rates-heading">
+            <div class="card__header">
+                <h2 id="trips-rates-heading" class="card__title">{{ 'trip.rates.title'|trans }}</h2>
+                <a class="card__link" href="{{ url_for('settings.trips.rates.create') }}" data-modal>{{ ui.icon('add') }}{{ 'trip.rates.add'|trans }}</a>
+            </div>
+            <p class="field__hint">{{ 'trip.rates.lead'|trans }}</p>
+            {% if rate_sets is empty %}
+                <p class="muted">{{ (is_gb ? 'trip.rates.empty_gb' : 'trip.rates.empty')|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for set in rate_sets %}
+                        {% set data = set.data %}
+                        {% set unit = data.distanceUnit.value %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon('price_check') }}</span>
+                            <span class="list__body">
+                                <span class="list__title"><a href="{{ url_for('settings.trips.rates.edit', {set: set.id}) }}" data-modal>{{ 'trip.claim.rate_set_from'|trans({date: data.effectiveFrom|local_date}) }}</a></span>
+                                <span class="list__meta">
+                                    {{- 'trip.rates.car'|trans }} {{ trips_ui.rate(data.carRate, data.currency, unit) -}}
+                                    {%- if data.carThreshold is not null %} · {{ 'trip.rates.after'|trans({threshold: data.carThreshold|number ~ ' ' ~ ('units.symbol.' ~ unit)|trans, rate: trips_ui.rate(data.carRateAfter, data.currency, unit)}) }}{% endif -%}
+                                    {%- if data.bikeRate is not null %} · {{ 'trip.rates.bike'|trans }} {{ trips_ui.rate(data.bikeRate, data.currency, unit) }}{% endif -%}
+                                    {%- if data.passengerRate is not null %} · {{ 'trip.rates.passenger'|trans }} {{ trips_ui.rate(data.passengerRate, data.currency, unit) }}{% endif -%}
+                                    {%- if data.hasEmployerRates() %} · {{ 'trip.rates.employer'|trans }} {{ data.employerCarRate is not null ? trips_ui.rate(data.employerCarRate, data.currency, unit) : dash }}{% endif -%}
+                                </span>
+                                {% if data.source %}<span class="list__meta">{{ data.source }}</span>{% endif %}
+                            </span>
+                            <span class="list__end">
+                                <a class="btn btn--ghost" href="{{ url_for('settings.trips.rates.delete', {set: set.id}) }}" data-modal aria-label="{{ 'trip.rates.delete_label'|trans({date: data.effectiveFrom|local_date}) }}">{{ ui.icon('delete') }}</a>
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

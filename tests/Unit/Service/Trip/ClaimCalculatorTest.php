@@ -30,6 +30,7 @@ final class ClaimCalculatorTest extends TestCase
     private const int BIKE = 3;
 
     private int $nextId = 1;
+    private static int $nextSetId = 100;
 
     public function testTheTripThatCrossesTenThousandMilesIsSplitExactly(): void
     {
@@ -322,11 +323,10 @@ final class ClaimCalculatorTest extends TestCase
         ?string $passenger = '0.0500',
         ?string $employerCar = null,
     ): MileageRateSet {
-        static $id = 100;
         $now = new DateTimeImmutable('2026-01-01', new DateTimeZone('UTC'));
 
         return new MileageRateSet(
-            id: $id++,
+            id: self::$nextSetId++,
             userId: 1,
             data: new MileageRateSetData(
                 effectiveFrom: self::date($from),

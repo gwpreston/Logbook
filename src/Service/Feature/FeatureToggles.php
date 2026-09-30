@@ -41,7 +41,7 @@ final readonly class FeatureToggles
         $states = [];
         foreach (Feature::cases() as $feature) {
             $value = is_array($stored) ? ($stored[$feature->value] ?? null) : null;
-            $states[$feature->value] = is_bool($value) ? $value : $this->env->bool($feature->envName(), true);
+            $states[$feature->value] = is_bool($value) ? $value : $this->env->bool($feature->envName(), $feature->isOnByDefault());
         }
 
         return $states;

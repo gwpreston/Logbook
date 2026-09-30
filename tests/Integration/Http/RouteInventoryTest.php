@@ -48,6 +48,7 @@ final class RouteInventoryTest extends AppTestCase
     private const array PERSONAL = [
         'logout',
         'api.me',
+        'api.trips.claim',
         'settings.api_keys',
         'settings.api_keys.revoke',
         'dashboard.layout',
@@ -58,6 +59,15 @@ final class RouteInventoryTest extends AppTestCase
         'settings.reminders.test',
         'settings.reminders.calendar',
         'settings.tyres',
+        // Phase 22: the user's own trip settings, saved journeys and rates.
+        'settings.trips',
+        'settings.trips.journeys.create',
+        'settings.trips.journeys.edit',
+        'settings.trips.journeys.delete',
+        'settings.trips.journeys.move',
+        'settings.trips.rates.create',
+        'settings.trips.rates.edit',
+        'settings.trips.rates.delete',
         'settings.preferences',
         'settings.password',
         'settings.theme',
@@ -81,6 +91,9 @@ final class RouteInventoryTest extends AppTestCase
         'api.vehicles',
         'api.upcoming',
         'api.reminders',
+        // Phase 22: the user's own claim, over the vehicles they may see.
+        'trips.claim',
+        'trips.claim.export',
     ];
 
     public function testEveryRouteIsClassified(): void
@@ -142,6 +155,8 @@ final class RouteInventoryTest extends AppTestCase
         self::assertSame(VehicleAbility::Log, $declared['api.fuel.create']);
         self::assertSame(VehicleAbility::Log, $declared['api.odometer.create']);
         self::assertSame(VehicleAbility::ViewCosts, $declared['api.expenses.index']);
+        self::assertSame(VehicleAbility::View, $declared['api.trips.index']);
+        self::assertSame(VehicleAbility::Log, $declared['api.trips.create']);
     }
 
     public function testEveryApiRouteButItsDescriptionNeedsAKey(): void

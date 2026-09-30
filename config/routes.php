@@ -7,14 +7,17 @@ use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListMaintenanceAction as ApiMaintenanceAction;
 use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
+use Logbook\Action\Api\ListTripsAction as ApiTripsAction;
 use Logbook\Action\Api\ListTyresAction as ApiTyresAction;
 use Logbook\Action\Api\ListVehiclesAction as ApiVehiclesAction;
 use Logbook\Action\Api\LogFuelAction as ApiLogFuelAction;
 use Logbook\Action\Api\LogReadingAction as ApiLogReadingAction;
+use Logbook\Action\Api\LogTripAction as ApiLogTripAction;
 use Logbook\Action\Api\MeAction as ApiMeAction;
 use Logbook\Action\Api\OpenApiAction;
 use Logbook\Action\Api\RemindersAction as ApiRemindersAction;
 use Logbook\Action\Api\ShowVehicleAction as ApiVehicleAction;
+use Logbook\Action\Api\TripClaimAction as ApiTripClaimAction;
 use Logbook\Action\Api\UpcomingAction as ApiUpcomingAction;
 use Logbook\Action\Api\VehicleSummaryAction as ApiSummaryAction;
 use Logbook\Action\Attachment\DeleteAttachmentAction;
@@ -102,6 +105,18 @@ use Logbook\Action\Sharing\ChangeShareAction;
 use Logbook\Action\Sharing\MyShareAction;
 use Logbook\Action\Sharing\SharingAction;
 use Logbook\Action\Sharing\TransferVehicleAction;
+use Logbook\Action\Trip\ClaimExportAction;
+use Logbook\Action\Trip\ClaimReportAction;
+use Logbook\Action\Trip\CreateTripAction;
+use Logbook\Action\Trip\DeleteTripAction;
+use Logbook\Action\Trip\EditTripAction;
+use Logbook\Action\Trip\Settings\JourneyDeleteAction;
+use Logbook\Action\Trip\Settings\JourneyFormAction;
+use Logbook\Action\Trip\Settings\JourneyMoveAction;
+use Logbook\Action\Trip\Settings\RateSetDeleteAction;
+use Logbook\Action\Trip\Settings\RateSetFormAction;
+use Logbook\Action\Trip\Settings\TripSettingsAction;
+use Logbook\Action\Trip\TripListAction;
 use Logbook\Action\Tyre\DeleteTyreAction;
 use Logbook\Action\Tyre\DeleteTyreChangeAction;
 use Logbook\Action\Tyre\DeleteTyreSetAction;
@@ -219,6 +234,14 @@ return static function (App $app): void {
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Tyres));
+                // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.
+                $keyed->group('', function (Group $trips) use ($ability): void {
+                    $trips->get('/vehicles/{id:[0-9]+}/trips', ApiTripsAction::class)->setName('api.trips.index')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $trips->post('/vehicles/{id:[0-9]+}/trips', ApiLogTripAction::class)->setName('api.trips.create')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
+                })->add($module(Feature::Trips));
             })->add(VehicleAccessMiddleware::class)
                 ->add(ApiAuthMiddleware::class);
         })->add(ApiErrorMiddleware::class);
@@ -241,7 +264,7 @@ return static function (App $app): void {
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
         $group->get('/log/new', LogEntryAction::class)->setName('log.chooser');
-        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule|tyre|tyre_check}', LogPickVehicleAction::class)
+        $group->get('/log/new/{kind:odometer|maintenance|expense|document|schedule|tyre|tyre_check|trip}', LogPickVehicleAction::class)
             ->setName('log.pick');
 
         $group->get('/garage', GarageAction::class)->setName('garage');
@@ -376,6 +399,18 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Manage->value);
             })->add($module(Feature::Tyres));
 
+            // Trips (spec.md §7.22). Other drivers' trips are 404 without ViewOthersTrips.
+            $vehicle->group('/trips', function (Group $trips) use ($ability): void {
+                $trips->get('', TripListAction::class)->setName('trips.index')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $trips->map(['GET', 'POST'], '/new', CreateTripAction::class)->setName('trips.create')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                $trips->map(['GET', 'POST'], '/{entry:[0-9]+}/edit', EditTripAction::class)->setName('trips.edit')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                $trips->map(['GET', 'POST'], '/{entry:[0-9]+}/delete', DeleteTripAction::class)->setName('trips.delete')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+            })->add($module(Feature::Trips));
+
             $vehicle->group('', function (Group $documents) use ($ability): void {
                 $documents->get('/documents', ComplianceListAction::class)->setName('compliance.index')
                     ->setArgument($ability, VehicleAbility::View->value);
@@ -415,11 +450,11 @@ return static function (App $app): void {
                 ->setArgument($ability, VehicleAbility::Manage->value);
 
             // Export and import check the module's toggle themselves (one route, several modules).
-            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations}';
+            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations|trips}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module')
                 ->setArgument($ability, VehicleAbility::Manage->value);
-            $csvModule = '{module:fuel|odometer|maintenance|documents|expenses}';
+            $csvModule = '{module:fuel|odometer|maintenance|documents|expenses|trips}';
             $vehicle->map(['GET', 'POST'], '/import/' . $csvModule, ImportUploadAction::class)
                 ->setName('import.upload')
                 ->setArgument($ability, VehicleAbility::Manage->value);
@@ -466,6 +501,27 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/tyres', TyreSettingsAction::class)
             ->setName('settings.tyres')
             ->add($module(Feature::Tyres));
+
+        // The signed-in user's own claim and trip settings (spec.md §7.23).
+        $group->group('', function (Group $trips): void {
+            $trips->get('/trips/claim', ClaimReportAction::class)->setName('trips.claim');
+            $trips->get('/trips/claim.csv', ClaimExportAction::class)->setName('trips.claim.export');
+            $trips->map(['GET', 'POST'], '/settings/trips', TripSettingsAction::class)->setName('settings.trips');
+            $trips->map(['GET', 'POST'], '/settings/trips/journeys/new', JourneyFormAction::class)
+                ->setName('settings.trips.journeys.create');
+            $trips->map(['GET', 'POST'], '/settings/trips/journeys/{journey:[0-9]+}/edit', JourneyFormAction::class)
+                ->setName('settings.trips.journeys.edit');
+            $trips->map(['GET', 'POST'], '/settings/trips/journeys/{journey:[0-9]+}/delete', JourneyDeleteAction::class)
+                ->setName('settings.trips.journeys.delete');
+            $trips->post('/settings/trips/journeys/{journey:[0-9]+}/move/{direction:up|down}', JourneyMoveAction::class)
+                ->setName('settings.trips.journeys.move');
+            $trips->map(['GET', 'POST'], '/settings/trips/rates/new', RateSetFormAction::class)
+                ->setName('settings.trips.rates.create');
+            $trips->map(['GET', 'POST'], '/settings/trips/rates/{set:[0-9]+}/edit', RateSetFormAction::class)
+                ->setName('settings.trips.rates.edit');
+            $trips->map(['GET', 'POST'], '/settings/trips/rates/{set:[0-9]+}/delete', RateSetDeleteAction::class)
+                ->setName('settings.trips.rates.delete');
+        })->add($module(Feature::Trips));
         $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index')
             ->setArgument($instance, InstanceAbility::Backup->value);
         $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download')

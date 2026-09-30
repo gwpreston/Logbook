@@ -1564,6 +1564,11 @@ toggles.
   same one the History pages use, with no milestones and no folding. The
   widget's title row links to the fleet history (*View all* →
   `/history`, keeping the dashboard's `?vehicle=`).
+- **Business mileage** (id `business_mileage`, Phase 22, with `trips` on;
+  last in the default order): the signed-in user's own business distance
+  this tax year, the claim value so far and the distance to the rate
+  threshold (§7.22); for the selected vehicle when one is chosen. The title
+  row links to the claim report.
 - **Vehicle filter:** with two or more active vehicles, a row of chips under
   the greeting — *All vehicles* and one per active vehicle with its type
   icon. Each chip is a link (`/?vehicle={id}`; the current one has

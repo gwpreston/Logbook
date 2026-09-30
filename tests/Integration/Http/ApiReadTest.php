@@ -11,6 +11,7 @@ use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceEntryData;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -18,6 +19,7 @@ use Logbook\Repository\UserRepository;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
+use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\UnitPreset;
@@ -52,7 +54,7 @@ final class ApiReadTest extends AppTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = $this->createApp(['APP_URL' => 'http://localhost:8080']);
+        $this->app = $this->createApp(['APP_URL' => 'http://localhost:8080', 'FEATURES_TRIPS' => 'true']);
         $this->pinClock($this->app, '2026-09-29T10:00:00Z');
         $this->browser = $this->signedIn($this->app);
         $this->owner = $this->owner($this->app);
@@ -102,6 +104,14 @@ final class ApiReadTest extends AppTestCase
             'tread' => '8',
         ]);
         self::assertSame(303, $response->getStatusCode());
+        $this->service($this->app, TripService::class)->create($this->golf, new TripData(
+            new DateTimeImmutable('2026-09-10', new DateTimeZone('UTC')),
+            'Ballymena',
+            'Belfast',
+            true,
+            '90.5',
+            purpose: 'Client visit',
+        ));
     }
 
     public function testEveryEndpointAnswersItsDescribedShape(): void
@@ -114,7 +124,9 @@ final class ApiReadTest extends AppTestCase
             '/vehicles/' . $id . '/summary', '/vehicles/' . $id . '/fuel', '/vehicles/' . $id . '/odometer',
             '/vehicles/' . $id . '/maintenance', '/vehicles/' . $id . '/documents', '/vehicles/' . $id . '/expenses',
             '/vehicles/' . $id . '/tyres', '/upcoming', '/upcoming?vehicle=' . $id, '/reminders',
-            '/reminders?vehicle=' . $id . '&status=due', '/openapi.json'] as $path
+            '/reminders?vehicle=' . $id . '&status=due', '/vehicles/' . $id . '/trips', '/trips/claim',
+            '/trips/claim?year=2025', '/trips/claim?period=custom&from=2026-09-01&to=2026-09-30&vehicles[]=' . $id,
+            '/openapi.json'] as $path
         ) {
             $response = $this->api->get($path);
             self::assertSame(200, $response->getStatusCode(), $path . ': ' . self::body($response));
@@ -124,6 +136,8 @@ final class ApiReadTest extends AppTestCase
         self::assertCount(2, ApiClient::json($this->api->get('/vehicles/' . $id . '/tyres'))->doc('items'));
         self::assertNotEmpty(ApiClient::json($this->api->get('/upcoming'))->doc('items')->toArray());
         self::assertNotEmpty(ApiClient::json($this->api->get('/reminders'))->doc('items')->toArray());
+        self::assertCount(1, ApiClient::json($this->api->get('/vehicles/' . $id . '/trips'))->doc('items'));
+        self::assertCount(1, ApiClient::json($this->api->get('/trips/claim'))->doc('trips'));
     }
 
     public function testQuantitiesAreCanonicalDecimalStringsAsStored(): void
@@ -180,7 +194,7 @@ final class ApiReadTest extends AppTestCase
     {
         $this->garage();
 
-        foreach (['/fuel', '/odometer', '/maintenance', '/documents', '/expenses', '/tyres', '/summary'] as $path) {
+        foreach (['/fuel', '/odometer', '/maintenance', '/documents', '/expenses', '/tyres', '/summary', '/trips'] as $path) {
             $body = self::body($this->api->get('/vehicles/' . $this->golf->id . $path));
             // A JSON number with a decimal point would be a float.
             self::assertDoesNotMatchRegularExpression('/[:\[,]\s*-?\d+\.\d+/', $body, $path);
@@ -309,11 +323,12 @@ final class ApiReadTest extends AppTestCase
 
         foreach (
             ['/vehicles/' . $id . '/fuel', '/vehicles/' . $id . '/maintenance', '/vehicles/' . $id . '/documents',
-            '/vehicles/' . $id . '/tyres', '/reminders'] as $path
+            '/vehicles/' . $id . '/tyres', '/reminders', '/vehicles/' . $id . '/trips', '/trips/claim'] as $path
         ) {
             self::assertSame(404, $this->api->get($path)->getStatusCode(), $path);
         }
         self::assertSame(404, $this->api->post('/vehicles/' . $id . '/fuel', ['odometer' => '1'])->getStatusCode());
+        self::assertSame(404, $this->api->post('/vehicles/' . $id . '/trips', ['from' => 'A'])->getStatusCode());
 
         $summary = ApiClient::json($this->api->get('/vehicles/' . $id . '/summary'));
         foreach (['fuel', 'reminders', 'documents', 'tyres'] as $field) {

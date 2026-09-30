@@ -1,0 +1,141 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
+
+{#
+ # Log or edit a trip (spec.md §7.22), as a page and a desktop modal. The
+ # *Saved journey* select is its own GET form, so without JS it reloads
+ # the page with ?journey=<id>; js/trip-form.js fills the fields in place.
+ #}
+{% set active_nav = 'garage' %}
+{% set editing = trip is not null %}
+{% set heading = (editing ? 'trip.edit_title' : 'trip.add_title')|trans %}
+{% set is_return = (values.is_return ?? '') == '1' %}
+{% set is_business = (values.is_business ?? '') == '1' %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('trips.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'trip.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'trip.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        {% if journeys is not empty and not editing %}
+            <form class="card form" method="get" action="{{ url_for('trips.create', {id: vehicle.id}) }}" data-trip-journeys="trip-form">
+                <div class="field">
+                    <label class="field__label" for="f-journey">{{ 'trip.field.journey'|trans }}</label>
+                    <div class="input-group">
+                        <select class="select" id="f-journey" name="journey" data-trip-journey>
+                            <option value="">{{ 'trip.journey_none'|trans }}</option>
+                            {% for journey in journeys %}
+                                <option value="{{ journey.id }}"{% if (values.journey_id ?? '') == journey.id ~ '' %} selected{% endif %}
+                                    data-from="{{ journey.from }}" data-to="{{ journey.to }}" data-distance="{{ journey.distance }}"
+                                    data-return="{{ journey.return ? '1' : '' }}" data-business="{{ journey.business ? '1' : '' }}"
+                                    data-purpose="{{ journey.purpose }}">{{ journey.label }} · {{ journey.distance }} {{ unit }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn" data-trip-journey-submit>{{ 'trip.journey_use'|trans }}</button>
+                    </div>
+                    <p class="field__hint">{{ 'trip.hint.journey'|trans }}</p>
+                </div>
+            </form>
+        {% endif %}
+
+        <form class="form" id="trip-form" method="post" enctype="multipart/form-data"
+              action="{{ editing ? url_for('trips.edit', {id: vehicle.id, entry: trip.id}) : url_for('trips.create', {id: vehicle.id}) }}"
+              {%- if not editing %} data-offline-queue data-offline-label="{{ vehicle.name() }}" data-zone="{{ prefs().timezone }}"{% if errors is empty %} data-now-field="travelled_on"{% endif %}{% endif %}>
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card">
+                {{ ui.input('travelled_on', 'trip.field.travelled_on'|trans, values, errors, {type: 'date', required: true}) }}
+                <div class="form-row">
+                    {{ ui.input('from_place', 'trip.field.from'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
+                    {{ ui.input('to_place', 'trip.field.to'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="is_return" value="1" data-trip-return{% if is_return %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'trip.field.is_return'|trans }}</span>
+                        <span class="toggle__hint">{{ 'trip.hint.is_return'|trans }}</span>
+                    </span>
+                </label>
+                <div class="field">
+                    <label class="field__label" for="f-distance" data-distance-label
+                           data-label="{{ 'trip.field.distance'|trans }}" data-label-one-way="{{ 'trip.field.distance_one_way'|trans }}">
+                        {{- (is_return ? 'trip.field.distance_one_way' : 'trip.field.distance')|trans -}}
+                    </label>
+                    <div class="input-group">
+                        <input class="input" id="f-distance" name="distance" type="number" step="any" min="0" inputmode="decimal"
+                               value="{{ values.distance ?? '' }}"{{ ui.described_by('distance', errors, true) }}>
+                        <span class="input-group__suffix" aria-hidden="true">{{ unit }}</span>
+                    </div>
+                    <p class="field__hint" id="f-distance-hint">{{ 'trip.hint.distance'|trans }}</p>
+                    {{ ui.field_error(errors, 'distance') }}
+                </div>
+                {% set has_odometer = (values.odometer_start ?? '') != '' or (values.odometer_end ?? '') != '' or errors.odometer_start is defined or errors.odometer_end is defined %}
+                <details class="disclosure"{% if has_odometer %} open{% endif %}>
+                    <summary>{{ 'trip.odometer_instead'|trans }}</summary>
+                    <div class="form-row">
+                        {{ ui.input('odometer_start', 'trip.field.odometer_start'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: unit, optional: true}) }}
+                        {{ ui.input('odometer_end', 'trip.field.odometer_end'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: unit, optional: true}) }}
+                    </div>
+                    <p class="field__hint">{{ 'trip.hint.odometer'|trans }}</p>
+                </details>
+            </section>
+
+            <section class="card">
+                {# Unticked sends 0: without it, a missing field reads as business (import, API). #}
+                <input type="hidden" name="is_business" value="0">
+                <label class="toggle">
+                    <input type="checkbox" name="is_business" value="1"{% if is_business %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'trip.field.is_business'|trans }}</span>
+                        {% if commute_hint %}<span class="toggle__hint">{{ 'trip.hint.commute'|trans }}</span>{% endif %}
+                    </span>
+                </label>
+                {{ ui.input('purpose', 'trip.field.purpose'|trans, values, errors, {maxlength: 200, hint: 'trip.hint.purpose'|trans}) }}
+                {{ ui.input('passengers', 'trip.field.passengers'|trans, values, errors, {type: 'number', min: 0, max: 8, step: 1, inputmode: 'numeric', hint: 'trip.hint.passengers'|trans}) }}
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'trip.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="2" maxlength="500"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </section>
+
+            {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
+
+            <section class="card">
+                <label class="toggle">
+                    <input type="checkbox" name="save_journey" value="1"{% if (values.save_journey ?? '') == '1' %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'trip.field.save_journey'|trans }}</span>
+                        <span class="toggle__hint">{{ 'trip.hint.save_journey'|trans }}</span>
+                    </span>
+                </label>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'trip.add_submit')|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (url_for('trips.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('trips.delete', {id: vehicle.id, entry: trip.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 final class DashboardLayoutTest extends TestCase
 {
     private const array DEFAULT = [
-        'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity',
+        'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage',
     ];
 
     public function testDefaultShowsEveryWidgetInTheSpecOrder(): void
@@ -32,7 +32,7 @@ final class DashboardLayoutTest extends TestCase
         ]);
 
         self::assertSame(
-            ['compliance', 'spend', 'reminders', 'coming_up', 'recent_fuel', 'fleet', 'efficiency', 'mileage', 'recent_activity'],
+            ['compliance', 'spend', 'reminders', 'coming_up', 'recent_fuel', 'fleet', 'efficiency', 'mileage', 'recent_activity', 'business_mileage'],
             $layout->toArray()['order'],
             'unknown ids and duplicates dropped; widgets it did not know about appended',
         );
@@ -46,15 +46,15 @@ final class DashboardLayoutTest extends TestCase
         $layout = DashboardLayout::default();
 
         self::assertSame(
-            ['reminders', 'spend', 'coming_up', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity'],
+            ['reminders', 'spend', 'coming_up', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage'],
             $layout->move(DashboardWidget::Spend, -1)->toArray()['order'],
         );
         self::assertSame(
-            ['reminders', 'coming_up', 'recent_fuel', 'spend', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity'],
+            ['reminders', 'coming_up', 'recent_fuel', 'spend', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage'],
             $layout->move(DashboardWidget::Spend, 1)->toArray()['order'],
         );
         self::assertSame(self::DEFAULT, $layout->move(DashboardWidget::Reminders, -1)->toArray()['order']);
-        self::assertSame(self::DEFAULT, $layout->move(DashboardWidget::RecentActivity, 1)->toArray()['order']);
+        self::assertSame(self::DEFAULT, $layout->move(DashboardWidget::BusinessMileage, 1)->toArray()['order']);
     }
 
     public function testHidingAndReorderingKeepEachOther(): void
@@ -64,7 +64,7 @@ final class DashboardLayoutTest extends TestCase
             ->reorder(['spend', 'fleet']);
 
         self::assertSame(
-            ['spend', 'fleet', 'reminders', 'coming_up', 'recent_fuel', 'efficiency', 'compliance', 'mileage', 'recent_activity'],
+            ['spend', 'fleet', 'reminders', 'coming_up', 'recent_fuel', 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage'],
             $layout->toArray()['order'],
         );
         self::assertSame(['efficiency'], $layout->toArray()['hidden']);

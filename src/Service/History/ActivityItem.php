@@ -61,6 +61,8 @@ final readonly class ActivityItem
         public array $tyres = [],
         /** Who added the entry (Phase 19); null = a former user, or a milestone. */
         public ?int $createdBy = null,
+        /** A trip's whole distance in km (Phase 22). */
+        public ?string $distanceKm = null,
     ) {
     }
 

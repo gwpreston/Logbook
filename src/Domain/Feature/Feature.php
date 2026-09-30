@@ -16,6 +16,7 @@ enum Feature: string
     case Reminders = 'reminders';
     case Reports = 'reports';
     case Tyres = 'tyres';
+    case Trips = 'trips';
 
     /**
      * The environment variable holding the default, e.g. FEATURES_FUEL.
@@ -23,6 +24,15 @@ enum Feature: string
     public function envName(): string
     {
         return 'FEATURES_' . strtoupper($this->value);
+    }
+
+    /**
+     * On unless the environment says otherwise, except trips (Phase 22):
+     * a specialist module most owners never need.
+     */
+    public function isOnByDefault(): bool
+    {
+        return $this !== self::Trips;
     }
 
     public function icon(): string
@@ -34,6 +44,7 @@ enum Feature: string
             self::Reminders => 'notifications',
             self::Reports => 'bar_chart',
             self::Tyres => 'tire_repair',
+            self::Trips => 'route',
         };
     }
 }

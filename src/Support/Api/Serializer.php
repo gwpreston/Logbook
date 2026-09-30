@@ -14,6 +14,7 @@ use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Compliance\DocumentState;
@@ -23,6 +24,10 @@ use Logbook\Service\Fuel\EconomySummary;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\SegmentCheck;
 use Logbook\Service\Reminder\ReminderEntry;
+use Logbook\Service\Trip\ClaimFilter;
+use Logbook\Service\Trip\ClaimLine;
+use Logbook\Service\Trip\ClaimTotals;
+use Logbook\Service\Trip\ValuedTrip;
 use Logbook\Service\Tyre\TyreStanding;
 use Logbook\Service\Tyre\TyreView;
 use Logbook\Support\Number\Decimal;
@@ -50,6 +55,8 @@ final class Serializer
     public const int QUANTITY_SCALE = 3;
     /** Places for a price per litre (kWh), as stored. */
     public const int PRICE_SCALE = 6;
+    /** Places for a mileage rate per km or mile, as stored. */
+    public const int RATE_SCALE = 4;
 
     public static function instant(?DateTimeInterface $instant): ?string
     {
@@ -448,6 +455,104 @@ final class Serializer
             'lead_time_days' => $reminder->leadTimeDays,
             'created_at' => self::instant($reminder->createdAt),
             'updated_at' => self::instant($reminder->updatedAt),
+        ];
+    }
+
+    /**
+     * A trip (spec.md §7.22): distances in km, the whole trip's.
+     * `created_by` is its driver (null: a former user).
+     *
+     * @return array<string, mixed>
+     */
+    public static function trip(Trip $trip): array
+    {
+        $data = $trip->data;
+
+        return [
+            'id' => $trip->id,
+            'vehicle_id' => $trip->vehicleId,
+            'travelled_on' => self::date($data->travelledOn),
+            'from' => $data->fromPlace,
+            'to' => $data->toPlace,
+            'journey' => $trip->journey(),
+            'is_return' => $data->isReturn,
+            'distance_km' => self::dec($data->distanceKm, self::QUANTITY_SCALE),
+            'odometer_start_km' => self::dec($data->odometerStartKm, self::QUANTITY_SCALE),
+            'odometer_end_km' => self::dec($data->odometerEndKm, self::QUANTITY_SCALE),
+            'is_business' => $data->isBusiness,
+            'purpose' => $data->purpose,
+            'passengers' => $data->passengers,
+            'notes' => $data->notes,
+            'created_by' => $trip->createdBy,
+            'created_at' => self::instant($trip->createdAt),
+            'updated_at' => self::instant($trip->updatedAt),
+        ];
+    }
+
+    /**
+     * What a claim report covers (spec.md §7.23).
+     *
+     * @return array<string, mixed>
+     */
+    public static function claimPeriod(ClaimFilter $filter): array
+    {
+        return [
+            'from' => self::date($filter->from),
+            'to' => self::date($filter->to),
+            'tax_year' => $filter->taxYear?->label(),
+        ];
+    }
+
+    /**
+     * One row of a claim: the trip at its rates, in the rate set's unit
+     * and currency; all null (no lines) when no rate set was in effect.
+     *
+     * @return array<string, mixed>
+     */
+    public static function claimTrip(ValuedTrip $row): array
+    {
+        $data = $row->trip->data;
+
+        return [
+            'id' => $row->trip->id,
+            'vehicle_id' => $row->trip->vehicleId,
+            'travelled_on' => self::date($data->travelledOn),
+            'journey' => $row->trip->journey(),
+            'purpose' => $data->purpose,
+            'distance_km' => self::dec($data->distanceKm, self::QUANTITY_SCALE),
+            'distance' => self::dec($row->distance, self::QUANTITY_SCALE),
+            'unit' => $row->unit()?->value,
+            'passengers' => $data->passengers,
+            'lines' => array_map(static fn (ClaimLine $line): array => [
+                'distance' => self::dec($line->distance, self::QUANTITY_SCALE),
+                'rate' => self::dec($line->rate, self::RATE_SCALE),
+            ], $row->lines),
+            'passenger_amount' => self::dec($row->passengerAmount, self::QUANTITY_SCALE),
+            'amount' => self::dec($row->amount(), self::QUANTITY_SCALE),
+            'currency' => $row->currency(),
+        ];
+    }
+
+    /**
+     * One currency's claim totals.
+     *
+     * @return array<string, mixed>
+     */
+    public static function claimTotals(ClaimTotals $totals): array
+    {
+        return [
+            'currency' => $totals->currency,
+            'rates' => array_map(static fn (array $rate): array => [
+                'unit' => $rate['unit']->value,
+                'rate' => self::dec($rate['rate'], self::RATE_SCALE),
+                'distance' => self::dec($rate['distance'], self::QUANTITY_SCALE),
+                'amount' => self::dec($rate['amount'], self::QUANTITY_SCALE),
+            ], $totals->rates),
+            'mileage_amount' => self::dec($totals->mileageAmount, self::QUANTITY_SCALE),
+            'passenger_amount' => self::dec($totals->passengerAmount, self::QUANTITY_SCALE),
+            'approved_amount' => self::dec($totals->approvedAmount(), self::QUANTITY_SCALE),
+            'employer_amount' => self::dec($totals->employerAmount, self::QUANTITY_SCALE),
+            'difference' => self::dec($totals->difference(), self::QUANTITY_SCALE),
         ];
     }
 

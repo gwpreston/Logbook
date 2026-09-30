@@ -6,10 +6,12 @@ namespace Logbook\Service\History;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
+use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -20,8 +22,10 @@ use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Repository\TripRepository;
 use Logbook\Repository\TyreRepository;
 use Logbook\Repository\ValuationRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Tyre\TyreService;
@@ -71,6 +75,8 @@ final readonly class ActivityFeed
         private FeatureToggles $features,
         private TyreRepository $tyres,
         private ValuationRepository $valuations,
+        private TripRepository $trips,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -204,6 +210,18 @@ final readonly class ActivityFeed
         $valuations = $query->includes(ActivityKind::Valuation)
             ? $this->valuations->listForVehiclesBetween($ids, $query->from, $query->until)
             : [];
+        // Another driver's trips only for those who may see them (spec.md §7.22).
+        $trips = [];
+        if ($query->includes(ActivityKind::Trip)) {
+            $everyone = [];
+            foreach ($query->vehicles as $vehicle) {
+                $everyone[$vehicle->id] = $this->access->can($user, VehicleAbility::ViewOthersTrips, $vehicle);
+            }
+            $trips = array_values(array_filter(
+                $this->trips->listForVehiclesBetween($ids, $query->from, $query->until),
+                static fn (Trip $trip): bool => $trip->createdBy === $user->id || ($everyone[$trip->vehicleId] ?? false),
+            ));
+        }
 
         $milestones = [];
         if ($query->includes(ActivityKind::Milestone)) {
@@ -227,6 +245,7 @@ final readonly class ActivityFeed
             AttachmentOwner::Compliance->value => array_map(static fn ($d): int => $d->id, $documents),
             AttachmentOwner::Expense->value => array_map(static fn ($e): int => $e->id, $expenses),
             AttachmentOwner::Valuation->value => array_map(static fn ($v): int => $v->id, $valuations),
+            AttachmentOwner::Trip->value => array_map(static fn (Trip $t): int => $t->id, $trips),
             AttachmentOwner::Purchase->value => $paperwork(AttachmentOwner::Purchase),
             AttachmentOwner::Sale->value => $paperwork(AttachmentOwner::Sale),
         ]));
@@ -366,6 +385,23 @@ final readonly class ActivityFeed
                 price: $data->amount,
                 files: $counts->of(AttachmentOwner::Valuation, $valuation->id),
                 createdBy: $valuation->createdBy,
+            );
+        }
+        foreach ($trips as $trip) {
+            $data = $trip->data;
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Trip,
+                vehicle: $vehicles[$trip->vehicleId],
+                entryId: $trip->id,
+                date: $data->travelledOn,
+                createdAt: $trip->createdAt,
+                label: $trip->journey(),
+                labelKey: $data->isBusiness ? 'history.kind.trip_business' : 'history.kind.trip_private',
+                icon: 'route',
+                note: $data->purpose,
+                files: $counts->of(AttachmentOwner::Trip, $trip->id),
+                createdBy: $trip->createdBy,
+                distanceKm: $data->distanceKm,
             );
         }
         foreach ($milestones as [$vehicle, $milestone, $date, $price]) {

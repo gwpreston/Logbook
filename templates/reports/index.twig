@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/expenses.twig' as exp %}
+{% import 'macros/trips.twig' as trips_ui %}
 
 {% set active_nav = 'reports' %}
 {% set dash = '—' %}
@@ -201,6 +202,10 @@
                 {% endif %}
             </section>
         {% endfor %}
+
+        {% if business and not business.isEmpty() %}
+            {{ trips_ui.business_table(business, 'trip.report.title'|trans) }}
+        {% endif %}
 
         {% if rows is not empty %}
             <section class="card" aria-labelledby="costs-heading">

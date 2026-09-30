@@ -22,6 +22,8 @@ enum DashboardWidget: string
     case Compliance = 'compliance';
     case Mileage = 'mileage';
     case RecentActivity = 'recent_activity';
+    /** This tax year's business mileage and claim (Phase 22). */
+    case BusinessMileage = 'business_mileage';
 
     /**
      * The module it shows, hidden with it (spec.md §7.10).
@@ -34,6 +36,7 @@ enum DashboardWidget: string
             self::Spend => Feature::Reports,
             self::RecentFuel, self::Efficiency => Feature::Fuel,
             self::Compliance => Feature::Compliance,
+            self::BusinessMileage => Feature::Trips,
         };
     }
 
@@ -48,6 +51,7 @@ enum DashboardWidget: string
             self::Efficiency => 'trending_up',
             self::Compliance => 'verified_user',
             self::Mileage => 'speed',
+            self::BusinessMileage => 'route',
             self::RecentActivity => 'history',
         };
     }

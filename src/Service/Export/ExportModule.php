@@ -9,7 +9,8 @@ use Logbook\Domain\Feature\Feature;
 /**
  * The per-vehicle lists that export to (and import from) CSV (spec.md §7.7,
  * §7.13). The value is the URL segment: /vehicles/{id}/export/{module}.csv.
- * Tyres, tyre changes (spec.md §7.17) and valuations (§7.1) export only.
+ * Tyres, tyre changes (spec.md §7.17) and valuations (§7.1) export only;
+ * trips (§7.22) export and import.
  */
 enum ExportModule: string
 {
@@ -21,6 +22,7 @@ enum ExportModule: string
     case Tyres = 'tyres';
     case TyreChanges = 'tyre-changes';
     case Valuations = 'valuations';
+    case Trips = 'trips';
 
     public function isImportable(): bool
     {
@@ -37,6 +39,7 @@ enum ExportModule: string
             self::Maintenance => Feature::Maintenance,
             self::Documents => Feature::Compliance,
             self::Tyres, self::TyreChanges => Feature::Tyres,
+            self::Trips => Feature::Trips,
             self::Odometer, self::Expenses, self::Valuations => null,
         };
     }
@@ -54,6 +57,7 @@ enum ExportModule: string
             self::Expenses => 'expenses.index',
             self::Tyres, self::TyreChanges => 'tyres.index',
             self::Valuations => 'valuations.index',
+            self::Trips => 'trips.index',
         };
     }
 }

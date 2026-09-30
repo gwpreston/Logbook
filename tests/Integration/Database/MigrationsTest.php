@@ -45,6 +45,9 @@ final class MigrationsTest extends AppTestCase
         'vehicle_shares',
         'invitations',
         'reminder_deliveries',
+        'trips',
+        'saved_journeys',
+        'mileage_rate_sets',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -84,7 +87,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 21.2 first MOT date, the Phase 19 users and sharing, the Phase 18.2 API
+        // Newest first: the Phase 22 trip tables, the Phase 21.2 first MOT date, the Phase 19 users and sharing, the Phase 18.2 API
         // keys, the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
         // purchase and sale paperwork (no schema change), the Phase 11.2
         // tread depth, the Phase 11.1 tyre tables, the Phase 10 document odometer, the Phase 9.2
@@ -93,6 +96,12 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($schema->tablesExist(['trips', 'saved_journeys', 'mileage_rate_sets']));
+        Migrator::run('rollback');
+        foreach (['trips', 'saved_journeys', 'mileage_rate_sets'] as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+
         self::assertTrue($this->hasColumn('vehicles', 'first_inspection_due_on'));
         Migrator::run('rollback');
         self::assertFalse($this->hasColumn('vehicles', 'first_inspection_due_on'), 'rollback must drop the first MOT date');

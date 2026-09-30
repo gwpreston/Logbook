@@ -1,0 +1,29 @@
+{# Business mileage (spec.md §7.22): the signed-in user's own business
+   distance this tax year, the claim value so far and the distance left
+   before the lower rate. #}
+{% set claim = dashboard.businessMileage %}
+{% set dash = '—' %}
+{% set left = claim ? claim.thresholdLeft : null %}
+<dl class="figures">
+    <div class="figures__item">
+        <dt>{{ 'dashboard.business.distance'|trans }}</dt>
+        <dd class="figures__value tabular">{{ claim ? claim.distanceKm()|distance : dash }}</dd>
+    </div>
+    <div class="figures__item">
+        <dt>{{ 'dashboard.business.value'|trans }}</dt>
+        <dd class="figures__value tabular">
+            {%- for totals in claim.totals ?? [] -%}
+                {{ totals.approvedAmount()|money(totals.currency) }}{% if not loop.last %}<br>{% endif %}
+            {%- else -%}{{ dash }}{%- endfor -%}
+        </dd>
+    </div>
+</dl>
+{% if claim %}
+    <p class="muted">
+        {{- 'trip.claim.tax_year'|trans({year: claim.filter.taxYear.label()}) }}
+        {%- if left %} · {{ (left.isPast() ? 'dashboard.business.past' : 'dashboard.business.left')|trans({
+            distance: left.left|number(0) ~ ' ' ~ ('units.symbol.' ~ left.unit.value)|trans,
+            rate: left.rateAfter|mileage_rate(left.currency),
+        }) }}{% endif -%}
+    </p>
+{% endif %}

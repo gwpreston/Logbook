@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.10.0",
-    "summary": "Read a Logbook garage and log fill-ups and odometer readings.",
+    "version": "1.11.0",
+    "summary": "Read a Logbook garage and log fill-ups, odometer readings and trips.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
       "name": "Proprietary"
@@ -649,6 +649,206 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReminderList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/trips": {
+      "get": {
+        "operationId": "listTrips",
+        "summary": "Trips, newest first",
+        "description": "The key user's own trips, or every driver's when they manage or own the vehicle. Needs the trips module.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logTrip",
+        "summary": "Log a trip",
+        "description": "Needs a read and write key. Validated as the trip form validates, in km, the whole trip's distance. A trip of the key's user with the same date, places and distance is not written again: it comes back with duplicate true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already logged (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/trips/claim": {
+      "get": {
+        "operationId": "tripClaim",
+        "summary": "The key user's mileage claim",
+        "description": "The claim report's figures: the key user's own business trips on every vehicle they can see, valued at their rates. Needs the trips module.",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{4}$"
+            },
+            "description": "The year the tax year starts in (default: the current tax year)."
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "year",
+                "custom"
+              ]
+            },
+            "description": "custom with from and to for a date range."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "First day, inclusive."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Last day, inclusive."
+          },
+          {
+            "name": "vehicles[]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "description": "Only these vehicles (default: all)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Claim"
                 }
               }
             }
@@ -2663,7 +2863,8 @@
               "compliance",
               "reminders",
               "reports",
-              "tyres"
+              "tyres",
+              "trips"
             ],
             "properties": {
               "fuel": {
@@ -2683,6 +2884,9 @@
               },
               "tyres": {
                 "type": "boolean"
+              },
+              "trips": {
+                "type": "boolean"
               }
             }
           }
@@ -2701,7 +2905,8 @@
             "enum": [
               "odometer_backwards",
               "odometer_jump",
-              "economy_check"
+              "economy_check",
+              "trip_longer_than_driven"
             ]
           },
           "detail": {
@@ -3072,6 +3277,432 @@
             "items": {
               "$ref": "#/components/schemas/Warning"
             }
+          }
+        }
+      },
+      "Trip": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "travelled_on",
+          "from",
+          "to",
+          "journey",
+          "is_return",
+          "distance_km",
+          "odometer_start_km",
+          "odometer_end_km",
+          "is_business",
+          "purpose",
+          "passengers",
+          "notes",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "description": "A logged trip. Distances are in km; distance_km is the whole trip (both ways for a return).",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "travelled_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "journey": {
+            "type": "string",
+            "description": "\"Ballymena → Belfast\", or \"Ballymena → Belfast → Ballymena\" for a return."
+          },
+          "is_return": {
+            "type": "boolean"
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "odometer_start_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "odometer_end_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "is_business": {
+            "type": "boolean"
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "passengers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The driver's user id; null for a former user."
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "TripPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trip"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "TripInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Give from, to and either distance_km or both odometers, or a journey_id (a saved journey of the key's user fills from, to, is_return, is_business, purpose and, without distance_km or odometers, the distance: doubled on a return). Fields sent win over the journey's.",
+        "properties": {
+          "travelled_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today in the owner's time zone. Send it, so a retry is recognised."
+          },
+          "journey_id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "One of the key user's saved journeys."
+          },
+          "from": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "to": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "is_return": {
+            "type": "boolean",
+            "description": "Default: false (or the journey's)."
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "The whole trip in km, never doubled."
+          },
+          "odometer_start_km": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "odometer_end_km": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "is_business": {
+            "type": "boolean",
+            "description": "Default: true (or the journey's). A business trip needs a purpose."
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "passengers": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 8
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "TripWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Trip"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ClaimLine": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "distance",
+          "rate"
+        ],
+        "properties": {
+          "distance": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "rate": {
+            "$ref": "#/components/schemas/Decimal"
+          }
+        },
+        "description": "Part of a trip's distance at one rate (two lines for a trip that crosses the threshold)."
+      },
+      "ClaimTrip": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "travelled_on",
+          "journey",
+          "purpose",
+          "distance_km",
+          "distance",
+          "unit",
+          "passengers",
+          "lines",
+          "passenger_amount",
+          "amount",
+          "currency"
+        ],
+        "description": "A business trip at the rates in effect on its date. With no rate set in effect, distance, unit, amounts and currency are null and lines is empty.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "travelled_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "journey": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "distance": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "In the rate set's unit."
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "km",
+              "mi",
+              null
+            ]
+          },
+          "passengers": {
+            "type": "integer"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimLine"
+            }
+          },
+          "passenger_amount": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Mileage plus passengers."
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Z]{3}$"
+          }
+        }
+      },
+      "ClaimTotals": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currency",
+          "rates",
+          "mileage_amount",
+          "passenger_amount",
+          "approved_amount",
+          "employer_amount",
+          "difference"
+        ],
+        "description": "One currency's totals. mileage_amount, passenger_amount and approved_amount are the sums of the trips' rounded amounts; each rate's amount is its distance × rate, before any rounding per trip.",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "rates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "unit",
+                "rate",
+                "distance",
+                "amount"
+              ],
+              "properties": {
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "km",
+                    "mi"
+                  ]
+                },
+                "rate": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "distance": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Decimal"
+                }
+              }
+            }
+          },
+          "mileage_amount": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "passenger_amount": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "approved_amount": {
+            "$ref": "#/components/schemas/Decimal",
+            "description": "Mileage plus passengers."
+          },
+          "employer_amount": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "What the employer paid; null without employer rates."
+          },
+          "difference": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Approved mileage (without passengers) minus the employer's payment: positive is unpaid."
+          }
+        }
+      },
+      "Claim": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "trips",
+          "totals",
+          "unvalued"
+        ],
+        "properties": {
+          "period": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to",
+              "tax_year"
+            ],
+            "properties": {
+              "from": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "to": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "tax_year": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "\"2026/27\" (or \"2026\" for a year starting 1 January); null for a custom range."
+              }
+            }
+          },
+          "trips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimTrip"
+            },
+            "description": "The key user's business trips in the period, oldest first."
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimTotals"
+            }
+          },
+          "unvalued": {
+            "type": "integer",
+            "description": "Trips with no rate set in effect on their date."
           }
         }
       }

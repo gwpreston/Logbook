@@ -20,6 +20,7 @@ final readonly class DeleteAttachmentAction
 {
     public function __construct(
         private AttachmentService $attachments,
+        private TripFileGuard $tripFiles,
         private View $view,
         private Redirector $redirect,
         private EntryGuard $guard,
@@ -33,6 +34,7 @@ final readonly class DeleteAttachmentAction
     {
         $vehicle = RequestContext::vehicle($request);
         $attachment = AttachmentRoute::attachment($this->attachments, $vehicle, $request, $args);
+        $this->tripFiles->allow($request, $attachment);
         $this->guard->allowChange($request, $vehicle, $attachment->uploadedBy);
         [$route, $params] = AttachmentRoute::ownerPage($attachment);
         $description = ['name' => $attachment->filename];

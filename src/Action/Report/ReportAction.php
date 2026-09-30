@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Report;
 
+use Logbook\Domain\Feature\Feature;
+use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Trip\BusinessMileage;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportRange;
@@ -30,6 +33,8 @@ final readonly class ReportAction
         private ReportCharts $charts,
         private View $view,
         private ClockInterface $clock,
+        private FeatureToggles $features,
+        private BusinessMileage $business,
     ) {
     }
 
@@ -53,6 +58,10 @@ final readonly class ReportAction
             'charts' => array_map($this->charts->monthly(...), $report->currencies),
             'filter_query' => $filter->toQuery(),
             'ownership_query' => OwnershipReportAction::query($filter),
+            // Business mileage (Phase 22, spec.md §7.7), with trips on.
+            'business' => $this->features->isEnabled(Feature::Trips)
+                ? $this->business->build($user, $report->vehicles, $report->period->from ?? $report->period->to, $report->period->to, $today)
+                : null,
         ]);
     }
 }

@@ -10,7 +10,8 @@ namespace Logbook\Domain\Attachment;
  * entry's. `purchase` and `sale` are the vehicle's purchase and sale (the
  * owner id is the vehicle's): paperwork belongs to those events, and there
  * is deliberately no `vehicle` owner (spec.md §7.12). `valuation` is a
- * valuation's (Phase 14.1): the screenshot of a quote.
+ * valuation's (Phase 14.1): the screenshot of a quote. `trip` is a trip's
+ * (Phase 22): a parking or toll receipt.
  */
 enum AttachmentOwner: string
 {
@@ -22,4 +23,5 @@ enum AttachmentOwner: string
     case Purchase = 'purchase';
     case Sale = 'sale';
     case Valuation = 'valuation';
+    case Trip = 'trip';
 }

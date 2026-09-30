@@ -1,0 +1,51 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{# Add or edit a saved journey (spec.md §7.22): one way, in the user's unit. #}
+{% set active_nav = 'settings' %}
+{% set editing = journey is not null %}
+{% set heading = (editing ? 'trip.journeys.edit_title' : 'trip.journeys.add_title')|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.trips') }}">{{ ui.icon('chevron_left') }}{{ 'trip.settings.title'|trans }}</a>
+        <header class="page-header">
+            <div><h1 class="page-header__title">{{ heading }}</h1></div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        <form class="form" method="post" action="{{ editing ? url_for('settings.trips.journeys.edit', {journey: journey.id}) : url_for('settings.trips.journeys.create') }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+            <section class="card">
+                <div class="form-row">
+                    {{ ui.input('from_place', 'trip.field.from'|trans, values, errors, {required: true, maxlength: 100}) }}
+                    {{ ui.input('to_place', 'trip.field.to'|trans, values, errors, {required: true, maxlength: 100}) }}
+                </div>
+                {{ ui.input('distance', 'trip.field.distance_one_way'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', required: true, suffix: prefs().distanceUnit.value}) }}
+                <label class="toggle">
+                    <input type="checkbox" name="is_return_default" value="1"{% if (values.is_return_default ?? '') == '1' %} checked{% endif %}>
+                    <span class="toggle__text"><span class="toggle__title">{{ 'trip.field.is_return'|trans }}</span></span>
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" name="is_business_default" value="1"{% if (values.is_business_default ?? '') == '1' %} checked{% endif %}>
+                    <span class="toggle__text"><span class="toggle__title">{{ 'trip.field.is_business'|trans }}</span></span>
+                </label>
+                {{ ui.input('purpose_default', 'trip.field.purpose'|trans, values, errors, {maxlength: 200, optional: true}) }}
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'form.save'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('settings.trips') }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('settings.trips.journeys.delete', {journey: journey.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

@@ -163,6 +163,18 @@
                     </a>
                 </li>
                 {% endif %}
+                {% if feature_enabled('trips') %}
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.trips') }}">
+                        <span class="list__icon">{{ ui.icon('route') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'trip.settings.link'|trans }}</span>
+                            <span class="list__meta">{{ 'trip.settings.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                {% endif %}
                 <li>
                     <a class="list__item" href="{{ url_for('settings.api_keys') }}">
                         <span class="list__icon">{{ ui.icon('key') }}</span>

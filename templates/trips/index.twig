@@ -1,0 +1,77 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
+{% import 'macros/trips.twig' as trips_ui %}
+
+{#
+ # The Trips tab (spec.md §7.22): this tax year's business and private
+ # distance and the viewer's claim value, then the trips the viewer may see
+ # (their own; everyone's for Manage and Own), newest first.
+ #}
+{% set active_nav = 'garage' %}
+{% set dash = '—' %}
+
+{% block title %}{{ 'trip.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'trips'} %}
+
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'trip.title'|trans, module: 'trips', add: {route: 'trips.create', label: 'trip.add'|trans}} %}
+
+        {{ trips_ui.split_stats(split, tax_year, claim_totals) }}
+
+        <p class="btn-row">
+            <a class="btn btn--ghost" href="{{ url_for('trips.claim', {}, {year: tax_year.startYear(), vehicles: [vehicle.id]}) }}">{{ ui.icon('receipt_long') }}{{ 'trip.claim.open'|trans({year: tax_year.label()}) }}</a>
+            <a class="btn btn--ghost" href="{{ url_for('settings.trips') }}">{{ ui.icon('tune') }}{{ 'trip.settings.link'|trans }}</a>
+        </p>
+
+        <section class="card" aria-labelledby="trips-heading">
+            <div class="card__header">
+                <h2 id="trips-heading" class="card__title">{{ 'trip.list_title'|trans }}</h2>
+                {% if not sees_everyone %}<span class="muted">{{ 'trip.own_only'|trans }}</span>{% endif %}
+            </div>
+            {% if trips is empty %}
+                <div class="empty">
+                    {{ ui.icon('route') }}
+                    <p class="empty__title">{{ 'trip.empty_title'|trans }}</p>
+                    <p>{{ 'trip.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for trip in trips %}
+                        {% set data = trip.data %}
+                        {% set editable = can_change(vehicle, trip.createdBy) %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon('route') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">
+                                    {%- if editable -%}
+                                        <a href="{{ url_for('trips.edit', {id: vehicle.id, entry: trip.id}) }}" data-modal>{{ trip.journey() }}</a>
+                                    {%- else -%}
+                                        {{ trip.journey() }}
+                                    {%- endif -%}
+                                </span>
+                                <span class="list__meta truncate">
+                                    {{- data.travelledOn|local_date }}
+                                    {%- if data.purpose %} · {{ data.purpose }}{% endif -%}
+                                    {%- if data.passengers > 0 %} · {{ 'trip.passengers_count'|trans({count: data.passengers}) }}{% endif -%}
+                                </span>
+                                {{ ui.added_by(vehicle, trip.createdBy) }}
+                            </span>
+                            <span class="list__end">
+                                {{ paperclip.count(attachment_counts.of('trip', trip.id)) }}
+                                <span class="pill{{ data.isBusiness ? ' pill--accent' }}">{{ (data.isBusiness ? 'trip.business' : 'trip.private')|trans }}</span>
+                                <span class="list__amount tabular">{{ data.distanceKm|distance(1) }}</span>
+                                {% if not vehicle.isArchived() and trip.createdBy == user.id %}
+                                    <a class="btn btn--ghost" href="{{ url_for('trips.create', {id: vehicle.id}, {again: trip.id}) }}" data-modal>{{ ui.icon('replay') }}{{ 'trip.log_again'|trans }}</a>
+                                {% endif %}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'trips.index', {id: vehicle.id}) }}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

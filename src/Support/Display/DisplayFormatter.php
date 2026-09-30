@@ -445,6 +445,22 @@ final readonly class DisplayFormatter
         return $this->formatMoney($value, $currency, $digits, max($digits, $decimals));
     }
 
+    /**
+     * A per-unit rate as money with up to 4 places, never fewer than the
+     * currency's: "£0.55", "£0.045" (mileage rates, spec.md §7.23).
+     *
+     * @param string|null $rate canonical decimal
+     */
+    public function rate(?string $rate, string $currency): string
+    {
+        if ($rate === null || !Decimal::isCanonical($rate)) {
+            return '';
+        }
+        $digits = Currency::fractionDigits($currency);
+
+        return $this->formatMoney((float) $rate, $currency, $digits, max($digits, 4));
+    }
+
     private function formatMoney(float $value, string $currency, int $minDigits, int $maxDigits): string
     {
         $formatter = new NumberFormatter($this->locale(), NumberFormatter::CURRENCY);

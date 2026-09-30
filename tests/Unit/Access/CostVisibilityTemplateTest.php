@@ -47,6 +47,11 @@ final class CostVisibilityTemplateTest extends TestCase
         // Pages whose route itself needs ViewCosts (config/routes.php).
         'expenses/index.twig' => 'the Expenses tab with costs: without ViewCosts the Action renders expenses/without_costs.twig',
         'valuations/index.twig' => 'the Valuations page: its route needs ViewCosts',
+        // Trips (Phase 22): a claim is the viewer's own trips at their own rates, never a vehicle's
+        // costs; cost per distance comes from BusinessMileage, which leaves it out without ViewCosts.
+        'trips/claim.twig' => 'the claimant’s own claim; cost per distance only with ViewCosts (BusinessMileage)',
+        'macros/trips.twig' => 'the viewer’s own claim; cost per distance only with ViewCosts (BusinessMileage)',
+        'dashboard/_business_mileage.twig' => 'the viewer’s own claim for this tax year',
     ];
 
     /**
