@@ -45,7 +45,7 @@ final class CostVisibilityTemplateTest extends TestCase
         'tyres/form.twig' => 'the linked service record picker on a Manage form',
         'tyres/change_edit.twig' => 'the linked service record picker on a Manage form',
         // Pages whose route itself needs ViewCosts (config/routes.php).
-        'expenses/index.twig' => 'the Expenses tab: its route needs ViewCosts',
+        'expenses/index.twig' => 'the Expenses tab with costs: without ViewCosts the Action renders expenses/without_costs.twig',
         'valuations/index.twig' => 'the Valuations page: its route needs ViewCosts',
     ];
 

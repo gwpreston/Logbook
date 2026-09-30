@@ -31,7 +31,8 @@
 {%- endmacro %}
 
 {# One reminder (a Service\Reminder\ReminderEntry) with its actions:
-   done / dismiss while open, reopen once closed; edit for manual ones. #}
+   done / dismiss while open, reopen once closed (Log); edit for manual
+   ones (Manage). Someone with View access sees no actions (spec.md §7.21). #}
 {% macro row(entry, wording, today, csrf) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import _self as rem %}
@@ -41,7 +42,12 @@
         <div class="list__item">
             <span class="list__icon">{{ ui.icon(reminder.icon()) }}</span>
             <span class="list__body">
-                <a class="list__title" href="{{ rem.source_url(reminder) }}">{{ name }}</a>
+                {# The source is edited with Manage (a schedule, a document, a manual reminder). #}
+                {% if can_vehicle(entry.vehicle, 'manage') %}
+                    <a class="list__title" href="{{ rem.source_url(reminder) }}">{{ name }}</a>
+                {% else %}
+                    <span class="list__title">{{ name }}</span>
+                {% endif %}
                 <span class="list__meta">{{ entry.vehicle.name() }} · {{ ('reminders.source.' ~ reminder.source.value)|trans }}</span>
                 {% if reminder.dueOn or reminder.dueKm is not null %}
                     <span class="list__meta">
@@ -61,6 +67,7 @@
             </span>
             <span class="list__end">{{ rem.pill(reminder, wording, today) }}</span>
         </div>
+        {% if can_vehicle(entry.vehicle, 'log') %}
         <div class="btn-row reminder__actions">
             {% if reminder.status.isOpen() %}
                 <form method="post" action="{{ url_for('reminders.status', {reminder: reminder.id, action: 'done'}) }}">
@@ -77,9 +84,10 @@
                     <button type="submit" class="btn btn--ghost">{{ ui.icon('undo') }}{{ 'reminders.action.reopen'|trans }}<span class="visually-hidden">: {{ name }}</span></button>
                 </form>
             {% endif %}
-            {% if reminder.source.value == 'manual' %}
+            {% if reminder.source.value == 'manual' and can_vehicle(entry.vehicle, 'manage') %}
                 <a class="btn btn--ghost" href="{{ url_for('reminders.edit', {reminder: reminder.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}<span class="visually-hidden">: {{ name }}</span></a>
             {% endif %}
         </div>
+        {% endif %}
     </li>
 {%- endmacro %}

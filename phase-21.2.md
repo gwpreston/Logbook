@@ -59,70 +59,70 @@ always change it.
 
 ### §6 Vehicle
 
-> - first_inspection_due_on (optional calendar date, Phase 21.2; never
->   converted through a time zone): when the vehicle's first MOT, or the
->   local equivalent, is due. It is used only while the vehicle has no
->   `inspection` document. Upgrading to 2.1.0 adds the column empty (see
->   *Existing vehicles*); rolling it back drops it and the reminders it
->   raised.
+- first_inspection_due_on (optional calendar date, Phase 21.2; never
+  converted through a time zone): when the vehicle's first MOT, or the
+  local equivalent, is due. It is used only while the vehicle has no
+  `inspection` document. Upgrading to 2.1.0 adds the column empty (see
+  *Existing vehicles*); rolling it back drops it and the reminders it
+  raised.
 
 ### §7.1 Garage: the vehicle form
 
-> - **First MOT due** (label from the `inspection` document type: "First MOT
->   due" in English, "Erste HU fällig" in German), under *First registered*,
->   optional, a date.
->   - **Suggestion:** from a rule table on `Support\InspectionRules`, keyed
->     by the owner's locale region: `GB` → 36 months after first
->     registration, `DE` → 36 months. The table holds nothing else. Months
->     are added with end-of-month clamping, as maintenance intervals are, so
->     29 Feb 2024 gives 28 Feb 2027.
->   - With JS, entering or changing *First registered* fills *First MOT due*
->     while the owner hasn't typed in it. Once they edit it, it is theirs.
->   - Without JS, on **add** only: when the field is blank, *First
->     registered* is set, a rule exists and the suggested date is today or
->     later, the saved vehicle gets the suggestion. The flash says so ("First
->     MOT reminder set for 14 Jun 2027. Change it on the vehicle's edit
->     page."). On **edit**, a blank field stays blank, so clearing it
->     sticks.
->   - A suggestion in the past is never filled in: that vehicle has had its
->     first MOT.
->   - **Hint**, GB: "Usually 3 years after first registration in England,
->     Scotland and Wales; 4 years in Northern Ireland." DE: "Usually 3 years
->     after first registration." Others: "Check when the first inspection is
->     due where the vehicle is registered."
->   - Once the vehicle has an `inspection` document, the field shows as
->     read-only text ("Done: the MOT certificate from 12 Jun 2027 now sets
->     the next one") and is not submitted.
->   - Validation: not before *First registered* when both are set (message:
->     "The first MOT can't be due before the vehicle was first
->     registered").
+- **First MOT due** (label from the `inspection` document type: "First MOT
+  due" in English, "Erste HU fällig" in German), under *First registered*,
+  optional, a date.
+  - **Suggestion:** from a rule table on `Support\InspectionRules`, keyed
+    by the owner's locale region: `GB` → 36 months after first
+    registration, `DE` → 36 months. The table holds nothing else. Months
+    are added with end-of-month clamping, as maintenance intervals are, so
+    29 Feb 2024 gives 28 Feb 2027.
+  - With JS, entering or changing *First registered* fills *First MOT due*
+    while the owner hasn't typed in it. Once they edit it, it is theirs.
+  - Without JS, on **add** only: when the field is blank, *First
+    registered* is set, a rule exists and the suggested date is today or
+    later, the saved vehicle gets the suggestion. The flash says so ("First
+    MOT reminder set for 14 Jun 2027. Change it on the vehicle's edit
+    page."). On **edit**, a blank field stays blank, so clearing it
+    sticks.
+  - A suggestion in the past is never filled in: that vehicle has had its
+    first MOT.
+  - **Hint**, GB: "Usually 3 years after first registration in England,
+    Scotland and Wales; 4 years in Northern Ireland." DE: "Usually 3 years
+    after first registration." Others: "Check when the first inspection is
+    due where the vehicle is registered."
+  - Once the vehicle has an `inspection` document, the field shows as
+    read-only text ("Done: the MOT certificate from 12 Jun 2027 now sets
+    the next one") and is not submitted.
+  - Validation: not before *First registered* when both are set (message:
+    "The first MOT can't be due before the vehicle was first
+    registered").
 
 ### §7.6 Reminders
 
-> - **First MOT** (Phase 21.2): source `first_inspection`, `source_id` = the
->   **vehicle's own id** (one per vehicle, like `tyre`). It is raised while
->   `first_inspection_due_on` is set, the vehicle is active and has no
->   `inspection` document, and the `compliance` module is on. Its due date is
->   that date, and its lead time is the owner's document lead time. It is
->   titled "First MOT" (the type's label).
-> - It is **done** automatically when an `inspection` document is saved for
->   the vehicle. It is removed when the date is cleared, and it moves when
->   the date changes. After that, the certificate's own expiry reminder
->   takes over (§7.5).
-> - Dismiss works as for any reminder. Notifications, digest and calendar
->   feed treat it like the others (and in Phase 19, go to the owner and to
->   shares with `notify`).
+- **First MOT** (Phase 21.2): source `first_inspection`, `source_id` = the
+  **vehicle's own id** (one per vehicle, like `tyre`). It is raised while
+  `first_inspection_due_on` is set, the vehicle is active and has no
+  `inspection` document, and the `compliance` module is on. Its due date is
+  that date, and its lead time is the owner's document lead time. It is
+  titled "First MOT" (the type's label).
+- It is **done** automatically when an `inspection` document is saved for
+  the vehicle. It is removed when the date is cleared, and it moves when
+  the date changes. After that, the certificate's own expiry reminder
+  takes over (§7.5).
+- Dismiss works as for any reminder. Notifications, digest and calendar
+  feed treat it like the others (and in Phase 19, go to the owner and to
+  shares with `notify`).
 
 ### §7.18 Coming up, §7.2 Overview, §7.19 Sale pack, §7.20 API
 
-> - *Coming up*: a **First MOT** item on the date, with no repeats and no
->   "last time" cost.
-> - Overview, current documents: "First MOT due 14 Jun 2027", with the due
->   badge rules of documents.
-> - The sale pack's *Inspection* line: "First MOT due 14 Jun 2027", when
->   there is no certificate yet. *Due next* includes it through *Coming up*.
-> - API: `first_inspection_due_on` on the vehicle; the summary's next due
->   item can be it.
+- *Coming up*: a **First MOT** item on the date, with no repeats and no
+  "last time" cost.
+- Overview, current documents: "First MOT due 14 Jun 2027", with the due
+  badge rules of documents.
+- The sale pack's *Inspection* line: "First MOT due 14 Jun 2027", when
+  there is no certificate yet. *Due next* includes it through *Coming up*.
+- API: `first_inspection_due_on` on the vehicle; the summary's next due
+  item can be it.
 
 ---
 

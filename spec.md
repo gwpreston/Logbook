@@ -1140,7 +1140,8 @@ iCal/webcal feed so items appear in the user's calendar.
   0–365. The vehicle tabs use the same lead times, so their badges and the
   reminders always agree. A shared vehicle's reminders use its **owner's**
   lead times and time zone for everyone (Phase 19), so a status never
-  depends on who looked.
+  depends on who looked; its tabs' badges, the dashboard's documents and
+  the API use the owner's lead times too (*Coming up* keeps the viewer's).
 - **Status**, judged against the owner's *today* (in their time zone):
   *overdue* once the due date (or, for a schedule, either limit) has passed;
   *due* within the lead time (a document expiring today is due, not yet

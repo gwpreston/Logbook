@@ -78,7 +78,8 @@ final readonly class ShowVehicleAction
         $user = RequestContext::requireUser($request);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $odometer = $this->odometer->history($vehicle);
-        $lead = $this->reminderSettings->reminderPreferences($user->id);
+        // The owner's lead times, as the vehicle's reminders use (Phase 19).
+        $lead = $this->reminderSettings->reminderPreferences($vehicle->userId);
         $fuel = $this->fuel->history($vehicle);
         $kind = Fuel::defaultFor($vehicle->data->fuelType)->kind();
         $documents = array_filter(

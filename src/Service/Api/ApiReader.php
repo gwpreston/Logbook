@@ -468,7 +468,10 @@ final readonly class ApiReader
     {
         $today ??= LocalTime::today($this->clock, $user->preferences->timeZone());
 
-        return $this->compliance->states($vehicle, $today, $this->reminderSettings->reminderPreferences($user->id)->documentDays);
+        // The owner's lead time, as the vehicle's reminders use (Phase 19).
+        $lead = $this->reminderSettings->reminderPreferences($vehicle->userId)->documentDays;
+
+        return $this->compliance->states($vehicle, $today, $lead);
     }
 
     public function costs(User $user, Vehicle $vehicle): bool

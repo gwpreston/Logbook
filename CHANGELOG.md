@@ -91,6 +91,9 @@ this is a major version.
   Invitation links are not in backups.
 - `SESSION_SECRET` also keys invitation links: changing it disables open
   ones.
+- **Custom notification channels** need one new method,
+  `reaches(Recipient $recipient): bool` (can it deliver to this person?);
+  see [docs/notification-channels.md](docs/notification-channels.md).
 
 ## [1.10.0] — 2026-09-30
 

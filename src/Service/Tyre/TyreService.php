@@ -109,7 +109,7 @@ final readonly class TyreService
             $change->data->maintenanceEntryId === null ? null : ($records[$change->data->maintenanceEntryId] ?? null),
         ), $changes);
 
-        return new TyreOverview($fitted, $stored, $retired, $listed, $sets, $this->judge($user, $views));
+        return new TyreOverview($fitted, $stored, $retired, $listed, $sets, $this->judge($vehicle, $user, $views));
     }
 
     /**
@@ -140,7 +140,7 @@ final readonly class TyreService
      */
     public function verdict(Vehicle $vehicle, User $user): TyreVerdict
     {
-        return $this->judge($user, $this->views($vehicle, $user));
+        return $this->judge($vehicle, $user, $this->views($vehicle, $user));
     }
 
     /**
@@ -157,9 +157,10 @@ final readonly class TyreService
     /**
      * @param list<TyreView> $views
      */
-    private function judge(User $user, array $views): TyreVerdict
+    private function judge(Vehicle $vehicle, User $user, array $views): TyreVerdict
     {
-        $lead = $this->reminderSettings->reminderPreferences($user->id);
+        // The owner's lead times, as the vehicle's tyre reminder uses (Phase 19).
+        $lead = $this->reminderSettings->reminderPreferences($vehicle->userId);
 
         return TyreJudgement::judge($views, $this->today($user), $lead->scheduleDays, $lead->scheduleKm);
     }

@@ -171,4 +171,29 @@ final class SharingTest extends AppTestCase
         );
         self::assertSame($ownerId, $this->service($app, VehicleRepository::class)->findById($golf->id)?->userId);
     }
+
+    public function testAViewShareCannotAddOrActOnTheOwnersReminders(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, '2026-09-30T12:00:00Z');
+        $owner = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $member = $this->createMember($app);
+        $this->service($app, VehicleShareRepository::class)
+            ->insert($golf->id, $member->id, ShareLevel::View, false, false, new \DateTimeImmutable('2026-09-01T00:00:00Z'));
+        $owner->get('/reminders/new');
+        $reminder = ['vehicle_id' => (string) $golf->id, 'title' => 'Wash', 'due_on' => '2026-10-02', 'lead_time_days' => '7'];
+        self::assertSame(303, $owner->post('/reminders/new', $reminder)->getStatusCode());
+        $partner = $this->browserFor($app, 'partner');
+
+        $list = self::body($partner->get('/reminders'));
+        self::assertStringContainsString('Wash', $list, 'they see the reminder');
+        self::assertStringNotContainsString('/done', $list, 'but no Done or Dismiss');
+        self::assertStringNotContainsString('/edit', $list, 'and no Edit');
+
+        $partner->get('/reminders/new');
+        $refused = $partner->post('/reminders/new', ['title' => 'Mine'] + $reminder);
+        self::assertSame(422, $refused->getStatusCode(), 'adding a reminder to the owner\'s vehicle needs Manage');
+        self::assertStringNotContainsString('Mine', self::body($partner->get('/reminders')));
+    }
 }
