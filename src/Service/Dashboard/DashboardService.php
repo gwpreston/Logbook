@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Logbook\Service\Dashboard;
 
 use DateTimeImmutable;
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Feature\FeatureToggles;
@@ -60,6 +62,7 @@ final readonly class DashboardService
         private ActivityFeed $activity,
         private ClockInterface $clock,
         private ComingUp $comingUp,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -90,8 +93,13 @@ final readonly class DashboardService
             ? self::only($this->reminders->overview($user), $selected)
             : null;
 
-        [$thisMonth, $lastMonth] = $show(DashboardWidget::Spend) && $scope !== []
-            ? $this->spend($user, $scope, $today)
+        // Spend counts only the vehicles whose costs the user may see (spec.md §5 Costs).
+        $costly = array_values(array_filter(
+            $scope,
+            fn (Vehicle $v): bool => $this->access->can($user, VehicleAbility::ViewCosts, $v),
+        ));
+        [$thisMonth, $lastMonth] = $show(DashboardWidget::Spend) && $costly !== []
+            ? $this->spend($user, $costly, $today)
             : [null, null];
 
         $fuel = $show(DashboardWidget::RecentFuel) || $show(DashboardWidget::Efficiency) || $selected !== null
@@ -174,16 +182,16 @@ final readonly class DashboardService
             }
         }
 
-        $report = $this->reports->forVehicles(
+        $report = $this->access->can($user, VehicleAbility::ViewCosts, $vehicle) ? $this->reports->forVehicles(
             $user,
             new ReportFilter(ReportPeriod::preset(ReportRange::TwelveMonths, $today), $vehicle->id),
             [$vehicle],
-        );
+        ) : null;
 
         return new PinnedVehicle(
             $snapshot,
             $economy,
-            $report->currencies[0] ?? null,
+            $report?->currencies[0] ?? null,
             $overview?->open[0] ?? null,
         );
     }

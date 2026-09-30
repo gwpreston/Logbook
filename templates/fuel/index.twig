@@ -5,6 +5,7 @@
 
 {% set active_nav = 'garage' %}
 {% set dash = '—' %}
+{% set costs = can_see_costs(vehicle) %}
 
 {% block title %}{{ 'fuel.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
 
@@ -39,6 +40,7 @@
                     {{ ui.stat('fuel.stat.last'|trans,
                         last ? last.distanceKm|economy(last.volume, electric) : dash,
                         last ? 'fuel.stat.last_over'|trans({distance: last.distanceKm|distance, date: last.endedAt|instant_date}) : '') }}
+                    {% if costs %}
                     {{ ui.stat('fuel.stat.average_price'|trans,
                         summary.averagePricePerUnit() is null ? dash : summary.averagePricePerUnit()|unit_price(currency, electric),
                         'fuel.stat.bought'|trans({amount: summary.totalVolume|quantity(electric, 0), count: summary.fills})) }}
@@ -46,6 +48,7 @@
                         summary.costPerKm() is null ? dash : summary.costPerKm()|per_distance(currency),
                         (electric ? 'fuel.stat.charging_only' : 'fuel.stat.fuel_only')|trans) }}
                     {{ ui.stat((electric ? 'fuel.stat.spend_ev' : 'fuel.stat.spend')|trans, summary.totalCost|money(currency), 'fuel.stat.all_time'|trans) }}
+                    {% endif %}
                 </dl>
 
                 {% if section.to_check > 0 %}
@@ -68,7 +71,7 @@
                 {% if section.grades %}
                     <div class="split">
                         <div class="page__stack">{{ overview }}</div>
-                        {{ fuel_ui.grade_card(section.grades, currency, electric, section.verdicts) }}
+                        {{ fuel_ui.grade_card(section.grades, currency, electric, section.verdicts, costs) }}
                     </div>
                 {% else %}
                     {{ overview }}
@@ -80,6 +83,7 @@
                         <div class="card__header card__header--wrap">
                             <h3 id="economy-{{ section.kind.value }}" class="card__title">{{ trend_title }}</h3>
                             {# Plain links: work without JS and survive a refresh; js/app.js swaps the charts in place. #}
+                            {% if costs %}
                             <nav class="segmented" aria-label="{{ 'fuel.trend.label'|trans }}">
                                 {% for mode in trend_modes %}
                                     <a class="segmented__option" data-trend-link="{{ mode.value }}"
@@ -89,8 +93,9 @@
                                     </a>
                                 {% endfor %}
                             </nav>
+                            {% endif %}
                         </div>
-                        <div data-trend-panel="economy"{% if trend.value != 'economy' %} hidden{% endif %}>
+                        <div data-trend-panel="economy"{% if trend.value != 'economy' and costs %} hidden{% endif %}>
                             {% if section.economy_chart.hasData() %}
                                 {{ ui.chart(section.economy_chart, trend_title) }}
                                 {{ ui.chart_table(section.economy_chart, trend_title) }}
@@ -99,6 +104,7 @@
                                 <p class="muted">{{ 'fuel.chart.need_more'|trans }}</p>
                             {% endif %}
                         </div>
+                        {% if costs %}
                         <div data-trend-panel="cost"{% if trend.value != 'cost' %} hidden{% endif %}>
                             {% set cost_title = 'fuel.trend.cost_title'|trans({unit: prefs().distanceUnit.value}) %}
                             <h4 class="card__title print-only">{{ cost_title }}</h4>
@@ -134,7 +140,9 @@
                                 <p class="field__hint">{{ (electric ? 'fuel.trend.cost_hint_ev' : 'fuel.trend.cost_hint')|trans }}</p>
                             {% endif %}
                         </div>
+                        {% endif %}
                     </section>
+                    {% if costs %}
                     <section class="card" aria-labelledby="price-{{ section.kind.value }}">
                         <h3 id="price-{{ section.kind.value }}" class="card__title">{{ 'fuel.chart.price_title'|trans }}</h3>
                         {% if section.price_chart.pointCount() >= 2 %}
@@ -144,6 +152,7 @@
                             <p class="muted">{{ 'fuel.chart.need_two'|trans }}</p>
                         {% endif %}
                     </section>
+                    {% endif %}
                 </div>
 
                 {% set monthly = section.monthly %}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Report;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -27,7 +28,10 @@ final readonly class ReportService
 
     public function build(User $user, ReportFilter $filter): Report
     {
-        return $this->forVehicles($user, $filter, $filter->scope($this->vehicles->listFleet($user, true)));
+        // Only vehicles whose costs the user may see count (spec.md §5 Costs).
+        $vehicles = $this->vehicles->listWith($user, VehicleAbility::ViewCosts, true);
+
+        return $this->forVehicles($user, $filter, $filter->scope($vehicles));
     }
 
     /**

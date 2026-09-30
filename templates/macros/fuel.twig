@@ -23,7 +23,7 @@
    §7.3). Liquid fuel: fills, volume, average price and — with at least two
    segments burned on one grade — an indicative economy. Electricity: share
    of energy and cost per kWh per charging type, then the blended cost. #}
-{% macro grade_card(breakdown, currency, electric, verdicts = []) -%}
+{% macro grade_card(breakdown, currency, electric, verdicts = [], costs = false) -%}
     {% import _self as fuel_ui %}
     {% set dash = '—' %}
     {% set title = (electric ? 'fuel.grades.title_ev' : 'fuel.grades.title')|trans %}
@@ -37,13 +37,15 @@
                         <th scope="col">{{ (electric ? 'fuel.grades.column.type' : 'fuel.grades.column.grade')|trans }}</th>
                         {% if electric %}
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.share'|trans }}</th>
+                            {% if costs %}
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.cost_per_kwh'|trans }}</th>
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.per_distance'|trans({unit: prefs().distanceUnit.value}) }}</th>
+                            {% endif %}
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.energy'|trans }}</th>
                         {% else %}
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.fills'|trans }}</th>
                             <th scope="col" class="table__num">{{ 'fuel.grades.column.volume'|trans }}</th>
-                            <th scope="col" class="table__num">{{ 'fuel.grades.column.price'|trans }}</th>
+                            {% if costs %}<th scope="col" class="table__num">{{ 'fuel.grades.column.price'|trans }}</th>{% endif %}
                         {% endif %}
                         <th scope="col" class="table__num">{{ (electric ? 'fuel.grades.column.efficiency' : 'fuel.grades.column.economy')|trans }}</th>
                     </tr>
@@ -61,14 +63,16 @@
                             </th>
                             {% if electric %}
                                 <td class="table__num tabular">{{ 'fuel.grades.share'|trans({share: row.share()}) }}</td>
+                                {% if costs %}
                                 <td class="table__num tabular">{{ price is null ? dash : price|unit_price(currency, true) }}</td>
                                 {% set per_km = breakdown.costPerKm(row) %}
                                 <td class="table__num tabular">{{ per_km is null ? dash : per_km|per_distance(currency) }}</td>
+                                {% endif %}
                                 <td class="table__num tabular">{{ row.volume|quantity(true, 0) }}</td>
                             {% else %}
                                 <td class="table__num tabular">{{ row.fills|number }}</td>
                                 <td class="table__num tabular">{{ row.volume|quantity(false, 0) }}</td>
-                                <td class="table__num tabular">{{ price is null ? dash : price|unit_price(currency, false) }}</td>
+                                {% if costs %}<td class="table__num tabular">{{ price is null ? dash : price|unit_price(currency, false) }}</td>{% endif %}
                             {% endif %}
                             <td class="table__num table__note tabular">
                                 {%- if row.hasEconomy() -%}
@@ -82,7 +86,7 @@
                         </tr>
                     {% endfor %}
                 </tbody>
-                {% if electric and breakdown.blendedPricePerUnit() is not null %}
+                {% if costs and electric and breakdown.blendedPricePerUnit() is not null %}
                     <tfoot>
                         <tr>
                             <th scope="row">{{ 'fuel.grades.blended'|trans }}</th>
@@ -204,13 +208,15 @@
     {% set check = opts.check ?? null %}
     {% set shown = check and (check.isFlagged() or check.isConfirmedFlag()) %}
     {% set check_id = 'check-' ~ fill.entry.id %}
+    {% set costs = can_see_costs(vehicle) %}
     <li{% if shown %} class="list__group"{% endif %}>
         <a class="list__item" href="{{ url_for('fuel.edit', {id: vehicle.id, entry: fill.entry.id}) }}" data-modal>
             <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
             <span class="list__body">
                 <span class="list__title">{{ data.filledAt|local_datetime }} {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
                 <span class="list__meta tabular">
-                    {{- data.odometerKm|distance }} · {{ data.volume|quantity(electric) }} · {{ data.pricePerUnit|unit_price(currency, electric) -}}
+                    {{- data.odometerKm|distance }} · {{ data.volume|quantity(electric) -}}
+                    {%- if costs %} · {{ data.pricePerUnit|unit_price(currency, electric) }}{% endif -%}
                     {%- if data.station %} · {{ data.station }}{% endif -%}
                 </span>
                 {% if fill.followsGap() %}
@@ -218,7 +224,7 @@
                 {% endif %}
             </span>
             <span class="list__end">
-                <span class="list__amount tabular">{{ data.totalCost|money(currency) }}</span>
+                {% if costs %}<span class="list__amount tabular">{{ data.totalCost|money(currency) }}</span>{% endif %}
                 {% if fill.segment %}
                     <span class="economy tabular"{% if shown %} aria-describedby="{{ check_id }}"{% endif %}>{{ fill.segment.distanceKm|economy(fill.segment.volume, electric) }}</span>
                     {% if shown %}{{ fuel_ui.check_mark(check) }}{% endif %}

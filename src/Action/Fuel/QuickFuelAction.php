@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -27,7 +28,7 @@ final readonly class QuickFuelAction
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $vehicles = $this->vehicles->listFleet(RequestContext::requireUser($request));
+        $vehicles = $this->vehicles->listWith(RequestContext::requireUser($request), VehicleAbility::Log);
 
         if ($vehicles === []) {
             RequestContext::session($request)->flash('info', 'fuel.quick_no_vehicles');

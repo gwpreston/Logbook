@@ -37,7 +37,7 @@
                 {%- if item.quantity %} · {{ item.quantity|quantity(item.electric) }}{% endif -%}
             </span>
         </span>
-        <span class="list__end">{{ paperclip.count(files) }}<span class="list__amount tabular">{{ item.amount|money }}</span></span>
+        <span class="list__end">{{ paperclip.count(files) }}{% if can_see_costs(item.vehicle) %}<span class="list__amount tabular">{{ item.amount|money }}</span>{% endif %}</span>
     </li>
 {%- endmacro %}
 

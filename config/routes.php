@@ -94,11 +94,13 @@ use Logbook\Action\Vehicle\EditVehicleAction;
 use Logbook\Action\Vehicle\RestoreVehicleAction;
 use Logbook\Action\Vehicle\ShowVehicleAction;
 use Logbook\Action\Vehicle\VehiclePhotoAction;
+use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Middleware\AuthGuardMiddleware;
 use Logbook\Middleware\CsrfMiddleware;
 use Logbook\Middleware\FeatureGateMiddleware;
+use Logbook\Middleware\InstanceAccessMiddleware;
 use Logbook\Middleware\VehicleAccessMiddleware;
 use Logbook\Service\Feature\FeatureToggles;
 use Psr\Container\ContainerInterface;
@@ -112,8 +114,10 @@ use Slim\Interfaces\RouteCollectorProxyInterface as Group;
  * Every HTML route sits in a CSRF-protected group; machine endpoints such as
  * /health stay outside so they never create sessions. Group middleware runs
  * last-added first: auth guard, then CSRF, then (module groups) the feature
- * gate, so a switched-off module's pages answer 404 (spec.md §7.10). Group
- * closures must not be static: Slim binds them to the container.
+ * gate, so a switched-off module's pages answer 404 (spec.md §7.10). In
+ * between, the access middlewares check each route's declared vehicle or
+ * instance ability (spec.md §5 Access policy). Group closures must not be
+ * static: Slim binds them to the container.
  */
 return static function (App $app): void {
     $container = $app->getContainer();
@@ -121,8 +125,10 @@ return static function (App $app): void {
     $toggles = $container->get(FeatureToggles::class);
     assert($toggles instanceof FeatureToggles);
     $module = static fn (Feature $feature): FeatureGateMiddleware => new FeatureGateMiddleware($feature, $toggles);
-    // What each /vehicles/{id} route needs (spec.md §5 Access policy); the route inventory test checks every route.
+    // What each /vehicles/{id} route and each install-wide page needs (spec.md §5
+    // Access policy); the route inventory test checks that every route is classified.
     $ability = VehicleAccessMiddleware::ABILITY;
+    $instance = InstanceAccessMiddleware::ABILITY;
 
     $app->get('/health', HealthAction::class)->setName('health');
 
@@ -146,7 +152,7 @@ return static function (App $app): void {
     })->add(CsrfMiddleware::class);
 
     // Signed-in pages.
-    $app->group('', function (Group $group) use ($module, $ability): void {
+    $app->group('', function (Group $group) use ($module, $ability, $instance): void {
         $group->get('/', HomeAction::class)->setName('home');
         $group->post('/logout', LogoutAction::class)->setName('logout');
         $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
@@ -326,15 +332,18 @@ return static function (App $app): void {
                 ->setArgument($ability, VehicleAbility::Manage->value);
         });
 
-        $group->group('', function (Group $reminders): void {
+        $group->group('', function (Group $reminders) use ($ability): void {
             $reminders->get('/reminders', ReminderListAction::class)->setName('reminders.index');
             $reminders->map(['GET', 'POST'], '/reminders/new', CreateReminderAction::class)->setName('reminders.create');
             $reminders->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/edit', EditReminderAction::class)
-                ->setName('reminders.edit');
+                ->setName('reminders.edit')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $reminders->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/delete', DeleteReminderAction::class)
-                ->setName('reminders.delete');
+                ->setName('reminders.delete')
+                ->setArgument($ability, VehicleAbility::Manage->value);
             $reminders->post('/reminders/{reminder:[0-9]+}/{action:done|dismiss|reopen}', ReminderStatusAction::class)
-                ->setName('reminders.status');
+                ->setName('reminders.status')
+                ->setArgument($ability, VehicleAbility::Log->value);
             $reminders->post('/settings/reminders/test', SendTestNotificationAction::class)->setName('settings.reminders.test');
             $reminders->post('/settings/reminders/calendar', CalendarFeedSettingsAction::class)
                 ->setName('settings.reminders.calendar');
@@ -350,17 +359,25 @@ return static function (App $app): void {
         $group->get('/settings', SettingsAction::class)->setName('settings');
         // Lead times also drive the vehicle tabs' due badges, so this page stays when reminders are off.
         $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');
-        $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules');
+        $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules')
+            ->setArgument($instance, InstanceAbility::ManageModules->value);
         $group->map(['GET', 'POST'], '/settings/tyres', TyreSettingsAction::class)
             ->setName('settings.tyres')
             ->add($module(Feature::Tyres));
-        $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index');
-        $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download');
-        $group->post('/settings/backup/restore', UploadRestoreAction::class)->setName('backup.restore');
+        $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index')
+            ->setArgument($instance, InstanceAbility::Backup->value);
+        $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download')
+            ->setArgument($instance, InstanceAbility::Backup->value);
+        $group->post('/settings/backup/restore', UploadRestoreAction::class)->setName('backup.restore')
+            ->setArgument($instance, InstanceAbility::Restore->value);
         $group->map(['GET', 'POST'], '/settings/backup/restore/{token:[a-f0-9]{32}}', ConfirmRestoreAction::class)
-            ->setName('backup.restore.confirm');
+            ->setName('backup.restore.confirm')
+            ->setArgument($instance, InstanceAbility::Restore->value);
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');
-    })->add(VehicleAccessMiddleware::class)->add(CsrfMiddleware::class)->add(AuthGuardMiddleware::class);
+    })->add(InstanceAccessMiddleware::class)
+        ->add(VehicleAccessMiddleware::class)
+        ->add(CsrfMiddleware::class)
+        ->add(AuthGuardMiddleware::class);
 };

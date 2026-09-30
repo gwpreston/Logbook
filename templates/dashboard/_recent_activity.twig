@@ -22,7 +22,7 @@
                         <span class="list__amount tabular">
                             {%- if item.kind.value == 'odometer' -%}
                                 {{ item.odometerKm|distance }}
-                            {%- elseif item.amount is not null -%}
+                            {%- elseif item.amount is not null and can_see_costs(item.vehicle) -%}
                                 {{ item.amount|money(item.currency) }}
                             {%- endif -%}
                         </span>

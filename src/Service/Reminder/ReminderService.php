@@ -101,6 +101,16 @@ final readonly class ReminderService
         return $reminder;
     }
 
+    /**
+     * Whether the user may do this with the reminder's vehicle.
+     */
+    public function allows(User $user, VehicleAbility $ability, Reminder $reminder): bool
+    {
+        $vehicle = $this->vehicles->findById($reminder->vehicleId);
+
+        return $vehicle !== null && $this->access->can($user, $ability, $vehicle);
+    }
+
     public function vehicleOf(User $user, Reminder $reminder): ?Vehicle
     {
         $vehicle = $this->vehicles->findById($reminder->vehicleId);

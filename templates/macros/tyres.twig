@@ -141,7 +141,7 @@
         </span>
         <span class="list__end">
             <span class="list__delta tabular">{{ tyre.isRetired() and not view.since ? 'tyre.lifetime'|trans({distance: view.distance.km|distance}) : tyres.distance(view) }}</span>
-            {% if view.costPerKm is not null %}<span class="list__amount tabular">{{ view.costPerKm|per_thousand_distance(currency) }}</span>{% endif %}
+            {% if view.costPerKm is not null and can_see_costs(vehicle) %}<span class="list__amount tabular">{{ view.costPerKm|per_thousand_distance(currency) }}</span>{% endif %}
         </span>
     </li>
 {%- endmacro %}
@@ -158,7 +158,7 @@
         </span>
         <span class="list__end">
             {% if change.data.odometerKm is not null %}<span class="list__delta tabular">{{ change.data.odometerKm|distance }}</span>{% endif %}
-            {% if item.record %}
+            {% if item.record and can_see_costs(vehicle) %}
                 <a class="list__amount tabular" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: item.record.id}) }}" data-modal title="{{ 'tyre.record'|trans }}: {{ item.record.data.title }}">{{ item.record.data.cost|money(currency) }}</a>
             {% endif %}
         </span>

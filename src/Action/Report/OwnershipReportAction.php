@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Report;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Service\Report\OwnershipService;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Vehicle\VehicleService;
@@ -38,7 +39,7 @@ final readonly class OwnershipReportAction
         return $this->view->render($request, $response, 'reports/ownership.twig', [
             'report' => $this->ownership->report($user, $filter, $today),
             'filter' => $filter,
-            'all_vehicles' => $this->vehicles->listFleet($user, true),
+            'all_vehicles' => $this->vehicles->listWith($user, VehicleAbility::ViewCosts, true),
             'filter_query' => self::query($filter),
         ]);
     }

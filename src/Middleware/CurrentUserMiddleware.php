@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Middleware;
 
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Access\AccessContext;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -22,8 +23,11 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
 {
     public const string ATTRIBUTE = 'user';
 
-    public function __construct(private UserRepository $users, private VehicleAccess $access)
-    {
+    public function __construct(
+        private UserRepository $users,
+        private VehicleAccess $access,
+        private AccessContext $context,
+    ) {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -38,6 +42,8 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
             // The account no longer exists: drop the stale sign-in.
             $session->destroy();
         }
+
+        $this->context->apply($user);
 
         return $handler->handle($request->withAttribute(self::ATTRIBUTE, $user));
     }

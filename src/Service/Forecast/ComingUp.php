@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Logbook\Service\Forecast;
 
 use DateTimeImmutable;
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\ReminderRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Expense\CostItem;
@@ -56,6 +58,7 @@ final readonly class ComingUp
         private FeatureToggles $features,
         private CostLedger $ledger,
         private ClockInterface $clock,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -76,9 +79,14 @@ final readonly class ComingUp
                 $manual[$reminder->vehicleId][] = $reminder;
             }
         }
+        // Amounts only for the vehicles whose costs the user may see (spec.md §5 Costs).
+        $costly = array_values(array_filter(
+            $vehicles,
+            fn (Vehicle $v): bool => $this->access->can($user, VehicleAbility::ViewCosts, $v),
+        ));
         $ledger = [];
-        if ($enabled[Feature::Fuel->value] && $vehicles !== []) {
-            foreach ($this->ledger->items($user, $vehicles) as $item) {
+        if ($enabled[Feature::Fuel->value] && $costly !== []) {
+            foreach ($this->ledger->items($user, $costly) as $item) {
                 $ledger[$item->vehicle->id][] = $item;
             }
         }
@@ -91,6 +99,7 @@ final readonly class ComingUp
             $enabled,
             $manual[$vehicle->id] ?? [],
             $ledger[$vehicle->id] ?? [],
+            in_array($vehicle, $costly, true),
         ), $vehicles);
 
         return ForecastCalculator::forecast($sources, $today);
@@ -100,6 +109,7 @@ final readonly class ComingUp
      * @param array<string, bool> $enabled
      * @param list<Reminder> $manual
      * @param list<CostItem> $ledger
+     * @param bool $costs false: no amounts (the user may not see this vehicle's costs)
      */
     private function sources(
         User $user,
@@ -109,6 +119,7 @@ final readonly class ComingUp
         array $enabled,
         array $manual,
         array $ledger,
+        bool $costs,
     ): VehicleSources {
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $history = $this->odometer->history($vehicle);
@@ -117,10 +128,10 @@ final readonly class ComingUp
         $schedules = $enabled[Feature::Maintenance->value]
             ? array_map(fn (ScheduleState $state): ScheduleDue => new ScheduleDue(
                 $state,
-                ForecastCalculator::cost(
+                $costs ? ForecastCalculator::cost(
                     ScheduleCalculator::latest($this->entries->listForSchedule($vehicle->id, $state->schedule->id))?->data->cost,
                     $currency,
-                ),
+                ) : null,
             ), $this->schedules->states($vehicle, $today, $history, $lead->scheduleDays, $lead->scheduleKm))
             : [];
 
@@ -139,11 +150,11 @@ final readonly class ComingUp
             currency: $currency,
             schedules: $schedules,
             documents: $documents,
-            tyres: $enabled[Feature::Tyres->value] ? $this->tyreDues($user, $vehicle, $currency) : [],
+            tyres: $enabled[Feature::Tyres->value] ? $this->tyreDues($user, $vehicle, $currency, $costs) : [],
             reminders: $manual,
             currentKm: $history->latest()?->readingKm,
             kmPerDay: $history->averageKmPerDay(),
-            fuel: $enabled[Feature::Fuel->value]
+            fuel: $enabled[Feature::Fuel->value] && $costs
                 ? FuelRate::of($ledger, $history->readings, ReportPeriod::preset(ReportRange::TwelveMonths, $today), $zone)
                 : null,
         );
@@ -158,7 +169,7 @@ final readonly class ComingUp
      *
      * @return list<TyreDue>
      */
-    private function tyreDues(User $user, Vehicle $vehicle, string $currency): array
+    private function tyreDues(User $user, Vehicle $vehicle, string $currency, bool $costs): array
     {
         $verdict = $this->tyres->verdict($vehicle, $user);
         $groups = [];
@@ -193,7 +204,7 @@ final readonly class ComingUp
                 dueOn: $dueOn,
                 dueKm: $first->dueKm,
                 projected: $first->reason === TyreStanding::WEAR,
-                cost: $this->fittingCost($vehicle, $named, $currency),
+                cost: $costs ? $this->fittingCost($vehicle, $named, $currency) : null,
             );
         }
 

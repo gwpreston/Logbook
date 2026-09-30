@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use Logbook\Service\Access\AccessTwigExtension;
 use Logbook\Service\Access\InstanceAccess;
 use Logbook\Service\Access\SingleOwnerInstanceAccess;
 use Logbook\Service\Access\SingleOwnerVehicleAccess;
@@ -170,6 +171,9 @@ return [
         $sidebar = $c->get(SidebarTwigExtension::class);
         assert($sidebar instanceof SidebarTwigExtension);
         $twig->addExtension($sidebar);
+        $access = $c->get(AccessTwigExtension::class);
+        assert($access instanceof AccessTwigExtension);
+        $twig->addExtension($access);
 
         return $twig;
     },

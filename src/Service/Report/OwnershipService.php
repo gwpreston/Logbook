@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Report;
 
 use DateTimeImmutable;
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -55,7 +56,8 @@ final readonly class OwnershipService
 
     public function report(User $user, ReportFilter $filter, DateTimeImmutable $today): OwnershipReport
     {
-        $vehicles = $filter->scope($this->vehicles->listFleet($user, true));
+        // Only vehicles whose costs the user may see count (spec.md §5 Costs).
+        $vehicles = $filter->scope($this->vehicles->listWith($user, VehicleAbility::ViewCosts, true));
         $zone = $user->preferences->timeZone();
 
         /** @var array<int, list<CostItem>> $items */

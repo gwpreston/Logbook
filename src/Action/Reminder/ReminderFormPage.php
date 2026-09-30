@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Reminder;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -26,13 +27,13 @@ final readonly class ReminderFormPage
     }
 
     /**
-     * The owner's active vehicles: the ones a reminder can be for.
+     * The active vehicles a reminder can be for: those the user may manage.
      *
      * @return list<Vehicle>
      */
     public function vehicles(User $user): array
     {
-        return $this->vehicles->listFleet($user);
+        return $this->vehicles->listWith($user, VehicleAbility::Manage);
     }
 
     /**
