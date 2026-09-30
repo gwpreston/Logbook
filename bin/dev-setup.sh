@@ -407,9 +407,16 @@ ok "the app responds on $BASE_URL (HTTP $code)"
 # accounts go first: the 2.0.0 migration refuses to roll back past several
 # users (their vehicles and entries go with them).
 # ---------------------------------------------------------------------------
+# Both run as www-data, the web server's user, so the uploads they create
+# stay writable by the app; directories left as root by an older run of this
+# script are handed back first.
+if [ "$DO_RESET" -eq 1 ] || [ "$SAMPLE_DATA" -eq 1 ]; then
+    compose exec -T app chown -R www-data:www-data /data >/dev/null 2>&1 || true
+fi
+
 if [ "$DO_RESET" -eq 1 ]; then
     step "Emptying the database"
-    if ! run_logged exec -T app sh -c "
+    if ! run_logged exec -T -u www-data app sh -c "
         php -r 'require \"vendor/autoload.php\"; \$c = Logbook\\Kernel::createContainer(Logbook\\Kernel::settings()); \$c->get(Doctrine\\DBAL\\Connection::class)->executeStatement(\"DELETE FROM users\");' 2>/dev/null || true
         vendor/bin/phinx rollback -e development -t 0 -q &&
         vendor/bin/phinx migrate -e development -q &&
@@ -425,7 +432,7 @@ fi
 SAMPLE_LOADED=0
 if [ "$SAMPLE_DATA" -eq 1 ]; then
     step "Creating sample data"
-    run_logged exec -T app vendor/bin/phinx seed:run -e development -s DemoDataSeeder \
+    run_logged exec -T -u www-data app vendor/bin/phinx seed:run -e development -s DemoDataSeeder \
         || die "The seeder failed. See the output above."
     # The seeder declines, rather than fails, when an account already exists;
     # say which of the two happened.

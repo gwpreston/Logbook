@@ -59,7 +59,7 @@ provider (`oidc`; `proxy` from Phase 23.2), issuer (the `iss` URL, up to
 255), subject (the `sub`, up to 255), last_login_at (UTC), created_at.
 `(provider, issuer, subject)` is unique, so a provider account links to
 at most one user. A user may have several identities.
->
+
 **User:** password_hash becomes nullable. A user created through SSO has
 none until they set one, and cannot sign in locally until then.
 
