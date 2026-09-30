@@ -46,6 +46,7 @@ final readonly class AuthService
             $data->displayName,
             $data->preferences,
             $this->clock->now(),
+            isAdmin: true,
         );
     }
 

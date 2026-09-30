@@ -27,6 +27,7 @@ final readonly class UserRepository
     private const array COLUMNS = [
         'id', 'username', 'password_hash', 'display_name', 'locale', 'timezone', 'distance_unit',
         'volume_unit', 'consumption_unit', 'depth_unit', 'currency', 'theme', 'accent', 'created_at', 'updated_at',
+        'is_admin', 'disabled_at',
     ];
 
     public function __construct(private Connection $connection)
@@ -91,6 +92,7 @@ final readonly class UserRepository
         string $displayName,
         DisplayPreferences $preferences,
         DateTimeImmutable $now,
+        bool $isAdmin = false,
     ): User {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
 
@@ -98,9 +100,10 @@ final readonly class UserRepository
             'username' => $username,
             'password_hash' => $passwordHash,
             'display_name' => $displayName,
+            'is_admin' => $isAdmin,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
-        ] + self::preferenceColumns($preferences));
+        ] + self::preferenceColumns($preferences), ['is_admin' => ParameterType::BOOLEAN]);
 
         $user = $this->find((int) $this->connection->lastInsertId());
         assert($user instanceof User);
@@ -175,6 +178,8 @@ final readonly class UserRepository
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'], $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'], $platform),
+            isAdmin: Row::bool($row, 'is_admin'),
+            disabledAt: ($row['disabled_at'] ?? null) === null ? null : UtcDateTime::fromDatabase($row['disabled_at'], $platform),
         );
     }
 }

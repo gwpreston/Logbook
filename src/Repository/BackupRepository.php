@@ -22,7 +22,7 @@ final readonly class BackupRepository
     /**
      * Every data table, parents before children (the foreign keys), so
      * restore empties them back to front and refills them front to back.
-     * Sessions are never backed up; `phinxlog` is the schema version.
+     * Sessions and invitations are never backed up; `phinxlog` is the schema version.
      */
     public const array TABLES = [
         'settings',
@@ -47,10 +47,17 @@ final readonly class BackupRepository
         'reminders',
         'expense_entries',
         'vehicle_valuations',
+        // Phase 19: who shares which vehicle, and who has been sent which
+        // reminder status (so a restore sends nothing again).
+        'vehicle_shares',
+        'reminder_deliveries',
     ];
 
-    /** Tables that are deliberately not backed up. */
-    public const array EXCLUDED = ['sessions', 'phinxlog'];
+    /**
+     * Tables that are deliberately not backed up. Invitation links (Phase
+     * 19) are for this install, now, like sessions.
+     */
+    public const array EXCLUDED = ['sessions', 'invitations', 'phinxlog'];
 
     public function __construct(private Connection $connection)
     {
@@ -145,6 +152,8 @@ final readonly class BackupRepository
     public function replaceAll(array $data): void
     {
         $this->connection->transactional(function (Connection $connection) use ($data): void {
+            // Links point at the replaced accounts (and would block deleting them).
+            $connection->createQueryBuilder()->delete('invitations')->executeStatement();
             foreach (array_reverse(self::TABLES) as $table) {
                 $connection->createQueryBuilder()->delete($table)->executeStatement();
             }
