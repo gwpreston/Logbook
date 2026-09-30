@@ -2,7 +2,7 @@
 
 *A tidier repository, and nothing left undecided by accident.*
 
-Status: 📋 planned · no app release (repository and docs only; noted in
+Status: 🚧 in progress · no app release (repository and docs only; noted in
 the 2.1.0 changelog)
 
 There are now more than twenty `phase-*.md` files in the root of the
@@ -53,8 +53,8 @@ docs/
 ```
 
 ### Tasks
-- [ ] `git mv phase-*.md docs/phases/` so history follows each file.
-- [ ] Fix links **inside** the moved files with a small, reviewed script
+- [x] `git mv phase-*.md docs/phases/` so history follows each file.
+- [x] Fix links **inside** the moved files with a small, reviewed script
       (committed as `bin/tools/relink-phases.php`, or run once and not
       committed). Every relative link that is not `http(s):`, `mailto:`, `#…`
       or another `phase-*.md` gets `../../` in front: `](CLAUDE.md)` →
@@ -62,7 +62,7 @@ docs/
       `](db/seeds/DemoDataSeeder.php)` → `](../../db/seeds/…)`. Links into
       `docs/` become `](../deployment.md)`. Links between phase files stay
       as they are, since they are now siblings.
-- [ ] Fix links **to** the phase files:
+- [x] Fix links **to** the phase files:
   - `ROADMAP.md`: `](phase-N.md)` → `](docs/phases/phase-N.md)`, in the
     table and every `→` line.
   - `spec.md`: the intro line (`the phase-*.md files (build order)` →
@@ -74,17 +74,17 @@ docs/
     configuration, import, notification and translation guides; build
     phases in docs/phases/".
   - `CHANGELOG.md`: any phase links (search; none known today).
-- [ ] Search the whole repository (templates, tests, scripts, CI config,
+- [x] Search the whole repository (templates, tests, scripts, CI config,
       `.github/`) for `phase-` and update anything that refers to a file
       path.
 
 ### Link test
-- [ ] `tests/Unit/Docs/MarkdownLinksTest.php`: finds every `*.md` outside
+- [x] `tests/Unit/Docs/MarkdownLinksTest.php`: finds every `*.md` outside
       `vendor/` and `node_modules/`, extracts inline links, and asserts that
       each relative target exists. Fragments are checked against the
       target's headings for Markdown targets; external URLs are not
       fetched. It fails with file, line and link.
-- [ ] It runs in `composer test`, so CI catches a broken link on every
+- [x] It runs in `composer test`, so CI catches a broken link on every
       engine run.
 
 ---
@@ -122,15 +122,15 @@ decided, or carried into `docs/phases/open-questions.md`."
 ## Part 3: One-off open-questions review (Phases 1–19)
 
 ### Tasks
-- [ ] Collect every *Open questions* section (and any "TBD", "to decide" or
+- [x] Collect every *Open questions* section (and any "TBD", "to decide" or
       "later?" notes) from Phases 1–19, with phase and question.
-- [ ] For each, check the spec, code and tests, and classify it:
+- [x] For each, check the spec, code and tests, and classify it:
   - **Answered:** the app already does something definite. Record what
     and where (spec section, class or test).
   - **Needs a decision:** still open and would change the app.
   - **Obsolete:** overtaken by a later phase or no longer relevant. Record
     why.
-- [ ] Write `docs/phases/open-questions.md`:
+- [x] Write `docs/phases/open-questions.md`:
 
   | # | Phase | Question | Status | Decision or where answered | Date |
   |---|---|---|---|---|---|
@@ -174,3 +174,24 @@ from them:
    1–19 with a status. The owner has been asked about every *Needs a
    decision* item, and nothing was acted on without an answer.
 5. No application code, template, migration or configuration changes.
+
+## Changed while building it
+
+- **The relinking script was run once and not committed.** It rewrote ten
+  links (`CLAUDE.md` and `spec.md` in Phases 16, 17.1, 18.1, 18.2 and 19);
+  Phases 21.1 onwards were already written with `../../`.
+- **The link checker lives in `tests/Support/MarkdownLinks.php`** so the
+  test can also run it on a fixture with broken links. It skips fenced and
+  inline code, checks reference definitions as well as inline links,
+  accepts directories and `<a id>` anchors, and refuses root-relative links
+  (they break on GitHub).
+- **`CLAUDE.md` §12 references in older phases.** Phases 7–15 say "Per
+  `CLAUDE.md` §12, update `spec.md` before building", which meant *Do not*
+  (now §13). They are left as written; the new §12 says spec first too.
+- **The log adds two statuses** to the three planned: *Parked* (future
+  work recorded in spec §12) and *Scheduled* (decided, with a later phase).
+  Ideas parked only with "wait for demand" count as *Needs a decision*.
+- **Phase 8 has no *Open questions*** despite its intro promising some.
+- **Unticked boxes** in finished phases (manual browser checks in 7 and
+  17.2; release tags in 9.2–13, which exist) are listed at the end of the
+  log rather than ticked.
