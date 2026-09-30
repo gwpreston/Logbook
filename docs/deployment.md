@@ -310,6 +310,23 @@ a subpath install is installable and works offline like one at the root; the
 proxy needs no extra rules. Browsers only allow service workers over HTTPS (or
 on `localhost`).
 
+### The REST API behind a proxy
+
+The API ([api.md](api.md)) lives under `<base>/api/v1` and needs no extra
+proxy rules, with two things to know:
+
+- **The `Authorization` header must reach PHP.** Proxies pass it on. Apache
+  with mod_php (the Docker image) does too; Apache with **PHP-FPM** drops it
+  unless told otherwise. `public/.htaccess` and the image's vhost hand it over
+  (`RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]`); with
+  `FallbackResource` and no `.htaccess`, add `CGIPassAuth On` to the
+  `<Directory>` block. nginx's `fastcgi_params` passes it already. If every
+  call answers 401 `missing_key` although the key is sent, this is why.
+- **Failed keys are counted per client address** (20 in 10 minutes blocks that
+  address for 10 minutes). Behind a proxy every request comes from the proxy's
+  address, so a client guessing keys also delays good keys until the block
+  ends. Keep keys in the tools that use them and they never fail.
+
 ---
 
 ## Installing on a phone (PWA)
@@ -390,7 +407,8 @@ same cron job, e.g. `find /var/www/logbook/var/backups -name '*.zip' -mtime +30 
 
 - `.env` (or your compose overrides) — in particular **`SESSION_SECRET`**: a
   restored database with a different secret still works, but everyone signs in
-  again and calendar feed links must be re-created.
+  again, calendar feed links must be re-created and API keys stop working
+  (create new ones in Settings → API keys).
 - Your reverse-proxy and TLS configuration.
 
 ### Moving to another database engine
