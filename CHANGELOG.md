@@ -6,12 +6,68 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-09-30
+
+Phases 20, 21.1 and 21.2: small things that make everyday use smoother, and
+a reminder for the one MOT nobody has paperwork for yet.
+
+### Added
+- **First MOT due** (Phase 21.2). A new car's first MOT is the one reminder
+  nobody has a certificate for. The vehicle form has an optional *First MOT
+  due* date under *First registered*. It is suggested from the first
+  registration date by the region of your language setting: 3 years for
+  Great Britain and Germany, 4 years for France, Ireland, Italy and Spain.
+  The hint mentions that Northern Ireland tests at 4 years, and the date is
+  always yours to change. With JS the date fills in as you type *First
+  registered*. Without JS, adding a vehicle with the field blank sets the
+  suggestion and says so. A suggestion that has already passed is never
+  offered. The date drives a **First MOT** reminder on your document lead
+  time. It is sent, put in the digest and in the calendar feed like any
+  other reminder, and shows in *Coming up*, on the overview, on the
+  Documents tab and on the sale pack's *Inspection* line. Logging the first
+  MOT certificate marks it done, and from then on the certificate's expiry
+  drives MOT reminders, as before. After that the field shows as read-only
+  text.
+- **Drag and drop files** (Phase 21.1) onto every file input: attachments,
+  the vehicle photo, purchase and sale paperwork, CSV import and backup
+  restore. Dropped files are added to what you already chose, with a list
+  to remove them from, the same type, size and count limits before
+  submitting, and announcements for screen readers. Without JS it is the
+  plain file input, as before.
+- **Sale pack cover page** (Phase 21.1): *Include the vehicle photo* (off by
+  default) prints a cover page with the photo before the summary. The photo
+  is never in the paperwork ZIP.
+- A hint on purchase paperwork to keep the registration certificate (V5C) as
+  a *Registration* document instead.
+- API: `first_inspection_due_on` on the vehicle, and `first_inspection` as a
+  source of *Coming up* items (`GET /upcoming`, the summary's
+  `next_due`) and of reminders. A client that switches on `source` should
+  expect the new value.
+
 ### Changed
+- **Tyre forms open in a modal on desktop** (Phase 21.1): editing a tyre, a
+  tyre change and a set, and their delete confirmations, like every other
+  entry form. Each is still its own page for phones, deep links and JS off.
+- **The monthly digest is on for new users** (Phase 21.1): accounts created
+  by first-run setup or an invitation get it on. It is still only sent when
+  a channel is set up and something is due.
 - **Phase files moved to `docs/phases/`** (Phase 20), beside a log of every
   phase's open questions and what was decided
   ([docs/phases/open-questions.md](docs/phases/open-questions.md)). The test
   suite now checks that every link in the repository's Markdown resolves.
   No change to the app.
+
+### Upgrade notes
+- **One migration** adds the empty `vehicles.first_inspection_due_on`
+  column. It rolls back cleanly on every engine. Rolling back also deletes
+  the *First MOT* reminders and the prompt settings.
+- **Existing users keep their digest choice.** Nobody who upgraded starts
+  getting a monthly email they didn't turn on.
+- **Existing vehicles get no date.** Nothing is guessed. Instead, each
+  vehicle with *First registered* set, no MOT certificate and a suggestion
+  still to come shows a one-time card on its overview: "Set a reminder for
+  the first MOT? Suggested: 14 Jun 2027", with *Set it* and *Not needed*.
+  Either answer, or saving the vehicle's edit form, puts it away for good.
 
 ## [2.0.0] — 2026-09-30
 

@@ -49,7 +49,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [19](docs/phases/phase-19.md) | Multiple users and vehicle sharing + v2.0 release | ✅ |
 | [20](docs/phases/phase-20.md) | Phase files into `docs/phases/`, open-questions review | ✅ |
 | [21.1](docs/phases/phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | ✅ |
-| [21.2](docs/phases/phase-21.2.md) | First MOT due + v2.1 release | 📋 |
+| [21.2](docs/phases/phase-21.2.md) | First MOT due + v2.1 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -438,8 +438,9 @@ them.*
 *A new car's first MOT is the one reminder nobody has paperwork for yet.*
 
 - An optional *First MOT due* date on the vehicle, suggested from the first
-  registration date (3 years in GB and DE) and stored, so owners in
-  Northern Ireland or elsewhere can set their own.
+  registration date (3 years in GB and DE, 4 in FR, IE, IT and ES) and
+  stored, so owners in Northern Ireland or elsewhere can set their own.
+- A one-time prompt offers it for vehicles already in the garage.
 - It drives a reminder, a *Coming up* item and the overview until the first
   MOT certificate is logged; then the certificate's expiry takes over.
 - Release **v2.1.0** (Phases 20, 21.1 and 21.2).

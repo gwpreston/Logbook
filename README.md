@@ -4,9 +4,9 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.0.0.** First-run setup, secure sign-in, several people on one
+> **Status: v2.1.0.** First-run setup, secure sign-in, several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
-> Manage, costs shared or not, each person's own reminders and units, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), purchase and sale paperwork and archiving, per-user units, currency,
+> Manage, costs shared or not, each person's own reminders and units, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), a *First MOT due* date suggested from it, purchase and sale paperwork and archiving, per-user units, currency,
 > language and time zone; a History tab per vehicle (and for the fleet) with a
 > printable service history that leaves costs off unless asked, and a sale pack for a buyer (summary, checkable mileage record, the paperwork as a ZIP); a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
@@ -14,7 +14,8 @@ your own server.
 > E5, diesel blends, home or rapid charging) compared by price and economy; a categorised service
 > history with recurring schedules ("every 10,000 mi or 12 months") that work
 > out when each job is next due; insurance, pollution certificates,
-> registration and inspections with their expiry; and receipts, invoices and
+> registration and inspections with their expiry (and the first MOT before
+> there is a certificate); and receipts, invoices and
 > certificates attached to any of them; tyres — what is fitted and stored,
 > how far and how old each one is, its tread depth and when it will need
 > replacing; and reminders for all of it, with
@@ -34,7 +35,7 @@ your own server.
 > backup and restore of everything; an installable phone app that logs
 > fill-ups offline; a REST API with keys, so Home Assistant, Shortcuts,
 > Grafana and Node-RED can read your garage and log fill-ups; in English and
-> German. 2.0.0 is a major version: read its upgrade notes in
+> German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
