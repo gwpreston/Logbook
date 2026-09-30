@@ -16,6 +16,7 @@ use Logbook\Repository\TyreRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentStatus;
+use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Forecast\ForecastItem;
@@ -127,6 +128,7 @@ final readonly class SalePackBuilder
             servicing: $maintenanceOn ? self::servicing($services, $entries) : null,
             compliance: $complianceOn,
             inspections: $complianceOn ? $this->inspections($vehicle, $today) : [],
+            firstInspection: $complianceOn ? FirstInspection::pending($vehicle, $this->compliance->list($vehicle)) : null,
             motHistory: $complianceOn
                 && Region::of($user->preferences->locale) === 'GB'
                 && ($vehicle->data->registration ?? '') !== '',

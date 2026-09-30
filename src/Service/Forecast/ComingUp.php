@@ -15,6 +15,7 @@ use Logbook\Repository\ReminderRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Expense\CostLedger;
 use Logbook\Service\Feature\FeatureToggles;
@@ -135,15 +136,18 @@ final readonly class ComingUp
             ), $this->schedules->states($vehicle, $today, $history, $lead->scheduleDays, $lead->scheduleKm))
             : [];
 
-        $documents = $enabled[Feature::Compliance->value]
-            ? array_values(array_map(
+        $documents = [];
+        $firstInspection = null;
+        if ($enabled[Feature::Compliance->value]) {
+            $states = $this->compliance->states($vehicle, $today, $lead->documentDays);
+            $documents = array_values(array_map(
                 static fn (DocumentState $s) => $s->document,
-                array_filter(
-                    $this->compliance->states($vehicle, $today, $lead->documentDays),
-                    static fn (DocumentState $s): bool => $s->status->isCurrent(),
-                ),
-            ))
-            : [];
+                array_filter($states, static fn (DocumentState $s): bool => $s->status->isCurrent()),
+            ));
+            // Any inspection document counts, replaced ones included.
+            $all = array_map(static fn (DocumentState $s) => $s->document, $states);
+            $firstInspection = FirstInspection::pending($vehicle, $all);
+        }
 
         return new VehicleSources(
             vehicle: $vehicle,
@@ -158,6 +162,7 @@ final readonly class ComingUp
                 ? FuelRate::of($ledger, $history->readings, ReportPeriod::preset(ReportRange::TwelveMonths, $today), $zone)
                 : null,
             costs: $costs,
+            firstInspection: $firstInspection,
         );
     }
 

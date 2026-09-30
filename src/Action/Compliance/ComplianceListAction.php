@@ -8,6 +8,7 @@ use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -30,6 +31,7 @@ final readonly class ComplianceListAction
         private View $view,
         private ClockInterface $clock,
         private ReminderSettingsStore $reminderSettings,
+        private FirstInspection $firstInspection,
     ) {
     }
 
@@ -42,7 +44,8 @@ final readonly class ComplianceListAction
         $user = RequestContext::requireUser($request);
         // The owner's lead time, as the vehicle's reminders use (Phase 19).
         $leadDays = $this->reminderSettings->reminderPreferences($vehicle->userId)->documentDays;
-        $states = $this->compliance->states($vehicle, LocalTime::today($this->clock, $user->preferences->timeZone()), $leadDays);
+        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        $states = $this->compliance->states($vehicle, $today, $leadDays);
 
         return $this->view->render($request, $response, 'compliance/index.twig', [
             'vehicle' => $vehicle,
@@ -52,6 +55,8 @@ final readonly class ComplianceListAction
             'attachments' => $this->attachments->index($vehicle),
             'types' => ComplianceType::cases(),
             'lead_days' => $leadDays,
+            // Before the first certificate (spec.md §7.5 *First MOT due*).
+            'first_inspection' => $this->firstInspection->due($vehicle, $today, $leadDays),
         ]);
     }
 }

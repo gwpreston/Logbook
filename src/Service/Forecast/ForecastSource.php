@@ -12,5 +12,7 @@ enum ForecastSource: string
     case Schedule = 'schedule';
     case Document = 'document';
     case Tyres = 'tyres';
+    /** A vehicle's *First MOT due* date before its first certificate (Phase 21.2). */
+    case FirstInspection = 'first_inspection';
     case Reminder = 'reminder';
 }

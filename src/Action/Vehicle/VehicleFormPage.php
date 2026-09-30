@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Service\Compliance\FirstInspection;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Fuel\FuelPicker;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Vehicle\FirstInspectionPrompt;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
+use Logbook\Support\InspectionRules;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\View\FormOptions;
 use Logbook\Support\View\View;
@@ -32,7 +37,20 @@ final readonly class VehicleFormPage
         private OdometerService $odometer,
         private ClockInterface $clock,
         private VehiclePaperwork $paperwork,
+        private FeatureToggles $features,
+        private FirstInspection $firstInspection,
+        private FirstInspectionPrompt $prompt,
     ) {
+    }
+
+    /**
+     * Whether the form carries an editable *First MOT due* (spec.md §7.1):
+     * with `compliance` on, and until the vehicle's first certificate.
+     */
+    public function hasFirstInspectionField(?Vehicle $vehicle): bool
+    {
+        return $this->features->isEnabled(Feature::Compliance)
+            && ($vehicle === null || !$this->firstInspection->vehicleHasCertificate($vehicle));
     }
 
     /**
@@ -47,7 +65,11 @@ final readonly class VehicleFormPage
         int $status = 200,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
-        $today = LocalTime::today($this->clock, $user->preferences->timeZone())->format('Y-m-d');
+        $todayDate = LocalTime::today($this->clock, $user->preferences->timeZone());
+        $today = $todayDate->format('Y-m-d');
+        // The suggestion follows the owner's locale (the adding user's for a new vehicle).
+        $ownerLocale = $vehicle === null ? $user->preferences->locale : $this->prompt->ownerLocale($user, $vehicle);
+        $compliance = $this->features->isEnabled(Feature::Compliance);
 
         return $this->view->render($request, $response, 'vehicles/form.twig', $this->paperwork->formContext($vehicle) + [
             'vehicle' => $vehicle,
@@ -73,6 +95,17 @@ final readonly class VehicleFormPage
             'last_registration' => $today,
             // Edit only: the current odometer, read-only (spec.md §7.1).
             'current_reading' => $vehicle === null ? null : $this->odometer->history($vehicle)->latest(),
+            'first_inspection' => [
+                'shown' => $compliance,
+                'editable' => $this->hasFirstInspectionField($vehicle),
+                // Read-only once a certificate exists: the one that now sets the next MOT.
+                'certificate' => $compliance && $vehicle !== null
+                    ? $this->firstInspection->currentCertificate($vehicle, $todayDate)
+                    : null,
+                'months' => InspectionRules::months($ownerLocale),
+                'hint' => InspectionRules::hintKey($ownerLocale),
+                'marker' => VehicleForm::FIRST_INSPECTION_JS,
+            ],
         ], $status);
     }
 }

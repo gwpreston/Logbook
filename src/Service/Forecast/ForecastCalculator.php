@@ -6,6 +6,7 @@ namespace Logbook\Service\Forecast;
 
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceDocument;
+use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Maintenance\DonePoint;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Service\Maintenance\DueState;
@@ -49,6 +50,9 @@ final class ForecastCalculator
             }
             foreach ($vehicle->tyres as $tyres) {
                 $items[] = self::tyres($vehicle, $tyres);
+            }
+            if ($vehicle->firstInspection !== null) {
+                $items[] = self::firstInspection($vehicle, $vehicle->firstInspection, $horizon);
             }
             foreach ($vehicle->reminders as $reminder) {
                 $items[] = self::reminder($vehicle, $reminder, $horizon);
@@ -269,6 +273,31 @@ final class ForecastCalculator
             projected: $tyres->projected && !$tyres->overdue,
             overdue: $tyres->overdue,
             cost: $tyres->cost,
+            currency: $vehicle->currency,
+        );
+    }
+
+    /**
+     * The first MOT on its date: no repeats (later ones come from each
+     * certificate) and no "last time" cost.
+     */
+    private static function firstInspection(
+        VehicleSources $vehicle,
+        DateTimeImmutable $on,
+        ForecastHorizon $horizon,
+    ): ForecastItem {
+        return new ForecastItem(
+            vehicle: $vehicle->vehicle,
+            source: ForecastSource::FirstInspection,
+            sourceId: $vehicle->vehicle->id,
+            title: null,
+            category: ComplianceType::Inspection->value,
+            icon: ComplianceType::Inspection->icon(),
+            dueOn: $on,
+            dueKm: null,
+            projected: false,
+            overdue: $on < $horizon->today,
+            cost: null,
             currency: $vehicle->currency,
         );
     }

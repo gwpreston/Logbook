@@ -15,7 +15,7 @@
 
         <section class="card" aria-labelledby="current-heading">
             <h2 id="current-heading" class="card__title">{{ 'compliance.current'|trans }}</h2>
-            {% if current is empty %}
+            {% if current is empty and first_inspection is null %}
                 <div class="empty">
                     {{ ui.icon('verified_user') }}
                     <p class="empty__title">{{ 'compliance.empty_title'|trans }}</p>
@@ -30,6 +30,7 @@
                 </div>
             {% else %}
                 <ul class="list document-list">
+                    {% if first_inspection %}{{ docs.first_inspection_row(first_inspection, vehicle) }}{% endif %}
                     {% for state in current %}
                         {{ docs.row(state, vehicle, currency, attachments.of('compliance', state.document.id)) }}
                     {% endfor %}

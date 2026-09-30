@@ -340,6 +340,20 @@ return [
         'vin_invalid' => 'A VIN has up to 17 letters and digits.',
         'registered_in_future' => 'The first registration date cannot be in the future.',
         'registered_too_early' => 'The first registration date cannot be before 1885.',
+        'first_inspection_before_registration' => 'The first MOT can’t be due before the vehicle was first registered.',
+        'first_inspection_too_early' => 'The first MOT date cannot be before 1885.',
+        'first_inspection_set' => 'First MOT reminder set for {date}. Change it on the vehicle’s edit page.',
+        'first_inspection' => [
+            'done_on' => 'Done: the MOT certificate from {date} now sets the next one.',
+            'done' => 'Done: the MOT certificate now sets the next one.',
+        ],
+        'first_inspection_prompt' => [
+            'title' => 'Set a reminder for the first MOT?',
+            'suggested' => 'Suggested: {date}.',
+            'set' => 'Set it',
+            'dismiss' => 'Not needed',
+            'saved' => 'First MOT reminder set for {date}.',
+        ],
         'model_year_warning' => 'Saved, but the year is {year} and it was first registered in {registered}: check both.',
         'reading_in_future' => 'The odometer reading cannot be dated in the future.',
         'reading_too_early' => 'The odometer reading cannot be dated before 1885.',
@@ -381,6 +395,7 @@ return [
             'nickname' => 'Nickname',
             'year' => 'Year',
             'first_registered_on' => 'First registered',
+            'first_inspection_due_on' => 'First MOT due',
             'current_odometer' => 'Current odometer',
             'current_odometer_on' => 'As of',
             'purchase_paperwork' => 'Purchase paperwork',
@@ -405,6 +420,12 @@ return [
             'variant' => 'E.g. “1.5 EcoBoost ST-Line X”.',
             'year' => 'The model year.',
             'first_registered_on' => 'As on the registration document (V5C / logbook), not the model year or when you bought it.',
+            'first_inspection' => [
+                'gb' => 'Usually 3 years after first registration in England, Scotland and Wales; 4 years in Northern Ireland.',
+                'three_years' => 'Usually 3 years after first registration.',
+                'four_years' => 'Usually 4 years after first registration.',
+                'none' => 'Check when the first inspection is due where the vehicle is registered. Choose a language with a country in Settings for a suggestion.',
+            ],
             'current_odometer' => 'Leave blank if you’ll log it with your first fill-up. 0 is fine for a new vehicle.',
             'current_odometer_on' => 'When the figure was read, for example on the MOT certificate or at the sale.',
             'paperwork' => 'The invoice or receipt: PDF, JPEG, PNG or WebP. Up to {files} files per save for purchase and sale together, each up to {max} MB. Needs its date.',
@@ -1246,6 +1267,10 @@ return [
     // tyre:end
     'compliance' => [
         'title' => 'Documents',
+        'first_inspection' => [
+            'title' => 'First MOT',
+            'due' => 'First MOT due {date}',
+        ],
         'add' => 'Add document',
         'add_title' => 'Add a document',
         'add_submit' => 'Save document',
@@ -1335,6 +1360,7 @@ return [
             'closed' => '{count, plural, one {# dismissed or done} other {# dismissed or done}}',
         ],
         'source' => [
+            'first_inspection' => 'First MOT',
             'schedule' => 'Maintenance',
             'compliance' => 'Document',
             'manual' => 'Your reminder',
@@ -1723,6 +1749,7 @@ return [
             'total_sub' => 'planned and fuel',
         ],
         'source' => [
+            'first_inspection' => 'First MOT',
             'schedule' => 'Service schedule',
             'document' => 'Document',
             'tyres' => 'Tyres',
@@ -2292,6 +2319,7 @@ return [
             'with_paperwork' => '{count, plural, =0 {none with paperwork} one {# with paperwork} other {# with paperwork}}',
             'inspection' => 'Inspection',
             'valid_until' => '{what} valid until {date}',
+            'first_inspection_due' => 'First MOT due {date}',
             'expired_on' => '{what} expired on {date}',
             'mot_history' => 'Check the full MOT history at {url}',
             'due_next' => 'Due next',

@@ -85,6 +85,8 @@ final class DemoDataSeeder extends AbstractSeed
             'default_grade' => null,
             'nickname' => null,
             'year' => null,
+            'first_registered_on' => null,
+            'first_inspection_due_on' => null,
             'registration' => null,
             'vin' => null,
             'capacity' => null,
@@ -124,6 +126,8 @@ final class DemoDataSeeder extends AbstractSeed
                 'capacity' => '77.400', 'currency' => 'EUR',
                 // Leased: no purchase price, so its cost of ownership is its running costs, lease included.
                 'purchase_date' => '2024-02-10', 'purchase_price' => null,
+                // Leased new, so no MOT certificate yet: its first MOT is 3 years on (spec.md §7.1, Phase 21.2).
+                'first_registered_on' => '2024-02-09', 'first_inspection_due_on' => '2027-02-09',
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Ford', 'model' => 'Fiesta 1.0 EcoBoost', 'year' => 2014,

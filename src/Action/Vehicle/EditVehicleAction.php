@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Service\Vehicle\FirstInspectionPrompt;
 use Logbook\Service\Vehicle\PaperworkNeedsDate;
 use Logbook\Service\Vehicle\TyresBlockTypeChange;
 use Logbook\Service\Vehicle\VehicleForm;
@@ -31,6 +32,7 @@ final readonly class EditVehicleAction
         private Redirector $redirect,
         private ClockInterface $clock,
         private VehiclePaperwork $paperwork,
+        private FirstInspectionPrompt $prompt,
     ) {
     }
 
@@ -49,7 +51,9 @@ final readonly class EditVehicleAction
 
         $input = RequestContext::form($request);
         $today = LocalTime::today($this->clock, $preferences->timeZone());
-        $data = VehicleForm::parse($input, $preferences, $today);
+        // Off the form (compliance off, or read-only after the first certificate), the stored date stays.
+        $withFirstInspection = $this->page->hasFirstInspectionField($vehicle);
+        $data = VehicleForm::parse($input, $preferences, $today, $withFirstInspection, $vehicle->data->firstInspectionDueOn);
         $files = $this->paperwork->fromRequest($request);
         $photo = VehicleRoute::photo($request);
         $checked = $photo === null ? null : FileUpload::check($photo, $this->vehicles->maxPhotoBytes(), UploadKind::Image);
@@ -83,6 +87,10 @@ final readonly class EditVehicleAction
             $this->vehicles->replacePhoto($user, $updated, $photo, $checked);
         } elseif (($input['remove_photo'] ?? '') === '1' && $updated->hasPhoto()) {
             $this->vehicles->removePhoto($user, $updated);
+        }
+        if ($withFirstInspection) {
+            // Saved with the field on the form, a cleared date is the owner's choice: no prompt.
+            $this->prompt->settle($updated);
         }
 
         $session = RequestContext::session($request);

@@ -986,6 +986,7 @@
           "capacity",
           "capacity_unit",
           "first_registered_on",
+          "first_inspection_due_on",
           "purchase_date",
           "sale_date",
           "currency",
@@ -1104,6 +1105,10 @@
           },
           "first_registered_on": {
             "$ref": "#/components/schemas/NullableDate"
+          },
+          "first_inspection_due_on": {
+            "$ref": "#/components/schemas/NullableDate",
+            "description": "First MOT (or the local equivalent) due; used only while the vehicle has no inspection document."
           },
           "purchase_date": {
             "$ref": "#/components/schemas/NullableDate"
@@ -2089,6 +2094,7 @@
               "schedule",
               "document",
               "tyres",
+              "first_inspection",
               "reminder"
             ]
           },
@@ -2171,6 +2177,7 @@
               "schedule",
               "compliance",
               "tyre",
+              "first_inspection",
               "manual"
             ]
           },

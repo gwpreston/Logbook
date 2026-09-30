@@ -92,7 +92,7 @@ final class UsersAndSharingMigrationTest extends AppTestCase
         $this->createMember($app, 'partner');
 
         try {
-            Migrator::run('rollback');
+            Migrator::run('rollback', ['--target' => self::BEFORE]);
             self::fail('rolling back with two users must be refused');
         } catch (RuntimeException $e) {
             self::assertStringContainsString('bin/export-user.php', $e->getMessage());
@@ -102,7 +102,7 @@ final class UsersAndSharingMigrationTest extends AppTestCase
         self::assertTrue($schema->tablesExist(['vehicle_shares']), 'the schema is intact');
 
         $this->connection($app)->delete('users', ['username' => 'partner']);
-        Migrator::run('rollback');
+        Migrator::run('rollback', ['--target' => self::BEFORE]);
         self::assertFalse($schema->tablesExist(['vehicle_shares']));
         self::assertEquals(1, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM users'), 'the user stays');
     }

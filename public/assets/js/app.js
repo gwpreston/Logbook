@@ -809,6 +809,9 @@
             if (window.LogbookFileDrop) {
                 window.LogbookFileDrop.enhance(body);
             }
+            if (window.LogbookFirstInspection) {
+                window.LogbookFirstInspection.enhance(body);
+            }
             if (!dialog.open) {
                 dialog.showModal();
             }

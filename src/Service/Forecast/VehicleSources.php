@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Forecast;
 
+use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -35,6 +36,8 @@ final readonly class VehicleSources
         public ?FuelRate $fuel = null,
         /** False when the user may not see this vehicle's costs: no amounts (spec.md §5 Costs). */
         public bool $costs = true,
+        /** The *First MOT due* date while it counts (FirstInspection::pending()); null with `compliance` off. */
+        public ?DateTimeImmutable $firstInspection = null,
     ) {
     }
 }

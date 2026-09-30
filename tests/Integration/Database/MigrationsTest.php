@@ -84,7 +84,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 19 users and sharing, the Phase 18.2 API
+        // Newest first: the Phase 21.2 first MOT date, the Phase 19 users and sharing, the Phase 18.2 API
         // keys, the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
         // purchase and sale paperwork (no schema change), the Phase 11.2
         // tread depth, the Phase 11.1 tyre tables, the Phase 10 document odometer, the Phase 9.2
@@ -93,6 +93,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($this->hasColumn('vehicles', 'first_inspection_due_on'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('vehicles', 'first_inspection_due_on'), 'rollback must drop the first MOT date');
+        self::assertTrue($this->hasColumn('vehicles', 'first_registered_on'), 'and keep the first registration');
+
         self::assertTrue($schema->tablesExist(['vehicle_shares', 'invitations', 'reminder_deliveries']));
         self::assertTrue($this->hasColumn('fuel_entries', 'created_by'));
         Migrator::run('rollback');
@@ -426,6 +431,8 @@ final class MigrationsTest extends AppTestCase
         self::assertFalse($columns['default_grade']->getNotnull());
         self::assertInstanceOf(DateType::class, $columns['first_registered_on']->getType(), 'a calendar date, not an instant');
         self::assertFalse($columns['first_registered_on']->getNotnull());
+        self::assertInstanceOf(DateType::class, $columns['first_inspection_due_on']->getType(), 'a calendar date too');
+        self::assertFalse($columns['first_inspection_due_on']->getNotnull());
         self::assertSame(100, $columns['variant']->getLength());
         self::assertFalse($columns['variant']->getNotnull());
 

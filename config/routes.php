@@ -118,6 +118,7 @@ use Logbook\Action\Vehicle\ArchiveVehicleAction;
 use Logbook\Action\Vehicle\CreateVehicleAction;
 use Logbook\Action\Vehicle\DeleteVehicleAction;
 use Logbook\Action\Vehicle\EditVehicleAction;
+use Logbook\Action\Vehicle\FirstInspectionPromptAction;
 use Logbook\Action\Vehicle\RestoreVehicleAction;
 use Logbook\Action\Vehicle\ShowVehicleAction;
 use Logbook\Action\Vehicle\VehiclePhotoAction;
@@ -248,6 +249,9 @@ return static function (App $app): void {
         $group->get('/vehicles/{id:[0-9]+}', ShowVehicleAction::class)->setName('vehicles.show')
             ->setArgument($ability, VehicleAbility::View->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/edit', EditVehicleAction::class)->setName('vehicles.edit')
+            ->setArgument($ability, VehicleAbility::Manage->value);
+        $group->post('/vehicles/{id:[0-9]+}/first-inspection', FirstInspectionPromptAction::class)
+            ->setName('vehicles.first_inspection')
             ->setArgument($ability, VehicleAbility::Manage->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/delete', DeleteVehicleAction::class)->setName('vehicles.delete')
             ->setArgument($ability, VehicleAbility::Own->value);
