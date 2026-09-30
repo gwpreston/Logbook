@@ -4,10 +4,38 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
-## [Unreleased]
+## [1.10.0] — 2026-09-30
 
-Phase 18.1: one access policy, ahead of the REST API (18.2) and more users
-(19). Nothing visible changes for the single owner; no migrations.
+Phases 18.1 and 18.2: one access policy, and a REST API. Home Assistant,
+Apple Shortcuts, Android automations, Grafana, Node-RED and OBD tools can
+read your garage and log fill-ups and odometer readings with an API key.
+
+### Added
+- **REST API** under `/api/v1` ([docs/api.md](docs/api.md)), described by
+  an OpenAPI 3.1 file your install serves at `/api/v1/openapi.json`.
+  - **Read:** vehicles, a per-vehicle summary for sensors (odometer, economy,
+    last fill-up, 12-month cost per mile or km, what is due next, reminder
+    counts, documents, tyres, and the same figures as text in your units),
+    fill-ups with the economy of each tank and its economy-check flag,
+    odometer readings, service records, documents, expenses, tyres, *Coming
+    up* and reminders. Lists are newest first, paged, and filtered by date.
+  - **Write:** log a fill-up (any two of volume, price and total, in litres
+    or UK or US gallons, miles or km) and add an odometer reading, checked
+    exactly as the forms check them, with the plausibility and economy
+    warnings returned. Retrying the same fill-up (same time and odometer)
+    returns the existing one instead of doubling it.
+  - Values are canonical (km, litres, L/100 km, the vehicle's currency) as
+    exact decimal strings, instants in UTC, errors as problem details with a
+    stable code, and amounts left out for anyone who may not see costs.
+- **API keys:** Settings → API keys creates a named key that can read, or
+  read and log; it is shown once, only its hash is stored, it can be
+  revoked at once, and the list shows when each was last used. A key sees
+  exactly what its user sees. `bin/api-key.php` creates, lists and revokes
+  keys on the command line. 20 failed keys from one address in 10 minutes
+  block it for 10 minutes.
+- Guides for a Home Assistant REST sensor, an Apple Shortcut that logs a
+  fill-up, a Grafana economy chart and a Node-RED flow.
+- `API_ENABLED` (default `true`) and `API_CORS_ORIGINS` (default none).
 
 ### Changed
 - **Access policy:** who may do what with a vehicle (view, see costs, log,
@@ -23,6 +51,24 @@ Phase 18.1: one access policy, ahead of the REST API (18.2) and more users
   pages again.
 - A test fails the build for any route that does not say what access it
   needs, and another for any amount a template shows outside a cost check.
+- The CSV import's duplicate rule is shared with the API's safe retries.
+- The restore page says when a backup holds API keys, which keep working
+  only with the same `SESSION_SECRET`.
+
+### Upgrade notes
+- **One migration** (the `api_keys` table), applied on start in Docker or
+  with `vendor/bin/phinx migrate -e production` on bare PHP. It rolls back
+  cleanly.
+- **New optional variables:** `API_ENABLED` (the API is on by default; every
+  call needs a key, so nothing is reachable until you create one; set
+  `false` to switch it off entirely) and `API_CORS_ORIGINS`.
+- **`SESSION_SECRET`** now also keys the API key hashes: changing it (or
+  restoring a backup into an install with another one) disables every API
+  key, as it already signed everyone out and disabled calendar feed links.
+- Apache with **PHP-FPM**: the `Authorization` header must reach PHP.
+  `public/.htaccess` hands it over; a hand-written vhost without it needs
+  `CGIPassAuth On` ([docs/deployment.md](docs/deployment.md#the-rest-api-behind-a-proxy)).
+  The Docker image needs nothing.
 
 ## [1.9.0] — 2026-09-29
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Logbook\Middleware\ApiCorsMiddleware;
 use Logbook\Middleware\BasePathMiddleware;
 use Logbook\Middleware\CurrentUserMiddleware;
 use Logbook\Middleware\LocaleMiddleware;
@@ -19,10 +20,13 @@ use Slim\Middleware\ErrorMiddleware;
  * Global middleware. Slim runs the LAST added FIRST, so this list is written
  * inner → outer. Resulting order (outer → inner), per spec.md §5:
  *
- *   error handling → base path → session → current user
- *   → locale + display preferences → modal redirects → routing → body parsing
+ *   API CORS (API paths only) → error handling → base path → session
+ *   → current user → locale + display preferences → modal redirects
+ *   → routing → body parsing
  *   → [route groups, config/routes.php: auth guard → CSRF → vehicle access
  *      → instance access → module gate] → Action
+ *   → [the API group: problem details → API key → vehicle access
+ *      → module gate] → Action
  */
 return static function (App $app): void {
     $container = $app->getContainer();
@@ -41,7 +45,7 @@ return static function (App $app): void {
     $app->add(SessionMiddleware::class);
     $app->add(BasePathMiddleware::class);
 
-    $errorHandler = new ErrorHandler($app->getCallableResolver(), $app->getResponseFactory(), $logger);
+    $errorHandler = new ErrorHandler($app->getCallableResolver(), $app->getResponseFactory(), $logger, $settings->basePath);
     $errorHandler->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
     $errorHandler->setDefaultErrorRenderer('text/html', HtmlErrorRenderer::class);
 
@@ -55,4 +59,5 @@ return static function (App $app): void {
     );
     $errorMiddleware->setDefaultErrorHandler($errorHandler);
     $app->add($errorMiddleware);
+    $app->add(ApiCorsMiddleware::class);
 };

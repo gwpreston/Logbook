@@ -1,0 +1,3073 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Logbook API",
+    "version": "1.10.0",
+    "summary": "Read a Logbook garage and log fill-ups and odometer readings.",
+    "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
+    "license": {
+      "name": "Proprietary"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Replaced by this install's address when served"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "The key's user, the key and the modules",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles": {
+      "get": {
+        "operationId": "listVehicles",
+        "summary": "Vehicles the key's user can see",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "archived",
+                "all"
+              ],
+              "default": "active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}": {
+      "get": {
+        "operationId": "getVehicle",
+        "summary": "One vehicle",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vehicle"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/summary": {
+      "get": {
+        "operationId": "getVehicleSummary",
+        "summary": "What a sensor shows",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "description": "Current odometer, economy per series, last fill-up, 12-month cost per distance, what is due next, reminder counts, current documents and tyres, and the same figures as text in the owner's units."
+      }
+    },
+    "/vehicles/{id}/fuel": {
+      "get": {
+        "operationId": "listFuel",
+        "summary": "Fill-ups, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelEntryPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logFuel",
+        "summary": "Log a fill-up",
+        "description": "Needs a read and write key. Validated as the form validates. An entry with the same time and odometer as an existing one is not written again: the existing one comes back with duplicate true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FuelInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already logged (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/odometer": {
+      "get": {
+        "operationId": "listOdometer",
+        "summary": "Odometer readings, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OdometerReadingPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logReading",
+        "summary": "Add an odometer reading",
+        "description": "Needs a read and write key. A reading with the same time and odometer as any existing one (whatever wrote it) is not written again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/maintenance": {
+      "get": {
+        "operationId": "listMaintenance",
+        "summary": "Service records, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceEntryPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/documents": {
+      "get": {
+        "operationId": "listDocuments",
+        "summary": "Compliance documents, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/expenses": {
+      "get": {
+        "operationId": "listExpenses",
+        "summary": "Expenses, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpensePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        },
+        "description": "Needs cost access to the vehicle (403 without)."
+      }
+    },
+    "/vehicles/{id}/tyres": {
+      "get": {
+        "operationId": "listTyres",
+        "summary": "Tyres: fitted, stored, retired",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/upcoming": {
+      "get": {
+        "operationId": "listUpcoming",
+        "summary": "Coming up over the next 12 months",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpcomingItemList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/reminders": {
+      "get": {
+        "operationId": "listReminders",
+        "summary": "Open reminders, most urgent first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "overdue",
+                "due",
+                "upcoming"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "operationId": "getOpenApi",
+        "summary": "This description",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "lbk_…",
+        "description": "An API key from Settings → API keys: Authorization: Bearer lbk_…"
+      }
+    },
+    "parameters": {
+      "id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": "The vehicle id."
+      },
+      "limit": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      "cursor": {
+        "name": "cursor",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        },
+        "description": "From the previous page's next URL."
+      },
+      "since": {
+        "name": "since",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        },
+        "description": "A date (YYYY-MM-DD, from its start in UTC) or an instant; inclusive."
+      },
+      "until": {
+        "name": "until",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        },
+        "description": "A date (to its end in UTC) or an instant; inclusive."
+      },
+      "vehicle": {
+        "name": "vehicle",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": "Only this vehicle."
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "No key, or a malformed, unknown or revoked one.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "headers": {
+          "WWW-Authenticate": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "A read key on a write (insufficient_scope), or the key's user may see the vehicle but not do this.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "No such vehicle for this key's user, the module is switched off, or the API is (API_ENABLED=false).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "BadParameter": {
+        "description": "A query parameter cannot be read (invalid_parameter).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooMany": {
+        "description": "Too many failed keys from this address; wait Retry-After seconds.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Invalid": {
+        "description": "Validation failed (validation_failed), with errors per field.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Archived": {
+        "description": "The vehicle is archived (vehicle_archived).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "BadBody": {
+        "description": "The body is not a JSON object (invalid_body).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]+\\.[0-9]+$",
+        "description": "A decimal number as a string at its stored precision, never a float: \"10600.000\".",
+        "examples": [
+          "10600.000"
+        ]
+      },
+      "NullableDecimal": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^-?[0-9]+\\.[0-9]+$"
+      },
+      "Instant": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+        "description": "ISO 8601 in UTC.",
+        "examples": [
+          "2026-09-29T07:42:00Z"
+        ]
+      },
+      "NullableInstant": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+      },
+      "Date": {
+        "type": "string",
+        "format": "date",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "A calendar date, no time or zone."
+      },
+      "NullableDate": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "detail"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable; branch on this, not on the text.",
+            "examples": [
+              "missing_key",
+              "invalid_key",
+              "insufficient_scope",
+              "too_many_failures",
+              "not_found",
+              "forbidden",
+              "method_not_allowed",
+              "invalid_parameter",
+              "invalid_body",
+              "validation_failed",
+              "vehicle_archived",
+              "cors_not_allowed",
+              "internal_error"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "description": "English."
+          },
+          "errors": {
+            "type": "object",
+            "description": "Validation only: per field, the form's message key and its English text.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "message"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "description": "RFC 9457 problem details."
+      },
+      "Vehicle": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "type",
+          "make",
+          "model",
+          "variant",
+          "nickname",
+          "year",
+          "registration",
+          "vin",
+          "fuel_type",
+          "default_grade",
+          "capacity",
+          "capacity_unit",
+          "first_registered_on",
+          "purchase_date",
+          "sale_date",
+          "currency",
+          "currency_override",
+          "status",
+          "archived_at",
+          "has_photo",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "car",
+              "bike"
+            ]
+          },
+          "make": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "variant": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nickname": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "registration": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fuel_type": {
+            "type": "string",
+            "enum": [
+              "petrol",
+              "diesel",
+              "ev",
+              "hybrid",
+              "phev",
+              "lpg",
+              "other"
+            ]
+          },
+          "default_grade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "e10_95",
+              "e5_95",
+              "e5_97",
+              "e5_98",
+              "e10_98",
+              "e5_99",
+              "e0",
+              "e85",
+              "e15",
+              "e20",
+              "aki_87",
+              "aki_89",
+              "aki_91",
+              "b7",
+              "b7_premium",
+              "b10",
+              "b20",
+              "b100",
+              "xtl",
+              "home",
+              "ac",
+              "dc",
+              "dc_rapid",
+              "dc_ultra",
+              null
+            ]
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "capacity_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "kwh"
+            ],
+            "description": "The tank in litres, or the battery in kWh for an EV."
+          },
+          "first_registered_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "purchase_date": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "sale_date": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "The vehicle's currency: its override, else the owner's."
+          },
+          "currency_override": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Z]{3}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "archived_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "has_photo": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "purchase_price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "sale_price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          }
+        }
+      },
+      "Segment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "distance",
+          "volume",
+          "consumption",
+          "fills",
+          "grade"
+        ],
+        "properties": {
+          "distance": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "volume": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "consumption": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Litres (kWh) per 100 km over the segment."
+          },
+          "fills": {
+            "type": "integer"
+          },
+          "grade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "e10_95",
+              "e5_95",
+              "e5_97",
+              "e5_98",
+              "e10_98",
+              "e5_99",
+              "e0",
+              "e85",
+              "e15",
+              "e20",
+              "aki_87",
+              "aki_89",
+              "aki_91",
+              "b7",
+              "b7_premium",
+              "b10",
+              "b20",
+              "b100",
+              "xtl",
+              "home",
+              "ac",
+              "dc",
+              "dc_rapid",
+              "dc_ultra",
+              null
+            ]
+          },
+          "cost": {
+            "$ref": "#/components/schemas/Decimal"
+          }
+        },
+        "description": "The full-to-full segment this fill-up closes."
+      },
+      "FillEconomy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "distance_since_previous",
+          "consumption_unit",
+          "segment"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "measured",
+              "partial",
+              "baseline",
+              "unmeasured",
+              "invalid"
+            ]
+          },
+          "distance_since_previous": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "consumption_unit": {
+            "type": "string",
+            "enum": [
+              "l_per_100km",
+              "kwh_per_100km"
+            ]
+          },
+          "segment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Segment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "EconomyCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "verdict",
+          "flagged",
+          "confirmed"
+        ],
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "not_checked",
+              "normal",
+              "more",
+              "less"
+            ]
+          },
+          "flagged": {
+            "type": "boolean"
+          },
+          "confirmed": {
+            "type": "boolean"
+          }
+        },
+        "description": "The economy check of the segment this fill-up closes (spec §7.3)."
+      },
+      "FuelEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "filled_at",
+          "odometer",
+          "distance_unit",
+          "fuel",
+          "grade",
+          "energy",
+          "volume",
+          "volume_unit",
+          "is_partial",
+          "is_missed_previous",
+          "station",
+          "notes",
+          "economy",
+          "economy_check",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "filled_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "fuel": {
+            "type": "string",
+            "enum": [
+              "petrol",
+              "diesel",
+              "lpg",
+              "ev",
+              "other"
+            ]
+          },
+          "grade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "e10_95",
+              "e5_95",
+              "e5_97",
+              "e5_98",
+              "e10_98",
+              "e5_99",
+              "e0",
+              "e85",
+              "e15",
+              "e20",
+              "aki_87",
+              "aki_89",
+              "aki_91",
+              "b7",
+              "b7_premium",
+              "b10",
+              "b20",
+              "b100",
+              "xtl",
+              "home",
+              "ac",
+              "dc",
+              "dc_rapid",
+              "dc_ultra",
+              null
+            ]
+          },
+          "energy": {
+            "type": "string",
+            "enum": [
+              "liquid",
+              "electric"
+            ]
+          },
+          "volume": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "kwh"
+            ]
+          },
+          "is_partial": {
+            "type": "boolean"
+          },
+          "is_missed_previous": {
+            "type": "boolean"
+          },
+          "station": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "economy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FillEconomy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "economy_check": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EconomyCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217; every amount in this object is in it. Left out, with the amounts, without cost access."
+          },
+          "price_per_unit": {
+            "$ref": "#/components/schemas/Decimal",
+            "description": "Per litre (kWh)."
+          },
+          "total_cost": {
+            "$ref": "#/components/schemas/Decimal"
+          }
+        }
+      },
+      "OdometerReading": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "recorded_at",
+          "odometer",
+          "distance_unit",
+          "source",
+          "source_id",
+          "note",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "recorded_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "fuel",
+              "maintenance",
+              "document",
+              "tyre"
+            ]
+          },
+          "source_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The fill-up, service record, document or tyre change that wrote it; null for a manual reading."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "MaintenanceEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "performed_on",
+          "category",
+          "title",
+          "odometer",
+          "distance_unit",
+          "vendor",
+          "description",
+          "schedule_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "performed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "vendor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schedule_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217; every amount in this object is in it. Left out, with the amounts, without cost access."
+          },
+          "cost": {
+            "$ref": "#/components/schemas/Decimal"
+          }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "type",
+          "title",
+          "provider",
+          "reference",
+          "start_on",
+          "expiry_on",
+          "status",
+          "days_left",
+          "odometer",
+          "distance_unit",
+          "notes",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "insurance",
+              "pollution",
+              "registration",
+              "inspection",
+              "other"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "expiry_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "expiring",
+              "expired",
+              "upcoming",
+              "open",
+              "replaced"
+            ]
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Days until expiry; negative once expired."
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217; every amount in this object is in it. Left out, with the amounts, without cost access."
+          },
+          "cost": {
+            "$ref": "#/components/schemas/Decimal"
+          }
+        }
+      },
+      "DocumentExpiry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "title",
+          "expiry_on",
+          "status",
+          "days_left"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "insurance",
+              "pollution",
+              "registration",
+              "inspection",
+              "other"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expiry_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "expiring",
+              "expired",
+              "upcoming",
+              "open",
+              "replaced"
+            ]
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "Expense": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "spent_on",
+          "category",
+          "amount",
+          "currency",
+          "note",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "spent_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "tax",
+              "parking",
+              "tolls",
+              "cleaning",
+              "accessories",
+              "fines",
+              "finance",
+              "other"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "Tyre": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "name",
+          "brand",
+          "model",
+          "size",
+          "season",
+          "dot",
+          "manufactured_on",
+          "status",
+          "position",
+          "set_id",
+          "retired_reason",
+          "since",
+          "retired_on",
+          "depth_unit",
+          "distance_unit",
+          "tread",
+          "due",
+          "notes",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "season": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "summer",
+              "winter",
+              "all_season",
+              null
+            ]
+          },
+          "dot": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manufactured_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "fitted",
+              "stored",
+              "retired"
+            ]
+          },
+          "position": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "fl",
+              "fr",
+              "rl",
+              "rr",
+              "spare",
+              "front",
+              "rear",
+              null
+            ]
+          },
+          "set_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "retired_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "worn",
+              "damaged",
+              "puncture",
+              "sold",
+              "other",
+              null
+            ]
+          },
+          "since": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "retired_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "depth_unit": {
+            "type": "string",
+            "const": "mm"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "tread": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "latest",
+              "depth_now",
+              "replace_at",
+              "distance_left",
+              "worn"
+            ],
+            "properties": {
+              "latest": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "measured_on",
+                  "depth",
+                  "distance"
+                ],
+                "properties": {
+                  "measured_on": {
+                    "$ref": "#/components/schemas/Date"
+                  },
+                  "depth": {
+                    "$ref": "#/components/schemas/Decimal"
+                  },
+                  "distance": {
+                    "$ref": "#/components/schemas/Decimal"
+                  }
+                }
+              },
+              "depth_now": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "The latest measurement moved on by the wear since."
+              },
+              "replace_at": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "distance_left": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "worn": {
+                "type": "boolean"
+              }
+            }
+          },
+          "due": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "reason",
+              "due_on",
+              "due_odometer"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "ok",
+                  "soon",
+                  "overdue"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "wear",
+                  "age",
+                  null
+                ]
+              },
+              "due_on": {
+                "$ref": "#/components/schemas/NullableDate"
+              },
+              "due_odometer": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              }
+            }
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217; every amount in this object is in it. Left out, with the amounts, without cost access."
+          },
+          "cost_per_distance": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Money per km over the tyre's life."
+          }
+        }
+      },
+      "UpcomingItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "vehicle_id",
+          "source",
+          "source_id",
+          "title",
+          "category",
+          "due_on",
+          "due_odometer",
+          "distance_unit",
+          "projected",
+          "overdue",
+          "occurrence"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "In the key owner's language."
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "document",
+              "tyres",
+              "reminder"
+            ]
+          },
+          "source_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "due_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "projected": {
+            "type": "boolean",
+            "description": "The date is estimated from the average daily distance."
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "occurrence": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217; every amount in this object is in it. Left out, with the amounts, without cost access."
+          },
+          "cost": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Last time's price; null when not known."
+          }
+        }
+      },
+      "Reminder": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "source",
+          "title",
+          "category",
+          "notes",
+          "status",
+          "due_on",
+          "due_odometer",
+          "distance_unit",
+          "days_left",
+          "lead_time_days",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "compliance",
+              "tyre",
+              "manual"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "due",
+              "overdue"
+            ]
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "due_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "lead_time_days": {
+            "type": "integer"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "EconomySeries": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fills",
+          "segments",
+          "consumption_unit",
+          "volume_unit",
+          "average_consumption",
+          "last_consumption",
+          "measured_distance",
+          "total_volume"
+        ],
+        "properties": {
+          "fills": {
+            "type": "integer"
+          },
+          "segments": {
+            "type": "integer"
+          },
+          "consumption_unit": {
+            "type": "string",
+            "enum": [
+              "l_per_100km",
+              "kwh_per_100km"
+            ]
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "kwh"
+            ]
+          },
+          "average_consumption": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "last_consumption": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "measured_distance": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "total_volume": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "total_cost": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "average_price_per_unit": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "cost_per_distance": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          }
+        },
+        "description": "One series' economy over every full-to-full segment."
+      },
+      "Summary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicle_id",
+          "name",
+          "status",
+          "distance_unit",
+          "odometer",
+          "next_due",
+          "display"
+        ],
+        "properties": {
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "odometer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "recorded_at",
+              "source"
+            ],
+            "properties": {
+              "value": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "recorded_at": {
+                "$ref": "#/components/schemas/Instant"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "fuel",
+                  "maintenance",
+                  "document",
+                  "tyre"
+                ]
+              }
+            }
+          },
+          "fuel": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "liquid",
+              "electric",
+              "last_fill_up"
+            ],
+            "properties": {
+              "liquid": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EconomySeries"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "electric": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EconomySeries"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "last_fill_up": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FuelEntry"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "description": "Left out when the Fuel module is off."
+          },
+          "costs": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "currency",
+              "from",
+              "to",
+              "total",
+              "distance",
+              "cost_per_distance"
+            ],
+            "properties": {
+              "currency": {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              "from": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "to": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "total": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "distance": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "cost_per_distance": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              }
+            },
+            "description": "Running costs over the last 12 months (as Reports counts them); left out without cost access."
+          },
+          "next_due": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UpcomingItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reminders": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "overdue",
+              "due"
+            ],
+            "properties": {
+              "overdue": {
+                "type": "integer"
+              },
+              "due": {
+                "type": "integer"
+              }
+            },
+            "description": "Open reminder counts; left out when Reminders is off."
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentExpiry"
+            },
+            "description": "Current documents; left out when Compliance is off."
+          },
+          "tyres": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "reason",
+              "due_on",
+              "due_odometer",
+              "worn"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "ok",
+                  "soon",
+                  "overdue"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "wear",
+                  "age",
+                  null
+                ]
+              },
+              "due_on": {
+                "$ref": "#/components/schemas/NullableDate"
+              },
+              "due_odometer": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "worn": {
+                "type": "boolean"
+              }
+            }
+          },
+          "display": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "odometer",
+              "next_due"
+            ],
+            "properties": {
+              "odometer": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "economy": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "last_fill_up": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cost_per_distance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "next_due": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "description": "The figures as text in the key owner's units, language and currency."
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "user",
+          "key",
+          "modules"
+        ],
+        "properties": {
+          "user": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "username",
+              "display_name",
+              "locale",
+              "timezone",
+              "currency",
+              "distance_unit",
+              "volume_unit",
+              "consumption_unit",
+              "depth_unit"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "username": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "locale": {
+                "type": "string"
+              },
+              "timezone": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              "distance_unit": {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              "volume_unit": {
+                "type": "string",
+                "enum": [
+                  "l",
+                  "gal_uk",
+                  "gal_us"
+                ]
+              },
+              "consumption_unit": {
+                "type": "string",
+                "enum": [
+                  "l_per_100km",
+                  "km_per_l",
+                  "mpg_uk",
+                  "mpg_us"
+                ]
+              },
+              "depth_unit": {
+                "type": "string",
+                "enum": [
+                  "mm",
+                  "in32"
+                ]
+              }
+            }
+          },
+          "key": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "scope",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "read_write"
+                ]
+              },
+              "created_at": {
+                "$ref": "#/components/schemas/Instant"
+              }
+            }
+          },
+          "modules": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fuel",
+              "maintenance",
+              "compliance",
+              "reminders",
+              "reports",
+              "tyres"
+            ],
+            "properties": {
+              "fuel": {
+                "type": "boolean"
+              },
+              "maintenance": {
+                "type": "boolean"
+              },
+              "compliance": {
+                "type": "boolean"
+              },
+              "reminders": {
+                "type": "boolean"
+              },
+              "reports": {
+                "type": "boolean"
+              },
+              "tyres": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "Warning": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "detail"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "odometer_backwards",
+              "odometer_jump",
+              "economy_check"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "description": "Something worth checking; never blocks."
+      },
+      "FuelInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "odometer"
+        ],
+        "description": "Give any two of volume, price_per_unit and total_cost; the third is derived.",
+        "properties": {
+          "filled_at": {
+            "$ref": "#/components/schemas/Instant",
+            "description": "Default: now. Send it, so a retry is recognised."
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "fuel": {
+            "type": "string",
+            "enum": [
+              "petrol",
+              "diesel",
+              "lpg",
+              "ev",
+              "other"
+            ],
+            "description": "Default: the vehicle's usual fuel."
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "e10_95",
+              "e5_95",
+              "e5_97",
+              "e5_98",
+              "e10_98",
+              "e5_99",
+              "e0",
+              "e85",
+              "e15",
+              "e20",
+              "aki_87",
+              "aki_89",
+              "aki_91",
+              "b7",
+              "b7_premium",
+              "b10",
+              "b20",
+              "b100",
+              "xtl",
+              "home",
+              "ac",
+              "dc",
+              "dc_rapid",
+              "dc_ultra"
+            ],
+            "description": "Default: the form's (the grade last bought)."
+          },
+          "volume": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "gal_uk",
+              "gal_us",
+              "kwh"
+            ],
+            "description": "Default: the owner's, or kWh for electricity."
+          },
+          "price_per_unit": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "total_cost": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "is_partial": {
+            "type": "boolean"
+          },
+          "is_missed_previous": {
+            "type": "boolean"
+          },
+          "station": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "ReadingInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "odometer"
+        ],
+        "properties": {
+          "recorded_at": {
+            "$ref": "#/components/schemas/Instant",
+            "description": "Default: now. Send it, so a retry is recognised."
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 255
+          }
+        }
+      },
+      "NumberInput": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "description": "A decimal string or a JSON number; read as a decimal, never a float, with \".\" as the decimal point."
+      },
+      "FuelEntryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FuelEntry"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "OdometerReadingPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OdometerReading"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "MaintenanceEntryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceEntry"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "DocumentPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "ExpensePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Expense"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "VehicleList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Vehicle"
+            }
+          }
+        }
+      },
+      "TyreList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tyre"
+            }
+          }
+        }
+      },
+      "UpcomingItemList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpcomingItem"
+            }
+          }
+        }
+      },
+      "ReminderList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reminder"
+            }
+          }
+        }
+      },
+      "FuelWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/FuelEntry"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ReadingWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/OdometerReading"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      }
+    }
+  }
+}

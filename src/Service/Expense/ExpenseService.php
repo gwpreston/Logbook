@@ -28,6 +28,14 @@ final readonly class ExpenseService
     }
 
     /**
+     * @return list<ExpenseEntry> by date, then in the order logged
+     */
+    public function entries(Vehicle $vehicle): array
+    {
+        return $this->entries->listForVehicle($vehicle->id);
+    }
+
+    /**
      * @throws ExpenseEntryNotFound
      */
     public function get(Vehicle $vehicle, int $id): ExpenseEntry

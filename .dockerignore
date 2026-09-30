@@ -9,7 +9,9 @@ var/*
 !var/.gitkeep
 data
 tests
-docs
+docs/*
+# The API description is served by the app (spec.md §7.20).
+!docs/api
 .phpunit.cache
 .phpcs-cache
 *.md

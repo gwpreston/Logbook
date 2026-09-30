@@ -106,6 +106,27 @@ out="$($compose exec -T app setpriv --reuid=www-data --regid=www-data --init-gro
     || fail "scheduled task exited non-zero"
 case "$out" in *"1 account(s) checked"*) echo "ok  scheduled task (manual run): $out" ;; *) fail "scheduled task said: $out" ;; esac
 
+# REST API (Phase 18.2): a key from the command line, then the API with it,
+# which also proves the web server passes the Authorization header to PHP.
+token="$($compose exec -T -u www-data app php bin/api-key.php create --user smoke --name Smoke --scope read)" \
+    || fail "bin/api-key.php create failed"
+case "$token" in lbk_*) echo "ok  bin/api-key.php create" ;; *) fail "bin/api-key.php printed: $token" ;; esac
+api() { # api <path> <status> [body-substring] [token]
+    status="$(curl -s -o /tmp/smoke.body -w '%{http_code}' ${4:+-H "Authorization: Bearer $4"} "$base/api/v1$1")" \
+        || fail "request to $base/api/v1$1 failed"
+    [ "$status" = "$2" ] || fail "$base/api/v1$1 returned $status, expected $2: $(cat /tmp/smoke.body)"
+    if [ -n "${3:-}" ]; then grep -qF -- "$3" /tmp/smoke.body || fail "$base/api/v1$1 body lacks: $3"; fi
+    echo "ok  $2  API $1"
+}
+api /vehicles 200 '"items":[]' "$token"
+api /me 200 '"username":"smoke"' "$token"
+api /vehicles 401 '"code":"missing_key"'
+# A bad key is counted: the throttle's counter must be writable by www-data.
+api /me 401 '"code":"invalid_key"' "lbk_0000000000000000000000000000000000000000000"
+$compose exec -T app sh -c 'ls var/cache/api-throttle/*.json' >/dev/null || fail "the failed-key counter was not written"
+echo "ok  failed-key counter written"
+api /openapi.json 200 '"openapi":"3.1.0"'
+
 # Restarting must be idempotent (migrations already applied) and keep sessions.
 $compose restart app >/dev/null
 $compose up -d --wait --no-build >/dev/null || fail "stack unhealthy after restart"

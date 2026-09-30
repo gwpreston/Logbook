@@ -117,7 +117,7 @@ final readonly class CsvImporter
                 continue;
             }
 
-            $key = self::key($result);
+            $key = DuplicateKey::of($result);
             if (isset($seen[$key])) {
                 $rows[] = new ImportRow($row['line'], ImportRowStatus::Duplicate, $values);
                 continue;
@@ -353,72 +353,29 @@ final readonly class CsvImporter
     {
         return match ($module) {
             ExportModule::Fuel => array_map(
-                static fn ($e): string => self::key($e->data),
+                static fn ($e): string => DuplicateKey::of($e->data),
                 $this->fuelEntries->listForVehicle($vehicle->id),
             ),
             // Every reading counts, whatever its source: a fill-up already
             // imported has written the reading an odometer file repeats.
             ExportModule::Odometer => array_map(
-                static fn ($r): string => self::key(new OdometerReadingData($r->readingKm, $r->recordedAt)),
+                static fn ($r): string => DuplicateKey::of(new OdometerReadingData($r->readingKm, $r->recordedAt)),
                 $this->readings->listForVehicle($vehicle->id),
             ),
             ExportModule::Maintenance => array_map(
-                static fn ($e): string => self::key($e->data),
+                static fn ($e): string => DuplicateKey::of($e->data),
                 $this->maintenanceEntries->listForVehicle($vehicle->id),
             ),
             ExportModule::Documents => array_map(
-                static fn ($d): string => self::key($d->data),
+                static fn ($d): string => DuplicateKey::of($d->data),
                 $this->documents->listForVehicle($vehicle->id),
             ),
             ExportModule::Expenses => array_map(
-                static fn ($e): string => self::key($e->data),
+                static fn ($e): string => DuplicateKey::of($e->data),
                 $this->expenseEntries->listForVehicle($vehicle->id),
             ),
             ExportModule::Tyres, ExportModule::TyreChanges, ExportModule::Valuations
                 => throw new LogicException($module->value . ' are not imported.'),
-        };
-    }
-
-    /**
-     * What makes two entries "the same" for duplicate detection.
-     */
-    private static function key(object $data): string
-    {
-        $lower = static fn (?string $text): string => mb_strtolower(trim($text ?? ''));
-
-        return match (true) {
-            $data instanceof FuelEntryData => implode('|', [
-                'fuel',
-                $data->filledAt->getTimestamp(),
-                Decimal::trim($data->odometerKm),
-            ]),
-            $data instanceof OdometerReadingData => implode('|', [
-                'odometer',
-                $data->recordedAt->getTimestamp(),
-                Decimal::trim($data->readingKm),
-            ]),
-            $data instanceof MaintenanceEntryData => implode('|', [
-                'maintenance',
-                $data->performedOn->format('Y-m-d'),
-                $data->category->value,
-                $lower($data->title),
-                Decimal::trim($data->cost),
-            ]),
-            $data instanceof ComplianceDocumentData => implode('|', [
-                'document',
-                $data->type->value,
-                $lower($data->reference),
-                $data->startOn?->format('Y-m-d') ?? '',
-                $data->expiryOn?->format('Y-m-d') ?? '',
-            ]),
-            $data instanceof ExpenseEntryData => implode('|', [
-                'expense',
-                $data->spentOn->format('Y-m-d'),
-                $data->category->value,
-                Decimal::trim($data->amount),
-                $lower($data->note),
-            ]),
-            default => throw new LogicException('Unexpected import data.'),
         };
     }
 }

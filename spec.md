@@ -90,6 +90,13 @@ disagree):
   row until something is stored in it). CSRF and the auth guard sit on route
   groups rather than globally so machine endpoints such as `/health` never
   create sessions; every HTML route is inside a CSRF-protected group.
+  The REST API (§7.20) is its own group under `/api/v1`, outer→inner:
+  problem-details errors → API key (with the failed-key throttle; the
+  key's user replaces any session user) → vehicle access → module gate.
+  `openapi.json` sits outside the key check. API CORS is a global
+  middleware, outermost, acting on API paths only, so it answers
+  preflights before routing; the error handler answers the router's own
+  errors under `/api/` as problem details.
 - **Current user:** resolved once per request from the session by middleware
   and exposed as the `user` request attribute. Actions never read the session
   to find the user, so multi-user can slot in without touching them.
@@ -492,6 +499,13 @@ MySQL only.
 - id (HMAC-SHA256 of the random cookie token, keyed with `SESSION_SECRET`; the
   token itself is never stored), user_id (optional), data (JSON), created_at,
   last_activity_at (UTC). Expires after 30 days without activity.
+
+**ApiKey** (Phase 18.2)
+- id, user_id (`ON DELETE CASCADE`), name (up to 100), token_hash
+  (HMAC-SHA256 of the token, keyed with `SESSION_SECRET`; unique; the
+  token itself is never stored), scope (`read` | `read_write`),
+  created_at, last_used_at (optional; updated at most once a minute),
+  revoked_at (optional), all UTC. Index on user_id. In backups (§7.20).
 
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
@@ -2258,6 +2272,165 @@ available for active and archived vehicles.
   repeats name and registration. The date printed is in the owner's
   format.
 
+### 7.20 REST API (Phase 18.2)
+
+A small JSON API for Home Assistant, Apple Shortcuts, Android automations,
+Grafana, Node-RED and OBD tools. It reads what a dashboard or automation
+needs and writes the two things automations log: fill-ups and odometer
+readings. Guides with worked examples are in `docs/api.md`; the OpenAPI
+3.1 description (`docs/api/openapi.json`) is the contract, and the tests
+validate every response against it.
+
+**Base and format.** Everything is under `{APP_BASE_PATH}/api/v1`, in
+JSON (`application/json`). Errors use RFC 9457 problem details
+(`application/problem+json`: `type`, `title`, `status`, `detail`, and a
+stable `code`), with `errors` per field for validation (the form's message
+key and its English text). Unknown API paths and wrong methods answer
+problem details too. API routes are outside the session and CSRF groups,
+like `/health`, so they never create a session; a session cookie sent
+along is ignored (only the key authenticates, so a signed-in browser
+cannot be made to write). `API_ENABLED` (default `true`) switches the
+whole group off: every API path answers 404.
+
+**Keys.**
+- Settings → API keys (`/settings/api-keys`) creates a key with a name
+  ("Home Assistant", up to 100 characters) and a scope: `read` or
+  `read_write`. The token, `lbk_` + 32 random bytes (base64url, 43
+  characters), is shown **once**, on the page that answers the create
+  (never through the session), with a copy button. `php bin/api-key.php`
+  does the same on the command line (§7.20 *CLI*).
+- Only a keyed hash is stored: HMAC-SHA256 with `SESSION_SECRET`, like
+  session ids and calendar tokens. Changing `SESSION_SECRET` therefore
+  disables every key (§9).
+- The list shows name, scope, created, last used (updated at most once a
+  minute) and *Revoke*, newest first; revoked keys stay listed as revoked.
+  Revoking is immediate and cannot be undone.
+- A key belongs to the user who created it and has **exactly that user's
+  access** through the access policy (§5), narrowed by its scope. Sent as
+  `Authorization: Bearer lbk_…`. A missing, malformed, unknown or revoked
+  key answers 401 with `WWW-Authenticate: Bearer`; a `read` key on a write
+  answers 403 (`insufficient_scope`).
+- Failed attempts are logged with the client address, never the token.
+  After 20 failures from one address in 10 minutes, that address gets 429
+  (with `Retry-After`) for 10 minutes, even with a good key (a small
+  counter file per address in the cache directory; no new service).
+- **Table** `api_keys` (§6 ApiKey). It is in backups. Keys restored into
+  an install with another `SESSION_SECRET` stop working, and the restore
+  page says so.
+
+**Values.**
+- Quantities are **canonical**: kilometres, litres (kWh for
+  electricity), L/100 km (kWh/100 km), and money in the vehicle's
+  currency. All are **decimal strings** at the stored precision
+  (`"78421.000"`, `"61.320"`), never floats, with the unit named once per
+  object (`"distance_unit": "km"`, `"volume_unit": "l"` or `"kwh"`,
+  `"currency": "GBP"`). Instants are ISO 8601 UTC
+  (`2026-09-29T07:42:00Z`); calendar dates are `YYYY-MM-DD`. Codes
+  (fuel, grade, category, status) are the app's enum values. A field with
+  no value is `null`, never left out, except the amounts below.
+- The summary also carries `display`: its figures formatted in the key
+  owner's units, locale and currency ("48,730 mi", "52.1 mpg"), for
+  sensors that just show text: `odometer`, `economy` (the vehicle's
+  usual kind of energy), `last_fill_up`, `cost_per_distance` and
+  `next_due`. Names in the API (a *Coming up* item's `name`) are in the
+  owner's language too; problem details are always English.
+- Costs follow `ViewCosts`. Without it, amount fields are **omitted**,
+  not zeroed or nulled.
+- Module toggles apply: a switched-off module's endpoints answer 404, and
+  its fields leave other responses (the summary's fuel figures when Fuel
+  is off, its documents when Compliance is off, and so on).
+
+**Read endpoints** (scope `read`). Vehicle ids come from the policy: one
+the key's user cannot view answers 404 (§5), and so does a `?vehicle=`
+filter naming one. The entry lists (fuel, odometer, maintenance,
+documents, expenses) are newest first (by the entry's date or instant,
+then id) and paged by an opaque cursor naming the last item seen, so an
+entry added meanwhile never shifts a page (`limit` 1–200, default 50;
+`next` is the URL of the next page, or `null`); `since` / `until` filter
+on the entry's date or instant (a date, or an instant; both inclusive, a
+date covering that whole day in UTC). Each list is read whole by its
+service, as the pages read it (a fill-up's economy needs the full
+history), and paged in PHP. The vehicles, tyres, *Coming up* and
+reminders lists are short, in their own order, and not paged. An invalid
+parameter answers 400 (`invalid_parameter`).
+
+| Endpoint | Returns |
+|---|---|
+| `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default active) |
+| `GET /vehicles/{id}` | one vehicle, as the edit form holds it |
+| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it), next due item, open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
+| `GET /vehicles/{id}/fuel` | fill-ups, each with its segment economy when it closes one and its economy-check flag |
+| `GET /vehicles/{id}/odometer` | readings with source |
+| `GET /vehicles/{id}/maintenance` | service records |
+| `GET /vehicles/{id}/documents` | compliance documents |
+| `GET /vehicles/{id}/expenses` | ad-hoc expenses (needs `ViewCosts`, like the Expenses tab) |
+| `GET /vehicles/{id}/tyres` | tyres with status, position, latest measured tread |
+| `GET /upcoming` | *Coming up* items (§7.18), `?vehicle=` optional |
+| `GET /reminders` | open reminders, `?vehicle=`, `?status=due\|overdue\|upcoming` |
+| `GET /me` | the key's user (display name, units, locale, time zone), the key's name and scope, and which modules are on |
+| `GET /openapi.json` | the OpenAPI description, its `servers` set to this install (no key needed) |
+
+**Write endpoints** (scope `read_write`, ability `Log`).
+- `POST /vehicles/{id}/fuel`: body `filled_at` (instant; default now),
+  `odometer` with optional `distance_unit` (`km`\|`mi`, default the
+  owner's), `fuel` and `grade` (codes; defaults as the form's: the
+  vehicle's usual fuel and the grade last bought), any two of `volume`
+  (with `volume_unit`: `l`\|`gal_uk`\|`gal_us`\|`kwh`, default the
+  owner's, or `kwh` for electricity; `price_per_unit` is per that unit)
+  / `price_per_unit` / `total_cost`, `is_partial`, `is_missed_previous`
+  (booleans), `station`, `notes`. Numbers are decimal strings or JSON
+  numbers and are read as decimals, never floats (number tokens are
+  turned into strings before the body is decoded), with `.` as the
+  decimal point; an exponent or a comma is a `validation.number` error.
+  Unknown fields are refused (`api.validation.unknown_field`), so a
+  misspelt field is caught rather than ignored; the API's own input rules
+  have `api.validation.*` keys (an instant without a zone, a flag that is
+  not a boolean, kWh for a liquid fuel).
+- `POST /vehicles/{id}/odometer`: `recorded_at` (default now),
+  `odometer`, `distance_unit`, `note`.
+- Both go through the **same form parsers and services** as the forms
+  and CSV import (the request's units in place of the owner's), so they
+  get the same validation and messages, the derived third amount, the
+  odometer reading written in the same transaction, schedules, reminders
+  and the economy check. Instants are kept to the minute, as the forms
+  keep them. The response is `201` with the created entry (as the list
+  returns it), plus `warnings` (`odometer_backwards`, `odometer_jump`,
+  `economy_check`) that never block. Validation errors answer 422.
+- **Retries are safe:** an entry that matches an existing one by the CSV
+  import's duplicate key (fill-up: same time and odometer; reading: same
+  time and odometer, whatever wrote the reading) answers `200` with the
+  existing entry and `"duplicate": true`. Nothing is written. An
+  automation that retries after a timeout never doubles a fill-up, as
+  long as it sends the time (a retry without `filled_at` is a new "now").
+- Archived vehicles refuse writes (409, `vehicle_archived`). The forms
+  never offer them (the pickers leave them out); the API says so.
+
+**CORS** is off by default. `API_CORS_ORIGINS` (comma-separated origins)
+allows browser dashboards: those origins get `Access-Control-Allow-Origin`
+on API responses, errors included, and a preflight (`OPTIONS`) answers 204
+for them (methods `GET, POST`, headers `Authorization, Content-Type`); any
+other preflight answers 403 (`cors_not_allowed`). Credentials are never
+allowed: the key travels in a header the page sets.
+
+**Settings → API keys** stays when `API_ENABLED` is `false` (keys can be
+prepared; the page says the API is off). Revoking asks for confirmation on
+its own page, like deleting an entry. The page with a new token is sent
+`Cache-Control: no-store`.
+
+**Deployment.** The `Authorization` header must reach PHP: `public/.htaccess`
+and the image's vhost hand it over for PHP-FPM; the Docker image ships
+`docs/api/openapi.json`. Failed keys are counted by the client address
+PHP sees, which behind a proxy is the proxy's.
+
+**CLI.** `php bin/api-key.php create --user <username> --name <name>
+--scope read|read_write` prints the token alone on stdout (for scripts);
+`list [--user <username>]` and `revoke <id>` for headless installs.
+
+**Not in this version:** editing or deleting through the API, other
+writes, attachments, OAuth or sessions, webhooks for new entries, reports
+and ownership figures beyond the summary, per-vehicle keys (Phase 19 lets
+a device have its own user instead).
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -2379,9 +2552,13 @@ Real environment variables override `.env`; an empty value counts as unset.
 - `DB_DRIVER` (`pgsql`|`mysql`|`sqlite`; default `sqlite`), `DB_HOST`,
   `DB_PORT` (default per driver), `DB_NAME` (for SQLite: the file path),
   `DB_USER`, `DB_PASSWORD`
-- `SESSION_SECRET` (optional key for hashing session ids and calendar-feed
-  tokens at rest; changing it signs everyone out and disables feed links),
+- `SESSION_SECRET` (optional key for hashing session ids, calendar-feed
+  tokens and API keys at rest; changing it signs everyone out, disables
+  feed links and disables every API key),
   `SESSION_SECURE` (default: true when `APP_URL` is https)
+- `API_ENABLED` (the REST API, §7.20; default `true`; `false` makes every
+  `/api/v1` path a 404), `API_CORS_ORIGINS` (comma-separated origins
+  allowed to call the API from a browser; default none)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
 - `BACKUP_PATH` (pre-restore backups and `bin/backup.php create`; default
   `var/backups`, Docker `/data/backups`), `MAX_RESTORE_MB` (largest backup
@@ -2448,7 +2625,6 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
-- REST API with API keys (OpenAPI documented) for scripting/Home Assistant.
 - Multi-user with roles (admin/editor/viewer) and per-vehicle sharing.
 - OIDC/SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
 - Trip/journey log (business vs personal for mileage claims),
@@ -2571,6 +2747,21 @@ task breakdowns live in the per-phase files; this is the map.
   grey print palette with their tables, no app shell, black on white in
   either theme (§8 *Printing reports*); no server-side PDF, no migration;
   release v1.9.0 with Phase 17.1.
+- **Phase 18.1 — Access policy.** Every access decision behind
+  `VehicleAccess` / `InstanceAccess` (§5): each vehicle route declares its
+  ability, cross-vehicle reads take the policy's visible ids, amounts sit
+  behind `ViewCosts`, a route inventory test; the single-owner policy
+  changes nothing visible; no migration. Ships with Phase 18.2 as v1.10.0.
+- **Phase 18.2 — REST API v1 + v1.10.0.** API keys (named, `read` or
+  `read_write`, shown once, revocable, hashed) in Settings and on the
+  command line, with their user's access; read endpoints for vehicles, a
+  per-vehicle summary with a formatted `display` block, fill-ups,
+  readings, service records, documents, expenses, tyres, *Coming up* and
+  reminders; fill-up and reading writes through the forms' parsers and
+  services, safe to retry by the import's duplicate key; canonical decimal
+  strings, problem details, cursor paging, CORS by allow-list, an OpenAPI
+  3.1 description validated in the tests, and guides for Home Assistant,
+  Shortcuts, Grafana and Node-RED (§7.20); one migration; release v1.10.0.
 
 ---
 

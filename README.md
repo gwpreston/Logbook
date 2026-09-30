@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v1.9.0 — every roadmap phase complete.** First-run setup, secure sign-in, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), purchase and sale paperwork and archiving, per-user units, currency,
+> **Status: v1.10.0.** First-run setup, secure sign-in, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), purchase and sale paperwork and archiving, per-user units, currency,
 > language and time zone; a History tab per vehicle (and for the fleet) with a
 > printable service history that leaves costs off unless asked, and a sale pack for a buyer (summary, checkable mileage record, the paperwork as a ZIP); a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
@@ -30,7 +30,9 @@ your own server.
 > type, and economy by month to show what winter costs); a dashboard of widgets you can
 > rearrange; modules you can switch off; CSV import with a preview; one-click
 > backup and restore of everything; an installable phone app that logs
-> fill-ups offline; in English and German. See [`ROADMAP.md`](ROADMAP.md) for
+> fill-ups offline; a REST API with keys, so Home Assistant, Shortcuts,
+> Grafana and Node-RED can read your garage and log fill-ups; in English and
+> German. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
 ## Quick start
@@ -64,6 +66,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
+| [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |
@@ -200,6 +203,6 @@ assets/        CSS/JS sources and vendored libraries
 translations/  message catalogues
 tests/         Unit/ and Integration/
 docker/        Apache vhost, PHP ini, entrypoint, nginx example, dev DB init
-bin/           CLI helpers (asset build, backup, dev router, wait-for-db, scheduler, test scripts)
-docs/          deployment, configuration, import, sale pack, notification and translation guides
+bin/           CLI helpers (asset build, backup, API keys, dev router, wait-for-db, scheduler, test scripts)
+docs/          deployment, configuration, import, API (and its OpenAPI file), sale pack, notification and translation guides
 ```

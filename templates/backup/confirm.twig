@@ -30,6 +30,9 @@
             </dl>
 
             <div class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'backup.confirm_warning'|trans }}</span></div>
+            {% if manifest.rows('api_keys') > 0 %}
+                <div class="alert alert--info" role="note">{{ ui.icon('info') }}<span>{{ 'backup.api_keys_notice'|trans }}</span></div>
+            {% endif %}
 
             <form class="form" method="post" action="{{ url_for('backup.restore.confirm', {token: token}) }}">
                 {{ ui.csrf(csrf) }}

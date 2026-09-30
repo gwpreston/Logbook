@@ -141,6 +141,7 @@ abstract class AppTestCase extends TestCase
             'maintenance_schedules',
             'fuel_entries',
             'vehicles',
+            'api_keys',
             'users',
             'settings',
         ];

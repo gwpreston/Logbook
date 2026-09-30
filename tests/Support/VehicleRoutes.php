@@ -14,6 +14,7 @@ use Slim\Interfaces\RouteInterface;
 /**
  * Every /vehicles/{id} route, and a request to one for a given vehicle
  * (other placeholders filled with a plausible value), for the access tests.
+ * The API's routes (an API key, not a session) are listed apart.
  */
 trait VehicleRoutes
 {
@@ -25,7 +26,21 @@ trait VehicleRoutes
     {
         return array_values(array_filter(
             $app->getRouteCollector()->getRoutes(),
-            static fn (RouteInterface $route): bool => VehicleAccessMiddleware::isVehicleRoute($route),
+            static fn (RouteInterface $route): bool => VehicleAccessMiddleware::isVehicleRoute($route)
+                && !str_starts_with($route->getPattern(), '/api/'),
+        ));
+    }
+
+    /**
+     * @param App<ContainerInterface> $app
+     * @return list<RouteInterface>
+     */
+    private function apiVehicleRoutes(App $app): array
+    {
+        return array_values(array_filter(
+            $app->getRouteCollector()->getRoutes(),
+            static fn (RouteInterface $route): bool => VehicleAccessMiddleware::isVehicleRoute($route)
+                && str_starts_with($route->getPattern(), '/api/'),
         ));
     }
 

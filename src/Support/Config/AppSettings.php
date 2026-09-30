@@ -43,6 +43,10 @@ final readonly class AppSettings
          * their own variables (notification channels; spec.md §7.11).
          */
         public Env $env = new Env([]),
+        /** The REST API (spec.md §7.20); off makes every /api/v1 path a 404. */
+        public bool $apiEnabled = true,
+        /** @var list<string> origins a browser may call the API from (none: CORS off) */
+        public array $apiCorsOrigins = [],
     ) {
     }
 
@@ -81,6 +85,8 @@ final readonly class AppSettings
             backupPath: self::path($env->string('BACKUP_PATH', 'var/backups'), $rootDir),
             maxRestoreMb: $env->int('MAX_RESTORE_MB', 256),
             env: $env,
+            apiEnabled: $env->bool('API_ENABLED', true),
+            apiCorsOrigins: self::origins($env->string('API_CORS_ORIGINS')),
         );
     }
 
@@ -121,6 +127,32 @@ final readonly class AppSettings
         }
 
         return $code;
+    }
+
+    /**
+     * "https://a.example, https://b.example:8123" → exact origins, without a
+     * trailing slash; anything that is not an http(s) origin is refused.
+     *
+     * @return list<string>
+     */
+    private static function origins(string $value): array
+    {
+        $origins = [];
+        foreach (explode(',', $value) as $origin) {
+            $origin = rtrim(trim($origin), '/');
+            if ($origin === '') {
+                continue;
+            }
+            if (preg_match('~^https?://[^/\s?#]+$~i', $origin) !== 1) {
+                throw new InvalidArgumentException(sprintf(
+                    'API_CORS_ORIGINS entry "%s" is not an origin (expected e.g. https://dashboard.example:8123).',
+                    $origin,
+                ));
+            }
+            $origins[] = strtolower($origin);
+        }
+
+        return array_values(array_unique($origins));
     }
 
     private static function path(string $path, string $rootDir): string
