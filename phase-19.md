@@ -3,7 +3,7 @@
 *A family garage: everyone sees their own cars and the ones shared with
 them.*
 
-Status: 📋 planned · releases **v2.0.0**
+Status: ✅ complete · released as **v2.0.0**
 
 An instance can have more than one user. An admin invites people; each user
 has their own vehicles, preferences and reminders; and a vehicle can be
@@ -193,77 +193,77 @@ deleted user stop working at once.
 ## Tasks
 
 ### Spec and docs
-- [ ] §2, §3, §6, §7.9, §7.11, §7.21 (new), §7.20 and §13 in `spec.md`;
+- [x] §2, §3, §6, §7.9, §7.11, §7.21 (new), §7.20 and §13 in `spec.md`;
       remove multi-user from §12.
-- [ ] `docs/users-and-sharing.md`: roles, sharing, costs, notifications, and
+- [x] `docs/users-and-sharing.md`: roles, sharing, costs, notifications, and
       the rollback rule.
 
 ### Migrations (every engine, each reversible)
-- [ ] `users.is_admin`, `users.disabled_at`; existing users become admins.
-- [ ] `vehicle_shares`, `invitations`, `reminder_deliveries` (backfilled
+- [x] `users.is_admin`, `users.disabled_at`; existing users become admins.
+- [x] `vehicle_shares`, `invitations`, `reminder_deliveries` (backfilled
       from `channels_notified` for the owner).
-- [ ] `created_by` and `uploaded_by` columns with indexes.
-- [ ] A rollback guard: refuse with more than one user, and name
+- [x] `created_by` and `uploaded_by` columns with indexes.
+- [x] A rollback guard: refuse with more than one user, and name
       `bin/export-user.php`.
 
 ### Policy
-- [ ] `SharedVehicleAccess` replaces `SingleOwnerVehicleAccess`. It reads
+- [x] `SharedVehicleAccess` replaces `SingleOwnerVehicleAccess`. It reads
       ownership and shares (one query per request, memoised) and adds the
       own-entry rule for `Log` edits and amounts.
-- [ ] `AdminInstanceAccess`: instance abilities for admins only.
-- [ ] Disabled users are refused by the auth guard, sessions and API key
+- [x] `AdminInstanceAccess`: instance abilities for admins only.
+- [x] Disabled users are refused by the auth guard, sessions and API key
       verification.
 
 ### Screens
-- [ ] Settings → Users, invite and reset links, and the invitation page.
-- [ ] Share page, transfer, leave.
-- [ ] Garage groups; the "Excludes N vehicles" notes on cost figures;
+- [x] Settings → Users, invite and reset links, and the invitation page.
+- [x] Share page, transfer, leave.
+- [x] Garage groups; the "Excludes N vehicles" notes on cost figures;
       "Added by"; hidden edit links for others' entries at Log level.
-- [ ] Settings → Reminders: personal email address, ntfy topic and Gotify
+- [x] Settings → Reminders: personal email address, ntfy topic and Gotify
       token overrides.
 
 ### Services
-- [ ] Reminder dispatch per recipient with `reminder_deliveries`.
+- [x] Reminder dispatch per recipient with `reminder_deliveries`.
       Idempotency is claimed per (reminder, user, status).
-- [ ] Every "created" path (forms, import, API) sets `created_by`.
-- [ ] `bin/export-user.php <username>`: a backup-format ZIP of one user's
+- [x] Every "created" path (forms, import, API) sets `created_by`.
+- [x] `bin/export-user.php <username>`: a backup-format ZIP of one user's
       vehicles, for moving someone to their own install.
 
 ### Tests
-- [ ] **Access matrix:** every route in the inventory, as owner, manage,
+- [x] **Access matrix:** every route in the inventory, as owner, manage,
       log, view, log without costs, no share and admin non-owner, with the
       expected status for each. The table lives in one test file, so a new
       route has to state its row.
-- [ ] Costs: no amount reaches the HTML, CSV, API or print for a user
+- [x] Costs: no amount reaches the HTML, CSV, API or print for a user
       without `ViewCosts`, except their own entries. Use seeded sentinel
       amounts.
-- [ ] Log level: can edit their own fill-up, not the owner's; delete the
+- [x] Log level: can edit their own fill-up, not the owner's; delete the
       same.
-- [ ] Notifications: owner plus two shares (one with `notify`), each in its
+- [x] Notifications: owner plus two shares (one with `notify`), each in its
       own language and units, each once per status; a retry after a
       partial failure never doubles one recipient; the household ntfy topic
       gets only admins' reminders.
-- [ ] Invitations: expiry, single use, revoked, and a taken username.
-- [ ] Deleting and disabling users: the paths above, and API keys stop
+- [x] Invitations: expiry, single use, revoked, and a taken username.
+- [x] Deleting and disabling users: the paths above, and API keys stop
       working at once.
-- [ ] The last admin cannot be removed or disabled.
-- [ ] Transfer keeps every entry, schedule, reminder and file.
-- [ ] Upgrade from 1.10.0 with real data: the single user becomes an admin,
+- [x] The last admin cannot be removed or disabled.
+- [x] Transfer keeps every entry, schedule, reminder and file.
+- [x] Upgrade from 1.10.0 with real data: the single user becomes an admin,
       nothing changes visibly, and every figure is identical.
-- [ ] Rollback: works with one user; refused with two.
-- [ ] Integration suite green on every engine.
+- [x] Rollback: works with one user; refused with two.
+- [x] Integration suite green on every engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder` gains a second user (`partner` / `logbook-demo`)
+- [x] `DemoDataSeeder` gains a second user (`partner` / `logbook-demo`)
       with Log access to the self-charging hybrid without costs and View access to the
       Golf, and fill-ups on the hybrid added by them.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.0.0** with prominent upgrade notes: take a
+- [x] `CHANGELOG.md` **2.0.0** with prominent upgrade notes: take a
       backup; migrations; existing user becomes admin; `MAIL_TO` is now the
       admin's default; rollback refused once a second user exists; 1.x
       cannot restore 2.0 backups.
-- [ ] Bump `VERSION`, rebuild assets, update the README (status,
+- [x] Bump `VERSION`, rebuild assets, update the README (status,
       documentation table, "first visit creates the owner account" →
       "creates the first admin").
 
@@ -281,13 +281,72 @@ deleted user stop working at once.
 4. Upgrading an existing single-user install changes nothing visible.
 5. Definition of done (CLAUDE.md §11) holds on every engine.
 
-## Open questions
+## Open questions (answered)
 
-- Should admins see every vehicle on the instance (useful for support) or
-  only their own and shared ones? This draft says only their own, since
-  backup is how an admin sees everything.
-- Should *Log* users see the vehicle's documents (insurance policy numbers,
-  registration)? This draft says yes, as part of View. A *Can see
-  documents* flag is the alternative.
-- Is a self-service password reset by email wanted now, or is the admin
-  link enough for a household?
+- **Admins see only their own and shared vehicles**, as drafted. Backup is
+  how an admin sees everything; an admin who needs a car shares it or is
+  given a share like anyone else.
+- **Log users see the documents** (policy numbers, registration), as part
+  of View. A *Can see documents* flag can come later if a household asks.
+- **No self-service password reset by email.** The admin's one-time reset
+  link is enough for a household, and email stays optional in Logbook.
+
+---
+
+## Changed while building it
+
+spec.md §5, §6, §7.9, §7.11, §7.13, §7.20 and §7.21 are the current text.
+
+- **Null `created_by` means a former user, not the owner.** The plan had
+  existing rows stay null and read as the owner's, but also had a deleted
+  user's entries (null through `ON DELETE SET NULL`) shown as "a former
+  user"; both cannot hold. The upgrade names each vehicle's owner on the
+  rows already there (manual readings only; a derived reading's author is
+  its entry's), and entries added where there is no signed-in user (the
+  command line, seeds) name the vehicle's owner. Transfers and edits never
+  change it.
+- **The own-entry rules live in `EntryAccess`**, not on the
+  `VehicleAccess` interface, which gained only `recipientVehicleIds()`:
+  `canChange()` and `canSeeAmount()` are the same for any vehicle policy,
+  and the test double did not have to learn them. Entry edit and delete
+  routes declare `Log`; `Action\EntryGuard` answers 403 for someone
+  else's entry without Manage. Templates ask `can_change()`,
+  `can_see_amount()`, `can_vehicle()` and `added_by()`; the cost scan
+  accepts `own_amount` / `can_see_amount()` beside `costs`.
+- **Invitations have a kind.** Reset links are rows of the same table
+  (`kind` = `reset`, `user_id` = whom), with `revoked_at` for *Revoke*; a
+  new reset link revokes the user's older ones. Invitations are not in
+  backups, like sessions.
+- **The Expenses tab is `View`.** It needed `ViewCosts`, which would have
+  left a Log driver without costs unable to find the expenses they added;
+  without costs it lists the ad-hoc expenses, amounts hidden bar their own,
+  with no totals or chart. The API's expenses list still needs `ViewCosts`.
+- **An admin can transfer a vehicle when deleting its owner.** Admins are not
+  owners, so the owner's *Transfer* is out of their reach; the delete page
+  has a transfer form per vehicle so an account nobody can sign in to can
+  still be removed.
+- **Channels say whether they reach someone** (`NotificationChannel::reaches()`),
+  and the registry uses it with the recipient. A member's ntfy topic URL can
+  be on any server (the instance token goes only to the instance's
+  server); a Gotify token is always on `GOTIFY_URL`. The webhook reaches
+  everyone.
+- **A shared vehicle is synced with its owner's settings**: `ReminderSync`
+  judges each vehicle by its owner's lead times, today and tyre limits, so a
+  shared user opening Reminders never moves a status.
+- **Claims moved to `reminder_deliveries`.** Claiming inserts the row (the
+  unique key decides, outside any transaction); release deletes it while
+  unsent; the reminder's own `notified_status`, `last_notified_at` and
+  `channels_notified` keep the latest delivery to anyone. A new occurrence
+  deletes the rows.
+- **Route arguments are `{member}`, not `{user}`**: Slim puts route
+  arguments on the request as attributes, and `user` is the signed-in user.
+- **No separate author indexes.** The columns have their foreign keys (MySQL
+  indexes those itself); nothing lists entries by author.
+- **Rolling back refuses cleanly inside Phinx's transaction** (it is rolled
+  back before the message), and `bin/dev-setup.sh --reset` deletes the
+  accounts before rolling back, since the sample data has two users.
+- **The seeder's hybrid had no fill-ups** (it only had readings), so the
+  partner's fill-ups are new: one in the middle of each of the last six
+  months, between the owner's readings.
+- The API response shapes did not change (no `created_by` in them), so the
+  OpenAPI description stands.
