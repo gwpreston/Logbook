@@ -4002,8 +4002,9 @@ entries by message*.
   | `draft_tyre_check` | tread check | tyres | positions and depths in the user's depth unit |
   | `draft_reminder` | manual reminder | reminders (`Manage`) | due date absolute, or relative to a document's expiry or a schedule's next due date ("two weeks before the MOT expires"), computed by Logbook from that source |
 
-  Every draft tool takes a `vehicle` id. With none, or several
-  candidates, it returns the candidates, and the model asks the user.
+  Every draft tool takes a `vehicle` id. Without one, the user's only
+  candidate is used; with several, the tool returns the candidates, and
+  the model asks the user.
   Dates are ISO, or words that Logbook resolves in the user's time zone
   ("today", "yesterday", "last Tuesday", "3 days ago"). The model never
   resolves them. A fill-up or reading dated today is timed now; one on
@@ -4093,6 +4094,14 @@ entries by message*.
   offered only in answer to the user's own message in *Ask*, and tool
   results never enable them. A draft is only ever a card waiting for the
   user. Nothing applies one except the POST from its card.
+- **Follow-ups** carry the thread's drafts and what became of them
+  (waiting, added, already logged, undone, discarded, expired) in the
+  context, so the conversation knows what was added.
+- **Tools offered:** the model is told, in the system text, to draft only
+  what the user's own message asks for, to pass on their words, never to
+  say an entry is saved, and to ask exactly the question a tool returns.
+- `bin/ai-eval.php` has 30 drafting cases beside the 40 questions, and
+  checks that no entry was written without *Add*.
 - **Not in scope:** editing or deleting existing entries by chat;
   changing settings by chat (parked, #75, §12); several entries in one
   press.

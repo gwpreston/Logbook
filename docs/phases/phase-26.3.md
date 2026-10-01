@@ -2,7 +2,7 @@
 
 *"Filled the BMW with 51 litres of E10 at £1.39, mileage 72,341." Add?*
 
-Status: 🚧 in progress · releases **v2.7.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.7.0** · file lives in `docs/phases/`
 
 Ask Logbook can read. This phase lets it **draft** new entries from a
 sentence: a fill-up, an odometer reading, a service record, a document, an
@@ -137,8 +137,8 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.26 *Drafting entries* in `spec.md`; the Phase 26.3 line in §13.
-- [ ] `docs/ai.md`: *Adding entries by message*, with examples per kind.
+- [x] §7.26 *Drafting entries* in `spec.md`; the Phase 26.3 line in §13.
+- [x] `docs/ai.md`: *Adding entries by message*, with examples per kind.
 
 ### API (decided 2026-10-01, #76)
 - [x] `JsonInput` field maps for maintenance, documents, expenses, tread
@@ -152,52 +152,93 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
       builds the tyre form's choices for the page and the API alike).
 
 ### Migration
-- [ ] `ai_drafts`, reversible on every engine, excluded from backups, and
+- [x] `ai_drafts`, reversible on every engine, excluded from backups, and
       cleared by the scheduler after expiry.
 
 ### Code
-- [ ] One draft tool per kind (schema, resolution, adapter call, result
+- [x] One draft tool per kind (schema, resolution, adapter call, result
       shape).
-- [ ] `Service\Ai\Draft\Resolver`: vehicle candidates, grade and category
+- [x] `Service\Ai\Draft\Resolver`: vehicle candidates, grade and category
       matching (exact code, then name, then synonyms in a translated list:
       "super unleaded" → E5 98), and relative dates.
-- [ ] `Service\Ai\Draft\DraftStore`: create, re-validate, apply, expire,
+- [x] `Service\Ai\Draft\DraftStore`: create, re-validate, apply, expire,
       undo.
-- [ ] Card partial; `Action\Ask\ApplyDraft`, `DiscardDraft`, `UndoDraft`;
-      *Edit* prefill through each form's existing prefill parameters (the
-      same as a reminder's *Done* link).
-- [ ] Translations (en, de): card text and synonym lists.
+- [x] Card partial; one `Action\Ask\DraftAction` for *Add*, *Discard*
+      and *Undo*; *Edit* through `?draft={id}` on each create form
+      (`Action\Ask\DraftPrefill`), as the forms had no field prefill.
+- [x] Translations (en, de): card text and synonym lists.
 
 ### Tests
-- [ ] **Your example:** "I filled the BMW with 51 litres of E10 at £1.39 a
+- [x] **Your example:** "I filled the BMW with 51 litres of E10 at £1.39 a
       litre. The mileage is 72,341" gives a card with £70.89 computed by
       Logbook, odometer 72,341 mi, and E10 95 matched. *Add* saves one
       fill-up and one reading.
-- [ ] **"Remind me to book the MOT two weeks before it expires"** gives a
+- [x] **"Remind me to book the MOT two weeks before it expires"** gives a
       manual reminder dated 14 days before the current MOT's expiry,
       computed from the document. With no MOT on file, the model is told so
       and asks.
-- [ ] Missing fields → `needs`; invalid values → the form's messages; two
+- [x] Missing fields → `needs`; invalid values → the form's messages; two
       BMWs → candidates and a question.
-- [ ] Gallons, miles, kWh and German decimal commas parsed as the forms
+- [x] Gallons, miles, kWh and German decimal commas parsed as the forms
       parse them.
-- [ ] Re-validation at *Add* (a newer reading makes the draft's reading
+- [x] Re-validation at *Add* (a newer reading makes the draft's reading
       backwards → warning shown, still addable; a deleted vehicle → refused).
-- [ ] Access: no `Log` → no draft tools offered (no `Manage` → no
+- [x] Access: no `Log` → no draft tools offered (no `Manage` → no
       `draft_reminder`); losing `Log` between draft
       and press → refused; another user's draft → 404.
-- [ ] Undo within 10 seconds deletes; after, or after an edit, it doesn't.
-- [ ] **Injection:** a tool result or stored note asking for a draft does
+- [x] Undo within 10 seconds deletes; after, or after an edit, it doesn't.
+- [x] **Injection:** a tool result or stored note asking for a draft does
       nothing; drafts never apply without the POST.
-- [ ] `bin/ai-eval.php` gains 30 drafting cases.
-- [ ] Integration suite green on every engine.
+- [x] `bin/ai-eval.php` gains 30 drafting cases.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB).
 
 ### Release
-- [ ] `CHANGELOG.md` **2.7.0**: adding entries from a message. No
+- [x] `CHANGELOG.md` **2.7.0**: adding entries from a message. No
       configuration; one migration.
-- [ ] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Bump `VERSION`, rebuild assets, update the README status.
 
 ---
+
+## Changed while building it
+
+- **Validation by a rolled-back write.** A draft tool runs inside Ask's
+  always-rolled-back transaction, so it writes the entry through the
+  API's writer there. That gives the form's validation, the derived
+  amount, the warnings (odometer, economy check, deeper tread) and the
+  form values for *Edit*, exactly as a save would. Then the rollback
+  leaves nothing behind. The registry keeps the draft (`ai_drafts`)
+  after the rollback. `ToolsReadOnlyTest` covers every draft tool:
+  every table is as it was, except `ai_drafts`.
+- **Access and modules are checked by the drafting code**, as the API's
+  routes check them: the kind's module, `Log` (or `Manage` for a manual
+  reminder, as on the Reminders page), not archived. They are checked
+  again at *Add*.
+- **Duplicates.** The API's writer returns an entry already logged instead
+  of writing it again. A draft that is a duplicate comes back as
+  `duplicate`, with no card. One that has become a duplicate by the time
+  *Add* is pressed saves nothing, says so on the card, and has nothing to
+  undo.
+- **Claimed once.** *Add* claims the draft with a conditional update in
+  the same transaction as the write, so a double press or a second tab
+  saves once. Saving the *Edit* form closes the draft as added.
+- **`ai_drafts` gained `card`, `form_values` and `discarded_at`** beside
+  the columns the phase listed, and `kind` uses `odometer` (as
+  `LogKind`), not `reading`.
+- **The card's price shows every place** ("£1.390/L") and the volume two
+  places ("51.00 L"). `DisplayFormatter::unitPrice()` and `volume()` take
+  that as an option; elsewhere they are unchanged.
+- **A fill-up or reading dated today is timed now; another day at local
+  noon** unless a time is said. Without a vehicle id, the user's only
+  candidate is used.
+- **The API's validation errors carry the form's `ValidationErrors`**
+  (`ApiProblem::$validation`), so drafts get the messages in the user's
+  language, with their parameters.
+- **Tread checks and manual reminders have new duplicate keys**, which the
+  CSV import never had: the same date and depths; an open manual reminder
+  with the same title and due date. They were chosen while building: the
+  owner decided that the endpoints exist (#76), not their keys.
+- **Tyre form choices** are built by `Service\Tyre\TyreFormContexts`,
+  shared by the page, the API's tread check and the draft.
 
 ## Acceptance criteria
 

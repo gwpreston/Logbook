@@ -173,8 +173,19 @@
         });
     }
 
+    // A draft card's Undo (Phase 26.3) is offered for a few seconds after Add;
+    // the server refuses it after that, so the button goes when its time is up.
+    function enhanceUndo(form) {
+        var seconds = parseInt(form.getAttribute('data-draft-undo'), 10);
+        if (!(seconds >= 0)) {
+            return;
+        }
+        window.setTimeout(function () { form.hidden = true; }, seconds * 1000);
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         Array.prototype.forEach.call(document.querySelectorAll('[data-ask-form]'), enhance);
         Array.prototype.forEach.call(document.querySelectorAll('[data-ask-copy]'), enhanceCopy);
+        Array.prototype.forEach.call(document.querySelectorAll('[data-draft-undo]'), enhanceUndo);
     });
 }(this));

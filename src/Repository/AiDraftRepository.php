@@ -176,6 +176,14 @@ final readonly class AiDraftRepository
     }
 
     /**
+     * Delete a thread's drafts (bin/ai-eval.php cleans up after itself).
+     */
+    public function deleteForThread(int $userId, int $threadId): void
+    {
+        $this->connection->delete(self::TABLE, ['user_id' => $userId, 'thread_id' => $threadId]);
+    }
+
+    /**
      * The scheduled clean-up: drafts never applied once they expire, and
      * applied ones a day after *Add*.
      */

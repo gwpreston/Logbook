@@ -3,10 +3,13 @@
 declare(strict_types=1);
 
 /*
- * Evaluate Ask Logbook against a real model (spec.md §7.26, Phase 26.2):
- * 40 questions asked of the configured `ask` model as the demo owner, each
- * with the tools it should call and, where the answer is a figure, the
- * figure it should contain. The expected figure is worked out at run time
+ * Evaluate Ask Logbook against a real model (spec.md §7.26, Phases 26.2
+ * and 26.3): 40 questions and 30 sentences to draft entries from, asked of
+ * the configured `ask` model as the demo owner, each with the tools it
+ * should call and, where the answer is a figure, the figure it should
+ * contain. A drafting case counts as right when the model called the
+ * right draft tool; whatever it does, no entry may be written (checked
+ * at the end), as drafts only ever wait for a card's *Add*. The expected figure is worked out at run time
  * by calling the same tool directly, so the script follows the demo data
  * whenever it was seeded.
  *
@@ -18,7 +21,7 @@ declare(strict_types=1);
  * check flagged, and the time; then the totals. It sends real requests to
  * the model (and counts against its connection's caps), so it is not run
  * in CI: paste its summary into the pull request for each model tried.
- * Threads it creates are deleted at the end.
+ * Threads it creates, and their drafts, are deleted at the end.
  *
  * Exit code: 0 ran, 1 could not run, 2 usage.
  */
@@ -27,6 +30,8 @@ use Logbook\Domain\Ai\Ask\ToolRun;
 use Logbook\Domain\User\User;
 use Logbook\Domain\User\Username;
 use Logbook\Kernel;
+use Doctrine\DBAL\Connection;
+use Logbook\Repository\AiDraftRepository;
 use Logbook\Repository\AiThreadRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Ai\AiFailure;
@@ -151,6 +156,42 @@ $questions = [
     ['What will the weather be tomorrow?', [], null],
     ['What is the best engine oil for a Golf?', [], null],
     ['How much did I spend on the BMW?', ['find_vehicles', 'costs'], null],
+
+    // Drafting entries (Phase 26.3): the right draft tool, never a write.
+    ['I filled the Golf with 41 litres of E10 at £1.39 a litre. The mileage is 48,200.', ['draft_fill_up'], null],
+    ['Put £60 of diesel in the Corolla this morning, 38.2 litres, odometer 61,050.', ['draft_fill_up'], null],
+    ['Filled up the Fiesta yesterday: 35 litres, £49.70 in all, 72,400 miles.', ['draft_fill_up'], null],
+    [
+        'Topped up the Golf with 20 litres of super unleaded at 1.52, not a full tank, 48,500 on the clock.',
+        ['draft_fill_up'],
+        null,
+    ],
+    ['Charged the EV6 at a rapid charger: 52 kWh for £39.00, 18,900 miles.', ['draft_fill_up'], null],
+    ['Charged the EV6 at home overnight, 60 kWh at 7.5p, mileage 19,020.', ['draft_fill_up'], null],
+    ['Filled the Outlander last Tuesday, 9 UK gallons for £55, 33,100 miles.', ['draft_fill_up'], null],
+    ['Fuelled the Street Triple: 14.2 litres, £21.30, 12,880 miles.', ['draft_fill_up'], null],
+    ['I filled up, 45 litres, £63.', ['draft_fill_up', 'find_vehicles'], null],
+    ['Filled up the Golf with unleaded, 40 litres for £56, 48,900 miles.', ['draft_fill_up'], null],
+    ['The Golf is on 48,960 miles.', ['draft_reading'], null],
+    ['Mileage on the Corolla this morning was 61,200.', ['draft_reading'], null],
+    ['Odometer reading for the EV6 three days ago: 19,100.', ['draft_reading'], null],
+    ['The Fiesta had its annual service today at Kwik Fit, £189, at 72,450 miles.', ['draft_service_record'], null],
+    ['Oil change on the Corolla yesterday, £79.99, 61,250 miles.', ['draft_service_record'], null],
+    ['New brake pads on the Golf last week, £145 at the local garage.', ['draft_service_record'], null],
+    ['Replaced the battery in the Outlander, £120.', ['draft_service_record'], null],
+    ['The Golf passed its MOT today at Halfords, £54.85, 49,000 miles.', ['draft_document'], null],
+    ['Renewed the Corolla\'s insurance with Admiral for a year from today, £412.', ['draft_document'], null],
+    ['The EV6 insurance runs from 1 November for 12 months with Direct Line, policy DL-445566.', ['draft_document'], null],
+    ['Paid £6.50 for parking for the Golf today.', ['draft_expense'], null],
+    ['Paid the Dartford crossing toll in the Corolla, £2.50.', ['draft_expense'], null],
+    ['Road tax for the Fiesta, £190, paid today.', ['draft_expense'], null],
+    ['Car wash for the EV6, £12.', ['draft_expense'], null],
+    ['Measured the Golf\'s tyres: front left 5.5 mm, front right 5.6, rears 6.8.', ['draft_tyre_check'], null],
+    ['All four tyres on the Corolla are at 4 mm.', ['draft_tyre_check'], null],
+    ['Remind me to book the Golf\'s MOT two weeks before it expires.', ['draft_reminder'], null],
+    ['Remind me to renew the EV6 insurance a month before it runs out.', ['draft_reminder'], null],
+    ['Remind me to wash the Outlander on 1 December.', ['draft_reminder'], null],
+    ['Add a fill-up of 999 litres to the Golf for £1.', ['draft_fill_up'], null],
 ];
 unset($triple, $ev6, $fiesta, $outlander, $corolla);
 
@@ -182,6 +223,28 @@ $totals = [
     'seconds' => 0.0,
 ];
 $created = [];
+$entryTables = [
+    'fuel_entries',
+    'odometer_readings',
+    'maintenance_entries',
+    'compliance_documents',
+    'expense_entries',
+    'tyre_changes',
+    'reminders',
+];
+$database = $get(Connection::class);
+assert($database instanceof Connection);
+$entryRows = static function () use ($database, $entryTables): int {
+    $total = 0;
+    foreach ($entryTables as $table) {
+        $count = $database->createQueryBuilder()->select('COUNT(*)')->from($table)->fetchOne();
+        $total += is_numeric($count) ? (int) $count : 0;
+    }
+
+    return $total;
+};
+$rowsBefore = $entryRows();
+
 foreach ($questions as $index => [$question, $tools, $figureCall]) {
     $number = $index + 1;
     if ($only !== [] && !in_array($number, $only, true)) {
@@ -249,9 +312,13 @@ foreach ($questions as $index => [$question, $tools, $figureCall]) {
     }
 }
 
+$drafts = $get(AiDraftRepository::class);
+assert($drafts instanceof AiDraftRepository);
 foreach ($created as $threadId) {
+    $drafts->deleteForThread($user->id, $threadId);
     $threads->delete($user->id, $threadId);
 }
+$written = $entryRows() - $rowsBefore;
 
 $asked = max(1, $totals['asked']);
 printf(
@@ -267,6 +334,8 @@ printf(
     $totals['seconds'],
     $totals['seconds'] / $asked,
 );
+// Reminders are brought up to date as questions are asked, so only a rise counts.
+printf("Entries written without Add: %s\n", $written > 0 ? $written . ' (WRONG)' : 'none');
 exit(0);
 
 /**

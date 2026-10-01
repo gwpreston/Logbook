@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.6.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.7.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -44,12 +44,13 @@ your own server.
 > rearrange; modules you can switch off; CSV import with a preview; one-click
 > backup and restore of everything; an installable phone app that logs
 > fill-ups and trips offline; a REST API with keys, so Home Assistant, Shortcuts,
-> Grafana and Node-RED can read your garage and log fill-ups; optional AI with
+> Grafana and Node-RED can read your garage and log fill-ups and other entries; optional AI with
 > the model you choose, on this server, your network or a cloud provider
 > (off until an admin connects one): *Ask Logbook* answers questions in plain
 > words from your own records, through read-only tools, with a source and a
 > link for every figure and a check that flags any number Logbook didn't
-> provide; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
+> provide, and drafts fill-ups, readings, services, documents, expenses, tread
+> checks and reminders from a sentence as cards you check and add; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
@@ -84,7 +85,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
-| [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy |
+| [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message |
 | [docs/sso.md](docs/sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link; header sign-in behind a forward-auth proxy (nginx, Traefik, Caddy, the Authentik outpost) and how to deploy it safely |
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |

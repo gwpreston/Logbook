@@ -57,7 +57,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [25](docs/phases/phase-25.md) | Trend and cost checks + v2.5 release | ✅ |
 | [26.1](docs/phases/phase-26.1.md) | AI foundation: connections, models and task routing | ✅ |
 | [26.2](docs/phases/phase-26.2.md) | Ask Logbook + v2.6 release | ✅ |
-| [26.3](docs/phases/phase-26.3.md) | Actions: say it, check it, add it + v2.7 release | 🚧 |
+| [26.3](docs/phases/phase-26.3.md) | Actions: say it, check it, add it + v2.7 release | ✅ |
 | [26.4](docs/phases/phase-26.4.md) | Read receipts and documents + v2.8 release | 📋 |
 | [26.5](docs/phases/phase-26.5.md) | MCP server + v2.9 release | 📋 |
 
