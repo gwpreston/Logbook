@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Domain\User\UserIdentity;
+use Logbook\Service\Auth\SignInMethods;
 use Logbook\Service\User\ProfileForm;
+use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Display\Accent;
 use Logbook\Support\Display\Theme;
 use Logbook\Support\Http\RequestContext;
@@ -31,6 +34,8 @@ final readonly class SettingsPage
         private View $view,
         private AvailableLocales $locales,
         private ClockInterface $clock,
+        private SignInMethods $methods,
+        private AppSettings $settings,
     ) {
     }
 
@@ -63,6 +68,19 @@ final readonly class SettingsPage
             'currency_options' => FormOptions::currencies(RequestContext::locale($request)),
             // Sample values so the effect of each preference is visible.
             'now' => $this->clock->now(),
+            // Single sign-on (spec.md §7.9 *Linking*) and whether a password is any use.
+            'local_login' => $this->settings->localLogin,
+            'has_password' => $user->hasPassword(),
+            'sso' => $this->settings->oidc->isConfigured() ? [
+                'name' => $this->settings->oidc->providerName,
+                'identities' => array_map(
+                    fn (UserIdentity $identity): array => [
+                        'identity' => $identity,
+                        'can_remove' => $this->methods->canRemove($user, $identity),
+                    ],
+                    $this->methods->identities($user),
+                ),
+            ] : null,
         ], $status);
     }
 }

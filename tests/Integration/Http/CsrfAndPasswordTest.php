@@ -166,7 +166,7 @@ final class CsrfAndPasswordTest extends AppTestCase
 
         $user = $this->service($app, UserRepository::class)->findByUsername('owner');
         self::assertNotNull($user);
-        self::assertTrue(password_verify('a brand new passphrase', $user->passwordHash));
+        self::assertTrue(password_verify('a brand new passphrase', (string) $user->passwordHash));
 
         $fresh = new TestBrowser($app);
         $fresh->get('/login');

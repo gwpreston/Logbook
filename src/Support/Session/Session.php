@@ -17,6 +17,8 @@ final class Session
     private const string USER_ID = '_user_id';
     private const string FLASH = '_flash';
     private const string CSRF = '_csrf';
+    private const string SSO = '_sso';
+    private const string WELCOME = '_welcome';
 
     private bool $dirty = false;
     private bool $regenerated = false;
@@ -80,6 +82,52 @@ final class Session
     {
         $this->regenerate();
         $this->set(self::USER_ID, $userId);
+    }
+
+    /**
+     * Remember that this session came from single sign-on (spec.md §7.9),
+     * with the ID token only when the provider's sign-out needs it.
+     */
+    public function markSingleSignOn(?string $idToken): void
+    {
+        $this->set(self::SSO, $idToken === null ? ['id_token' => null] : ['id_token' => $idToken]);
+    }
+
+    public function cameFromSingleSignOn(): bool
+    {
+        return is_array($this->data[self::SSO] ?? null);
+    }
+
+    public function singleSignOnIdToken(): ?string
+    {
+        $sso = $this->data[self::SSO] ?? null;
+
+        return is_array($sso) && is_string($sso['id_token'] ?? null) ? $sso['id_token'] : null;
+    }
+
+    /**
+     * A user created on first single sign-on is offered the welcome form
+     * once, then sent on to $next.
+     */
+    public function startWelcome(?string $next): void
+    {
+        $this->set(self::WELCOME, ['next' => $next]);
+    }
+
+    public function welcomePending(): bool
+    {
+        return is_array($this->data[self::WELCOME] ?? null);
+    }
+
+    /**
+     * End the welcome; where to go next.
+     */
+    public function finishWelcome(): ?string
+    {
+        $welcome = $this->data[self::WELCOME] ?? null;
+        $this->remove(self::WELCOME);
+
+        return is_array($welcome) && is_string($welcome['next'] ?? null) ? $welcome['next'] : null;
     }
 
     /**

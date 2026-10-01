@@ -50,6 +50,8 @@ final class UserExport
             $keep('users', static fn (array $row): bool => $row['id'] === $user),
         );
         $out['api_keys'] = $keep('api_keys', static fn (array $row): bool => $row['user_id'] === $user);
+        // Phase 23.1: their linked single sign-on accounts, for the same provider there.
+        $out['user_identities'] = $keep('user_identities', static fn (array $row): bool => $row['user_id'] === $user);
         $out['settings'] = $keep(
             'settings',
             static fn (array $row): bool => $row['scope'] === 'user' && $row['owner_id'] === $user,

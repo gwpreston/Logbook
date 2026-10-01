@@ -9,6 +9,7 @@
         "ext-json": "*",
         "ext-pdo": "*",
         "doctrine/dbal": "^4.5",
+        "firebase/php-jwt": "^7.2",
         "monolog/monolog": "^3.12",
         "php-di/php-di": "^7.1",
         "psr/clock": "^1.0",

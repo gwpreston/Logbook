@@ -871,6 +871,34 @@
         }
       }
     },
+    "/journeys": {
+      "get": {
+        "operationId": "listJourneys",
+        "summary": "The key user's saved journeys",
+        "description": "Their saved journeys in their Settings → Trips order, to log one with journey_id on POST /vehicles/{id}/trips. Needs the trips module.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/openapi.json": {
       "get": {
         "operationId": "getOpenApi",
@@ -3703,6 +3731,66 @@
           "unvalued": {
             "type": "integer",
             "description": "Trips with no rate set in effect on their date."
+          }
+        }
+      },
+      "JourneyList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedJourney"
+            }
+          }
+        }
+      },
+      "SavedJourney": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "from",
+          "to",
+          "journey",
+          "distance_km",
+          "is_return",
+          "is_business",
+          "purpose"
+        ],
+        "description": "A saved journey. distance_km is one way; is_return, is_business and purpose are what a trip logged from it starts with.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "journey": {
+            "type": "string",
+            "description": "\"Ballymena → Belfast\", or \"Ballymena → Belfast → Ballymena\" for a return."
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "is_return": {
+            "type": "boolean"
+          },
+          "is_business": {
+            "type": "boolean"
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }

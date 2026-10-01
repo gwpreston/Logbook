@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
+use Logbook\Action\Api\ListJourneysAction as ApiJourneysAction;
 use Logbook\Action\Api\ListMaintenanceAction as ApiMaintenanceAction;
 use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
 use Logbook\Action\Api\ListTripsAction as ApiTripsAction;
@@ -24,8 +25,12 @@ use Logbook\Action\Attachment\DeleteAttachmentAction;
 use Logbook\Action\Attachment\ShowAttachmentAction;
 use Logbook\Action\Auth\InviteAction;
 use Logbook\Action\Auth\LoginAction;
+use Logbook\Action\Auth\LoginLinkAction;
 use Logbook\Action\Auth\LogoutAction;
+use Logbook\Action\Auth\OidcCallbackAction;
+use Logbook\Action\Auth\OidcStartAction;
 use Logbook\Action\Auth\SetupAction;
+use Logbook\Action\Auth\WelcomeAction;
 use Logbook\Action\Backup\BackupPageAction;
 use Logbook\Action\Backup\ConfirmRestoreAction;
 use Logbook\Action\Backup\DownloadBackupAction;
@@ -91,7 +96,10 @@ use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
 use Logbook\Action\Settings\DeleteUserAction;
 use Logbook\Action\Settings\ModuleSettingsAction;
+use Logbook\Action\Settings\OidcLinkAction;
+use Logbook\Action\Settings\OidcUnlinkAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
+use Logbook\Action\Settings\RemoveIdentityAction;
 use Logbook\Action\Settings\RevokeApiKeyAction;
 use Logbook\Action\Settings\RevokeInvitationAction;
 use Logbook\Action\Settings\SavePreferencesAction;
@@ -241,6 +249,7 @@ return static function (App $app): void {
                     $trips->post('/vehicles/{id:[0-9]+}/trips', ApiLogTripAction::class)->setName('api.trips.create')
                         ->setArgument($ability, VehicleAbility::Log->value);
                     $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
+                    $trips->get('/journeys', ApiJourneysAction::class)->setName('api.journeys');
                 })->add($module(Feature::Trips));
             })->add(VehicleAccessMiddleware::class)
                 ->add(ApiAuthMiddleware::class);
@@ -253,6 +262,12 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/login', LoginAction::class)->setName('login');
         // One-time invitation and password-reset links (spec.md §7.9): the token is the authentication.
         $group->map(['GET', 'POST'], '/invite/{token:[A-Za-z0-9_-]{43}}', InviteAction::class)->setName('invite.accept');
+        // Break-glass sign-in links from bin/auth.php (spec.md §7.9): the token is the authentication.
+        $group->map(['GET', 'POST'], '/login/link/{token:[A-Za-z0-9_-]{43}}', LoginLinkAction::class)->setName('login.link');
+        // Single sign-on (spec.md §7.9): 404 unless OIDC_ISSUER is set. The callback also ends a
+        // signed-in user's *Link* flow, so it sits here, outside the auth guard.
+        $group->get('/auth/oidc/start', OidcStartAction::class)->setName('oidc.start');
+        $group->get('/auth/oidc/callback', OidcCallbackAction::class)->setName('oidc.callback');
         $group->get('/diagnostics/deep/link', DeepLinkCheckAction::class)->setName('diagnostics.deep-link');
     })->add(CsrfMiddleware::class);
 
@@ -260,6 +275,8 @@ return static function (App $app): void {
     $app->group('', function (Group $group) use ($module, $ability, $instance): void {
         $group->get('/', HomeAction::class)->setName('home');
         $group->post('/logout', LogoutAction::class)->setName('logout');
+        // Once, after an account is created on first single sign-on (spec.md §7.9).
+        $group->map(['GET', 'POST'], '/welcome', WelcomeAction::class)->setName('welcome');
         $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
@@ -547,12 +564,18 @@ return static function (App $app): void {
         $group->post('/settings/users/links/{invitation:[0-9]+}/revoke', RevokeInvitationAction::class)
             ->setName('settings.users.revoke')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        $group->post('/settings/users/{member:[0-9]+}/identities/{identity:[0-9]+}/remove', RemoveIdentityAction::class)
+            ->setName('settings.users.identity.remove')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
         // One's own API keys (spec.md §7.20); kept when the API is off, so keys can be prepared.
         $group->map(['GET', 'POST'], '/settings/api-keys', ApiKeysAction::class)->setName('settings.api_keys');
         $group->map(['GET', 'POST'], '/settings/api-keys/{key:[0-9]+}/revoke', RevokeApiKeyAction::class)
             ->setName('settings.api_keys.revoke');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
+        // One's own single sign-on account (spec.md §7.9 *Linking*).
+        $group->post('/settings/sso/link', OidcLinkAction::class)->setName('settings.sso.link');
+        $group->post('/settings/sso/{identity:[0-9]+}/unlink', OidcUnlinkAction::class)->setName('settings.sso.unlink');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');
     })->add(InstanceAccessMiddleware::class)
         ->add(VehicleAccessMiddleware::class)

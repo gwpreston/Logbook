@@ -39,6 +39,10 @@ final class RouteInventoryTest extends AppTestCase
         'login',
         'invite.accept',
         'diagnostics.deep-link',
+        // Phase 23.1: single sign-on and the break-glass link.
+        'login.link',
+        'oidc.start',
+        'oidc.callback',
     ];
 
     /**
@@ -71,6 +75,12 @@ final class RouteInventoryTest extends AppTestCase
         'settings.preferences',
         'settings.password',
         'settings.theme',
+        // Phase 23.1: one's own single sign-on account, the welcome after SSO
+        // created it, and the saved journeys (API).
+        'settings.sso.link',
+        'settings.sso.unlink',
+        'welcome',
+        'api.journeys',
     ];
 
     /** Signed in; every vehicle they show comes from the policy's visible ids (VehicleService::listFleet / listWith). */
@@ -201,6 +211,7 @@ final class RouteInventoryTest extends AppTestCase
             'settings.users.delete' => InstanceAbility::ManageUsers,
             'settings.users.transfer' => InstanceAbility::ManageUsers,
             'settings.users.revoke' => InstanceAbility::ManageUsers,
+            'settings.users.identity.remove' => InstanceAbility::ManageUsers,
         ], $declared);
     }
 

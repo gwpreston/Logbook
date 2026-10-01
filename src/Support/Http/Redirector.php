@@ -54,6 +54,18 @@ final readonly class Redirector
     }
 
     /**
+     * To the identity provider (spec.md §7.9): an URL from its discovery
+     * document, never from the request.
+     */
+    public function external(string $url): ResponseInterface
+    {
+        return $this->responses->createResponse(303)
+            ->withHeader('Location', $url)
+            ->withHeader('Cache-Control', 'no-store')
+            ->withHeader('Referrer-Policy', 'no-referrer');
+    }
+
+    /**
      * @param array<string, string> $data
      * @param array<string, string> $query
      */

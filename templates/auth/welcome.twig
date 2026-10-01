@@ -1,0 +1,42 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Once, after single sign-on created the account (spec.md §7.9): the
+ # preferences an invitation asks for. *Skip* keeps the defaults.
+ #}
+{% block title %}{{ 'sso.welcome_title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="auth auth--wide">
+        <section class="card auth__card" aria-labelledby="welcome-heading">
+            <header class="auth__header">
+                <h1 id="welcome-heading">{{ 'sso.welcome_title'|trans }}</h1>
+                <p class="muted">{{ 'sso.welcome_lead'|trans({name: user.displayName}) }}</p>
+            </header>
+
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+
+            <form class="form" method="post" action="{{ url_for('welcome') }}">
+                {{ ui.csrf(csrf) }}
+                {% set preset_options = [] %}
+                {% for preset in unit_presets %}
+                    {% set preset_options = preset_options|merge([{value: preset.value, label: ('units.preset.' ~ preset.value)|trans}]) %}
+                {% endfor %}
+                {{ ui.chips('units', 'prefs.units'|trans, values, errors, preset_options, {required: true, hint: 'setup.units_hint'|trans}) }}
+                <div class="form-row">
+                    {{ ui.select('currency', 'prefs.currency'|trans, values, errors, currency_options, {required: true}) }}
+                    {{ ui.select('locale', 'prefs.locale'|trans, values, errors, locale_options, {required: true}) }}
+                </div>
+                {{ ui.timezone_select(values, errors, timezone_options, errors is empty) }}
+
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'sso.welcome_submit'|trans }}</button>
+                    <button type="submit" name="skip" value="1" class="btn btn--ghost btn--lg" formnovalidate>{{ 'sso.welcome_skip'|trans }}</button>
+                </div>
+            </form>
+        </section>
+    </div>
+{% endblock %}

@@ -86,9 +86,12 @@ final readonly class UserRepository
         return $row === false ? null : $this->hydrate($row);
     }
 
+    /**
+     * @param string|null $passwordHash null for an account created through single sign-on
+     */
     public function insert(
         string $username,
-        string $passwordHash,
+        ?string $passwordHash,
         string $displayName,
         DisplayPreferences $preferences,
         DateTimeImmutable $now,
@@ -200,7 +203,7 @@ final readonly class UserRepository
         return new User(
             id: Row::int($row, 'id'),
             username: Row::string($row, 'username'),
-            passwordHash: Row::string($row, 'password_hash'),
+            passwordHash: Row::nullableString($row, 'password_hash'),
             displayName: Row::string($row, 'display_name'),
             preferences: new DisplayPreferences(
                 locale: Row::string($row, 'locale'),

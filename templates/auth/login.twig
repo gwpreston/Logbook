@@ -1,6 +1,10 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 
+{#
+ # Sign-in (spec.md §7.9). With single sign-on configured, *Sign in with
+ # {name}* comes first; with AUTH_LOCAL_LOGIN=false it is all there is.
+ #}
 {% block title %}{{ 'auth.sign_in'|trans }} · {{ parent() }}{% endblock %}
 
 {% block content %}
@@ -8,22 +12,33 @@
         <section class="card auth__card" aria-labelledby="login-heading">
             <header class="auth__header">
                 <h1 id="login-heading">{{ 'auth.sign_in'|trans }}</h1>
-                <p class="muted">{{ 'auth.sign_in_lead'|trans }}</p>
+                <p class="muted">{{ (local_login ? 'auth.sign_in_lead' : 'auth.sign_in_lead_sso')|trans }}</p>
             </header>
 
             {% if error ?? null %}
                 <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ error|trans }}</span></div>
             {% endif %}
 
-            <form class="form" method="post" action="{{ url_for('login') }}">
-                {{ ui.csrf(csrf) }}
-                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            {% if sso %}
+                <a class="btn btn--primary btn--lg btn--block" href="{{ url_for('oidc.start', {}, next ? {next: next} : {}) }}" data-sso-start>{{ ui.icon('verified_user') }}{{ 'sso.sign_in_with'|trans({name: sso.name}) }}</a>
+            {% endif %}
 
-                {{ ui.input('username', 'auth.username'|trans, {username: username}, {}, {required: true, autocomplete: 'username', maxlength: 64}) }}
-                {{ ui.input('password', 'auth.password'|trans, {}, {}, {type: 'password', required: true, autocomplete: 'current-password'}) }}
+            {% if local_login %}
+                {% if sso %}
+                    <p class="auth__or muted">{{ 'sso.or_password'|trans }}</p>
+                {% endif %}
+                <form class="form" method="post" action="{{ url_for('login') }}">
+                    {{ ui.csrf(csrf) }}
+                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-                <button type="submit" class="btn btn--primary btn--lg btn--block">{{ ui.icon('login') }}{{ 'auth.sign_in'|trans }}</button>
-            </form>
+                    {{ ui.input('username', 'auth.username'|trans, {username: username}, {}, {required: true, autocomplete: 'username', maxlength: 64}) }}
+                    {{ ui.input('password', 'auth.password'|trans, {}, {}, {type: 'password', required: true, autocomplete: 'current-password'}) }}
+
+                    <button type="submit" class="btn {{ sso ? 'btn--soft' : 'btn--primary' }} btn--lg btn--block">{{ ui.icon('login') }}{{ 'auth.sign_in'|trans }}</button>
+                </form>
+            {% elseif not sso %}
+                <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ 'auth.no_sign_in_method'|trans }}</span></div>
+            {% endif %}
         </section>
     </div>
 {% endblock %}

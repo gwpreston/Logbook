@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Service\Auth\Oidc\OidcSignIn;
+use Logbook\Service\Auth\Oidc\OidcSignOut;
+use Logbook\Service\Auth\SignInMethods;
 use Logbook\Service\Notification\Channel\EmailConfig;
+use Logbook\Support\Config\AppSettings;
 use Logbook\Service\User\CreatedLink;
 use Logbook\Service\User\UserAdmin;
 use Logbook\Support\Config\Env;
@@ -24,6 +28,10 @@ final readonly class UsersPage
     public function __construct(
         private UserAdmin $admin,
         private View $view,
+        private SignInMethods $methods,
+        private OidcSignIn $oidc,
+        private OidcSignOut $signOut,
+        private AppSettings $settings,
         Env $env,
     ) {
         $this->mailConfigured = EmailConfig::fromEnv($env)->isConfigured();
@@ -54,6 +62,16 @@ final readonly class UsersPage
             'mail_configured' => $this->mailConfigured,
             'values' => $values,
             'errors' => $errors?->all() ?? [],
+            // Sign-in methods per user and the single sign-on setup (spec.md §7.9 *Admin view*).
+            'identities' => $this->methods->identitiesByUser(),
+            'local_login' => $this->settings->localLogin,
+            'sso' => [
+                'configured' => $this->oidc->isConfigured(),
+                'name' => $this->settings->oidc->providerName,
+                'redirect_uri' => $this->oidc->redirectUri(),
+                'logout_uri' => $this->signOut->postLogoutRedirect(),
+                'logout' => $this->settings->oidc->logout,
+            ],
         ], $status)->withHeader('Cache-Control', 'no-store');
     }
 }

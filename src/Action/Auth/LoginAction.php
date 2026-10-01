@@ -18,7 +18,9 @@ use Psr\Log\LoggerInterface;
  * GET|POST /login — sign in, then return to the page originally requested.
  *
  * Failed attempts are logged at notice level with the client address, so a
- * tool such as fail2ban can watch the log.
+ * tool such as fail2ban can watch the log. With single sign-on configured
+ * the page offers *Sign in with {name}*; with AUTH_LOCAL_LOGIN=false it
+ * offers only that, and a password POST is refused (spec.md §7.9).
  */
 final readonly class LoginAction
 {
@@ -48,7 +50,16 @@ final readonly class LoginAction
         }
 
         if ($request->getMethod() !== 'POST') {
-            return $this->view->render($request, $response, 'auth/login.twig', ['next' => $next, 'username' => '']);
+            return $this->view->render($request, $response, 'auth/login.twig', $this->page($next));
+        }
+        if (!$this->settings->localLogin) {
+            $this->logger->notice('Password sign-in refused (AUTH_LOCAL_LOGIN=false) from {ip}', [
+                'ip' => self::stringParam($request->getServerParams()['REMOTE_ADDR'] ?? null) ?? 'unknown',
+            ]);
+
+            return $this->view->render($request, $response, 'auth/login.twig', $this->page($next) + [
+                'error' => 'auth.local_login_off',
+            ], 403);
         }
 
         $username = trim(self::stringParam($input['username'] ?? null) ?? '');
@@ -62,15 +73,27 @@ final readonly class LoginAction
             ]);
 
             return $this->view->render($request, $response, 'auth/login.twig', [
-                'next' => $next,
                 'username' => $username,
                 'error' => 'auth.invalid_credentials',
-            ], 422);
+            ] + $this->page($next), 422);
         }
 
         RequestContext::session($request)->signIn($user->id);
 
         return $next !== null ? $this->redirect->to($next) : $this->redirect->toRoute('home');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function page(?string $next): array
+    {
+        return [
+            'next' => $next,
+            'username' => '',
+            'local_login' => $this->settings->localLogin,
+            'sso' => $this->settings->oidc->isConfigured() ? ['name' => $this->settings->oidc->providerName] : null,
+        ];
     }
 
     private static function stringParam(mixed $value): ?string
