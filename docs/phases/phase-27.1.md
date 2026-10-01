@@ -375,4 +375,10 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §6, §7.2,
   `claims_only`, `fault`. OpenAPI 1.14.0.
 - *Edit* on a `draft_incident` card carries the damage areas comma-joined
   and splits them back on the form.
+- **Payouts are a claim detail everywhere:** Reports' *Payouts received*
+  and ownership's *Insurance payouts* count only the incidents whose
+  details the viewer may see. Anyone else gets running costs as spent.
+- **Part of an incident** lists only incidents the user may change, as
+  *Link a record* does. A link to one they can't change is left as it is
+  when they save their own record.
 

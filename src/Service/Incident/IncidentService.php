@@ -222,6 +222,14 @@ final readonly class IncidentService
     }
 
     /**
+     * The incident a record is linked to, or null.
+     */
+    public function linkOf(Vehicle $vehicle, LinkKind $kind, int $recordId): ?int
+    {
+        return $this->incidents->linkOf($kind, $vehicle->id, $recordId);
+    }
+
+    /**
      * The ids of the records linked to each incident of the vehicle.
      *
      * @return array<int, array<value-of<LinkKind>, list<int>>> by incident id

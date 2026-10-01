@@ -7,7 +7,9 @@ namespace Logbook\Tests\Integration\Incident;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Attention\AttentionKind;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Incident\Claim;
 use Logbook\Domain\Incident\ClaimStatus;
 use Logbook\Domain\Incident\DamageArea;
@@ -22,6 +24,9 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Repository\AttachmentRepository;
+use Logbook\Repository\ExpenseEntryRepository;
+use Logbook\Repository\VehicleShareRepository;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Attachment\PendingUpload;
 use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Attachment\AttachmentService;
@@ -298,5 +303,84 @@ final class IncidentFeaturesTest extends AppTestCase
             claim: new Claim(ClaimStatus::Settled, 'Aviva', claimNumber: '4417', updatedOn: self::day('2026-08-30')),
         ), null, new DateTimeZone('Europe/London'));
         self::assertSame([], $this->stalled(), 'settled');
+    }
+
+    public function testPayoutsAreAClaimDetailInReportsAndOwnership(): void
+    {
+        $repair = $this->maintenance($this->app, $this->golf, '2026-03-20', 'Rear bumper', '1400.00');
+        $incident = $this->log(claim: new Claim(ClaimStatus::Settled, payout: '1000.000'));
+        $this->incidents()->link($this->golf, LinkKind::Maintenance, $repair->id, $incident);
+        $logger = $this->createMember($this->app, 'logger');
+        $this->service($this->app, VehicleShareRepository::class)
+            ->insert($this->golf->id, $logger->id, ShareLevel::Log, true, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+
+        $theirs = self::body($this->browserFor($this->app, 'logger')->get('/reports?range=all'));
+        self::assertStringContainsString('£1,400.00', $theirs, 'they see costs');
+        self::assertStringNotContainsString('£1,000.00', $theirs, 'but not the payout');
+
+        $payouts = $this->service($this->app, OwnershipService::class)->payouts($logger, $this->golf);
+        self::assertSame([], $payouts, 'running costs stay gross for them');
+        self::assertCount(1, $this->service($this->app, OwnershipService::class)->payouts($this->owner, $this->golf));
+    }
+
+    public function testThePickerOffersOnlyIncidentsTheUserMayChangeAndKeepsOthersLinks(): void
+    {
+        $owners = $this->log();
+        $logger = $this->createMember($this->app, 'logger');
+        $this->service($this->app, VehicleShareRepository::class)
+            ->insert($this->golf->id, $logger->id, ShareLevel::Log, true, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+        $browser = $this->browserFor($this->app, 'logger');
+        $base = '/vehicles/' . $this->golf->id . '/expenses';
+
+        $form = self::body($browser->get($base . '/new'));
+        self::assertStringNotContainsString('name="incident_id"', $form, 'the owner\'s incident is not theirs to link to');
+
+        $entry = ['spent_on' => '2026-03-15', 'category' => 'parking', 'amount' => '3'];
+        $browser->post($base . '/new', $entry + ['incident_id' => (string) $owners->id]);
+        $expenses = $this->service($this->app, ExpenseEntryRepository::class)->listForVehicle($this->golf->id);
+        self::assertNull($expenses[0]->incidentId, 'a forged choice links nothing');
+
+        // A link the owner made stays when the logger edits their own record.
+        $this->incidents()->link($this->golf, LinkKind::Expense, $expenses[0]->id, $owners);
+        $browser->post($base . '/' . $expenses[0]->id . '/edit', ['amount' => '4', 'incident_id' => ''] + $entry);
+        $kept = $this->service($this->app, ExpenseEntryRepository::class)->find($this->golf->id, $expenses[0]->id);
+        self::assertSame($owners->id, $kept?->incidentId);
+    }
+
+    public function testNewsWithin30DaysClearsAStalledClaim(): void
+    {
+        $claim = new Claim(ClaimStatus::Open, 'Aviva', claimNumber: '4417', updatedOn: self::day('2026-07-01'));
+        $incident = $this->log('2026-07-01', $claim);
+        $before = $this->stalled();
+        self::assertCount(1, $before);
+
+        $this->incidents()->update($this->golf, $incident, new IncidentData(
+            occurredOn: $incident->data->occurredOn,
+            type: $incident->data->type,
+            claim: new Claim(ClaimStatus::Open, 'Aviva', claimNumber: '4417', updatedOn: self::day('2026-09-20')),
+        ), null, new DateTimeZone('Europe/London'));
+        $after = $this->stalled();
+        self::assertSame([], $after, 'news nine days ago');
+    }
+
+    public function testWithTheModuleOffTheChipPackOptionReportsSectionAndCheckAreGone(): void
+    {
+        $repair = $this->maintenance($this->app, $this->golf, '2026-03-20', 'Rear bumper', '1400.00');
+        $incident = $this->log('2026-07-01', new Claim(ClaimStatus::Open, 'Aviva', claimNumber: '4417', payout: '50.000'));
+        $this->incidents()->link($this->golf, LinkKind::Maintenance, $repair->id, $incident);
+        $toggles = $this->service($this->app, FeatureToggles::class);
+        $toggles->save(array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== Feature::Incidents)));
+        $id = $this->golf->id;
+
+        $history = self::body($this->browser->get('/vehicles/' . $id . '/history'));
+        self::assertStringNotContainsString('kind=incidents', $history);
+        $year = self::body($this->browser->get('/vehicles/' . $id . '/history?year=2026'));
+        self::assertStringNotContainsString('Part of:', $year);
+        $pack = self::body($this->browser->get('/vehicles/' . $id . '/sale-pack'));
+        self::assertStringNotContainsString('name="incidents"', $pack);
+        self::assertStringNotContainsString('Incident-related spend', self::body($this->browser->get('/reports?range=all')));
+        $stalled = $this->stalled();
+        self::assertSame([], $stalled);
+        self::assertStringNotContainsString('Insurance payouts', self::body($this->browser->get('/vehicles/' . $id)));
     }
 }

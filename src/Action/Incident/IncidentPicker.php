@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Incident;
 
+use Logbook\Service\Access\AccessContext;
+use Logbook\Service\Incident\IncidentAccess;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\Tyre\TyreChangeKind;
 use Logbook\Domain\Feature\Feature;
@@ -29,7 +31,25 @@ final readonly class IncidentPicker
     public function __construct(
         private IncidentService $incidents,
         private FeatureToggles $features,
+        private IncidentAccess $access,
+        private AccessContext $context,
     ) {
+    }
+
+    /**
+     * The vehicle's incidents the signed-in user may change: the only ones
+     * a record can be linked to, as on the incident page.
+     *
+     * @return list<Incident>
+     */
+    private function linkable(Vehicle $vehicle): array
+    {
+        $user = $this->context->user();
+
+        return $user === null ? [] : array_values(array_filter(
+            $this->incidents->list($vehicle),
+            fn (Incident $incident): bool => $this->access->canChange($user, $vehicle, $incident),
+        ));
     }
 
     /**
@@ -48,7 +68,7 @@ final readonly class IncidentPicker
             'date' => $incident->data->occurredOn,
             'type' => $incident->data->type->labelKey(),
             'open' => $incident->data->status === IncidentStatus::Open,
-        ], $this->incidents->list($vehicle))];
+        ], $this->linkable($vehicle))];
     }
 
     /**
@@ -89,6 +109,12 @@ final readonly class IncidentPicker
         if (!$this->features->isEnabled(Feature::Incidents) || !array_key_exists(self::FIELD, $form)) {
             return;
         }
+        // A link to an incident this user may not change is left as it is.
+        $current = $this->incidents->linkOf($vehicle, $kind, $recordId);
+        $linkable = array_map(static fn (Incident $incident): int => $incident->id, $this->linkable($vehicle));
+        if ($current !== null && !in_array($current, $linkable, true)) {
+            return;
+        }
         $value = $form[self::FIELD];
         $incident = is_string($value) ? $this->find($vehicle, $value) : null;
         $this->incidents->link($vehicle, $kind, $recordId, $incident);
@@ -126,7 +152,7 @@ final readonly class IncidentPicker
         if (!ctype_digit($id)) {
             return null;
         }
-        foreach ($this->incidents->list($vehicle) as $incident) {
+        foreach ($this->linkable($vehicle) as $incident) {
             if ($incident->id === (int) $id) {
                 return $incident;
             }

@@ -25,6 +25,7 @@ final readonly class IncidentReport
         private IncidentRepository $incidents,
         private VehicleService $vehicles,
         private FeatureToggles $features,
+        private IncidentAccess $access,
     ) {
     }
 
@@ -37,8 +38,10 @@ final readonly class IncidentReport
             return [];
         }
         $currencies = [];
+        $vehicles = [];
         foreach ($report->vehicles as $vehicle) {
             $currencies[$vehicle->id] = $this->vehicles->currencyFor($user, $vehicle);
+            $vehicles[$vehicle->id] = $vehicle;
         }
 
         /** @var array<string, int> $counts */
@@ -54,7 +57,8 @@ final readonly class IncidentReport
             $currency = $currencies[$incident->vehicleId];
             $counts[$currency] = ($counts[$currency] ?? 0) + 1;
             $payout = $incident->data->claim->payout;
-            if ($payout !== null) {
+            // A payout is a claim detail (spec.md §7.29 Access).
+            if ($payout !== null && $this->access->seesDetails($user, $vehicles[$incident->vehicleId], $incident)) {
                 $payouts[$currency] = ($payouts[$currency] ?? Money::zero($currency))->add(Money::of($payout, $currency));
             }
         }

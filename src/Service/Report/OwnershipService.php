@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Report;
 
+use Logbook\Service\Incident\IncidentAccess;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Repository\IncidentRepository;
 use Logbook\Service\Feature\FeatureToggles;
@@ -34,11 +35,14 @@ final readonly class OwnershipService
         private ValuationService $valuations,
         private IncidentRepository $incidents,
         private FeatureToggles $features,
+        private IncidentAccess $incidentAccess,
     ) {
     }
 
     /**
      * The vehicle's insurance payouts, when incidents are on (spec.md §7.29).
+     * A payout is a claim detail: only those the viewer may see count, so
+     * anyone else gets the running costs as spent.
      *
      * @return list<InsurancePayout>
      */
@@ -51,7 +55,7 @@ final readonly class OwnershipService
         $payouts = [];
         foreach ($this->incidents->listForVehicle($vehicle->id) as $incident) {
             $payout = $incident->data->claim->payout;
-            if ($payout !== null) {
+            if ($payout !== null && $this->incidentAccess->seesDetails($user, $vehicle, $incident)) {
                 $payouts[] = new InsurancePayout($incident->data->occurredOn, Money::of($payout, $currency), $incident->id);
             }
         }
