@@ -2,7 +2,7 @@
 
 *Spot a car getting thirstier, or a price typed wrong, without any AI.*
 
-Status: 🚧 in progress · releases **v2.5.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.5.0** · file lives in `docs/phases/`
 
 The economy check (Phase 13) flags **one** tank that is far from the usual.
 It cannot see a slow drift: five tanks each a little worse, together 15%
@@ -208,6 +208,7 @@ first.
 - [x] `CHANGELOG.md` **2.5.0**: trend and cost checks. Upgrade notes: no
       migration (or one enum change), no configuration.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Tag `v2.5.0` once merged.
 
 ---
 
