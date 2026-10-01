@@ -29,7 +29,8 @@ use Logbook\Support\Money\Currency;
  * fuel price outliers and maintenance cost outliers, judged by the owner's
  * thresholds and today. Plain arithmetic (EconomyDrift, PriceOutlier,
  * CostOutlier); this class only loads what they need, once per vehicle,
- * and decides who may see and hide each item.
+ * and decides who may see and hide each item: price and cost items show
+ * amounts, so only to users who may see the vehicle's costs.
  */
 final readonly class TrendChecks
 {
@@ -46,6 +47,7 @@ final readonly class TrendChecks
      * @param array<string, bool> $enabled module toggles
      * @param FuelHistory|null $history the vehicle's fuel history (fuel on)
      * @param bool $serviceOverdue a service schedule is overdue (from *Coming up*)
+     * @param bool $costs the user may see the vehicle's amounts (Phase 19): price and cost items show them
      * @param PriceBook $book the owners' fill-ups, shared across one list's vehicles
      * @return list<AttentionItem>
      */
@@ -55,6 +57,7 @@ final readonly class TrendChecks
         User $owner,
         AttentionThresholds $thresholds,
         bool $manage,
+        bool $costs,
         array $enabled,
         ?FuelHistory $history,
         bool $serviceOverdue,
@@ -65,9 +68,11 @@ final readonly class TrendChecks
         $items = [];
         if ($history !== null && !$history->isEmpty()) {
             array_push($items, ...$this->drift($vehicle, $history, $thresholds, $enabled, $serviceOverdue, $now, $zone));
-            array_push($items, ...$this->prices($user, $vehicle, $owner, $history, $thresholds, $manage, $book));
+            if ($costs) {
+                array_push($items, ...$this->prices($user, $vehicle, $owner, $history, $thresholds, $manage, $book));
+            }
         }
-        if ($enabled[Feature::Maintenance->value]) {
+        if ($costs && $enabled[Feature::Maintenance->value]) {
             $today = LocalTime::dateOf($now, $zone);
             array_push($items, ...$this->costs($user, $vehicle, $owner, $thresholds, $manage, $today));
         }
@@ -92,11 +97,12 @@ final readonly class TrendChecks
     ): array {
         $fits = null;
         if ($enabled[Feature::Tyres->value]) {
-            $fits = function () use ($vehicle, $zone): array {
+            $fits = function () use ($vehicle): array {
                 $dates = [];
                 foreach ($this->tyres->listChanges($vehicle->id) as $change) {
                     if ($change->kind === TyreChangeKind::Fit) {
-                        $dates[] = LocalTime::dateOf($change->data->doneOn, $zone);
+                        // Already a calendar date (midnight UTC), not an instant.
+                        $dates[] = $change->data->doneOn;
                     }
                 }
 

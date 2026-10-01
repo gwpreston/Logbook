@@ -3487,7 +3487,9 @@ wrong.
   a fill-up they added (a derived reading's author is its entry's). Stale
   mileage needs `Log`, a stale valuation `Manage`, trips exceeding mileage
   `Log`; economy drift `Log`; a price or cost outlier `Manage`, or `Log`
-  for a fill-up or record they added. *Now* items are shown to everyone who can view; their actions
+  for a fill-up or record they added, and in either case only with
+  `ViewCosts`, since its title shows the usual amount, a figure made from
+  other entries (§7.21). *Now* items are shown to everyone who can view; their actions
   follow the actions' own abilities.
 - **Cost:** the overview computes one vehicle's items. The dashboard
   computes every visible vehicle's in one pass, shared by the widget and

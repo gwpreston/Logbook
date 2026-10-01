@@ -44,7 +44,7 @@ final class EconomyDrift
 
     /**
      * @param int $percent flagged at least this much worse
-     * @param (Closure(): list<DateTimeImmutable>)|null $tyreFits when tyres were fitted (local dates;
+     * @param (Closure(): list<DateTimeImmutable>)|null $tyreFits when tyres were fitted (calendar dates;
      *        tyres on), asked only for a finding
      * @param bool $serviceOverdue a service schedule is overdue (maintenance on)
      */
@@ -233,7 +233,7 @@ final class EconomyDrift
      * fill-up to the last one's close.
      *
      * @param non-empty-list<FillEconomy> $recent
-     * @param list<DateTimeImmutable> $fits local dates
+     * @param list<DateTimeImmutable> $fits calendar dates (midnight UTC)
      */
     private static function tyresFitted(array $recent, array $fits, DateTimeZone $zone): ?DateTimeImmutable
     {

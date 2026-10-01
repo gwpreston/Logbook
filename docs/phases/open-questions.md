@@ -44,9 +44,9 @@ starting it) on the same day, before Phase 25 started.
 | 13 | [11.2](phase-11.2.md) | Rotation suggestion when fronts wear faster | Parked | spec §12, maintenance insights. | 2026-09-30 |
 | 14 | [12](phase-12.md) | Remember the last print choice (*Show costs*)? | Decided | No: *Show costs* stays a per-print choice (`PrintOptions` reads `costs=1` only), so every print starts buyer-safe. | 2026-09-30 |
 | 15 | [12](phase-12.md) | A hint on filing the V5C as *Registration* vs the invoice under *Bought* | Answered | Built in [Phase 21.1](phase-21.1.md) §5: the purchase paperwork hint (spec §7.1; `VehiclePaperworkTest`). | 2026-09-30 |
-| 16 | [13](phase-13.md) | Seasonal baselines for economy checks | Scheduled | [Phase 25](phase-25.md): economy drift compares with the same months a year earlier (spec §7.24 item 7). Was parked in spec §12. | 2026-10-01 |
+| 16 | [13](phase-13.md) | Seasonal baselines for economy checks | Scheduled | Built in [Phase 25](phase-25.md): economy drift compares with the same months a year earlier (spec §7.24 item 7). Was parked in spec §12. | 2026-10-01 |
 | 17 | [13](phase-13.md) | One *sensitivity* setting for economy checks | Answered | spec §7.3: "Not in scope: … thresholds as settings". The bands are a fixed constant in `EconomyCheck`. | 2026-09-30 |
-| 18 | [13](phase-13.md) | Detect a sudden, sustained change | Scheduled | [Phase 25](phase-25.md): economy drift, recent tanks against the 12-month baseline (spec §7.24 item 7). Was parked in spec §12. | 2026-10-01 |
+| 18 | [13](phase-13.md) | Detect a sudden, sustained change | Scheduled | Built in [Phase 25](phase-25.md): economy drift, recent tanks against the 12-month baseline (spec §7.24 item 7). Was parked in spec §12. | 2026-10-01 |
 | 19 | [14.1](phase-14.1.md) | Insurer's agreed value as a valuation | Parked | spec §12. Until then, log it as a valuation with the source "Insurer". | 2026-09-30 |
 | 20 | [14.1](phase-14.1.md) | A valuation's mileage as context | Decided | No: valuations keep no mileage, so there is one mileage series. | 2026-09-30 |
 | 21 | [14.2](phase-14.2.md) | Dashboard tile or widget for cost of ownership | Parked | spec §12, pending a design pass for a fifth tile. | 2026-09-30 |

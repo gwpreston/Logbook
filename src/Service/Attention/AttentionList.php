@@ -289,6 +289,7 @@ final readonly class AttentionList
             $owner,
             $thresholds,
             $manage,
+            $this->access->can($user, VehicleAbility::ViewCosts, $vehicle),
             $enabled,
             $fuel,
             $serviceOverdue,

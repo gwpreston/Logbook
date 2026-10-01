@@ -275,6 +275,14 @@ Found while starting it:
 - **The tyre cause** counts *Fit* changes from the first recent segment's
   opening fill-up to the last one's close; **winter** means every recent
   segment ended in November–February and not every baseline one did.
+- **Price and cost items need `ViewCosts`.** Their titles show the usual
+  amount, a figure made from other entries, so a Log share without costs
+  gets neither, even for an entry they added (`EntryAccess::canSeeAmount`
+  allows only that entry's own amount). The drift shows no money and needs
+  only `Log`. The digest follows the same list. Tested.
+- **Tyre fittings are calendar dates** (midnight UTC), compared and shown
+  as they are, so an owner west of UTC sees the right day (tested with
+  New York).
 - **Price and cost items use *Looks right*** for *Hide*, and open their
   edit form in a modal; a drift has *View economy* (the Fuel tab's trend
   chart) and *Hide*.

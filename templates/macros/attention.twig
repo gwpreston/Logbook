@@ -76,9 +76,10 @@
                     {{ detail }}
                 </span>
                 {% if causes %}
-                    <ul class="attention-item__causes">
-                        {% for cause in causes %}<li>{{ cause }}</li>{% endfor %}
-                    </ul>
+                    {# Spans: the body is a span, so no list inside it. #}
+                    <span class="attention-item__causes">
+                        {% for cause in causes %}<span class="attention-item__cause">{{ cause }}</span>{% endfor %}
+                    </span>
                 {% endif %}
             </span>
             <span class="list__end"><span class="pill attention-item__label pill--{{ severity == 'now' ? 'overdue' : 'soon' }}">{{ wording.label(item) }}</span></span>

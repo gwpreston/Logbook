@@ -227,6 +227,50 @@ final class TrendChecksTest extends ReminderTestCase
         self::assertCount(3, $this->items($golf, $driver), 'and their own fill-up and record');
     }
 
+    public function testAShareWithoutCostsSeesNoPriceOrCostEvenOnTheirOwnEntries(): void
+    {
+        $this->start();
+        $golf = $this->thirsty();
+        $this->fill($golf, '2026-09-15', 10, '1.000', FuelGrade::E5_98, partial: true);
+        $this->fill($golf, '2026-09-20', 10, '1.000', FuelGrade::E5_98, partial: true);
+        $price = $this->fill($golf, '2026-09-26', 10, '1.000', FuelGrade::E5_98, price: '14.000', partial: true);
+        $this->record($golf, '2024-01-15', '200');
+        $this->record($golf, '2024-06-15', '212');
+        $this->record($golf, '2025-01-15', '230');
+        $cost = $this->record($golf, '2026-03-14', '2120');
+
+        $driver = $this->share($golf, ShareLevel::Log, 'driver', costs: false);
+        $id = $this->connection($this->app)->fetchOne('SELECT id FROM users WHERE username = ?', ['driver']);
+        $this->connection($this->app)->update('fuel_entries', ['created_by' => $id], ['id' => $price->id]);
+        $this->connection($this->app)->update('maintenance_entries', ['created_by' => $id], ['id' => $cost->id]);
+
+        // Their own entries' amounts they may see, but "your usual" is made
+        // from everyone's (EntryAccess::canSeeAmount): no price or cost item.
+        $items = $this->items($golf, $driver);
+        self::assertCount(1, $items, 'the drift shows no amounts; the price and cost do');
+        self::assertStringContainsString('Economy is about', $items[0]);
+        self::assertStringNotContainsString('£', implode('', $items));
+        self::assertCount(3, $this->items($golf), 'the owner sees all three');
+    }
+
+    public function testATyreFittingIsACauseOnItsCalendarDateWestOfUtc(): void
+    {
+        $this->start();
+        $this->connection($this->app)->update('users', ['timezone' => 'America/New_York'], ['username' => 'owner']);
+        $golf = $this->thirsty();
+        $this->connection($this->app)->insert('tyre_changes', [
+            'vehicle_id' => $golf->id,
+            'kind' => 'fit',
+            'done_on' => '2026-08-03',
+            'created_at' => '2026-08-03 12:00:00',
+            'updated_at' => '2026-08-03 12:00:00',
+        ]);
+
+        $items = $this->items($golf);
+        self::assertCount(1, $items);
+        self::assertStringContainsString('New tyres were fitted on 3 Aug 2026.', $items[0], 'not 2 Aug');
+    }
+
     // --- Helpers -----------------------------------------------------------
 
     private function start(): void
@@ -338,10 +382,10 @@ final class TrendChecksTest extends ReminderTestCase
         $this->browser->get('/settings/reminders');
     }
 
-    private function share(Vehicle $vehicle, ShareLevel $level, string $username): TestBrowser
+    private function share(Vehicle $vehicle, ShareLevel $level, string $username, bool $costs = true): TestBrowser
     {
         $this->createMember($this->app, $username);
-        self::assertNull($this->service($this->app, SharingService::class)->add($vehicle, $username, $level, true, false));
+        self::assertNull($this->service($this->app, SharingService::class)->add($vehicle, $username, $level, $costs, false));
 
         return $this->browserFor($this->app, $username);
     }
