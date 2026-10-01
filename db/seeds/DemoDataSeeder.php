@@ -389,14 +389,19 @@ final class DemoDataSeeder extends AbstractSeed
             )) as $row
         ) {
             if (is_array($row)) {
-                $e10[] = $row + ['time' => (int) strtotime(self::stringValue($row['filled_at'] ?? null) . ' UTC')];
+                $e10[] = [
+                    'id' => self::intValue($row['id'] ?? null),
+                    'time' => (int) strtotime(self::stringValue($row['filled_at'] ?? null) . ' UTC'),
+                    'price' => self::floatValue($row['price_per_unit'] ?? null),
+                    // Booleans come back as 0/1, "0"/"1" or t/f depending on the engine.
+                    'partial' => in_array($row['is_partial'] ?? null, [true, 1, '1', 't'], true),
+                ];
             }
         }
         usort($e10, static fn (array $a, array $b): int => $b['time'] <=> $a['time']);
         $typo = null;
         foreach ($e10 as $candidate) {
-            // Booleans come back as 0/1, "0"/"1" or t/f depending on the engine.
-            if (in_array($candidate['is_partial'] ?? null, [true, 1, '1', 't'], true)) {
+            if ($candidate['partial']) {
                 continue;
             }
             $near = array_filter($e10, static fn (array $o): bool => $o['id'] !== $candidate['id']
@@ -412,8 +417,8 @@ final class DemoDataSeeder extends AbstractSeed
         $this->execute(
             'UPDATE fuel_entries SET price_per_unit = ? WHERE id = ?',
             [
-                Decimal::multiply(number_format(self::floatValue($typo['price_per_unit'] ?? null), 6, '.', ''), '10', 6),
-                self::intValue($typo['id'] ?? null),
+                Decimal::multiply(number_format($typo['price'], 6, '.', ''), '10', 6),
+                $typo['id'],
             ],
         );
 
