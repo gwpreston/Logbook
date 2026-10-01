@@ -69,7 +69,8 @@ final readonly class AuthService
     public function authenticate(string $username, #[SensitiveParameter] string $password): ?User
     {
         $user = $this->users->findByUsername(Username::normalise($username));
-        if ($user === null) {
+        if ($user === null || $user->passwordHash === null) {
+            // No such user, or one with single sign-on only (Phase 23.1).
             $this->hasher->verifyDummy($password);
 
             return null;
@@ -92,7 +93,7 @@ final readonly class AuthService
 
     public function verifyPassword(User $user, #[SensitiveParameter] string $password): bool
     {
-        return $this->hasher->verify($password, $user->passwordHash);
+        return $user->passwordHash !== null && $this->hasher->verify($password, $user->passwordHash);
     }
 
     /**

@@ -44,6 +44,31 @@ which notification channels to use — are chosen in the app, not here. The
 | `SESSION_SECRET` | *(empty)* | Key for hashing session ids, calendar-feed tokens, API keys and invitation links at rest. Generate with `openssl rand -hex 32`. Changing it signs everyone out, disables calendar feed links, open invitation and reset links, and every API key. |
 | `SESSION_SECURE` | true when `APP_URL` is `https://` | Send the session cookie over HTTPS only. |
 
+## Single sign-on
+
+OpenID Connect sign-in with Authelia, Authentik, Keycloak or another
+provider. See [sso.md](sso.md). Setting `OIDC_ISSUER` switches it on; an
+issuer without a client id or secret, scopes without `openid` or an
+unknown `OIDC_LINK` stop the app at start with a message naming the
+variable. The redirect URI to register is
+`{APP_URL}{APP_BASE_PATH}/auth/oidc/callback`.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `OIDC_ISSUER` | *(empty: off)* | The provider's issuer URL, exactly as its discovery document states it (Authentik's ends in `/`). |
+| `OIDC_CLIENT_ID` | *(empty)* | Required with `OIDC_ISSUER`. |
+| `OIDC_CLIENT_SECRET` | *(empty)* | Required with `OIDC_ISSUER`: a confidential client. |
+| `OIDC_PROVIDER_NAME` | `SSO` | Button text: *Sign in with {name}*. |
+| `OIDC_SCOPES` | `openid profile email` | Space- or comma-separated; must include `openid`. Add `groups` where the provider needs it for the groups claim. |
+| `OIDC_USERNAME_CLAIM` | `preferred_username` | The claim used for username linking and for new users' usernames. |
+| `OIDC_GROUPS_CLAIM` | `groups` | The claim holding group names (a list, or one string). |
+| `OIDC_LINK` | `explicit` | `explicit`: an account reaches a user only once that user links it in Settings → Account. `username`: also a user with the same username and no linked account yet. Only safe where usernames at the provider are set by admins alone. |
+| `OIDC_AUTO_CREATE` | `false` | Create a member (no password) on first sign-in for an account nobody has. |
+| `OIDC_ALLOWED_GROUPS` | *(empty: everyone)* | Comma-separated: only members of these groups may sign in with SSO. |
+| `OIDC_ADMIN_GROUPS` | *(empty)* | Comma-separated: admin is set from these groups at every SSO sign-in, both ways. The last admin is never demoted. Empty: admin stays as set in the app. |
+| `OIDC_LOGOUT` | `false` | Also sign out at the provider. Register `{APP_URL}{APP_BASE_PATH}/login` there as the post-logout redirect URI. |
+| `AUTH_LOCAL_LOGIN` | `true` | Password sign-in. `false` leaves only SSO. First-run setup still creates a local admin, and `php bin/auth.php login-link <username>` still works. |
+
 ## REST API
 
 See [api.md](api.md).

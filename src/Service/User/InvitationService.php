@@ -50,7 +50,7 @@ final readonly class InvitationService
         if (!$invitation->isOpen($this->clock->now())) {
             return null;
         }
-        if ($invitation->kind === InvitationKind::Reset) {
+        if ($invitation->kind !== InvitationKind::Invite) {
             $user = $invitation->userId === null ? null : $this->users->find($invitation->userId);
             if ($user === null || !$user->isActive()) {
                 return null;
@@ -86,6 +86,20 @@ final readonly class InvitationService
 
             return $user;
         });
+    }
+
+    /**
+     * Use up a break-glass sign-in link (spec.md §7.9): the user to sign
+     * in, or null when it was used meanwhile.
+     */
+    public function acceptLogin(Invitation $invitation): ?User
+    {
+        $user = $invitation->userId === null ? null : $this->users->find($invitation->userId);
+        if ($user === null || !$user->isActive() || !$this->invitations->markUsed($invitation->id, $this->clock->now())) {
+            return null;
+        }
+
+        return $user;
     }
 
     /**

@@ -9,6 +9,7 @@ use Logbook\Service\Access\InstanceAccess;
 use Logbook\Service\Access\SharedVehicleAccess;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Auth\Oidc\OidcCache;
 use Logbook\Service\Feature\FeatureTwigExtension;
 use Logbook\Service\Navigation\SidebarTwigExtension;
 use Logbook\Service\Notification\Channel\EmailChannel;
@@ -19,6 +20,7 @@ use Logbook\Service\Notification\Channel\WebhookChannel;
 use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Support\Clock\UtcClock;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Config\OidcConfig;
 use Logbook\Support\Database\ConnectionFactory;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
@@ -198,6 +200,10 @@ return [
         'phpMaxFileUploads',
         (int) (ini_get('max_file_uploads') === false ? 20 : ini_get('max_file_uploads')),
     ),
+
+    // Single sign-on (spec.md §7.9, Phase 23.1).
+    OidcConfig::class => static fn (ContainerInterface $c): OidcConfig => $settingsOf($c)->oidc,
+    OidcCache::class => static fn (ContainerInterface $c): OidcCache => new OidcCache($settingsOf($c)->cacheDir . '/oidc'),
 
     HttpClientInterface::class => static fn (): HttpClientInterface => HttpClient::create([
         'timeout' => 15,

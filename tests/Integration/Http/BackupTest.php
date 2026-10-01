@@ -25,6 +25,8 @@ use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Domain\User\UserIdentity;
+use Logbook\Repository\UserIdentityRepository;
 use Logbook\Service\Api\ApiKeyService;
 use Logbook\Service\Attachment\PendingUpload;
 use Logbook\Service\Attachment\PendingUploads;
@@ -125,6 +127,7 @@ final class BackupTest extends AppTestCase
         self::assertContains('trips', array_column($before['tables']['settings'], 'name'));
         self::assertCount(1, $before['tables']['vehicle_valuations'], 'valuations travel too');
         self::assertCount(1, $before['tables']['api_keys'], 'API keys too');
+        self::assertCount(1, $before['tables']['user_identities'], 'linked sign-in accounts too (Phase 23.1)');
         self::assertContains('document', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertContains('tyre', array_column($before['tables']['odometer_readings'], 'source'));
         self::assertCount(1, $before['tables']['tyre_sets']);
@@ -416,6 +419,9 @@ final class BackupTest extends AppTestCase
         $this->service($app, FeatureToggles::class)->save([Feature::Fuel, Feature::Maintenance, Feature::Reminders]);
         // API keys (Phase 18.2) travel too, as their keyed hashes.
         $this->apiToken = $this->service($app, ApiKeyService::class)->create($owner, 'Home Assistant', ApiScope::Read)->token;
+        // Phase 23.1: a linked single sign-on account.
+        $this->service($app, UserIdentityRepository::class)
+            ->insert($owner->id, UserIdentity::OIDC, 'https://auth.example.com/', 'sub-owner', new \DateTimeImmutable(self::NOW));
     }
 
     /**

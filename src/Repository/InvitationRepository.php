@@ -138,13 +138,21 @@ final readonly class InvitationRepository
      */
     public function revokeResetsFor(int $userId, DateTimeImmutable $now): void
     {
+        $this->revokeOpenFor($userId, InvitationKind::Reset, $now);
+    }
+
+    /**
+     * Revoke every open link of this kind for a user.
+     */
+    public function revokeOpenFor(int $userId, InvitationKind $kind, DateTimeImmutable $now): void
+    {
         $this->connection->createQueryBuilder()
             ->update(self::TABLE)
             ->set('revoked_at', ':now')
-            ->where('user_id = :user', 'kind = :reset', 'used_at IS NULL', 'revoked_at IS NULL')
+            ->where('user_id = :user', 'kind = :kind', 'used_at IS NULL', 'revoked_at IS NULL')
             ->setParameter('now', UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()))
             ->setParameter('user', $userId, ParameterType::INTEGER)
-            ->setParameter('reset', InvitationKind::Reset->value)
+            ->setParameter('kind', $kind->value)
             ->executeStatement();
     }
 

@@ -13,6 +13,8 @@ use DateTimeImmutable;
 final readonly class Invitation
 {
     public const int VALID_DAYS = 7;
+    /** A break-glass sign-in link (`login`) lasts ten minutes (spec.md §7.9). */
+    public const int LOGIN_VALID_MINUTES = 10;
 
     public function __construct(
         public int $id,

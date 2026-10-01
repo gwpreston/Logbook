@@ -27,6 +27,8 @@ final readonly class BackupRepository
     public const array TABLES = [
         'settings',
         'users',
+        // Phase 23.1: linked single sign-on accounts (issuer and subject).
+        'user_identities',
         // API keys (Phase 18.2): hashed with SESSION_SECRET, so they work only
         // where it is the same (the restore page says so).
         'api_keys',

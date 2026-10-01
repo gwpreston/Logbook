@@ -1,0 +1,23 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # A break-glass sign-in link (spec.md §7.9): one click signs this user in.
+ # The link is used by the POST, so a link preview cannot use it up.
+ #}
+{% block title %}{{ 'auth.login_link_title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="auth">
+        <section class="card auth__card" aria-labelledby="link-heading">
+            <header class="auth__header">
+                <h1 id="link-heading">{{ 'auth.login_link_title'|trans }}</h1>
+                <p class="muted">{{ 'auth.login_link_lead'|trans({username: invitation.username}) }}</p>
+            </header>
+            <form class="form" method="post" action="{{ url_for('login.link', {token: token}) }}">
+                {{ ui.csrf(csrf) }}
+                <button type="submit" class="btn btn--primary btn--lg btn--block">{{ ui.icon('login') }}{{ 'auth.login_link_submit'|trans({name: invitation.displayName}) }}</button>
+            </form>
+        </section>
+    </div>
+{% endblock %}

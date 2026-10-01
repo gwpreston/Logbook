@@ -48,6 +48,7 @@ final class MigrationsTest extends AppTestCase
         'trips',
         'saved_journeys',
         'mileage_rate_sets',
+        'user_identities',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -87,7 +88,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 22 trip tables,
+        // Newest first: the Phase 23.1 identities, the Phase 22 trip tables,
         // the Phase 21.2 first MOT date, the Phase 19 users and sharing, the Phase 18.2 API
         // keys, the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
         // purchase and sale paperwork (no schema change), the Phase 11.2
@@ -97,6 +98,10 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($schema->tablesExist(['user_identities']));
+        Migrator::run('rollback');
+        self::assertFalse($schema->tablesExist(['user_identities']), 'rollback must drop the identities');
+
         self::assertTrue($schema->tablesExist(['trips', 'saved_journeys', 'mileage_rate_sets']));
         Migrator::run('rollback');
         foreach (['trips', 'saved_journeys', 'mileage_rate_sets'] as $table) {
@@ -410,11 +415,14 @@ final class MigrationsTest extends AppTestCase
     public function testUserAndSessionColumns(): void
     {
         $users = $this->columnsOrSkip('users');
-        $columns = ['username', 'password_hash', 'display_name', 'locale', 'timezone'];
+        $columns = ['username', 'display_name', 'locale', 'timezone'];
         $columns = [...$columns, 'distance_unit', 'volume_unit', 'consumption_unit', 'currency', 'theme'];
         foreach ($columns as $required) {
             self::assertTrue($users[$required]->getNotnull(), sprintf('users.%s must be NOT NULL', $required));
         }
+        // Phase 23.1: a user created through single sign-on has no password.
+        self::assertFalse($users['password_hash']->getNotnull(), 'users.password_hash is nullable');
+        self::assertSame(255, $users['password_hash']->getLength(), 'and keeps its length');
         self::assertInstanceOf(DateTimeType::class, $users['created_at']->getType());
 
         $sessions = $this->columns('sessions');

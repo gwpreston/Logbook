@@ -17,7 +17,8 @@ final readonly class User
         public int $id,
         /** Always lower-case (see Username::normalise()). */
         public string $username,
-        public string $passwordHash,
+        /** Null for a user created through single sign-on who has not set one (Phase 23.1). */
+        public ?string $passwordHash,
         public string $displayName,
         public DisplayPreferences $preferences,
         public DateTimeImmutable $createdAt,
@@ -30,5 +31,10 @@ final readonly class User
     public function isActive(): bool
     {
         return $this->disabledAt === null;
+    }
+
+    public function hasPassword(): bool
+    {
+        return $this->passwordHash !== null;
     }
 }

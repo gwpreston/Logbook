@@ -19,7 +19,9 @@ The first review (Phase 20, 2026-09-30) covered Phases 0–19. Phases 0–8,
 promises one "at the end", but none was written and nothing in it was left
 undecided. The owner answered every *Needs a decision* item on 2026-09-30,
 together with the open questions of Phases 21.1 and 21.2 (#37–#42), and
-Phase 22's on the same day before it started (#43–#47).
+Phase 22's on the same day before it started (#43–#47). Phase 22's
+question found while building (#48) and Phase 23.1's (#49–#51) were
+answered on 2026-10-01, before Phase 23.1 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -70,7 +72,10 @@ Phase 22's on the same day before it started (#43–#47).
 | 45 | [22](phase-22.md) | `trips` on by default for GB-locale users? | Decided | No: off for everyone (`FEATURES_TRIPS=false`). | 2026-09-30 |
 | 46 | [22](phase-22.md) | A `van` vehicle type? | Parked | No: vans stay `car`, which has the same approved rates; a van type in spec §12. | 2026-09-30 |
 | 47 | [22](phase-22.md) | Cost per business mile: ownership cost or running costs only? | Answered | Cost of ownership per distance (#23; spec §7.7 falls back to running costs alone without a value). | 2026-09-30 |
-| 48 | [22](phase-22.md) | An API endpoint listing saved journeys (for Shortcuts)? | Needs a decision | Found while building: `journey_id` works, but its id comes from the edit link. | 2026-09-30 |
+| 48 | [22](phase-22.md) | An API endpoint listing saved journeys (for Shortcuts)? | Scheduled | Yes: `GET /api/v1/journeys`, built in [Phase 23.1](phase-23.1.md) (spec §7.20). | 2026-10-01 |
+| 49 | [23.1](phase-23.1.md) | OIDC client library, or a JWT library with the checks written here? | Decided | `firebase/php-jwt` plus `symfony/http-client`; every check written and tested here (spec §4). | 2026-10-01 |
+| 50 | [23.1](phase-23.1.md) | More than one OIDC provider? | Parked | One provider; more in spec §12. | 2026-10-01 |
+| 51 | [23.1](phase-23.1.md) | `OIDC_LINK=email` on a verified email? | Parked | No, while Logbook doesn't verify its own emails; spec §12. | 2026-10-01 |
 
 ## Other loose ends found in the review
 

@@ -47,6 +47,10 @@
                 {% for row in users %}
                     {% set member = row.user %}
                     {% set is_me = member.id == user.id %}
+                    {% set member_identities = identities[member.id] ?? [] %}
+                    {% set methods = [] %}
+                    {% if member.hasPassword() and local_login %}{% set methods = methods|merge(['users.method.password'|trans]) %}{% endif %}
+                    {% for identity in member_identities %}{% set methods = methods|merge([sso.name]) %}{% endfor %}
                     <li class="user-row">
                         <div class="list__item">
                             <span class="list__icon">{{ ui.icon(member.isActive() ? (member.isAdmin ? 'admin_panel_settings' : 'person') : 'person_off') }}</span>
@@ -57,6 +61,7 @@
                                     {{ (member.isActive() ? 'users.status.active' : 'users.status.disabled')|trans }} ·
                                     {{ row.lastSeenAt ? 'users.last_seen'|trans({when: row.lastSeenAt|local_datetime}) : 'users.never_seen'|trans -}}
                                 </span>
+                                <span class="list__meta" data-sign-in-methods>{{ 'users.methods'|trans({methods: methods is empty ? 'users.method.none'|trans : methods|join(', ')}) }}</span>
                             </span>
                         </div>
                         <div class="btn-row user-row__actions">
@@ -68,6 +73,12 @@
                                 {{ ui.csrf(csrf) }}
                                 <button type="submit" class="btn btn--sm">{{ ui.icon('lock_reset') }}{{ 'users.reset'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
                             </form>
+                            {% for identity in member_identities %}
+                                <form method="post" action="{{ url_for('settings.users.identity.remove', {member: member.id, identity: identity.id}) }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <button type="submit" class="btn btn--sm">{{ ui.icon('block') }}{{ 'users.identity_remove'|trans({provider: sso.name}) }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                                </form>
+                            {% endfor %}
                             {% if not is_me %}
                                 <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: member.isActive() ? 'disable' : 'enable'}) }}">
                                     {{ ui.csrf(csrf) }}
@@ -81,6 +92,33 @@
             </ul>
         </section>
 
+        {# Single sign-on (spec.md §7.9 *Configuration*): set by environment variables; what to register at the provider. #}
+        <section class="card" aria-labelledby="sso-heading" data-sso-setup>
+            <h2 id="sso-heading" class="card__title">{{ ui.icon('verified_user') }}{{ 'sso.card_title'|trans }}</h2>
+            {% if sso.configured %}
+                <p class="muted">{{ 'users.sso_on'|trans({name: sso.name}) }}{% if not local_login %} {{ 'users.sso_local_off'|trans }}{% endif %}</p>
+            {% else %}
+                <p class="muted">{{ 'users.sso_off'|trans }}</p>
+            {% endif %}
+            <div class="field">
+                <label class="field__label" for="f-redirect-uri">{{ 'users.sso_redirect_uri'|trans }}</label>
+                <div class="input-group">
+                    <input class="input" id="f-redirect-uri" type="text" readonly value="{{ sso.redirect_uri }}" autocomplete="off" spellcheck="false">
+                    <button type="button" class="btn btn--soft" data-copy="#f-redirect-uri" data-copied-label="{{ 'api_keys.copied'|trans }}" hidden>{{ ui.icon('content_copy') }}<span>{{ 'api_keys.copy'|trans }}</span></button>
+                </div>
+                <p class="field__hint">{{ 'users.sso_redirect_hint'|trans }}</p>
+            </div>
+            {% if sso.logout %}
+                <div class="field">
+                    <label class="field__label" for="f-logout-uri">{{ 'users.sso_logout_uri'|trans }}</label>
+                    <div class="input-group">
+                        <input class="input" id="f-logout-uri" type="text" readonly value="{{ sso.logout_uri }}" autocomplete="off" spellcheck="false">
+                        <button type="button" class="btn btn--soft" data-copy="#f-logout-uri" data-copied-label="{{ 'api_keys.copied'|trans }}" hidden>{{ ui.icon('content_copy') }}<span>{{ 'api_keys.copy'|trans }}</span></button>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
         {% if links is not empty %}
             <section class="card" aria-labelledby="links-heading">
                 <h2 id="links-heading" class="card__title">{{ ui.icon('link') }}{{ 'users.links_heading'|trans }}</h2>
@@ -88,7 +126,7 @@
                     {% for link in links %}
                         <li>
                             <div class="list__item">
-                                <span class="list__icon">{{ ui.icon(link.kind.value == 'reset' ? 'lock_reset' : 'mail') }}</span>
+                                <span class="list__icon">{{ ui.icon({reset: 'lock_reset', login: 'key'}[link.kind.value] ?? 'mail') }}</span>
                                 <span class="list__body">
                                     <span class="list__title">{{ link.displayName }} <span class="muted">({{ link.username }})</span></span>
                                     <span class="list__meta">{{ ('users.link_kind.' ~ link.kind.value)|trans }} · {{ 'users.expires'|trans({when: link.expiresAt|local_datetime}) }}</span>

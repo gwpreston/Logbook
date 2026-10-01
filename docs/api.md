@@ -114,6 +114,7 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/trips` | trips: your own, or every driver's when you manage or own the vehicle (paged; trips module) |
 | `POST /vehicles/{id}/trips` | log a trip, or one from a saved journey (read and write key; trips module) |
 | `GET /trips/claim` | your mileage claim's figures for a tax year or date range (trips module) |
+| `GET /journeys` | your saved journeys, in your order (trips module) |
 | `GET /openapi.json` | the OpenAPI description (no key) |
 
 A vehicle id the key's user cannot see answers `404`, like one that does
@@ -196,7 +197,7 @@ ways, never doubled.
 | `is_business` | default `true`; a business trip needs a `purpose` |
 | `purpose`, `notes` | text |
 | `passengers` | business passengers, 0–8 |
-| `journey_id` | one of your saved journeys (*Settings → Trips*; the id is in its edit link) |
+| `journey_id` | one of your saved journeys (`GET /journeys` lists them with their ids) |
 
 A saved journey fills `from`, `to`, `is_return`, `is_business`, `purpose`
 and the distance: the journey's one-way distance, doubled for a return,
@@ -210,6 +211,12 @@ trip of yours on the vehicle with the same date, places and distance (the
 CSV import's rule) answers `200` with it and `"duplicate": true`; nothing is
 written. Send `travelled_on`, so a retry just after midnight is recognised.
 Archived vehicles refuse trips (`409`).
+
+`GET /journeys` lists your saved journeys in your *Settings → Trips*
+order: `id`, `from`, `to`, `journey` (the label), `distance_km` (**one
+way**), and the `is_return`, `is_business` and `purpose` a trip logged from
+it starts with. A Shortcut can offer them with *Choose from List* and send
+the chosen `id` as `journey_id`.
 
 `GET /trips/claim` is the claim report's figures: your business trips on
 every vehicle you can see, at your mileage rates (UK users get HMRC's
@@ -381,6 +388,12 @@ Logbook shows it, use `value_json.display.odometer` or
 6. **Get Dictionary Value** `duplicate`, then **If** it is *1*: **Show
    Result** "Already logged". Otherwise **Get Dictionary Value**
    `entry.economy.segment.consumption` and show it, and any `warnings`.
+
+"Log a saved journey": **Get Contents of URL** `…/api/v1/journeys` (GET,
+the same header), **Get Dictionary Value** `items`, **Choose from List**
+showing each item's `journey`, then POST `{"journey_id": <its id>}` to
+`…/api/v1/vehicles/1/trips`. Today's date and the journey's distance,
+return and purpose are filled in.
 
 Android automations (Tasker's *HTTP Request*, Home Assistant's companion
 app) are the same request: POST, the header, and the JSON body.

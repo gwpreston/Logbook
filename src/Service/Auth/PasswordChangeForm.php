@@ -9,7 +9,9 @@ use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\Validation\Validator;
 
 /**
- * Change-password form: current password, new password twice.
+ * Change-password form: current password, new password twice. A user
+ * without a password (single sign-on only, Phase 23.1) sets one without a
+ * current password.
  */
 final class PasswordChangeForm
 {
@@ -22,7 +24,9 @@ final class PasswordChangeForm
         $validator = new Validator($input, $locale);
 
         $current = $input['current_password'] ?? '';
-        if (!is_string($current) || $current === '') {
+        if (!$user->hasPassword()) {
+            // Nothing to confirm: the session (from single sign-on) is the proof.
+        } elseif (!is_string($current) || $current === '') {
             $validator->addError('current_password', 'validation.required');
         } elseif (!$auth->verifyPassword($user, $current)) {
             $validator->addError('current_password', 'auth.current_password_wrong');

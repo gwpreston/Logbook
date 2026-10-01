@@ -51,6 +51,15 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [21.1](docs/phases/phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | ✅ |
 | [21.2](docs/phases/phase-21.2.md) | First MOT due + v2.1 release | ✅ |
 | [22](docs/phases/phase-22.md) | Trips and business mileage claims + v2.2 release | ✅ |
+| [23.1](docs/phases/phase-23.1.md) | Single sign-on with OpenID Connect | 📋 |
+| [23.2](docs/phases/phase-23.2.md) | Reverse-proxy header sign-in + v2.3 release | 📋 |
+| [24](docs/phases/phase-24.md) | Needs attention + v2.4 release | 📋 |
+| [25](docs/phases/phase-25.md) | Trend and cost checks + v2.5 release | 📋 |
+| [26.1](docs/phases/phase-26.1.md) | AI foundation: connections, models and task routing | 📋 |
+| [26.2](docs/phases/phase-26.2.md) | Ask Logbook + v2.6 release | 📋 |
+| [26.3](docs/phases/phase-26.3.md) | Actions: say it, check it, add it + v2.7 release | 📋 |
+| [26.4](docs/phases/phase-26.4.md) | Read receipts and documents + v2.8 release | 📋 |
+| [26.5](docs/phases/phase-26.5.md) | MCP server + v2.9 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -499,6 +508,66 @@ them.*
 
 → [`docs/phases/phase-24.md`](docs/phases/phase-24.md)
 
+## Phase 25 — Trend and cost checks + v2.5 release
+*Spot a car getting thirstier, or a price typed wrong, without any AI.*
+
+- Economy drift (recent tanks against the year, allowing for the season),
+  fuel price outliers and cost outliers as *Needs attention* checks, with
+  likely causes from recorded facts.
+- Plain statistics; no model, no network. Release **v2.5.0**.
+
+→ [`phase-25.md`](docs/phases/phase-25.md)
+
+## Phase 26.1 — AI foundation: connections, models and task routing
+*Use whichever model you trust: on this server, on your network, or in
+the cloud.*
+
+- Any number of connections through four adapters (OpenAI-compatible,
+  covering Ollama, llama.cpp, LM Studio and vLLM; Ollama; Anthropic;
+  Gemini), each shown as *This server*, *Your network* or *Internet*.
+- Tasks routed to a connection and model each; internet use acknowledged;
+  encrypted keys; a usage log without content; off until an admin sets it
+  up. Ships with Phase 26.2 as **v2.6.0**.
+
+→ [`phase-26.1.md`](docs/phases/phase-26.1.md)
+
+## Phase 26.2 — Ask Logbook + v2.6 release
+*Ask a question in plain words; get Logbook's own numbers back.*
+
+- Read-only tools over the existing services and access policy, with
+  display strings in the user's units; answers with sources and links; a
+  grounding check on every number. Release **v2.6.0**.
+
+→ [`phase-26.2.md`](docs/phases/phase-26.2.md)
+
+## Phase 26.3 — Actions: say it, check it, add it + v2.7 release
+*"Filled the BMW with 51 litres of E10 at £1.39, mileage 72,341." Add?*
+
+- Draft tools for fill-ups, readings, service records, documents,
+  expenses, tread checks and reminders through the API's input adapter;
+  Logbook computes and validates; nothing is saved without *Add*. Release
+  **v2.7.0**.
+
+→ [`phase-26.3.md`](docs/phases/phase-26.3.md)
+
+## Phase 26.4 — Read receipts and documents + v2.8 release
+*Photograph the garage invoice; check the form; save.*
+
+- Photos and PDFs read into the right prefilled form with the file
+  attached; text PDFs read as text; EXIF stripped; V5C references never
+  extracted; recommended work offered as reminders. Release **v2.8.0**.
+
+→ [`phase-26.4.md`](docs/phases/phase-26.4.md)
+
+## Phase 26.5 — MCP server + v2.9 release
+*Use Logbook from Claude Desktop, or any assistant that speaks MCP.*
+
+- The same tools over MCP with API keys; fill-ups and readings written as
+  the API does, everything else as drafts confirmed in Logbook. Release
+  **v2.9.0**.
+
+→ [`phase-26.5.md`](docs/phases/phase-26.5.md)
+
 ---
 
 ## After 1.0
@@ -508,10 +577,14 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 
 - Server-side PDF: emailed or scheduled reports, and a one-file sale pack
   with the invoices merged in.
-- An MCP server on the REST API, for AI actions.
 - Personal fuel-tank entity, VIN decode / registration lookup,
   OBD-II / vehicle-API mileage import (through the REST API, Phase 18.2).
 
 Not planned: automatic vehicle valuation from online services (third-party
 lookups and paid APIs, against keeping data local) and generic depreciation
 curves (invented figures beside real ones).
+
+---
+
+*This roadmap is a plan, not a promise — phases and priorities may shift. The
+`phase-*.md` files and [`spec.md`](spec.md) are the working source of truth.*

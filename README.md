@@ -73,6 +73,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
+| [docs/sso.md](docs/sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link |
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |

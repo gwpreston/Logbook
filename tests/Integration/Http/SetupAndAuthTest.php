@@ -85,7 +85,7 @@ final class SetupAndAuthTest extends AppTestCase
 
         $user = $this->service($app, UserRepository::class)->findByUsername('gareth');
         self::assertNotNull($user, 'usernames are stored lower-case');
-        self::assertStringStartsWith('$argon2id$', $user->passwordHash);
+        self::assertStringStartsWith('$argon2id$', (string) $user->passwordHash);
         self::assertSame(VolumeUnit::UsGallon, $user->preferences->volumeUnit);
         self::assertSame(ConsumptionUnit::MpgUs, $user->preferences->consumptionUnit);
         self::assertSame('America/Chicago', $user->preferences->timezone);

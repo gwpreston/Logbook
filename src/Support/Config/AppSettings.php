@@ -47,6 +47,10 @@ final readonly class AppSettings
         public bool $apiEnabled = true,
         /** @var list<string> origins a browser may call the API from (none: CORS off) */
         public array $apiCorsOrigins = [],
+        /** Single sign-on (spec.md §7.9, Phase 23.1). */
+        public OidcConfig $oidc = new OidcConfig(),
+        /** Password sign-in (`AUTH_LOCAL_LOGIN`); setup and break-glass links work either way. */
+        public bool $localLogin = true,
     ) {
     }
 
@@ -87,6 +91,8 @@ final readonly class AppSettings
             env: $env,
             apiEnabled: $env->bool('API_ENABLED', true),
             apiCorsOrigins: self::origins($env->string('API_CORS_ORIGINS')),
+            oidc: OidcConfig::fromEnv($env),
+            localLogin: $env->bool('AUTH_LOCAL_LOGIN', true),
         );
     }
 

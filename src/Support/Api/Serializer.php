@@ -14,6 +14,7 @@ use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -486,6 +487,27 @@ final class Serializer
             'created_by' => $trip->createdBy,
             'created_at' => self::instant($trip->createdAt),
             'updated_at' => self::instant($trip->updatedAt),
+        ];
+    }
+
+    /**
+     * A saved journey (spec.md §7.20 `GET /journeys`): one way, in km.
+     *
+     * @return array<string, mixed>
+     */
+    public static function savedJourney(SavedJourney $journey): array
+    {
+        $data = $journey->data;
+
+        return [
+            'id' => $journey->id,
+            'from' => $data->fromPlace,
+            'to' => $data->toPlace,
+            'journey' => $journey->journey(),
+            'distance_km' => self::dec($data->distanceKm, self::QUANTITY_SCALE),
+            'is_return' => $data->isReturnDefault,
+            'is_business' => $data->isBusinessDefault,
+            'purpose' => $data->purposeDefault,
         ];
     }
 
