@@ -336,9 +336,10 @@ names both variables, rather than trusting everyone. Every variable is in
 
 ### How it works
 
-- **Only the page routes.** The API, the calendar feed, `/health` and the
-  app's static files never look at the header. Exempt them from forward
-  auth at the proxy, because scripts and calendar apps can't sign in there.
+- **Only the page routes.** The API, the MCP server (`/mcp`), the
+  calendar feed, `/health` and the app's static files never look at the
+  header. Exempt them from forward auth at the proxy, because scripts,
+  calendar apps and MCP clients can't sign in there.
   The examples do this.
 - **Trust:** the header counts only when the connecting address
   (`REMOTE_ADDR`) is in `AUTH_PROXY_TRUSTED`, a comma-separated list of IP
@@ -392,7 +393,7 @@ the proxy ends the Logbook session on the next request.
 is a complete server block for Logbook at `/logbook/`. It uses
 `auth_request` against Authelia's `/api/authz/auth-request`, sets the four
 `Remote-*` headers from Authelia's answer on every request, and exempts
-the API, the calendar feed and `/health`. The smoke test
+the API, the MCP server, the calendar feed and `/health`. The smoke test
 (`bin/smoke-test.sh header`) runs it unchanged. On the app:
 
 ```dotenv
@@ -448,7 +449,7 @@ http:
       middlewares: [strip-remote, authelia]
       service: logbook
     logbook-exempt:
-      rule: Host(`logbook.example.com`) && (PathPrefix(`/api/`) || PathPrefix(`/calendar/`) || Path(`/health`))
+      rule: Host(`logbook.example.com`) && (PathPrefix(`/api/`) || PathPrefix(`/calendar/`) || Path(`/health`) || Path(`/mcp`))
       priority: 100
       middlewares: [strip-remote]
       service: logbook
@@ -471,7 +472,7 @@ logbook.example.com {
 	request_header -Remote-Name
 	request_header -Remote-Email
 
-	@exempt path /api/* /calendar/* /health
+	@exempt path /api/* /calendar/* /health /mcp
 	handle @exempt {
 		reverse_proxy app:80
 	}
@@ -492,10 +493,10 @@ logbook.example.com {
 Create a **Proxy Provider** for Logbook, in *Proxy* mode (the outpost
 forwards to Logbook itself) or *Forward auth (single application)* with
 nginx, Traefik or Caddy in front, and an application for it. Add
-`^/(api|calendar)/.*` and `^/health$` to the provider's *Unauthenticated
-Paths*, so the API, the calendar feed and the health check get through
-without signing in. (Prefix them with your base path, for example
-`^/logbook/(api|calendar)/.*`.) The outpost sets its `X-authentik-*`
+`^/(api|calendar)/.*`, `^/health$` and `^/mcp$` to the provider's
+*Unauthenticated Paths*, so the API, the calendar feed, the health check
+and the MCP server get through without signing in. (Prefix them with your
+base path, for example `^/logbook/(api|calendar)/.*`.) The outpost sets its `X-authentik-*`
 headers on every request it forwards and drops headers with underscores.
 
 There are two ways to use it.

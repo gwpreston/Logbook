@@ -9,6 +9,7 @@ use Logbook\Kernel;
 use Logbook\Service\Mcp\McpVersion;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\JsonDoc;
 use Logbook\Tests\Support\McpClient;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -36,13 +37,13 @@ final class McpProtocolTest extends AppTestCase
 
         $result = McpClient::result($mcp->modern('server/discover'));
 
-        self::assertSame('complete', $result['resultType']);
-        self::assertSame(['2026-07-28', '2025-11-25', '2025-06-18'], $result['supportedVersions']);
-        self::assertSame(['tools', 'resources', 'prompts'], array_keys($result['capabilities']));
-        self::assertSame(0, $result['ttlMs']);
-        self::assertSame('private', $result['cacheScope']);
-        self::assertSame(Kernel::version(), $result['_meta']['io.modelcontextprotocol/serverInfo']['version']);
-        self::assertNotSame('', $result['instructions']);
+        self::assertSame('complete', $result->get('resultType'));
+        self::assertSame(['2026-07-28', '2025-11-25', '2025-06-18'], $result->get('supportedVersions'));
+        self::assertSame(['tools', 'resources', 'prompts'], $result->keys('capabilities'));
+        self::assertSame(0, $result->get('ttlMs'));
+        self::assertSame('private', $result->get('cacheScope'));
+        self::assertSame(Kernel::version(), $result->get('_meta', 'io.modelcontextprotocol/serverInfo', 'version'));
+        self::assertNotSame('', $result->string('instructions'));
     }
 
     public function testLegacyClientsInitializeAndCarryOnWithoutASession(): void
@@ -56,9 +57,9 @@ final class McpProtocolTest extends AppTestCase
                 'clientInfo' => ['name' => 'Old', 'version' => '1'],
             ], null);
             $result = McpClient::result($response);
-            self::assertSame($given, $result['protocolVersion'], $asked);
-            self::assertSame('logbook', $result['serverInfo']['name']);
-            self::assertArrayNotHasKey('resultType', $result, 'legacy results keep their own shape');
+            self::assertSame($given, $result->get('protocolVersion'), $asked);
+            self::assertSame('logbook', $result->get('serverInfo', 'name'));
+            self::assertArrayNotHasKey('resultType', $result->toArray(), 'legacy results keep their own shape');
             self::assertSame('', $response->getHeaderLine('Mcp-Session-Id'), 'no session is issued');
         }
 
@@ -68,11 +69,11 @@ final class McpProtocolTest extends AppTestCase
         self::assertSame(202, $initialized->getStatusCode());
         self::assertSame('', (string) $initialized->getBody());
 
-        self::assertSame([], McpClient::result($mcp->legacy('ping')));
-        self::assertNotEmpty(McpClient::result($mcp->legacy('tools/list'))['tools']);
-        self::assertNotEmpty(McpClient::result($mcp->legacy('tools/list', [], '2025-06-18'))['tools']);
+        self::assertSame([], McpClient::result($mcp->legacy('ping'))->toArray());
+        self::assertNotEmpty(McpClient::result($mcp->legacy('tools/list'))->get('tools'));
+        self::assertNotEmpty(McpClient::result($mcp->legacy('tools/list', [], '2025-06-18'))->get('tools'));
         self::assertNotEmpty(
-            McpClient::result($mcp->legacy('tools/list', [], null))['tools'],
+            McpClient::result($mcp->legacy('tools/list', [], null))->get('tools'),
             'no MCP-Protocol-Version: served as 2025-06-18',
         );
     }
@@ -80,19 +81,22 @@ final class McpProtocolTest extends AppTestCase
     public function testTheSpecificationsOwnExampleRequestsAreAnswered(): void
     {
         $mcp = $this->client();
-        foreach (['DiscoverRequest', 'ListToolsRequest', 'ListResourcesRequest', 'ListResourceTemplatesRequest', 'ListPromptsRequest'] as $type) {
+        $types = ['DiscoverRequest', 'ListToolsRequest', 'ListResourcesRequest', 'ListResourceTemplatesRequest',
+            'ListPromptsRequest'];
+        foreach ($types as $type) {
             foreach (glob(Kernel::rootDir() . self::EXAMPLES . $type . '/*.json') ?: [] as $file) {
                 $body = (string) file_get_contents($file);
                 $message = json_decode($body, true);
                 self::assertIsArray($message);
+                $message = new JsonDoc($message);
                 $response = $mcp->raw('POST', $body, [
                     'MCP-Protocol-Version' => McpVersion::MODERN,
-                    'Mcp-Method' => $message['method'],
+                    'Mcp-Method' => $message->string('method'),
                 ]);
                 self::assertSame(200, $response->getStatusCode(), $type . ': ' . $response->getBody());
                 $answer = McpClient::body($response);
-                self::assertSame($message['id'], $answer['id'], $type);
-                self::assertSame('complete', $answer['result']['resultType'], $type);
+                self::assertSame($message->get('id'), $answer->get('id'), $type);
+                self::assertSame('complete', $answer->get('result', 'resultType'), $type);
             }
         }
     }
@@ -122,8 +126,8 @@ final class McpProtocolTest extends AppTestCase
         $response = $mcp->modern('tools/call', ['name' => 'find_vehicles', 'arguments' => ['query' => 'Golf']], $headers);
 
         self::assertSame($status, $response->getStatusCode());
-        self::assertSame($code, McpClient::body($response)['error']['code']);
-        self::assertSame(1, McpClient::body($response)['id'], 'the id is kept once it could be read');
+        self::assertSame($code, McpClient::body($response)->get('error', 'code'));
+        self::assertSame(1, McpClient::body($response)->get('id'), 'the id is kept once it could be read');
     }
 
     public function testABase64McpNameIsDecodedBeforeItIsCompared(): void
@@ -134,7 +138,7 @@ final class McpProtocolTest extends AppTestCase
             'Mcp-Name' => '=?base64?' . base64_encode('find_vehicles') . '?=',
         ]);
 
-        self::assertFalse(McpClient::result($response)['isError']);
+        self::assertFalse(McpClient::result($response)->get('isError'));
     }
 
     public function testVersionsAndMetadataAreChecked(): void
@@ -151,14 +155,14 @@ final class McpProtocolTest extends AppTestCase
             ]],
         ]), ['MCP-Protocol-Version' => '2099-01-01', 'Mcp-Method' => 'tools/list']);
         self::assertSame(400, $future->getStatusCode());
-        $error = McpClient::body($future)['error'];
-        self::assertSame(-32022, $error['code']);
-        self::assertSame(['supported' => McpVersion::supported(), 'requested' => '2099-01-01'], $error['data']);
-        McpClient::assertConforms(McpClient::body($future), 'UnsupportedProtocolVersionError');
+        $error = McpClient::body($future)->doc('error');
+        self::assertSame(-32022, $error->get('code'));
+        self::assertSame(['supported' => McpVersion::supported(), 'requested' => '2099-01-01'], $error->get('data'));
+        McpClient::assertConforms(McpClient::body($future)->toArray(), 'UnsupportedProtocolVersionError');
 
         $old = $mcp->legacy('tools/list', [], '2024-11-05');
         self::assertSame(400, $old->getStatusCode(), 'a legacy header naming a version Logbook does not speak');
-        self::assertSame(-32022, McpClient::body($old)['error']['code']);
+        self::assertSame(-32022, McpClient::body($old)->get('error', 'code'));
 
         $noCapabilities = $mcp->raw('POST', (string) json_encode([
             'jsonrpc' => '2.0',
@@ -167,14 +171,14 @@ final class McpProtocolTest extends AppTestCase
             'params' => ['_meta' => ['io.modelcontextprotocol/protocolVersion' => McpVersion::MODERN]],
         ]), ['MCP-Protocol-Version' => McpVersion::MODERN, 'Mcp-Method' => 'tools/list']);
         self::assertSame(400, $noCapabilities->getStatusCode());
-        self::assertSame(-32602, McpClient::body($noCapabilities)['error']['code']);
+        self::assertSame(-32602, McpClient::body($noCapabilities)->get('error', 'code'));
 
         $headerOnly = $mcp->raw('POST', '{"jsonrpc":"2.0","id":9,"method":"tools/list"}', [
             'MCP-Protocol-Version' => McpVersion::MODERN,
             'Mcp-Method' => 'tools/list',
         ]);
         self::assertSame(400, $headerOnly->getStatusCode(), 'a modern header makes it modern: _meta is then required');
-        self::assertSame(-32602, McpClient::body($headerOnly)['error']['code']);
+        self::assertSame(-32602, McpClient::body($headerOnly)->get('error', 'code'));
     }
 
     public function testUnknownMethodsAreNotFoundInTheirEra(): void
@@ -183,14 +187,14 @@ final class McpProtocolTest extends AppTestCase
 
         $modern = $mcp->modern('logging/setLevel', ['level' => 'info']);
         self::assertSame(404, $modern->getStatusCode());
-        self::assertSame(-32601, McpClient::body($modern)['error']['code']);
-        McpClient::assertConforms(McpClient::body($modern)['error'], 'MethodNotFoundError');
+        self::assertSame(-32601, McpClient::body($modern)->get('error', 'code'));
+        McpClient::assertConforms(McpClient::body($modern)->get('error'), 'MethodNotFoundError');
 
         self::assertSame(404, $mcp->modern('ping')->getStatusCode(), 'ping is gone in 2026-07-28');
 
         $legacy = $mcp->legacy('resources/subscribe', ['uri' => 'logbook://me']);
         self::assertSame(200, $legacy->getStatusCode());
-        self::assertSame(-32601, McpClient::body($legacy)['error']['code']);
+        self::assertSame(-32601, McpClient::body($legacy)->get('error', 'code'));
     }
 
     public function testMalformedMessagesAndOtherHttpMethods(): void
@@ -208,7 +212,7 @@ final class McpProtocolTest extends AppTestCase
         foreach ($cases as $case => [$body, $code]) {
             $response = $mcp->raw('POST', $body);
             self::assertSame(400, $response->getStatusCode(), $case);
-            self::assertSame($code, McpClient::body($response)['error']['code'], $case);
+            self::assertSame($code, McpClient::body($response)->get('error', 'code'), $case);
         }
 
         foreach (['GET', 'DELETE'] as $method) {

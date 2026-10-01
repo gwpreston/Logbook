@@ -209,11 +209,13 @@ final readonly class McpToolbox
     private function write(User $user, DraftProposal $proposal): array
     {
         try {
-            [$vehicle, $written] = $this->transaction->run(function () use ($user, $proposal): array {
+            /** @var array{\Logbook\Domain\Vehicle\Vehicle, DraftWritten} $done */
+            $done = $this->transaction->run(function () use ($user, $proposal): array {
                 $vehicle = $this->writer->vehicle($user, $proposal->kind, $proposal->vehicleId);
 
                 return [$vehicle, $this->writer->write($user, $vehicle, $proposal->kind, $proposal->input)];
             });
+            [$vehicle, $written] = $done;
         } catch (DraftRefused $refused) {
             return self::failure($this->translator->trans($refused->key));
         } catch (DraftInvalid $invalid) {
@@ -229,7 +231,6 @@ final readonly class McpToolbox
                 'say' => $this->translator->trans('ask.draft.say.invalid'),
             ], true);
         }
-        assert($written instanceof DraftWritten);
 
         $route = $proposal->kind === DraftKind::Fuel ? 'fuel.index' : 'odometer.index';
         $link = $this->urls->route($route, ['id' => (string) $vehicle->id]);

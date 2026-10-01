@@ -74,6 +74,7 @@ final readonly class ApiKeysAction
             'api_base' => AbsoluteUrl::origin($this->settings->url, $this->settings->basePath)
                 . $this->settings->basePath . '/api/v1',
             'openapi_url' => $this->settings->apiEnabled ? $this->urls->route('api.openapi') : null,
+            'mcp_url' => $this->settings->mcpRouted() ? $this->urls->route('mcp') : null,
         ], $errors === null ? 200 : 422)->withHeader('Cache-Control', 'no-store');
     }
 }

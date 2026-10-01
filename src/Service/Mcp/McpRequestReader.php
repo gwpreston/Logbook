@@ -57,12 +57,12 @@ final class McpRequestReader
         if (!$notification && !is_int($id) && !is_string($id)) {
             throw new McpError(McpError::INVALID_REQUEST, 'A request id must be a string or an integer.', 400);
         }
+        $id = is_int($id) || is_string($id) ? $id : null;
         $params = $message['params'] ?? [];
         if (!is_array($params) || ($params !== [] && array_is_list($params))) {
             throw new McpError(McpError::INVALID_REQUEST, '"params" must be an object.', 400);
         }
         /** @var array<string, mixed> $params */
-        $id = $notification ? null : $id;
 
         $meta = is_array($params['_meta'] ?? null) ? $params['_meta'] : [];
         $metaVersion = $meta[self::META_VERSION] ?? null;

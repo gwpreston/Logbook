@@ -2532,6 +2532,8 @@ return [
         'base_label' => 'API address',
         'header_hint' => 'Send the key with every request: Authorization: Bearer lbk_…',
         'openapi' => 'OpenAPI description (for tools that read it)',
+        'mcp_label' => 'MCP server address (Claude Desktop and other assistants)',
+        'mcp_hint' => 'The same keys work there. A read key sees the read tools; a read-and-write key can also log fill-ups and readings, and draft other entries for you to add. See docs/mcp.md.',
         'secret_hint' => 'Keys are stored hashed with SESSION_SECRET: changing it stops every key working.',
     ],
     'api' => [

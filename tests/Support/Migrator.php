@@ -16,7 +16,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 final class Migrator
 {
     /**
-     * @param array<string, string> $options e.g. ['--target' => '0']
+     * @param array<string, string|list<string>> $options e.g. ['--target' => '0'], ['--seed' => ['DemoDataSeeder']]
      */
     public static function run(string $command, array $options = []): string
     {

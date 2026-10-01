@@ -206,6 +206,10 @@ can't be chosen for it. A task without a model switches its features off.
 
 ## Ask Logbook
 
+> **Using Claude Desktop or another assistant instead?** Logbook's
+> [MCP server](mcp.md) gives it the same tools, with its own model and no
+> connection here.
+
 Ask a question in plain words on **Ask** (`/ask`; in the sidebar, the
 header on a phone, the dashboard and the phone app's quick actions):
 "How much did I spend on fuel last year?", "When did I last change the oil

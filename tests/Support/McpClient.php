@@ -13,6 +13,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\App;
 use Slim\Psr7\Factory\ServerRequestFactory;
+use stdClass;
 
 /**
  * Drives the MCP endpoint (spec.md §7.28) with a key, in either protocol
@@ -38,7 +39,7 @@ final class McpClient
         'prompts/get' => 'GetPromptResult',
     ];
 
-    /** @var array<string, object> */
+    /** @var array<string, stdClass> */
     private static array $schemas = [];
 
     public readonly string $address;
@@ -67,7 +68,7 @@ final class McpClient
         $params['_meta'] = [
             'io.modelcontextprotocol/protocolVersion' => McpVersion::MODERN,
             'io.modelcontextprotocol/clientInfo' => ['name' => 'LogbookTests', 'version' => '1.0.0'],
-            'io.modelcontextprotocol/clientCapabilities' => new \stdClass(),
+            'io.modelcontextprotocol/clientCapabilities' => new stdClass(),
         ] + (is_array($params['_meta'] ?? null) ? $params['_meta'] : []);
         $mirrored = ['MCP-Protocol-Version' => McpVersion::MODERN, 'Mcp-Method' => $method];
         $name = $params['name'] ?? $params['uri'] ?? null;
@@ -125,46 +126,40 @@ final class McpClient
 
     /**
      * The decoded JSON-RPC answer.
-     *
-     * @return array<string, mixed>
      */
-    public static function body(ResponseInterface $response): array
+    public static function body(ResponseInterface $response): JsonDoc
     {
         $data = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
         Assert::assertIsArray($data);
 
-        return $data;
+        return new JsonDoc($data);
     }
 
     /**
      * The result of a successful answer.
-     *
-     * @return array<string, mixed>
      */
-    public static function result(ResponseInterface $response): array
+    public static function result(ResponseInterface $response): JsonDoc
     {
         $body = self::body($response);
-        Assert::assertSame(200, $response->getStatusCode(), (string) json_encode($body));
-        Assert::assertArrayHasKey('result', $body, (string) json_encode($body));
-        Assert::assertIsArray($body['result']);
+        $text = (string) json_encode($body->toArray());
+        Assert::assertSame(200, $response->getStatusCode(), $text);
+        Assert::assertArrayHasKey('result', $body->toArray(), $text);
 
-        return $body['result'];
+        return $body->doc('result');
     }
 
     /**
      * A tool call's structured content, after checking it is not an error.
-     *
-     * @return array<string, mixed>
      */
-    public static function structured(ResponseInterface $response, bool $isError = false): array
+    public static function structured(ResponseInterface $response, bool $isError = false): JsonDoc
     {
         $result = self::result($response);
-        Assert::assertSame($isError, $result['isError'] ?? false, (string) json_encode($result));
-        Assert::assertIsArray($result['structuredContent']);
+        Assert::assertSame($isError, $result->get('isError') ?? false, (string) json_encode($result->toArray()));
+        $content = $result->doc('structuredContent');
         // The text block carries the same JSON, for clients that read only text.
-        Assert::assertSame($result['structuredContent'], json_decode($result['content'][0]['text'], true));
+        Assert::assertSame($content->toArray(), json_decode($result->string('content', 0, 'text'), true));
 
-        return $result['structuredContent'];
+        return $content;
     }
 
     /**
@@ -173,6 +168,7 @@ final class McpClient
     public static function assertConforms(mixed $message, string $type, string $version = McpVersion::MODERN): void
     {
         $schema = self::schema($version);
+        Assert::assertObjectHasProperty('$defs', $schema);
         $wrapped = json_decode((string) json_encode(['$ref' => '#/$defs/' . $type, '$defs' => $schema->{'$defs'}]));
         $document = is_object($message) ? $message : json_decode((string) json_encode($message));
         $validator = new Validator();
@@ -214,11 +210,11 @@ final class McpClient
         Assert::assertSame('application/json', $response->getHeaderLine('Content-Type'));
         // Decoded as objects, so an empty object stays one for the schema.
         $message = json_decode($text, false, 512, JSON_THROW_ON_ERROR);
-        Assert::assertIsObject($message);
+        Assert::assertInstanceOf(stdClass::class, $message);
         if (isset($message->result)) {
             self::assertConforms($message->result, self::RESULTS[$method] ?? 'Result', $schemaVersion);
             if ($schemaVersion === McpVersion::MODERN) {
-                Assert::assertSame('logbook', $message->result->_meta->{'io.modelcontextprotocol/serverInfo'}->name ?? null);
+                Assert::assertSame('logbook', self::serverName($message->result));
             }
         } else {
             self::assertConforms($message, 'JSONRPCErrorResponse', $schemaVersion);
@@ -227,12 +223,23 @@ final class McpClient
         return $response;
     }
 
-    private static function schema(string $version): object
+    /**
+     * `_meta`'s server name in a modern result, or null when there is none.
+     */
+    private static function serverName(mixed $result): mixed
+    {
+        $meta = $result instanceof stdClass ? $result->_meta ?? null : null;
+        $info = $meta instanceof stdClass ? $meta->{'io.modelcontextprotocol/serverInfo'} ?? null : null;
+
+        return $info instanceof stdClass ? $info->name ?? null : null;
+    }
+
+    private static function schema(string $version): stdClass
     {
         $file = McpVersion::isLegacy($version) ? '2025-11-25' : McpVersion::MODERN;
         if (!isset(self::$schemas[$file])) {
             $schema = json_decode((string) file_get_contents(Kernel::rootDir() . self::FIXTURES . $file . '/schema.json'));
-            Assert::assertIsObject($schema);
+            Assert::assertInstanceOf(stdClass::class, $schema);
             self::$schemas[$file] = $schema;
         }
 

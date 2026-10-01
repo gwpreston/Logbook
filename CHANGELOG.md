@@ -6,6 +6,54 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.9.0] — 2026-10-01
+
+Phase 26.5: **the MCP server**. Claude Desktop, Claude Code, an IDE agent
+or a local assistant can now use Logbook's tools with **its own model**,
+through the Model Context Protocol at `/mcp`. It needs no AI connection in
+Settings → AI. It is authorised with an API key, so it sees exactly what
+the key's user sees. [`docs/mcp.md`](docs/mcp.md) sets it up.
+
+### Added
+- **The MCP endpoint** at `<your URL>/mcp` (Streamable HTTP). It speaks
+  the current, stateless protocol version `2026-07-28` and the earlier
+  `2025-11-25` and `2025-06-18`, without sessions. Every response is
+  checked against the specification's own schemas in the test suite.
+- **The Ask read tools** for every key (costs, fuel, mileage, maintenance,
+  documents, tyres, trips, *Coming up*, *Needs attention* and more), with
+  the same figures as *Ask Logbook* and a full link to the page in
+  Logbook.
+- **Writes for read-and-write keys:** `log_fill_up` and `add_reading`
+  write through the API's write path. A retry never logs twice. Service
+  records, documents, expenses, tread checks and reminders become
+  **drafts**, kept 7 days and listed on the dashboard under **Drafts to
+  review**, each with *Add*, *Edit* and *Discard*. They work without AI
+  set up.
+- **Resources** (`logbook://vehicles`, `logbook://me` and each vehicle's
+  summary) and **prompts** (*Monthly summary*, *Before a service*, *Sale
+  checklist*).
+- Tool descriptions and prompts in the key user's language (English,
+  German).
+- Settings → API keys shows the MCP address. Each tool call, resource read
+  and prompt appears in the AI usage log as *MCP clients*, with the key's
+  name and never the content.
+
+### Changed
+- The forward-auth examples in [`docs/sso.md`](docs/sso.md) and
+  `docker/nginx/forward-auth-example.conf` also exempt `/mcp`, as they do
+  `/api/`.
+- `API_CORS_ORIGINS` also covers `/mcp`. An `Origin` that isn't listed is
+  refused there.
+
+### Upgrade notes
+- One migration (`ai_drafts.source`, marking drafts from MCP). It rolls
+  back.
+- One new, optional variable: `MCP_ENABLED` (default `true`). `/mcp` is a
+  404 when it, or `API_ENABLED`, is `false`. Nothing is reachable without
+  an API key.
+- Behind forward auth (Authelia, Authentik), exempt `/mcp` as you exempt
+  `/api/`.
+
 ## [2.8.0] — 2026-10-01
 
 Phase 26.4: **reading receipts and documents**. Photograph a garage
@@ -1578,7 +1626,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.8.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.9.0...HEAD
+[2.9.0]: https://github.com/gwpreston16/Logbook/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/gwpreston16/Logbook/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/gwpreston16/Logbook/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/gwpreston16/Logbook/compare/v2.5.0...v2.6.0

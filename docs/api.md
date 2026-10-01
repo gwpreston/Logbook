@@ -12,6 +12,9 @@ The contract is the OpenAPI 3.1 description, served by your install at
 [`docs/api/openapi.json`](api/openapi.json)); the test suite checks every
 response against it. `spec.md` §7.20 has the rules.
 
+The same keys open the [MCP server](mcp.md) (`/mcp`), for Claude Desktop
+and other assistants.
+
 - [Keys](#keys)
 - [Requests and values](#requests-and-values)
 - [Endpoints](#endpoints)

@@ -2530,6 +2530,8 @@ return [
         'base_label' => 'API-Adresse',
         'header_hint' => 'Sende den Schlüssel bei jeder Anfrage mit: Authorization: Bearer lbk_…',
         'openapi' => 'OpenAPI-Beschreibung (für Werkzeuge, die sie lesen)',
+        'mcp_label' => 'MCP-Server-Adresse (Claude Desktop und andere Assistenten)',
+        'mcp_hint' => 'Dort gelten dieselben Schlüssel. Ein Leseschlüssel sieht die Lesewerkzeuge; ein Schlüssel zum Lesen und Schreiben kann auch Tankvorgänge und Kilometerstände eintragen und andere Einträge entwerfen, die du dann hinzufügst. Siehe docs/mcp.md.',
         'secret_hint' => 'Schlüssel werden mit SESSION_SECRET gehasht gespeichert: Wird es geändert, funktioniert kein Schlüssel mehr.',
     ],
     'api' => [
