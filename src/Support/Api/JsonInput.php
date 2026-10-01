@@ -87,6 +87,37 @@ final class JsonInput
         'schedule_id' => 'schedule',
     ];
 
+    /** API field → form field, for the incident form (Phase 27.1). */
+    public const array INCIDENT_FIELDS = [
+        'occurred_on' => 'occurred_on',
+        'occurred_at_time' => 'occurred_at_time',
+        'location' => 'location',
+        'type' => 'type',
+        'fault' => 'fault',
+        'description' => 'description',
+        'damage_areas' => 'damage_areas',
+        'severity' => 'severity',
+        'odometer' => 'odometer',
+        'driver_user_id' => 'driver_user_id',
+        'driver_name' => 'driver_name',
+        'other_party_name' => 'other_party_name',
+        'other_party_registration' => 'other_party_registration',
+        'other_party_insurer' => 'other_party_insurer',
+        'police_reference' => 'police_reference',
+        'status' => 'status',
+        'closed_on' => 'closed_on',
+        'write_off_category' => 'write_off_category',
+        'notes' => 'notes',
+        'claim_status' => 'claim_status',
+        'insurer' => 'insurer',
+        'insurance_document_id' => 'insurance_document_id',
+        'claim_number' => 'claim_number',
+        'excess' => 'excess',
+        'payout' => 'payout',
+        'ncd_affected' => 'ncd_affected',
+        'claim_updated_on' => 'claim_updated_on',
+    ];
+
     /** API field → form field, for the document form (Phase 26.3). */
     public const array DOCUMENT_FIELDS = [
         'type' => 'type',
@@ -333,6 +364,35 @@ final class JsonInput
     }
 
     /**
+     * An incident body as the incident form's input (spec.md §7.29 *API*):
+     * the date defaults to today, `damage_areas` is a list of codes, ids
+     * and amounts are strings, the odometer is in `distance_unit`.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string|list<string>>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function incident(array $body, DisplayPreferences $owner, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::INCIDENT_FIELDS), 'distance_unit'], $errors);
+
+        $input = [];
+        foreach (self::INCIDENT_FIELDS as $api => $form) {
+            $input[$form] = match ($api) {
+                'occurred_on' => self::text($body, $api, $errors, $today->format('Y-m-d')),
+                'odometer', 'excess', 'payout', 'driver_user_id', 'insurance_document_id' => self::decimal($body, $api, $errors),
+                'damage_areas' => self::codes($body, $api, $errors),
+                default => self::text($body, $api, $errors),
+            };
+        }
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
      * A document body as the document form's input. Dates are optional, as
      * on the form.
      *
@@ -546,6 +606,24 @@ final class JsonInput
         }
 
         return trim($value);
+    }
+
+    /**
+     * A list of codes (strings); missing is an empty list.
+     *
+     * @param array<string, mixed> $body
+     * @return list<string>
+     */
+    private static function codes(array $body, string $name, ValidationErrors $errors): array
+    {
+        $value = $body[$name] ?? [];
+        if (!is_array($value) || !array_is_list($value) || array_filter($value, is_string(...)) !== $value) {
+            $errors->add($name, 'api.validation.list');
+
+            return [];
+        }
+
+        return $value;
     }
 
     /**

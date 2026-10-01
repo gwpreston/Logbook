@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
+use Logbook\Action\Api\IncidentHistoryAction as ApiIncidentHistoryAction;
+use Logbook\Action\Api\ListIncidentsAction as ApiIncidentsAction;
 use Logbook\Action\Api\ListJourneysAction as ApiJourneysAction;
+use Logbook\Action\Api\LogIncidentAction as ApiLogIncidentAction;
 use Logbook\Action\Api\ListMaintenanceAction as ApiMaintenanceAction;
 use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
 use Logbook\Action\Api\ListTripsAction as ApiTripsAction;
@@ -308,6 +311,16 @@ return static function (App $app): void {
                     $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
                     $trips->get('/journeys', ApiJourneysAction::class)->setName('api.journeys');
                 })->add($module(Feature::Trips));
+                // Incidents (spec.md §7.20, §7.29): the access rules of IncidentAccess.
+                $keyed->group('', function (Group $incidents) use ($ability): void {
+                    $incidents->get('/vehicles/{id:[0-9]+}/incidents', ApiIncidentsAction::class)
+                        ->setName('api.incidents.index')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $incidents->post('/vehicles/{id:[0-9]+}/incidents', ApiLogIncidentAction::class)
+                        ->setName('api.incidents.create')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $incidents->get('/incidents/history', ApiIncidentHistoryAction::class)->setName('api.incidents.history');
+                })->add($module(Feature::Incidents));
             })->add(VehicleAccessMiddleware::class)
                 ->add(ApiAuthMiddleware::class);
         })->add(ApiErrorMiddleware::class);

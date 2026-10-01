@@ -21,6 +21,8 @@ enum DraftKind: string
     case Expense = 'expense';
     case TyreCheck = 'tyre_check';
     case Reminder = 'reminder';
+    /** Phase 27.1 (spec.md §7.29). */
+    case Incident = 'incident';
 
     /**
      * The module it needs; null for the core ones.
@@ -33,6 +35,7 @@ enum DraftKind: string
             self::Document => Feature::Compliance,
             self::TyreCheck => Feature::Tyres,
             self::Reminder => Feature::Reminders,
+            self::Incident => Feature::Incidents,
             self::Odometer, self::Expense => null,
         };
     }
@@ -55,6 +58,7 @@ enum DraftKind: string
             self::Expense => 'draft_expense',
             self::TyreCheck => 'draft_tyre_check',
             self::Reminder => 'draft_reminder',
+            self::Incident => 'draft_incident',
         };
     }
 

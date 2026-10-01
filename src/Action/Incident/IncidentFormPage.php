@@ -7,7 +7,6 @@ namespace Logbook\Action\Incident;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceDocument;
-use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Incident\ClaimStatus;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\Fault;
@@ -19,9 +18,7 @@ use Logbook\Domain\Incident\Severity;
 use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
-use Logbook\Repository\ComplianceDocumentRepository;
-use Logbook\Service\Sharing\SharingService;
-use Logbook\Service\User\UserDirectory;
+use Logbook\Service\Incident\IncidentChoices;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\View\View;
@@ -36,43 +33,25 @@ final readonly class IncidentFormPage
     public function __construct(
         private View $view,
         private AttachmentUpload $upload,
-        private SharingService $sharing,
-        private UserDirectory $directory,
-        private ComplianceDocumentRepository $documents,
+        private IncidentChoices $choices,
         private VehicleService $vehicles,
     ) {
     }
 
     /**
-     * The users who may be named as the driver: the owner and everyone the vehicle is shared with.
-     *
      * @return array<int, string> id => display name
      */
     public function drivers(Vehicle $vehicle): array
     {
-        $drivers = [];
-        $owner = $this->directory->find($vehicle->userId);
-        if ($owner !== null) {
-            $drivers[$owner->id] = $owner->displayName;
-        }
-        foreach ($this->sharing->sharesOf($vehicle) as $row) {
-            $drivers[$row->user->id] = $row->user->displayName;
-        }
-
-        return $drivers;
+        return $this->choices->drivers($vehicle);
     }
 
     /**
-     * @return list<ComplianceDocument> the vehicle's insurance documents, newest first
+     * @return list<ComplianceDocument>
      */
     public function policies(Vehicle $vehicle): array
     {
-        $policies = array_values(array_filter(
-            $this->documents->listForVehicle($vehicle->id),
-            static fn (ComplianceDocument $document): bool => $document->data->type === ComplianceType::Insurance,
-        ));
-
-        return array_reverse($policies);
+        return $this->choices->policies($vehicle);
     }
 
     /**

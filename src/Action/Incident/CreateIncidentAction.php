@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Incident;
 
+use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceDocument;
@@ -28,6 +30,7 @@ final readonly class CreateIncidentAction
         private AttachmentUpload $upload,
         private Redirector $redirect,
         private ClockInterface $clock,
+        private DraftPrefill $prefill,
     ) {
     }
 
@@ -53,6 +56,8 @@ final readonly class CreateIncidentAction
             $date = is_string($on) ? LocalTime::parseDate($on) : null;
             $date = $date !== null && $date <= $today ? $date : $today;
             $values = IncidentForm::defaults($date, $this->incidents->policyOn($vehicle, $date));
+            // *Edit* on a draft card (Phase 26.3): the draft's values, marked.
+            $values = IncidentForm::listValues($this->prefill->values($request, DraftKind::Incident, $vehicle->id, $values));
 
             return $this->page->render($request, $response, $user, $vehicle, $values);
         }
@@ -73,6 +78,7 @@ final readonly class CreateIncidentAction
         }
 
         $incident = $this->incidents->create($vehicle, $input->data, $input->odometerKm, $zone, $files);
+        $this->prefill->saved($request);
         RequestContext::session($request)->flash('success', 'incident.created');
 
         return $this->redirect->backOr($request, 'incidents.show', [

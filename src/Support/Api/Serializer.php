@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Api;
 
+use Logbook\Domain\Incident\DamageArea;
+use Logbook\Service\Incident\ClaimsRow;
+use Logbook\Service\Incident\IncidentView;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -516,6 +519,113 @@ final class Serializer
             'created_by' => $trip->createdBy,
             'created_at' => self::instant($trip->createdAt),
             'updated_at' => self::instant($trip->updatedAt),
+        ];
+    }
+
+    /**
+     * An incident as the key's user may see it (spec.md §7.29 *Access*):
+     * the summary always; the detail fields only with `details` (null
+     * otherwise, `claim` and `other_party` null); amounts also need
+     * `amounts`. Links are the linked records' ids.
+     *
+     * @param array<string, list<int>> $links by LinkKind value
+     * @return array<string, mixed>
+     */
+    public static function incident(
+        IncidentView $view,
+        ?string $driver,
+        ?string $odometerKm,
+        string $currency,
+        array $links,
+        ?DateTimeImmutable $createdAt = null,
+        ?DateTimeImmutable $updatedAt = null,
+    ): array {
+        $costs = $view->costs;
+
+        return [
+            'id' => $view->id,
+            'vehicle_id' => $view->vehicleId,
+            'occurred_on' => self::date($view->occurredOn),
+            'type' => $view->type->value,
+            'damage_areas' => array_map(static fn (DamageArea $area): string => $area->value, $view->damageAreas),
+            'severity' => $view->severity?->value,
+            'write_off_category' => $view->writeOff->value,
+            'status' => $view->status->value,
+            'closed_on' => $view->closedOn === null ? null : self::date($view->closedOn),
+            'odometer' => self::dec($odometerKm, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'details' => $view->details,
+            'occurred_at_time' => $view->occurredAtTime,
+            'location' => $view->location,
+            'fault' => $view->fault?->value,
+            'description' => $view->description,
+            'driver_user_id' => $view->driverUserId,
+            'driver' => $view->details ? $driver : null,
+            'police_reference' => $view->policeReference,
+            'notes' => $view->notes,
+            'other_party' => $view->details ? [
+                'name' => $view->otherPartyName,
+                'registration' => $view->otherPartyRegistration,
+                'insurer' => $view->otherPartyInsurer,
+            ] : null,
+            'claim' => $view->details ? [
+                'status' => $view->claimStatus?->value,
+                'insurer' => $view->insurer,
+                'insurance_document_id' => $view->insuranceDocumentId,
+                'claim_number' => $view->claimNumber,
+                'excess' => self::dec($view->excess, self::QUANTITY_SCALE),
+                'payout' => self::dec($view->payout, self::QUANTITY_SCALE),
+                'ncd_affected' => $view->ncdAffected?->value,
+                'updated_on' => $view->claimUpdatedOn === null ? null : self::date($view->claimUpdatedOn),
+            ] : null,
+            'costs' => $costs === null ? null : [
+                'linked' => $costs->linked->toDecimal(2),
+                'payouts' => $view->showsPayouts() ? $costs->payouts->toDecimal(2) : null,
+                'net' => $view->showsPayouts() ? $costs->net->toDecimal(2) : null,
+                'received_more' => $view->showsPayouts() ? $costs->receivedMore : null,
+            ],
+            'currency' => $currency,
+            'links' => [
+                'maintenance' => $links['maintenance'] ?? [],
+                'expenses' => $links['expense'] ?? [],
+                'tyre_changes' => $links['tyre'] ?? [],
+            ],
+            'created_by' => $view->createdBy,
+            'created_at' => $createdAt === null ? null : self::instant($createdAt),
+            'updated_at' => $updatedAt === null ? null : self::instant($updatedAt),
+        ];
+    }
+
+    /**
+     * A claims history row (spec.md §7.29): never the other party.
+     *
+     * @return array<string, mixed>
+     */
+    public static function claimsRow(ClaimsRow $row): array
+    {
+        $view = $row->incident;
+        $vehicle = $row->vehicle;
+
+        return [
+            'incident_id' => $view->id,
+            'occurred_on' => self::date($view->occurredOn),
+            'vehicle' => [
+                'id' => $vehicle->id,
+                'name' => $vehicle->name(),
+                'registration' => $vehicle->data->registration,
+                'archived' => $vehicle->isArchived(),
+            ],
+            'type' => $view->type->value,
+            'write_off_category' => $view->writeOff->value,
+            'details' => $view->details,
+            'fault' => $view->fault?->value,
+            'driver' => $row->driver,
+            'claim_status' => $view->claimStatus?->value,
+            'insurer' => $view->insurer,
+            'claim_number' => $view->claimNumber,
+            'payout' => self::dec($view->payout, self::QUANTITY_SCALE),
+            'currency' => $row->currency,
+            'ncd_affected' => $view->ncdAffected?->value,
         ];
     }
 

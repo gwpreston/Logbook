@@ -1239,6 +1239,232 @@
           }
         }
       }
+    },
+    "/vehicles/{id}/incidents": {
+      "get": {
+        "operationId": "listIncidents",
+        "summary": "Incidents, newest first",
+        "description": "As the key's user may see them (spec §7.29 Access). Needs the incidents module.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logIncident",
+        "summary": "Log an incident",
+        "description": "Needs a read and write key. Validated as the incident form validates. One of the vehicle's incidents with the same date, type and claim number is not written again: it comes back with duplicate true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already logged (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/incidents/history": {
+      "get": {
+        "operationId": "claimsHistory",
+        "summary": "The claims history",
+        "description": "Every incident on every vehicle the key's user can see, archived and sold ones included, newest first. Never the other party. Needs the incidents module.",
+        "parameters": [
+          {
+            "name": "years",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "3",
+                "5",
+                "10"
+              ]
+            },
+            "description": "The last 3, 5 (default) or 10 years, by calendar date."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Date"
+            },
+            "description": "A date range instead of years."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Date"
+            },
+            "description": "The end of the range (inclusive)."
+          },
+          {
+            "name": "vehicle_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "description": "One vehicle."
+          },
+          {
+            "name": "driver",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "A user id, or name:<typed name>."
+          },
+          {
+            "name": "claims_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Only incidents the insurer was told about."
+          },
+          {
+            "name": "fault",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "at_fault",
+                "not_at_fault",
+                "split",
+                "unknown"
+              ]
+            },
+            "description": "One fault."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimsHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4541,6 +4767,746 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "Incident": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "occurred_on",
+          "type",
+          "damage_areas",
+          "severity",
+          "write_off_category",
+          "status",
+          "closed_on",
+          "odometer",
+          "distance_unit",
+          "details",
+          "occurred_at_time",
+          "location",
+          "fault",
+          "description",
+          "driver_user_id",
+          "driver",
+          "police_reference",
+          "notes",
+          "other_party",
+          "claim",
+          "costs",
+          "currency",
+          "links",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "description": "An incident as the key's user may see it. Everyone who can view the vehicle sees the summary (date, type, damage, status, write-off, links); `details` is false and the detail fields are null unless they manage or own the vehicle or logged it. Amounts also need cost access.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "occurred_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "collision",
+              "parked_damage",
+              "theft",
+              "break_in",
+              "vandalism",
+              "weather",
+              "glass",
+              "pothole",
+              "animal",
+              "fire",
+              "other"
+            ]
+          },
+          "damage_areas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "front",
+                "rear",
+                "left",
+                "right",
+                "roof",
+                "underside",
+                "glass",
+                "wheels",
+                "interior"
+              ]
+            }
+          },
+          "severity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "cosmetic",
+              "minor",
+              "major",
+              null
+            ]
+          },
+          "write_off_category": {
+            "type": "string",
+            "enum": [
+              "none",
+              "cat_n",
+              "cat_s",
+              "cat_b",
+              "cat_a"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "closed_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km"
+            ]
+          },
+          "details": {
+            "type": "boolean"
+          },
+          "occurred_at_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fault": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "at_fault",
+              "not_at_fault",
+              "split",
+              "unknown",
+              null
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "driver_user_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "driver": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "police_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "other_party": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "registration",
+              "insurer"
+            ],
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "registration": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "insurer": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "claim": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "insurer",
+              "insurance_document_id",
+              "claim_number",
+              "excess",
+              "payout",
+              "ncd_affected",
+              "updated_on"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "not_claimed",
+                  "notified",
+                  "open",
+                  "settled",
+                  "declined",
+                  "withdrawn"
+                ]
+              },
+              "insurer": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "insurance_document_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "claim_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "excess": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "payout": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "ncd_affected": {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ]
+              },
+              "updated_on": {
+                "$ref": "#/components/schemas/NullableDate"
+              }
+            }
+          },
+          "costs": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "linked",
+              "payouts",
+              "net",
+              "received_more"
+            ],
+            "description": "Linked costs as Reports counts them (null without cost access, or on a write); payouts and the net cost only with the details.",
+            "properties": {
+              "linked": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "payouts": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "net": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "received_more": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "maintenance",
+              "expenses",
+              "tyre_changes"
+            ],
+            "properties": {
+              "maintenance": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "expenses": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "tyre_changes": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          }
+        }
+      },
+      "IncidentPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Incident"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "IncidentWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Incident"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "IncidentInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "description": "Validated as the incident form validates. Amounts and ids are strings; the odometer is in distance_unit (the key user's unit when left out).",
+        "properties": {
+          "occurred_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Defaults to today; not in the future."
+          },
+          "occurred_at_time": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "collision",
+              "parked_damage",
+              "theft",
+              "break_in",
+              "vandalism",
+              "weather",
+              "glass",
+              "pothole",
+              "animal",
+              "fire",
+              "other"
+            ]
+          },
+          "fault": {
+            "type": "string",
+            "enum": [
+              "at_fault",
+              "not_at_fault",
+              "split",
+              "unknown"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "damage_areas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "front",
+                "rear",
+                "left",
+                "right",
+                "roof",
+                "underside",
+                "glass",
+                "wheels",
+                "interior"
+              ]
+            }
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "cosmetic",
+              "minor",
+              "major"
+            ]
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "driver_user_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Someone who can view the vehicle."
+          },
+          "driver_name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "other_party_name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "other_party_registration": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "other_party_insurer": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "police_reference": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "closed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "write_off_category": {
+            "type": "string",
+            "enum": [
+              "none",
+              "cat_n",
+              "cat_s",
+              "cat_b",
+              "cat_a"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "claim_status": {
+            "type": "string",
+            "enum": [
+              "not_claimed",
+              "notified",
+              "open",
+              "settled",
+              "declined",
+              "withdrawn"
+            ]
+          },
+          "insurer": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "insurance_document_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "One of the vehicle's insurance documents."
+          },
+          "claim_number": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "excess": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "payout": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "ncd_affected": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ]
+          },
+          "claim_updated_on": {
+            "$ref": "#/components/schemas/Date"
+          }
+        }
+      },
+      "ClaimsRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "incident_id",
+          "occurred_on",
+          "vehicle",
+          "type",
+          "write_off_category",
+          "details",
+          "fault",
+          "driver",
+          "claim_status",
+          "insurer",
+          "claim_number",
+          "payout",
+          "currency",
+          "ncd_affected"
+        ],
+        "description": "One row of the claims history. Never the other party. Without the details the claim fields are null.",
+        "properties": {
+          "incident_id": {
+            "type": "integer"
+          },
+          "occurred_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "vehicle": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "registration",
+              "archived"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "registration": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "archived": {
+                "type": "boolean"
+              }
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "collision",
+              "parked_damage",
+              "theft",
+              "break_in",
+              "vandalism",
+              "weather",
+              "glass",
+              "pothole",
+              "animal",
+              "fire",
+              "other"
+            ]
+          },
+          "write_off_category": {
+            "type": "string",
+            "enum": [
+              "none",
+              "cat_n",
+              "cat_s",
+              "cat_b",
+              "cat_a"
+            ]
+          },
+          "details": {
+            "type": "boolean"
+          },
+          "fault": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "at_fault",
+              "not_at_fault",
+              "split",
+              "unknown",
+              null
+            ]
+          },
+          "driver": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "claim_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "not_claimed",
+              "notified",
+              "open",
+              "settled",
+              "declined",
+              "withdrawn",
+              null
+            ]
+          },
+          "insurer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "claim_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payout": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "ncd_affected": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "yes",
+              "no",
+              "unknown",
+              null
+            ]
+          }
+        }
+      },
+      "ClaimsHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimsRow"
             }
           }
         }

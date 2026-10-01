@@ -2787,6 +2787,7 @@ return [
             'instant' => 'Gib Datum und Uhrzeit mit Zeitzone an, z. B. 2026-09-29T07:42:00Z.',
             'boolean' => 'Verwende true oder false.',
             'string' => 'Verwende einen Text.',
+            'list' => 'Verwende eine Liste von Textwerten.',
             'kwh_for_electric' => 'kWh gilt nur für Strom; verwende l, gal_uk oder gal_us.',
             'electric_in_kwh' => 'Strom wird in kWh gemessen; verwende kwh oder lass die Einheit weg.',
             'depths' => 'Gib die Profiltiefen als Objekt von Positionscode (fl, fr, rl, rr, front, rear, spare) zu Tiefe an.',
@@ -3712,6 +3713,7 @@ return [
             'mileage' => 'Kilometerstand',
             'ownership' => 'Gesamtkosten',
             'trips_summary' => 'Fahrten',
+            'incidents' => 'Schadenhistorie',
             'needs_attention' => 'Braucht Aufmerksamkeit',
             'draft' => 'Entwurf',
         ],
@@ -3727,6 +3729,7 @@ return [
                 'expense' => 'Ausgabe',
                 'tyre_check' => 'Profilmessung',
                 'reminder' => 'Erinnerung',
+                'incident' => 'Schaden',
             ],
             'field' => [
                 'when' => 'Wann',
@@ -3752,6 +3755,10 @@ return [
                 'amount' => 'Betrag',
                 'due_on' => 'Fällig',
                 'lead_time_days' => 'Erinnern',
+                'damage' => 'Schaden',
+                'fault' => 'Schuld',
+                'claim' => 'Versicherungsfall',
+                'insurer' => 'Versicherer',
             ],
             'summary' => [
                 'fuel' => '{volume} {fuel} zu {price} = {total}',
@@ -3761,6 +3768,7 @@ return [
                 'expense' => '{category}: {amount}',
                 'tyre_check' => 'Profil: {depths}',
                 'reminder' => '{title}, fällig am {due}',
+                'incident' => '{type}, {date}',
             ],
             'derived' => [
                 'total' => 'Gesamtbetrag aus Menge und Preis ausgerechnet.',
@@ -3860,6 +3868,7 @@ return [
             'ownership' => 'Berechne die Gesamtkosten…',
             'trips_summary' => 'Suche die Fahrten heraus…',
             'needs_attention' => 'Prüfe, was Aufmerksamkeit braucht…',
+            'incidents' => 'Schäden und Versicherungsfälle werden durchgesehen…',
             'draft_fill_up' => 'Tanken wird entworfen…',
             'draft_reading' => 'Kilometerstand wird entworfen…',
             'draft_service_record' => 'Wartungseintrag wird entworfen…',
@@ -3867,6 +3876,7 @@ return [
             'draft_expense' => 'Ausgabe wird entworfen…',
             'draft_tyre_check' => 'Profilmessung wird entworfen…',
             'draft_reminder' => 'Erinnerung wird entworfen…',
+            'draft_incident' => 'Schaden wird entworfen…',
         ],
         // Words the tools' results and sources use.
         'result' => [
@@ -3898,6 +3908,7 @@ return [
             'tyres' => 'Die Reifen eines Fahrzeugs: montierte (nach Position) und eingelagerte Sätze, mit Marke, Größe, Saison, Laufleistung, Alter, letzter Profiltiefe, geschätzter Reststrecke und Datum bis zur Verschleißgrenze und ob sie zu ersetzen sind.',
             'trips_summary' => 'Die Dienstfahrten des Nutzers in einem Zeitraum: Anzahl, dienstliche und private Strecke und der Erstattungsbetrag zu den amtlichen Sätzen. Standard ist das laufende Steuerjahr.',
             'needs_attention' => 'Was jetzt Aufmerksamkeit braucht: überfällige Wartung, Dokumente und Erinnerungen und Einträge, die falsch aussehen (seltsame Kilometerstände, Verbrauchsabweichung, ungewöhnliche Preise oder Kosten, veraltete Kilometerstände oder Werte).',
+            'incidents' => 'Schäden und Versicherungsfälle an den Fahrzeugen des Nutzers, auch verkaufte und archivierte: Datum, Fahrzeug, Art, Schuld, Fahrer, Stand, Versicherer, Schadennummer, Zahlung und Auswirkung auf den Schadenfreiheitsrabatt. Standardmäßig die letzten 5 Jahre, nach denen Versicherer meist fragen.',
             'log_fill_up' => 'Trägt einen Tankvorgang (oder eine Ladung) jetzt in Logbook ein, wie der Nutzer ihn beschrieben hat. Gib die Worte, Zahlen und Einheiten des Nutzers weiter und lass weg, was er nicht gesagt hat: Logbook ermittelt Fahrzeug, Datum und Beträge und fragt nach, wenn es unsicher ist. Bestätige die Angaben vor dem Aufruf mit dem Nutzer. Ein erneuter Aufruf mit demselben Tankvorgang trägt ihn nie doppelt ein.',
             'add_reading' => 'Trägt jetzt einen Kilometerstand in Logbook ein. Für einen Tankvorgang nimm log_fill_up: Es speichert den Stand mit. Gib die Worte und Zahlen des Nutzers weiter; bestätige vor dem Aufruf mit dem Nutzer. Ein erneuter Aufruf mit demselben Stand trägt ihn nie doppelt ein.',
             'draft_service_record' => 'Entwirft einen Wartungseintrag (Wartung oder Reparatur). Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis. Gib die Worte, Zahlen und Einheiten des Nutzers weiter; lass weg, was er nicht gesagt hat.',
@@ -3905,6 +3916,7 @@ return [
             'draft_expense' => 'Entwirft eine Ausgabe (Parken, Maut, Kfz-Steuer, Reinigung, Zubehör, Bußgelder, Finanzierung, Sonstiges). Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis. Tanken, Wartung und Dokumente haben eigene Werkzeuge.',
             'draft_tyre_check' => 'Entwirft eine Profiltiefenmessung: eine Tiefe für einen oder mehrere montierte Reifen. Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis.',
             'draft_reminder' => 'Entwirft eine manuelle Erinnerung: einen Titel und ein Fälligkeitsdatum oder eine Zeit vor oder nach dem Ablauf eines Dokuments oder der nächsten Fälligkeit eines Plans. Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis.',
+            'draft_incident' => 'Entwirft einen Schaden (Unfall, Parkschaden, Diebstahl, Einbruch, Vandalismus, Unwetter, Glas, Schlagloch, Wild oder Brand): was passiert ist, der Schaden und alles zum Versicherungsfall. Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis.',
         ],
         'say' => [
             'logged' => 'Eingetragen. Es steht jetzt in Logbook: {link}',

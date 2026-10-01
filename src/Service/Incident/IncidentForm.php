@@ -109,6 +109,32 @@ final class IncidentForm
     }
 
     /**
+     * The values as flat strings, the damage areas comma-joined (a draft
+     * card's *Edit* carries them so, spec.md §7.26).
+     *
+     * @param array<string, string|list<string>> $values
+     * @return array<string, string>
+     */
+    public static function flatValues(array $values): array
+    {
+        return array_map(static fn (string|array $value): string => is_array($value) ? implode(',', $value) : $value, $values);
+    }
+
+    /**
+     * The values back with the damage areas as a list.
+     *
+     * @param array<string, string> $values
+     * @return array<string, string|list<string>>
+     */
+    public static function listValues(array $values): array
+    {
+        $areas = $values['damage_areas'] ?? '';
+        unset($values['damage_areas']);
+
+        return $values + ['damage_areas' => $areas === '' ? [] : explode(',', $areas)];
+    }
+
+    /**
      * @param array<array-key, mixed> $input
      * @param DateTimeImmutable $today calendar date in the user's time zone
      * @param list<int> $drivers the users who may be named as the driver

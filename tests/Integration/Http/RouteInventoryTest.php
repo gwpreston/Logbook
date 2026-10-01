@@ -133,6 +133,7 @@ final class RouteInventoryTest extends AppTestCase
         // Phase 27.1: every incident on the vehicles the user can see.
         'incidents.history',
         'incidents.history.export',
+        'api.incidents.history',
     ];
 
     public function testEveryRouteIsClassified(): void

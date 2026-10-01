@@ -239,6 +239,7 @@ return [
         get(Tool\Documents::class),
         get(Tool\Tyres::class),
         get(Tool\TripsSummary::class),
+        get(Tool\Incidents::class),
         get(Tool\NeedsAttention::class),
         // Drafting entries (Phase 26.3): validated cards for the user's Add, never a write.
         get(Tool\Draft\DraftFillUp::class),
@@ -248,6 +249,7 @@ return [
         get(Tool\Draft\DraftExpense::class),
         get(Tool\Draft\DraftTyreCheck::class),
         get(Tool\Draft\DraftReminder::class),
+        get(Tool\Draft\DraftIncident::class),
     ]),
 
     // The MCP server (spec.md §7.28, Phase 26.5): the read tools come from the
@@ -260,6 +262,7 @@ return [
         get(Tool\Draft\DraftExpense::class),
         get(Tool\Draft\DraftTyreCheck::class),
         get(Tool\Draft\DraftReminder::class),
+        get(Tool\Draft\DraftIncident::class),
     ]),
 
     // Single sign-on (spec.md §7.9, Phase 23.1).

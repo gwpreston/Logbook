@@ -55,6 +55,7 @@ final readonly class McpToolbox
         'draft_expense' => DraftKind::Expense,
         'draft_tyre_check' => DraftKind::TyreCheck,
         'draft_reminder' => DraftKind::Reminder,
+        'draft_incident' => DraftKind::Incident,
     ];
 
     /** @var array<string, DraftTool> by kind value */
