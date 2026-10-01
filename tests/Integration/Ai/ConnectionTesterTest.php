@@ -16,6 +16,7 @@ use Logbook\Service\Ai\ConnectionTester;
 use Logbook\Tests\Support\AiTestCase;
 use Psr\Container\ContainerInterface;
 use Slim\App;
+use Symfony\Component\HttpClient\Response\MockResponse;
 
 /**
  * *Test* (spec.md §7.25): each step's result, the capabilities it confirms
@@ -55,6 +56,28 @@ final class ConnectionTesterTest extends AiTestCase
         self::assertTrue($tested->json);
         self::assertNotNull($tested->testedAt);
         self::assertSame(['type' => 'json_object'], $this->provider->last()['json']['response_format'] ?? null);
+    }
+
+    public function testAnAnswerCutOffByThinkingSaysSo(): void
+    {
+        $app = $this->aiApp();
+        $this->pinClock($app, '2026-10-15T12:00:00Z');
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+        $id = $this->network($app, 'Box', 'http://10.0.0.5/v1');
+        $modelId = $this->assign($app, $id, 'reasoner', AiTaskName::Ask, [Capability::Tools]);
+        $this->provider->queue('openai/models', new MockResponse(
+            '{"choices":[{"index":0,"message":{"role":"assistant","content":""},"finish_reason":"length"}]}',
+            ['http_code' => 200],
+        ), 'openai/tool_call');
+
+        $model = $this->service($app, AiModelRepository::class)->find($modelId);
+        self::assertNotNull($model);
+        $report = $this->service($app, ConnectionTester::class)->test($owner, $this->connectionOf($app, $id), $model);
+
+        self::assertSame('completion', $report->firstFailure()['step'] ?? null);
+        self::assertStringContainsString('output limit', (string) ($report->firstFailure()['error'] ?? ''));
+        self::assertSame(2048, $this->provider->requests[1]['json']['max_tokens'] ?? null, 'room for thinking');
     }
 
     public function testAStoppedTestKeepsWhatItDidNotTry(): void

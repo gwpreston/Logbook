@@ -103,6 +103,32 @@ final class AiSettingsTest extends AiTestCase
         self::assertStringContainsString('You agreed to send data to api.openai.com', $html);
     }
 
+    public function testTickingTheBoxWhileChangingTheAddressDoesNotAgreeToTheNewOne(): void
+    {
+        [$app, $browser] = $this->admin();
+        $show = $browser->post('/settings/ai/connections/new', [
+            'name' => 'OpenAI',
+            'adapter' => 'openai_compatible',
+            'base_url' => 'https://api.openai.com/v1',
+            'max_request_mb' => '8',
+            'enabled' => '1',
+        ])->getHeaderLine('Location');
+        $browser->get($show . '/edit');
+
+        $browser->post($show . '/edit', [
+            'name' => 'OpenRouter',
+            'adapter' => 'openai_compatible',
+            'base_url' => 'https://openrouter.ai/api/v1',
+            'max_request_mb' => '8',
+            'enabled' => '1',
+            'acknowledge' => '1',
+        ]);
+
+        $html = self::body($browser->get($show));
+        self::assertStringContainsString('data-ai-acknowledge', $html, 'asked again, naming the new host');
+        self::assertStringContainsString('sent to openrouter.ai and the provider', $html);
+    }
+
     public function testAGatewaysAcknowledgementNamesTheProvidersItRoutesTo(): void
     {
         [, $browser] = $this->admin();

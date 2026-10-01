@@ -20,6 +20,7 @@ use Logbook\Support\Database\UtcDateTime;
 final readonly class AiRequestRepository
 {
     private const string TABLE = 'ai_requests';
+    private const int MAX_CONTENT_BYTES = 60000;
 
     public function __construct(private Connection $connection)
     {
@@ -37,7 +38,8 @@ final readonly class AiRequestRepository
             'duration_ms' => $record->durationMs,
             'outcome' => $record->outcome->value,
             'error_code' => $record->errorCode,
-            'content' => $record->content,
+            // TEXT on MySQL holds 64 KB: a debugging log keeps the start.
+            'content' => $record->content === null ? null : mb_strcut($record->content, 0, self::MAX_CONTENT_BYTES),
             'created_at' => UtcDateTime::toDatabase($record->createdAt, $this->connection->getDatabasePlatform()),
         ], [
             'user_id' => ParameterType::INTEGER,

@@ -3694,7 +3694,9 @@ request to any model service.
   questions, the data needed to answer them and uploaded receipts will be
   sent to {host}" (for a gateway preset, "…to {host} and the provider it
   routes each model to"). It is recorded with who and when and the URL it
-  was given for; changing the URL clears it. A connection that is classed
+  was given for; changing the URL clears it, and a box ticked in the
+  same form as a new URL does not count (it named the old host): the
+  connection's page asks again, naming the new one. A connection that is classed
   *Internet* at call time without an acknowledgement for its current URL
   sends nothing and says why (this also catches a LAN name that now
   resolves to a public address).

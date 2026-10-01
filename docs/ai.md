@@ -192,7 +192,12 @@ Tests count in the usage log like any other request.
 | Reading text PDFs | JSON output | text PDFs; without its own model it uses the one for questions, if that has JSON output |
 
 So text can stay on a small local model while receipts go to a stronger
-vision model, or the other way round. A model without what a task needs
+vision model, or the other way round.
+
+**Temperature** and **Longest answer** are optional. Leave temperature
+empty for reasoning models (OpenAI's GPT-5 family, Claude and Gemini with
+thinking): some refuse it. A reasoning model also spends part of the
+longest answer on thinking, so keep that generous or empty. A model without what a task needs
 can't be chosen for it. A task without a model switches its features off.
 
 ## Limits and the usage log

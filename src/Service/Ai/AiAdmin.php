@@ -172,7 +172,14 @@ final readonly class AiAdmin
             $this->secrets->put($id, AdapterFactory::HEADER . $name, $this->box->store($value), $now);
         }
 
-        if ($form->acknowledge && $form->settings->location === Location::Internet) {
+        // The checkbox names the saved address, so it never covers a new one
+        // typed in the same form: that is asked again on the connection's page.
+        if (
+            $form->acknowledge
+            && $form->settings->location === Location::Internet
+            && $existing !== null
+            && $existing->baseUrl === $form->settings->baseUrl
+        ) {
             $this->connections->acknowledge($id, $admin->id, $form->settings->baseUrl, $now);
         }
 

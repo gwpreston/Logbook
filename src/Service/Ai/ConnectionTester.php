@@ -14,6 +14,8 @@ use Logbook\Domain\User\User;
 use Logbook\Repository\AiModelRepository;
 use Logbook\Service\Ai\Provider\ChatMessage;
 use Logbook\Service\Ai\Provider\ChatRequest;
+use Logbook\Service\Ai\Provider\ChatResult;
+use Logbook\Service\Ai\Provider\FinishReason;
 use Logbook\Service\Ai\Provider\ImageInput;
 use Logbook\Service\Ai\Provider\ResponseFormat;
 use Logbook\Service\Ai\Provider\ToolDefinition;
@@ -43,6 +45,12 @@ final readonly class ConnectionTester
         'required' => ['colour', 'count'],
         'additionalProperties' => false,
     ];
+
+    /**
+     * The longest answer a step allows: room for a reasoning model's
+     * thinking, which counts as output, while still bounded.
+     */
+    private const int MAX_TOKENS = 2048;
 
     /** Errors that stop the whole test: nothing more would be sent. */
     private const array STOPPING = [
@@ -90,11 +98,9 @@ final readonly class ConnectionTester
         $this->step($results, TestStep::Completion, static function () use ($call): void {
             $result = $call(new ChatRequest(
                 [ChatMessage::user('Reply with the single word OK.')],
-                maxOutputTokens: 64,
+                maxOutputTokens: self::MAX_TOKENS,
             ));
-            if (trim($result->text) === '') {
-                throw new AiFailure(ErrorCode::BadResponse, 'The model answered with no text.');
-            }
+            self::requireText($result);
         }, $stopped);
 
         $tools = static function () use ($call): void {
@@ -105,7 +111,7 @@ final readonly class ConnectionTester
                     'properties' => ['a' => ['type' => 'integer'], 'b' => ['type' => 'integer']],
                     'required' => ['a', 'b'],
                 ])],
-                maxOutputTokens: 256,
+                maxOutputTokens: self::MAX_TOKENS,
             ));
             if ($result->toolCalls === [] || $result->toolCalls[0]->name !== 'add_numbers') {
                 throw new AiFailure(ErrorCode::BadResponse, 'The model did not call the tool.');
@@ -120,11 +126,9 @@ final readonly class ConnectionTester
             $image = new ImageInput((string) base64_decode(self::IMAGE, true), 'image/png');
             $result = $call(new ChatRequest(
                 [ChatMessage::user('What colour is this image? Answer in one word.', [$image])],
-                maxOutputTokens: 64,
+                maxOutputTokens: self::MAX_TOKENS,
             ));
-            if (trim($result->text) === '') {
-                throw new AiFailure(ErrorCode::BadResponse, 'The model answered with no text.');
-            }
+            self::requireText($result);
         };
         if (!$stopped && $model->images) {
             $worked = $this->step($results, TestStep::Images, $images, $stopped);
@@ -165,7 +169,7 @@ final readonly class ConnectionTester
                 $call(new ChatRequest(
                     [ChatMessage::user('Give the colour "red" and the count 3.')],
                     response: new ResponseFormat('test_object', self::JSON_SCHEMA, $mode),
-                    maxOutputTokens: 256,
+                    maxOutputTokens: self::MAX_TOKENS,
                 ));
                 $results[] = ['step' => TestStep::Json->value, 'ok' => true, 'ms' => self::since($started), 'error' => null];
 
@@ -205,6 +209,16 @@ final readonly class ConnectionTester
 
             return false;
         }
+    }
+
+    private static function requireText(ChatResult $result): void
+    {
+        if (trim($result->text) !== '') {
+            return;
+        }
+        throw new AiFailure(ErrorCode::BadResponse, $result->finishReason === FinishReason::Length
+            ? 'The model stopped at the output limit before answering (a reasoning model may spend it all on thinking).'
+            : 'The model answered with no text.');
     }
 
     private static function describe(AiFailure $e): string

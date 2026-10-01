@@ -8,6 +8,7 @@
         "ext-intl": "*",
         "ext-json": "*",
         "ext-pdo": "*",
+        "ext-sodium": "*",
         "doctrine/dbal": "^4.5",
         "firebase/php-jwt": "^7.2",
         "monolog/monolog": "^3.12",

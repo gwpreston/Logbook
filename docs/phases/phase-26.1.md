@@ -279,7 +279,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §9 and
       and the warning shown; retention.
 - [x] `AI_ENABLED=false` and *Use AI features* off hide everything and send
       nothing.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL 17, MySQL 8.4, MariaDB 11.4: 1888 tests).
 - [ ] **Manual interop check** (in the PR): Ollama (same host and LAN),
       llama.cpp server, OpenAI, Anthropic, Gemini, OpenRouter, Groq and
       Mistral, each passing *Test*.
@@ -334,7 +334,16 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §9 and
   saved), *Use AI features* appears only then, and `GET /api/v1/me` leaves
   the AI modules out.
 - **Test** keeps any tick it did not try when a refusal stops it, and
-  listing models is refused like a call but not logged.
+  listing models is refused like a call but not logged. Its steps allow
+  2048 output tokens, since a reasoning model's thinking counts as output,
+  and an answer cut off at the limit says so.
+- **The acknowledgement box on the edit form** names the saved host, so
+  ticking it while changing the address does not agree to the new one; the
+  connection's page asks again.
+- **`ext-sodium`** is now a declared requirement (it was used by EdDSA
+  only through a suggestion before).
+- **Logged content** (`AI_LOG_CONTENT=true`) is cut to 60 KB and invalid
+  UTF-8 replaced, so a large answer never fails after the model replied.
 - **`InstanceAbility::ManageAi`** hides its pages: `InstanceAccessMiddleware`
   answers 404 instead of 403 for it.
 - **Icons** `smart_toy`, `dns`, `lan`, `public`, `document_scanner`,
