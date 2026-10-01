@@ -168,7 +168,10 @@ final class DemoDataSeeder extends AbstractSeed
      * Who added what (Phase 19): the owner everything, then a second user,
      * a member, with Log access to the hybrid (no costs) and View access to
      * the Golf, who fills the hybrid up in the middle of each of the last
-     * six months.
+     * six months; the owner fills it on the 10th and 20th. On E10 95 it
+     * uses about 4.1 L/100 km; from 10 Jul it is E5 98 and about 12% more,
+     * a slow drift over the last five tanks (Phase 25) with no single tank
+     * unusual.
      */
     private function seedPartner(string $now, int $ownerId): void
     {
@@ -220,7 +223,8 @@ final class DemoDataSeeder extends AbstractSeed
         ];
         $this->table('vehicle_shares')->insert([$share($hybrid, 'log'), $share($golf, 'view')])->saveData();
 
-        // The partner fills the hybrid up mid-month, between the owner's monthly readings.
+        // The partner fills the hybrid up mid-month, between the owner's
+        // monthly readings; the owner twice a month before that.
         $readings = array_values(array_filter(
             $this->fetchAll(sprintf(
                 "SELECT reading_km, recorded_at FROM odometer_readings"
@@ -229,34 +233,70 @@ final class DemoDataSeeder extends AbstractSeed
             )),
             is_array(...),
         ));
-        $fills = [];
-        for ($i = max(1, count($readings) - 6); $i < count($readings); $i++) {
+        $fill = static fn (string $at, float $km, float $litres, float $price, string $grade, int $by): array => [
+            'vehicle_id' => $hybrid,
+            'filled_at' => $at,
+            'odometer_km' => number_format($km, 3, '.', ''),
+            'fuel' => 'petrol',
+            'grade' => $grade,
+            'volume' => number_format($litres, 3, '.', ''),
+            'price_per_unit' => number_format($price, 6, '.', ''),
+            'total_cost' => number_format(round($litres * $price, 2), 3, '.', ''),
+            'is_partial' => false,
+            'is_missed_previous' => false,
+            'station' => 'Tesco Extra',
+            'notes' => null,
+            'created_by' => $by,
+            'created_at' => $at,
+            'updated_at' => $at,
+        ];
+        // Owner on the 10th and 20th, partner on the 15th of the last six
+        // months, each between the monthly readings. From 10 Jul the tank is
+        // E5 98 and it uses 12% more: the last five tanks drift (Phase 25).
+        $first = max(1, count($readings) - 6);
+        $planned = [];
+        for ($i = 1; $i < count($readings); $i++) {
             $from = self::floatValue($readings[$i - 1]['reading_km'] ?? null);
             $to = self::floatValue($readings[$i]['reading_km'] ?? null);
             $recorded = $readings[$i - 1]['recorded_at'] ?? null;
             $month = substr(is_string($recorded) ? $recorded : '', 0, 10);
-            $at = gmdate('Y-m-d H:i:s', (int) strtotime($month . ' +14 days 17:30'));
-            $litres = 30 + ($i % 4) * 2.5;
-            $price = 1.459 + ($i % 3) * 0.02;
-            $fills[] = [
-                'vehicle_id' => $hybrid,
-                'filled_at' => $at,
-                'odometer_km' => number_format(($from + $to) / 2, 3, '.', ''),
-                'fuel' => 'petrol',
-                'grade' => 'e10_95',
-                'volume' => number_format($litres, 3, '.', ''),
-                'price_per_unit' => number_format($price, 6, '.', ''),
-                'total_cost' => number_format(round($litres * $price, 2), 3, '.', ''),
-                'is_partial' => false,
-                'is_missed_previous' => false,
-                'station' => 'Tesco Extra',
-                'notes' => null,
-                'created_by' => $partnerId,
-                'created_at' => $at,
-                'updated_at' => $at,
-            ];
+            foreach ([[10, 0.3, $ownerId], [15, 0.5, $partnerId], [20, 0.7, $ownerId]] as [$day, $share, $by]) {
+                if ($by === $partnerId && $i < $first) {
+                    continue;
+                }
+                $time = $by === $partnerId ? '17:30' : '08:15';
+                $at = gmdate('Y-m-d H:i:s', (int) strtotime($month . ' +' . ($day - 1) . ' days ' . $time));
+                $planned[] = [$at, $from + ($to - $from) * $share, $by, $i + $day];
+            }
         }
-        $this->table('fuel_entries')->insert($fills)->saveData();
+        $switch = '2026-07-10';
+        $owners = [];
+        $fills = [];
+        $previous = null;
+        $grade = 'e10_95';
+        foreach ($planned as [$at, $km, $by, $n]) {
+            // What this fill tops up was burned on the grade bought before it.
+            $rate = $grade === 'e5_98' ? 0.046 : 0.041;
+            $litres = $previous === null ? 36.0 : ($km - $previous) * $rate * (1 + ($n % 3 - 1) * 0.02);
+            $grade = $at >= $switch ? 'e5_98' : 'e10_95';
+            $price = ($grade === 'e5_98' ? 1.589 : 1.429) + ($n % 3) * 0.01;
+            $row = $fill($at, $km, $litres, $price, $grade, $by);
+            if ($by === $partnerId) {
+                $fills[] = $row;
+            } else {
+                $owners[] = $row;
+            }
+            $previous = $km;
+        }
+        $this->table('fuel_entries')->insert([...$owners, ...$fills])->saveData();
+        $this->execute(sprintf(
+            'INSERT INTO odometer_readings'
+            . ' (vehicle_id, reading_km, recorded_at, source, note, fuel_entry_id, created_at, updated_at)'
+            . " SELECT vehicle_id, odometer_km, filled_at, 'fuel', NULL, id, created_at, updated_at FROM fuel_entries"
+            . ' WHERE vehicle_id = %d AND created_by = %d',
+            $hybrid,
+            $ownerId,
+        ));
         $this->execute(sprintf(
             'INSERT INTO odometer_readings'
             . ' (vehicle_id, reading_km, recorded_at, source, note, fuel_entry_id, created_at, updated_at)'
@@ -337,6 +377,45 @@ final class DemoDataSeeder extends AbstractSeed
         if ($updated !== 1) {
             throw new LogicException('The demo economy confirmation matched no single fill-up.');
         }
+
+        // Phase 25: one of the Golf's recent full E10 tanks with the price
+        // typed ten times over (14.79 for 1.479), for the price check: the
+        // latest with at least three E10 fill-ups within 30 days to judge it by.
+        $e10 = [];
+        foreach (
+            $this->fetchAll(sprintf(
+                "SELECT id, filled_at, price_per_unit, is_partial FROM fuel_entries WHERE vehicle_id = %d AND grade = 'e10_95'",
+                $ids['LB19 KTR'],
+            )) as $row
+        ) {
+            if (is_array($row)) {
+                $e10[] = $row + ['time' => (int) strtotime(self::stringValue($row['filled_at'] ?? null) . ' UTC')];
+            }
+        }
+        usort($e10, static fn (array $a, array $b): int => $b['time'] <=> $a['time']);
+        $typo = null;
+        foreach ($e10 as $candidate) {
+            // Booleans come back as 0/1, "0"/"1" or t/f depending on the engine.
+            if (in_array($candidate['is_partial'] ?? null, [true, 1, '1', 't'], true)) {
+                continue;
+            }
+            $near = array_filter($e10, static fn (array $o): bool => $o['id'] !== $candidate['id']
+                && abs($o['time'] - $candidate['time']) <= 30 * 86400);
+            if (count($near) >= 3) {
+                $typo = $candidate;
+                break;
+            }
+        }
+        if ($typo === null) {
+            throw new LogicException('No demo Golf fill-up can be judged for the price check.');
+        }
+        $this->execute(
+            'UPDATE fuel_entries SET price_per_unit = ? WHERE id = ?',
+            [
+                Decimal::multiply(number_format(self::floatValue($typo['price_per_unit'] ?? null), 6, '.', ''), '10', 6),
+                self::intValue($typo['id'] ?? null),
+            ],
+        );
 
         // Each fill-up's odometer reading (portable INSERT … SELECT).
         $this->execute(
@@ -465,6 +544,11 @@ final class DemoDataSeeder extends AbstractSeed
             $entry([
                 'performed_on' => '2026-06-18', 'odometer_km' => '74050.000', 'category' => 'brakes',
                 'title' => 'Front brake pads', 'cost' => '95.500', 'vendor' => 'Main Street Motors',
+            ]),
+            // Phase 25: £178 typed as £1,780, for the cost check.
+            $entry([
+                'performed_on' => '2026-04-14', 'title' => 'Interim service',
+                'description' => 'Oil and filter.', 'cost' => '1780.000', 'vendor' => 'Main Street Motors',
             ]),
         ])->saveData();
 
