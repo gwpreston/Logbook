@@ -779,7 +779,7 @@ MySQL only.
   **Not in backups.**
 
 **AiFeedback** (Phase 26.2, the counts)
-- id, month (`YYYY-MM`), mark (`helpful` | `not_right`), count. `(month,
+- id, month (`YYYY-MM`), mark (`helpful` | `not_right`), total. `(month,
   mark)` is unique. Kept when threads go. **Not in backups.**
 
 **Setting / FeatureToggle**
