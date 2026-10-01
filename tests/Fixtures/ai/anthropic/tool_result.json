@@ -1,0 +1,85 @@
+{
+  "status": 200,
+  "request": {
+    "model": "claude-sonnet-5-5",
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Add 2 and 3."
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "",
+            "signature": "EqQBCgIYAhIMsig"
+          },
+          {
+            "type": "text",
+            "text": "I'll add them."
+          },
+          {
+            "type": "tool_use",
+            "id": "toolu_01A09q90qw90lq917835lq9",
+            "name": "add_numbers",
+            "input": {
+              "a": 2,
+              "b": 3
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "toolu_01A09q90qw90lq917835lq9",
+            "content": "{\"sum\":5}"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "add_numbers",
+        "description": "Adds two whole numbers.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "integer"
+            },
+            "b": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    ]
+  },
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "2 + 3 = 5."
+      }
+    ],
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 450,
+      "output_tokens": 9
+    }
+  }
+}

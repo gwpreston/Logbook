@@ -6,6 +6,8 @@ namespace Logbook\Action\Settings;
 
 use Logbook\Domain\User\User;
 use Logbook\Domain\User\UserIdentity;
+use Logbook\Service\Ai\AiPreferences;
+use Logbook\Service\Ai\AiStatus;
 use Logbook\Service\Auth\SignInMethods;
 use Logbook\Service\User\ProfileForm;
 use Logbook\Support\Config\AppSettings;
@@ -37,6 +39,8 @@ final readonly class SettingsPage
         private ClockInterface $clock,
         private SignInMethods $methods,
         private AppSettings $settings,
+        private AiStatus $ai,
+        private AiPreferences $aiPreferences,
     ) {
     }
 
@@ -73,6 +77,12 @@ final readonly class SettingsPage
             'local_login' => $this->settings->localLogin,
             'has_password' => $user->hasPassword(),
             'sso' => $this->signInCard($user),
+            // AI (spec.md §7.25): the admin link while AI_ENABLED, the user's switch once it is set up.
+            'ai' => [
+                'enabled' => $this->settings->ai->enabled,
+                'set_up' => $this->ai->isSetUp(),
+                'on' => $this->aiPreferences->isOn($user->id),
+            ],
         ], $status);
     }
 

@@ -859,6 +859,28 @@ a.list__item:hover {
     white-space: nowrap;
 }
 
+/* Settings → AI: a model's last test, one line per step (spec.md §7.25). */
+.ai-test-results {
+    display: grid;
+    gap: 2px;
+    margin: var(--space-1) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.78125rem;
+}
+
+.ai-test-results li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    overflow-wrap: anywhere;
+}
+
+.ai-capabilities {
+    padding: 0 var(--space-3) var(--space-3);
+}
+
 /* Empty state */
 .empty {
     display: flex;

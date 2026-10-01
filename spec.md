@@ -63,6 +63,7 @@ each vehicle costs.*
 | i18n | symfony/translation | ICU, pluralization, multi-locale |
 | Auth | PHP sessions + Argon2id + slim/csrf | Standard, secure, no external IdP needed |
 | Single sign-on (Phase 23.1; the proxy JWT's HS256 in 23.2) | `firebase/php-jwt` (JWS and JWKS; `phpseclib/phpseclib` for its PS256) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
+| AI providers (Phase 26.1) | No SDK: `symfony/http-client` with per-request options, libsodium `secretbox` for stored keys, an in-house JSON Schema subset check | Four small adapters cover every runtime and provider; nothing new to install (§5 *AI adapters*) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -132,8 +133,9 @@ disagree):
   `Action\EntryGuard` once it has loaded the entry (403 otherwise).
 
   `Service\Access\InstanceAccess::can(User, InstanceAbility)` covers
-  `ManageModules`, `Backup`, `Restore`, `ManageNotifications` and
-  `ManageUsers`.
+  `ManageModules`, `Backup`, `Restore`, `ManageNotifications`,
+  `ManageUsers` and, from Phase 26.1, `ManageAi` (Settings → AI, which
+  answers 404 rather than 403 without it, §7.25).
 
   **Phase 19 policy** (`SharedVehicleAccess`, `AdminInstanceAccess`): the
   owner (`vehicles.user_id`) has every vehicle ability; a user with a
@@ -248,6 +250,51 @@ disagree):
   sign-in redirect (§7.9: a local path under `APP_BASE_PATH` only, so no open
   redirects); anything else is ignored and the form redirects as it always
   did. In a modal the redirect arrives as `X-Logbook-Location`, as usual.
+- **AI adapters** (Phase 26.1, §7.25).
+  `Service\Ai\Provider\ProviderAdapter` has
+  `chat(ChatRequest): ChatResult` and `listModels(): list<ModelInfo>`.
+  The request is provider-neutral: system text, messages (user,
+  assistant with tool calls, tool results), tools (name, description,
+  JSON Schema), images (bytes plus media type), a response schema with
+  its structured-output mode, temperature and max output tokens. The
+  result holds text, tool calls, the parsed object (for a response
+  schema), finish reason, usage, and the provider's own form of the
+  turn, which a tool loop sends back unchanged (Anthropic's thinking
+  blocks, Gemini's thought signatures). Each adapter maps to its API:
+  Chat Completions tools and `response_format` (OpenAI-compatible;
+  `max_completion_tokens` for OpenAI itself, `max_tokens` elsewhere; an
+  error inside an HTTP 200, as OpenRouter sends, is an error); Anthropic
+  Messages with `tools`, `tool_choice`, image blocks and
+  `output_config.format`; Gemini `generateContent` (`v1beta`) with
+  `parametersJsonSchema` function declarations, `functionResponse` ids
+  and `responseJsonSchema` (an invalid key, which Gemini answers with
+  400, is an `auth` error); Ollama through its OpenAI-compatible `/v1`
+  endpoint, with its native `/api/tags` and `/api/show` for listing. **No
+  provider SDK.**
+  - **HTTP:** adapters use the app's `symfony/http-client`
+    (`HttpClientInterface`), not PSR-18, because the connection's timeout
+    (`timeout` and `max_duration`), TLS (`verify_peer`, `verify_host`,
+    `cafile`), headers and `max_redirects: 0` are per-request options
+    there (decided while starting Phase 26.1). Tests use
+    `MockHttpClient` with recorded fixtures, so CI needs no network or
+    model.
+  - **Retries:** never retry a request that may have been processed;
+    retry once on a connection error that happened before any bytes were
+    sent (name resolution or connect refused).
+  - **JSON Schema check** (`Support\Json\SchemaCheck`): an in-house check
+    of the subset Logbook's own schemas use: `type` (one or a list),
+    `properties`, `required`, `additionalProperties: false`, `items`,
+    `enum`, `minimum` / `maximum`, `minLength` / `maxLength`. Unknown
+    keywords are ignored. Every structured result passes it, whatever
+    the mode (no runtime dependency added; decided while starting Phase
+    26.1).
+  - `Service\Ai\AiGateway::run(User, AiTaskName, ChatRequest)` is the
+    only way a feature reaches a model: it checks `AI_ENABLED`, the
+    user's switch, the task's assignment, the connection (enabled,
+    readable secrets, location and acknowledgement), the size and the
+    monthly cap, takes the user's lock, calls the adapter, logs the
+    usage, and maps every failure to an `AiFailure` with a code and a
+    safe message (§7.25 *Errors*).
 
 ---
 
@@ -665,13 +712,60 @@ MySQL only.
   subject_id)` is unique: hiding again replaces the row. In backups and in
   `bin/export-user.php`'s file.
 
+**AiConnection** (Phase 26.1, §7.25)
+- id, name (up to 100), adapter (`openai_compatible` | `ollama` |
+  `anthropic` | `gemini`), base_url (up to 500), location (the class when
+  last saved or tested: `server` | `network` | `internet`), header_names
+  (JSON list; their values are secrets), timeout_seconds, verify_tls
+  (bool), ca_bundle (optional path), max_request_mb, monthly_token_cap
+  (optional), enabled (bool), acknowledged_by (optional user id, `ON
+  DELETE SET NULL`), acknowledged_at (optional), acknowledged_url (the
+  URL the acknowledgement was given for), created_at, updated_at (UTC).
+  In backups.
+
+**AiSecret** (Phase 26.1)
+- id, connection_id (`ON DELETE CASCADE`), slot (`api_key` or
+  `header:<name>`), value (`v1:` + base64 of the `secretbox` nonce and
+  ciphertext, or `env:NAME`), created_at, updated_at. `(connection_id,
+  slot)` is unique. **Never in backups** or exports.
+
+**AiModel** (Phase 26.1)
+- id, connection_id (`ON DELETE CASCADE`), name (the provider's model
+  id, up to 200), label (optional display name), listed (bool: came from
+  *Refresh models*), added (bool: offered to tasks), tools, images, json
+  (bools), json_mode (optional: `json_schema` | `json_object` | `tool`),
+  tested_at (optional), test_results (optional JSON: each step's outcome,
+  time and redacted error), created_at, updated_at. `(connection_id,
+  name)` is unique. In backups.
+
+**AiTask** (Phase 26.1)
+- id, task (`ask` | `read_document` | `read_text`; unique), model_id
+  (`ON DELETE CASCADE`: removing the model unassigns the task),
+  temperature (optional decimal 0–2), max_output_tokens (optional),
+  updated_at. In backups.
+
+**AiRequest** (Phase 26.1, the usage log)
+- id, user_id (optional, `ON DELETE SET NULL`), task (an AiTask value or
+  `test`), connection_id (optional, `ON DELETE SET NULL`), model (name),
+  tokens_in, tokens_out (optional), duration_ms, outcome (`ok` | `error`
+  | `timeout` | `refused`), error_code (optional, §7.25 *Errors*),
+  content (optional JSON, only with `AI_LOG_CONTENT=true`), created_at
+  (UTC). Indexes on created_at and (connection_id, created_at). Deleted
+  after 90 days. **Not in backups.**
+
+**AiBusy** (Phase 26.1, the one-at-a-time lock)
+- id, user_id (unique, `ON DELETE CASCADE`), started_at, expires_at
+  (UTC). **Not in backups.**
+
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
   User-scoped keys include `reminders` (lead times), `notifications`,
   `tyres.thresholds`, `dashboard.layout` and, from Phase 24,
   `attention.thresholds` (`{"mileage_days": 60, "valuation_months": 12}`,
   and from Phase 25 `drift_percent`, `drift_percent_electric`,
-  `price_percent`, `cost_multiple` and `cost_floor`, §7.24).
+  `price_percent`, `cost_multiple` and `cost_floor`, §7.24) and, from
+  Phase 26.1, `ai.use` (bool, §7.25). The global `ai.this_host` (a list of
+  addresses, §7.25) is set on Settings → AI.
 
 ---
 
@@ -1935,7 +2029,10 @@ Global settings to enable/disable modules (e.g. hide compliance if not needed).
 Disabled modules are removed from nav, routes, and dashboard.
 
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`,
-  `tyres` (Phase 11.1), `trips` (Phase 22). A
+  `tyres` (Phase 11.1), `trips` (Phase 22), and from Phase 26.1 the AI
+  modules `ai_ask`, `ai_actions` and `ai_scan` (§7.25: on by default, but
+  doing nothing without an assigned task, and listed on Settings → Modules
+  only while AI is set up). A
   module is enabled unless the global setting `features` (a JSON object of
   module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
   (default true, except `trips`: default false). The garage, mileage log,
@@ -3013,7 +3110,7 @@ parameter answers 400 (`invalid_parameter`).
 | `GET /vehicles/{id}/tyres` | tyres with status, position, latest measured tread |
 | `GET /upcoming` | *Coming up* items (§7.18), `?vehicle=` optional |
 | `GET /reminders` | open reminders, `?vehicle=`, `?status=due\|overdue\|upcoming` |
-| `GET /me` | the key's user (display name, units, locale, time zone), the key's name and scope, and which modules are on |
+| `GET /me` | the key's user (display name, units, locale, time zone), the key's name and scope, and which modules are on (not the AI modules, which have no API yet; Phase 26.1) |
 | `GET /openapi.json` | the OpenAPI description, its `servers` set to this install (no key needed) |
 
 **Write endpoints** (scope `read_write`, ability `Log`).
@@ -3496,6 +3593,217 @@ wrong.
   the tiles (*Coming up* loads them together). Each source is loaded once
   per vehicle; no item runs a query per reading or fill-up.
 
+### 7.25 AI connections (Phase 26.1)
+
+Logbook can use language models wherever they run: on this server (Ollama
+or llama.cpp beside it), on the owner's network (a desktop with a GPU, a
+llama.cpp, LM Studio or vLLM box), or remotely (OpenAI, Anthropic, Google
+Gemini, a gateway such as OpenRouter, or a self-hosted model behind a
+proxy). Phase 26.1 builds only the plumbing: connections, models, task
+routing, limits and the usage log. The AI features that use it come in
+Phases 26.2–26.5.
+
+**Everything is off until an admin sets it up.** Without a connection
+and an assigned task Logbook looks and behaves exactly as before: no AI
+entry point, no AI module switch, no *Use AI features* switch, and no
+request to any model service.
+
+- **Settings → AI** (`/settings/ai`, admins only: the instance ability
+  `ManageAi`; the pages answer **404** to anyone else, and with
+  `AI_ENABLED=false` they are not routed at all). A link on Settings for
+  admins.
+- **Connections** (§6 AiConnection): name ("Ollama on the desktop"),
+  adapter (`openai_compatible` | `ollama` | `anthropic` | `gemini`), base
+  URL, API key (optional; local servers rarely need one), extra headers
+  (optional, for a proxy in front of a self-hosted model: `Authorization:
+  Basic …`, or a gateway's own such as OpenRouter's `HTTP-Referer` and
+  `X-Title`), timeout (default 120 s for *This server* and *Your network*,
+  60 s for *Internet*, 5–600), TLS verification (on; can be switched off
+  per connection for a LAN server with a self-signed certificate, with a
+  warning, unless `AI_ALLOW_INSECURE_TLS=false`), a custom CA bundle path
+  (optional; a readable file on the server), the largest request (default
+  8 MB, 1–50), a monthly token cap (optional) and *Enabled*.
+  - **Presets** fill adapter and URL, all editable: OpenAI
+    `https://api.openai.com/v1`, Anthropic `https://api.anthropic.com`,
+    Gemini `https://generativelanguage.googleapis.com`, OpenRouter
+    `https://openrouter.ai/api/v1`, Groq `https://api.groq.com/openai/v1`,
+    Mistral `https://api.mistral.ai/v1`, Together
+    `https://api.together.xyz/v1`, DeepSeek `https://api.deepseek.com/v1`,
+    Ollama `http://localhost:11434`, llama.cpp `http://localhost:8080/v1`,
+    LM Studio `http://localhost:1234/v1`, and *Other OpenAI-compatible*
+    (the admin types the URL). The preset list works without JS (a
+    select that fills nothing; the admin then types the URL) and Alpine
+    fills the fields when JS is on.
+  - The base URL must be `http` or `https` with a host and no query,
+    fragment or credentials (credentials go in a header).
+  - **Only admins set URLs; a URL is never taken from a request
+    elsewhere, and redirects are never followed** (every adapter request
+    sets `max_redirects: 0`; a redirect is reported with where it
+    points). Private addresses are allowed on purpose:
+    LAN models are the point.
+  - **Delete** (with a confirmation page) removes the connection, its
+    models and its secrets; tasks using its models become unassigned.
+    Usage rows keep their counts without the connection.
+- **Secrets** (the API key and each header value) are stored in their
+  own table (§6 AiSecret), never beside the connection:
+  - typed as `env:NAME` (a valid environment variable name), only the
+    reference is stored and the variable is read at call time;
+  - anything else is encrypted with libsodium `secretbox` (a random nonce
+    per value), with a key derived from `SESSION_SECRET` by HKDF-SHA256,
+    info `logbook-ai`, stored as `v1:` + base64(nonce ‖ ciphertext).
+    Without a `SESSION_SECRET` there is no key, so only `env:` references
+    can be saved and the form says so.
+  - A secret is **never shown again** after saving, not even masked: the
+    form says *Saved* with *Replace* and *Remove*, and an empty field
+    keeps it. A form re-shown after a validation error never puts the
+    typed key back.
+  - Rotating `SESSION_SECRET` makes stored secrets unreadable: the
+    connection then says *Re-enter the key*, and nothing is sent on it. An
+    `env:` variable that is unset says *Set {NAME}* the same way.
+  - Secrets are redacted (replaced by `[redacted]`) from every provider
+    error text before it reaches a page, the usage log or the log file.
+  - **Backups** carry connections, models and tasks **without** secrets
+    (the `ai_secrets` table is excluded, `env:` references included): a
+    restored connection asks for its key again. The restore page says so.
+- **Where it runs.** The base URL's host is resolved when the connection
+  is saved, when it is tested, and again on every call, and classed
+  (`Service\Ai\ConnectionLocator`):
+  - *This server*: a loopback address, `localhost`,
+    `host.docker.internal`, `host-gateway`, or an address the admin lists
+    under *This server's addresses* on Settings → AI (for a sibling
+    container or the host's own LAN address);
+  - *Your network*: RFC 1918 (10/8, 172.16/12, 192.168/16), link-local
+    (169.254/16, fe80::/10), IPv6 ULA (fc00::/7), the shared range
+    100.64.0.0/10 used by Tailscale (decided 2026-10-01,
+    `docs/phases/open-questions.md` #69), and names ending `.local`,
+    `.lan`, `.internal` or `.home.arpa`, or with no dot (a LAN machine
+    name);
+  - *Internet*: anything else.
+
+  A name is classed by **what it resolves to**, not what it looks like: a
+  public-looking name resolving to a private address is *Your network*,
+  and a name resolving to several addresses takes the widest class (any
+  public address makes it *Internet*). IPv4-mapped IPv6 addresses are
+  classed as their IPv4 address. A name that does not resolve is classed
+  by its name alone (*Your network* for the suffixes above, otherwise
+  *Internet*), and *Test* reports that it did not resolve. The class is
+  shown as a badge (icon and words, never colour alone) on the
+  connection, beside every task that uses it, and later in the AI
+  features themselves.
+- **Internet connections** need the admin to tick "I understand that
+  questions, the data needed to answer them and uploaded receipts will be
+  sent to {host}" (for a gateway preset, "…to {host} and the provider it
+  routes each model to"). It is recorded with who and when and the URL it
+  was given for; changing the URL clears it, and a box ticked in the
+  same form as a new URL does not count (it named the old host): the
+  connection's page asks again, naming the new one. A connection that is classed
+  *Internet* at call time without an acknowledgement for its current URL
+  sends nothing and says why (this also catches a LAN name that now
+  resolves to a public address).
+- **Test** (per connection, on its page) runs, in order: a model list;
+  then for a chosen model a short completion, a tool call, a tiny image
+  (only when the model is marked for images) and JSON output (only when
+  marked for it). Each step shows ok or failed, its time, and on failure
+  the error text with any secret redacted. Steps after a failed list
+  still run when a model is chosen. The tool call always runs and sets
+  *Tools*; the image and JSON steps set *Images* and *JSON output*. A
+  refusal that stops the test (acknowledgement, key, cap, the user's
+  lock) runs nothing more and changes no tick it did not try. Results are
+  stored on the model (when, and each step's outcome); the first failure
+  is also shown as a message. Test's model calls go through the same
+  limits and usage log as any other call (task `test`); listing models is
+  not a model call and is not logged, but is refused the same way.
+- **Models** (§6 AiModel) per connection: *Refresh models* lists them
+  (OpenAI-compatible `GET {base}/models`, Ollama `GET /api/tags`,
+  Anthropic `GET /v1/models`, Gemini `GET /v1beta/models`). Listed models
+  are kept for the picker; a model can also be typed by name, for servers
+  that don't list. Only models the admin **adds** to the connection
+  appear in task pickers. The list has a search box (a plain GET filter;
+  OpenRouter lists hundreds).
+  - **Capabilities** (`tools`, `images`, `json`): the provider's report
+    where it gives one (OpenRouter's `supported_parameters` and
+    `architecture.input_modalities`; Anthropic's `capabilities.image_input`
+    and `structured_outputs`; Ollama's `/api/show` `tools` and `vision`,
+    asked for the first 50 models; llama.cpp's `multimodal`), else none.
+    The admin ticks them; *Test* confirms or clears each one it tried.
+    Refreshing never changes an added model's ticks.
+  - **Take off** a model: it leaves the task pickers (its tasks are
+    unassigned); a listed model stays listed, a typed one is deleted.
+  - **Structured output** mode, recorded by *Test*: `json_schema`
+    (`response_format: json_schema`, Gemini `responseJsonSchema`), else
+    `json_object` plus the schema check, else `tool` (one forced tool call
+    whose arguments are the object). Anthropic's `json_schema` is its
+    `output_config.format` (its newest models refuse a forced tool; `tool`
+    remains for older ones); Gemini has `json_schema` and `tool`; Ollama's
+    and llama.cpp's OpenAI endpoints cannot force a tool, so Ollama tries
+    `json_schema` then `json_object`. All pass through the same JSON
+    Schema check (§5 *AI adapters*). An untested model uses `json_schema`.
+- **Tasks** (§6 AiTask): each AI job is assigned one added model (and so
+  its connection) with optional temperature (0–2) and max output tokens
+  (1–32768):
+
+  | Task | Needs | Used by |
+  |---|---|---|
+  | `ask` | tools | Ask Logbook (26.2), drafting (26.3) |
+  | `read_document` | (images **or** text only) and JSON output | receipt and document reading (26.4) |
+  | `read_text` | JSON output | text PDFs (26.4); unassigned, it uses `ask`'s model when that has JSON output |
+
+  A model without a task's capabilities cannot be chosen for it (the
+  picker shows it disabled with the reason, and saving refuses it). So
+  text can stay on a local model while receipts go to a stronger vision
+  model, or the other way round. A task without an assignment switches
+  its features off; admins are told where to set it ("Set a model for Ask
+  Logbook in Settings → AI"), members see nothing.
+- **No automatic fallback.** Each task has one connection. A failure is
+  shown ("The model on Ollama on the desktop didn't answer in 120
+  seconds"), never silently sent elsewhere.
+- **Limits** (per connection):
+  - the largest request (default 8 MB, for images): a larger body is
+    refused before anything is sent;
+  - a monthly token cap (optional): tokens in and out logged on the
+    connection in the current calendar month (in `APP_TIMEZONE`) are
+    summed before each call; at or over the cap the connection pauses
+    until the 1st and the features say why. Derived from the usage log,
+    so nothing needs resetting;
+  - **one request at a time per user**: a second is refused at once with
+    "Still working on your last question" (decided 2026-10-01, #68). The
+    lock is a row in `ai_busy` (§6), taken by an insert that fails on the
+    unique user, outside any transaction, and released when the call ends;
+    a lock older than its expiry (the connection's timeout plus 30
+    seconds) is taken over.
+- **Usage log** (§6 AiRequest): user, task, connection, model, tokens in
+  and out (when reported), duration, outcome (`ok` | `error` | `timeout`
+  | `refused`), error code, created_at. **No prompts or answers** unless
+  `AI_LOG_CONTENT=true` (off; for debugging one's own install), which
+  stores the request's and the result's text and a warning shows on
+  Settings → AI. Rows older than 90 days are deleted by the scheduled
+  task. Settings → AI shows this month's calls, tokens and failures per
+  connection and per task.
+- **Errors** reach users as safe, translated messages by code:
+  `timeout`, `unreachable`, `auth` (401/403), `not_found` (the model;
+  for Ollama, "Run `ollama pull {model}` on that computer"),
+  `rate_limited` (429), `too_large`, `cap_reached`, `busy`,
+  `not_acknowledged`, `secret_unreadable`, `bad_response` (unparseable,
+  or failing the JSON Schema check), `provider` (any other). Admins also
+  see the provider's (redacted) text on Settings → AI.
+- **Users** (decided 2026-10-01, #67): Settings → Account → *Use AI
+  features*, a user setting `ai.use`, **on** unless the user switched it
+  off. Shown only once AI is set up (at least one task has a working
+  assignment). Off hides every AI entry point for that user and sends
+  nothing on their behalf.
+- **Admin-only connections** (decided 2026-10-01, #65): members cannot
+  add their own connections or keys; every call a member makes uses the
+  admins' connections and counts against their caps.
+- **Answers are returned whole** (decided 2026-10-01, #66), with a
+  progress indicator in the features; nothing is streamed to the
+  browser.
+- **Modules** (§7.10): `ai_ask`, `ai_actions` and `ai_scan`. They default
+  to on but do nothing without an assigned task, and appear on Settings →
+  Modules only while AI is set up.
+- **Not in this phase:** any user-facing AI feature (26.2–26.5), running
+  models inside the Logbook container, fine-tuning, embeddings or vector
+  search, per-user connections, streaming, automatic fallback.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -3669,7 +3977,16 @@ Real environment variables override `.env`; an empty value counts as unset.
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES` (default true;
-  see §7.10), `FEATURES_TRIPS` (default false)
+  see §7.10), `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,
+  `FEATURES_AI_ACTIONS`, `FEATURES_AI_SCAN` (default true; §7.25)
+- AI (§7.25, Phase 26.1): `AI_ENABLED` (default `true`; `false` hides
+  Settings → AI, every AI switch and entry point, and sends nothing,
+  whatever is configured), `AI_LOG_CONTENT` (default `false`; `true`
+  stores prompts and answers in the usage log, for debugging, with a
+  warning on Settings → AI), `AI_ALLOW_INSECURE_TLS` (default `true`:
+  allows a connection's *Verify TLS* to be switched off; `false` forbids
+  it and verifies every connection). API keys typed as `env:NAME` read
+  that variable at call time.
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
   `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
   task inside the container; default `true`), `SCHEDULER_INTERVAL` (seconds
@@ -3942,6 +4259,18 @@ task breakdowns live in the per-phase files; this is the map.
   by fingerprint and its threshold among the owner's *Needs attention*
   settings. Plain statistics, no model or network. No migration; release
   v2.5.0.
+- **Phase 26.1 — AI foundation: connections, models and task routing.**
+  Admin-only connections to model providers wherever they run (this
+  server, the network, the internet) through four adapters
+  (OpenAI-compatible, Ollama, Anthropic, Gemini) with no SDK; secrets
+  encrypted with a key from `SESSION_SECRET` or read from `env:`; each
+  connection classed by where it resolves, with an acknowledgement for
+  internet ones; models with capabilities confirmed by *Test*; tasks
+  routed to a model each; limits (size, monthly tokens, one request at a
+  time per user); a usage log without content; the user's *Use AI
+  features* switch and three AI modules, all hidden until AI is set up
+  (§5 *AI adapters*, §6, §7.10, §7.25, §9). One migration. Ships with
+  Phase 26.2 as v2.6.0.
 
 ---
 

@@ -1,0 +1,39 @@
+{
+  "status": 200,
+  "request": {
+    "model": "claude-sonnet-5-5",
+    "max_tokens": 64,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image",
+            "source": {
+              "type": "base64",
+              "media_type": "image/png",
+              "data": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR42mO4oKBAEmIY1TCqYfhqAABLfxAQegypMgAAAABJRU5ErkJggg=="
+            }
+          },
+          {
+            "type": "text",
+            "text": "What colour is this image? Answer in one word."
+          }
+        ]
+      }
+    ]
+  },
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Red"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 30,
+      "output_tokens": 2
+    }
+  }
+}

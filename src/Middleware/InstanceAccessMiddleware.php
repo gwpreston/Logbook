@@ -13,11 +13,13 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Slim\Exception\HttpNotFoundException;
 use Slim\Routing\RouteContext;
 
 /**
  * Guards the install-wide pages (spec.md §5 *Access policy*): a route that
- * declares an `instance` argument needs that InstanceAbility, else 403.
+ * declares an `instance` argument needs that InstanceAbility, else 403
+ * (404 for an ability that hides its pages, such as Settings → AI).
  * Sits on the whole signed-in group, next to VehicleAccessMiddleware.
  */
 final readonly class InstanceAccessMiddleware implements MiddlewareInterface
@@ -38,7 +40,7 @@ final readonly class InstanceAccessMiddleware implements MiddlewareInterface
         $ability = InstanceAbility::tryFrom($declared)
             ?? throw new LogicException(sprintf('Unknown instance ability "%s".', $declared));
         if (!$this->access->can(RequestContext::requireUser($request), $ability)) {
-            throw new AccessDeniedException($request);
+            throw $ability->isHidden() ? new HttpNotFoundException($request) : new AccessDeniedException($request);
         }
 
         return $handler->handle($request);

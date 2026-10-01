@@ -1,0 +1,66 @@
+{
+  "status": 200,
+  "request": {
+    "model": "gpt-5",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Add 2 and 3."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "add_numbers",
+          "description": "Adds two whole numbers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "integer"
+              },
+              "b": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "response": {
+    "id": "chatcmpl-def",
+    "object": "chat.completion",
+    "model": "gpt-5",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_abc123",
+              "type": "function",
+              "function": {
+                "name": "add_numbers",
+                "arguments": "{\"a\":2,\"b\":3}"
+              }
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 60,
+      "completion_tokens": 18,
+      "total_tokens": 78
+    }
+  }
+}

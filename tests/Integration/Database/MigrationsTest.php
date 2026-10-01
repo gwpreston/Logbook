@@ -49,6 +49,13 @@ final class MigrationsTest extends AppTestCase
         'saved_journeys',
         'mileage_rate_sets',
         'user_identities',
+        'attention_hidden',
+        'ai_connections',
+        'ai_secrets',
+        'ai_models',
+        'ai_tasks',
+        'ai_requests',
+        'ai_busy',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -88,7 +95,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 24 hidden checks, the Phase 23.1 identities, the Phase 22 trip tables,
+        // Newest first: the Phase 26.1 AI tables, the Phase 24 hidden checks, the Phase 23.1 identities,
+        // the Phase 22 trip tables,
         // the Phase 21.2 first MOT date, the Phase 19 users and sharing, the Phase 18.2 API
         // keys, the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
         // purchase and sale paperwork (no schema change), the Phase 11.2
@@ -98,6 +106,13 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        $ai = ['ai_connections', 'ai_secrets', 'ai_models', 'ai_tasks', 'ai_requests', 'ai_busy'];
+        self::assertTrue($schema->tablesExist($ai));
+        Migrator::run('rollback');
+        foreach ($ai as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+
         self::assertTrue($schema->tablesExist(['attention_hidden']));
         Migrator::run('rollback');
         self::assertFalse($schema->tablesExist(['attention_hidden']), 'rollback must drop the hidden checks');

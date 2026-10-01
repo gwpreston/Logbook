@@ -83,6 +83,8 @@ final class RouteInventoryTest extends AppTestCase
         'api.journeys',
         // Phase 23.2: linking one's own proxy account.
         'proxy.link',
+        // Phase 26.1: one's own *Use AI features* switch.
+        'settings.ai_use',
     ];
 
     /** Signed in; every vehicle they show comes from the policy's visible ids (VehicleService::listFleet / listWith). */
@@ -214,6 +216,17 @@ final class RouteInventoryTest extends AppTestCase
             'settings.users.transfer' => InstanceAbility::ManageUsers,
             'settings.users.revoke' => InstanceAbility::ManageUsers,
             'settings.users.identity.remove' => InstanceAbility::ManageUsers,
+            // Phase 26.1: Settings → AI, which answers 404 to non-admins.
+            'settings.ai' => InstanceAbility::ManageAi,
+            'settings.ai.tasks' => InstanceAbility::ManageAi,
+            'settings.ai.this_host' => InstanceAbility::ManageAi,
+            'settings.ai.connections.create' => InstanceAbility::ManageAi,
+            'settings.ai.connections.show' => InstanceAbility::ManageAi,
+            'settings.ai.connections.edit' => InstanceAbility::ManageAi,
+            'settings.ai.connections.delete' => InstanceAbility::ManageAi,
+            'settings.ai.connections.acknowledge' => InstanceAbility::ManageAi,
+            'settings.ai.connections.models' => InstanceAbility::ManageAi,
+            'settings.ai.connections.test' => InstanceAbility::ManageAi,
         ], $declared);
     }
 

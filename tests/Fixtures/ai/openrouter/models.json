@@ -1,0 +1,59 @@
+{
+  "status": 200,
+  "response": {
+    "data": [
+      {
+        "id": "openai/gpt-4o",
+        "canonical_slug": "openai/gpt-4o",
+        "name": "OpenAI: GPT-4o",
+        "created": 1715558400,
+        "context_length": 128000,
+        "architecture": {
+          "input_modalities": [
+            "text",
+            "image",
+            "file"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "GPT",
+          "instruct_type": null
+        },
+        "pricing": {
+          "prompt": "0.0000025",
+          "completion": "0.00001"
+        },
+        "supported_parameters": [
+          "tools",
+          "tool_choice",
+          "max_tokens",
+          "temperature",
+          "response_format",
+          "structured_outputs"
+        ]
+      },
+      {
+        "id": "meta-llama/llama-3.1-8b-instruct",
+        "name": "Meta: Llama 3.1 8B Instruct",
+        "context_length": 131072,
+        "architecture": {
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ]
+        },
+        "supported_parameters": [
+          "max_tokens",
+          "temperature"
+        ]
+      }
+    ],
+    "total_count": 2,
+    "links": {
+      "next": null
+    }
+  }
+}

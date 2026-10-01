@@ -1,0 +1,30 @@
+{#
+ # AI fragments (spec.md §7.25). Import with: {% import 'macros/ai.twig' as ai %}
+ #}
+
+{# Where a connection runs: an icon and the words, never colour alone. #}
+{% macro location(location) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set tone = {server: 'valid', network: 'accent', internet: 'soon'}[location.value] %}
+    <span class="pill pill--{{ tone }}" data-ai-location="{{ location.value }}">{{ ui.icon(location.icon()) }}{{ location.labelKey()|trans }}</span>
+{%- endmacro %}
+
+{# A secret's state, never its value. #}
+{% macro secret_state(state) -%}
+    {% if state is null %}
+        {{- 'ai.secret.none'|trans -}}
+    {% elseif state.state == 'saved' %}
+        {{- 'ai.secret.saved'|trans -}}
+    {% elseif state.state == 'env' %}
+        {{- 'ai.secret.env'|trans({variable: state.variable}) -}}
+    {% elseif state.state == 'unset' %}
+        <strong>{{ 'ai.secret.unset'|trans({variable: state.variable}) }}</strong>
+    {%- else %}
+        <strong>{{ 'ai.secret.unreadable'|trans }}</strong>
+    {%- endif %}
+{%- endmacro %}
+
+{# The acknowledgement's sentence, naming the host (and a gateway's providers). #}
+{% macro acknowledgement_text(host, gateway) -%}
+    {{ (gateway ? 'ai.acknowledge.text_gateway' : 'ai.acknowledge.text')|trans({host: host}) }}
+{%- endmacro %}

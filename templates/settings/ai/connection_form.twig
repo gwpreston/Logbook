@@ -1,0 +1,153 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ai.twig' as ai %}
+
+{#
+ # Add or edit an AI connection (spec.md §7.25 *Connections*). Secrets are
+ # never shown again, not even masked: a saved one says so, with *Replace*
+ # (type a new one) and *Remove*. Presets fill the adapter and URL with JS;
+ # without it the admin types them.
+ #}
+{% set active_nav = 'settings' %}
+{% set editing = connection is not null %}
+{% set heading = (editing ? 'ai.connection.edit_title' : 'ai.connection.add_title')|trans %}
+{% set key_state = secrets['api_key'] ?? null %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ editing ? url_for('settings.ai.connections.show', {connection: connection.id}) : url_for('settings.ai') }}">{{ ui.icon('chevron_left') }}{{ editing ? connection.name : 'ai.title'|trans }}</a>
+        <header class="page-header">
+            <div><h1 class="page-header__title">{{ heading }}</h1></div>
+        </header>
+
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ editing ? url_for('settings.ai.connections.edit', {connection: connection.id}) : url_for('settings.ai.connections.create') }}"
+              x-data="{ presets: {{ preset_map|json_encode|e('html_attr') }}, apply(key) { const p = this.presets[key]; if (!p) return; this.$refs.adapter.value = p.adapter; if (p.url) this.$refs.url.value = p.url; } }">
+            {{ ui.csrf(csrf) }}
+            <section class="card">
+                {% if not editing %}
+                    <div class="field">
+                        <label class="field__label" for="f-preset">{{ 'ai.connection.preset'|trans }}</label>
+                        <select class="select" id="f-preset" name="preset" aria-describedby="f-preset-hint" @change="apply($event.target.value)">
+                            {% for preset in presets %}
+                                <option value="{{ preset.value }}"{% if (values.preset ?? '') == preset.value %} selected{% endif %}>{{ preset.labelKey()|trans }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="field__hint" id="f-preset-hint">{{ 'ai.connection.preset_hint'|trans }}</p>
+                    </div>
+                {% endif %}
+                {{ ui.input('name', 'ai.connection.name'|trans, values, errors, {required: true, maxlength: 100, placeholder: 'ai.connection.name_example'|trans}) }}
+                <div class="field">
+                    <label class="field__label" for="f-adapter">{{ 'ai.connection.adapter'|trans }}</label>
+                    <select class="select" id="f-adapter" name="adapter" required x-ref="adapter"{{ ui.described_by('adapter', errors, true) }}>
+                        {% for adapter in adapters %}
+                            <option value="{{ adapter.value }}"{% if (values.adapter ?? '') == adapter.value %} selected{% endif %}>{{ adapter.labelKey()|trans }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="field__hint" id="f-adapter-hint">{{ 'ai.connection.adapter_hint'|trans }}</p>
+                    {{ ui.field_error(errors, 'adapter') }}
+                </div>
+                <div class="field">
+                    <label class="field__label" for="f-base_url">{{ 'ai.connection.base_url'|trans }}</label>
+                    <input class="input" id="f-base_url" name="base_url" type="url" required maxlength="500" spellcheck="false" autocomplete="off" x-ref="url" value="{{ values.base_url ?? '' }}"{{ ui.described_by('base_url', errors, true) }}>
+                    <p class="field__hint" id="f-base_url-hint">{{ 'ai.connection.base_url_hint'|trans }}</p>
+                    {{ ui.field_error(errors, 'base_url') }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="secrets-heading">
+                <h2 id="secrets-heading" class="card__title">{{ ui.icon('key') }}{{ 'ai.connection.secrets'|trans }}</h2>
+                <div class="field">
+                    <label class="field__label" for="f-api_key">{{ (key_state ? 'ai.connection.api_key_replace' : 'ai.connection.api_key')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <input class="input" id="f-api_key" name="api_key" type="password" autocomplete="off" spellcheck="false" maxlength="2000"{{ ui.described_by('api_key', errors, true) }}>
+                    <p class="field__hint" id="f-api_key-hint">
+                        {% if key_state %}{{ ai.secret_state(key_state) }} {% endif %}{{ 'ai.connection.api_key_hint'|trans }}
+                    </p>
+                    {{ ui.field_error(errors, 'api_key') }}
+                </div>
+                {% if key_state %}
+                    <label class="toggle">
+                        <input type="checkbox" name="remove_api_key" value="1">
+                        <span class="toggle__text"><span class="toggle__title">{{ 'ai.connection.api_key_remove'|trans }}</span></span>
+                    </label>
+                {% endif %}
+                {% if editing and connection.headerNames is not empty %}
+                    <fieldset class="fieldset">
+                        <legend class="field__label">{{ 'ai.connection.saved_headers'|trans }}</legend>
+                        {% for name in connection.headerNames %}
+                            <label class="toggle">
+                                <input type="checkbox" name="remove_headers[]" value="{{ name }}">
+                                <span class="toggle__text">
+                                    <span class="toggle__title">{{ 'ai.connection.header_remove'|trans({name: name}) }}</span>
+                                    <span class="toggle__hint">{{ ai.secret_state(secrets['header:' ~ name] ?? null) }}</span>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </fieldset>
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-headers">{{ 'ai.connection.headers'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-headers" name="headers" rows="2" spellcheck="false" autocomplete="off"{{ ui.described_by('headers', errors, true) }}></textarea>
+                    <p class="field__hint" id="f-headers-hint">{{ 'ai.connection.headers_hint'|trans }}</p>
+                    {{ ui.field_error(errors, 'headers') }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="limits-heading">
+                <h2 id="limits-heading" class="card__title">{{ ui.icon('tune') }}{{ 'ai.connection.limits'|trans }}</h2>
+                {{ ui.input('timeout_seconds', 'ai.connection.timeout'|trans, values, errors, {type: 'number', step: 1, min: 5, max: 600, inputmode: 'numeric', optional: true, suffix: 's', hint: 'ai.connection.timeout_hint'|trans}) }}
+                {{ ui.input('max_request_mb', 'ai.connection.max_request'|trans, values, errors, {type: 'number', step: 1, min: 1, max: 50, inputmode: 'numeric', suffix: 'MB', hint: 'ai.connection.max_request_hint'|trans}) }}
+                {{ ui.input('monthly_token_cap', 'ai.connection.cap'|trans, values, errors, {type: 'number', step: 1, min: 1, inputmode: 'numeric', optional: true, hint: 'ai.connection.cap_hint'|trans}) }}
+            </section>
+
+            <section class="card" aria-labelledby="tls-heading">
+                <h2 id="tls-heading" class="card__title">{{ ui.icon('lock') }}{{ 'ai.connection.tls'|trans }}</h2>
+                <label class="toggle">
+                    <input type="checkbox" name="verify_tls" value="1"{% if (values.verify_tls ?? '') == '1' or not allow_insecure_tls %} checked{% endif %}{% if not allow_insecure_tls %} disabled{% endif %} aria-describedby="f-verify-hint">
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'ai.connection.verify_tls'|trans }}</span>
+                        <span class="toggle__hint" id="f-verify-hint">{{ (allow_insecure_tls ? 'ai.connection.verify_tls_hint' : 'ai.connection.verify_tls_forced')|trans }}</span>
+                    </span>
+                </label>
+                {% if allow_insecure_tls and editing and not connection.verifyTls %}
+                    <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'ai.connection.tls_off_warning'|trans }}</span></div>
+                {% endif %}
+                {{ ui.input('ca_bundle', 'ai.connection.ca_bundle'|trans, values, errors, {maxlength: 500, optional: true, hint: 'ai.connection.ca_bundle_hint'|trans}) }}
+            </section>
+
+            <section class="card">
+                <label class="toggle">
+                    <input type="checkbox" name="enabled" value="1"{% if (values.enabled ?? '') == '1' %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'ai.connection.enabled'|trans }}</span>
+                        <span class="toggle__hint">{{ 'ai.connection.enabled_hint'|trans }}</span>
+                    </span>
+                </label>
+                {% if editing and connection.location.value == 'internet' %}
+                    <label class="toggle">
+                        <input type="checkbox" name="acknowledge" value="1"{% if connection.isAcknowledged() %} checked disabled{% endif %}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ ai.acknowledgement_text(connection.host(), gateway ?? false) }}</span>
+                            <span class="toggle__hint">{{ 'ai.acknowledge.url_change'|trans }}</span>
+                        </span>
+                    </label>
+                {% else %}
+                    <p class="muted">{{ 'ai.acknowledge.after_save'|trans }}</p>
+                {% endif %}
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'form.save'|trans }}</button>
+                <a class="btn btn--lg" href="{{ editing ? url_for('settings.ai.connections.show', {connection: connection.id}) : url_for('settings.ai') }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('settings.ai.connections.delete', {connection: connection.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+{% endblock %}

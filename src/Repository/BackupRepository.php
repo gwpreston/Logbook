@@ -59,13 +59,20 @@ final readonly class BackupRepository
         'mileage_rate_sets',
         // Phase 24: the data checks each user has hidden (Needs attention).
         'attention_hidden',
+        // Phase 26.1: AI connections, their models and the task routing.
+        // Never their secrets (`ai_secrets`): a restored connection asks
+        // for its key again.
+        'ai_connections',
+        'ai_models',
+        'ai_tasks',
     ];
 
     /**
      * Tables that are deliberately not backed up. Invitation links (Phase
-     * 19) are for this install, now, like sessions.
+     * 19) are for this install, now, like sessions. AI secrets, the usage
+     * log and the per-user request lock (Phase 26.1) are never carried.
      */
-    public const array EXCLUDED = ['sessions', 'invitations', 'phinxlog'];
+    public const array EXCLUDED = ['sessions', 'invitations', 'phinxlog', 'ai_secrets', 'ai_requests', 'ai_busy'];
 
     public function __construct(private Connection $connection)
     {

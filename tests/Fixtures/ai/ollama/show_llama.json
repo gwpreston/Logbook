@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "request": {
+    "model": "llama3.2:3b"
+  },
+  "response": {
+    "capabilities": [
+      "completion",
+      "tools"
+    ],
+    "details": {
+      "family": "llama"
+    }
+  }
+}

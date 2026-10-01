@@ -55,7 +55,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [23.2](docs/phases/phase-23.2.md) | Reverse-proxy header sign-in + v2.3 release | ✅ |
 | [24](docs/phases/phase-24.md) | Needs attention + v2.4 release | ✅ |
 | [25](docs/phases/phase-25.md) | Trend and cost checks + v2.5 release | ✅ |
-| [26.1](docs/phases/phase-26.1.md) | AI foundation: connections, models and task routing | 📋 |
+| [26.1](docs/phases/phase-26.1.md) | AI foundation: connections, models and task routing | 🚧 |
 | [26.2](docs/phases/phase-26.2.md) | Ask Logbook + v2.6 release | 📋 |
 | [26.3](docs/phases/phase-26.3.md) | Actions: say it, check it, add it + v2.7 release | 📋 |
 | [26.4](docs/phases/phase-26.4.md) | Read receipts and documents + v2.8 release | 📋 |

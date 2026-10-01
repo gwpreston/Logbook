@@ -53,6 +53,8 @@ final readonly class AppSettings
         public bool $localLogin = true,
         /** Header sign-in behind a forward-auth proxy (spec.md §7.9, Phase 23.2). */
         public ProxyAuthConfig $proxy = new ProxyAuthConfig(),
+        /** AI connections (spec.md §7.25, Phase 26.1). */
+        public AiConfig $ai = new AiConfig(),
     ) {
     }
 
@@ -96,6 +98,7 @@ final readonly class AppSettings
             oidc: OidcConfig::fromEnv($env),
             localLogin: $env->bool('AUTH_LOCAL_LOGIN', true),
             proxy: ProxyAuthConfig::fromEnv($env),
+            ai: AiConfig::fromEnv($env),
         );
     }
 

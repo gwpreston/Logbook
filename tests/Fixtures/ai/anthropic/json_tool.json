@@ -1,0 +1,62 @@
+{
+  "status": 200,
+  "request": {
+    "model": "claude-3-5-haiku-20241022",
+    "max_tokens": 256,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Give the colour \"red\" and the count 3."
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "test_object",
+        "description": "Return the answer as this object.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "colour": {
+              "type": "string"
+            },
+            "count": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "colour",
+            "count"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "tool",
+      "name": "test_object"
+    }
+  },
+  "response": {
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_x",
+        "name": "test_object",
+        "input": {
+          "colour": "red",
+          "count": 3
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 400,
+      "output_tokens": 40
+    }
+  }
+}

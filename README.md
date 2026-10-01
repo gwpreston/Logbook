@@ -80,6 +80,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
+| [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick |
 | [docs/sso.md](docs/sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link; header sign-in behind a forward-auth proxy (nginx, Traefik, Caddy, the Authentik outpost) and how to deploy it safely |
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |

@@ -23,6 +23,8 @@ use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\OidcConfig;
 use Logbook\Support\Config\ProxyAuthConfig;
 use Logbook\Support\Log\LogThrottle;
+use Logbook\Support\Net\HostResolver;
+use Logbook\Support\Net\SystemHostResolver;
 use Logbook\Support\Database\ConnectionFactory;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
@@ -214,6 +216,9 @@ return [
 
         return new LogThrottle($settingsOf($c)->cacheDir . '/log-throttle', $clock);
     },
+
+    // AI hosts are classed by what they resolve to (spec.md §7.25).
+    HostResolver::class => get(SystemHostResolver::class),
 
     HttpClientInterface::class => static fn (): HttpClientInterface => HttpClient::create([
         'timeout' => 15,

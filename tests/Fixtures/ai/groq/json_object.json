@@ -1,0 +1,44 @@
+{
+  "status": 200,
+  "request": {
+    "model": "llama-3.3-70b-versatile",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Answer with one JSON object only, no other text, matching this JSON Schema:\n{\"type\":\"object\",\"properties\":{\"colour\":{\"type\":\"string\"},\"count\":{\"type\":\"integer\"}},\"required\":[\"colour\",\"count\"],\"additionalProperties\":false}"
+      },
+      {
+        "role": "user",
+        "content": "Give the colour \"red\" and the count 3."
+      }
+    ],
+    "response_format": {
+      "type": "json_object"
+    },
+    "max_tokens": 256
+  },
+  "response": {
+    "id": "chatcmpl-groq",
+    "object": "chat.completion",
+    "model": "llama-3.3-70b-versatile",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"colour\": \"red\", \"count\": 3}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 70,
+      "completion_tokens": 14,
+      "queue_time": 0.01,
+      "prompt_time": 0.002
+    },
+    "x_groq": {
+      "id": "req_01"
+    }
+  }
+}

@@ -25,7 +25,9 @@ answered on 2026-10-01, before Phase 23.1 started, and Phase 23.2's
 (#52–#55, two of them found while starting it) on the same day, before
 Phase 23.2 started. Phase 24's (#56–#58) were answered on 2026-10-01,
 before it started, and Phase 25's (#59–#64, four of them found while
-starting it) on the same day, before Phase 25 started.
+starting it) on the same day, before Phase 25 started. Phase 26.1's
+(#65–#69, two of them found while starting it) were answered on
+2026-10-01, before Phase 26.1 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -93,6 +95,11 @@ starting it) on the same day, before Phase 25 started.
 | 62 | [25](phase-25.md) | The cost floor without exchange rates? | Decided | 100 in the vehicle's currency's major unit (spec §7.24). | 2026-10-01 |
 | 63 | [25](phase-25.md) | A fill-up priced at 0? | Decided | Never flagged and never counted in the median, for every fuel (spec §7.24). | 2026-10-01 |
 | 64 | [25](phase-25.md) | The drift title's percentage: consumption or the unit shown? | Decided | Worked out from the two figures shown (spec §7.24). | 2026-10-01 |
+| 65 | [26.1](phase-26.1.md) | Per-user AI connections (members' own keys)? | Decided | No: connections are admin-only; members use the admins' (spec §7.25). | 2026-10-01 |
+| 66 | [26.1](phase-26.1.md) | Stream answers to the browser? | Decided | No: returned whole, with a progress indicator (spec §7.25). | 2026-10-01 |
+| 67 | [26.1](phase-26.1.md) | Default for *Use AI features*? | Decided | On for every user once AI is set up; switchable off per user (spec §7.25, user setting `ai.use`). | 2026-10-01 |
+| 68 | [26.1](phase-26.1.md) | A second AI request while one runs: wait or refuse? | Decided | Refused at once ("Still working on your last question"), a lock row per user (spec §7.25 *Limits*, §6 AiBusy). | 2026-10-01 |
+| 69 | [26.1](phase-26.1.md) | Tailscale (100.64.0.0/10): *Your network* or *Internet*? | Decided | *Your network* (spec §7.25 *Where it runs*). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

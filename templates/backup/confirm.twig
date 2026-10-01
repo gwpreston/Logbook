@@ -33,6 +33,9 @@
             {% if manifest.rows('api_keys') > 0 %}
                 <div class="alert alert--info" role="note">{{ ui.icon('info') }}<span>{{ 'backup.api_keys_notice'|trans }}</span></div>
             {% endif %}
+            {% if manifest.rows('ai_connections') > 0 %}
+                <div class="alert alert--info" role="note">{{ ui.icon('info') }}<span>{{ 'backup.ai_notice'|trans }}</span></div>
+            {% endif %}
 
             <form class="form" method="post" action="{{ url_for('backup.restore.confirm', {token: token}) }}">
                 {{ ui.csrf(csrf) }}

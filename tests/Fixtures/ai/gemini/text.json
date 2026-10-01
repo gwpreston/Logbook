@@ -1,0 +1,53 @@
+{
+  "status": 200,
+  "request": {
+    "systemInstruction": {
+      "parts": [
+        {
+          "text": "You are concise."
+        }
+      ]
+    },
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Hello"
+          }
+        ]
+      }
+    ],
+    "generationConfig": {
+      "temperature": 0.2,
+      "maxOutputTokens": 100
+    }
+  },
+  "response": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Hi! "
+            },
+            {
+              "text": "How can I help?"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 12,
+      "candidatesTokenCount": 5,
+      "thoughtsTokenCount": 40,
+      "totalTokenCount": 57
+    },
+    "modelVersion": "gemini-3-flash",
+    "responseId": "abc123"
+  }
+}

@@ -16,4 +16,15 @@ enum InstanceAbility: string
     case ManageNotifications = 'manage_notifications';
     /** Settings → Users: invitations, admins, disabling and deleting (Phase 19). */
     case ManageUsers = 'manage_users';
+    /** Settings → AI: connections, models and tasks (Phase 26.1). */
+    case ManageAi = 'manage_ai';
+
+    /**
+     * Whether a user without the ability gets 404 rather than 403, so the
+     * page's existence is not revealed (Settings → AI, spec.md §7.25).
+     */
+    public function isHidden(): bool
+    {
+        return $this === self::ManageAi;
+    }
 }
