@@ -3,7 +3,9 @@
 A small JSON API for automations: Home Assistant sensors, Apple Shortcuts
 and Android automations that log a fill-up, Grafana panels, Node-RED flows
 and OBD tools that post the odometer. It reads what a dashboard needs and
-writes two things: **fill-ups** and **odometer readings**.
+writes **fill-ups**, **odometer readings** and **trips**, and from 2.7
+**service records**, **documents**, **expenses**, **tread checks** and
+**manual reminders**.
 
 The contract is the OpenAPI 3.1 description, served by your install at
 `<your URL>/api/v1/openapi.json` (the same file as
@@ -15,6 +17,7 @@ response against it. `spec.md` §7.20 has the rules.
 - [Endpoints](#endpoints)
 - [Lists: paging and dates](#lists-paging-and-dates)
 - [Logging fill-ups and readings](#logging-fill-ups-and-readings)
+- [Logging other entries](#logging-other-entries)
 - [Errors](#errors)
 - [Browser dashboards (CORS)](#browser-dashboards-cors)
 - Examples: [curl](#curl) · [Home Assistant](#home-assistant) ·
@@ -106,9 +109,14 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre) (paged) |
 | `POST /vehicles/{id}/odometer` | add a reading (read and write key) |
 | `GET /vehicles/{id}/maintenance` | service records (paged) |
+| `POST /vehicles/{id}/maintenance` | add a service record (read and write key) |
 | `GET /vehicles/{id}/documents` | compliance documents with their status and days left (paged) |
+| `POST /vehicles/{id}/documents` | add a document (read and write key) |
 | `GET /vehicles/{id}/expenses` | expenses (paged; needs cost access) |
+| `POST /vehicles/{id}/expenses` | add an expense (read and write key; cost access not needed) |
 | `GET /vehicles/{id}/tyres` | tyres: fitted, stored, retired, with tread and what is due |
+| `POST /vehicles/{id}/tyres/checks` | record a tread check (read and write key) |
+| `POST /vehicles/{id}/reminders` | add a manual reminder (read and write key; Manage) |
 | `GET /upcoming` | *Coming up* over the next 12 months (`?vehicle=`) |
 | `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`) |
 | `GET /vehicles/{id}/trips` | trips: your own, or every driver's when you manage or own the vehicle (paged; trips module) |
@@ -174,6 +182,35 @@ automation that retries after a timeout never doubles a fill-up, **as long
 as it sends `filled_at`** (a retry without it is a new "now").
 
 An archived vehicle refuses writes (`409 vehicle_archived`).
+
+## Logging other entries
+
+From 2.7, five more writes follow the same rules: the form's validation
+and messages, `201` with the entry as its list shows it (a tread check has
+no list, so its answer is the check), `warnings`, safe retries,
+`409` for an archived vehicle, and `404` while the entry's module is off.
+Dates are `YYYY-MM-DD` and default to today in your time zone.
+
+| Endpoint | Body | Needs | A retry matches |
+|---|---|---|---|
+| `POST /vehicles/{id}/maintenance` | `performed_on`, `odometer`, `distance_unit`, `category` (required: `service`, `oil`, `tyres`, …), `title` (required), `cost`, `vendor`, `description`, `schedule_id` | Log | same date, category, title and cost |
+| `POST /vehicles/{id}/documents` | `type` (required: `insurance`, `inspection`, …), `title`, `provider`, `reference`, `start_on`, `expiry_on`, `cost`, `odometer` (needs `start_on`), `distance_unit`, `notes` | Log | same type, reference, start and expiry |
+| `POST /vehicles/{id}/expenses` | `spent_on`, `category` (required: `parking`, `tolls`, …), `amount` (0 is fine), `note` | Log | same date, category, amount and note |
+| `POST /vehicles/{id}/tyres/checks` | `checked_on`, `odometer`, `distance_unit`, `depth_unit` (`mm` or `in32`; default yours), `depths` (required: `{"fl": "6.5", "fr": "6.4"}`, fitted positions only), `note` | Log | same date and the same depth at every position |
+| `POST /vehicles/{id}/reminders` | `title` and `due_on` (required), `lead_time_days` (default your manual lead time), `notes` | Manage | an open manual reminder with the same title and due date |
+
+```sh
+# A service record in miles; it writes its odometer reading, as the form does.
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"performed_on": "2026-09-20", "odometer": 30280, "distance_unit": "mi",
+          "category": "service", "title": "Annual service", "cost": "187.43"}' \
+     "$BASE/vehicles/1/maintenance"
+
+# A tread check in 32nds of an inch.
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"odometer": 30280, "depth_unit": "in32", "depths": {"fl": 8, "fr": 7.5}}' \
+     "$BASE/vehicles/1/tyres/checks"
+```
 
 ## Trips
 

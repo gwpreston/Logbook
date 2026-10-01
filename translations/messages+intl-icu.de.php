@@ -2535,6 +2535,8 @@ return [
             'string' => 'Verwende einen Text.',
             'kwh_for_electric' => 'kWh gilt nur für Strom; verwende l, gal_uk oder gal_us.',
             'electric_in_kwh' => 'Strom wird in kWh gemessen; verwende kwh oder lass die Einheit weg.',
+            'depths' => 'Gib die Profiltiefen als Objekt von Positionscode (fl, fr, rl, rr, front, rear, spare) zu Tiefe an.',
+            'no_tyre_at_position' => 'An dieser Position ist kein Reifen montiert.',
         ],
     ],
     'backup' => [

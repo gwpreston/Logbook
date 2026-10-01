@@ -141,14 +141,15 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 - [ ] `docs/ai.md`: *Adding entries by message*, with examples per kind.
 
 ### API (decided 2026-10-01, #76)
-- [ ] `JsonInput` field maps for maintenance, documents, expenses, tread
+- [x] `JsonInput` field maps for maintenance, documents, expenses, tread
       checks and manual reminders, onto their forms' fields.
-- [ ] `POST /api/v1/vehicles/{id}/maintenance`, `/documents`,
+- [x] `POST /api/v1/vehicles/{id}/maintenance`, `/documents`,
       `/expenses`, `/tyres/checks` and `/reminders` through `ApiWriter`:
       module gating, `Log` (`Manage` for reminders, as the form), archived 409,
       duplicate keys as spec §7.20.
-- [ ] OpenAPI operations and schemas; response validation tests;
-      `docs/api.md` examples.
+- [x] OpenAPI operations and schemas; response validation tests;
+      `docs/api.md` examples (`ApiMoreWritesTest`; `TyreFormContexts` now
+      builds the tyre form's choices for the page and the API alike).
 
 ### Migration
 - [ ] `ai_drafts`, reversible on every engine, excluded from backups, and

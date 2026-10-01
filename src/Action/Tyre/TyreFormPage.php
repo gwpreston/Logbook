@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace Logbook\Action\Tyre;
 
 use DateTimeImmutable;
-use Logbook\Domain\Feature\Feature;
-use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\Tyre\TyreChangeKind;
 use Logbook\Domain\Tyre\TyreRetireReason;
 use Logbook\Domain\Tyre\TyreSeason;
 use Logbook\Domain\Vehicle\Vehicle;
-use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Tyre\TyreChangeRefused;
 use Logbook\Service\Tyre\TyreFormContext;
+use Logbook\Service\Tyre\TyreFormContexts;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Validation\ValidationErrors;
@@ -33,7 +31,7 @@ final readonly class TyreFormPage
         private View $view,
         private TyreService $tyres,
         private OdometerService $odometer,
-        private FeatureToggles $features,
+        private TyreFormContexts $contexts,
         private DisplayFormatter $formatter,
     ) {
     }
@@ -47,37 +45,7 @@ final readonly class TyreFormPage
         DateTimeImmutable $on,
         ?int $currentLink = null,
     ): TyreFormContext {
-        $fitted = [];
-        $stored = [];
-        foreach ($this->tyres->tyres($vehicle) as $tyre) {
-            if ($tyre->isFitted() && $tyre->position !== null) {
-                $fitted[$tyre->position->value] = $tyre;
-            } elseif ($tyre->isStored()) {
-                $stored[] = $tyre;
-            }
-        }
-        $ordered = [];
-        foreach ($vehicle->data->type->tyrePositions() as $position) {
-            if (isset($fitted[$position->value])) {
-                $ordered[$position->value] = $fitted[$position->value];
-            }
-        }
-        $maintenance = $this->features->isEnabled(Feature::Maintenance);
-        $links = $maintenance ? $this->tyres->linkCandidates($vehicle, $on, $currentLink) : [];
-
-        return new TyreFormContext(
-            positions: $vehicle->data->type->tyrePositions(),
-            fitted: $ordered,
-            stored: $stored,
-            setIds: array_map(static fn ($s): int => $s->id, $this->tyres->sets($vehicle)),
-            linkIds: array_map(static fn (MaintenanceEntry $e): int => $e->id, $links),
-            today: $today,
-            maintenance: $maintenance,
-            linkIdsWithOdometer: array_values(array_map(
-                static fn (MaintenanceEntry $e): int => $e->id,
-                array_filter($links, static fn (MaintenanceEntry $e): bool => $e->data->odometerKm !== null),
-            )),
-        );
+        return $this->contexts->for($vehicle, $today, $on, $currentLink);
     }
 
     /**

@@ -2537,6 +2537,8 @@ return [
             'string' => 'Use a text value.',
             'kwh_for_electric' => 'kWh is only for electricity; use l, gal_uk or gal_us.',
             'electric_in_kwh' => 'Electricity is measured in kWh; use kwh or leave the unit out.',
+            'depths' => 'Give depths as an object from position code (fl, fr, rl, rr, front, rear, spare) to depth.',
+            'no_tyre_at_position' => 'No tyre is fitted at this position.',
         ],
     ],
     'backup' => [

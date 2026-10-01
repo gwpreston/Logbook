@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.11.0",
-    "summary": "Read a Logbook garage and log fill-ups, odometer readings and trips.",
+    "version": "1.12.0",
+    "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
       "name": "Proprietary"
@@ -445,6 +445,69 @@
             "$ref": "#/components/responses/BadParameter"
           }
         }
+      },
+      "post": {
+        "operationId": "logMaintenance",
+        "summary": "Add a service record",
+        "description": "Needs a read and write key and Log. The maintenance module must be on. A record with the same date, category, title and cost (the CSV import's duplicate key) is not written again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/documents": {
@@ -493,6 +556,69 @@
           },
           "400": {
             "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logDocument",
+        "summary": "Add a compliance document",
+        "description": "Needs a read and write key and Log. The compliance module must be on. A document with the same type, reference, start and expiry is not written again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -546,6 +672,69 @@
           }
         },
         "description": "Needs cost access to the vehicle (403 without)."
+      },
+      "post": {
+        "operationId": "logExpense",
+        "summary": "Add an expense",
+        "description": "Needs a read and write key and Log (cost access is not needed to add one). An expense with the same date, category, amount and note is not written again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/tyres": {
@@ -917,6 +1106,136 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/tyres/checks": {
+      "post": {
+        "operationId": "logTreadCheck",
+        "summary": "Record a tread check",
+        "description": "Needs a read and write key and Log. The tyres module must be on. A check on the same date with the same depth at every position is not written again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreadCheckInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreadCheckWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreadCheckWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/reminders": {
+      "post": {
+        "operationId": "logReminder",
+        "summary": "Add a manual reminder",
+        "description": "Needs a read and write key and Manage, as on the Reminders page. The reminders module must be on. An open manual reminder with the same title and due date is not written again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -1993,8 +2312,6 @@
           "vehicle_id",
           "spent_on",
           "category",
-          "amount",
-          "currency",
           "note",
           "created_at",
           "updated_at"
@@ -2027,7 +2344,8 @@
           },
           "currency": {
             "type": "string",
-            "pattern": "^[A-Z]{3}$"
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217. Left out, with the amount, only on a write's duplicate that is another user's, without cost access."
           },
           "note": {
             "type": [
@@ -2934,7 +3252,8 @@
               "odometer_backwards",
               "odometer_jump",
               "economy_check",
-              "trip_longer_than_driven"
+              "trip_longer_than_driven",
+              "tread_deeper"
             ]
           },
           "detail": {
@@ -3791,6 +4110,421 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "MaintenanceInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "title"
+        ],
+        "properties": {
+          "performed_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today in the owner's time zone."
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "cost": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "schedule_id": {
+            "type": "integer",
+            "description": "One of the vehicle's schedules: the record completes it."
+          }
+        }
+      },
+      "DocumentInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "insurance",
+              "pollution",
+              "registration",
+              "inspection",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Needed for type other."
+          },
+          "provider": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "start_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "expiry_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "Needs start_on: the reading is written at local noon on it."
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "ExpenseInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category"
+        ],
+        "properties": {
+          "spent_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today in the owner's time zone."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "tax",
+              "parking",
+              "tolls",
+              "cleaning",
+              "accessories",
+              "fines",
+              "finance",
+              "other"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "TreadCheckInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "depths"
+        ],
+        "properties": {
+          "checked_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today in the owner's time zone."
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "depth_unit": {
+            "type": "string",
+            "enum": [
+              "mm",
+              "in32"
+            ],
+            "description": "Default: the owner's."
+          },
+          "depths": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+              "enum": [
+                "fl",
+                "fr",
+                "rl",
+                "rr",
+                "front",
+                "rear",
+                "spare"
+              ]
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NumberInput"
+            },
+            "description": "Fitted position code → depth. A position with no fitted tyre is refused."
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "ReminderInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "due_on"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "lead_time_days": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Default: the owner's manual reminder lead time."
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "TreadCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "checked_on",
+          "odometer",
+          "distance_unit",
+          "note",
+          "depths",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "checked_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "depths": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "position",
+                "tyre_id",
+                "depth_mm"
+              ],
+              "properties": {
+                "position": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "fl",
+                    "fr",
+                    "rl",
+                    "rr",
+                    "front",
+                    "rear",
+                    "spare",
+                    null
+                  ]
+                },
+                "tyre_id": {
+                  "type": "integer"
+                },
+                "depth_mm": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                }
+              }
+            }
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "MaintenanceWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/MaintenanceEntry"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "DocumentWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ExpenseWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Expense"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "TreadCheckWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/TreadCheck"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ReminderWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Reminder"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
           }
         }
       }

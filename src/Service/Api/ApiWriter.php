@@ -4,6 +4,32 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Api;
 
+use DateTimeImmutable;
+use Logbook\Domain\Compliance\ComplianceDocument;
+use Logbook\Domain\Expense\ExpenseEntry;
+use Logbook\Domain\Maintenance\MaintenanceEntry;
+use Logbook\Domain\Maintenance\MaintenanceSchedule;
+use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Reminder\ReminderSource;
+use Logbook\Domain\Tyre\Tyre;
+use Logbook\Domain\Tyre\TyreChange;
+use Logbook\Domain\Tyre\TyreChangeKind;
+use Logbook\Service\Compliance\ComplianceDocumentForm;
+use Logbook\Service\Compliance\ComplianceService;
+use Logbook\Service\Expense\ExpenseEntryForm;
+use Logbook\Service\Expense\ExpenseService;
+use Logbook\Service\Maintenance\MaintenanceEntryForm;
+use Logbook\Service\Maintenance\MaintenanceService;
+use Logbook\Service\Maintenance\ScheduleService;
+use Logbook\Service\Reminder\ManualReminderForm;
+use Logbook\Service\Reminder\ReminderEntry;
+use Logbook\Service\Reminder\ReminderService;
+use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\Tyre\TyreChangeForm;
+use Logbook\Service\Tyre\TyreChangeRefused;
+use Logbook\Service\Tyre\TyreChangeService;
+use Logbook\Service\Tyre\TyreFormContexts;
+use Logbook\Service\Tyre\TyreService;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Odometer\OdometerReading;
@@ -32,8 +58,9 @@ use Logbook\Support\Validation\ValidationErrors;
 use Psr\Clock\ClockInterface;
 
 /**
- * The API's writes (spec.md §7.20): a fill-up, an odometer reading and a
- * trip (Phase 22).
+ * The API's writes (spec.md §7.20): a fill-up, an odometer reading, a
+ * trip (Phase 22), and a service record, document, expense, tread check
+ * and manual reminder (Phase 26.3).
  * Each goes through its form's parser and its service, exactly as the
  * forms and the CSV import do, so validation, the derived amount, the
  * odometer reading, schedules, reminders and the economy check all apply.
@@ -43,6 +70,15 @@ use Psr\Clock\ClockInterface;
 final readonly class ApiWriter
 {
     public function __construct(
+        private MaintenanceService $maintenance,
+        private ScheduleService $schedules,
+        private ComplianceService $compliance,
+        private ExpenseService $expenses,
+        private TyreChangeService $tyreChanges,
+        private TyreService $tyres,
+        private TyreFormContexts $tyreContexts,
+        private ReminderService $reminders,
+        private ReminderSettingsStore $reminderSettings,
         private FuelService $fuel,
         private OdometerService $odometer,
         private VehicleService $vehicles,
@@ -175,6 +211,243 @@ final readonly class ApiWriter
         }
 
         return ['trip' => $trip, 'duplicate' => false, 'warnings' => $warnings];
+    }
+
+    /**
+     * @param array<string, mixed> $body
+     * @return array{entry: MaintenanceEntry, duplicate: bool, warnings: list<array{code: string, detail: string}>}
+     * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
+     */
+    public function logMaintenance(User $user, Vehicle $vehicle, array $body): array
+    {
+        self::assertActive($vehicle);
+        $zone = $user->preferences->timeZone();
+        $mapped = JsonInput::maintenance($body, $user->preferences, LocalTime::today($this->clock, $zone));
+        if ($mapped instanceof ValidationErrors) {
+            throw $this->validation->of($mapped);
+        }
+        $scheduleIds = array_map(static fn (MaintenanceSchedule $s): int => $s->id, $this->schedules->list($vehicle));
+        $data = MaintenanceEntryForm::parse($mapped['input'], $mapped['preferences'], $scheduleIds);
+        if ($data instanceof ValidationErrors) {
+            throw $this->validation->of(JsonInput::renamed($data, JsonInput::MAINTENANCE_FIELDS));
+        }
+
+        $key = DuplicateKey::of($data);
+        foreach ($this->maintenance->history($vehicle)->entries as $entry) {
+            if (DuplicateKey::of($entry->data) === $key) {
+                return ['entry' => $entry, 'duplicate' => true, 'warnings' => []];
+            }
+        }
+
+        $entry = $this->maintenance->create($vehicle, $data, $zone);
+
+        return [
+            'entry' => $entry,
+            'duplicate' => false,
+            'warnings' => self::odometerWarnings($this->maintenance->odometerWarning($vehicle, $entry)),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $body
+     * @return array{entry: ComplianceDocument, duplicate: bool, warnings: list<array{code: string, detail: string}>}
+     * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
+     */
+    public function logDocument(User $user, Vehicle $vehicle, array $body): array
+    {
+        self::assertActive($vehicle);
+        $mapped = JsonInput::document($body, $user->preferences);
+        if ($mapped instanceof ValidationErrors) {
+            throw $this->validation->of($mapped);
+        }
+        $data = ComplianceDocumentForm::parse($mapped['input'], $mapped['preferences']);
+        if ($data instanceof ValidationErrors) {
+            throw $this->validation->of(JsonInput::renamed($data, JsonInput::DOCUMENT_FIELDS));
+        }
+
+        $key = DuplicateKey::of($data);
+        foreach ($this->compliance->list($vehicle) as $document) {
+            if (DuplicateKey::of($document->data) === $key) {
+                return ['entry' => $document, 'duplicate' => true, 'warnings' => []];
+            }
+        }
+
+        $document = $this->compliance->create($vehicle, $data, $user->preferences->timeZone());
+
+        return [
+            'entry' => $document,
+            'duplicate' => false,
+            'warnings' => self::odometerWarnings($this->compliance->odometerWarning($vehicle, $document)),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $body
+     * @return array{entry: ExpenseEntry, duplicate: bool, warnings: list<array{code: string, detail: string}>}
+     * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
+     */
+    public function logExpense(User $user, Vehicle $vehicle, array $body): array
+    {
+        self::assertActive($vehicle);
+        $mapped = JsonInput::expense($body, $user->preferences, LocalTime::today($this->clock, $user->preferences->timeZone()));
+        if ($mapped instanceof ValidationErrors) {
+            throw $this->validation->of($mapped);
+        }
+        $data = ExpenseEntryForm::parse($mapped['input'], $mapped['preferences']);
+        if ($data instanceof ValidationErrors) {
+            throw $this->validation->of(JsonInput::renamed($data, JsonInput::EXPENSE_FIELDS));
+        }
+
+        $key = DuplicateKey::of($data);
+        foreach ($this->expenses->entries($vehicle) as $entry) {
+            if (DuplicateKey::of($entry->data) === $key) {
+                return ['entry' => $entry, 'duplicate' => true, 'warnings' => []];
+            }
+        }
+
+        return ['entry' => $this->expenses->create($vehicle, $data), 'duplicate' => false, 'warnings' => []];
+    }
+
+    /**
+     * *Check tread* (spec.md §7.17): a depth for each fitted position named.
+     * A retry matches a check on the same date with the same depths.
+     *
+     * @param array<string, mixed> $body
+     * @return array{check: TyreChange, duplicate: bool, warnings: list<array{code: string, detail: string}>}
+     * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
+     */
+    public function logTreadCheck(User $user, Vehicle $vehicle, array $body): array
+    {
+        self::assertActive($vehicle);
+        $preferences = $user->preferences;
+        $today = LocalTime::today($this->clock, $preferences->timeZone());
+        $context = $this->tyreContexts->for($vehicle, $today, $today);
+        $fitted = array_map(static fn (Tyre $tyre): int => $tyre->id, $context->fitted);
+        $mapped = JsonInput::treadCheck($body, $preferences, $today, $fitted);
+        if ($mapped instanceof ValidationErrors) {
+            throw $this->validation->of($mapped);
+        }
+        $parsed = TyreChangeForm::parse(TyreChangeKind::Check, $mapped['input'], $mapped['preferences'], $context);
+        if ($parsed instanceof ValidationErrors) {
+            throw $this->validation->of(self::treadErrors($parsed, $fitted));
+        }
+
+        $key = self::treadKey($parsed->data->doneOn, $parsed->depths);
+        foreach ($this->tyres->changes($vehicle) as $change) {
+            if ($change->kind !== TyreChangeKind::Check) {
+                continue;
+            }
+            $depths = [];
+            foreach ($change->lines as $line) {
+                $depths[$line->tyreId] = (string) $line->treadMm;
+            }
+            if (self::treadKey($change->data->doneOn, $depths) === $key) {
+                return ['check' => $change, 'duplicate' => true, 'warnings' => []];
+            }
+        }
+
+        try {
+            $check = $this->tyreChanges->record($vehicle, $parsed, $preferences->timeZone(), $preferences->locale);
+        } catch (TyreChangeRefused $refused) {
+            $params = [];
+            foreach ($refused->params as $name => $value) {
+                $params[$name] = $value instanceof DateTimeImmutable ? $value->format('Y-m-d') : $value;
+            }
+            $errors = new ValidationErrors();
+            $errors->add($refused->field, $refused->key, $params);
+            throw $this->validation->of($errors);
+        }
+        $warnings = self::odometerWarnings($this->odometer->warningForEntry($vehicle, OdometerSource::Tyre, $check->id));
+        foreach ($this->tyreChanges->deeperReadings($vehicle, $check) as $deeper) {
+            $warnings[] = [
+                'code' => 'tread_deeper',
+                'detail' => sprintf(
+                    'Tyre %d measured deeper than its last check (%s mm); check the depth.',
+                    $deeper->tyre->id,
+                    Decimal::trim($deeper->previous->treadMm),
+                ),
+            ];
+        }
+
+        return ['check' => $check, 'duplicate' => false, 'warnings' => $warnings];
+    }
+
+    /**
+     * A manual reminder (spec.md §7.6). A retry matches an open manual
+     * reminder on the vehicle with the same title and due date.
+     *
+     * @param array<string, mixed> $body
+     * @return array{
+     *     entry: ReminderEntry,
+     *     today: DateTimeImmutable,
+     *     duplicate: bool,
+     *     warnings: list<array{code: string, detail: string}>,
+     * }
+     * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
+     */
+    public function logReminder(User $user, Vehicle $vehicle, array $body): array
+    {
+        self::assertActive($vehicle);
+        $lead = $this->reminderSettings->reminderPreferences($user->id)->manualDays;
+        $mapped = JsonInput::reminder($body, $user->preferences, $vehicle->id, $lead);
+        if ($mapped instanceof ValidationErrors) {
+            throw $this->validation->of($mapped);
+        }
+        $data = ManualReminderForm::parse($mapped['input'], $mapped['preferences']->locale, [$vehicle->id]);
+        if ($data instanceof ValidationErrors) {
+            throw $this->validation->of(JsonInput::renamed($data, JsonInput::REMINDER_FIELDS));
+        }
+
+        $overview = $this->reminders->overview($user);
+        foreach ($overview->open as $entry) {
+            $reminder = $entry->reminder;
+            if (
+                $reminder->vehicleId === $vehicle->id
+                && $reminder->source === ReminderSource::Manual
+                && mb_strtolower(trim($reminder->title)) === mb_strtolower(trim($data->title))
+                && $reminder->dueOn?->format('Y-m-d') === $data->dueOn->format('Y-m-d')
+            ) {
+                return ['entry' => $entry, 'today' => $overview->today, 'duplicate' => true, 'warnings' => []];
+            }
+        }
+
+        $reminder = $this->reminders->createManual($user, $data);
+
+        return [
+            'entry' => new ReminderEntry($reminder, $vehicle),
+            'today' => $overview->today,
+            'duplicate' => false,
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * @param array<int, string> $depths tyre id → mm
+     */
+    private static function treadKey(DateTimeImmutable $on, array $depths): string
+    {
+        ksort($depths);
+        $parts = [$on->format('Y-m-d')];
+        foreach ($depths as $id => $mm) {
+            $parts[] = $id . '=' . Decimal::trim($mm);
+        }
+
+        return implode('|', $parts);
+    }
+
+    /**
+     * The form's errors under the API's names: `tread_{tyre}` → `depths.{position}`.
+     *
+     * @param array<string, int> $fitted position code → tyre id
+     */
+    private static function treadErrors(ValidationErrors $form, array $fitted): ValidationErrors
+    {
+        $fields = JsonInput::TREAD_CHECK_FIELDS;
+        foreach ($fitted as $position => $id) {
+            $fields['depths.' . $position] = 'tread_' . $id;
+        }
+
+        return JsonInput::renamed($form, $fields);
     }
 
     private function existingFill(Vehicle $vehicle, FuelEntryData $data): ?FuelEntry

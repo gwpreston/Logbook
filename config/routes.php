@@ -11,8 +11,13 @@ use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
 use Logbook\Action\Api\ListTripsAction as ApiTripsAction;
 use Logbook\Action\Api\ListTyresAction as ApiTyresAction;
 use Logbook\Action\Api\ListVehiclesAction as ApiVehiclesAction;
+use Logbook\Action\Api\LogDocumentAction as ApiLogDocumentAction;
+use Logbook\Action\Api\LogExpenseAction as ApiLogExpenseAction;
 use Logbook\Action\Api\LogFuelAction as ApiLogFuelAction;
+use Logbook\Action\Api\LogMaintenanceAction as ApiLogMaintenanceAction;
 use Logbook\Action\Api\LogReadingAction as ApiLogReadingAction;
+use Logbook\Action\Api\LogReminderAction as ApiLogReminderAction;
+use Logbook\Action\Api\LogTreadCheckAction as ApiLogTreadCheckAction;
 use Logbook\Action\Api\LogTripAction as ApiLogTripAction;
 use Logbook\Action\Api\MeAction as ApiMeAction;
 use Logbook\Action\Api\OpenApiAction;
@@ -246,6 +251,13 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/expenses', ApiExpensesAction::class)->setName('api.expenses.index')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                // Phase 26.3: as the expense form, Log is enough to add one.
+                $keyed->post('/vehicles/{id:[0-9]+}/expenses', ApiLogExpenseAction::class)->setName('api.expenses.create')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                // A manual reminder needs Manage, as on the Reminders page (spec.md §7.21).
+                $keyed->post('/vehicles/{id:[0-9]+}/reminders', ApiLogReminderAction::class)->setName('api.reminders.create')
+                    ->setArgument($ability, VehicleAbility::Manage->value)
+                    ->add($module(Feature::Reminders));
                 $keyed->group('', function (Group $fuel) use ($ability): void {
                     $fuel->get('/vehicles/{id:[0-9]+}/fuel', ApiFuelAction::class)->setName('api.fuel.index')
                         ->setArgument($ability, VehicleAbility::View->value);
@@ -260,6 +272,17 @@ return static function (App $app): void {
                     ->add($module(Feature::Compliance));
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
                     ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Tyres));
+                $keyed->post('/vehicles/{id:[0-9]+}/maintenance', ApiLogMaintenanceAction::class)
+                    ->setName('api.maintenance.create')
+                    ->setArgument($ability, VehicleAbility::Log->value)
+                    ->add($module(Feature::Maintenance));
+                $keyed->post('/vehicles/{id:[0-9]+}/documents', ApiLogDocumentAction::class)->setName('api.documents.create')
+                    ->setArgument($ability, VehicleAbility::Log->value)
+                    ->add($module(Feature::Compliance));
+                $keyed->post('/vehicles/{id:[0-9]+}/tyres/checks', ApiLogTreadCheckAction::class)
+                    ->setName('api.tyres.checks.create')
+                    ->setArgument($ability, VehicleAbility::Log->value)
                     ->add($module(Feature::Tyres));
                 // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.
                 $keyed->group('', function (Group $trips) use ($ability): void {
