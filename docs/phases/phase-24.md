@@ -2,7 +2,7 @@
 
 *What is wrong right now, on one short list, with the fix one tap away.*
 
-Status: 🚧 in progress · releases **v2.4.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.4.0** · file lives in `docs/phases/`
 
 Logbook already knows when something is wrong: an overdue service, an
 expired MOT, tyres past their limit, a mistyped odometer, a fill-up that
@@ -265,6 +265,7 @@ subject_id)` is unique. It is in backups.
       migration; the widget is appended to existing dashboards and can be
       moved.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Tag `v2.4.0` once merged.
 
 ---
 
