@@ -93,6 +93,15 @@
                                 </a>
                             </li>
                         {% endfor %}
+                        {% if ask_available() %}
+                            {# Ask Logbook (spec.md §7.26): only while it is available to this user. #}
+                            <li>
+                                <a class="nav-link" href="{{ url_for('ask') }}" data-ask-entry{% if current_nav == 'ask' %} aria-current="page"{% endif %}>
+                                    {{ ui.icon('forum') }}
+                                    <span class="nav-link__label">{{ 'ask.nav'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                     </ul>
                 </nav>
 
@@ -134,6 +143,9 @@
             <header class="topbar">
                 {{ ui.brand() }}
                 {{ ui.theme_toggle('icon-btn', true, signed_in, csrf, current_path) }}
+                {% if signed_in and ask_available() %}
+                    <a class="icon-btn" href="{{ url_for('ask') }}" data-ask-entry{% if current_nav == 'ask' %} aria-current="page"{% endif %}>{{ ui.icon('forum') }}<span class="visually-hidden">{{ 'ask.nav'|trans }}</span></a>
+                {% endif %}
                 {% if signed_in and 'settings' not in bottom_items|map(i => i.key) %}
                     <a class="icon-btn" href="{{ url_for('settings') }}"{% if current_nav == 'settings' %} aria-current="page"{% endif %}>{{ ui.icon('settings') }}<span class="visually-hidden">{{ 'nav.settings'|trans }}</span></a>
                 {% endif %}

@@ -93,6 +93,12 @@ use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\SalePack\DownloadPaperworkAction;
 use Logbook\Action\SalePack\ShowSalePackAction;
 use Logbook\Action\Settings\AdminTransferAction;
+use Logbook\Action\Ask\AskAction;
+use Logbook\Action\Ask\AskFeedbackAction;
+use Logbook\Action\Ask\AskPostAction;
+use Logbook\Action\Ask\AskProgressAction;
+use Logbook\Action\Ask\AskRetentionAction;
+use Logbook\Action\Ask\AskThreadDeleteAction;
 use Logbook\Action\Settings\Ai\AiAcknowledgeAction;
 use Logbook\Action\Settings\Ai\AiConnectionAction;
 use Logbook\Action\Settings\Ai\AiConnectionDeleteAction;
@@ -603,6 +609,15 @@ return static function (App $app): void {
         if ($settings->ai->enabled) {
             // One's own *Use AI features* switch; 404 until AI is set up.
             $group->post('/settings/ai-use', AiUseAction::class)->setName('settings.ai_use');
+            // Ask Logbook (spec.md §7.26, Phase 26.2): 404 unless Ask is available to the user.
+            $group->get('/ask', AskAction::class)->setName('ask');
+            $group->post('/ask', AskPostAction::class)->setName('ask.post');
+            $group->get('/ask/progress/{token:[0-9a-f]{32}}', AskProgressAction::class)->setName('ask.progress');
+            $group->post('/ask/retention', AskRetentionAction::class)->setName('ask.retention');
+            $group->post('/ask/threads/delete', AskThreadDeleteAction::class)->setName('ask.threads.delete');
+            $group->get('/ask/threads/{thread:[0-9]+}', AskAction::class)->setName('ask.thread');
+            $group->post('/ask/threads/{thread:[0-9]+}/delete', AskThreadDeleteAction::class)->setName('ask.thread.delete');
+            $group->post('/ask/messages/{message:[0-9]+}/feedback', AskFeedbackAction::class)->setName('ask.feedback');
             // Settings → AI: admins only, and 404 (not 403) to anyone else.
             $group->group('/settings/ai', function (Group $ai) use ($instance): void {
                 $manage = InstanceAbility::ManageAi->value;

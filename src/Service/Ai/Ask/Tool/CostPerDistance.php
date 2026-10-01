@@ -68,7 +68,8 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
             ];
             foreach ($rows as $row) {
                 if ($row->costPerKm !== null) {
-                    $figures[] = $row->vehicle->name() . ': ' . $this->kit->format->perDistance($row->costPerKm, $section->currency);
+                    $figures[] = $row->vehicle->name() . ': '
+                        . $this->kit->format->perDistance($row->costPerKm, $section->currency);
                 }
             }
         }

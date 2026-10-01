@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use Logbook\Service\Ai\Ask\AskTwigExtension;
 use Logbook\Service\Ai\Ask\Tool;
 use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Access\AccessTwigExtension;
@@ -182,6 +183,9 @@ return [
         $access = $c->get(AccessTwigExtension::class);
         assert($access instanceof AccessTwigExtension);
         $twig->addExtension($access);
+        $ask = $c->get(AskTwigExtension::class);
+        assert($ask instanceof AskTwigExtension);
+        $twig->addExtension($ask);
 
         return $twig;
     },
@@ -213,6 +217,16 @@ return [
         get(Tool\Costs::class),
         get(Tool\CostPerDistance::class),
         get(Tool\Maintenance::class),
+        get(Tool\VehicleSummary::class),
+        get(Tool\FuelStats::class),
+        get(Tool\LastDone::class),
+        get(Tool\Mileage::class),
+        get(Tool\Ownership::class),
+        get(Tool\ComingUpTool::class),
+        get(Tool\Documents::class),
+        get(Tool\Tyres::class),
+        get(Tool\TripsSummary::class),
+        get(Tool\NeedsAttention::class),
     ]),
 
     // Single sign-on (spec.md §7.9, Phase 23.1).

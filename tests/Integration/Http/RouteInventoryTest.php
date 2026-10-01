@@ -85,6 +85,15 @@ final class RouteInventoryTest extends AppTestCase
         'proxy.link',
         // Phase 26.1: one's own *Use AI features* switch.
         'settings.ai_use',
+        // Phase 26.2: Ask Logbook, one's own threads only (404 unless Ask is available).
+        'ask',
+        'ask.post',
+        'ask.progress',
+        'ask.retention',
+        'ask.thread',
+        'ask.thread.delete',
+        'ask.threads.delete',
+        'ask.feedback',
     ];
 
     /** Signed in; every vehicle they show comes from the policy's visible ids (VehicleService::listFleet / listWith). */

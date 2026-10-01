@@ -133,7 +133,10 @@ final readonly class Maintenance implements AskTool
                 $period->preset === 'all_time' ? null : $this->kit->periodLabel($period),
             ]),
             $figures,
-            $this->kit->link('/vehicles/' . $vehicle->id . '/maintenance', $category === null ? [] : ['category' => $category->value]),
+            $this->kit->link(
+                '/vehicles/' . $vehicle->id . '/maintenance',
+                $category === null ? [] : ['category' => $category->value],
+            ),
             [$vehicle->id],
         );
     }

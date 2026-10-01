@@ -44,7 +44,7 @@ final readonly class Costs extends ReportTool implements AskTool
                     'vehicles' => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Vehicle ids.'],
                     ...AskPeriod::SCHEMA,
                     'group_by' => ['type' => 'string', 'enum' => self::GROUP_BY],
-                    'category' => ['type' => 'string', 'enum' => array_map(static fn (CostGroup $g): string => $g->value, CostGroup::cases())],
+                    'category' => ['type' => 'string', 'enum' => self::categories()],
                 ],
                 'additionalProperties' => false,
             ],
@@ -54,10 +54,7 @@ final readonly class Costs extends ReportTool implements AskTool
     public function run(User $user, ToolArguments $arguments): ToolResult
     {
         $groupBy = $arguments->choice('group_by', self::GROUP_BY) ?? 'category';
-        $category = CostGroup::tryFrom($arguments->choice('category', array_map(
-            static fn (CostGroup $g): string => $g->value,
-            CostGroup::cases(),
-        )) ?? '');
+        $category = CostGroup::tryFrom($arguments->choice('category', self::categories()) ?? '');
         [$report, $period, $counted, $hidden, $named] = $this->report($user, $arguments, $category);
 
         $currencies = array_map(fn (CurrencyReport $section): array => [
@@ -120,5 +117,13 @@ final readonly class Costs extends ReportTool implements AskTool
                 'total' => $this->kit->money($g->amount),
             ], $section->spentGroups())],
         };
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function categories(): array
+    {
+        return array_map(static fn (CostGroup $g): string => $g->value, CostGroup::cases());
     }
 }

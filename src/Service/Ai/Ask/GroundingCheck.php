@@ -24,7 +24,8 @@ final class GroundingCheck
      * A number: grouped thousands with an optional fraction, or plain digits
      * with an optional fraction. Not part of a longer word or number.
      */
-    private const string NUMBER = '/(?<![\p{L}\d])[-−]?(?:\d{1,3}(?:[,.\x{00A0}\x{202F}\']\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)(?![\d])/u';
+    private const string NUMBER = '/(?<![\p{L}\d])[-−]?'
+        . '(?:\d{1,3}(?:[,.\x{00A0}\x{202F}\']\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)(?![\d])/u';
 
     private const array GROUP_SEPARATORS = ["\u{00A0}", "\u{202F}", "'"];
 
@@ -57,7 +58,7 @@ final class GroundingCheck
             $flagged[$text] = true;
         }
 
-        return array_keys($flagged);
+        return array_map(strval(...), array_keys($flagged));
     }
 
     /**
@@ -142,7 +143,8 @@ final class GroundingCheck
             return null;
         }
         $whole = str_replace([$group, ...self::GROUP_SEPARATORS], '', $parts[0], $groups);
-        if ($groups > 0 && preg_match('/^\d{1,3}(?:[' . preg_quote($group, '/') . "\u{00A0}\u{202F}']\\d{3})+$/u", $parts[0]) !== 1) {
+        $grouped = '/^\d{1,3}(?:[' . preg_quote($group, '/') . "\u{00A0}\u{202F}']\\d{3})+$/u";
+        if ($groups > 0 && preg_match($grouped, $parts[0]) !== 1) {
             return null;
         }
         if ($whole === '' || !ctype_digit($whole)) {
@@ -248,7 +250,10 @@ final class GroundingCheck
         }
 
         return (string) preg_replace(
-            ['/\b\d{1,2}(?:st|nd|rd|th)?\.?\s+(?:of\s+)?(?=(?:' . $names . ')\b)/iu', '/(?<=\b(?:' . $names . '))\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/iu'],
+            [
+                '/\b\d{1,2}(?:st|nd|rd|th)?\.?\s+(?:of\s+)?(?=(?:' . $names . ')\b)/iu',
+                '/(?<=\b(?:' . $names . '))\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/iu',
+            ],
             ' ',
             $text,
         );
@@ -267,7 +272,14 @@ final class GroundingCheck
         $names = [];
         foreach (array_unique([$locale, 'en']) as $language) {
             foreach (['MMMM', 'MMM'] as $pattern) {
-                $formatter = new IntlDateFormatter($language, IntlDateFormatter::NONE, IntlDateFormatter::NONE, 'UTC', null, $pattern);
+                $formatter = new IntlDateFormatter(
+                    $language,
+                    IntlDateFormatter::NONE,
+                    IntlDateFormatter::NONE,
+                    'UTC',
+                    null,
+                    $pattern,
+                );
                 for ($month = 1; $month <= 12; $month++) {
                     $name = $formatter->format(new \DateTimeImmutable(sprintf('2026-%02d-15T12:00:00Z', $month)));
                     if (is_string($name) && $name !== '') {

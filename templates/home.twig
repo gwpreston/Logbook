@@ -30,6 +30,11 @@
             {% endif %}
         </header>
 
+        {% if dashboard.hasVehicles() and not customise and ask_available() %}
+            {# Ask Logbook (spec.md §7.26). #}
+            <p class="dashboard-ask"><a class="btn btn--soft" href="{{ url_for('ask') }}" data-ask-entry>{{ ui.icon('forum') }}{{ 'ask.dashboard_link'|trans }}</a></p>
+        {% endif %}
+
         {# Vehicle filter (spec.md §7.8): plain links, so it works without JS and can be bookmarked. #}
         {% if dashboard.hasFilter() and not customise %}
             <nav class="vehicle-filter" aria-label="{{ 'dashboard.filter.label'|trans }}">

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Ai\Ask;
 
+use Logbook\Domain\Ai\Ask\AskMessage;
 use Logbook\Domain\Ai\Ask\AskRole;
 use Logbook\Domain\Ai\ErrorCode;
 use Logbook\Domain\Ai\Location;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Repository\AiThreadRepository;
 use Logbook\Service\Ai\Ask\Conversation;
+use Logbook\Service\Ai\Ask\ToolKit;
 use Logbook\Tests\Support\AskTestCase;
 use Logbook\Tests\Support\ScriptedProvider as Script;
 
@@ -46,17 +48,14 @@ final class ConversationTest extends AskTestCase
         self::assertSame(['£132.35'], $run->result->figures);
 
         // The model saw the context and the tool's result.
-        $system = (string) $this->provider->requests[0]['json']['messages'][0]['content'];
+        $system = $this->sent(0)[0]['content'];
         self::assertStringContainsString('"today":"2026-10-15"', $system);
         self::assertStringContainsString('"name":"BMW 320d"', $system);
-        $second = $this->provider->requests[1]['json']['messages'];
-        $tool = end($second);
-        self::assertIsArray($tool);
-        self::assertSame('tool', $tool['role']);
-        self::assertStringContainsString('"display":"£132.35"', (string) $tool['content']);
+        self::assertStringContainsString('"display":"£132.35"', $this->toolReplies(1)[0]);
 
         $messages = $this->service($app, AiThreadRepository::class)->messages($outcome->thread);
-        self::assertSame([AskRole::User, AskRole::Assistant], array_map(static fn ($m) => $m->role, $messages));
+        $roles = array_map(static fn (AskMessage $m): AskRole => $m->role, $messages);
+        self::assertSame([AskRole::User, AskRole::Assistant], $roles);
         self::assertSame('£132.35', $messages[1]->toolRuns[0]->result?->figures[0]);
     }
 
@@ -89,10 +88,9 @@ final class ConversationTest extends AskTestCase
         $outcome = $this->service($app, Conversation::class)->ask($owner, null, 'Which BMWs do I have?');
 
         self::assertCount(Conversation::MAX_TOOL_CALLS, $outcome->answer->toolRuns);
-        $last = $this->provider->requests[2]['json']['messages'];
-        $replies = array_values(array_filter($last, static fn (array $m): bool => $m['role'] === 'tool'));
+        $replies = $this->toolReplies(2);
         self::assertCount(10, $replies);
-        self::assertStringContainsString(Conversation::ENOUGH, (string) $replies[9]['content']);
+        self::assertStringContainsString(Conversation::ENOUGH, $replies[9]);
         self::assertSame('You have one BMW.', $outcome->answer->content);
     }
 
@@ -106,11 +104,10 @@ final class ConversationTest extends AskTestCase
 
         $outcome = $this->service($app, Conversation::class)->ask($owner, null, 'When was the oil changed?');
 
-        $messages = $this->provider->requests[1]['json']['messages'];
-        $replies = array_values(array_filter($messages, static fn (array $m): bool => $m['role'] === 'tool'));
-        self::assertStringContainsString('No vehicle with that id', (string) $replies[0]['content']);
-        self::assertStringContainsString('There is no tool called', (string) $replies[1]['content']);
-        self::assertSame('No vehicle with that id. Use an id from the vehicle list or find_vehicles.', $outcome->answer->toolRuns[0]->error);
+        $replies = $this->toolReplies(1);
+        self::assertStringContainsString('No vehicle with that id', $replies[0]);
+        self::assertStringContainsString('There is no tool called', $replies[1]);
+        self::assertSame(ToolKit::NOT_FOUND, $outcome->answer->toolRuns[0]->error);
     }
 
     public function testAProviderFailureIsKeptWithTheToolCallsSoFar(): void

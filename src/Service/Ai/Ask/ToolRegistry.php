@@ -70,7 +70,9 @@ final readonly class ToolRegistry
     {
         $tool = $this->tools[$call->name] ?? null;
         if ($tool === null || !$tool->isAvailable($user)) {
-            return new ToolRun($call->id, $call->name, $call->arguments, null, sprintf('There is no tool called "%s".', $call->name));
+            $error = sprintf('There is no tool called "%s".', $call->name);
+
+            return new ToolRun($call->id, $call->name, $call->arguments, null, $error);
         }
 
         try {

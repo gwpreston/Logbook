@@ -881,6 +881,124 @@ a.list__item:hover {
     padding: 0 var(--space-3) var(--space-3);
 }
 
+/* Ask Logbook (spec.md §7.26): questions, answers, sources and the grounding mark. */
+.ask-where {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.ask-thread {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ask-turn {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.ask-question {
+    justify-self: end;
+    max-width: 85%;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
+    background: var(--accent-soft);
+    overflow-wrap: anywhere;
+}
+
+.ask-answer {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.ask-answer__text p,
+.ask-answer__text ul {
+    margin: 0 0 var(--space-2);
+}
+
+.ask-answer__text > :last-child {
+    margin-bottom: 0;
+}
+
+.ask-unverified {
+    padding: 0 2px;
+    border-radius: 3px;
+    background: var(--amber-soft);
+    color: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.ask-sources summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: var(--fs-sm);
+}
+
+.ask-sources__list {
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
+    padding-left: var(--space-4);
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+}
+
+.ask-answer__footer,
+.ask-feedback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+}
+
+.ask-feedback {
+    margin: 0;
+}
+
+.ask-feedback [aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.ask-progress {
+    margin: 0;
+}
+
+.ask-thread-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ask-thread-row > a {
+    flex: 1;
+    min-width: 0;
+}
+
+.ask-delete-all summary {
+    list-style: none;
+    display: inline-flex;
+}
+
+.ask-delete-all summary::-webkit-details-marker {
+    display: none;
+}
+
+.ask-retention {
+    margin-top: var(--space-3);
+}
+
 /* Empty state */
 .empty {
     display: flex;
