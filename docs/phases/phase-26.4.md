@@ -228,7 +228,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
       notes: one migration; Ghostscript in the image; EXIF stripped from
       scanned photos.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
-- [ ] Tag `v2.8.0` once merged.
+- [x] Tag `v2.8.0` once merged.
 
 ---
 
