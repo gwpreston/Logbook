@@ -345,7 +345,10 @@ MySQL only.
   `other`; changing the fuel type clears one that no longer fits), currency override (optional), photo
   (optional: stored path + MIME type), purchase date/price (optional), sale
   date/price (optional), status (`active` | `archived`), archived_at,
-  created/updated (UTC). Deleting a vehicle deletes its history and photo;
+  disposal (optional, Phase 27.2: `sold` | `written_off`; null = archived
+  without a reason, as every vehicle archived before 2.10.0),
+  disposal_incident_id (optional, Phase 27.2, `ON DELETE SET NULL`: the
+  total-loss incident when `written_off`), created/updated (UTC). Deleting a vehicle deletes its history and photo;
   archiving keeps everything.
 - The families a fuel type fits (§7.3) are defined once, on the fuel type
   (`FuelType::fittingFamilies()`): petrol for `petrol` and `hybrid`, petrol
@@ -369,11 +372,12 @@ MySQL only.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`), note (optional),
+  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`), note (optional),
   fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
   by `ON DELETE CASCADE`), maintenance_entry_id, compliance_document_id and
   tyre_change_id (likewise, for `maintenance`, `document` and `tyre`
-  readings), created/updated (UTC). Index `(vehicle_id, recorded_at)`.
+  readings), incident_id (likewise, for `incident` readings, Phase 27.1),
+  created/updated (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
   coherent series (see #230-style requirement). A fill-up writes its reading in
   the same transaction and moves it when edited; only `manual` readings are
@@ -586,14 +590,61 @@ MySQL only.
   the `trip` attachment rows (the files stay under `UPLOAD_PATH`) and the
   `trips` user settings.
 
+**Incident** (Phase 27.1, §7.29)
+- id, vehicle_id (`ON DELETE CASCADE`), created_by (user, `ON DELETE SET
+  NULL`, as entry authorship), occurred_on (calendar date, never converted
+  through a time zone), occurred_at_time (optional local time of day),
+  location (optional free text, up to 200), type (`collision` |
+  `parked_damage` | `theft` | `break_in` | `vandalism` | `weather` |
+  `glass` | `pothole` | `animal` | `fire` | `other`), fault (`at_fault` |
+  `not_at_fault` | `split` | `unknown`, default `unknown`), description
+  (optional, up to 2,000), damage_areas (JSON list of `front` | `rear` |
+  `left` | `right` | `roof` | `underside` | `glass` | `wheels` |
+  `interior`), severity (`cosmetic` | `minor` | `major`), driver_user_id
+  (optional, a Phase 19 user, `ON DELETE SET NULL`), driver_name (optional
+  free text, up to 100, for someone without an account), other_party_name,
+  other_party_registration, other_party_insurer (optional, up to 100
+  each), police_reference (optional, up to 100), status (`open` |
+  `closed`), closed_on (optional calendar date), write_off_category
+  (`none` | `cat_n` | `cat_s` | `cat_b` | `cat_a`, default `none`), notes
+  (optional), created/updated (UTC). Index `(vehicle_id, occurred_on)`.
+- **Claim** fields on the incident: claim_status (`not_claimed` |
+  `notified` | `open` | `settled` | `declined` | `withdrawn`, default
+  `not_claimed`), insurer (optional, up to 100; the form defaults it to
+  the provider of the `insurance` document current on occurred_on),
+  insurance_document_id (optional, `ON DELETE SET NULL`), claim_number
+  (optional, up to 100), excess (`decimal`, optional, ≥ 0), payout
+  (`decimal`, optional, ≥ 0: money the owner received), ncd_affected
+  (`yes` | `no` | `unknown`, default `unknown`), claim_updated_on
+  (optional calendar date of the latest news). Amounts are in the
+  vehicle's currency, and 0 is valid.
+- From Phase 27.2: repair_estimate (`decimal`, optional, ≥ 0), shown on
+  the incident page as information only and **never** counted in linked
+  costs, Reports or ownership (decided 2026-10-01,
+  `docs/phases/open-questions.md` #101).
+- **Links:** `incident_id` (nullable, `ON DELETE SET NULL`, indexed) on
+  `maintenance_entries`, `expense_entries` and `tyre_changes`. A record
+  belongs to at most one incident, of its own vehicle. Deleting an
+  incident unlinks its records and never deletes them; deleting a linked
+  record leaves the incident.
+- **Reading:** an optional odometer on the incident writes an
+  OdometerReading with source `incident` through incident_id, as
+  documents do: at the local time given, else local noon on occurred_on.
+- Upgrading to 2.10.0 creates the table, the three link columns, the
+  reading column and the `incident` attachment owner type, and moves the
+  schema version. Rolling it back unlinks the records, turns `incident`
+  readings into `manual` ones (link cleared), removes the `incident`
+  attachment rows (the files stay under `UPLOAD_PATH`) and drops the
+  table.
+
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
   (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`|`purchase`|
-  `sale`|`valuation`|`trip`; `odometer` for manual readings only;
+  `sale`|`valuation`|`trip`|`incident`; `odometer` for manual readings only;
   `purchase` and
   `sale` for the vehicle's purchase and sale, Phase 12, with owner_id = the
   vehicle's id; `valuation` for a valuation, Phase 14.1; `trip` for a trip,
-  Phase 22),
+  Phase 22; `incident` for an incident's photos and files, Phase 27.1),
   owner_id, filename (the uploaded name,
   sanitised, for display and downloads only), mime (detected from the
   content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
@@ -789,7 +840,8 @@ MySQL only.
 **AiDraft** (Phase 26.3, §7.26 *Drafting entries*)
 - id, user_id (`ON DELETE CASCADE`), thread_id (optional, `ON DELETE
   SET NULL`), kind (`fuel` | `odometer` | `maintenance` | `document` |
-  `expense` | `tyre_check` | `reminder`), vehicle_id (`ON DELETE
+  `expense` | `tyre_check` | `reminder` | `incident`, the last from Phase
+  27.1), vehicle_id (`ON DELETE
   CASCADE`), input (JSON: the validated API-shaped body), card (JSON:
   the formatted lines, derived marks and warnings shown on the card),
   form_values (JSON: the create form's values in the user's units and
@@ -805,7 +857,9 @@ MySQL only.
   the form carries), filename (sanitised), mime, size, stored_path (random
   name under `UPLOAD_PATH/pending`), vehicle_id (optional, the vehicle
   chosen beforehand; `ON DELETE CASCADE`), target (optional: the form it
-  was started from, `fuel` | `maintenance` | `document`), status
+  was started from, `fuel` | `maintenance` | `document`, and `incident`
+  from Phase 27.2), incident_id (optional, Phase 27.2, `ON DELETE
+  CASCADE`: the incident a claim letter or estimate updates), status
   (`reading` | `read` | `failed` | `saved`), result (optional JSON: the validated,
   scrubbed extraction, or the failure code), recommendations (optional
   JSON: what the saved entry's card still offers), created_at, expires_at
@@ -1061,7 +1115,9 @@ from fleet totals unless "include archived" is toggled.
   logged).
 - Deleting asks for confirmation on its own page (works without JS) and
   removes the vehicle, its history, its photo and every file attached to it
-  or its purchase and sale. Archive/restore is one click.
+  or its purchase and sale. Archive/restore is one click, except that
+  from Phase 27.2 a vehicle with a settled write-off can be archived as
+  *Written off* through a confirm page (§7.29 *Total loss*).
 - Currency resolves as: vehicle override → the owner's default currency →
   `APP_CURRENCY`.
 - Photo: JPEG, PNG or WebP (checked by content, not by file name), up to
@@ -1650,6 +1706,10 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   The valuations export (Phase 14.1, linked from the valuations page) has
   Date, Amount, Currency, Source and Notes, oldest first; valuations have no
   CSV import (a handful of rows a year).
+- **Incidents** (Phase 27.1, `incidents` on): a section with the period's
+  incident count, *Incident-related spend* and *Payouts received*; spend
+  itself is unchanged, since linked costs are already in their own groups
+  (§7.29).
 
 #### Cost of ownership (Phase 14.2)
 What a vehicle has really cost over the time it has been owned: the running
@@ -1716,6 +1776,12 @@ currency and never converted.
   purchase price, log only the interest and fees, not the payments that pay
   off that price, or it is counted twice." It is an ad-hoc expense like any
   other (group *other*) and counts in every report as such.
+- **Insurance payouts** (Phase 27.1, `incidents` on): running costs are
+  net of the payouts of incidents dated in the period, shown as the line
+  *Insurance payouts* under the groups; the rates' running parts use the
+  net figure. From Phase 27.2 a total-loss settlement is the sale price
+  and is left out of that line ("Settlement counted as the sale price",
+  §7.29 *Total loss*). The ownership CSV gains *insurance payouts*.
 - **Kept apart from running cost.** The dashboard's pinned *Running cost*
   tile, the Expenses tab and every report keep their own periods and
   figures; cost of ownership is a different question and replaces none of
@@ -2118,7 +2184,9 @@ Global settings to enable/disable modules (e.g. hide compliance if not needed).
 Disabled modules are removed from nav, routes, and dashboard.
 
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`,
-  `tyres` (Phase 11.1), `trips` (Phase 22), and from Phase 26.1 the AI
+  `tyres` (Phase 11.1), `trips` (Phase 22), `incidents` (Phase 27.1, on by
+  default, decided 2026-10-01, `docs/phases/open-questions.md` #94), and
+  from Phase 26.1 the AI
   modules `ai_ask`, `ai_actions` and `ai_scan` (§7.25: on by default, but
   doing nothing without an assigned task, and listed on Settings → Modules
   only while AI is set up). A
@@ -2163,6 +2231,18 @@ Disabled modules are removed from nav, routes, and dashboard.
     *Log trip*, the phone app's quick action, the *Business mileage*
     widget, the Mileage tab's split, the Reports section and the *Trips*
     chip. Trip CSV export and import go with it. The data is kept.
+  - `incidents` off: the Incidents tab, incident pages, the claims history
+    and the incident API routes (404); the chooser's *Log incident*, the
+    *Part of an incident* select on the maintenance, expense and tyre
+    forms (existing links are kept untouched), the *Incidents* chip and
+    rows in history and print, the sale pack's *Include incidents* option
+    and write-off line and notice, the overview's write-off badge and
+    incident rows in *Recent activity*, the Reports section, the
+    ownership *Insurance payouts* line (running costs are then shown
+    without payouts), the *Needs attention* claim item, the incident CSV
+    export, the Ask and MCP tools, the scan kinds that fill an incident
+    (Phase 27.2) and archiving's *Written off* (Phase 27.2; a vehicle
+    already written off keeps its disposal). The data is kept.
   - `maintenance` off leaves tyres working: the cost, garage and link fields
     are hidden on tyre forms, existing links are kept untouched, and a
     linked change is listed on its own in history (without a cost).
@@ -2264,6 +2344,19 @@ outside web root, served via an authenticated handler; type/size validated.
   stored as uploaded. Files stored before 2.8.0 are left as they are.
   An image that fails to decode is refused as before. ICC colour profiles
   are dropped with the rest; JPEG is re-encoded at quality 90.
+- **Incident photos keep their metadata** (Phase 27.1, decided
+  2026-10-01, `docs/phases/open-questions.md` #96): an attachment of
+  owner type `incident` is stored **exactly as uploaded**, after the same
+  content check, decode check and size limit, so its time, place and
+  camera data stay as evidence for an insurer. It is not rotated: it is
+  shown with CSS `image-orientation: from-image` (the browser default).
+  The incident form says so under the file input: "Photos are kept as
+  taken, including when and where. They are cleaned only if you share
+  them in a sale pack." A copy that leaves through the sale pack ZIP
+  (§7.19) is turned upright and stripped as every other photo is, as it
+  is written; the stored file is unchanged. A file scanned for an
+  incident (Phase 27.2) is a document, not a damage photo, and is
+  stripped as every scan is.
 - **Pending uploads** (Phase 26.4): a scanned file (§7.27) is checked by
   the same rules and held as a pending upload (§6 PendingUpload) until its
   entry is saved, then becomes that entry's attachment in the entry's
@@ -2446,6 +2539,16 @@ vehicles; a disabled module cannot be imported).
     attachments. The schema version moves.
   - `bin/export-user.php` carries the user's trips, saved journeys and
     rate sets.
+- **Incidents** (Phase 27.1, §7.29):
+  - Incidents join the CSV export (`/vehicles/{id}/export/incidents.csv`,
+    every field but the other party, as the claims history; links as the
+    linked records' ids). There is no CSV import.
+  - Backups carry `incidents`, the three `incident_id` links, `incident`
+    readings and `incident` attachments (from Phase 27.2 also the
+    vehicles' disposal fields and the estimate). The schema version moves.
+  - `bin/export-user.php` carries the incidents of the user's vehicles; a
+    driver who is another user on this install is kept as their name in
+    driver_name.
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -2552,9 +2655,10 @@ with a printable service history to hand to a buyer.
   under the *Fuel* chip, and only the History pages fold (the widget and the
   print view list plainly).
 - **Kind chips** under the toolbar: *Everything* (default), *Service*,
-  *Fuel*, *Tyres*, *Documents*, *Expenses*, *Mileage*. Each is a link
+  *Fuel*, *Tyres*, *Documents*, *Expenses*, *Mileage*, and *Incidents*
+  (Phase 27.1, §7.29). Each is a link
   (`?kind=service` / `fuel` / `tyres` / `documents` / `expenses` /
-  `mileage`), one chosen at a time,
+  `mileage` / `incidents`), one chosen at a time,
   with `aria-current` on the chosen one; a switched-off module's chip is
   hidden, and an unknown (or switched-off) value falls back to *Everything*.
   Milestones show under *Everything* only.
@@ -3008,6 +3112,8 @@ available for active and archived vehicles.
     a screen-only notice says "The photo may show your number plate, house
     or street. Check it before you share the pack." The photo is served by
     the authenticated photo route and never goes in the ZIP.
+  - *Include incidents* (Phase 27.1): off by default; the *Incidents*
+    group, the write-off line and the seller notice are §7.29's.
   - Which kinds of paperwork go in the ZIP (below).
   The options panel and every seller notice are screen-only and are never
   printed.
@@ -3090,7 +3196,9 @@ available for active and archived vehicles.
   files and it needs no PHP extension:
   - Kinds offered, with their defaults: service and repair records (on),
     inspection and pollution documents (on), manual-reading photos (on),
-    purchase paperwork (off), insurance (off). Registration documents,
+    purchase paperwork (off), insurance (off), and with *Include
+    incidents* on, incident photos (off; each turned upright and stripped
+    of metadata as it is written, §7.12). Registration documents,
     `other` documents, sale paperwork, valuations, fill-ups and expenses
     are **never offered**. A registration document (the V5C in the UK)
     carries a reference that can be used for fraud.
@@ -3311,6 +3419,15 @@ user's saved journeys in their Settings → Trips order (`id`, `from_place`,
 `to_place`, `distance_km` one way, `distance_unit`, `is_return`,
 `is_business`, `purpose`), so a Shortcut can offer them and log one by
 `journey_id`.
+
+**Incidents** (Phase 27.1, §7.29): `GET/POST /api/v1/vehicles/{id}/incidents`
+(reading needs `View`; the detail fields need `ViewIncidentDetails` and
+amounts `ViewCosts`, and are left out of the object otherwise; writing
+needs `Log` and a `read_write` key, goes through the form's parser, and is
+safe to retry by vehicle, date, type and claim number) and `GET
+/api/v1/incidents/history` (the claims history's filters and rows, never
+the other party). Links to records and attachments are read-only here
+(record ids). With `incidents` off, every incident path answers 404.
 
 **Not in this version:** editing or deleting through the API, writes
 beyond those above (valuations, schedules, tyre fitting and changes, trips'
@@ -3666,7 +3783,13 @@ wrong.
        - *Fix* opens the record's edit form. *Looks right* hides a genuine
          big job (a gearbox, a clutch); the fingerprint is the record's
          id, cost and category. `Manage`, or `Log` for a record they added.
-    Items 7–9 are plain arithmetic on the owner's data: no model, no
+    10. **Stalled claim** (Phase 27.1; `incidents` on): an incident with
+        claim status `notified` or `open` and no claim update for more
+        than 30 days, one item each: "Claim 4417 with Aviva: no update
+        for 34 days". It links to the incident. The fingerprint is the
+        incident's id, claim status and claim_updated_on. Needs
+        `ViewIncidentDetails` (§7.29) and `Log`.
+    Items 7–10 are plain arithmetic on the owner's data: no model, no
     network, and no figure changes (flagged entries count everywhere).
 - **Thresholds** (Settings → Reminders, a *Needs attention* card shown
   with or without the `reminders` module): *Mileage not updated after*
@@ -3681,7 +3804,7 @@ wrong.
   whoever looks (as lead times, §7.6). The single-tank economy bands
   (§7.3) and the 2,000 km a day rule (§7.2) stay fixed; the drift
   threshold above is a different check.
-- **Hiding.** Items 2, 4, 6, 7, 8 and 9 have *Hide* (*Looks right* on 8
+- **Hiding.** Items 2, 4, 6, 7, 8, 9 and 10 have *Hide* (*Looks right* on 8
   and 9): `POST
   /vehicles/{id}/attention/hide` with CSRF, the item's kind, subject and
   the fingerprint the page showed. The server recomputes the item and
@@ -3985,6 +4108,7 @@ request to any model service.
   | `ownership(vehicle)` | cost of ownership (Phase 14.2) | lifetime running cost, depreciation, per distance |
   | `trips_summary(period)` | Phase 22 (module on) | business and private distance, claim value |
   | `needs_attention(vehicles?)` | Phase 24 and 25 | current items |
+  | `incidents(vehicles?, period?, claims_only?)` | claims history (§7.29, module on) | incidents and claims, archived and sold vehicles included, with the access rules of §7.29 |
 
   Every tool returns **both** the raw values (decimal strings, canonical
   units) and **display strings** in the user's units, locale and currency
@@ -4063,6 +4187,7 @@ entries by message*.
   | `draft_document` | compliance document | compliance | type, provider, dates; an expiry from a term ("renewed for a year from today") computed by Logbook |
   | `draft_expense` | expense | core | category matched |
   | `draft_tyre_check` | tread check | tyres | positions and depths in the user's depth unit |
+  | `draft_incident` | incident | incidents | Phase 27.1: date (not in the future), type and fault matched to the codes, damage areas, claim status, insurer from the policy current on the date unless named |
   | `draft_reminder` | manual reminder | reminders (`Manage`) | due date absolute, or relative to a document's expiry or a schedule's next due date ("two weeks before the MOT expires"), computed by Logbook from that source |
 
   Every draft tool takes a `vehicle` id. Without one, the user's only
@@ -4190,6 +4315,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     the browser also offers the file picker);
   - *Fill from a file* on the maintenance, document and fill-up create
     forms, for a file chosen there.
+  - from Phase 27.2, *Fill from a file* on the incident form and *Update
+    from a letter* on the incident page (§7.29), which scan for that
+    incident (PendingUpload incident_id).
   *Fill from a file* is a link from the create form to the Scan page with
   that vehicle and form chosen; files already attached are not re-read
   (decided 2026-10-01, `docs/phases/open-questions.md` #86). Each entry
@@ -4225,7 +4353,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     cannot be parsed is treated as a scan.
 - **Classify, then extract, in one request.** The response schema has a
   `kind` (`service_invoice` | `fuel_receipt` | `inspection` | `insurance`
-  | `registration` | `other`) and an object per kind. The system text
+  | `registration` | `other`, and from Phase 27.2 `claim_letter` |
+  `repair_estimate`) and an object per kind. The system text
   says to leave a field empty rather than guess, to give dates, amounts
   and readings **exactly as printed** (Logbook parses them, so day/month
   order is decided in the user's locale, not by the model), to copy each
@@ -4247,7 +4376,14 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     result (`pass` | `fail`), registration, advisories (lines), failures
     (lines), test number.
   - *Insurance:* insurer, policy number, cover start and end,
-    registration, cost, currency.
+    registration, cost, currency. A policy schedule or certificate, not
+    a letter about a claim.
+  - *Claim letter* (Phase 27.2): an insurer's or broker's letter or email
+    about a claim: letter date, insurer, claim number, policy number,
+    registration, incident date, claim status words, excess, payout or
+    settlement amount, currency, write-off category words.
+  - *Repair estimate* (Phase 27.2): date, repairer, registration, claim
+    number, work (lines), estimate total, currency.
   - *Registration document (V5C):* registration, make, model, first
     registration date, VIN. The document reference number is **not in the
     schema**, and any run of 11 digits (with or without spaces) in any
@@ -4309,8 +4445,20 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     the compliance module. Unticked, the pending upload is deleted.
   - **Other → `other` document:** title, start = the date, provider,
     expiry.
+  - **Claim letter → incident** (Phase 27.2, §7.29): insurer, claim
+    number, claim status (the words matched to the codes: "settled",
+    "payment issued" → `settled`; "declined", "rejected" → `declined`;
+    anything unclear is left empty), excess, payout, write-off category
+    (`Cat N`, `Cat S`, …), *Latest update* = the letter date, and the
+    incident date when creating. A claim number matching an incident of
+    the vehicle opens its edit form, otherwise *Log incident*.
+  - **Repair estimate → incident** (Phase 27.2): the repair estimate,
+    and "Estimate from {repairer}" added to the notes; the incident is
+    the one scanned for, else the one whose claim number matches, else
+    the vehicle's most recent open incident (a select to change it), else
+    *Log incident*.
   A kind whose module is off on the vehicle (fuel, maintenance,
-  compliance) opens no form: the page says which module is off and keeps
+  compliance, incidents) opens no form: the page says which module is off and keeps
   the file as a pending upload for 24 hours. The user can change the kind
   on the result page ("This is a fuel receipt"), which maps the same
   extraction again without a second request.
@@ -4437,7 +4585,8 @@ with its own model. No connection in Settings → AI is needed or used.
     that it was logged already), with the link to the vehicle's fill-ups or
     mileage log.
   - `read_write` keys also get `draft_service_record`, `draft_document`,
-    `draft_expense`, `draft_tyre_check` and `draft_reminder`: validated as
+    `draft_expense`, `draft_tyre_check`, `draft_reminder` and, from Phase
+    27.1, `draft_incident`: validated as
     in §7.26 *Drafting entries*, then kept as a draft from MCP (§6
     AiDraft `source = mcp`) for **7 days**. Their result says "Draft
     saved. Open {link} to add it.", the link going to the dashboard card.
@@ -4481,6 +4630,199 @@ with its own model. No connection in Settings → AI is needed or used.
   in §12); OAuth for MCP clients; SSE streams, subscriptions and
   list-changed notifications; file reading over MCP (§7.27 stays in
   Logbook's pages); any Settings → AI connection.
+
+### 7.29 Incidents, damage and insurance claims (Phase 27.1)
+What happened, what was fixed, what the insurer did, and the five-year
+answer the next insurance quote asks for. An incident is an event that
+**links** the records Logbook already keeps (repairs, expenses, tyre
+changes, attachments, a reading) rather than copying their costs, so
+nothing is counted twice (§6 Incident).
+
+- **Module** `incidents`, switchable (§7.10), on by default.
+- **Incidents tab** (`/vehicles/{id}/incidents`): open incidents first,
+  then newest first, each with date, type, a fault badge, a claim-status
+  badge, a write-off badge ("Cat S") when written off, the net cost (with
+  `ViewCosts`), and a paperclip when it has files. The toolbar has *Log
+  incident*, which is also in the *Log entry* chooser (§5).
+- **Form** (page and desktop modal, §5), in four sections: *What
+  happened* (date, time, location, type, description, odometer, driver: a
+  user who can view the vehicle, or a name), *Damage* (areas as
+  checkboxes, severity, photos and files, write-off category), *Other
+  party* (a `<details>`, folded by default; name, registration, insurer,
+  police reference) and *Insurance* (claim status, insurer and policy,
+  claim number, excess, payout, no-claims effect, latest update). The
+  insurer and policy default to the `insurance` document current on the
+  incident's date; changing the date before saving changes the default
+  only while the field is untouched (without JS, the default is set when
+  the form opens and on a *Use the policy for this date* link).
+  Validation: the date is not in the future; the time is a valid local
+  time; amounts ≥ 0 (0 is valid); *closed* needs no other field and sets
+  closed_on to the owner's today unless given; a status back to *open*
+  clears closed_on. Changing the claim status sets *Latest update* to the
+  owner's today unless it was changed too. The odometer follows the
+  reading rules (§7.2).
+- **Incident page** (`/vehicles/{id}/incidents/{incident}`): the details,
+  the photos as a grid (each opens the full file through the
+  authenticated handler), and **Linked records**: the repairs, expenses
+  and tyre changes linked to it, each with its date, cost and link.
+  - *Link a record*: a picker (a plain form) of the vehicle's records not
+    linked to any incident and dated from the incident's date to 180 days
+    after it, newest first; *Unlink* beside each linked record (POST,
+    CSRF). Buttons *Add a repair*, *Add an expense* (excess, hire car,
+    recovery) and *Add a tyre change* open the normal create forms with
+    the incident preselected, returning to the incident page after saving.
+  - **Costs:** *Linked costs* (the sum of the linked records' costs, a
+    linked tyre change counted once, as the ledger counts it, §7.7),
+    *Payouts received* (the payout) and *Net cost to you* (linked minus
+    payouts). A negative net shows as 0 with "You received more than it
+    cost". The excess is shown as a claim detail, not added: the money
+    paid out for it is an expense the owner links (*Add an expense*).
+  - From Phase 27.2, *Repair estimate* among the claim details,
+    labelled "Estimate, not counted in costs".
+  - With reminders on, *Add reminder* opens a manual reminder form
+    prefilled "Chase claim {number}" (or "Chase claim" without one),
+    `Manage`, as manual reminders need.
+- **Maintenance, expense and tyre change forms** gain *Part of an
+  incident* (an optional select of the vehicle's incidents, open ones
+  first, each "12 Mar 2025 · Parked damage"), preselected when the form
+  is opened from an incident. A record of another vehicle's incident is
+  refused.
+- **Claims history** (`/incidents/history`, module on, from the main
+  navigation's *Reports* group and the Incidents tab): every incident on
+  every vehicle the user can see, **including archived and sold ones**
+  (decided in the phase plan: insurers ask per driver over years, not per
+  current car).
+  - Filters (a plain GET form): the last 3, 5 (default) or 10 years, or a
+    date range, by occurred_on as a calendar date (the last 5 years =
+    occurred_on on or after the same day five years before the owner's
+    today); vehicle; driver; *Claims only* (claim status other than
+    `not_claimed`) or *All incidents* (default); fault.
+  - Columns: date, vehicle and registration, type, fault, driver, claim
+    status, insurer, claim number, payout (with `ViewCosts`), no-claims
+    effect. Newest first.
+  - The hint: "Insurers usually ask about the last 5 years, including
+    incidents that were not your fault and ones on vehicles you no
+    longer own."
+  - Printable (the Phase 17.2 conventions: black on white, no app shell,
+    the filters as a line under the heading) and CSV
+    (`/incidents/history.csv`, same filters, the rules of every CSV
+    export). The other party is **never** included.
+  - A row whose detail fields the user may not see (below) shows its
+    date, vehicle and type, with the other columns as "Not shared with
+    you".
+- **History** (§7.16): an *Incidents* chip (`?kind=incidents`). Incident
+  rows show under *Everything* and *Incidents* with their linked records
+  nested beneath them, as linked tyre changes are under service records;
+  a linked record still counts under its own chip, shown there on its
+  own with "Part of: Parked damage, 12 Mar 2025". The print view leaves
+  incidents out unless *Include incidents* is ticked (off by default),
+  and then shows only date, type, damage and the linked repairs.
+- **Sale pack** (§7.19): *Include incidents* (off by default). With it
+  on, an *Incidents* group lists each incident's date, type, damage
+  areas, severity and its linked repairs (date and vendor), and the ZIP
+  offers *Incident photos* (off by default) beside the repairs'
+  paperwork, which comes with *Service and repair records*. Fault, claim
+  details, payouts, the estimate, the driver, the location, the police
+  reference and the other party are **never** shown.
+  - **Write-off** (decided 2026-10-01, `docs/phases/open-questions.md`
+    #92): when any incident has a write-off category, the summary shows
+    "Recorded as Cat S (14 Mar 2025)" whenever incidents are included.
+    When they are not, a screen-only notice tells the seller: "This
+    vehicle has a Cat S record. A buyer's vehicle history check will show
+    it." The decision: the category is never hidden in a way that looks
+    deliberate (any history check shows it), and the seller stays in
+    charge of what the pack includes.
+- **Overview:** a vehicle with a write-off category on any incident shows
+  the category as a badge in its header ("Cat S"). The *Recent activity*
+  card includes incidents.
+- **Reports** (§7.7): spend is unchanged, because linked costs are
+  already counted in their own groups. An *Incidents* section gives, for
+  the period (by occurred_on), the number of incidents, *Incident-related
+  spend* (linked costs) and *Payouts received*, per currency; with no
+  incident in the period it is left out.
+- **Ownership** (§7.7 *Cost of ownership*): running costs are shown
+  **net of payouts**, with the line *Insurance payouts* (payouts of the
+  vehicle's incidents dated in the ownership period) so the figure is
+  explained; the per-distance and per-month running parts use the net
+  figure. The decision: spend is money that went out, ownership answers
+  "what has it cost me", which a payout changes. From Phase 27.2 a
+  total-loss settlement is the sale price instead (below).
+- **Needs attention** (§7.24), *Check*: an incident with claim status
+  `notified` or `open` whose latest claim update (claim_updated_on, else
+  occurred_on) is more than **30 days** before the owner's today (raised
+  on day 31): "Claim 4417 with Aviva: no
+  update for 34 days". It links to the incident and can be hidden (the
+  fingerprint is the incident's id, claim status and claim_updated_on).
+- **Access** (Phase 19, a `ViewIncidentDetails` ability in the Phase 18.1
+  policy): logging and editing need `Log` (editing someone else's
+  incident needs `Manage`, as entries do). Fault, the other party, the
+  police reference, the claim number, the payout, the estimate and the
+  driver are visible to `Manage` and `Own` and to the incident's creator.
+  Others with `View` see the date, type, damage, photos and linked
+  repairs. Amounts also need `ViewCosts`.
+- **API** (§7.20): `GET/POST /api/v1/vehicles/{id}/incidents`, `GET
+  /api/v1/incidents/history` (the claims history's filters and rows),
+  with the access rules above; a POST's duplicate key is the vehicle,
+  date, type and claim number.
+- **Ask Logbook** (§7.26): an `incidents(vehicles?, period?,
+  claims_only?)` tool, so "Have I had any claims in the last five years?"
+  is answered with the claims history's figures, and a `draft_incident`
+  draft tool (Phase 26.3 rules: nothing saves without *Add*). Over MCP
+  (§7.28) the read tool is offered as every Ask read tool is, and
+  `draft_incident` to `read_write` keys as a draft (decided 2026-10-01,
+  `docs/phases/open-questions.md` #97).
+- **Export:** incidents join the CSV export (§7.13). There is no CSV
+  import.
+- **Not in scope:** contacting insurers or their claim-form formats; map
+  lookups for the location; recording injuries, or witness statements
+  beyond notes; automatic vehicle history checks (HPI and similar).
+
+#### Total loss (Phase 27.2)
+Decided 2026-10-01 (`docs/phases/open-questions.md` #93, #98, #99).
+
+- **Archiving offers *Written off*** when the vehicle has an incident with
+  a write-off category other than `none` and claim status `settled`.
+  Otherwise *Archive* stays one click (§7.1). When it is offered,
+  *Archive* opens a small confirm page (`/vehicles/{id}/archive`, a plain
+  form, works without JS; the desktop modal with JS) with *Written off*
+  (chosen) or *Just archive*. *Written off* shows the incident (the latest
+  settled one with a category, or a select when there are several), and a
+  sale date and sale price prefilled from its closed_on (else
+  claim_updated_on, else today) and payout, both editable. Saving sets
+  disposal `written_off`, disposal_incident_id, the sale date and price,
+  and archives, in one transaction.
+- **Sold:** the vehicle edit form's sale section sets disposal `sold`
+  when a sale date is saved on a vehicle with no disposal. *Restore*
+  clears disposal and disposal_incident_id; the sale date and price stay,
+  as now.
+- **Ownership, no double counting:** the disposal incident's payout is
+  the sale price, so it is left out of the *Insurance payouts* line, and
+  the ownership card and report say "Settlement counted as the sale
+  price" under it. Depreciation ends at the settlement as for any sale.
+- **Labels:** an archived vehicle with disposal `written_off` is labelled
+  "Written off 14 Mar 2025" where a sold one says "Sold" (garage cards,
+  overview, ownership report's *sold* column: `written off`). The
+  *Sold* milestone is titled *Written off* with the incident linked.
+- **Module off:** archiving is one click again; a vehicle already written
+  off keeps its disposal and label.
+
+#### Reading claim letters and repair estimates (Phase 27.2)
+Decided 2026-10-01 (`docs/phases/open-questions.md` #95, #100, #101).
+Two scan kinds (§7.27), `claim_letter` and `repair_estimate`, fill an
+incident. They need `ai_scan` and `incidents` on.
+
+- **A claim letter whose claim number matches an incident** of the
+  vehicle opens that incident's **edit** form, each changed field marked
+  "From the file, check" as on a create form; the letter is attached on
+  save. No match (or no claim number) opens *Log incident* prefilled.
+- **Update from a letter** on the incident page (`Log`, or `Manage` for
+  someone else's incident) scans for that incident, so the match is not
+  needed.
+- **A repair estimate** fills the repair estimate and puts the repairer
+  in the notes line "Estimate from {repairer}" on the matched or chosen
+  incident (an estimate seldom carries a claim number, so from *Log
+  entry* → *Scan* it opens the most recent open incident of the vehicle
+  with a select to change it, or *Log incident* when there is none).
 
 ---
 
@@ -5000,6 +5342,24 @@ task breakdowns live in the per-phase files; this is the map.
   reviewed on the dashboard. Three resources, three prompts,
   `MCP_ENABLED`, and setup guides for Claude Desktop and other clients
   (§6 AiDraft, §7.28). One migration. Release v2.9.0.
+- **Phase 27.1 — Incidents, damage and insurance claims.** An
+  `incidents` module (on by default): incidents with type, fault,
+  damage, driver, the other party and an insurance claim, which **link**
+  the repairs, expenses and tyre changes they caused rather than copying
+  their costs. Photos keep their EXIF. A claims history across every
+  vehicle, sold ones included, printable and CSV, for insurance quotes.
+  History, the sale pack (an optional incident summary, never the claim),
+  Reports, ownership net of payouts, a stalled-claim *Needs attention*
+  item, the API, Ask and MCP know about incidents (§6 Incident; §7.7,
+  §7.10, §7.12, §7.13, §7.16, §7.19, §7.20, §7.24, §7.26, §7.28, §7.29).
+  One migration. No release of its own.
+- **Phase 27.2 — Total loss and reading claim letters + v2.10 release.**
+  Archiving offers *Written off* for a settled write-off, with the
+  settlement as the sale price and counted once in ownership. Scanning
+  reads insurer claim letters (updating the matching incident by claim
+  number) and repair estimates (a new estimate field, never counted)
+  (§6 Vehicle disposal, Incident, PendingUpload; §7.1, §7.7, §7.27,
+  §7.29). One migration. Release v2.10.0.
 
 ---
 
