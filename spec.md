@@ -258,12 +258,19 @@ disagree):
   JSON Schema), images (bytes plus media type), a response schema with
   its structured-output mode, temperature and max output tokens. The
   result holds text, tool calls, the parsed object (for a response
-  schema), finish reason and usage. Each adapter maps to its API: Chat
-  Completions tools and `response_format` (OpenAI-compatible); Anthropic
-  Messages with `tools`, `tool_choice` and image blocks; Gemini
-  `generateContent` with function declarations and `responseJsonSchema`;
-  Ollama through its OpenAI-compatible `/v1` endpoint, with its native
-  `/api/tags` only for listing. **No provider SDK.**
+  schema), finish reason, usage, and the provider's own form of the
+  turn, which a tool loop sends back unchanged (Anthropic's thinking
+  blocks, Gemini's thought signatures). Each adapter maps to its API:
+  Chat Completions tools and `response_format` (OpenAI-compatible;
+  `max_completion_tokens` for OpenAI itself, `max_tokens` elsewhere; an
+  error inside an HTTP 200, as OpenRouter sends, is an error); Anthropic
+  Messages with `tools`, `tool_choice`, image blocks and
+  `output_config.format`; Gemini `generateContent` (`v1beta`) with
+  `parametersJsonSchema` function declarations, `functionResponse` ids
+  and `responseJsonSchema` (an invalid key, which Gemini answers with
+  400, is an `auth` error); Ollama through its OpenAI-compatible `/v1`
+  endpoint, with its native `/api/tags` and `/api/show` for listing. **No
+  provider SDK.**
   - **HTTP:** adapters use the app's `symfony/http-client`
     (`HttpClientInterface`), not PSR-18, because the connection's timeout
     (`timeout` and `max_duration`), TLS (`verify_peer`, `verify_host`,
@@ -3103,7 +3110,7 @@ parameter answers 400 (`invalid_parameter`).
 | `GET /vehicles/{id}/tyres` | tyres with status, position, latest measured tread |
 | `GET /upcoming` | *Coming up* items (§7.18), `?vehicle=` optional |
 | `GET /reminders` | open reminders, `?vehicle=`, `?status=due\|overdue\|upcoming` |
-| `GET /me` | the key's user (display name, units, locale, time zone), the key's name and scope, and which modules are on |
+| `GET /me` | the key's user (display name, units, locale, time zone), the key's name and scope, and which modules are on (not the AI modules, which have no API yet; Phase 26.1) |
 | `GET /openapi.json` | the OpenAPI description, its `servers` set to this install (no key needed) |
 
 **Write endpoints** (scope `read_write`, ability `Log`).
@@ -3631,7 +3638,8 @@ request to any model service.
     fragment or credentials (credentials go in a header).
   - **Only admins set URLs; a URL is never taken from a request
     elsewhere, and redirects are never followed** (every adapter request
-    sets `max_redirects: 0`). Private addresses are allowed on purpose:
+    sets `max_redirects: 0`; a redirect is reported with where it
+    points). Private addresses are allowed on purpose:
     LAN models are the point.
   - **Delete** (with a confirmation page) removes the connection, its
     models and its secrets; tasks using its models become unassigned.
@@ -3643,6 +3651,8 @@ request to any model service.
   - anything else is encrypted with libsodium `secretbox` (a random nonce
     per value), with a key derived from `SESSION_SECRET` by HKDF-SHA256,
     info `logbook-ai`, stored as `v1:` + base64(nonce ‖ ciphertext).
+    Without a `SESSION_SECRET` there is no key, so only `env:` references
+    can be saved and the form says so.
   - A secret is **never shown again** after saving, not even masked: the
     form says *Saved* with *Replace* and *Remove*, and an empty field
     keeps it. A form re-shown after a validation error never puts the
@@ -3693,9 +3703,14 @@ request to any model service.
   (only when the model is marked for images) and JSON output (only when
   marked for it). Each step shows ok or failed, its time, and on failure
   the error text with any secret redacted. Steps after a failed list
-  still run when a model name is given. Test results are stored on the
-  model (when, and each step's outcome). Test calls go through the same
-  limits and usage log as any other call (task `test`).
+  still run when a model is chosen. The tool call always runs and sets
+  *Tools*; the image and JSON steps set *Images* and *JSON output*. A
+  refusal that stops the test (acknowledgement, key, cap, the user's
+  lock) runs nothing more and changes no tick it did not try. Results are
+  stored on the model (when, and each step's outcome); the first failure
+  is also shown as a message. Test's model calls go through the same
+  limits and usage log as any other call (task `test`); listing models is
+  not a model call and is not logged, but is refused the same way.
 - **Models** (§6 AiModel) per connection: *Refresh models* lists them
   (OpenAI-compatible `GET {base}/models`, Ollama `GET /api/tags`,
   Anthropic `GET /v1/models`, Gemini `GET /v1beta/models`). Listed models
@@ -3705,15 +3720,22 @@ request to any model service.
   OpenRouter lists hundreds).
   - **Capabilities** (`tools`, `images`, `json`): the provider's report
     where it gives one (OpenRouter's `supported_parameters` and
-    `architecture.input_modalities`), else none. The admin ticks them;
-    *Test* confirms or clears each ticked one it tried. Refreshing never
-    changes an added model's ticks.
+    `architecture.input_modalities`; Anthropic's `capabilities.image_input`
+    and `structured_outputs`; Ollama's `/api/show` `tools` and `vision`,
+    asked for the first 50 models; llama.cpp's `multimodal`), else none.
+    The admin ticks them; *Test* confirms or clears each one it tried.
+    Refreshing never changes an added model's ticks.
+  - **Take off** a model: it leaves the task pickers (its tasks are
+    unassigned); a listed model stays listed, a typed one is deleted.
   - **Structured output** mode, recorded by *Test*: `json_schema`
     (`response_format: json_schema`, Gemini `responseJsonSchema`), else
     `json_object` plus the schema check, else `tool` (one forced tool call
-    whose arguments are the object). Anthropic uses `tool`. All three pass
-    through the same JSON Schema check (§5 *AI adapters*). An untested
-    model uses `json_schema` where the adapter has it, else `tool`.
+    whose arguments are the object). Anthropic's `json_schema` is its
+    `output_config.format` (its newest models refuse a forced tool; `tool`
+    remains for older ones); Gemini has `json_schema` and `tool`; Ollama's
+    and llama.cpp's OpenAI endpoints cannot force a tool, so Ollama tries
+    `json_schema` then `json_object`. All pass through the same JSON
+    Schema check (§5 *AI adapters*). An untested model uses `json_schema`.
 - **Tasks** (§6 AiTask): each AI job is assigned one added model (and so
   its connection) with optional temperature (0–2) and max output tokens
   (1–32768):

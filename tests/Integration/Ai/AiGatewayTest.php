@@ -8,15 +8,18 @@ use DateTimeImmutable;
 use Logbook\Domain\Ai\AdapterType;
 use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\Capability;
+use Logbook\Domain\Ai\ConnectionSettings;
 use Logbook\Domain\Ai\ErrorCode;
 use Logbook\Domain\Ai\Location;
 use Logbook\Domain\Ai\Outcome;
 use Logbook\Domain\Ai\RequestRecord;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\User\User;
+use Logbook\Kernel;
 use Logbook\Repository\AiBusyRepository;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiRequestRepository;
+use Logbook\Repository\UserRepository;
 use Logbook\Service\Ai\AiFailure;
 use Logbook\Service\Ai\AiGateway;
 use Logbook\Service\Ai\AiPreferences;
@@ -30,6 +33,7 @@ use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Tests\Support\AiTestCase;
 use Psr\Container\ContainerInterface;
 use Slim\App;
+use Symfony\Component\HttpClient\Response\MockResponse;
 
 /**
  * AiGateway (spec.md §5 *AI adapters*, §7.25): routing, the
@@ -87,7 +91,7 @@ final class AiGatewayTest extends AiTestCase
 
         $connection = $connections->find($cloud);
         self::assertNotNull($connection);
-        $connections->update($cloud, new \Logbook\Domain\Ai\ConnectionSettings(
+        $connections->update($cloud, new ConnectionSettings(
             $connection->name,
             $connection->adapter,
             'https://openrouter.ai/api/v1',
@@ -146,7 +150,7 @@ final class AiGatewayTest extends AiTestCase
         $this->assign($app, $sealed, 'gpt-5', AiTaskName::Ask, [Capability::Tools]);
         $rotated = $this->aiApp(['SESSION_SECRET' => 'another-secret-another-secret-xx']);
         $this->pinClock($rotated, self::NOW);
-        $rotatedOwner = $this->service($rotated, \Logbook\Repository\UserRepository::class)->find($owner->id);
+        $rotatedOwner = $this->service($rotated, UserRepository::class)->find($owner->id);
         self::assertNotNull($rotatedOwner);
 
         $unreadable = $this->failure($rotated, $rotatedOwner);
@@ -261,7 +265,7 @@ final class AiGatewayTest extends AiTestCase
         $this->assign($app, $id, 'gpt-5', AiTaskName::Ask, [Capability::Tools]);
         $other = $this->addConnection($app, 'Other', AdapterType::Ollama, 'http://localhost:11434', Location::Server);
         $this->assign($app, $other, 'llama3.2:3b', AiTaskName::ReadText, [Capability::Json]);
-        $this->provider->queue(new \Symfony\Component\HttpClient\Response\MockResponse(
+        $this->provider->queue(new MockResponse(
             '{"error":{"message":"Key my-secret-proxy-key is not valid"}}',
             ['http_code' => 401],
         ));
@@ -274,7 +278,7 @@ final class AiGatewayTest extends AiTestCase
         self::assertSame('Proxy', $error->connectionName);
         self::assertCount(1, $this->provider->requests, 'no other connection is tried');
         $this->assertLogged($app, Outcome::Error, 'auth');
-        $log = (string) file_get_contents(\Logbook\Kernel::rootDir() . '/var/log/testing.log');
+        $log = (string) file_get_contents(Kernel::rootDir() . '/var/log/testing.log');
         self::assertStringNotContainsString('my-secret-proxy-key', $log);
     }
 

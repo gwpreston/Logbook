@@ -224,9 +224,10 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §9 and
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.25, §9, §7.10 and §5 in `spec.md`; the Phase 26.1 line in §13;
-      remove the MCP line from the roadmap's *After 1.0* when 26.5 lands.
-- [ ] `docs/ai.md`: what AI does in Logbook and what it never does;
+- [x] §7.25, §9, §7.10 and §5 in `spec.md`; the Phase 26.1 line in §13;
+      remove the MCP line from the roadmap's *After 1.0* when 26.5 lands
+      (that part is 26.5's).
+- [x] `docs/ai.md`: what AI does in Logbook and what it never does;
       connection recipes:
   - Ollama on the same machine (bare PHP: `http://localhost:11434`;
     Docker: `http://host.docker.internal:11434` with `extra_hosts:
@@ -238,53 +239,106 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §9 and
   - OpenAI, Anthropic and Gemini keys.
   It also gives model suggestions by task and hardware, marked as
   examples that change often.
-- [ ] `docker-compose.yml`: an optional `ai` profile with an `ollama`
+- [x] `docker-compose.yml`: an optional `ai` profile with an `ollama`
       service and volume (`docker compose --profile ai up -d`), CPU by
       default, with the GPU stanza commented.
 
 ### Migrations
-- [ ] `ai_connections`, `ai_models`, `ai_tasks`, `ai_requests`; the
+- [x] `ai_connections`, `ai_models`, `ai_tasks`, `ai_requests`; the
       acknowledgement fields; `users` setting for *Use AI features*. Every
       engine, reversible; backups include all but secrets and
       `ai_requests`.
 
 ### Code
-- [ ] `Service\Ai\Provider\*` adapters, `ChatRequest` and `ChatResult`
+- [x] `Service\Ai\Provider\*` adapters, `ChatRequest` and `ChatResult`
       value objects, `ModelInfo`, `Capability` enum.
-- [ ] `Service\Ai\ConnectionLocator` (host classing), `SecretBox` (encrypt,
+- [x] `Service\Ai\ConnectionLocator` (host classing), `SecretBox` (encrypt,
       decrypt, `env:`), `AiGateway` (routes a task to its connection, applies
       limits, logs usage, maps errors to user-safe messages).
-- [ ] Settings → AI pages: connections (add, edit, test, refresh models,
+- [x] Settings → AI pages: connections (add, edit, test, refresh models,
       acknowledge), models and capabilities, tasks, usage.
-- [ ] *Use AI features* in Settings → Account; the three module toggles.
-- [ ] Scheduler: usage log retention; monthly cap reset.
-- [ ] Translations (en, de).
+- [x] *Use AI features* in Settings → Account; the three module toggles.
+- [x] Scheduler: usage log retention; monthly cap reset (none needed: the
+      cap is summed from this month's rows; stale locks are cleared instead).
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] **Recorded fixtures** per adapter (request and response JSON for text,
+- [x] **Recorded fixtures** per adapter (request and response JSON for text,
       tool calls, images, JSON output, errors, timeouts). Adapters are tested
       against them with PSR-18 mocks, so CI needs no network or model.
-- [ ] Host classing: loopback, `host.docker.internal`, RFC 1918, IPv6 ULA,
+- [x] Host classing: loopback, `host.docker.internal`, RFC 1918, IPv6 ULA,
       `.local`, public addresses, a public name resolving to a private
       address (classed by address), and redirects not followed.
-- [ ] Internet connections refuse to run without the acknowledgement; a URL
+- [x] Internet connections refuse to run without the acknowledgement; a URL
       change clears it.
-- [ ] Secrets: never rendered, encrypted at rest, `env:` read at call time,
+- [x] Secrets: never rendered, encrypted at rest, `env:` read at call time,
       unreadable after `SESSION_SECRET` changes (with the right message),
       absent from backups.
-- [ ] Limits: size, monthly cap, one at a time per user.
-- [ ] Usage log without content; with `AI_LOG_CONTENT=true`, content logged
+- [x] Limits: size, monthly cap, one at a time per user.
+- [x] Usage log without content; with `AI_LOG_CONTENT=true`, content logged
       and the warning shown; retention.
-- [ ] `AI_ENABLED=false` and *Use AI features* off hide everything and send
+- [x] `AI_ENABLED=false` and *Use AI features* off hide everything and send
       nothing.
 - [ ] Integration suite green on every engine.
 - [ ] **Manual interop check** (in the PR): Ollama (same host and LAN),
       llama.cpp server, OpenAI, Anthropic, Gemini, OpenRouter, Groq and
       Mistral, each passing *Test*.
-- [ ] Recorded fixtures include OpenRouter's and Groq's model lists and a
+- [x] Recorded fixtures include OpenRouter's and Groq's model lists and a
       `json_object` fallback case.
 
 ---
+
+## Changed while building it
+
+- **HTTP client:** the adapters use the app's `symfony/http-client`, not
+  PSR-18: the connection's timeout, TLS, CA bundle, headers and
+  `max_redirects: 0` are per-request options there. Tests use
+  `MockHttpClient` with recorded fixtures (`tests/Fixtures/ai/`), and
+  assert the options sent.
+- **JSON Schema check:** an in-house subset (`Support\Json\SchemaCheck`)
+  rather than a new runtime dependency; the keywords are listed in spec §5.
+- **Wire formats checked against the providers' current documentation**
+  before the fixtures were written, which changed three things:
+  - Anthropic's newest models refuse a forced tool, so structured output
+    there is `output_config.format` (`json_schema`), with the forced tool
+    kept for older models.
+  - Anthropic's thinking blocks and Gemini's thought signatures must go
+    back unchanged in a tool loop, so a result carries the provider's own
+    form of the turn (`ChatResult::toMessage()`), and Gemini's function
+    responses echo the call's id.
+  - Ollama's and llama.cpp's OpenAI endpoints cannot force a tool, so
+    Ollama tries `json_schema` then `json_object`. Gemini answers a bad
+    key with HTTP 400, mapped to `auth`; OpenRouter can report an error
+    inside an HTTP 200.
+- **Capabilities reported by more providers** than OpenRouter: Anthropic's
+  model list, Ollama's `/api/show` (first 50 models) and llama.cpp's
+  `multimodal`.
+- **Secrets in their own table** (`ai_secrets`), excluded from backups
+  like sessions, rather than columns blanked on export. `env:` references
+  are not carried either.
+- **No `SESSION_SECRET`, no stored keys:** only `env:` keys can be saved
+  then (an empty secret would make the encryption meaningless).
+- **The monthly cap needs no reset:** it is summed from this calendar
+  month's usage rows in `APP_TIMEZONE`. The scheduled task deletes rows
+  after 90 days and clears locks left by requests that died; it now runs
+  that part even with the reminders module off.
+- **The lock** is a row in `ai_busy` (unique per user), inserted in its
+  own nested transaction so a clash never aborts a surrounding one on
+  PostgreSQL, and taken over once it is older than the connection's
+  timeout plus 30 seconds.
+- **Where it runs is re-checked on every call**, not only on save and
+  Test: a network name that starts resolving publicly becomes *Internet*
+  and stops until acknowledged.
+- **Nothing about AI shows until it is set up:** the AI modules are not
+  listed on Settings → Modules (and keep their state when the page is
+  saved), *Use AI features* appears only then, and `GET /api/v1/me` leaves
+  the AI modules out.
+- **Test** keeps any tick it did not try when a refusal stops it, and
+  listing models is refused like a call but not logged.
+- **`InstanceAbility::ManageAi`** hides its pages: `InstanceAccessMiddleware`
+  answers 404 instead of 403 for it.
+- **Icons** `smart_toy`, `dns`, `lan`, `public`, `document_scanner`,
+  `forum`, `science` and `sync` added to the sprite.
 
 ## Acceptance criteria
 

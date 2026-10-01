@@ -1,6 +1,8 @@
 # Logbook + PostgreSQL. Works unedited:   docker compose up -d   → http://localhost:8080
 # Override any variable in a .env file next to this one (see .env.example).
 # MySQL instead? docker compose -f docker-compose.mysql.yml up -d
+# A local model beside it (docs/ai.md)?   docker compose --profile ai up -d
+#   then on Settings → AI add Ollama at http://ollama:11434
 
 name: logbook
 
@@ -42,6 +44,14 @@ services:
       WEBHOOK_URL: ${WEBHOOK_URL:-}
       SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
       SCHEDULER_INTERVAL: ${SCHEDULER_INTERVAL:-900}
+      # AI (docs/ai.md): connections are set on Settings → AI.
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_LOG_CONTENT: ${AI_LOG_CONTENT:-false}
+      AI_ALLOW_INSECURE_TLS: ${AI_ALLOW_INSECURE_TLS:-true}
+    # Lets Logbook reach a model running on the Docker host itself, such as
+    # Ollama installed there: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - logbook_data:/data
     depends_on:
@@ -63,6 +73,25 @@ services:
       timeout: 5s
       retries: 20
 
+  # Optional local model server, started only with --profile ai. Pull a model
+  # into it once: docker compose exec ollama ollama pull llama3.2:3b
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ai"]
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    # CPU by default. For an NVIDIA GPU (with the NVIDIA Container Toolkit),
+    # uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
 volumes:
   logbook_data:
   postgres_data:
+  ollama_data:

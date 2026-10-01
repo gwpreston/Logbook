@@ -105,6 +105,22 @@ See [api.md](api.md).
 | `API_ENABLED` | `true` | The JSON API under `/api/v1`. Every call needs an API key (Settings → API keys, or `bin/api-key.php`), so it is closed until you make one. `false` makes every API address a 404. |
 | `API_CORS_ORIGINS` | *(empty)* | Comma-separated origins (`https://ha.example.com:8123`) whose pages may call the API from the browser. Empty: CORS off. Home Assistant sensors, Shortcuts, Grafana and Node-RED call from a server and need nothing here. |
 
+## AI
+
+See [ai.md](ai.md). Connections, keys, models and tasks are set by an admin
+on **Settings → AI**, not here; nothing is sent to any model until then.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `AI_ENABLED` | `true` | `false` removes Settings → AI and every AI switch and feature, and sends nothing, whatever is configured. |
+| `AI_LOG_CONTENT` | `false` | `true` keeps questions, answers and the data sent with them in the usage log, for debugging your own install; Settings → AI shows a warning while it is on. Off, the log has counts, times and outcomes only. |
+| `AI_ALLOW_INSECURE_TLS` | `true` | Allows a connection's *Verify TLS certificates* to be switched off (a LAN server with a self-signed certificate). `false` verifies every connection. |
+
+A key typed as `env:NAME` on Settings → AI is read from the variable `NAME`
+when it is used, so it can live with the rest of your secrets. A key typed
+in full is encrypted with a key derived from `SESSION_SECRET`: without one,
+only `env:` keys can be saved, and changing it means entering the keys again.
+
 ## Files and backups
 
 | Variable | Default | Meaning |
@@ -155,6 +171,9 @@ which configured channels to use in **Settings → Reminders**. See
 | `FEATURES_REPORTS` | `true` | Reports and the spend widget. |
 | `FEATURES_TYRES` | `true` | Tyres: what is fitted and stored, tyre changes, distance per tyre, tread depth, the wear estimate, Settings → Tyres and tyre reminders. |
 | `FEATURES_TRIPS` | `false` | Trips and mileage claims: the Trips tab, saved journeys, mileage rates, the claim report, the business and private split, the *Business mileage* widget and report section, and the trip API. The one module that is off by default ([trips.md](trips.md)). |
+| `FEATURES_AI_ASK` | `true` | Ask Logbook (Phase 26.2). Does nothing, and is not listed on Settings → Modules, until AI is set up ([ai.md](ai.md)). |
+| `FEATURES_AI_ACTIONS` | `true` | Drafting entries from what you say (Phase 26.3). As above. |
+| `FEATURES_AI_SCAN` | `true` | Reading receipts and documents (Phase 26.4). As above. |
 
 These are defaults: once an owner saves **Settings → Modules**, that choice
 wins. A switched-off module disappears from menus, pages (404), the dashboard,

@@ -42,6 +42,13 @@ services:
       WEBHOOK_URL: ${WEBHOOK_URL:-}
       SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
       SCHEDULER_INTERVAL: ${SCHEDULER_INTERVAL:-900}
+      # AI (docs/ai.md): connections are set on Settings → AI.
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_LOG_CONTENT: ${AI_LOG_CONTENT:-false}
+      AI_ALLOW_INSECURE_TLS: ${AI_ALLOW_INSECURE_TLS:-true}
+    # A model on the Docker host itself: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - logbook_data:/data
     depends_on:

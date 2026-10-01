@@ -24,8 +24,8 @@ use Psr\Clock\ClockInterface;
  * model a short completion, a tool call, a tiny image (when it is marked
  * for images) and JSON output (when marked for it, trying each mode best
  * first). Each step reports its time and its redacted error. Tool calls,
- * images and JSON are confirmed or cleared by what worked, and stored on
- * the model with the results. Every call goes through AiGateway (task
+ * images and JSON are confirmed or cleared by what was tried (what a test
+ * stopped before keeps its tick), and stored on the model with the results. Every call goes through AiGateway (task
  * `test`), so the acknowledgement, limits and usage log apply.
  */
 final readonly class ConnectionTester
@@ -80,7 +80,12 @@ final readonly class ConnectionTester
         }
 
         $call = fn (ChatRequest $request) => $this->gateway->call($admin, 'test', $connection, $model->name, $request);
-        $confirmed = [];
+        // What was not tried keeps its tick; what was tried is set by the result.
+        $capabilities = [
+            Capability::Tools->value => $model->tools,
+            Capability::Images->value => $model->images,
+            Capability::Json->value => $model->json,
+        ];
 
         $this->step($results, TestStep::Completion, static function () use ($call): void {
             $result = $call(new ChatRequest(
@@ -106,8 +111,9 @@ final readonly class ConnectionTester
                 throw new AiFailure(ErrorCode::BadResponse, 'The model did not call the tool.');
             }
         };
-        if (!$stopped && $this->step($results, TestStep::Tools, $tools, $stopped)) {
-            $confirmed[] = Capability::Tools;
+        if (!$stopped) {
+            $worked = $this->step($results, TestStep::Tools, $tools, $stopped);
+            $capabilities[Capability::Tools->value] = $stopped ? $model->tools : $worked;
         }
 
         $images = static function () use ($call): void {
@@ -120,17 +126,23 @@ final readonly class ConnectionTester
                 throw new AiFailure(ErrorCode::BadResponse, 'The model answered with no text.');
             }
         };
-        if (!$stopped && $model->images && $this->step($results, TestStep::Images, $images, $stopped)) {
-            $confirmed[] = Capability::Images;
+        if (!$stopped && $model->images) {
+            $worked = $this->step($results, TestStep::Images, $images, $stopped);
+            $capabilities[Capability::Images->value] = $stopped ? $model->images : $worked;
         }
 
-        $jsonMode = null;
+        $jsonMode = $model->jsonMode;
         if (!$stopped && $model->json) {
-            $jsonMode = $this->json($results, $call, $connection, $stopped);
-            if ($jsonMode !== null) {
-                $confirmed[] = Capability::Json;
+            $found = $this->json($results, $call, $connection, $stopped);
+            if (!$stopped) {
+                $jsonMode = $found;
+                $capabilities[Capability::Json->value] = $found !== null;
             }
         }
+        $confirmed = array_values(array_filter(
+            Capability::cases(),
+            static fn (Capability $c): bool => $capabilities[$c->value],
+        ));
 
         $this->models->recordTest($model->id, $results, $confirmed, $jsonMode, $this->clock->now());
 
