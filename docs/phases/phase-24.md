@@ -2,7 +2,7 @@
 
 *What is wrong right now, on one short list, with the fix one tap away.*
 
-Status: 📋 planned · releases **v2.4.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.4.0** · file lives in `docs/phases/`
 
 Logbook already knows when something is wrong: an overdue service, an
 expired MOT, tyres past their limit, a mistyped odometer, a fill-up that
@@ -35,12 +35,17 @@ earlier.
 4. A marker on garage cards.
 5. Hiding for data checks that are genuinely fine. A hidden item comes back
    when its data changes.
+6. A *Needs attention* section in the monthly digest, listing the *Check*
+   items, so data problems reach owners who rarely open the app (decided
+   2026-10-01).
+7. The two staleness thresholds as user settings (decided 2026-10-01).
 
 ## Not in scope
 
 - A score, grade, percentage or traffic-light rating of a vehicle.
-- New notifications. Reminders already notify about due work. Data checks
-  are not sent (see *Open questions*).
+- New notifications of their own. Reminders already notify about due work.
+  Data checks reach people only through the monthly digest's section
+  (decided 2026-10-01), never as a message of their own.
 - Things that are merely *due soon*. That is *Coming up* and the reminder
   list. This list is for what is wrong now.
 - Automatic fixes.
@@ -48,6 +53,9 @@ earlier.
 ---
 
 ## Spec addition (§7.24 Needs attention)
+
+The text that went into `spec.md` §6, §7.1, §7.8, §7.11 and §7.24 is the
+authoritative one; this section is the draft it came from.
 
 ### 7.24 Needs attention (Phase 24)
 Derived on every read (`Service\Attention\AttentionList`) from the same
@@ -80,12 +88,14 @@ The list is core.
    *Looks right*, as now.
 4. **Mileage not updated:** the vehicle has a distance-based schedule, or a
    fitted tyre with a wear estimate, and its latest reading is more than
-   **60 days** old: "No mileage logged since 2 May 2026. Distance-based
+   **60 days** old (the owner's setting, default 60; decided 2026-10-01): "No mileage logged since 2 May 2026. Distance-based
    services can't be projected." The action is *Add reading*.
 5. **Trips exceed mileage** (Phase 22, `trips` on): the split's notice for
    the current tax year, linking to the Trips tab.
 6. **Stale valuation:** the vehicle has valuations, is not sold, and the
-   latest is over 12 months old (§7.1's hint), linking to *Add valuation*.
+   latest is over 12 months old (the owner's setting, default 12, which
+   §7.1's hint then follows too; decided 2026-10-01), linking to *Add
+   valuation*.
 
 **Hiding.** *Check* items 2, 4 and 6 have *Hide*. It is a POST with CSRF
 that stores a row keyed by the item's kind and subject, with a
@@ -113,17 +123,24 @@ dismiss due work.
 - **Garage cards and the fleet widget's tiles:** beside "N due", a
   "Needs attention" marker (icon and text, with the count in its
   accessible label) when the vehicle has any item.
-- Not in History, print, the sale pack, notifications or the API in this
-  phase.
+- **Monthly digest** (§7.11, decided 2026-10-01): after the due
+  reminders, a *Needs attention* section listing the recipient's *Check*
+  items on the vehicles they receive reminders for, as they would see them
+  (their access, their hidden items). A month with checks but nothing due
+  still sends a digest. *Now* items are not repeated there: they are the
+  digest's due reminders already.
+- Not in History, print, the sale pack, other notifications or the API in
+  this phase.
 
 **Access** (Phase 19): users see the items of vehicles they can view.
 *Check* items and *Hide* appear only to users who could fix them
 (`Manage`, or `Log` for an item about their own entry). Hidden items are
 per user.
 
-**Cost:** the overview computes one vehicle's items. The widget computes
-each visible vehicle's with the per-request memoisation that *Coming up*
-and the fuel services already use. No item runs a query per row.
+**Cost:** the overview computes one vehicle's items. The dashboard
+computes every visible vehicle's in one pass (*Coming up* loads them
+together), shared by the widget and the fleet tiles. Each source is loaded
+once per vehicle; no item runs a query per row.
 
 ### §6 Data model
 
@@ -144,9 +161,24 @@ subject_id)` is unique. It is in backups.
   honours dismissals when reminders are on. Dismissing stays in one place.
 - **Economy flags are one item.** A cold week can flag three tanks. One
   line with a count, linking to the check view, beats three.
-- **The stale-mileage threshold of 60 days** applies only where projections
-  need readings. A garaged classic with no distance-based schedule is never
-  nagged.
+- **The stale-mileage threshold** (default 60 days) applies only where
+  projections need readings. A garaged classic with no distance-based
+  schedule is never nagged.
+- **Thresholds are the owner's settings** (decided 2026-10-01): *Mileage
+  not updated after* (days, 7–365, default 60) and *Valuation is stale
+  after* (months, 1–60, default 12), on Settings → Reminders in a *Needs
+  attention* card that shows with `reminders` off too. Stored as their own
+  user setting (`attention.thresholds`). As with lead times (Phase 19), a
+  shared vehicle is judged by its owner's thresholds and today, whoever
+  looks. The §7.1 stale-value hint reads the same setting, so the
+  Ownership card and the list never disagree. The economy bands and the
+  2,000 km a day rule stay fixed (log #17).
+- **Data checks go in the digest** (decided 2026-10-01), not in a
+  notification of their own. The digest is already monthly and already
+  opt-in, so this adds no new noise. Its webhook payload gains an
+  `attention` list beside `items`, which keeps its shape.
+- **Due-soon work stays out** (decided 2026-10-01): the list is what is
+  wrong now. *Coming up* and the reminders cover what is due soon.
 - **Hiding uses fingerprints.** A hidden check reappears if the data it
   judged changes, so hiding never buries a new problem.
 
@@ -163,6 +195,17 @@ subject_id)` is unique. It is in backups.
 ### Migration
 - [ ] `attention_hidden`. Every engine, reversible; moves the schema
       version; backups include it.
+
+### Settings
+- [ ] `AttentionThresholds` and its store; the *Needs attention* card on
+      Settings → Reminders (with and without the `reminders` module);
+      `Depreciation`'s stale hint follows the owner's setting.
+
+### Digest
+- [ ] `ReminderNotifier::sendDigest` adds the recipient's *Check* items;
+      a month with checks and nothing due still sends; the composer's
+      section (en, de); the webhook's `attention` list; the digest hint
+      on Settings → Reminders.
 
 ### Services
 - [ ] `Domain\Attention\AttentionItem` (kind, severity `now` | `check`,
@@ -196,7 +239,11 @@ subject_id)` is unique. It is in backups.
       per user.
 - [ ] Stale mileage: not raised without distance-based schedules or wear
       estimates; raised at 61 days and not at 59, counted in the owner's
-      time zone.
+      time zone; follows the owner's setting (and so does the valuation
+      check, and the overview's stale-value hint).
+- [ ] Digest: checks listed after the due reminders; sent with checks and
+      nothing due; nothing sent with neither; a View recipient gets no
+      checks; hidden items left out; the webhook's `attention` list.
 - [ ] Order: *Now* before *Check*, oldest overdue first; the overview shows
       five and *Show all*; the widget follows the chip and shows "Nothing
       needs attention" when empty.
@@ -238,7 +285,12 @@ subject_id)` is unique. It is in backups.
 - **Due items as well as overdue?** This draft keeps due-soon work in
   *Coming up* and reminders. Should items within their lead time also
   appear, under *Now*?
+  *Decided 2026-10-01: no, overdue only (drafted).*
 - **The monthly digest:** add a short "Needs attention" section listing
   *Check* items, so data problems reach owners who rarely open the app?
+  *Decided 2026-10-01: yes, in this phase. A month with checks and nothing
+  due still sends a digest. See* Decisions.
 - **Thresholds:** 60 days for stale mileage and 12 months for valuations as
   constants (drafted), or user settings?
+  *Decided 2026-10-01: user settings, the vehicle owner's, defaulting to
+  60 days and 12 months. See* Decisions.

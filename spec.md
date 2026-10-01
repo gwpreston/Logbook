@@ -654,8 +654,20 @@ MySQL only.
   created_at, last_used_at (optional; updated at most once a minute),
   revoked_at (optional), all UTC. Index on user_id. In backups (§7.20).
 
+**AttentionHidden** (Phase 24, §7.24)
+- id, user_id (`ON DELETE CASCADE`), vehicle_id (`ON DELETE CASCADE`),
+  kind (`reading` | `mileage_stale` | `valuation_stale`), subject_id (the
+  reading's id for `reading`, else the vehicle's), fingerprint (SHA-256
+  hex of the state that was judged), hidden_at (UTC). `(user_id, kind,
+  subject_id)` is unique: hiding again replaces the row. In backups and in
+  `bin/export-user.php`'s file.
+
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
+  User-scoped keys include `reminders` (lead times), `notifications`,
+  `tyres.thresholds`, `dashboard.layout` and, from Phase 24,
+  `attention.thresholds` (`{"mileage_days": 60, "valuation_months": 12}`,
+  §7.24).
 
 ---
 
@@ -671,6 +683,9 @@ from fleet totals unless "include archived" is toggled.
   badge on the photo's top-right corner reads "N due" — the vehicle's open
   reminders that are *overdue* or *due* (§7.6) — red when any is overdue,
   amber otherwise, hidden at zero (and while the reminders module is off).
+  Beside it, a *Needs attention* marker (Phase 24, §7.24: an icon and the
+  words, with the count in its accessible label and `title`, "Needs
+  attention: 2 items") when the vehicle has any item for the viewer.
   Below a hairline divider, a footer with the current odometer (owner's
   distance unit) and the average economy over every full-to-full segment
   (owner's consumption unit; kWh efficiency for an EV; "—" until a
@@ -842,7 +857,9 @@ from fleet totals unless "include archived" is toggled.
     figure is left out. For a gain neither is shown (a per-mile appreciation
     means nothing).
   - **Stale value:** when the vehicle is not sold and its latest valuation
-    is more than 12 months old: "Valued 14 months ago; add a new valuation
+    is more than 12 months old (from Phase 24, the vehicle owner's
+    *Valuation is stale after* setting, default 12 months, §7.24, so the
+    hint and the *Needs attention* item always agree): "Valued 14 months ago; add a new valuation
     for an up-to-date figure." The figures still show.
   - **Nothing is extrapolated or fetched.** There is no depreciation curve
     ("about 15% a year"): a value is something someone quoted, never
@@ -1609,13 +1626,19 @@ toggles.
   JSON in `settings` (scope user, key `dashboard.layout`). Unknown widget
   ids are dropped and widgets added in later releases are appended, so an old
   saved layout never breaks. Without a saved layout (and without JS) the
-  default order applies: upcoming reminders, coming up, spend this month,
-  recent fuel, your vehicles, efficiency trend, compliance status, mileage,
-  recent activity.
+  default order applies: needs attention (Phase 24), upcoming reminders,
+  coming up, spend this month, recent fuel, your vehicles, efficiency
+  trend, compliance status, mileage, recent activity, business mileage.
 - **Coming up** (id `coming_up`, Phase 15; core): the next five items of
   the 12-month forecast (§7.18) across the vehicle filter, overdue first,
   and the 12-month total per currency; *View all* → `/upcoming`, keeping
   `?vehicle=`. Appended to saved layouts by the rule above.
+- **Needs attention** (id `needs_attention`, Phase 24; core; first in the
+  default order, appended to saved layouts by the rule above): the items
+  of §7.24 across the vehicle filter, each naming its vehicle, *Now* items
+  first, then *Check*, up to eight. With none: "Nothing needs attention"
+  (the widget keeps its place). The *your vehicles* tiles carry the
+  garage cards' *Needs attention* marker (§7.1).
 - **Customise** (`/?customise=1`, also a button): each widget gets move up /
   move down / hide-show buttons — plain forms, so arranging works without JS
   and from the keyboard — plus "reset layout". With JS, widgets can also be
@@ -2011,10 +2034,19 @@ Extensible channel interface so more can be added.
   before 2.1.0, and users restored from an older backup, keep what they
   had and nobody starts getting a digest they didn't choose. No migration.
   The card's hint says it is sent only when a channel is set up and
-  something is due):
+  something is due or needs attention):
   on the first run of each
   month in the user's time zone, covering their recipient vehicles, one summary of every open reminder due by the end
-  of that month, overdue ones included. Nothing is sent when nothing is due.
+  of that month, overdue ones included, then (Phase 24) a *Needs
+  attention* section with the user's *Check* items (§7.24) on the same
+  vehicles: the ones they would see, so none for a View share, only their
+  own entries' for a Log share, and never one they have hidden. *Now*
+  items are not repeated: they are the due reminders. Nothing is sent when
+  nothing is due and nothing needs attention; a month with checks and
+  nothing due still sends, with a line saying nothing is due. The webhook's
+  JSON gains an `attention` list (`vehicle_id`, `vehicle`, `kind`,
+  `title`) beside `items`, which is unchanged; other channels get the
+  section as text.
 - **Content** is translated into the recipient's language and formatted in their
   units and time zone, and links to the reminder list (absolute URL from
   `APP_URL` and `APP_BASE_PATH`).
@@ -3272,6 +3304,102 @@ public sign-up, self-service password reset by email.
     header row in the user's language. The file name is
     `mileage-claim-<tax year>.csv`.
 
+### 7.24 Needs attention (Phase 24)
+What is wrong right now, on one short list, with the fix one tap away.
+Deliberately **not a health score**: no score, grade, percentage or
+traffic-light rating of a vehicle anywhere. The list is facts the app
+already computes, in a fixed order, and it disappears when nothing is
+wrong.
+
+- **Derived on every read** (`Service\Attention\AttentionList`) from the
+  services that own each fact, never stored, apart from each user's hidden
+  items. Active vehicles only; archived ones raise nothing. The list is
+  core; a switched-off module's items leave it.
+- **Items**, in this order:
+  - *Now* — work or paperwork that is **overdue** (due-soon work stays in
+    *Coming up* and the reminders):
+    1. **Overdue items:** *Coming up*'s *Overdue* group for the vehicle
+       (§7.18): schedules past a limit, documents past expiry, tyres past a
+       wear or age limit, manual reminders past their date (reminders on)
+       and the first MOT. Read from the sources, so the list works with the
+       `reminders` module off. With reminders on, the reminders are brought
+       up to date first (§7.6 *Sync*), and an item whose current reminder
+       is dismissed or done is left out (a tyre reminder covers all the
+       vehicle's overdue tyre items). Titled with each source's own words
+       and the *Coming up* wording ("MOT · expired 3 days ago", "Annual
+       service · overdue at 48,000 mi"), oldest first. Actions: *Log it*
+       (`Log`; the entry form for that work, prefilled: a service record
+       for the schedule, a renewal of the document's type, *Fit tyres*, a
+       new MOT certificate for the first MOT) or, for a manual reminder,
+       *Done*; and *Dismiss* (`Log`, reminders on).
+  - *Check* — the data looks wrong, so figures built on it may be too:
+    2. **Implausible readings:** each reading the Mileage tab flags (§7.2:
+       backwards, or over 2,000 km a day), one item each: "Reading on 12
+       Aug 2026 (48,120 mi) is lower than the one before". *Fix* opens the
+       reading's edit form, which sends a derived reading to its entry.
+    3. **Economy flags:** the fill-ups the economy check flags and that are
+       not confirmed (§7.3), as **one** item per vehicle: "3 fill-ups look
+       unusual", linking to the Fuel tab's `?check=1`, where *Looks right*
+       confirms them as before.
+    4. **Mileage not updated:** the vehicle has a distance-based schedule
+       (maintenance on) or a fitted tyre with a wear estimate (tyres on),
+       and its latest reading is more than the owner's *Mileage not
+       updated after* days old (default 60), counted in the owner's time
+       zone: "No mileage logged since 2 May 2026. Distance-based services
+       can't be projected." A vehicle with no reading at all raises it too
+       ("No mileage logged yet"). *Add reading*.
+    5. **Trips exceed mileage** (`trips` on): the Mileage tab's notice for
+       the current tax year (§7.22), linking to the Mileage tab. No *Hide*:
+       fix the readings or the trips.
+    6. **Stale valuation:** the vehicle has valuations, is not sold, and the
+       latest is older than the owner's *Valuation is stale after* months
+       (default 12; the same rule as §7.1's hint). *Add valuation*
+       (`Manage`).
+- **Thresholds** (Settings → Reminders, a *Needs attention* card shown
+  with or without the `reminders` module): *Mileage not updated after*
+  (days, 7–365, default 60) and *Valuation is stale after* (months, 1–60,
+  default 12), stored as the user setting `attention.thresholds`. A
+  vehicle is judged by its **owner's** thresholds and today, whoever looks
+  (as lead times, §7.6). The economy bands and the 2,000 km a day rule are
+  fixed (§7.2, §7.3).
+- **Hiding.** Items 2, 4 and 6 have *Hide*: `POST
+  /vehicles/{id}/attention/hide` with CSRF, the item's kind, subject and
+  the fingerprint the page showed. The server recomputes the item and
+  stores a row (§6 AttentionHidden) only when it is still shown to this
+  user, hideable, and its fingerprint matches, so a click never hides a
+  state the user did not see; then it returns where it came from (in and
+  out of modals). The **fingerprint** is a SHA-256 of what was judged: for
+  a reading, its id, value and time and those of the reading before it
+  and after it; for stale mileage, the latest reading's id, value and time
+  (none: "none"); for a stale valuation, the latest valuation's id, date
+  and amount. The item stays hidden only while the fingerprint matches,
+  so an edit to the reading or its neighbours, a new reading or a new
+  valuation brings it back. Hidden items are per user. Item 3 uses *Looks
+  right*; item 5 has no *Hide*; *Now* items are dismissed through their
+  reminder, never hidden here, so there is one place to dismiss due work.
+- **Where it shows:**
+  - **Overview:** a *Needs attention* card first, above every other card,
+    showing up to five items, the rest behind *Show all (8)* (a
+    `<details>`, working without JS). Hidden entirely when there are no
+    items.
+  - **Dashboard** widget `needs_attention` (§7.8), and a marker on the
+    garage cards (§7.1) and the *your vehicles* tiles.
+  - **Monthly digest** (§7.11): the *Check* items.
+  - Each item has an icon, its *Now* or *Check* label as text (never
+    colour alone), the title and its action links.
+  - Not in History, print, the sale pack, other notifications or the API.
+- **Access** (Phase 19): users see the items of vehicles they can view.
+  *Check* items, and *Hide*, appear only to users who could fix them:
+  `Manage`, or `Log` for a reading they added by hand or an economy flag on
+  a fill-up they added (a derived reading's author is its entry's). Stale
+  mileage needs `Log`, a stale valuation `Manage`, trips exceeding mileage
+  `Log`. *Now* items are shown to everyone who can view; their actions
+  follow the actions' own abilities.
+- **Cost:** the overview computes one vehicle's items. The dashboard
+  computes every visible vehicle's in one pass, shared by the widget and
+  the tiles (*Coming up* loads them together). Each source is loaded once
+  per vehicle; no item runs a query per reading or fill-up.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -3700,6 +3828,15 @@ task breakdowns live in the per-phase files; this is the map.
   header; refuse to start when half-configured; deployment guides for
   nginx, Traefik, Caddy and the Authentik outpost (§7.9, §9). No
   migration. Releases v2.3.0 with Phase 23.1.
+- **Phase 24 — Needs attention + v2.4 release.** One list of what is
+  wrong now (§7.24): overdue work from *Coming up*, implausible readings,
+  unconfirmed economy flags, mileage not updated, trips exceeding mileage
+  and stale valuations, in a fixed order; an overview card, a dashboard
+  widget and a garage marker (§7.1, §7.8); data checks hidden by
+  fingerprint until their data changes (§6 AttentionHidden); the two
+  staleness thresholds as the owner's settings; a *Needs attention*
+  section in the monthly digest (§7.11). Not a score. One migration;
+  release v2.4.0.
 
 ---
 
