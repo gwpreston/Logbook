@@ -3380,8 +3380,8 @@ wrong.
          from being flagged against a summer baseline. Without it the item
          says so: "This may include the time of year: there's no data for
          these months last year." An improvement is never flagged.
-       - **Title** in the owner's unit, with the percentage worked out from
-         the two figures shown (so it reads right in mpg too, and may
+       - **Title** in the viewer's unit, with the percentage worked out
+         from the two figures shown (so it reads right in mpg too, and may
          round below the threshold): "Economy is about 15% worse over the
          last 5 tanks than your 12-month average (38.2 against 45.1 mpg)";
          "charges" for electricity.

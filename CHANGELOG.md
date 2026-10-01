@@ -6,6 +6,40 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.5.0] — 2026-10-01
+
+Phase 25: **trend and cost checks**. *Needs attention* now spots a car
+getting slowly thirstier, and a price or a service cost typed with a digit
+too many. They are plain statistics on your own entries: no AI, no
+network, and no figure is changed by them.
+
+### Added
+- **Economy drift:** the last five tanks (or charges) at least 10% worse
+  than your 12-month average, judged per series, so a plug-in hybrid's
+  fuel and electricity are apart (electricity at 15%, since it swings more
+  with the weather). Once a year of data exists, the same months a year
+  earlier must be worse too, so a normal winter raises nothing; before
+  that the item says it may be the time of year. It lists the likely
+  causes Logbook can see: a grade switch, new tyres, winter, an overdue
+  service, shorter tanks than usual.
+- **Fuel price outliers:** a fill-up more than 35% above or below what you
+  paid for the same grade within 30 days (home and rapid charging apart;
+  your other vehicles in the same currency when this one has too few).
+  A free fill-up or charge is never flagged. Ten times or a tenth of the
+  usual asks "an extra or missing digit?".
+- **Maintenance cost outliers:** a record from the last 12 months more
+  than 3× the category's earlier median and at least 100 above it.
+- *Fix* opens the fill-up or record; *Looks right* (or *Hide* on a drift)
+  keeps it hidden until it changes, or until the next tank for a drift.
+- Five more thresholds on Settings → Reminders, *Needs attention* card,
+  the vehicle owner's: drift (liquid and electricity), price, cost
+  multiple and cost floor.
+- The monthly digest and its webhook include the new checks.
+
+### Upgrade notes
+- No migration and no configuration. Thresholds saved before 2.5.0 keep
+  their values; the new ones start at their defaults.
+
 ## [2.4.0] — 2026-10-01
 
 Phase 24: **Needs attention**, one short list of what is wrong right now,
@@ -1375,7 +1409,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/gwpreston16/Logbook/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/gwpreston16/Logbook/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/gwpreston16/Logbook/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/gwpreston16/Logbook/compare/v2.1.0...v2.2.0

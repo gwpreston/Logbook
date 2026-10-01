@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.4.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.5.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -32,7 +32,9 @@ your own server.
 > tyres and reminders, each at what it cost last time, plus a fuel
 > estimate); a *Needs attention* list on each vehicle and the dashboard of
 > what is wrong right now (overdue work, readings or fill-ups that look
-> wrong, mileage or a valuation gone stale), each with its fix, and never
+> wrong, mileage or a valuation gone stale, economy slowly getting worse
+> over the last few tanks, a price or a service cost with a digit too
+> many), each with its fix and the likely causes Logbook can see, and never
 > a score; business trips and mileage claims (switched on when you need
 > them: private mileage worked out from the odometer, HMRC's approved rates
 > for UK users or your own, a printable claim with employer payments, and

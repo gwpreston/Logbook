@@ -142,3 +142,6 @@ the shipped channels are exercised with recorded transports in
   due still sends a digest. The webhook's JSON carries them as an
   `attention` list (`vehicle_id`, `vehicle`, `kind`, `title`) beside
   `items`, which keeps its shape; for other events the list is empty.
+- From 2.5.0 those checks include economy drift (`drift_liquid`,
+  `drift_electric`), fuel price outliers (`fuel_price`) and maintenance
+  cost outliers (`maintenance_cost`), each as one line with its title.
