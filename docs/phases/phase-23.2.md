@@ -2,7 +2,7 @@
 
 *When Authelia or Authentik already guards the door, don't ask twice.*
 
-Status: 🚧 in progress (built and tested; real Authelia and Authentik not yet checked by hand) · releases **v2.3.0** with Phase 23.1 · file lives in
+Status: ✅ complete · released as **v2.3.0** together with Phase 23.1 · file lives in
 `docs/phases/`
 
 Many self-hosters put every app behind a forward-auth proxy: Authelia with
@@ -222,11 +222,11 @@ this section is the draft it came from.
 - [x] Bump `VERSION`, rebuild assets, update the README (status, the
       documentation table gains `docs/sso.md`). *(Assets rebuilt: nothing
       changed, as this phase adds no CSS or JS.)*
-- [ ] Phase 23.1's manual check against real Authentik and Authelia, and
+- [x] Phase 23.1's manual check against real Authentik and Authelia, and
       the same for header sign-in (an Authelia forward-auth stack and an
       Authentik outpost, including its `X-authentik-jwt`), before tagging
-      `v2.3.0`.
-- [ ] Tag `v2.3.0` once merged.
+      `v2.3.0`. *(Checked by the owner, 2026-10-01.)*
+- [x] Tag `v2.3.0` once merged.
 
 ---
 

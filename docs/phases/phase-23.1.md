@@ -2,7 +2,7 @@
 
 *Sign in with the Authelia, Authentik or Keycloak you already run.*
 
-Status: 🚧 in progress (built and tested; Authentik and Authelia not yet checked by hand) · ships with Phase 23.2 as **v2.3.0** · file lives in
+Status: ✅ complete · released as **v2.3.0** together with Phase 23.2 · file lives in
 `docs/phases/`
 
 Self-hosters often run an identity provider already. This phase lets
@@ -224,7 +224,7 @@ none until they set one, and cannot sign in locally until then.
       local sign-out only.
 - [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL,
       MariaDB: 1603 tests each, 2026-10-01).
-- [ ] **Manual interop check** (in the PR): against real Authelia,
+- [x] **Manual interop check** (in the PR): against real Authelia,
       Authentik and Keycloak containers, with the `docker-compose` examples
       kept in `docker/sso/`.
       *Keycloak 26.4 checked 2026-10-01 (`docker/sso/keycloak`): link, sign
@@ -232,8 +232,8 @@ none until they set one, and cannot sign in locally until then.
       unlinked account refused, sign-out at Keycloak back to sign-in;
       then in Chrome: *Link* (a POST answered by the redirect to Keycloak),
       *Sign in with Keycloak*, and *Sign out* ending the Keycloak session.
-      Authentik and Authelia are still to be checked before the v2.3.0
-      release (Phase 23.2).*
+      Authentik and Authelia checked by the owner before the v2.3.0
+      release, 2026-10-01.*
 
 ---
 

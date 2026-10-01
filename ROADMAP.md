@@ -51,8 +51,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [21.1](docs/phases/phase-21.1.md) | Tyre modals, drag-and-drop files, digest on by default, sale pack cover | ✅ |
 | [21.2](docs/phases/phase-21.2.md) | First MOT due + v2.1 release | ✅ |
 | [22](docs/phases/phase-22.md) | Trips and business mileage claims + v2.2 release | ✅ |
-| [23.1](docs/phases/phase-23.1.md) | Single sign-on with OpenID Connect | 🚧 |
-| [23.2](docs/phases/phase-23.2.md) | Reverse-proxy header sign-in + v2.3 release | 🚧 |
+| [23.1](docs/phases/phase-23.1.md) | Single sign-on with OpenID Connect | ✅ |
+| [23.2](docs/phases/phase-23.2.md) | Reverse-proxy header sign-in + v2.3 release | ✅ |
 | [24](docs/phases/phase-24.md) | Needs attention + v2.4 release | 📋 |
 | [25](docs/phases/phase-25.md) | Trend and cost checks + v2.5 release | 📋 |
 | [26.1](docs/phases/phase-26.1.md) | AI foundation: connections, models and task routing | 📋 |
