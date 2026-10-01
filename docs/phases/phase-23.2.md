@@ -206,7 +206,7 @@ this section is the draft it came from.
 - [x] Sign-out with and without `AUTH_PROXY_LOGOUT_URL`.
 - [x] Works under `APP_BASE_PATH`.
 - [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL,
-      MariaDB: 1691 tests each, 2026-10-01).
+      MariaDB: 1693 tests each, 2026-10-01).
 - [x] **Smoke test:** `bin/smoke-test.sh` gains a header-auth run behind the
       nginx example, with the header sent by nginx only.
       *`bin/smoke-test.sh header` (and in CI): `docker/nginx/forward-auth-example.conf`
