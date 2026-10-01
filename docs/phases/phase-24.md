@@ -2,7 +2,7 @@
 
 *What is wrong right now, on one short list, with the fix one tap away.*
 
-Status: ✅ complete · releases **v2.4.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.4.0** · file lives in `docs/phases/`
 
 Logbook already knows when something is wrong: an overdue service, an
 expired MOT, tyres past their limit, a mistyped odometer, a fill-up that
@@ -356,4 +356,6 @@ subject_id)` is unique. It is in backups.
   `tests/Support/QueryCounter.php`) and unit tests for the rule, the
   fingerprints and the settings.
 - **Checked in Chrome** on the demo data: the dashboard widget, the
-  overview card and the garage markers.
+  overview card and the garage markers, at desktop width and at 390 px.
+  The suite passes on SQLite, PostgreSQL, MySQL and MariaDB
+  (`bin/test-all-dbs.sh`, with migrate, full rollback and migrate first).
