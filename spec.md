@@ -87,8 +87,8 @@ disagree):
 - Front controller (`public/index.php`) → Slim app → middleware stack → Action.
 - **Middleware order (outer→inner):** error handling → base-path → session →
   current user → locale + display preferences → routing → per route group:
-  auth guard → CSRF → vehicle access → instance access (see *Access
-  policy*). The session is global but lazy (no cookie or database
+  header sign-in (§7.9, page groups only) → auth guard → CSRF → vehicle
+  access → instance access (see *Access policy*). The session is global but lazy (no cookie or database
   row until something is stored in it). CSRF and the auth guard sit on route
   groups rather than globally so machine endpoints such as `/health` never
   create sessions; every HTML route is inside a CSRF-protected group.
@@ -1874,8 +1874,10 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
     with a header for an unlinked proxy account (#55), so mixed access
     (LAN direct, internet through the proxy) works; only a header that
     resolves to **another** user replaces it.
-  A sign-in on a POST answers as a stale form would (the CSRF token
-  rotated), never as a change.
+  Whenever the session changes the answer is a redirect, to the same
+  page for a GET and home otherwise, so the next request is built for the
+  new user from the start and a post that brought a change is never
+  applied.
 - **Sign-in page:** with header sign-in on and the request from a trusted
   proxy without the header, it says "Your sign-in proxy didn't send a
   user. Check its configuration", besides the usual methods. A header for

@@ -1,0 +1,21 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Sign-out of a header-based session without AUTH_PROXY_LOGOUT_URL (spec.md
+ # §7.9 *Sign-out*): the next request would sign straight back in, so say so
+ # here instead of redirecting into it.
+ #}
+{% block title %}{{ 'proxy.signed_out_title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="auth">
+        <section class="card auth__card" aria-labelledby="signed-out-heading" data-proxy-signed-out>
+            <header class="auth__header">
+                <h1 id="signed-out-heading">{{ 'proxy.signed_out_title'|trans }}</h1>
+                <p class="muted">{{ 'proxy.signed_out_lead'|trans }}</p>
+            </header>
+            <a class="btn btn--soft btn--lg btn--block" href="{{ url_for('home') }}">{{ ui.icon('login') }}{{ 'proxy.signed_out_back'|trans }}</a>
+        </section>
+    </div>
+{% endblock %}

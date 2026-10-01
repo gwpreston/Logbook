@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Domain\User\User;
 use Logbook\Domain\User\UserIdentity;
 use Logbook\Service\Auth\SignInMethods;
 use Logbook\Service\User\ProfileForm;
@@ -71,16 +72,37 @@ final readonly class SettingsPage
             // Single sign-on (spec.md §7.9 *Linking*) and whether a password is any use.
             'local_login' => $this->settings->localLogin,
             'has_password' => $user->hasPassword(),
-            'sso' => $this->settings->oidc->isConfigured() ? [
-                'name' => $this->settings->oidc->providerName,
-                'identities' => array_map(
-                    fn (UserIdentity $identity): array => [
-                        'identity' => $identity,
-                        'can_remove' => $this->methods->canRemove($user, $identity),
-                    ],
-                    $this->methods->identities($user),
-                ),
-            ] : null,
+            'sso' => $this->signInCard($user),
         ], $status);
+    }
+
+    /**
+     * The *Single sign-on* card: linked OIDC and proxy accounts, and *Link*
+     * while OIDC is configured and none is linked; null when there is
+     * nothing to show.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function signInCard(User $user): ?array
+    {
+        $identities = $this->methods->identities($user);
+        $oidc = $this->settings->oidc->isConfigured();
+        if (!$oidc && $identities === []) {
+            return null;
+        }
+        $providers = array_map(static fn (UserIdentity $identity): string => $identity->provider, $identities);
+        $hasOidc = in_array(UserIdentity::OIDC, $providers, true);
+
+        return [
+            'name' => $this->settings->oidc->providerName,
+            'can_link_oidc' => $oidc && !$hasOidc,
+            'identities' => array_map(
+                fn (UserIdentity $identity): array => [
+                    'identity' => $identity,
+                    'can_remove' => $this->methods->canRemove($user, $identity),
+                ],
+                $identities,
+            ),
+        ];
     }
 }

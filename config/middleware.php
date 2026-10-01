@@ -23,8 +23,8 @@ use Slim\Middleware\ErrorMiddleware;
  *   API CORS (API paths only) → error handling → base path → session
  *   → current user → locale + display preferences → modal redirects
  *   → routing → body parsing
- *   → [route groups, config/routes.php: auth guard → CSRF → vehicle access
- *      → instance access → module gate] → Action
+ *   → [route groups, config/routes.php: header sign-in → auth guard → CSRF
+ *      → vehicle access → instance access → module gate] → Action
  *   → [the API group: problem details → API key → vehicle access
  *      → module gate] → Action
  */

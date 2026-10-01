@@ -54,8 +54,8 @@ final readonly class Redirector
     }
 
     /**
-     * To the identity provider (spec.md §7.9): an URL from its discovery
-     * document, never from the request.
+     * To the identity provider or sign-in proxy (spec.md §7.9): a URL from
+     * its discovery document or from configuration, never from the request.
      */
     public function external(string $url): ResponseInterface
     {

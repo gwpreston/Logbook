@@ -51,6 +51,8 @@ final readonly class AppSettings
         public OidcConfig $oidc = new OidcConfig(),
         /** Password sign-in (`AUTH_LOCAL_LOGIN`); setup and break-glass links work either way. */
         public bool $localLogin = true,
+        /** Header sign-in behind a forward-auth proxy (spec.md §7.9, Phase 23.2). */
+        public ProxyAuthConfig $proxy = new ProxyAuthConfig(),
     ) {
     }
 
@@ -93,6 +95,7 @@ final readonly class AppSettings
             apiCorsOrigins: self::origins($env->string('API_CORS_ORIGINS')),
             oidc: OidcConfig::fromEnv($env),
             localLogin: $env->bool('AUTH_LOCAL_LOGIN', true),
+            proxy: ProxyAuthConfig::fromEnv($env),
         );
     }
 
