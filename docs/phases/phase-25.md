@@ -2,7 +2,7 @@
 
 *Spot a car getting thirstier, or a price typed wrong, without any AI.*
 
-Status: 📋 planned · releases **v2.5.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.5.0** · file lives in `docs/phases/`
 
 The economy check (Phase 13) flags **one** tank that is far from the usual.
 It cannot see a slow drift: five tanks each a little worse, together 15%
@@ -118,9 +118,16 @@ first.
 > - **Link:** the record's edit form. **Hide:** the fingerprint is the
 >   record's cost and category.
 >
-> Thresholds are constants on each check's service, not settings (see
+> Thresholds were drafted as constants; the owner chose settings (see
 > *Open questions*). Every check follows the module toggles (`fuel`,
 > `maintenance`) and the access rules of §7.24.
+>
+> *As decided on 2026-10-01, spec.md §7.24 is the source of truth and
+> differs from this draft in: the thresholds are the owner's settings;
+> electricity drift defaults to 15%; a price of 0 is never flagged for
+> any fuel and never counted in the median; the drift title's percentage
+> is worked out in the unit shown; the cost floor is 100 in the vehicle's
+> currency's major unit; access follows the existing items.*
 
 ---
 
@@ -152,9 +159,17 @@ first.
       from Phase 8, tyre changes from Phase 11.1, overdue from *Coming up*,
       segment length).
 - [ ] `Service\Attention\PriceOutlier` and `Service\Attention\CostOutlier`.
-- [ ] Register the three kinds with `AttentionList`, with fingerprints and
-      *Hide* (Phase 24's `attention_hidden`; add the kinds to its enum).
-- [ ] No new tables. No migration unless the enum is stored as a DB enum.
+- [ ] Register the kinds with `AttentionList` (`drift_liquid`,
+      `drift_electric`, `fuel_price`, `maintenance_cost`: two drift kinds
+      because a plug-in hybrid can raise both and `attention_hidden` is
+      unique per kind and subject), with fingerprints and *Hide*.
+- [ ] No new tables and no migration: `attention_hidden.kind` is a string.
+
+### Settings
+- [ ] Five more fields on the *Needs attention* card (Settings →
+      Reminders), stored in `attention.thresholds`: drift % (liquid,
+      electricity), price %, cost multiple and cost floor. Blank saves the
+      default; a row missing a key reads its default.
 
 ### Templates, translations
 - [ ] Titles and cause sentences in English and German, with ICU plurals,
@@ -174,8 +189,13 @@ first.
       charges never flagged; the fingerprint changes on edit.
 - [ ] **Cost:** 3× and at least 100 above flagged; a cheap category never
       flagged under the absolute floor; fewer than 3 earlier records
-      skipped; other currencies skipped; only the last 12 months raised.
+      skipped; only the last 12 months raised. (A record has no currency
+      of its own, so there are no other currencies to skip; the price
+      fallback skips other-currency vehicles instead.)
 - [ ] Module toggles and access rules as §7.24.
+- [ ] The owner's thresholds apply whoever looks; out-of-range values fall
+      back to the defaults; changing a threshold changes the verdict.
+- [ ] Free fill-ups (price 0) never flagged and never in the median.
 - [ ] Query count bounded for the dashboard.
 - [ ] Integration suite green on every engine.
 
@@ -205,5 +225,24 @@ first.
 
 - **Thresholds** (10%, 35%, 3× and 100) as constants (drafted), or
   settings?
+  *Decided 2026-10-01: the owner's settings, on the* Needs attention
+  *card with Phase 24's two, defaulting to the drafted values.*
 - **Electricity drift:** EV efficiency swings more with temperature than
   liquid fuel does. Use a wider threshold (15%) for the electricity series?
+  *Decided 2026-10-01: yes, 15% by default (its own setting).*
+
+Found while starting it:
+
+- **Access:** who sees the new items and *Hide*?
+  *Decided 2026-10-01: as the existing items. Drift needs `Log`; a price
+  or cost outlier `Manage`, or `Log` for an entry they added.*
+- **Cost floor without exchange rates:** what is "the currency
+  equivalent of 100"?
+  *Decided 2026-10-01: 100 in the vehicle's currency's major unit.*
+- **Zero price:** only free charges were exempt, so a free liquid
+  fill-up would be flagged as a missing digit.
+  *Decided 2026-10-01: a price of 0 is never flagged and never counted,
+  for every fuel.*
+- **The drift title's percentage:** consumption change, or the change in
+  the unit shown (they differ in mpg)?
+  *Decided 2026-10-01: worked out from the two figures shown.*

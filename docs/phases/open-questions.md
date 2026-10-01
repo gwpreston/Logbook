@@ -24,7 +24,8 @@ question found while building (#48) and Phase 23.1's (#49–#51) were
 answered on 2026-10-01, before Phase 23.1 started, and Phase 23.2's
 (#52–#55, two of them found while starting it) on the same day, before
 Phase 23.2 started. Phase 24's (#56–#58) were answered on 2026-10-01,
-before it started.
+before it started, and Phase 25's (#59–#64, four of them found while
+starting it) on the same day, before Phase 25 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -40,12 +41,12 @@ before it started.
 | 10 | [11.1](phase-11.1.md) | CSV import of tyre history | Answered | spec §7.17: "There is no tyre import." Export only. | 2026-09-30 |
 | 11 | [11.2](phase-11.2.md) | Region presets for tread thresholds | Answered | spec §7.17: "No region rules are built in." One set of defaults in `TyreThresholds`. | 2026-09-30 |
 | 12 | [11.2](phase-11.2.md) | Tread depth per zone (inner / centre / outer) | Parked | spec §12. Not built: one `tread_mm` per change line. | 2026-09-30 |
-| 13 | [11.2](phase-11.2.md) | Rotation suggestion when fronts wear faster | Parked | spec §12, with maintenance insights (#16, #18). | 2026-09-30 |
+| 13 | [11.2](phase-11.2.md) | Rotation suggestion when fronts wear faster | Parked | spec §12, maintenance insights. | 2026-09-30 |
 | 14 | [12](phase-12.md) | Remember the last print choice (*Show costs*)? | Decided | No: *Show costs* stays a per-print choice (`PrintOptions` reads `costs=1` only), so every print starts buyer-safe. | 2026-09-30 |
 | 15 | [12](phase-12.md) | A hint on filing the V5C as *Registration* vs the invoice under *Bought* | Answered | Built in [Phase 21.1](phase-21.1.md) §5: the purchase paperwork hint (spec §7.1; `VehiclePaperworkTest`). | 2026-09-30 |
-| 16 | [13](phase-13.md) | Seasonal baselines for economy checks | Parked | spec §12, with maintenance insights (#13, #18). | 2026-09-30 |
+| 16 | [13](phase-13.md) | Seasonal baselines for economy checks | Scheduled | [Phase 25](phase-25.md): economy drift compares with the same months a year earlier (spec §7.24 item 7). Was parked in spec §12. | 2026-10-01 |
 | 17 | [13](phase-13.md) | One *sensitivity* setting for economy checks | Answered | spec §7.3: "Not in scope: … thresholds as settings". The bands are a fixed constant in `EconomyCheck`. | 2026-09-30 |
-| 18 | [13](phase-13.md) | Detect a sudden, sustained change | Parked | spec §12, with maintenance insights (#13, #16). | 2026-09-30 |
+| 18 | [13](phase-13.md) | Detect a sudden, sustained change | Scheduled | [Phase 25](phase-25.md): economy drift, recent tanks against the 12-month baseline (spec §7.24 item 7). Was parked in spec §12. | 2026-10-01 |
 | 19 | [14.1](phase-14.1.md) | Insurer's agreed value as a valuation | Parked | spec §12. Until then, log it as a valuation with the source "Insurer". | 2026-09-30 |
 | 20 | [14.1](phase-14.1.md) | A valuation's mileage as context | Decided | No: valuations keep no mileage, so there is one mileage series. | 2026-09-30 |
 | 21 | [14.2](phase-14.2.md) | Dashboard tile or widget for cost of ownership | Parked | spec §12, pending a design pass for a fifth tile. | 2026-09-30 |
@@ -86,6 +87,12 @@ before it started.
 | 56 | [24](phase-24.md) | *Needs attention*: due-soon items as well as overdue? | Decided | No, overdue only; due-soon work stays in *Coming up* and the reminders (spec §7.24). | 2026-10-01 |
 | 57 | [24](phase-24.md) | A *Needs attention* section in the monthly digest? | Decided | Yes, built in this phase: the recipient's *Check* items after the due reminders; a month with checks and nothing due still sends (spec §7.11, §7.24). | 2026-10-01 |
 | 58 | [24](phase-24.md) | Stale mileage and valuation thresholds: constants or settings? | Decided | Built in this phase: user settings, the vehicle owner's: 60 days and 12 months by default, on Settings → Reminders; the §7.1 stale-value hint follows them (spec §7.1, §7.24). | 2026-10-01 |
+| 59 | [25](phase-25.md) | Trend and cost thresholds: constants or settings? | Decided | Settings, the vehicle owner's, on the *Needs attention* card: drift 10%, price 35%, cost 3× and 100 by default (spec §7.24). | 2026-10-01 |
+| 60 | [25](phase-25.md) | A wider drift threshold for electricity? | Decided | Yes, 15% by default, its own setting (spec §7.24). | 2026-10-01 |
+| 61 | [25](phase-25.md) | Access to the new checks? | Decided | As the existing items: drift `Log`; price and cost outliers `Manage`, or `Log` for an entry they added (spec §7.24). | 2026-10-01 |
+| 62 | [25](phase-25.md) | The cost floor without exchange rates? | Decided | 100 in the vehicle's currency's major unit (spec §7.24). | 2026-10-01 |
+| 63 | [25](phase-25.md) | A fill-up priced at 0? | Decided | Never flagged and never counted in the median, for every fuel (spec §7.24). | 2026-10-01 |
+| 64 | [25](phase-25.md) | The drift title's percentage: consumption or the unit shown? | Decided | Worked out from the two figures shown (spec §7.24). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

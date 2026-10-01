@@ -656,8 +656,11 @@ MySQL only.
 
 **AttentionHidden** (Phase 24, §7.24)
 - id, user_id (`ON DELETE CASCADE`), vehicle_id (`ON DELETE CASCADE`),
-  kind (`reading` | `mileage_stale` | `valuation_stale`), subject_id (the
-  reading's id for `reading`, else the vehicle's), fingerprint (SHA-256
+  kind (`reading` | `mileage_stale` | `valuation_stale` and, from Phase
+  25, `drift_liquid` | `drift_electric` | `fuel_price` |
+  `maintenance_cost`), subject_id (the reading's id for `reading`, the
+  fill-up's for `fuel_price`, the maintenance record's for
+  `maintenance_cost`, else the vehicle's), fingerprint (SHA-256
   hex of the state that was judged), hidden_at (UTC). `(user_id, kind,
   subject_id)` is unique: hiding again replaces the row. In backups and in
   `bin/export-user.php`'s file.
@@ -667,7 +670,8 @@ MySQL only.
   User-scoped keys include `reminders` (lead times), `notifications`,
   `tyres.thresholds`, `dashboard.layout` and, from Phase 24,
   `attention.thresholds` (`{"mileage_days": 60, "valuation_months": 12}`,
-  §7.24).
+  and from Phase 25 `drift_percent`, `drift_percent_electric`,
+  `price_percent`, `cost_multiple` and `cost_floor`, §7.24).
 
 ---
 
@@ -3355,14 +3359,101 @@ wrong.
        latest is older than the owner's *Valuation is stale after* months
        (default 12; the same rule as §7.1's hint). *Add valuation*
        (`Manage`).
+    7. **Economy drift** (Phase 25; `fuel` on): a sustained change, judged
+       per series (liquid fuel and electricity apart, so a plug-in hybrid
+       can raise one of each; kinds `drift_liquid` and `drift_electric`).
+       Only *checkable* segments count (at least 100 km, as §7.3's check).
+       - *Recent* = the series' last **5** segments that ended within the
+         last 120 days (owner's today); with fewer than 3 the check is
+         skipped.
+       - *Baseline* = the segments that ended in the 12 months before the
+         first recent one ended. At least **8** are needed.
+       - Each side is weighted as the averages are: total fuel used ×
+         100 ÷ total distance (L/100 km or kWh/100 km), compared exactly.
+       - **Flagged** when recent is at least the owner's *drift* threshold
+         worse than baseline (default **10%** for liquid fuel, **15%** for
+         electricity, which swings more with temperature), **and**, when
+         the same calendar months a year earlier (the months the recent
+         segments span in the owner's time zone, through §7.3's month
+         split) hold at least 3 segments, also at least that much worse
+         than those months' figure. That second test keeps every winter
+         from being flagged against a summer baseline. Without it the item
+         says so: "This may include the time of year: there's no data for
+         these months last year." An improvement is never flagged.
+       - **Title** in the owner's unit, with the percentage worked out from
+         the two figures shown (so it reads right in mpg too, and may
+         round below the threshold): "Economy is about 15% worse over the
+         last 5 tanks than your 12-month average (38.2 against 45.1 mpg)";
+         "charges" for electricity.
+       - **Likely causes**, fixed sentences, each only when its fact holds:
+         the recent segments' most common grade differs from the
+         baseline's ("You've switched from E10 95 to E5 98"); a tyre change
+         dated within the recent window (`tyres` on: "New tyres were fitted
+         on 3 Aug"); every recent segment ended in November–February and
+         the baseline's did not all ("Winter usually costs 5–15%"); a
+         service schedule is overdue (`maintenance` on, from *Coming up*:
+         "A service is overdue"); the recent segments' mean distance is
+         under half the baseline median ("Shorter tanks than usual often
+         mean more short journeys"). Always: "Also worth checking: tyre
+         pressures, load and roof boxes."
+       - *View economy* links to the Fuel tab's economy trend. *Hide*;
+         `Log`.
+    8. **Fuel price outlier** (Phase 25; `fuel` on): one item per fill-up
+       whose price per unit is far from what was paid around that time.
+       - Compared with the vehicle's other fill-ups of the **same fuel and
+         grade** (no grade matches no grade; for electricity the grade is
+         how it was charged, so home and rapid prices are judged apart)
+         within **30 days** either side. With fewer than **3**, the
+         owner's fill-ups of that fuel and grade on any of their vehicles
+         in the same currency, in the same window; still fewer, skipped.
+       - A price of **0 is never flagged and never counted** (a free
+         charge, a courtesy tank), for every fuel.
+       - **Flagged** when more than the owner's *price* threshold (default
+         **35%**) above or below the median.
+       - **Title:** "Fill-up on 12 Sep: £13.90/L, about 10× your usual
+         £1.39/L. Check the price or the volume." ("Charge on …" for
+         electricity). The ratio reads "about N×" from 2× up, "about N%
+         above/below" under it. Within ×/÷ 1.25 of 10, 100 or 1,000 (or
+         their inverses) it adds "An extra or missing digit?".
+       - *Fix* opens the fill-up's edit form. *Looks right* hides it; the
+         fingerprint is the fill-up's id, price, volume and total, so an
+         edit re-judges. `Manage`, or `Log` for a fill-up they added.
+    9. **Maintenance cost outlier** (Phase 25; `maintenance` on): one item
+       per maintenance record far above the vehicle's usual for its
+       category.
+       - Compared with the vehicle's **earlier** records (by date, then
+         the order added) in the **same category** with a cost above 0. At
+         least **3** are needed.
+       - **Flagged** when the cost is more than the owner's *cost multiple*
+         (default **3×**) of their median **and** at least the owner's
+         *cost floor* (default **100**, in the vehicle's currency's major
+         unit; there are no exchange rates) above it, so a £30 wiper job
+         after three £9 ones is not flagged. A record's cost is always in
+         its vehicle's currency, so there is nothing to convert.
+       - Only records dated within the last **12 months** are raised, so
+         old history doesn't flood the list.
+       - **Title:** "Service on 14 Mar cost £6,400, about 30× your usual
+         £212. Check the amount.", with the same digit wording as item 8.
+       - *Fix* opens the record's edit form. *Looks right* hides a genuine
+         big job (a gearbox, a clutch); the fingerprint is the record's
+         id, cost and category. `Manage`, or `Log` for a record they added.
+    Items 7–9 are plain arithmetic on the owner's data: no model, no
+    network, and no figure changes (flagged entries count everywhere).
 - **Thresholds** (Settings → Reminders, a *Needs attention* card shown
   with or without the `reminders` module): *Mileage not updated after*
   (days, 7–365, default 60) and *Valuation is stale after* (months, 1–60,
-  default 12), stored as the user setting `attention.thresholds`. A
-  vehicle is judged by its **owner's** thresholds and today, whoever looks
-  (as lead times, §7.6). The economy bands and the 2,000 km a day rule are
-  fixed (§7.2, §7.3).
-- **Hiding.** Items 2, 4 and 6 have *Hide*: `POST
+  default 12) and, from Phase 25, *Economy drift* (%, 5–50, default 10),
+  *Economy drift, electricity* (%, 5–50, default 15), *Fuel price differs
+  by* (%, 10–90, default 35), *Cost is more than* (×, 2–20, default 3) and
+  *and at least* (major currency units, 0–10,000, default 100), stored as
+  the user setting `attention.thresholds`. A value left blank saves the
+  default; out of range is refused; a stored row missing a key reads its
+  default. A vehicle is judged by its **owner's** thresholds and today,
+  whoever looks (as lead times, §7.6). The single-tank economy bands
+  (§7.3) and the 2,000 km a day rule (§7.2) stay fixed; the drift
+  threshold above is a different check.
+- **Hiding.** Items 2, 4, 6, 7, 8 and 9 have *Hide* (*Looks right* on 8
+  and 9): `POST
   /vehicles/{id}/attention/hide` with CSRF, the item's kind, subject and
   the fingerprint the page showed. The server recomputes the item and
   stores a row (§6 AttentionHidden) only when it is still shown to this
@@ -3372,7 +3463,9 @@ wrong.
   a reading, its id, value and time and those of the reading before it
   and after it; for stale mileage, the latest reading's id, value and time
   (none: "none"); for a stale valuation, the latest valuation's id, date
-  and amount. The item stays hidden only while the fingerprint matches,
+  and amount; for drift, the ids of the recent segments' closing
+  fill-ups (so a new tank re-judges); for a price or cost outlier, as
+  items 8 and 9 say. The item stays hidden only while the fingerprint matches,
   so an edit to the reading or its neighbours, a new reading or a new
   valuation brings it back. Hidden items are per user. Item 3 uses *Looks
   right*; item 5 has no *Hide*; *Now* items are dismissed through their
@@ -3393,7 +3486,8 @@ wrong.
   `Manage`, or `Log` for a reading they added by hand or an economy flag on
   a fill-up they added (a derived reading's author is its entry's). Stale
   mileage needs `Log`, a stale valuation `Manage`, trips exceeding mileage
-  `Log`. *Now* items are shown to everyone who can view; their actions
+  `Log`; economy drift `Log`; a price or cost outlier `Manage`, or `Log`
+  for a fill-up or record they added. *Now* items are shown to everyone who can view; their actions
   follow the actions' own abilities.
 - **Cost:** the overview computes one vehicle's items. The dashboard
   computes every visible vehicle's in one pass, shared by the widget and
@@ -3633,9 +3727,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Server-side PDF (emailed reports, one-file sale pack with invoices
   merged).
 - **Maintenance insights** (parked 2026-09-30, `docs/phases/open-questions.md`
-  #13, #16, #18): a tyre rotation suggestion when the fronts wear faster
-  than the rears; seasonal baselines for economy checks; detecting a
-  sudden, sustained change in economy.
+  #13): a tyre rotation suggestion when the fronts wear faster than the
+  rears. (Seasonal baselines and sustained economy change, #16 and #18,
+  are Phase 25's economy drift, §7.24.)
 - Tread depth per zone (inner / centre / outer) (#12).
 - An insurance document's agreed value offered as a valuation (#19).
 - A cost-of-ownership tile or widget on the dashboard, after a design pass
@@ -3837,6 +3931,15 @@ task breakdowns live in the per-phase files; this is the map.
   staleness thresholds as the owner's settings; a *Needs attention*
   section in the monthly digest (§7.11). Not a score. One migration;
   release v2.4.0.
+- **Phase 25 — Trend and cost checks + v2.5 release.** Three more
+  *Check* items in *Needs attention* (§7.24): economy drift per series
+  (recent tanks against the year, with the same months a year earlier
+  when they exist, and likely causes from recorded facts), fuel price
+  outliers against nearby fill-ups of the same grade, and maintenance
+  cost outliers against the category's earlier records; each with *Hide*
+  by fingerprint and its threshold among the owner's *Needs attention*
+  settings. Plain statistics, no model or network. No migration; release
+  v2.5.0.
 
 ---
 
