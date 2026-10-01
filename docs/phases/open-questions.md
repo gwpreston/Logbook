@@ -31,7 +31,8 @@ starting it) on the same day, before Phase 25 started. Phase 26.1's
 them found while starting it) on the same day, before Phase 26.2 started,
 and Phase 26.3's (#74–#78, three of them found while starting it) on the
 same day, before Phase 26.3 started, and Phase 26.4's (#79–#84, two of
-them found while starting it) on the same day, before Phase 26.4 started.
+them found while starting it) on the same day, before Phase 26.4 started;
+two found while building it (#85, #86) were answered the same day.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -119,6 +120,8 @@ them found while starting it) on the same day, before Phase 26.4 started.
 | 82 | [26.4](phase-26.4.md) | Manual reminders by distance? | Decided | Yes: an optional *Due at* odometer (`reminders.due_km`), whichever comes first; form, API `due_odometer`, the scan's card (spec §7.6, §7.20). | 2026-10-01 |
 | 83 | [26.4](phase-26.4.md) | `gd` and `exif` (found while starting) | Decided | In the Docker image on every architecture and required on bare PHP (`ext-gd`, `ext-exif`) (spec §4, §10). | 2026-10-01 |
 | 84 | [26.4](phase-26.4.md) | PDF text extractor (found while starting) | Decided | `smalot/pdfparser`, pinned, LGPL-3.0, unmodified through Composer (spec §4). | 2026-10-01 |
+| 85 | [26.4](phase-26.4.md) | A V5C photo sends its reference as pixels (found while building) | Decided | Accept and warn: text redacted before sending, never extracted or stored; the Scan page names where the file goes and warns on *Internet*. Criterion 4 reworded (spec §7.27). | 2026-10-01 |
+| 86 | [26.4](phase-26.4.md) | *Fill from* a file already attached? (found while building) | Decided | New files only: the create forms link to Scan for that vehicle and form (spec §7.27). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

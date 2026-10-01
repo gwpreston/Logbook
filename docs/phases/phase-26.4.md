@@ -239,7 +239,10 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
    mileage, and the advisories are offered as reminders.
 3. A failed or unavailable model still leaves the user with their file on
    an empty form.
-4. No GPS data or V5C reference number leaves the device or is stored.
+4. No GPS data leaves the device or is stored. A V5C reference number is
+   never extracted, stored or sent as text; a photo of a V5C carries it
+   as pixels, and the Scan page says so on an *Internet* connection
+   (#85).
 5. With a local or network model, no file leaves the owner's machines.
 6. Definition of done (CLAUDE.md §11) holds.
 
@@ -280,3 +283,14 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
 - *(Found while starting.)* **Which PDF text extractor?**
   **Decided 2026-10-01 (#84):** `smalot/pdfparser`, pinned, LGPL-3.0,
   used unmodified through Composer (spec §4).
+- *(Found while building.)* **A V5C photo sends its reference number as
+  pixels.** Text can be redacted before sending; a picture cannot.
+  **Decided 2026-10-01 (#85):** accept it and warn. Text is redacted
+  before sending and the number is never extracted or stored; the Scan
+  page names where the file goes and, on an *Internet* connection, says a
+  V5C photo carries its reference to that provider. Acceptance criterion
+  4 reworded to match (spec §7.27).
+- *(Found while building.)* **Fill from a file already attached?**
+  **Decided 2026-10-01 (#86):** new files only. The create forms link to
+  Scan for that vehicle and form; attached files are not re-read
+  (spec §7.27).
