@@ -52,7 +52,7 @@ final class GroundingCheck
 
         $flagged = [];
         foreach ($this->numbers($answer, $locale, true) as [$text, $readings]) {
-            if ($this->isTrivial($readings) || $this->matches($readings, $allowed)) {
+            if (self::isTrivial($text) || $this->matches($readings, $allowed)) {
                 continue;
             }
             $flagged[$text] = true;
@@ -106,23 +106,20 @@ final class GroundingCheck
     }
 
     /**
-     * Years and small counts are never flagged.
-     *
-     * @param list<string> $readings
+     * Years and small counts are never flagged: plain digits only, as
+     * written ("2025", "3"). A grouped or decimal figure ("£1,000",
+     * "1.950 €", "3.5") is always checked, whatever another reading of it
+     * would be.
      */
-    private function isTrivial(array $readings): bool
+    private static function isTrivial(string $token): bool
     {
-        foreach ($readings as $reading) {
-            if (preg_match('/^-?\d+$/', $reading) !== 1) {
-                continue;
-            }
-            $value = abs((int) $reading);
-            if ($value <= 12 || ($value >= 1900 && $value <= 2100)) {
-                return true;
-            }
+        $digits = ltrim(str_replace('−', '-', $token), '-');
+        if (!ctype_digit($digits)) {
+            return false;
         }
+        $value = (int) $digits;
 
-        return false;
+        return $value <= 12 || ($value >= 1900 && $value <= 2100 && strlen($digits) === 4);
     }
 
     /**

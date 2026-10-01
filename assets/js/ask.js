@@ -5,8 +5,9 @@
  * - `[data-ask-form]` posts in the background (header `X-Ask: 1`) and polls
  *   its `data-progress-url` about once a second for the progress line
  *   ("Looking up your fuel costs…") until the answer is ready; then the
- *   page goes to the answer. Without JS the form posts and the server
- *   redirects to the answer itself.
+ *   page goes to the answer. If the POST gets no reply from Logbook (a
+ *   proxy's timeout), the polls still find the answer once it is saved.
+ *   Without JS the form posts and the server redirects to the answer.
  * - `[data-ask-copy]` buttons (hidden without JS) copy their answer's text.
  *
  * The pure helper at the top has no DOM and is unit tested with
@@ -26,11 +27,34 @@
         if (body && typeof body.error === 'string' && body.error !== '') {
             return {error: body.error};
         }
+        // No reply Logbook wrote (a proxy's timeout, the network): the
+        // question may still be running, so keep polling for it.
+        if (status === 0 || status >= 500) {
+            return {wait: true, status: status};
+        }
 
         return {error: fallback, status: status};
     }
 
-    var core = {outcome: outcome};
+    /*
+     * What a progress poll means: go to the answer, a line to show, or
+     * (done without an answer) the fallback error.
+     */
+    function progressStep(body, fallback) {
+        if (!body) {
+            return {};
+        }
+        if (body.done && typeof body.url === 'string' && body.url !== '') {
+            return {go: body.url};
+        }
+        if (body.done) {
+            return {error: fallback};
+        }
+
+        return body.line ? {line: body.line} : {};
+    }
+
+    var core = {outcome: outcome, progressStep: progressStep};
 
     if (typeof module === 'object' && module.exports) {
         module.exports = core;
@@ -63,6 +87,30 @@
             setProgress(progress, working);
 
             var polling = true;
+            var waiting = false;
+            var started = Date.now();
+            var finish = function (result) {
+                if (!polling) {
+                    return;
+                }
+                if (result.go) {
+                    polling = false;
+                    window.location.assign(result.go);
+                    return;
+                }
+                if (result.wait) {
+                    // The POST went quiet; the polls will find the answer.
+                    waiting = true;
+                    return;
+                }
+                polling = false;
+                busy = false;
+                submit.disabled = false;
+                form.removeAttribute('aria-busy');
+                setProgress(progress, result.error);
+                progress.classList.add('field__error');
+                question.focus();
+            };
             var poll = function () {
                 if (!polling) {
                     return;
@@ -70,12 +118,20 @@
                 fetch(form.getAttribute('data-progress-url'), {credentials: 'same-origin', headers: {Accept: 'application/json'}})
                     .then(function (response) { return response.ok ? response.json() : null; })
                     .then(function (body) {
-                        if (polling && body && body.line) {
-                            setProgress(progress, body.line);
+                        var step = progressStep(body, failed);
+                        if (step.line) {
+                            setProgress(progress, step.line);
+                        } else if (step.go) {
+                            finish(step);
+                        } else if (step.error && waiting) {
+                            finish(step);
                         }
                     })
                     .catch(function () { /* the next poll tries again */ })
                     .then(function () {
+                        if (polling && Date.now() - started > 15 * 60 * 1000) {
+                            finish({error: failed});
+                        }
                         if (polling) {
                             window.setTimeout(poll, 1000);
                         }
@@ -96,19 +152,7 @@
                     );
                 })
                 .catch(function () { return outcome(0, null, failed); })
-                .then(function (result) {
-                    polling = false;
-                    if (result.go) {
-                        window.location.assign(result.go);
-                        return;
-                    }
-                    busy = false;
-                    submit.disabled = false;
-                    form.removeAttribute('aria-busy');
-                    setProgress(progress, result.error);
-                    progress.classList.add('field__error');
-                    question.focus();
-                });
+                .then(finish);
         });
     }
 

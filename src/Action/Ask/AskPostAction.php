@@ -55,8 +55,11 @@ final readonly class AskPostAction
             default => null,
         };
         if ($error === null) {
-            // Every tool call and model call, then the answer.
+            // Every tool call and model call, then the answer; kept going if
+            // a proxy gives up on the request (the page finds the answer by
+            // polling its progress).
             set_time_limit(Conversation::DEADLINE_SECONDS + 660);
+            ignore_user_abort(true);
             try {
                 $outcome = $this->conversation->ask($user, $thread, $question, $token);
                 $url = $this->redirect->urlFor('ask.thread', ['thread' => (string) $outcome->thread->id])

@@ -80,7 +80,7 @@ final class AskPagesTest extends AskTestCase
         $this->provider->queue(Script::tools(['find_vehicles', ['query' => 'BMW']]), Script::answer('One BMW.'));
 
         $before = self::decoded($browser->get('/ask/progress/' . $token));
-        self::assertSame(['done' => false, 'line' => 'Thinking…', 'lines' => []], $before);
+        self::assertSame(['done' => false, 'url' => null, 'line' => 'Thinking…', 'lines' => []], $before);
 
         $posted = $browser->post('/ask', ['question' => 'Which BMWs?', 'progress' => $token], headers: ['X-Ask' => '1']);
         self::assertSame(200, $posted->getStatusCode());
@@ -89,12 +89,15 @@ final class AskPagesTest extends AskTestCase
         self::assertMatchesRegularExpression('#^/ask/threads/\d+\#answer-\d+$#', $body['url']);
 
         $after = self::decoded($browser->get('/ask/progress/' . $token));
-        self::assertSame(['done' => true, 'line' => 'Finding your vehicles…', 'lines' => ['Finding your vehicles…']], $after);
+        self::assertSame('/ask/threads/' . self::threadIn($body['url']), $after['url'] ?? null, 'the poll finds the answer too');
+        self::assertSame(true, $after['done'] ?? null);
+        self::assertSame(['Finding your vehicles…'], $after['lines'] ?? null);
 
         $this->createMember($app, 'partner');
         $other = $this->browserFor($app, 'partner');
         $theirs = self::decoded($other->get('/ask/progress/' . $token));
-        self::assertSame(['done' => false, 'line' => 'Thinking…', 'lines' => []], $theirs, 'another user sees nothing of it');
+        $nothing = ['done' => false, 'url' => null, 'line' => 'Thinking…', 'lines' => []];
+        self::assertSame($nothing, $theirs, 'another user sees nothing of it');
     }
 
     public function testASecondQuestionWhileOneRunsIsRefused(): void
@@ -113,6 +116,44 @@ final class AskPagesTest extends AskTestCase
         self::assertSame(['error' => 'Still working on your last question.'], self::decoded($json));
         self::assertSame([], $this->provider->requests);
         self::assertSame(0, $this->rows($app, 'ai_threads'));
+    }
+
+    public function testARefusedBackgroundPostLeavesTheFormsTokenUsable(): void
+    {
+        [$app, $owner] = $this->askApp();
+        $browser = $this->browserFor($app, 'owner');
+        $fields = ['question' => 'Anything?'] + $browser->csrfFields();
+        $now = new DateTimeImmutable(self::NOW);
+        $busy = $this->service($app, AiBusyRepository::class);
+        $busy->acquire($owner->id, $now, $now->modify('+10 minutes'));
+        self::assertSame(422, $browser->post('/ask', $fields, withCsrf: false, headers: ['X-Ask' => '1'])->getStatusCode());
+
+        $busy->release($owner->id);
+        $this->provider->queue(Script::answer('Hello.'));
+        $again = $browser->post('/ask', $fields, withCsrf: false, headers: ['X-Ask' => '1']);
+        self::assertSame(200, $again->getStatusCode(), 'the same token works for the retry');
+    }
+
+    public function testWorksBehindASubpath(): void
+    {
+        [$app] = $this->askApp(['APP_BASE_PATH' => '/logbook']);
+        $browser = $this->browserFor($app, 'owner');
+        $bmw = $this->vehicle($app, 'BMW', '320d');
+        $this->expense($app, $bmw, '2026-09-01', '12.00');
+
+        $page = (string) $browser->get('/ask')->getBody();
+        self::assertStringContainsString('action="/logbook/ask"', $page);
+        self::assertMatchesRegularExpression('#data-progress-url="/logbook/ask/progress/[0-9a-f]{32}"#', $page);
+
+        $this->provider->queue(Script::tools(['costs', ['period' => 'this_year']]), Script::answer('£12.00 this year.'));
+        $posted = $browser->post('/logbook/ask', ['question' => 'Costs this year?']);
+        self::assertStringStartsWith('/logbook/ask/threads/', $posted->getHeaderLine('Location'));
+        $answer = (string) $browser->follow($posted)->getBody();
+        self::assertStringContainsString('href="/logbook/reports?range=ytd&amp;include_archived=1"', $answer);
+
+        $this->provider->queue(Script::answer('Again.'));
+        $json = self::decoded($browser->post('/logbook/ask', ['question' => 'Again?'], headers: ['X-Ask' => '1']));
+        self::assertStringStartsWith('/logbook/ask/threads/', is_string($json['url'] ?? null) ? $json['url'] : '');
     }
 
     public function testAnEmptyQuestionIsRejected(): void

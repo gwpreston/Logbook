@@ -73,4 +73,14 @@ final class GroundingCheckTest extends TestCase
     {
         return (new GroundingCheck())->ungrounded($answer, [self::RESULT], $locale);
     }
+
+    public function testRoundFiguresAreCheckedWhateverAnotherReadingWouldBe(): void
+    {
+        self::assertSame(['3,000'], $this->check('About £3,000 a year.'));
+        self::assertSame(['1,950'], $this->check('Roughly £1,950.'));
+        self::assertSame(['10,000'], $this->check('Every 10,000 mi.'));
+        self::assertSame(['3.000'], $this->check('Rund 3.000 € im Jahr.', 'de_DE'));
+        self::assertSame(['1.000'], $this->check('Alle 1.000 km.', 'de_DE'));
+        self::assertSame([], $this->check('In 2025, 3 fill-ups over 12 months.'));
+    }
 }

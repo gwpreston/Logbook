@@ -255,7 +255,10 @@ only once per status, so running it more often is harmless.
 composer start                    # PHP built-in server on http://localhost:8090
 ```
 
-For development only; it honours `APP_BASE_PATH` too.
+For development only; it honours `APP_BASE_PATH` too. It runs four
+workers (`PHP_CLI_SERVER_WORKERS=4`), so *Ask Logbook*'s progress polls are
+answered while a question runs; on Windows, where the built-in server has
+one worker, the progress line waits until the answer.
 
 ---
 
@@ -327,6 +330,28 @@ proxy rules, with two things to know:
   address for 10 minutes). Behind a proxy every request comes from the proxy's
   address, so a client guessing keys also delays good keys until the block
   ends. Keep keys in the tools that use them and they never fail.
+
+### Ask Logbook behind a proxy
+
+A question to *Ask Logbook* ([ai.md](ai.md#ask-logbook)) is one request
+that lasts as long as the model takes: with a slow local model and
+several lookups, that can be a few minutes (Logbook stops starting new
+model calls after 240 seconds). Many proxies give up on a request after
+60 seconds. Logbook keeps working when they do: the page polls for
+progress and opens the answer once it is saved. Without JavaScript the
+browser shows the proxy's timeout page instead, so for slow models raise
+the timeouts for `<base>/ask`:
+
+- **nginx** in front of Logbook: `proxy_read_timeout 600s;` (and with
+  php-fpm, `fastcgi_read_timeout 600s;`) in a `location <base>/ask` block,
+  or for the whole site.
+- **php-fpm:** `request_terminate_timeout` in the pool must be 0 (the
+  default) or at least 600 s. Logbook raises PHP's own `max_execution_time`
+  for the request.
+- **Apache** (the Docker image): its `Timeout` defaults to 300 seconds,
+  which is enough; behind another proxy, raise that proxy's timeout.
+- **Cloudflare** and similar CDNs cut requests at about 100 seconds on
+  their free plans; the page still finds the answer by polling.
 
 ---
 

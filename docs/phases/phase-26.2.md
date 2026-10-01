@@ -2,7 +2,7 @@
 
 *Ask a question in plain words; get Logbook's own numbers back.*
 
-Status: 🚧 in progress · releases **v2.6.0** with Phase 26.1 · file lives in
+Status: ✅ complete · released as **v2.6.0** with Phase 26.1 · file lives in
 `docs/phases/`
 
 "When did I last change the oil on the BMW?", "How much did I spend on fuel
@@ -249,6 +249,13 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7, §7.18,
   anyone it isn't available to.
 - **Answers** are shown as paragraphs and lists, with `**bold**` kept;
   everything else is escaped.
+- **Behind a proxy that times out** (often 60 s), the question keeps
+  running (`ignore_user_abort`), the progress JSON gives the answer's
+  thread once it is saved, and the page goes there whatever happened to the
+  POST. `docs/deployment.md` lists the timeouts to raise for no-JS use.
+  `composer start` runs four workers so polls are answered in development.
+- **Grounding:** only plain digits count as a year or a small count;
+  "£1,000" or "1.950 €" is always checked.
 - `phpunit.xml.dist` sets `memory_limit` to 512M: the suite's peak (about
   123 MB) had reached the CLI default of 128M.
 

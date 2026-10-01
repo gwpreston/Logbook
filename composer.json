@@ -59,7 +59,7 @@
     "scripts": {
         "start": [
             "Composer\\Config::disableProcessTimeout",
-            "php -S 0.0.0.0:8090 -t public bin/dev-router.php"
+            "PHP_CLI_SERVER_WORKERS=4 php -S 0.0.0.0:8090 -t public bin/dev-router.php"
         ],
         "test": "phpunit",
         "test:unit": "phpunit --testsuite unit",
