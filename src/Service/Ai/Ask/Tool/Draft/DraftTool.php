@@ -94,10 +94,19 @@ abstract class DraftTool implements AskTool
 
     public function isAvailable(User $user): bool
     {
+        return $this->features->isEnabled(Feature::AiActions) && $this->canDraft($user);
+    }
+
+    /**
+     * Whether this user can draft this kind at all, AI aside: its module is
+     * on and they can add it to some vehicle. The MCP server (spec.md
+     * §7.28) asks only this, since no Logbook model is involved (#91).
+     */
+    public function canDraft(User $user): bool
+    {
         $feature = $this->kind()->feature();
 
-        return $this->features->isEnabled(Feature::AiActions)
-            && ($feature === null || $this->features->isEnabled($feature))
+        return ($feature === null || $this->features->isEnabled($feature))
             && $this->resolver->candidates($user, $this->kind()) !== [];
     }
 

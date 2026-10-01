@@ -2,7 +2,7 @@
 
 *Use Logbook from Claude Desktop, or any assistant that speaks MCP.*
 
-Status: 📋 planned · releases **v2.9.0** · file lives in `docs/phases/`
+Status: ✅ complete (manual interop check and tag pending) · releases **v2.9.0** · file lives in `docs/phases/`
 
 Phases 26.2 and 26.3 define Logbook's tools: read tools over its services,
 and draft tools for new entries. This phase exposes the **same tools** over
@@ -101,48 +101,49 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.20,
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.28 and §9 (`MCP_ENABLED`) in `spec.md`; the Phase 26.5 line in
+- [x] §7.28 and §9 (`MCP_ENABLED`) in `spec.md`; the Phase 26.5 line in
       §13; remove the MCP line from the roadmap's *After 1.0*.
-- [ ] `docs/mcp.md`: keys and scopes; configuring Claude Desktop (a remote
+- [x] `docs/mcp.md`: keys and scopes; configuring Claude Desktop (a remote
       MCP server by URL, with a bearer header, or through a local bridge
       when a client can't send headers); reaching it on the LAN; exposing
       it remotely behind the reverse proxy (TLS, and exempting `/mcp` from
       forward auth as `/api/` is).
 
 ### Dependencies
-- [ ] The official MCP PHP SDK if it fits Slim and PSR-7/15 without a
+- [x] The official MCP PHP SDK if it fits Slim and PSR-7/15 without a
       framework, else a small Streamable HTTP implementation of what is
       needed (initialise, tools, resources, prompts, JSON-RPC over POST,
       optional SSE for responses). The choice goes in §4.
 
 ### Code
-- [ ] `Action\Mcp\Endpoint` and the MCP adapter over `ToolRegistry`
+- [x] `Action\Mcp\Endpoint` and the MCP adapter over `ToolRegistry`
       (Phase 26.2) and the draft tools (Phase 26.3).
-- [ ] Resources and prompts.
-- [ ] Pending MCP drafts on `/ask` and the dashboard; 7-day expiry.
-- [ ] Translations (en, de) for tool descriptions and prompts.
+- [x] Resources and prompts.
+- [x] Pending MCP drafts on `/ask` and the dashboard; 7-day expiry.
+- [x] Translations (en, de) for tool descriptions and prompts.
 
 ### Tests
-- [ ] Protocol: initialise, list tools, call a tool, list and read
+- [x] Protocol: initialise, list tools, call a tool, list and read
       resources, list and get prompts, errors as JSON-RPC errors, with a
       conformance check against the SDK's or the specification's examples.
-- [ ] Auth: no key, a bad key, a read key calling a write tool → refused;
+- [x] Auth: no key, a bad key, a read key calling a write tool → refused;
       throttling; `Origin` check.
-- [ ] Tools return the same figures as Phase 26.2 for the demo data;
+- [x] Tools return the same figures as Phase 26.2 for the demo data;
       access rules hold.
-- [ ] `log_fill_up` is duplicate-safe; drafts appear in Logbook, apply,
+- [x] `log_fill_up` is duplicate-safe; drafts appear in Logbook, apply,
       expire.
-- [ ] Works under `APP_BASE_PATH`; `MCP_ENABLED=false` and
+- [x] Works under `APP_BASE_PATH`; `MCP_ENABLED=false` and
       `API_ENABLED=false` → 404.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine.
 - [ ] **Manual interop check** (in the PR): Claude Desktop and one other MCP
       client, over the LAN and through the reverse proxy.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.9.0**: the MCP server. Upgrade notes: no
+- [x] `CHANGELOG.md` **2.9.0**: the MCP server. Upgrade notes: no
       migration beyond the draft source flag; new optional variable.
-- [ ] Bump `VERSION`, update the README (status, documentation table gains
+- [x] Bump `VERSION`, update the README (status, documentation table gains
       `docs/mcp.md`).
+- [ ] Tag `v2.9.0` once merged.
 
 ---
 
@@ -159,5 +160,82 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.20,
 
 - **stdio bridge:** worth shipping `bin/mcp-stdio.php` now for clients that
   can't send headers, or wait until one is needed?
+  **Decided 2026-10-01 (#87):** wait. `docs/mcp.md` shows `mcp-remote`
+  (`npx mcp-remote <url> --header "Authorization: Bearer …"`), which needs
+  Node on the client machine only. The PHP bridge is in spec §12. Checking
+  showed why it matters: Claude's custom connectors connect from
+  Anthropic's servers (public HTTPS only), and their request-header
+  option is still a limited beta.
 - **Direct writes:** should `log_fill_up` and `add_reading` also become
   drafts over MCP, for consistency with the chat?
+  **Decided 2026-10-01 (#88):** no, direct writes for `read_write` keys,
+  through the API's write path. Every other kind is a draft.
+- *(Found while starting.)* **Which protocol versions?** The current MCP
+  revision, `2026-07-28`, is stateless and has no `initialize`; clients on
+  `2025-11-25` and earlier still send it.
+  **Decided 2026-10-01 (#89):** dual-era. `2026-07-28` statelessly, and
+  `initialize` for `2025-11-25` and `2025-06-18`, also stateless (no
+  session id, which that transport makes optional) (spec §7.28).
+- *(Found while starting.)* **The MCP PHP SDK or our own?** `mcp/sdk`
+  (v0.8.1) is experimental until 1.0, adds five dependencies and registers
+  tools by attribute.
+  **Decided 2026-10-01 (#90):** our own small implementation, tested
+  against the specification's JSON schemas (spec §4, §7.28).
+- *(Found while starting.)* **What switches MCP off for a user?** Draft
+  tools needed `ai_actions` (#78), and *Use AI features* (#67) is per
+  user.
+  **Decided 2026-10-01 (#91):** only `MCP_ENABLED`, `API_ENABLED` and the
+  key; each tool needs its own module. The AI modules and *Use AI
+  features* don't apply (spec §7.28).
+
+## What changed while starting
+
+- `/ask` answers 404 unless Ask is available (AI set up, `ai_ask`, *Use
+  AI features*), so MCP drafts are reviewed on the dashboard's *Drafts to
+  review* in every case and on `/ask` when Ask is available. Their buttons
+  don't need Ask.
+- The draft tools' descriptions and results tell the model about a card
+  in the chat. Over MCP every tool has its own description (`mcp.tool.*`,
+  en and de), and the draft results point to the dashboard instead.
+- The roadmap's *After 1.0* list had no MCP line left to remove.
+- `GET`/`DELETE` answer 405, responses are always JSON (no SSE), and
+  results are `cacheScope: "private"` with `ttlMs: 0`.
+
+## What changed while building
+
+- **The key check is shared.** `ApiKeyAuthenticator` (throttle, key,
+  active user, access policy, display preferences) came out of
+  `ApiAuthMiddleware`, so the API and `/mcp` let a key in the same way. The
+  API's own behaviour is unchanged (its tests pass as they were).
+- **Draft tools say whether a user can draft, AI aside**
+  (`DraftTool::canDraft`): the kind's module, and some vehicle the user
+  may add it to. Ask still also needs `ai_actions`.
+- **`log_fill_up` and `add_reading`** run the Ask draft tool in a
+  rolled-back transaction (resolution and validation), then write the
+  validated body through the same `DraftWriter` → `ApiWriter` path *Add*
+  uses, in its own transaction. A tool's question back (`choose_vehicle`,
+  `ask_user`, `needs`, `invalid`, `duplicate`) is returned as it is, with
+  a line saying what to do next.
+- **MCP drafts have their own buttons route**, `POST /drafts/{id}/{action}`.
+  It sits in the signed-in group (CSRF) and outside the AI block, so it
+  works with `AI_ENABLED=false`. It serves MCP drafts only and sends the
+  user back to the page that listed the draft (`back`: dashboard or
+  `/ask`). The card markup is shared (`DraftCards`, out of `AskPage`).
+- **The usage log** marks a tool's own refusal `error` / `tool_error`, and
+  a protocol error `refused` / `rpc_<code>`. `tools/list` and the other
+  lists aren't logged.
+- **Refusals before the message is read** (401, 403 `Origin`, 429) are
+  JSON-RPC errors without an id, with Logbook's own codes outside the
+  reserved range (-31401, -31403, -31429).
+- **Settings → API keys** shows the MCP address beside the API's.
+- **Conformance:** the specification's schemas (`2026-07-28`,
+  `2025-11-25`) and its `2026-07-28` examples are copied into
+  `tests/Fixtures/mcp` with their licence. `tests/Support/McpClient.php`
+  checks every response against them with `justinrainbow/json-schema`,
+  now an explicit dev dependency. A spike first confirmed it rejects
+  broken copies (no `resultType`, a negative `ttlMs`, an unknown
+  `cacheScope`).
+- **Docs:** `docs/mcp.md`; the forward-auth examples (`docs/sso.md`,
+  `docker/nginx/forward-auth-example.conf`) exempt `/mcp`;
+  `docs/configuration.md`, `docs/api.md` and `docs/ai.md` point to it.
+- The *Sale checklist* prompt links to the vehicle's sale pack page.

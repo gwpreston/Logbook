@@ -55,6 +55,8 @@ final readonly class AppSettings
         public ProxyAuthConfig $proxy = new ProxyAuthConfig(),
         /** AI connections (spec.md §7.25, Phase 26.1). */
         public AiConfig $ai = new AiConfig(),
+        /** The MCP server (spec.md §7.28, Phase 26.5); routed only while the API is on too. */
+        public bool $mcpEnabled = true,
     ) {
     }
 
@@ -99,7 +101,16 @@ final readonly class AppSettings
             localLogin: $env->bool('AUTH_LOCAL_LOGIN', true),
             proxy: ProxyAuthConfig::fromEnv($env),
             ai: AiConfig::fromEnv($env),
+            mcpEnabled: $env->bool('MCP_ENABLED', true),
         );
+    }
+
+    /**
+     * Whether `/mcp` is routed: `MCP_ENABLED` and `API_ENABLED` both on.
+     */
+    public function mcpRouted(): bool
+    {
+        return $this->apiEnabled && $this->mcpEnabled;
     }
 
     public function isProduction(): bool

@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\AiDraft;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Ai\Draft\DraftProposal;
+use Logbook\Domain\Ai\Draft\DraftSource;
 use Logbook\Domain\Ai\Draft\DraftState;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -57,9 +58,28 @@ final readonly class DraftStore
     ) {
     }
 
-    public function create(User $user, ?int $threadId, DraftProposal $proposal): int
+    public function create(User $user, ?int $threadId, DraftProposal $proposal, DraftSource $source = DraftSource::Ask): int
     {
-        return $this->drafts->insert($user->id, $threadId, $proposal, $this->clock->now());
+        return $this->drafts->insert($user->id, $threadId, $proposal, $this->clock->now(), $source);
+    }
+
+    /**
+     * The drafts an MCP client left for review (spec.md §7.28 *Drafts to
+     * review*): those waiting for *Add*, and those added in the last few
+     * seconds, whose card still offers *Undo*. Newest first.
+     *
+     * @return list<AiDraft>
+     */
+    public function toReview(User $user): array
+    {
+        $now = $this->clock->now();
+
+        return $this->drafts->pending(
+            $user->id,
+            DraftSource::Mcp,
+            $now,
+            $now->modify('-' . AiDraft::UNDO_SECONDS . ' seconds'),
+        );
     }
 
     /**

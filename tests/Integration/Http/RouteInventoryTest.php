@@ -96,6 +96,10 @@ final class RouteInventoryTest extends AppTestCase
         'ask.feedback',
         // Phase 26.3: a draft card's buttons, one's own drafts only; the kind's ability is checked at the press.
         'ask.draft',
+        // Phase 26.5: an MCP draft's buttons, likewise; and the MCP endpoint, whose key's user is
+        // judged by each tool, resource and prompt with the pages' access policy.
+        'drafts.action',
+        'mcp',
         // Phase 26.4: scanning, one's own scans only (404 unless scanning is available); the vehicle's
         // ability is checked by the form a scan opens, the card (Manage) and the vehicle page (Manage).
         'scan',

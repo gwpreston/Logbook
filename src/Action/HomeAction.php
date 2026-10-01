@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Action;
 
 use Logbook\Action\Dashboard\DashboardCharts;
+use Logbook\Service\Ai\Draft\DraftCards;
+use Logbook\Service\Ai\Draft\DraftStore;
 use Logbook\Service\Attention\AttentionWording;
 use Logbook\Service\Dashboard\DashboardService;
 use Logbook\Service\Forecast\ForecastWording;
@@ -21,7 +23,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * order. `?vehicle={id}` narrows every widget to one active vehicle and pins
  * its card (an unknown or archived id shows the fleet). `?customise=1`
  * shows the move / hide controls (plain forms, so the layout can be
- * arranged without JS), always over the whole fleet.
+ * arranged without JS), always over the whole fleet. Drafts an MCP
+ * client left are listed above the widgets (spec.md §7.28).
  */
 final readonly class HomeAction
 {
@@ -33,6 +36,8 @@ final readonly class HomeAction
         private ClockInterface $clock,
         private ForecastWording $forecastWording,
         private AttentionWording $attentionWording,
+        private DraftStore $drafts,
+        private DraftCards $draftCards,
     ) {
     }
 
@@ -48,6 +53,7 @@ final readonly class HomeAction
         return $this->view->render($request, $response, 'home.twig', [
             'dashboard' => $dashboard,
             'customise' => $customise,
+            'review_drafts' => array_values($this->draftCards->cards($user, $this->drafts->toReview($user))),
             'today' => LocalTime::today($this->clock, $user->preferences->timeZone()),
             'wording' => $this->wording,
             'forecast_wording' => $this->forecastWording,

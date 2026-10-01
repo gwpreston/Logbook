@@ -2530,6 +2530,8 @@ return [
         'base_label' => 'API-Adresse',
         'header_hint' => 'Sende den Schlüssel bei jeder Anfrage mit: Authorization: Bearer lbk_…',
         'openapi' => 'OpenAPI-Beschreibung (für Werkzeuge, die sie lesen)',
+        'mcp_label' => 'MCP-Server-Adresse (Claude Desktop und andere Assistenten)',
+        'mcp_hint' => 'Dort gelten dieselben Schlüssel. Ein Leseschlüssel sieht die Lesewerkzeuge; ein Schlüssel zum Lesen und Schreiben kann auch Tankvorgänge und Kilometerstände eintragen und andere Einträge entwerfen, die du dann hinzufügst. Siehe docs/mcp.md.',
         'secret_hint' => 'Schlüssel werden mit SESSION_SECRET gehasht gespeichert: Wird es geändert, funktioniert kein Schlüssel mehr.',
     ],
     'api' => [
@@ -3150,6 +3152,7 @@ return [
             'read_document' => 'Belege und Dokumente lesen',
             'read_text' => 'Text-PDFs lesen',
             'test' => 'Tests',
+            'mcp' => 'MCP-Clients',
             'list' => 'Modelllisten',
             'hint' => [
                 'ask' => 'Logbook fragen und Einträge entwerfen. Braucht Werkzeuge.',
@@ -3455,6 +3458,7 @@ return [
         // Einträge entwerfen (Phase 26.3, spec.md §7.26).
         'draft' => [
             'card_label' => 'Entwurf aus deiner Nachricht',
+            'card_label_mcp' => 'Von einem Assistenten entworfen (MCP)',
             'kind' => [
                 'fuel' => 'Tanken',
                 'odometer' => 'Kilometerstand',
@@ -3614,6 +3618,76 @@ return [
                 'soon' => 'Reifen bald zu ersetzen',
                 'overdue' => 'Reifen jetzt zu ersetzen',
             ],
+        ],
+    ],
+    // MCP-Server (Phase 26.5, spec.md §7.28).
+    'mcp' => [
+        'instructions' => 'Logbook verwaltet die Fahrzeuge des Nutzers: Tanken, Kilometerstand, Wartung, Dokumente, Reifen, Erinnerungen, Kosten und Fahrten. Fahrzeug-IDs liefern find_vehicles oder die Ressource logbook://vehicles. Ergebnisse enthalten Rohwerte neben Anzeigetexten in den Einheiten und der Währung des Nutzers: Zitiere die Anzeigetexte und nenne den Link, wenn der Nutzer die Seite sehen möchte.',
+        'tool' => [
+            'find_vehicles' => 'Findet die Fahrzeuge des Nutzers nach Name, Marke, Modell oder Kennzeichen, für ihre IDs. Liefert jeden Treffer; passen mehrere, frag den Nutzer, welches gemeint ist.',
+            'costs' => 'Ausgaben in einem Zeitraum: Summen je Währung, nach Kategorie (Kraftstoff, Wartung, Dokumente, Sonstiges), Monat oder Fahrzeug, dazu die gefahrene Strecke. Ohne vehicles für alle Fahrzeuge; mit category nur eine Kostenart, z. B. Kraftstoff.',
+            'cost_per_distance' => 'Laufende Kosten je Strecke (alle Kosten geteilt durch die gefahrene Strecke) in einem Zeitraum, je Fahrzeug und für alle Fahrzeuge zusammen je Währung. Für Fragen wie „welches Auto kostet je Kilometer am meisten“.',
+            'maintenance' => 'Die Wartungseinträge eines Fahrzeugs (Inspektionen, Ölwechsel, Reparaturen, …), neueste zuerst. Filter nach Kategorie, nach Wörtern in Titel, Werkstatt oder Notizen und nach Zeitraum.',
+            'vehicle_summary' => 'Überblick über ein Fahrzeug: letzter Kilometerstand, Alter, Verbrauch, laufende Kosten je Strecke der letzten 12 Monate und was als Nächstes fällig ist.',
+            'fuel_stats' => 'Tanken (oder Laden) in einem Zeitraum: Tankvorgänge, Menge, Ausgaben, Durchschnittspreis je Einheit und Verbrauch in der Einheit des Nutzers, nach Kraftstoffsorte, und ob sich eine Sorte lohnt. Ohne vehicle für alle Fahrzeuge.',
+            'last_done' => 'Wann eine Arbeit an einem Fahrzeug zuletzt gemacht wurde (Datum und Kilometerstand), nach Kategorie (z. B. Öl) oder nach ID oder Titel eines Wartungsplans, und wann der Plan das nächste Mal fällig ist.',
+            'mileage' => 'Gefahrene Strecke in einem Zeitraum aus den Kilometerständen, je Fahrzeug und gesamt; der Durchschnitt je Monat und Jahr über das ganze Fahrtenbuch und der letzte Stand. Ohne vehicle für alle Fahrzeuge.',
+            'ownership' => 'Die Gesamtkosten eines Fahrzeugs über die Besitzzeit: laufende Kosten, Wertverlust (Kaufpreis gegen den letzten Wert), die Summe und die Kosten je Strecke und Monat.',
+            'coming_up' => 'Was als Nächstes fällig ist: Wartung nach Plan, Dokumente (Versicherung, HU, …), Reifen und Erinnerungen, mit Fälligkeitsdatum, Kilometerstand und den Kosten vom letzten Mal. Überfälliges zuerst.',
+            'documents' => 'Die Dokumente eines Fahrzeugs (Versicherung, HU oder andere Prüfung, Zulassung, Abgasbescheinigung, Sonstiges) mit Beginn, Ablauf, Status und Anbieter. Ohne vehicle für alle aktiven Fahrzeuge.',
+            'tyres' => 'Die Reifen eines Fahrzeugs: montierte (nach Position) und eingelagerte Sätze, mit Marke, Größe, Saison, Laufleistung, Alter, letzter Profiltiefe, geschätzter Reststrecke und Datum bis zur Verschleißgrenze und ob sie zu ersetzen sind.',
+            'trips_summary' => 'Die Dienstfahrten des Nutzers in einem Zeitraum: Anzahl, dienstliche und private Strecke und der Erstattungsbetrag zu den amtlichen Sätzen. Standard ist das laufende Steuerjahr.',
+            'needs_attention' => 'Was jetzt Aufmerksamkeit braucht: überfällige Wartung, Dokumente und Erinnerungen und Einträge, die falsch aussehen (seltsame Kilometerstände, Verbrauchsabweichung, ungewöhnliche Preise oder Kosten, veraltete Kilometerstände oder Werte).',
+            'log_fill_up' => 'Trägt einen Tankvorgang (oder eine Ladung) jetzt in Logbook ein, wie der Nutzer ihn beschrieben hat. Gib die Worte, Zahlen und Einheiten des Nutzers weiter und lass weg, was er nicht gesagt hat: Logbook ermittelt Fahrzeug, Datum und Beträge und fragt nach, wenn es unsicher ist. Bestätige die Angaben vor dem Aufruf mit dem Nutzer. Ein erneuter Aufruf mit demselben Tankvorgang trägt ihn nie doppelt ein.',
+            'add_reading' => 'Trägt jetzt einen Kilometerstand in Logbook ein. Für einen Tankvorgang nimm log_fill_up: Es speichert den Stand mit. Gib die Worte und Zahlen des Nutzers weiter; bestätige vor dem Aufruf mit dem Nutzer. Ein erneuter Aufruf mit demselben Stand trägt ihn nie doppelt ein.',
+            'draft_service_record' => 'Entwirft einen Wartungseintrag (Wartung oder Reparatur). Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis. Gib die Worte, Zahlen und Einheiten des Nutzers weiter; lass weg, was er nicht gesagt hat.',
+            'draft_document' => 'Entwirft ein Dokument (Versicherung, HU oder andere Prüfung, Zulassung, Abgasbescheinigung, Sonstiges). Noch wird nichts gespeichert: Der Nutzer fügt es in Logbook hinzu, über den Link im Ergebnis. Gib die Worte und Daten des Nutzers weiter.',
+            'draft_expense' => 'Entwirft eine Ausgabe (Parken, Maut, Kfz-Steuer, Reinigung, Zubehör, Bußgelder, Finanzierung, Sonstiges). Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis. Tanken, Wartung und Dokumente haben eigene Werkzeuge.',
+            'draft_tyre_check' => 'Entwirft eine Profiltiefenmessung: eine Tiefe für einen oder mehrere montierte Reifen. Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis.',
+            'draft_reminder' => 'Entwirft eine manuelle Erinnerung: einen Titel und ein Fälligkeitsdatum oder eine Zeit vor oder nach dem Ablauf eines Dokuments oder der nächsten Fälligkeit eines Plans. Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis.',
+        ],
+        'say' => [
+            'logged' => 'Eingetragen. Es steht jetzt in Logbook: {link}',
+            'duplicate' => 'Das war schon eingetragen, also wurde nichts Neues gespeichert: {link}',
+            'draft_saved' => 'Entwurf gespeichert. Öffne {link}, um ihn hinzuzufügen.',
+            'choose_vehicle' => 'Frag den Nutzer, welches Fahrzeug gemeint ist, und ruf dann mit dessen ID erneut auf.',
+            'ask_user' => 'Stell dem Nutzer die Frage und ruf dann mit seiner Antwort erneut auf.',
+        ],
+        'resource' => [
+            'vehicles' => [
+                'title' => 'Fahrzeuge',
+                'description' => 'Die Fahrzeuge, die der Nutzer sieht: ID, Name, Kennzeichen, Art, Kraftstoff und Status (aktiv oder archiviert).',
+            ],
+            'me' => [
+                'title' => 'Einstellungen',
+                'description' => 'Sprache, Zeitzone, Währung, Einheiten und Steuerjahresbeginn des Nutzers, Name und Umfang des Schlüssels und welche Module an sind.',
+            ],
+            'vehicle_summary' => [
+                'title' => 'Fahrzeugüberblick',
+                'description' => 'Überblick über ein Fahrzeug: letzter Kilometerstand, Alter, Verbrauch, laufende Kosten je Strecke der letzten 12 Monate und was als Nächstes fällig ist.',
+            ],
+        ],
+        'prompt' => [
+            'vehicle_argument' => 'Die ID des Fahrzeugs, aus find_vehicles oder logbook://vehicles.',
+            'monthly_summary' => [
+                'title' => 'Monatsübersicht',
+                'description' => 'Kosten, Tanken, Strecke und alles, was Aufmerksamkeit braucht, im letzten Monat je Fahrzeug.',
+                'text' => 'Fasse den letzten Monat in Logbook für jedes meiner Fahrzeuge zusammen. Nutze costs (Zeitraum last_month, nach Fahrzeug), fuel_stats und mileage für den letzten Monat und needs_attention. Nenne je Fahrzeug die Ausgaben, Kraftstoff und Verbrauch, die gefahrene Strecke und alles, was Aufmerksamkeit braucht. Zitiere die Anzeigetexte und fasse dich kurz.',
+            ],
+            'before_service' => [
+                'title' => 'Vor der Wartung',
+                'description' => 'Die letzten Wartungen eines Fahrzeugs, was fällig ist und der Zustand der Reifen.',
+                'text' => 'Ich bringe {vehicle} (Fahrzeug-ID {id}) zur Wartung. Liste aus Logbook die letzten Wartungen (maintenance), was fällig oder überfällig ist (coming_up und last_done) und Profiltiefe und Alter der Reifen (tyres). Schließe mit einer kurzen Liste, wonach ich die Werkstatt fragen sollte.',
+            ],
+            'sale_checklist' => [
+                'title' => 'Verkaufs-Checkliste',
+                'description' => 'Was die Verkaufsmappe für ein Fahrzeug zeigen würde, und welche Lücken es gibt.',
+                'text' => 'Ich bereite den Verkauf von {vehicle} (Fahrzeug-ID {id}) vor. Prüfe in Logbook, was die Verkaufsmappe zeigen würde: Wartungshistorie (maintenance), Dokumente und HU-Historie (documents), Kilometerverlauf (mileage) und Besitzkosten (ownership). Nenne Lücken, nach denen ein Käufer fragen würde, etwa fehlende Wartungen, abgelaufene Dokumente oder lange Lücken im Kilometerverlauf. Die Verkaufsmappe selbst: {link}',
+            ],
+        ],
+        'review' => [
+            'heading' => 'Entwürfe zum Prüfen',
+            'lead' => '{count, plural, one {Ein Assistent hat diesen Eintrag über den MCP-Server entworfen. Prüfe ihn und füge ihn hinzu, bearbeite oder verwirf ihn.} other {Ein Assistent hat diese # Einträge über den MCP-Server entworfen. Prüfe jeden und füge ihn hinzu, bearbeite oder verwirf ihn.}}',
         ],
     ],
 ];

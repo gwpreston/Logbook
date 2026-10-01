@@ -3,15 +3,19 @@
  # A drafted entry's card (spec.md §7.26 *Draft card*): each field as
  # Logbook computed and formatted it, derived values marked, the form's
  # warnings, and Add / Edit / Discard. Once added: Added · View · Undo.
- # `item` comes from AskPage::cards(). Plain forms; works without JS.
+ # `item` comes from DraftCards::cards(). Plain forms; works without JS.
+ # An MCP client's draft (spec.md §7.28) posts to /drafts, which needs no
+ # Ask, and comes back to `back` ('home' or 'ask', the page listing it).
  #}
 {% set draft = item.draft %}
 {% set card = item.card %}
+{% set from_mcp = draft.source.value == 'mcp' %}
+{% set draft_route = from_mcp ? 'drafts.action' : 'ask.draft' %}
 <section class="draft-card draft-card--{{ item.state }}" id="draft-{{ draft.id }}" aria-labelledby="draft-{{ draft.id }}-title" data-draft-card>
     <header class="draft-card__header">
         {% if item.vehicle %}{{ ui.vehicle_photo(item.vehicle, 'draft-card__photo') }}{% endif %}
         <div>
-            <p class="draft-card__label muted">{{ 'ask.draft.card_label'|trans }}</p>
+            <p class="draft-card__label muted">{{ (from_mcp ? 'ask.draft.card_label_mcp' : 'ask.draft.card_label')|trans }}</p>
             <h3 class="draft-card__title" id="draft-{{ draft.id }}-title">{{ card.title ?? '' }} · {{ card.vehicle ?? '' }}{% if card.registration ?? null %} <span class="muted">{{ card.registration }}</span>{% endif %}</h3>
         </div>
     </header>
@@ -34,21 +38,24 @@
 
     <div class="draft-card__actions" role="group" aria-label="{{ card.title ?? '' }}">
         {% if item.state == 'waiting' %}
-            <form method="post" action="{{ url_for('ask.draft', {draft: draft.id, action: 'add'}) }}">
+            <form method="post" action="{{ url_for(draft_route, {draft: draft.id, action: 'add'}) }}">
                 {{ ui.csrf(csrf) }}
+                {% if from_mcp %}<input type="hidden" name="back" value="{{ back ?? 'home' }}">{% endif %}
                 <button class="btn btn--primary" type="submit">{{ ui.icon('add') }}{{ 'ask.draft.add'|trans }}</button>
             </form>
             <a class="btn" href="{{ url_for(item.edit[0], item.edit[1], item.edit[2]) }}" data-modal>{{ ui.icon('edit') }}{{ 'ask.draft.edit'|trans }}</a>
-            <form method="post" action="{{ url_for('ask.draft', {draft: draft.id, action: 'discard'}) }}">
+            <form method="post" action="{{ url_for(draft_route, {draft: draft.id, action: 'discard'}) }}">
                 {{ ui.csrf(csrf) }}
+                {% if from_mcp %}<input type="hidden" name="back" value="{{ back ?? 'home' }}">{% endif %}
                 <button class="btn btn--ghost" type="submit">{{ ui.icon('close') }}{{ 'ask.draft.discard'|trans }}</button>
             </form>
         {% elseif item.state == 'added' %}
             <p class="draft-card__status" role="status">{{ ui.icon('check_circle') }}{{ (card.duplicate ?? false) ? 'ask.draft.duplicate'|trans : 'ask.draft.added'|trans }}</p>
             <a class="btn btn--ghost" href="{{ url_for(item.view[0], item.view[1]) }}">{{ 'ask.draft.view'|trans }}</a>
             {% if item.can_undo %}
-                <form method="post" action="{{ url_for('ask.draft', {draft: draft.id, action: 'undo'}) }}" data-draft-undo="{{ item.undo_seconds }}">
+                <form method="post" action="{{ url_for(draft_route, {draft: draft.id, action: 'undo'}) }}" data-draft-undo="{{ item.undo_seconds }}">
                     {{ ui.csrf(csrf) }}
+                {% if from_mcp %}<input type="hidden" name="back" value="{{ back ?? 'home' }}">{% endif %}
                     <button class="btn btn--ghost" type="submit">{{ ui.icon('undo') }}{{ 'ask.draft.undo'|trans }}</button>
                 </form>
             {% endif %}

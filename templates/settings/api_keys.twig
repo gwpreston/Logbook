@@ -99,6 +99,14 @@
                 <p><a href="{{ openapi_url }}">{{ 'api_keys.openapi'|trans }}</a></p>
             {% endif %}
             <p class="field__hint">{{ 'api_keys.secret_hint'|trans }}</p>
+            {% if mcp_url %}
+                {# The MCP server (spec.md §7.28) takes the same keys. #}
+                <div class="field">
+                    <label class="field__label" for="f-mcp-url">{{ 'api_keys.mcp_label'|trans }}</label>
+                    <input class="input tabular" id="f-mcp-url" type="text" readonly value="{{ mcp_url }}" aria-describedby="f-mcp-url-hint">
+                    <p class="field__hint" id="f-mcp-url-hint">{{ 'api_keys.mcp_hint'|trans }}</p>
+                </div>
+            {% endif %}
         </section>
     </div>
 {% endblock %}

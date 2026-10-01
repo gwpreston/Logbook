@@ -24,12 +24,15 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * Global and outermost, so it answers preflights before routing (no
  * OPTIONS routes) and marks the router's own 404s too; anything that is
- * not an API path passes straight through.
+ * not an API path or the MCP endpoint (§7.28, which also allows its own
+ * headers) passes straight through.
  */
 final readonly class ApiCorsMiddleware implements MiddlewareInterface
 {
     private const string METHODS = 'GET, POST, OPTIONS';
     private const string HEADERS = 'Authorization, Content-Type';
+    /** The MCP transport's own request headers (spec.md §7.28). */
+    private const string MCP_HEADERS = 'Authorization, Content-Type, MCP-Protocol-Version, Mcp-Method, Mcp-Name';
     private const int MAX_AGE = 600;
 
     public function __construct(
@@ -41,7 +44,9 @@ final readonly class ApiCorsMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if (!$this->settings->apiEnabled || !ApiPath::matches($request->getUri()->getPath(), $this->settings->basePath)) {
+        $path = $request->getUri()->getPath();
+        $mcp = $this->settings->mcpRouted() && ApiPath::isMcp($path, $this->settings->basePath);
+        if (!$mcp && (!$this->settings->apiEnabled || !ApiPath::matches($path, $this->settings->basePath))) {
             return $handler->handle($request);
         }
 
@@ -59,7 +64,7 @@ final readonly class ApiCorsMiddleware implements MiddlewareInterface
 
             return $this->withCors($this->responses->createResponse(204), $origin)
                 ->withHeader('Access-Control-Allow-Methods', self::METHODS)
-                ->withHeader('Access-Control-Allow-Headers', self::HEADERS)
+                ->withHeader('Access-Control-Allow-Headers', $mcp ? self::MCP_HEADERS : self::HEADERS)
                 ->withHeader('Access-Control-Max-Age', (string) self::MAX_AGE);
         }
 

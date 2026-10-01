@@ -65,6 +65,7 @@ each vehicle costs.*
 | Single sign-on (Phase 23.1; the proxy JWT's HS256 in 23.2) | `firebase/php-jwt` (JWS and JWKS; `phpseclib/phpseclib` for its PS256) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
 | AI providers (Phase 26.1) | No SDK: `symfony/http-client` with per-request options, libsodium `secretbox` for stored keys, an in-house JSON Schema subset check | Four small adapters cover every runtime and provider; nothing new to install (§5 *AI adapters*) |
 | Reading files (Phase 26.4) | `smalot/pdfparser` (PDF text layer, LGPL-3.0, used unmodified through Composer); PHP's `gd` (JPEG, PNG, WebP) and `exif` for rotating, stripping and downscaling photos (**required**); Ghostscript or Imagick, optional, for rendering scanned PDFs | Pure PHP for text PDFs; every photo upload is re-encoded without its metadata, so `gd` and `exif` are required like `intl` (decided 2026-10-01, `docs/phases/open-questions.md` #83, #84) |
+| MCP server (Phase 26.5) | No SDK: Logbook's own Streamable HTTP endpoint (JSON-RPC over POST, JSON responses), protocol versions `2026-07-28` and the legacy `2025-11-25` / `2025-06-18`; conformance tested against the specification's JSON schemas with `justinrainbow/json-schema` (dev only) | The official `mcp/sdk` is experimental before 1.0, adds five dependencies and registers tools by attribute, while Logbook's tool list varies by key and language (decided 2026-10-01, `docs/phases/open-questions.md` #90; §7.28) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -792,7 +793,8 @@ MySQL only.
   CASCADE`), input (JSON: the validated API-shaped body), card (JSON:
   the formatted lines, derived marks and warnings shown on the card),
   form_values (JSON: the create form's values in the user's units and
-  language, for *Edit*), created_at, expires_at (an hour later),
+  language, for *Edit*), source (`ask` | `mcp`, Phase 26.5; default
+  `ask`), created_at, expires_at (an hour later; 7 days for `mcp`),
   discarded_at, applied_at, applied_entry_id and
   applied_updated_at (optional; *Undo*'s check that the entry is
   untouched), all UTC. Deleted by the scheduled task once expired and not
@@ -3280,7 +3282,9 @@ allows browser dashboards: those origins get `Access-Control-Allow-Origin`
 on API responses, errors included, and a preflight (`OPTIONS`) answers 204
 for them (methods `GET, POST`, headers `Authorization, Content-Type`); any
 other preflight answers 403 (`cors_not_allowed`). Credentials are never
-allowed: the key travels in a header the page sets.
+allowed: the key travels in a header the page sets. The same applies to
+the MCP endpoint (§7.28, Phase 26.5), whose preflight also allows the
+`MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` headers.
 
 **Settings → API keys** stays when `API_ENABLED` is `false` (keys can be
 prepared; the page says the API is off). Revoking asks for confirmation on
@@ -4361,6 +4365,123 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   field (#79); bulk scanning; a warranty entity (warranties scan as
   `other`); OCR engines (the vision model reads images).
 
+### 7.28 MCP server (Phase 26.5)
+
+Logbook's Ask tools (§7.26) over the Model Context Protocol, so an MCP
+client (Claude Desktop, an IDE agent, a local assistant) can use them
+with its own model. No connection in Settings → AI is needed or used.
+
+- **Endpoint:** `POST {APP_BASE_PATH}/mcp`, the Streamable HTTP
+  transport. Outside the session and CSRF groups, like the API. It is
+  routed only while both `MCP_ENABLED` (default `true`) and `API_ENABLED`
+  are on; otherwise `/mcp` is a 404. `GET` and `DELETE` answer 405.
+- **Protocol versions** (decided 2026-10-01, `docs/phases/open-questions.md`
+  #89): **dual-era**, and stateless in both eras.
+  - *Modern* `2026-07-28`: every request carries
+    `io.modelcontextprotocol/protocolVersion` and `…/clientCapabilities`
+    in `_meta`, and the `MCP-Protocol-Version`, `Mcp-Method` and (for
+    `tools/call`, `resources/read`, `prompts/get`) `Mcp-Name` headers,
+    which must match the body (a Base64 `=?base64?…?=` value is decoded
+    first). A missing or different header is a 400 `HeaderMismatch`
+    (-32020); missing `_meta` fields a 400 -32602; an unknown version a
+    400 `UnsupportedProtocolVersion` (-32022) listing the supported ones;
+    an unknown method a 404 -32601. `server/discover` is implemented.
+    Results carry `resultType: "complete"`, the server's name and version
+    in `_meta` (`io.modelcontextprotocol/serverInfo`), and on the
+    cacheable ones `ttlMs: 0` with `cacheScope: "private"`.
+  - *Legacy* `2025-11-25` and `2025-06-18`: `initialize` answers with the
+    client's version when it is one of those, otherwise `2025-11-25`;
+    `notifications/initialized` (and any notification) answers 202;
+    `ping` answers `{}`. No session id is issued (the transport makes it
+    optional) and none is required, so each request stands alone. A
+    legacy request without `MCP-Protocol-Version` is served as
+    `2025-06-18`; a header naming a version Logbook doesn't speak is a 400.
+  - A request is modern when it has the `_meta` version or a
+    `MCP-Protocol-Version: 2026-07-28` (or later) header; otherwise legacy.
+  - Responses are single JSON objects (`application/json`); Logbook never
+    opens an SSE stream, which the transport allows. Batches are refused.
+- **Implementation** (decided 2026-10-01, #90): Logbook's own, about the
+  size of one AI adapter, rather than the experimental `mcp/sdk` (§4).
+  Conformance is tested against the specification's published JSON
+  schemas and examples for both eras.
+- **Auth:** `Authorization: Bearer lbk_…`, a Phase 18.2 key (§7.20). A
+  missing or bad key is a 401 with `WWW-Authenticate: Bearer`, counted by
+  the API's failed-key throttle (429 while blocked). The key's user is the
+  request's user, with the access policy and display preferences applied
+  exactly as for the API, so a key never sees more than its user. `Origin`,
+  when sent, must be one of `API_CORS_ORIGINS`, or the request is a 403
+  (DNS-rebinding protection; the refused origin is logged); the API's CORS
+  (preflight and `Access-Control-Allow-Origin`) covers `/mcp` too, with the
+  MCP headers allowed. These refusals come before the message is read, so
+  their JSON-RPC errors have no id and use Logbook's own codes, outside the
+  reserved range: -31401 (401), -31403 (403), -31429 (429).
+  **Settings → API keys** shows the MCP address beside the API's, while
+  `/mcp` is routed.
+- **What switches it off for a user** (decided 2026-10-01, #91): only
+  `MCP_ENABLED`, `API_ENABLED` and the key. Each tool needs its own
+  module (`fuel`, `maintenance`, …) as on the pages and the API; the AI
+  modules (`ai_ask`, `ai_actions`, `ai_scan`) and the user's *Use AI
+  features* setting don't apply, because no Logbook model is used.
+- **Tools** (`tools/list` varies only by the key; deterministic order):
+  - Every key: the Phase 26.2 read tools, with the same arguments and
+    results (raw values, display strings in the key user's units, locale
+    and currency), plus `link`, an absolute URL (`APP_URL`, base path
+    included) to the page showing the same. A result is returned as
+    `structuredContent` and as the same JSON in one text block.
+  - `read_write` keys also get `log_fill_up` and `add_reading`
+    (decided 2026-10-01, #88): the Ask draft tools' arguments and
+    resolution (vehicle, words, dates, numbers), then the API's write path
+    (§7.20) for real: validation, the derived amount, duplicate-safe
+    retries (an entry logged already is not written again: the result's
+    `status` is `duplicate`), and warnings. The result says "Logged" (or
+    that it was logged already), with the link to the vehicle's fill-ups or
+    mileage log.
+  - `read_write` keys also get `draft_service_record`, `draft_document`,
+    `draft_expense`, `draft_tyre_check` and `draft_reminder`: validated as
+    in §7.26 *Drafting entries*, then kept as a draft from MCP (§6
+    AiDraft `source = mcp`) for **7 days**. Their result says "Draft
+    saved. Open {link} to add it.", the link going to the dashboard card.
+  - Tool descriptions are written for an MCP client's model, translated
+    to the key user's language (`mcp.tool.*`). Unknown tools, and tools
+    the key can't use, are a JSON-RPC -32602. A tool's own refusal (a
+    vehicle the user can't see, an invalid entry) is a result with
+    `isError: true` and the message; a question back (which vehicle,
+    missing details, a date or number to confirm) is an ordinary result
+    with its `status` and what to ask.
+- **Drafts to review:** waiting MCP drafts are listed on the dashboard
+  (*Drafts to review*, above the widgets, while there are any) and on
+  `/ask` when Ask is available, each as the §7.26 draft card with *Add*,
+  *Edit* and *Discard*, and *Undo* for 10 seconds after *Add*. Their
+  buttons work without Ask (only the draft's own user); an Ask draft
+  still needs Ask. Expired MCP drafts are deleted by the scheduled task
+  like Ask's.
+- **Resources:** `logbook://vehicles` (id, name, registration, fuel type,
+  status, for the vehicles the user can see), `logbook://me` (units,
+  currency, locale, time zone, tax-year start) and the template
+  `logbook://vehicles/{id}/summary` (the `vehicle_summary` tool's
+  result). An unknown or hidden vehicle is a -32602 (legacy: -32002).
+  All JSON (`application/json`).
+- **Prompts:** `monthly_summary` (last month's costs, fuel, mileage and
+  anything needing attention, per vehicle), `before_service` (argument
+  `vehicle`: its last services, what is due, and tyre state) and
+  `sale_checklist` (argument `vehicle`: what the sale pack would show and
+  any gaps). Each is one user message naming the tools to call, in the
+  key user's language.
+- **Logging:** each `tools/call`, `resources/read` and `prompts/get` is
+  in the usage log (§7.25) as task `mcp`, with the key's name in place of
+  the model, its outcome and duration, and never any content (whatever
+  `AI_LOG_CONTENT` says).
+- **Clients** (`docs/mcp.md`): a client that can send a bearer header
+  connects by URL. Claude's custom connectors connect from Anthropic's
+  servers, so they need the server reachable over public HTTPS; on a LAN,
+  or without the connector's request headers, Claude Desktop uses the
+  `mcp-remote` bridge (`npx mcp-remote <url> --header …`), which needs
+  Node on the client machine only (decided 2026-10-01, #87).
+- **Not in scope:** the stdio transport (a `bin/mcp-stdio.php` bridge is
+  in §12); OAuth for MCP clients; SSE streams, subscriptions and
+  list-changed notifications; file reading over MCP (§7.27 stays in
+  Logbook's pages); any Settings → AI connection.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -4489,6 +4610,8 @@ Real environment variables override `.env`; an empty value counts as unset.
 - `API_ENABLED` (the REST API, §7.20; default `true`; `false` makes every
   `/api/v1` path a 404), `API_CORS_ORIGINS` (comma-separated origins
   allowed to call the API from a browser; default none)
+- `MCP_ENABLED` (the MCP server, §7.28; default `true`; `false`, or
+  `API_ENABLED=false`, makes `/mcp` a 404)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
 - Single sign-on (§7.9, Phase 23.1): `OIDC_ISSUER` (SSO is configured
   when set), `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_PROVIDER_NAME`
@@ -4629,6 +4752,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Settings by chat (Phase 26.3, #75): changing lead times, units or
   modules from *Ask* ("set my MOT reminder to two weeks"). Settings stay
   forms only until then.
+- MCP (Phase 26.5): a `bin/mcp-stdio.php` stdio bridge for clients that
+  can't send headers (#87; `mcp-remote` is documented meanwhile); OAuth
+  for MCP clients; SSE streams and list-changed subscriptions.
 
 ---
 
@@ -4865,6 +4991,15 @@ task breakdowns live in the per-phase files; this is the map.
   Recommended work and MOT advisories are offered as manual reminders,
   which can now be due at an odometer (§6 PendingUpload, Reminder; §7.6,
   §7.12, §7.20, §7.27). One migration. Release v2.8.0.
+- **Phase 26.5 — MCP server + v2.9 release.** The Ask read tools over
+  the Model Context Protocol at `/mcp` (Streamable HTTP, `2026-07-28` and
+  the legacy `initialize` versions, stateless), authorised by an API key
+  and seeing what its user sees. `read_write` keys log fill-ups and
+  readings through the API's write path; service records, documents,
+  expenses, tread checks and reminders become drafts kept 7 days and
+  reviewed on the dashboard. Three resources, three prompts,
+  `MCP_ENABLED`, and setup guides for Claude Desktop and other clients
+  (§6 AiDraft, §7.28). One migration. Release v2.9.0.
 
 ---
 

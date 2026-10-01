@@ -173,6 +173,19 @@ $compose exec -T app sh -c 'ls var/cache/api-throttle/*.json' >/dev/null || fail
 echo "ok  failed-key counter written"
 api /openapi.json 200 '"openapi":"3.1.0"'
 
+# MCP server (Phase 26.5): the same key at /mcp, through the web server (and,
+# in the header variant, nginx's forward-auth exemption).
+mcp() { # mcp <status> <body-substring> [token]
+    status="$(curl -s -o /tmp/smoke.body -w '%{http_code}' ${3:+-H "Authorization: Bearer $3"} \
+        -H 'Content-Type: application/json' -H 'MCP-Protocol-Version: 2025-11-25' \
+        -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' "$base/mcp")" || fail "request to $base/mcp failed"
+    [ "$status" = "$1" ] || fail "$base/mcp returned $status, expected $1: $(cat /tmp/smoke.body)"
+    grep -qF -- "$2" /tmp/smoke.body || fail "$base/mcp body lacks: $2"
+    echo "ok  $1  MCP tools/list"
+}
+mcp 200 '"name":"find_vehicles"' "$token"
+mcp 401 '"code":-31401'
+
 # Restarting must be idempotent (migrations already applied) and keep sessions.
 $compose restart app >/dev/null
 $compose up -d --wait --no-build >/dev/null || fail "stack unhealthy after restart"

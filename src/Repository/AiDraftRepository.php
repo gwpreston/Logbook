@@ -11,11 +11,13 @@ use Doctrine\DBAL\ParameterType;
 use Logbook\Domain\Ai\Draft\AiDraft;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Ai\Draft\DraftProposal;
+use Logbook\Domain\Ai\Draft\DraftSource;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
 /**
- * Ask's drafted entries (`ai_drafts`, spec.md §6 AiDraft). A draft is read
+ * Drafted entries (`ai_drafts`, spec.md §6 AiDraft), from Ask or an MCP
+ * client (§7.28). A draft is read
  * only by its own user; another user's id is not found. *Add* claims a
  * draft with a conditional update, so it is applied once at most.
  */
@@ -29,18 +31,24 @@ final readonly class AiDraftRepository
     {
     }
 
-    public function insert(int $userId, ?int $threadId, DraftProposal $proposal, DateTimeImmutable $now): int
-    {
+    public function insert(
+        int $userId,
+        ?int $threadId,
+        DraftProposal $proposal,
+        DateTimeImmutable $now,
+        DraftSource $source = DraftSource::Ask,
+    ): int {
         $this->connection->insert(self::TABLE, [
             'user_id' => $userId,
             'thread_id' => $threadId,
+            'source' => $source->value,
             'kind' => $proposal->kind->value,
             'vehicle_id' => $proposal->vehicleId,
             'input' => self::json($proposal->input),
             'card' => self::json($proposal->card),
             'form_values' => self::json($proposal->formValues),
             'created_at' => $this->time($now),
-            'expires_at' => $this->time($now->modify('+' . AiDraft::TTL_SECONDS . ' seconds')),
+            'expires_at' => $this->time($now->modify('+' . $source->ttlSeconds() . ' seconds')),
         ], ['user_id' => ParameterType::INTEGER, 'thread_id' => ParameterType::INTEGER, 'vehicle_id' => ParameterType::INTEGER]);
 
         return (int) $this->connection->lastInsertId();
@@ -100,6 +108,33 @@ final readonly class AiDraftRepository
             ->setParameter('user', $userId, ParameterType::INTEGER)
             ->setParameter('thread', $threadId, ParameterType::INTEGER)
             ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * The user's drafts from a source that are waiting for *Add*, or were
+     * added since $addedSince (their card still offers *Undo*), newest first.
+     *
+     * @return list<AiDraft>
+     */
+    public function pending(int $userId, DraftSource $source, DateTimeImmutable $now, DateTimeImmutable $addedSince): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('*')
+            ->from(self::TABLE)
+            ->where(
+                'user_id = :user',
+                'source = :source',
+                '(applied_at IS NULL AND discarded_at IS NULL AND expires_at > :now)'
+                . ' OR (applied_at >= :since AND discarded_at IS NULL)',
+            )
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('source', $source->value)
+            ->setParameter('now', $this->time($now))
+            ->setParameter('since', $this->time($addedSince))
+            ->orderBy('id', 'DESC')
             ->fetchAllAssociative();
 
         return array_values(array_map($this->hydrate(...), $rows));
@@ -228,6 +263,7 @@ final readonly class AiDraftRepository
             appliedAt: $nullable('applied_at'),
             appliedEntryId: Row::nullableInt($row, 'applied_entry_id'),
             appliedUpdatedAt: $nullable('applied_updated_at'),
+            source: DraftSource::tryFrom(Row::nullableString($row, 'source') ?? '') ?? DraftSource::Ask,
         );
     }
 

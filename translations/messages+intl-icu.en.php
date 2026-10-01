@@ -2532,6 +2532,8 @@ return [
         'base_label' => 'API address',
         'header_hint' => 'Send the key with every request: Authorization: Bearer lbk_…',
         'openapi' => 'OpenAPI description (for tools that read it)',
+        'mcp_label' => 'MCP server address (Claude Desktop and other assistants)',
+        'mcp_hint' => 'The same keys work there. A read key sees the read tools; a read-and-write key can also log fill-ups and readings, and draft other entries for you to add. See docs/mcp.md.',
         'secret_hint' => 'Keys are stored hashed with SESSION_SECRET: changing it stops every key working.',
     ],
     'api' => [
@@ -3152,6 +3154,7 @@ return [
             'read_document' => 'Reading receipts and documents',
             'read_text' => 'Reading text PDFs',
             'test' => 'Tests',
+            'mcp' => 'MCP clients',
             'list' => 'Model lists',
             'hint' => [
                 'ask' => 'Ask Logbook and drafting entries. Needs tools.',
@@ -3468,6 +3471,7 @@ return [
         // Drafting entries (Phase 26.3, spec.md §7.26).
         'draft' => [
             'card_label' => 'Draft from your message',
+            'card_label_mcp' => 'Drafted by an assistant (MCP)',
             'kind' => [
                 'fuel' => 'Fill-up',
                 'odometer' => 'Odometer reading',
@@ -3616,6 +3620,76 @@ return [
             'draft_expense' => 'Drafting the expense…',
             'draft_tyre_check' => 'Drafting the tread check…',
             'draft_reminder' => 'Drafting the reminder…',
+        ],
+    ],
+    // MCP server (Phase 26.5, spec.md §7.28): what an MCP client's model and its user read.
+    'mcp' => [
+        'instructions' => 'Logbook keeps the user\'s vehicles: fuel, mileage, maintenance, documents, tyres, reminders, costs and trips. Use find_vehicles or the logbook://vehicles resource to get vehicle ids. Results carry raw values beside display strings in the user\'s units and currency: quote the display strings, and give the link when the user may want to see the page.',
+        'tool' => [
+            'find_vehicles' => 'Find the user\'s vehicles by name, make, model or registration, for their ids. Returns every match; when more than one matches, ask the user which they mean.',
+            'costs' => 'Money spent in a period: totals per currency, split by category (fuel, maintenance, compliance, other), by month or by vehicle, plus the distance driven. Leave vehicles out for all of them; use category to count only one kind of cost, e.g. fuel.',
+            'cost_per_distance' => 'Running cost per distance (all costs divided by the distance driven) in a period, per vehicle and for all vehicles together in each currency. Use it for "which car costs most per mile".',
+            'maintenance' => 'A vehicle\'s maintenance records (services, oil changes, repairs, …), newest first. Filter by category, by words in the title, vendor or notes, and by period.',
+            'vehicle_summary' => 'An overview of one vehicle: latest odometer reading, age, fuel economy, running cost per distance over the last 12 months, and the next thing due.',
+            'fuel_stats' => 'Fuel (or charging) in a period: fill-ups, volume, spend, average price per unit and economy in the user\'s unit, split by fuel grade, and whether a grade is worth it. Leave vehicle out for every vehicle.',
+            'last_done' => 'When a job was last done on a vehicle (date and odometer), by category (e.g. oil) or by a maintenance schedule\'s id or title, and when the schedule is next due.',
+            'mileage' => 'Distance driven in a period, from odometer readings, per vehicle and in total; the average per month and per year over the whole mileage log, and the latest reading. Leave vehicle out for every vehicle.',
+            'ownership' => 'The lifetime cost of owning one vehicle: running costs, depreciation (purchase price against the latest value), the total, and the cost per distance and per month.',
+            'coming_up' => 'What falls due next: services by schedule, document renewals (insurance, MOT, …), tyres and reminders, with due dates, due odometer and last time\'s cost. Overdue items come first.',
+            'documents' => 'A vehicle\'s documents (insurance, MOT or inspection, registration, pollution certificate, other) with start and expiry dates, status and provider. Leave vehicle out for every active vehicle.',
+            'tyres' => 'A vehicle\'s tyres: those fitted (by position) and stored sets, with brand, size, season, distance covered, age, the last tread depth, the estimated distance and date until worn, and whether they are due for replacing.',
+            'trips_summary' => 'The user\'s business trips in a period: count, business and private distance, and the mileage claim value at the approved rates. Defaults to the current tax year.',
+            'needs_attention' => 'What needs attention now: overdue services, renewals and reminders, and records that look wrong (odd odometer readings, economy drift, unusual prices or costs, stale mileage or valuations).',
+            'log_fill_up' => 'Log a fill-up (or a charge) in Logbook now, as the user described it. Pass on the user\'s own words, numbers and units, and leave out what they did not say: Logbook resolves the vehicle, the date and the amounts, and asks back when unsure. Confirm the details with the user before calling. Retrying the same fill-up never logs it twice.',
+            'add_reading' => 'Log an odometer (mileage) reading in Logbook now. For a fill-up, use log_fill_up instead: it records the reading too. Pass on the user\'s own words and numbers; confirm with the user before calling. Retrying the same reading never logs it twice.',
+            'draft_service_record' => 'Draft a service record (maintenance or repair work). Nothing is saved yet: the user adds it in Logbook, from the link in the result. Pass on the user\'s own words, numbers and units; leave out what they did not say.',
+            'draft_document' => 'Draft a document (insurance, MOT or other inspection, registration, pollution certificate, other). Nothing is saved yet: the user adds it in Logbook, from the link in the result. Pass on the user\'s own words and dates.',
+            'draft_expense' => 'Draft an expense (parking, tolls, road tax, cleaning, accessories, fines, finance, other). Nothing is saved yet: the user adds it in Logbook, from the link in the result. Fuel, servicing and documents have their own tools.',
+            'draft_tyre_check' => 'Draft a tread depth check: a depth for one or more fitted tyres. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
+            'draft_reminder' => 'Draft a manual reminder: a title and a due date, or a time before or after a document expires or a schedule is next due. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
+        ],
+        'say' => [
+            'logged' => 'Logged. It is in Logbook now: {link}',
+            'duplicate' => 'This was logged already, so nothing new was written: {link}',
+            'draft_saved' => 'Draft saved. Open {link} to add it.',
+            'choose_vehicle' => 'Ask the user which vehicle they mean, then call again with its id.',
+            'ask_user' => 'Ask the user the question, then call again with their answer.',
+        ],
+        'resource' => [
+            'vehicles' => [
+                'title' => 'Vehicles',
+                'description' => 'The vehicles the user can see: id, name, registration, type, fuel type and status (active or archived).',
+            ],
+            'me' => [
+                'title' => 'Preferences',
+                'description' => 'The user\'s language, time zone, currency, units and tax-year start, the key\'s name and scope, and which modules are on.',
+            ],
+            'vehicle_summary' => [
+                'title' => 'Vehicle summary',
+                'description' => 'One vehicle\'s overview: latest odometer reading, age, economy, running cost per distance over the last 12 months, and the next thing due.',
+            ],
+        ],
+        'prompt' => [
+            'vehicle_argument' => 'The vehicle\'s id, from find_vehicles or logbook://vehicles.',
+            'monthly_summary' => [
+                'title' => 'Monthly summary',
+                'description' => 'Last month\'s costs, fuel, mileage and anything needing attention, per vehicle.',
+                'text' => 'Summarise last month in Logbook for each of my vehicles. Use the costs tool (period last_month, grouped by vehicle), fuel_stats and mileage for last month, and needs_attention. For each vehicle give what was spent, fuel used and economy, distance driven, and anything that needs attention. Quote the display strings and keep it short.',
+            ],
+            'before_service' => [
+                'title' => 'Before a service',
+                'description' => 'A vehicle\'s last services, what is due, and the state of its tyres.',
+                'text' => 'I am taking {vehicle} (vehicle id {id}) in for a service. From Logbook, list its last few services (maintenance), what is due or overdue (coming_up and last_done), and its tyres\' tread and age (tyres). End with a short list of things to ask the garage about.',
+            ],
+            'sale_checklist' => [
+                'title' => 'Sale checklist',
+                'description' => 'What the sale pack would show for a vehicle, and any gaps.',
+                'text' => 'I am getting {vehicle} (vehicle id {id}) ready to sell. From Logbook, check what its sale pack would show: the service history (maintenance), documents and MOT history (documents), the mileage record (mileage) and ownership costs (ownership). Point out gaps a buyer would ask about, such as missing services, expired documents or long gaps in the mileage. The sale pack itself is at {link}.',
+            ],
+        ],
+        'review' => [
+            'heading' => 'Drafts to review',
+            'lead' => '{count, plural, one {An assistant drafted this entry through the MCP server. Check it, then add, edit or discard it.} other {An assistant drafted these # entries through the MCP server. Check each one, then add, edit or discard it.}}',
         ],
     ],
 ];

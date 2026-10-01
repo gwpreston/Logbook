@@ -8,13 +8,9 @@ use Logbook\Domain\Ai\Ask\AskMessage;
 use Logbook\Domain\Ai\Ask\AskRole;
 use Logbook\Domain\Ai\Ask\AskThread;
 use Logbook\Domain\Ai\ErrorCode;
-use Logbook\Domain\Ai\Draft\AiDraft;
-use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\User\User;
+use Logbook\Service\Ai\Draft\DraftCards;
 use Logbook\Service\Ai\Draft\DraftStore;
-use Logbook\Service\Vehicle\VehicleNotFound;
-use Logbook\Service\Vehicle\VehicleService;
-use Psr\Clock\ClockInterface;
 use Logbook\Repository\AiThreadRepository;
 use Logbook\Service\Ai\AiPreferences;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -32,8 +28,7 @@ final readonly class AskPage
         private AiPreferences $preferences,
         private TranslatorInterface $translator,
         private DraftStore $drafts,
-        private VehicleService $vehicles,
-        private ClockInterface $clock,
+        private DraftCards $draftCards,
     ) {
     }
 
@@ -54,6 +49,8 @@ final readonly class AskPage
             'question' => $question ?? '',
             'error' => $error,
             'progress_token' => bin2hex(random_bytes(16)),
+            // Drafts an MCP client left (spec.md §7.28 *Drafts to review*).
+            'review_drafts' => array_values($this->draftCards->cards($user, $this->drafts->toReview($user))),
         ];
     }
 
@@ -115,44 +112,8 @@ final readonly class AskPage
                 }
             }
         }
-        $now = $this->clock->now();
-        $cards = [];
-        foreach ($this->drafts->many($user, $ids) as $draft) {
-            try {
-                $vehicle = $this->vehicles->get($user, $draft->vehicleId);
-            } catch (VehicleNotFound) {
-                $vehicle = null;
-            }
-            $vehicleArgs = ['id' => (string) $draft->vehicleId];
-            [$view, $edit, $editQuery] = match ($draft->kind) {
-                DraftKind::Fuel => [['fuel.index', $vehicleArgs], ['fuel.create', $vehicleArgs], []],
-                DraftKind::Odometer => [['odometer.index', $vehicleArgs], ['odometer.create', $vehicleArgs], []],
-                DraftKind::Maintenance => [['maintenance.index', $vehicleArgs], ['maintenance.create', $vehicleArgs], []],
-                DraftKind::Document => [['compliance.index', $vehicleArgs], ['compliance.create', $vehicleArgs], []],
-                DraftKind::Expense => [['expenses.index', $vehicleArgs], ['expenses.create', $vehicleArgs], []],
-                DraftKind::TyreCheck => [
-                    ['tyres.index', $vehicleArgs],
-                    ['tyres.change', $vehicleArgs + ['kind' => 'check']],
-                    [],
-                ],
-                DraftKind::Reminder => [['reminders.index', []], ['reminders.create', []], ['vehicle' => $draft->vehicleId]],
-            };
-            $cards[$draft->id] = [
-                'draft' => $draft,
-                'state' => $draft->state($now)->value,
-                'card' => $draft->card,
-                'vehicle' => $vehicle,
-                'can_undo' => $draft->canUndo($now),
-                'undo_seconds' => max(
-                    0,
-                    AiDraft::UNDO_SECONDS - ($now->getTimestamp() - ($draft->appliedAt?->getTimestamp() ?? 0)),
-                ),
-                'view' => $view,
-                'edit' => [$edit[0], $edit[1], $editQuery + ['draft' => $draft->id]],
-            ];
-        }
 
-        return $cards;
+        return $this->draftCards->cards($user, $this->drafts->many($user, $ids));
     }
 
     /**
