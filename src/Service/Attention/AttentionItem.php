@@ -23,7 +23,7 @@ final readonly class AttentionItem
     public function __construct(
         public AttentionKind $kind,
         public Vehicle $vehicle,
-        /** The reading's id for a reading, the vehicle's otherwise (or the forecast item's source id). */
+        /** The reading's, fill-up's or record's id for those kinds, the vehicle's otherwise (or the forecast item's source id). */
         public int $subjectId,
         public string $icon,
         /** The *Coming up* item (Overdue). */
@@ -42,9 +42,17 @@ final readonly class AttentionItem
         public ?DateTimeImmutable $valuedOn = null,
         /** Whole months since then (ValuationStale). */
         public ?int $months = null,
+        /** The drift and its likely causes (DriftLiquid, DriftElectric). */
+        public ?DriftFinding $drift = null,
+        /** The fill-up and the price it was compared with (FuelPrice). */
+        public ?PriceFinding $price = null,
+        /** The record and the cost it was compared with (MaintenanceCost). */
+        public ?CostFinding $cost = null,
+        /** The vehicle's currency, for the amounts in a price or cost title. */
+        public ?string $currency = null,
         /** What was judged (hideable kinds). */
         public ?string $fingerprint = null,
-        /** May take the main action: *Log it*, *Fix*, *Review*, *Add reading*, *Add valuation*. */
+        /** May take the main action: *Log it*, *Fix*, *Review*, *Add reading*, *Add valuation*, *View economy*. */
         public bool $canAct = false,
         /** May dismiss (or, for a manual reminder, mark done) its reminder. */
         public bool $canDismiss = false,
@@ -60,7 +68,7 @@ final readonly class AttentionItem
 
     /**
      * Now before Check; overdue work oldest first (as *Coming up* orders
-     * it), then by kind, readings oldest first.
+     * it), then by kind, readings, fill-ups and records oldest first.
      */
     public static function compare(self $a, self $b): int
     {
@@ -70,6 +78,8 @@ final readonly class AttentionItem
 
         return ($a->kind->rank() <=> $b->kind->rank())
             ?: (($a->reading?->recordedAt <=> $b->reading?->recordedAt))
+            ?: (($a->price?->entry->data->filledAt <=> $b->price?->entry->data->filledAt))
+            ?: (($a->cost?->entry->data->performedOn <=> $b->cost?->entry->data->performedOn))
             ?: strcmp($a->vehicle->name(), $b->vehicle->name())
             ?: ($a->vehicle->id <=> $b->vehicle->id)
             ?: ($a->subjectId <=> $b->subjectId);

@@ -42,11 +42,12 @@ use Psr\Clock\ClockInterface;
 /**
  * *Needs attention* (spec.md §7.24): what is wrong with each vehicle right
  * now, for one user, gathered from the services that own each fact. It
- * judges nothing new apart from the stale-mileage rule: overdue work is
- * *Coming up*'s overdue group, readings are the Mileage tab's plausibility
- * flags, economy is the Fuel tab's check, trips are the Mileage tab's
- * split, and a stale valuation is §7.1's rule. A switched-off module's
- * items leave the list; archived vehicles raise nothing.
+ * judges nothing new apart from the stale-mileage rule and the trend and
+ * cost checks (TrendChecks, Phase 25): overdue work is *Coming up*'s
+ * overdue group, readings are the Mileage tab's plausibility flags,
+ * economy is the Fuel tab's check, trips are the Mileage tab's split, and
+ * a stale valuation is §7.1's rule. A switched-off module's items leave
+ * the list; archived vehicles raise nothing.
  *
  * Each source is loaded once per vehicle, never once per reading or
  * fill-up. Safe from the command line (the digest): it reads no request.
@@ -68,6 +69,7 @@ final readonly class AttentionList
         private ClaimReportService $claims,
         private AttentionSettingsStore $settings,
         private AttentionHiddenRepository $hidden,
+        private TrendChecks $trends,
         private VehicleAccess $access,
         private UserDirectory $directory,
         private ClockInterface $clock,
@@ -113,6 +115,7 @@ final readonly class AttentionList
         }
         $hidden = $withHidden ? [] : $this->hidden->fingerprints($user->id, $ids);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        $book = new PriceBook();
 
         $items = [];
         foreach ($vehicles as $vehicle) {
@@ -124,7 +127,7 @@ final readonly class AttentionList
                 }
             }
             if ($canLog) {
-                array_push($items, ...$this->checks($user, $vehicle, $enabled, $today));
+                array_push($items, ...$this->checks($user, $vehicle, $enabled, $today, $overdue[$vehicle->id] ?? [], $book));
             }
         }
 
@@ -199,13 +202,22 @@ final readonly class AttentionList
 
     /**
      * The data checks a user who can log on this vehicle may fix. Judged
-     * by the owner's thresholds and today, whoever looks (Phase 19).
+     * by the owner's thresholds and today, whoever looks (Phase 19). The
+     * fuel history is loaded once and shared by the economy flags and the
+     * trend checks.
      *
      * @param array<string, bool> $enabled
+     * @param list<ForecastItem> $overdue the vehicle's overdue *Coming up* items
      * @return list<AttentionItem>
      */
-    private function checks(User $user, Vehicle $vehicle, array $enabled, DateTimeImmutable $today): array
-    {
+    private function checks(
+        User $user,
+        Vehicle $vehicle,
+        array $enabled,
+        DateTimeImmutable $today,
+        array $overdue,
+        PriceBook $book,
+    ): array {
         $manage = $this->access->can($user, VehicleAbility::Manage, $vehicle);
         $owner = $vehicle->userId === $user->id ? $user : $this->directory->find($vehicle->userId) ?? $user;
         $zone = $owner->preferences->timeZone();
@@ -214,9 +226,10 @@ final readonly class AttentionList
         $history = $this->odometer->history($vehicle);
 
         $items = $this->readingChecks($user, $vehicle, $history, $manage);
-        if ($enabled[Feature::Fuel->value]) {
+        $fuel = $enabled[Feature::Fuel->value] ? $this->fuel->history($vehicle) : null;
+        if ($fuel !== null) {
             $flagged = array_filter(
-                $this->fuel->checks($this->fuel->history($vehicle))->flagged(),
+                $this->fuel->checks($fuel)->flagged(),
                 static fn (SegmentCheck $c): bool => $manage || EntryAccess::isOwn($user, $c->entry()->createdBy),
             );
             if ($flagged !== []) {
@@ -265,6 +278,23 @@ final readonly class AttentionList
                 $items[] = $valuation;
             }
         }
+
+        $serviceOverdue = $enabled[Feature::Maintenance->value] && array_filter(
+            $overdue,
+            static fn (ForecastItem $i): bool => $i->source === ForecastSource::Schedule,
+        ) !== [];
+        array_push($items, ...$this->trends->items(
+            $user,
+            $vehicle,
+            $owner,
+            $thresholds,
+            $manage,
+            $enabled,
+            $fuel,
+            $serviceOverdue,
+            $this->clock->now(),
+            $book,
+        ));
 
         return $items;
     }

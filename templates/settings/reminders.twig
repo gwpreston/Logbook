@@ -43,6 +43,20 @@
                     {{ ui.input('mileage_days', 'attention.settings.mileage_days'|trans, values, errors, {type: 'number', step: 1, min: 7, max: 365, inputmode: 'numeric', suffix: days, hint: 'attention.settings.mileage_days_hint'|trans}) }}
                     {{ ui.input('valuation_months', 'attention.settings.valuation_months'|trans, values, errors, {type: 'number', step: 1, min: 1, max: 60, inputmode: 'numeric', suffix: 'attention.settings.months_suffix'|trans, hint: 'attention.settings.valuation_months_hint'|trans}) }}
                 </div>
+                {# Phase 25: the trend and cost checks (§7.24 items 7–9). #}
+                <p class="field__hint">{{ 'attention.settings.checks_intro'|trans }}</p>
+                {% set percent = 'attention.settings.percent_suffix'|trans %}
+                <div class="form-row">
+                    {{ ui.input('drift_percent', 'attention.settings.drift_percent'|trans, values, errors, {type: 'number', step: 1, min: 5, max: 50, inputmode: 'numeric', suffix: percent, hint: 'attention.settings.drift_percent_hint'|trans}) }}
+                    {{ ui.input('drift_percent_electric', 'attention.settings.drift_percent_electric'|trans, values, errors, {type: 'number', step: 1, min: 5, max: 50, inputmode: 'numeric', suffix: percent, hint: 'attention.settings.drift_percent_electric_hint'|trans}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('price_percent', 'attention.settings.price_percent'|trans, values, errors, {type: 'number', step: 1, min: 10, max: 90, inputmode: 'numeric', suffix: percent, hint: 'attention.settings.price_percent_hint'|trans}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('cost_multiple', 'attention.settings.cost_multiple'|trans, values, errors, {type: 'number', step: 1, min: 2, max: 20, inputmode: 'numeric', suffix: 'attention.settings.times_suffix'|trans, hint: 'attention.settings.cost_multiple_hint'|trans}) }}
+                    {{ ui.input('cost_floor', 'attention.settings.cost_floor'|trans, values, errors, {type: 'number', step: 1, min: 0, max: 10000, inputmode: 'numeric', hint: 'attention.settings.cost_floor_hint'|trans}) }}
+                </div>
             </section>
 
             {% if feature_enabled('reminders') %}
