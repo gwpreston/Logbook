@@ -15,6 +15,8 @@ final readonly class UserIdentity
 {
     /** The single OpenID Connect provider (Phase 23.1). */
     public const string OIDC = 'oidc';
+    /** A trusted sign-in proxy's header (Phase 23.2). */
+    public const string PROXY = 'proxy';
 
     public function __construct(
         public int $id,

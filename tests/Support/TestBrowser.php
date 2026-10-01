@@ -23,11 +23,44 @@ final class TestBrowser
     private array $cookies = [];
     private string $lastHtml = '';
 
+    private string $remoteAddress = '192.0.2.10';
+    /** @var array<string, string> */
+    private array $defaultHeaders = [];
+
     /**
      * @param App<ContainerInterface> $app
      */
     public function __construct(private readonly App $app)
     {
+    }
+
+    /**
+     * Connect from this address from now on (REMOTE_ADDR), as a proxy would.
+     */
+    public function from(string $address): self
+    {
+        $this->remoteAddress = $address;
+
+        return $this;
+    }
+
+    /**
+     * Send these headers with every request from now on (an empty value
+     * stops sending one), as a sign-in proxy adds its header.
+     *
+     * @param array<string, string> $headers
+     */
+    public function sending(array $headers): self
+    {
+        foreach ($headers as $name => $value) {
+            if ($value === '') {
+                unset($this->defaultHeaders[$name]);
+            } else {
+                $this->defaultHeaders[$name] = $value;
+            }
+        }
+
+        return $this;
     }
 
     /**
@@ -119,9 +152,17 @@ final class TestBrowser
      */
     private function request(string $method, string $path, array $fields, array $files, array $headers = []): ResponseInterface
     {
-        $request = (new ServerRequestFactory())->createServerRequest($method, $path, ['REMOTE_ADDR' => '192.0.2.10'])
+        // As Apache 2.4 hands them to PHP: every header also an HTTP_* variable,
+        // except names with an underscore, which it drops there (and only there).
+        $server = ['REMOTE_ADDR' => $this->remoteAddress];
+        foreach ($headers + $this->defaultHeaders as $name => $value) {
+            if (!str_contains($name, '_')) {
+                $server['HTTP_' . strtoupper(strtr($name, '-', '_'))] = $value;
+            }
+        }
+        $request = (new ServerRequestFactory())->createServerRequest($method, $path, $server)
             ->withCookieParams($this->cookies);
-        foreach ($headers as $name => $value) {
+        foreach ($headers + $this->defaultHeaders as $name => $value) {
             $request = $request->withHeader($name, $value);
         }
         if ($method === 'POST') {

@@ -21,6 +21,8 @@ use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Support\Clock\UtcClock;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\OidcConfig;
+use Logbook\Support\Config\ProxyAuthConfig;
+use Logbook\Support\Log\LogThrottle;
 use Logbook\Support\Database\ConnectionFactory;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
@@ -204,6 +206,14 @@ return [
     // Single sign-on (spec.md §7.9, Phase 23.1).
     OidcConfig::class => static fn (ContainerInterface $c): OidcConfig => $settingsOf($c)->oidc,
     OidcCache::class => static fn (ContainerInterface $c): OidcCache => new OidcCache($settingsOf($c)->cacheDir . '/oidc'),
+    // Header sign-in (spec.md §7.9, Phase 23.2).
+    ProxyAuthConfig::class => static fn (ContainerInterface $c): ProxyAuthConfig => $settingsOf($c)->proxy,
+    LogThrottle::class => static function (ContainerInterface $c) use ($settingsOf): LogThrottle {
+        $clock = $c->get(ClockInterface::class);
+        assert($clock instanceof ClockInterface);
+
+        return new LogThrottle($settingsOf($c)->cacheDir . '/log-throttle', $clock);
+    },
 
     HttpClientInterface::class => static fn (): HttpClientInterface => HttpClient::create([
         'timeout' => 15,

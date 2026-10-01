@@ -1,0 +1,44 @@
+# Smoke test: header sign-in behind nginx forward auth (Phase 23.2), at /logbook.
+# Layered on top of docker-compose.yml (paths are relative to the project root):
+#   docker compose -f docker-compose.yml -f docker/smoke/compose.header.yml up -d --wait
+#
+# nginx runs docker/nginx/forward-auth-example.conf unchanged; "authelia" is a
+# stub (authelia-stub.conf). The app trusts only nginx's fixed address, and its
+# own published port (APP_PORT) is the "bypass" a smoke test can try.
+
+services:
+  app:
+    environment:
+      APP_BASE_PATH: /logbook
+      AUTH_PROXY_HEADER: Remote-User
+      AUTH_PROXY_NAME_HEADER: Remote-Name
+      AUTH_PROXY_EMAIL_HEADER: Remote-Email
+      AUTH_PROXY_GROUPS_HEADER: Remote-Groups
+      AUTH_PROXY_TRUSTED: 172.29.71.10
+      AUTH_PROXY_LOGOUT_URL: http://auth.example.test/logout
+
+  authelia:
+    image: nginx:1.29-alpine
+    volumes:
+      - ./docker/smoke/authelia-stub.conf:/etc/nginx/conf.d/default.conf:ro
+
+  proxy:
+    image: nginx:1.29-alpine
+    ports:
+      - "${PROXY_PORT:-18081}:80"
+    volumes:
+      - ./docker/nginx/forward-auth-example.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      default:
+        ipv4_address: 172.29.71.10
+    depends_on:
+      app:
+        condition: service_healthy
+      authelia:
+        condition: service_started
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.29.71.0/24

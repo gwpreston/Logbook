@@ -40,6 +40,21 @@ final readonly class SignInMethods
         return $this->identities->byUser();
     }
 
+    /**
+     * How messages name an identity's provider: OIDC_PROVIDER_NAME, or
+     * "Proxy" (the word in every catalogue so far; templates use
+     * `users.method.proxy`).
+     */
+    public function providerName(UserIdentity $identity): string
+    {
+        return $identity->provider === UserIdentity::PROXY ? 'Proxy' : $this->settings->oidc->providerName;
+    }
+
+    public function find(int $identityId): ?UserIdentity
+    {
+        return $this->identities->find($identityId);
+    }
+
     public function canUsePassword(User $user): bool
     {
         return $this->settings->localLogin && $user->hasPassword();

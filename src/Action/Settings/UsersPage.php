@@ -72,6 +72,12 @@ final readonly class UsersPage
                 'logout_uri' => $this->signOut->postLogoutRedirect(),
                 'logout' => $this->settings->oidc->logout,
             ],
+            'proxy_setup' => [
+                'mode' => $this->settings->proxy->mode->value,
+                'header' => $this->settings->proxy->header,
+                'trusted' => array_map(strval(...), $this->settings->proxy->trusted),
+                'link' => $this->settings->proxy->link->value,
+            ],
         ], $status)->withHeader('Cache-Control', 'no-store');
     }
 }

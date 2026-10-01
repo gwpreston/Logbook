@@ -81,6 +81,8 @@ final class RouteInventoryTest extends AppTestCase
         'settings.sso.unlink',
         'welcome',
         'api.journeys',
+        // Phase 23.2: linking one's own proxy account.
+        'proxy.link',
     ];
 
     /** Signed in; every vehicle they show comes from the policy's visible ids (VehicleService::listFleet / listWith). */

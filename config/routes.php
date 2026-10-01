@@ -29,6 +29,7 @@ use Logbook\Action\Auth\LoginLinkAction;
 use Logbook\Action\Auth\LogoutAction;
 use Logbook\Action\Auth\OidcCallbackAction;
 use Logbook\Action\Auth\OidcStartAction;
+use Logbook\Action\Auth\ProxyLinkAction;
 use Logbook\Action\Auth\SetupAction;
 use Logbook\Action\Auth\WelcomeAction;
 use Logbook\Action\Backup\BackupPageAction;
@@ -154,6 +155,7 @@ use Logbook\Middleware\AuthGuardMiddleware;
 use Logbook\Middleware\CsrfMiddleware;
 use Logbook\Middleware\FeatureGateMiddleware;
 use Logbook\Middleware\InstanceAccessMiddleware;
+use Logbook\Middleware\ProxyAuthMiddleware;
 use Logbook\Middleware\VehicleAccessMiddleware;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Support\Config\AppSettings;
@@ -269,7 +271,9 @@ return static function (App $app): void {
         $group->get('/auth/oidc/start', OidcStartAction::class)->setName('oidc.start');
         $group->get('/auth/oidc/callback', OidcCallbackAction::class)->setName('oidc.callback');
         $group->get('/diagnostics/deep/link', DeepLinkCheckAction::class)->setName('diagnostics.deep-link');
-    })->add(CsrfMiddleware::class);
+    })->add(CsrfMiddleware::class)
+        // Header sign-in (spec.md §7.9): page groups only, so never the API, feed or /health.
+        ->add(ProxyAuthMiddleware::class);
 
     // Signed-in pages.
     $app->group('', function (Group $group) use ($module, $ability, $instance): void {
@@ -277,6 +281,8 @@ return static function (App $app): void {
         $group->post('/logout', LogoutAction::class)->setName('logout');
         // Once, after an account is created on first single sign-on (spec.md §7.9).
         $group->map(['GET', 'POST'], '/welcome', WelcomeAction::class)->setName('welcome');
+        // *Link your proxy account* (spec.md §7.9 header sign-in): reads the header again.
+        $group->post('/auth/proxy/link', ProxyLinkAction::class)->setName('proxy.link');
         $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
@@ -580,5 +586,6 @@ return static function (App $app): void {
     })->add(InstanceAccessMiddleware::class)
         ->add(VehicleAccessMiddleware::class)
         ->add(CsrfMiddleware::class)
-        ->add(AuthGuardMiddleware::class);
+        ->add(AuthGuardMiddleware::class)
+        ->add(ProxyAuthMiddleware::class);
 };

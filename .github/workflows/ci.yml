@@ -129,6 +129,8 @@ jobs:
         run: bin/smoke-test.sh pgsql
       - name: Smoke test — MySQL, served at the root
         run: bin/smoke-test.sh mysql
+      - name: Smoke test — header sign-in behind nginx forward auth
+        run: bin/smoke-test.sh header
 
       - name: Image metadata
         id: meta

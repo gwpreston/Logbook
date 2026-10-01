@@ -3,6 +3,7 @@
 #
 #   bin/smoke-test.sh pgsql     # docker-compose.yml, app at /logbook behind nginx
 #   bin/smoke-test.sh mysql     # docker-compose.mysql.yml, app at /
+#   bin/smoke-test.sh header    # docker-compose.yml, /logbook behind nginx forward auth (header sign-in)
 #
 # Assumes the image logbook:local exists (docker build -t logbook:local .).
 set -eu
@@ -11,7 +12,7 @@ cd "$(dirname "$0")/.."
 variant="${1:-pgsql}"
 export APP_PORT="${APP_PORT:-18080}" PROXY_PORT="${PROXY_PORT:-18081}"
 jar="$(mktemp)"
-trap 'rm -f "$jar" /tmp/smoke.body' EXIT
+trap 'rm -f "$jar" /tmp/smoke.body /tmp/smoke.head' EXIT
 
 fail() { echo "SMOKE FAIL: $*" >&2; $compose logs --no-color >&2 || true; $compose down -v >/dev/null 2>&1 || true; exit 1; }
 
@@ -84,7 +85,52 @@ case "$variant" in
         expect "$base/diagnostics/deep/link" 200 'Deep link works'
         setup_flow "$base" "/"
         ;;
-    *) echo "usage: $0 pgsql|mysql" >&2; exit 2 ;;
+    header)
+        # Header sign-in (Phase 23.2) behind docker/nginx/forward-auth-example.conf,
+        # with a stub for Authelia: the smoke_user cookie is "signed in at the proxy".
+        compose="docker compose -p logbook-smoke -f docker-compose.yml -f docker/smoke/compose.header.yml"
+        $compose up -d --wait --no-build || fail "stack did not become healthy"
+        base="http://localhost:$PROXY_PORT/logbook"
+        direct="http://localhost:$APP_PORT/logbook"
+        expect "$base/health" 200 '"database":"ok"'
+        expect "$base/" 302
+        # First run happens on the app itself: header sign-in waits for a user.
+        setup_flow "$direct" "/logbook/"
+        rm -f "$jar"
+        # The header sent straight to the app (not from nginx's address) is ignored.
+        curl -s -o /tmp/smoke.body -D /tmp/smoke.head -H 'Remote-User: smoke' "$direct/" >/dev/null
+        grep -qi '^location: /logbook/login' /tmp/smoke.head || fail "a header from outside the proxy signed someone in"
+        echo "ok  header from an untrusted address ignored"
+        printf 'localhost\tFALSE\t/\tFALSE\t0\tsmoke_user\tsmoke\n' > "$jar"
+        expect "$base/" 303
+        expect "$base/" 200 'Hello, smoke'
+        # nginx overwrites what a client sends, and drops the underscore spelling.
+        status="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code}' \
+            -H 'Remote-User: someone-else' -H 'Remote_User: someone-else' "$base/settings")"
+        { [ "$status" = 200 ] && grep -q 'value="smoke"' /tmp/smoke.body; } \
+            || fail "a client's own Remote-User reached the app ($status)"
+        echo "ok  client Remote-User and Remote_User replaced by nginx"
+        # Exempt from forward auth, and never signed in by the header.
+        api_status="$(curl -s -o /dev/null -w '%{http_code}' -H 'Remote-User: smoke' "$base/api/v1/me")"
+        [ "$api_status" = 401 ] || fail "the API answered $api_status without a key"
+        echo "ok  401  API without a key, behind forward auth's exemption"
+        # Switching user at the proxy ends the session.
+        sed -i.bak 's/smoke_user\tsmoke$/smoke_user\tstranger/' "$jar" && rm -f "$jar.bak"
+        expect "$base/" 303
+        expect "$base/" 303
+        expect "$base/login" 200 'isn&#039;t linked to Logbook'
+        sed -i.bak 's/smoke_user\tstranger$/smoke_user\tsmoke/' "$jar" && rm -f "$jar.bak"
+        expect "$base/" 303
+        expect "$base/settings" 200 'action="/logbook/logout"'
+        status="$(curl -s -b "$jar" -c "$jar" -o /dev/null -w '%{http_code} %{redirect_url}' \
+            --data-urlencode "csrf_name=$(field csrf_name)" --data-urlencode "csrf_value=$(field csrf_value)" \
+            "$base/logout")"
+        [ "$status" = "303 http://auth.example.test/logout" ] || fail "sign-out answered: $status"
+        echo "ok  303  sign-out goes to AUTH_PROXY_LOGOUT_URL"
+        expect "$base/" 303
+        expect "$base/" 200 'Hello, smoke'
+        ;;
+    *) echo "usage: $0 pgsql|mysql|header" >&2; exit 2 ;;
 esac
 
 # Reminders: the page works, and the entrypoint's scheduler has run the task.

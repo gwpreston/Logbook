@@ -6,6 +6,82 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-10-01
+
+Phases 23.1 and 23.2: sign in with the identity provider you already run.
+Logbook can be an OpenID Connect client of Authelia, Authentik, Keycloak or
+any standard provider, or trust the user a forward-auth proxy (Authelia,
+an Authentik outpost) passes on. Both only change how someone proves who
+they are, never what they can see. **Everything is off until configured.**
+Guide: [docs/sso.md](docs/sso.md).
+
+### Added
+- **Sign in with OpenID Connect** (`OIDC_*`): a *Sign in with {name}*
+  button, the authorization code flow with PKCE, `state` and `nonce`, and
+  the ID token checked in full (signature against the provider's keys with
+  RS256, PS256, ES256 or EdDSA only; issuer, audience, `azp`, expiry, issue
+  time, nonce). Discovery and keys are cached for a day under `var/cache`.
+- **Linking accounts:** *Link {name} account* in Settings → Account, or
+  `OIDC_LINK=username` for providers whose usernames only admins set.
+  Optionally `OIDC_AUTO_CREATE` creates a member on first sign-in, who sees
+  a short welcome form. `OIDC_ALLOWED_GROUPS` and `OIDC_ADMIN_GROUPS` (the
+  last admin is never demoted).
+- **Header sign-in** (`AUTH_PROXY_*`) behind a forward-auth proxy: a plain
+  username header such as `Remote-User`, trusted **only** from the
+  connecting addresses in `AUTH_PROXY_TRUSTED` (never `X-Forwarded-For`).
+  Alternatively, Authentik's signed `X-authentik-jwt`, checked with HS256
+  and the proxy provider's client secret, which needs no trusted network.
+  Linking by username (the default) or from a *Link your proxy account*
+  banner while signed in. Optional creation of new users and admin from
+  groups. The session follows the header: another user's header switches
+  it, and a missing header ends a session the header started. A password
+  session survives requests without one, so direct LAN access still works.
+  *Sign out* goes on to `AUTH_PROXY_LOGOUT_URL`. Worked configurations for
+  nginx `auth_request`, Traefik `forwardAuth`, Caddy `forward_auth` and the
+  Authentik outpost, each exempting the API, the calendar feed and
+  `/health` ([docker/nginx/forward-auth-example.conf](docker/nginx/forward-auth-example.conf)).
+- **`AUTH_LOCAL_LOGIN=false`** leaves only single sign-on, with a
+  break-glass link from the command line for when the provider is down:
+  `php bin/auth.php login-link <username>` (10 minutes, one use).
+- **Settings → Users** shows each user's sign-in methods (*Password*, the
+  provider, *Proxy*), lets an admin remove a linked account, and shows the
+  redirect URI to register and whether header sign-in is on.
+- **Passwords for SSO users:** *Set a password* in Settings → Account.
+- **API:** `GET /api/v1/journeys` lists the key user's saved journeys (for
+  Shortcuts).
+
+### Security
+- A half-set configuration **stops the app at start** (web and command
+  line) with a message naming the variable. Above all, a proxy header
+  without `AUTH_PROXY_TRUSTED` stops it, rather than trusting everyone.
+- Header sign-in is safe only when the app is reachable **only through
+  the proxy** and the proxy **sets the header on every request**. Read the
+  warning in [docs/sso.md](docs/sso.md#header-sign-in) before switching it
+  on. A client's `Remote_User` (underscore) is never read as `Remote-User`:
+  Logbook reads the server's `HTTP_*` variables, which Apache 2.4 (the
+  Docker image) and nginx with php-fpm (by default) never fill from an
+  underscore name. PHP's built-in development server does, so never put it
+  behind a real proxy.
+- With the JWT mode, `AUTH_PROXY_JWT_SECRET` can mint tokens, and a
+  captured token works until it expires. Set `AUTH_PROXY_TRUSTED` as well
+  when you can.
+- Failed SSO sign-ins and refused proxy headers are logged with the client
+  address (at most once per address per hour for headers), for fail2ban.
+
+### Upgrade notes
+- **One migration** adds `user_identities` and makes `users.password_hash`
+  nullable (a user who signs in only with SSO has none). It rolls back
+  cleanly on every engine, except that rollback is refused while any user
+  has no password. The message names them; give each a password first.
+  Rolling back also removes open break-glass links. Header sign-in needs no
+  migration of its own.
+- **Nothing changes until you configure it:** without `OIDC_ISSUER` or an
+  `AUTH_PROXY_*` header, sign-in is exactly as before. First-run setup
+  always creates a local admin with a password.
+- **Backups move to a new schema version** (linked accounts are included).
+  A 2.3.0 backup restores into 2.3.0. Restore an older backup with its own
+  version, then upgrade.
+
 ## [2.2.0] — 2026-09-30
 
 Phase 22: trips and business mileage claims. Log the business journeys you

@@ -35,11 +35,13 @@ final readonly class RemoveIdentityAction
     {
         $actor = RequestContext::requireUser($request);
         $user = $this->admin->find((int) ($args['member'] ?? 0)) ?? throw new HttpNotFoundException($request);
+        $identity = $this->methods->find((int) ($args['identity'] ?? 0));
+        $provider = $identity === null ? $this->settings->oidc->providerName : $this->methods->providerName($identity);
         $done = $this->methods->remove($user, (int) ($args['identity'] ?? 0), $actor);
         RequestContext::session($request)->flash(
             $done ? 'success' : 'error',
             $done ? 'users.identity_removed' : 'users.identity_refused',
-            ['name' => $user->displayName, 'provider' => $this->settings->oidc->providerName],
+            ['name' => $user->displayName, 'provider' => $provider],
         );
 
         return $this->redirect->toRoute('settings.users');

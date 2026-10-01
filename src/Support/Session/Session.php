@@ -19,6 +19,7 @@ final class Session
     private const string CSRF = '_csrf';
     private const string SSO = '_sso';
     private const string WELCOME = '_welcome';
+    private const string PROXY = '_proxy';
 
     private bool $dirty = false;
     private bool $regenerated = false;
@@ -77,12 +78,14 @@ final class Session
     /**
      * Start an authenticated session under a new id (fixation protection).
      * CSRF tokens issued before sign-in are discarded, and so is what a
-     * previous sign-in left (its single sign-on ID token, a pending welcome).
+     * previous sign-in left (its single sign-on ID token, its proxy
+     * account, a pending welcome).
      */
     public function signIn(int $userId): void
     {
         $this->regenerate();
         $this->remove(self::SSO);
+        $this->remove(self::PROXY);
         $this->remove(self::WELCOME);
         $this->set(self::USER_ID, $userId);
     }
@@ -106,6 +109,30 @@ final class Session
         $sso = $this->data[self::SSO] ?? null;
 
         return is_array($sso) && is_string($sso['id_token'] ?? null) ? $sso['id_token'] : null;
+    }
+
+    /**
+     * Remember that this session came from a proxy's header (spec.md §7.9
+     * *The session follows the header*) and for which proxy account.
+     */
+    public function markProxy(string $accountKey): void
+    {
+        $this->set(self::PROXY, $accountKey);
+    }
+
+    public function cameFromProxy(): bool
+    {
+        return is_string($this->data[self::PROXY] ?? null);
+    }
+
+    /**
+     * The proxy account a header-based session belongs to.
+     */
+    public function proxyAccount(): ?string
+    {
+        $key = $this->data[self::PROXY] ?? null;
+
+        return is_string($key) ? $key : null;
     }
 
     /**

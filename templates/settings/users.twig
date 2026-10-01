@@ -50,7 +50,7 @@
                     {% set member_identities = identities[member.id] ?? [] %}
                     {% set methods = [] %}
                     {% if member.hasPassword() and local_login %}{% set methods = methods|merge(['users.method.password'|trans]) %}{% endif %}
-                    {% for identity in member_identities %}{% set methods = methods|merge([sso.name]) %}{% endfor %}
+                    {% for identity in member_identities %}{% set methods = methods|merge([identity.provider == 'proxy' ? 'users.method.proxy'|trans : sso.name]) %}{% endfor %}
                     <li class="user-row">
                         <div class="list__item">
                             <span class="list__icon">{{ ui.icon(member.isActive() ? (member.isAdmin ? 'admin_panel_settings' : 'person') : 'person_off') }}</span>
@@ -76,7 +76,7 @@
                             {% for identity in member_identities %}
                                 <form method="post" action="{{ url_for('settings.users.identity.remove', {member: member.id, identity: identity.id}) }}">
                                     {{ ui.csrf(csrf) }}
-                                    <button type="submit" class="btn btn--sm">{{ ui.icon('block') }}{{ 'users.identity_remove'|trans({provider: sso.name}) }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                                    <button type="submit" class="btn btn--sm">{{ ui.icon('block') }}{{ 'users.identity_remove'|trans({provider: identity.provider == 'proxy' ? 'users.method.proxy'|trans : sso.name}) }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
                                 </form>
                             {% endfor %}
                             {% if not is_me %}
@@ -116,6 +116,18 @@
                         <button type="button" class="btn btn--soft" data-copy="#f-logout-uri" data-copied-label="{{ 'api_keys.copied'|trans }}" hidden>{{ ui.icon('content_copy') }}<span>{{ 'api_keys.copy'|trans }}</span></button>
                     </div>
                 </div>
+            {% endif %}
+        </section>
+
+        {# Header sign-in (spec.md §7.9 *Settings*): set by environment variables. #}
+        <section class="card" aria-labelledby="proxy-heading" data-proxy-setup>
+            <h2 id="proxy-heading" class="card__title">{{ ui.icon('verified_user') }}{{ 'users.proxy_title'|trans }}</h2>
+            {% if proxy_setup.mode == 'off' %}
+                <p class="muted">{{ 'users.proxy_off'|trans }}</p>
+            {% else %}
+                <p class="muted">{{ ('users.proxy_on_' ~ proxy_setup.mode)|trans({header: proxy_setup.header}) }}</p>
+                <p class="muted">{{ proxy_setup.trusted is empty ? 'users.proxy_any_address'|trans : 'users.proxy_trusted'|trans({trusted: proxy_setup.trusted|join(', ')}) }}</p>
+                <p class="muted">{{ ('users.proxy_link_' ~ proxy_setup.link)|trans }}</p>
             {% endif %}
         </section>
 

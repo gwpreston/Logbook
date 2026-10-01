@@ -62,7 +62,7 @@ each vehicle costs.*
 | JS | Alpine.js + Chart.js + SortableJS | Progressive enhancement, no SPA, no runtime Node |
 | i18n | symfony/translation | ICU, pluralization, multi-locale |
 | Auth | PHP sessions + Argon2id + slim/csrf | Standard, secure, no external IdP needed |
-| Single sign-on (Phase 23.1) | `firebase/php-jwt` (JWS and JWKS; `phpseclib/phpseclib` for its PS256) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
+| Single sign-on (Phase 23.1; the proxy JWT's HS256 in 23.2) | `firebase/php-jwt` (JWS and JWKS; `phpseclib/phpseclib` for its PS256) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -87,8 +87,8 @@ disagree):
 - Front controller (`public/index.php`) → Slim app → middleware stack → Action.
 - **Middleware order (outer→inner):** error handling → base-path → session →
   current user → locale + display preferences → routing → per route group:
-  auth guard → CSRF → vehicle access → instance access (see *Access
-  policy*). The session is global but lazy (no cookie or database
+  header sign-in (§7.9, page groups only) → auth guard → CSRF → vehicle
+  access → instance access (see *Access policy*). The session is global but lazy (no cookie or database
   row until something is stored in it). CSRF and the auth guard sit on route
   groups rather than globally so machine endpoints such as `/health` never
   create sessions; every HTML route is inside a CSRF-protected group.
@@ -608,8 +608,9 @@ MySQL only.
 
 **UserIdentity** (Phase 23.1, §7.9)
 - id, user_id (`ON DELETE CASCADE`), provider (`oidc`; `proxy` from Phase
-  23.2), issuer (the `iss` URL, up to 255), subject (the `sub`, up to
-  255), last_login_at (UTC, optional), created_at (UTC). `(provider,
+  23.2), issuer (the `iss` URL, up to 255; for a plain proxy header the
+  header's name, lower-cased), subject (the `sub`, up to 255; for a plain
+  proxy header its lower-cased value), last_login_at (UTC, optional), created_at (UTC). `(provider,
   issuer, subject)` is unique, so a provider account links to at most one
   user. A user may have several identities. In backups and the user
   export. Rolling the migration back is refused while any user has no
@@ -1795,6 +1796,112 @@ can see. Guide: `docs/sso.md`.
   logout, refresh tokens (Logbook keeps its own session and never calls
   the provider after sign-in), SSO for the API or calendar feed (they keep
   their tokens).
+
+**Header sign-in behind a forward-auth proxy** (Phase 23.2)
+
+When Authelia, Authentik or another forward-auth proxy already signs
+people in, Logbook can trust who the proxy says they are, so they land
+signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
+
+- **Two modes** (§9), never both: the app refuses to start with
+  `AUTH_PROXY_HEADER` and `AUTH_PROXY_JWT_HEADER` both set.
+  - *Plain header* (`AUTH_PROXY_HEADER`, e.g. `Remote-User`,
+    `X-authentik-username`): the value is the username. Trusted only from
+    the proxy's address, so `AUTH_PROXY_TRUSTED` is **required**: with the
+    header set and no trusted list the app refuses to start, naming both
+    variables. Optional `AUTH_PROXY_NAME_HEADER`,
+    `AUTH_PROXY_EMAIL_HEADER` (used only when creating a user) and
+    `AUTH_PROXY_GROUPS_HEADER` (separated by commas, as Authelia sends
+    them, or by `|`, as Authentik's outpost does).
+  - *Signed JWT* (`AUTH_PROXY_JWT_HEADER`, e.g. `X-authentik-jwt`, decided
+    2026-10-01, #52): Authentik's proxy outpost passes the ID token its
+    proxy provider issued. A proxy provider has no signing key, so the
+    token is **HS256 signed with the provider's client secret**
+    (`AUTH_PROXY_JWT_SECRET`). Only HS256 is accepted (`none` and every
+    other algorithm are refused); `iss` must equal `AUTH_PROXY_JWT_ISSUER`
+    exactly, `aud` contain `AUTH_PROXY_JWT_AUDIENCE` (the provider's
+    client id), and `exp` be in the future and `iat` not, with 60 seconds
+    of leeway. The username is `preferred_username`; `name`, `email` and
+    `groups` come from the claims too, never from plain headers. Here
+    `AUTH_PROXY_TRUSTED` is optional, and enforced when set. A token that
+    fails a check counts as no header, and the reason is logged (at most
+    once per address per hour). The secret can mint tokens and a captured
+    token works until it expires: the docs say both.
+- **Where it runs:** a middleware on the page route groups (signed-out
+  and signed-in pages), outside the auth guard. Never on the API, the
+  calendar feed, `/health`, the PWA files or static assets. It does
+  nothing while no user exists: first-run setup is unchanged.
+- **Trust check:** the connecting address (`REMOTE_ADDR` as PHP sees it;
+  never `X-Forwarded-For` or `Forwarded`) must be in `AUTH_PROXY_TRUSTED`
+  (IPv4 and IPv6 addresses and CIDR ranges; an IPv4-mapped IPv6 address
+  matches its IPv4 form; an invalid entry stops the app at start). From
+  any other address the header is ignored and the request goes through
+  normal sign-in; a warning is logged at most once per address per hour:
+  "Header Remote-User from 203.0.113.9 ignored: not a trusted proxy".
+  Only the HTTP header is read, never the CGI `REMOTE_USER` variable, and
+  it is read from the server's `HTTP_*` variables (`HTTP_REMOTE_USER`),
+  not from the PSR-7 header list, which folds a client's `Remote_User` into
+  `Remote-User`. Apache 2.4 and nginx with php-fpm (by default) never put
+  an underscore name into those variables.
+- **Finding the user:** the plain value is trimmed and lower-cased (empty,
+  or longer than 255 characters, counts as missing). Then, as §7.9 *Finding
+  the user* with the `proxy` provider:
+  1. a `proxy` identity (issuer and subject as §6 UserIdentity) → that
+     user;
+  2. else, with `AUTH_PROXY_LINK=username` (the default, decided
+     2026-10-01, #53): the user with that username and no `proxy`
+     identity yet is linked;
+  3. else, with `AUTH_PROXY_AUTO_CREATE=true`: a new member (display name
+     and email from the name and email header or claims when present;
+     the email becomes their reminder email address), sent once to the
+     welcome form;
+  4. else nobody: "Your sign-in proxy's account {name} isn't linked to
+     Logbook. Ask an admin to invite you, then link it while signed in."
+  `AUTH_PROXY_ALLOWED_GROUPS` and `AUTH_PROXY_ADMIN_GROUPS` work as the
+  OIDC ones (including the last-admin guard), read from the groups header
+  or claim. A disabled user is refused: "Sign-in through your proxy
+  didn't work. Ask an admin."
+- **Linking while signed in** (decided 2026-10-01, #54): a user signed in
+  with a password or OIDC who arrives with a valid header for a proxy
+  account nobody has linked keeps their session and sees a banner, *Link
+  your proxy account {name}*, if they have no `proxy` identity yet and are
+  in the allowed groups. Its button (`POST /auth/proxy/link`) reads the
+  header again from that request and links it. This is how
+  `AUTH_PROXY_LINK=identity` users get linked, and it also links a proxy
+  account whose username differs from the Logbook one.
+- **The session follows the header:**
+  - no session, or one for another user → sign in as the header's user
+    (session regenerated, CSRF rotated), marked as header-based;
+  - a header-based session and the header now missing, failing its
+    checks, from an untrusted address, or for someone else → the session
+    ends, then the new user (if any) is signed in;
+  - a password or OIDC session survives requests without a header, and
+    with a header for an unlinked proxy account (#55), so mixed access
+    (LAN direct, internet through the proxy) works; only a header that
+    resolves to **another** user replaces it.
+  Whenever the session changes the answer is a redirect, to the same
+  page for a GET and home otherwise, so the next request is built for the
+  new user from the start and a post that brought a change is never
+  applied.
+- **Sign-in page:** with header sign-in on and the request from a trusted
+  proxy without the header, it says "Your sign-in proxy didn't send a
+  user. Check its configuration", besides the usual methods. A header for
+  an unlinked or refused account shows the message from *Finding the
+  user* instead.
+- **Sign-out:** ends the session. For a header-based session the browser
+  then goes to `AUTH_PROXY_LOGOUT_URL` when set (e.g. Authelia's
+  `/logout`). Without one, the answer is a page saying "You're signed out
+  of Logbook, but your proxy signs you straight back in. Sign out at the
+  proxy to end it there", since the next request would sign straight back
+  in.
+- **Settings:** Settings → Users and Settings → Account show *Proxy* as a
+  sign-in method; it can be removed like an OIDC identity (and, as there,
+  not while it is the only way in). Settings → Users says whether header
+  sign-in is on, and in which mode.
+- **Not in this version:** header sign-in for the API or calendar feed;
+  trusting `X-Forwarded-For`; mTLS; validating an RS256 or ES256 proxy
+  JWT against a key set (an Authentik proxy provider cannot sign that
+  way).
 
 ### 7.10 Feature toggles
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
@@ -3305,6 +3412,23 @@ Real environment variables override `.env`; an empty value counts as unset.
   sign-in; default `true`). A half-set configuration (issuer without
   client id or secret) or an unknown `OIDC_LINK` stops the app at start
   with a message naming the variable.
+- Header sign-in (§7.9, Phase 23.2): `AUTH_PROXY_HEADER` (the plain
+  username header, e.g. `Remote-User`; empty, the default, is off) or
+  `AUTH_PROXY_JWT_HEADER` (Authentik's signed `X-authentik-jwt`; never
+  both), `AUTH_PROXY_TRUSTED` (comma-separated IP addresses and CIDR
+  ranges of the proxy; required with `AUTH_PROXY_HEADER`, optional with
+  the JWT), `AUTH_PROXY_NAME_HEADER`, `AUTH_PROXY_EMAIL_HEADER`,
+  `AUTH_PROXY_GROUPS_HEADER` (plain mode, optional; groups separated by
+  `,` or `|`),
+  `AUTH_PROXY_JWT_SECRET`, `AUTH_PROXY_JWT_ISSUER`,
+  `AUTH_PROXY_JWT_AUDIENCE` (all three required with the JWT header),
+  `AUTH_PROXY_LINK` (`identity` | `username`; default `username`),
+  `AUTH_PROXY_AUTO_CREATE` (default `false`), `AUTH_PROXY_ALLOWED_GROUPS`,
+  `AUTH_PROXY_ADMIN_GROUPS` (comma-separated; default none),
+  `AUTH_PROXY_LOGOUT_URL` (where *Sign out* sends a header-based session;
+  default none). A header without what it requires, both headers, an
+  invalid trusted entry, an unknown `AUTH_PROXY_LINK` or a logout URL that
+  isn't http(s) stops the app (web and CLI) at start, naming the variable.
 - `BACKUP_PATH` (pre-restore backups and `bin/backup.php create`; default
   `var/backups`, Docker `/data/backups`), `MAX_RESTORE_MB` (largest backup
   accepted by the restore form; default 256, and PHP's upload limits must
@@ -3371,7 +3495,8 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
-- Reverse-proxy header auth (planned as Phase 23.2).
+- Header sign-in (Phase 23.2): mTLS between proxy and app; RS256 or
+  ES256 proxy JWTs checked against a key set, should a proxy offer them.
 - Single sign-on (Phase 23.1): more than one OIDC provider (#50); linking
   an SSO account by a verified email (`OIDC_LINK=email`) once Logbook
   verifies its own email addresses (#51).
@@ -3567,6 +3692,14 @@ task breakdowns live in the per-phase files; this is the map.
   switchable off with a CLI break-glass link; optional provider sign-out
   (§6 UserIdentity, §7.9, §9). Also `GET /api/v1/journeys` (§7.20). One
   migration. Ships with Phase 23.2 as v2.3.0.
+- **Phase 23.2 — Header sign-in + v2.3 release.** Sign-in from a
+  forward-auth proxy (Authelia, Authentik): a plain username header
+  trusted only from listed proxy addresses, or Authentik's HS256-signed
+  JWT header; linking by username (default) or explicitly while signed
+  in; optional creation and admin from groups; the session follows the
+  header; refuse to start when half-configured; deployment guides for
+  nginx, Traefik, Caddy and the Authentik outpost (§7.9, §9). No
+  migration. Releases v2.3.0 with Phase 23.1.
 
 ---
 

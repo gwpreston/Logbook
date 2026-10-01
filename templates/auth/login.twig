@@ -4,6 +4,7 @@
 {#
  # Sign-in (spec.md §7.9). With single sign-on configured, *Sign in with
  # {name}* comes first; with AUTH_LOCAL_LOGIN=false it is all there is.
+ # Header sign-in leaves a notice when the proxy sent no usable user.
  #}
 {% block title %}{{ 'auth.sign_in'|trans }} · {{ parent() }}{% endblock %}
 
@@ -17,6 +18,11 @@
 
             {% if error ?? null %}
                 <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ error|trans }}</span></div>
+            {% endif %}
+
+            {% if proxy and proxy.kind in ['missing', 'not_linked', 'refused'] %}
+                {# Header sign-in (spec.md §7.9 *Sign-in page*). #}
+                <div class="alert {{ proxy.kind == 'missing' ? 'alert--warning' : 'alert--error' }}" role="{{ proxy.kind == 'missing' ? 'status' : 'alert' }}" data-proxy-notice="{{ proxy.kind }}">{{ ui.icon(proxy.kind == 'missing' ? 'warning' : 'error') }}<span>{{ ('proxy.' ~ proxy.kind)|trans({name: proxy.name}) }}</span></div>
             {% endif %}
 
             {% if sso %}

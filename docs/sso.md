@@ -9,7 +9,8 @@ What they can see and do is still set in Logbook ([users-and-sharing.md](users-a
 
 Passwords stay as the fallback, first-run setup still creates a local
 admin, and a command-line link gets the owner in when the provider is down.
-`spec.md` §7.9 has the exact rules.
+Already behind a forward-auth proxy? [Header sign-in](#header-sign-in)
+trusts the user it passes on instead. `spec.md` §7.9 has the exact rules.
 
 - [How it works](#how-it-works)
 - [Setting it up](#setting-it-up)
@@ -23,6 +24,11 @@ admin, and a command-line link gets the owner in when the provider is down.
 - [Break-glass: getting in when the provider is down](#break-glass-getting-in-when-the-provider-is-down)
 - [Signing out](#signing-out)
 - [When it doesn't work](#when-it-doesnt-work)
+- [Header sign-in](#header-sign-in) (behind Authelia or an Authentik outpost)
+  - [Authelia with nginx](#authelia-with-nginx)
+  - [Authelia with Traefik](#authelia-with-traefik)
+  - [Authelia with Caddy](#authelia-with-caddy)
+  - [Authentik proxy outpost](#authentik-proxy-outpost)
 - [Upgrading and rolling back](#upgrading-and-rolling-back)
 
 ---
@@ -291,10 +297,282 @@ A provider that can't be reached at all shows "Authentik can't be reached
 just now" on the sign-in page. The password form still works if it is on,
 and the break-glass link always works.
 
+## Header sign-in
+
+Many self-hosters already put every app behind a forward-auth proxy:
+Authelia with nginx, Traefik or Caddy, or an Authentik outpost. The proxy
+signs people in and passes the username on in a header such as
+`Remote-User`. With header sign-in, someone who has signed in at the proxy
+opens Logbook already signed in as their own user, without a second
+sign-in or an OIDC client to set up.
+
+> **Read this before switching it on.** Header sign-in trusts a header that
+> anyone can type. It is only safe when **both** of these hold:
+>
+> 1. **The app is reachable only through the proxy.** No published port on
+>    the app container, no LAN address that skips the proxy, and nothing
+>    else on the proxy's network that could connect to it. Logbook checks
+>    the *connecting address* against `AUTH_PROXY_TRUSTED` and ignores the
+>    header from anywhere else. That check is only as good as your network.
+> 2. **The proxy sets the header on every request it passes on**, replacing
+>    whatever the client sent. The examples below do this. Watch out for a
+>    "bypass" or public rule at the proxy that forwards a request without
+>    authenticating it, because the client's own header then travels
+>    through unchanged.
+>
+> **Underscores.** A client can send `Remote_User`, which many tools treat
+> as `Remote-User`. Logbook reads the proxy's headers from the variables
+> the web server hands PHP (`HTTP_REMOTE_USER`), and Apache 2.4 (the Docker
+> image) never puts a header with an underscore there. On a bare-PHP
+> install with nginx and php-fpm, keep nginx's default
+> `underscores_in_headers off`, which drops them. PHP's built-in
+> development server (`composer start`) doesn't drop them, so never put it
+> behind a real proxy.
+
+It is off unless `AUTH_PROXY_HEADER` (or `AUTH_PROXY_JWT_HEADER`) is set.
+The app refuses to start with a header and no `AUTH_PROXY_TRUSTED`, and
+names both variables, rather than trusting everyone. Every variable is in
+[configuration.md](configuration.md#header-sign-in).
+
+### How it works
+
+- **Only the page routes.** The API, the calendar feed, `/health` and the
+  app's static files never look at the header. Exempt them from forward
+  auth at the proxy, because scripts and calendar apps can't sign in there.
+  The examples do this.
+- **Trust:** the header counts only when the connecting address
+  (`REMOTE_ADDR`) is in `AUTH_PROXY_TRUSTED`, a comma-separated list of IP
+  addresses and CIDR ranges (IPv4 and IPv6). `X-Forwarded-For` and
+  `Forwarded` are never used for this, since a client can write them. From
+  any other address the header is ignored and logged, at most once per
+  address per hour: `Header Remote-User from 203.0.113.9 ignored: not a
+  trusted proxy`. With Docker, the trusted address is the proxy container's
+  address on the network it shares with the app. Give that network a fixed
+  subnet so the address stays the same (the example below does).
+- **Finding the user:** the header's value, trimmed and lower-cased, is the
+  proxy account. A proxy account already linked to a user signs in as that
+  user. With `AUTH_PROXY_LINK=username` (the default), a user with the
+  same username and no proxy account yet is linked the first time. With
+  `AUTH_PROXY_AUTO_CREATE=true`, anyone else becomes a new member (display
+  name and email from `AUTH_PROXY_NAME_HEADER` and
+  `AUTH_PROXY_EMAIL_HEADER`), who sees the welcome form once.
+  `AUTH_PROXY_ALLOWED_GROUPS` and `AUTH_PROXY_ADMIN_GROUPS` work like the
+  OIDC ones ([Groups and admins](#groups-and-admins)), read from
+  `AUTH_PROXY_GROUPS_HEADER` (comma- or `|`-separated). Nothing happens
+  while no user exists: run first-run setup on the app directly, or let the
+  proxy through once with the header absent.
+- **The session follows the header.** A header for someone else switches
+  the session, under a new session id. A header that goes missing (signed
+  out at the proxy, or the request didn't come through it) ends a session
+  that the header started. A session from a password or OIDC sign-in is
+  kept when no header arrives, so you can still reach Logbook directly on
+  the LAN with your password. Only a header naming another *linked* user
+  replaces it. Each switch answers with a redirect to the same page, so a
+  form posted at that moment is never applied.
+- **Linking a different name.** When your Logbook username differs from
+  your proxy username, or with `AUTH_PROXY_LINK=identity`, sign in with
+  your password and open Logbook through the proxy. A banner offers *Link
+  your proxy account*. After that the proxy alone signs you in. Settings →
+  Account lists the linked proxy account, and Settings → Users shows
+  *Proxy* among each user's sign-in methods, where an admin can remove it.
+
+### Signing out with header sign-in
+
+*Sign out* ends the Logbook session, but the proxy would sign you straight
+back in on the next request. Set `AUTH_PROXY_LOGOUT_URL` to the proxy's
+sign-out page and *Sign out* goes on there (Authelia:
+`https://auth.example.com/logout`; Authentik:
+`https://logbook.example.com/outpost.goauthentik.io/sign_out`). Without
+it, Logbook shows a page saying to sign out at the proxy. Signing out at
+the proxy ends the Logbook session on the next request.
+
+### Authelia with nginx
+
+[`docker/nginx/forward-auth-example.conf`](../docker/nginx/forward-auth-example.conf)
+is a complete server block for Logbook at `/logbook/`. It uses
+`auth_request` against Authelia's `/api/authz/auth-request`, sets the four
+`Remote-*` headers from Authelia's answer on every request, and exempts
+the API, the calendar feed and `/health`. The smoke test
+(`bin/smoke-test.sh header`) runs it unchanged. On the app:
+
+```dotenv
+APP_BASE_PATH=/logbook
+AUTH_PROXY_HEADER=Remote-User
+AUTH_PROXY_NAME_HEADER=Remote-Name
+AUTH_PROXY_EMAIL_HEADER=Remote-Email
+AUTH_PROXY_GROUPS_HEADER=Remote-Groups
+AUTH_PROXY_TRUSTED=172.29.71.10
+AUTH_PROXY_LOGOUT_URL=https://auth.example.com/logout
+```
+
+and in Docker Compose, a fixed address for nginx, with no `ports:` on the
+app:
+
+```yaml
+services:
+  proxy:
+    networks:
+      default:
+        ipv4_address: 172.29.71.10
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.29.71.0/24
+```
+
+### Authelia with Traefik
+
+Blank the headers first, then `forwardAuth`, so a request Authelia lets
+through without a user never carries the client's own:
+
+```yaml
+# Dynamic configuration (file provider)
+http:
+  middlewares:
+    strip-remote:
+      headers:
+        customRequestHeaders:
+          Remote-User: ""
+          Remote-Groups: ""
+          Remote-Name: ""
+          Remote-Email: ""
+    authelia:
+      forwardAuth:
+        address: http://authelia:9091/api/authz/forward-auth
+        trustForwardHeader: true
+        authResponseHeaders: [Remote-User, Remote-Groups, Remote-Name, Remote-Email]
+  routers:
+    logbook:
+      rule: Host(`logbook.example.com`)
+      middlewares: [strip-remote, authelia]
+      service: logbook
+    logbook-exempt:
+      rule: Host(`logbook.example.com`) && (PathPrefix(`/api/`) || PathPrefix(`/calendar/`) || Path(`/health`))
+      priority: 100
+      middlewares: [strip-remote]
+      service: logbook
+  services:
+    logbook:
+      loadBalancer:
+        servers:
+          - url: http://app:80
+```
+
+`AUTH_PROXY_TRUSTED` is Traefik's address on the app's network.
+
+### Authelia with Caddy
+
+```caddyfile
+logbook.example.com {
+	# Never pass on what the client sent.
+	request_header -Remote-User
+	request_header -Remote-Groups
+	request_header -Remote-Name
+	request_header -Remote-Email
+
+	@exempt path /api/* /calendar/* /health
+	handle @exempt {
+		reverse_proxy app:80
+	}
+	handle {
+		forward_auth authelia:9091 {
+			uri /api/authz/forward-auth
+			copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+		}
+		reverse_proxy app:80
+	}
+}
+```
+
+`AUTH_PROXY_TRUSTED` is Caddy's address on the app's network.
+
+### Authentik proxy outpost
+
+Create a **Proxy Provider** for Logbook, in *Proxy* mode (the outpost
+forwards to Logbook itself) or *Forward auth (single application)* with
+nginx, Traefik or Caddy in front, and an application for it. Add
+`^/(api|calendar)/.*` and `^/health$` to the provider's *Unauthenticated
+Paths*, so the API, the calendar feed and the health check get through
+without signing in. (Prefix them with your base path, for example
+`^/logbook/(api|calendar)/.*`.) The outpost sets its `X-authentik-*`
+headers on every request it forwards and drops headers with underscores.
+
+There are two ways to use it.
+
+**The plain header,** from the outpost's address only:
+
+```dotenv
+AUTH_PROXY_HEADER=X-authentik-username
+AUTH_PROXY_NAME_HEADER=X-authentik-name
+AUTH_PROXY_EMAIL_HEADER=X-authentik-email
+AUTH_PROXY_GROUPS_HEADER=X-authentik-groups
+AUTH_PROXY_TRUSTED=172.29.71.20
+AUTH_PROXY_LOGOUT_URL=https://logbook.example.com/outpost.goauthentik.io/sign_out
+```
+
+**The signed JWT,** `X-authentik-jwt`. The outpost also passes on the ID
+token its provider issued. An Authentik proxy provider can't have a signing
+key, so Authentik signs that token with **HS256 and the provider's client
+secret**. Logbook checks it with the same secret, so the header can't be
+forged without the secret, and `AUTH_PROXY_TRUSTED` becomes optional:
+
+```dotenv
+AUTH_PROXY_JWT_HEADER=X-authentik-jwt
+AUTH_PROXY_JWT_ISSUER=https://authentik.example.com/application/o/logbook/
+AUTH_PROXY_JWT_AUDIENCE=<the provider's Client ID>
+AUTH_PROXY_JWT_SECRET=<the provider's client secret>
+# Optional, and still enforced when set:
+AUTH_PROXY_TRUSTED=172.29.71.20
+```
+
+- The issuer is the application's, with the trailing slash. The client ID
+  is on the provider's page. The client secret isn't shown there; an admin
+  can read it from the API as `client_secret` in
+  `GET /api/v3/outposts/proxy/` (with an API token for an admin).
+- Only HS256 is accepted. Logbook checks the signature, the issuer, the
+  audience (`aud` must contain the client ID), the expiry and the issue
+  time, with 60 seconds of leeway. The username is `preferred_username`;
+  `name`, `email` and `groups` also come from the token, never from the
+  plain headers.
+- **The secret can mint tokens.** Anyone who has it can sign in as anyone.
+  Keep it out of logs and backups of `.env`, as you would a password.
+- **A captured token works until it expires** (the provider's *Token
+  validity*), from anywhere if `AUTH_PROXY_TRUSTED` is empty. When it
+  expires, the Logbook session ends with it. The outpost's own session
+  lasts the same validity (plus a second), so it signs in again at
+  Authentik and passes on a fresh token.
+  Keep the validity short, and set `AUTH_PROXY_TRUSTED` too when you can.
+- With forward auth, also pass `X-authentik-jwt` on: add it to Traefik's
+  `authResponseHeaders` or Caddy's `copy_headers`, or to nginx's
+  `auth_request_set` and `proxy_set_header` lines.
+
+### When header sign-in doesn't work
+
+| The log says | Fix |
+|---|---|
+| Header Remote-User from 172.x.y.z ignored: not a trusted proxy | That is the proxy's address as Logbook sees it: put it (or its subnet) in `AUTH_PROXY_TRUSTED`. If it is your browser's address instead, the request bypassed the proxy. |
+| Header … refused: the value is not one username | A comma or control characters in the value. Either the wrong header is configured, or it arrived twice (joined with a comma) because the proxy appended its header to the client's instead of replacing it. Use `proxy_set_header` (nginx) or the examples above. |
+| Header X-authentik-jwt … refused: the JWT's issuer "…" is not AUTH_PROXY_JWT_ISSUER | Copy the issuer from the token (or the application's OpenID configuration) exactly, trailing slash included. |
+| … the JWT was refused: Signature verification failed | `AUTH_PROXY_JWT_SECRET` isn't the provider's client secret. |
+| … the JWT has expired | The outpost passed on an old token. Check the server clocks, and the provider's token validity. |
+| Header sign-in: "…" is not linked to any user, or not in AUTH_PROXY_ALLOWED_GROUPS | Link it while signed in (the banner), set `AUTH_PROXY_LINK=username` or `AUTH_PROXY_AUTO_CREATE=true`, or check the groups header. |
+
+"Your sign-in proxy didn't send a user" on the sign-in page means a
+trusted proxy sent the request without the header. The proxy isn't
+authenticating that path, or it is passing the header under another name.
+
+"Too many redirects" through the proxy means the browser isn't keeping
+Logbook's session cookie, so every page signs in again and redirects to
+itself. Usually `SESSION_SECURE=true` (or an `https` `APP_URL`) while the
+browser reaches Logbook over plain `http`.
+
 ## Upgrading and rolling back
 
 Upgrading to 2.3.0 adds the `user_identities` table and lets a user have no
-password. Nothing changes until you set `OIDC_ISSUER`. Backups and
+password. Nothing changes until you set `OIDC_ISSUER` or an
+`AUTH_PROXY_*` header. Header sign-in needs no migration of its own: it
+stores its linked accounts in the same table. Backups and
 `bin/export-user.php` include linked accounts. In another install they work
 only with the same provider and issuer.
 

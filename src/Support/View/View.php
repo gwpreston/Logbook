@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Support\View;
 
 use Logbook\Middleware\CsrfMiddleware;
+use Logbook\Middleware\ProxyAuthMiddleware;
 use Logbook\Middleware\SessionMiddleware;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\RequestContext;
@@ -93,6 +94,8 @@ final readonly class View
                 ? $uri->getPath() . ($uri->getQuery() !== '' ? '?' . $uri->getQuery() : '')
                 : '',
             'return_to' => ReturnTarget::of($request, $this->settings->basePath),
+            // What header sign-in has to say on this page (spec.md §7.9), or null.
+            'proxy' => $request->getAttribute(ProxyAuthMiddleware::ATTRIBUTE),
         ];
     }
 
@@ -101,6 +104,14 @@ final readonly class View
      */
     private static function emptyRequestContext(): array
     {
-        return ['modal' => false, 'user' => null, 'csrf' => null, 'flashes' => [], 'current_path' => '', 'return_to' => null];
+        return [
+            'modal' => false,
+            'user' => null,
+            'csrf' => null,
+            'flashes' => [],
+            'current_path' => '',
+            'return_to' => null,
+            'proxy' => null,
+        ];
     }
 }

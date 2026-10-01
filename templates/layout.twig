@@ -144,6 +144,20 @@
                 {% if flashes is not empty %}
                     <div class="flashes">{{ ui.flashes(flashes) }}</div>
                 {% endif %}
+                {% if signed_in and proxy and proxy.kind == 'link_offer' %}
+                    {# Header sign-in (spec.md §7.9): a signed-in user meets an unlinked proxy account. #}
+                    <div class="alert alert--info prompt-bar" role="status" data-proxy-link-offer>
+                        {{ ui.icon('link') }}
+                        <span>{{ 'proxy.link_offer'|trans({name: proxy.name}) }}</span>
+                        <span class="prompt-bar__actions">
+                            <form method="post" action="{{ url_for('proxy.link') }}">
+                                {{ ui.csrf(csrf) }}
+                                {{ ui.return_field(current_path) }}
+                                <button type="submit" class="btn btn--primary btn--sm">{{ ui.icon('link') }}{{ 'proxy.link'|trans }}</button>
+                            </form>
+                        </span>
+                    </div>
+                {% endif %}
                 {% if signed_in and feature_enabled('fuel') %}
                     {# Fill-ups saved offline, waiting to be sent (js/app.js; spec.md §7.15). #}
                     <section class="card outbox" data-offline-outbox hidden aria-labelledby="outbox-heading"
