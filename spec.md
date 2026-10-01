@@ -1811,7 +1811,8 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
     header set and no trusted list the app refuses to start, naming both
     variables. Optional `AUTH_PROXY_NAME_HEADER`,
     `AUTH_PROXY_EMAIL_HEADER` (used only when creating a user) and
-    `AUTH_PROXY_GROUPS_HEADER` (comma-separated).
+    `AUTH_PROXY_GROUPS_HEADER` (separated by commas, as Authelia sends
+    them, or by `|`, as Authentik's outpost does).
   - *Signed JWT* (`AUTH_PROXY_JWT_HEADER`, e.g. `X-authentik-jwt`, decided
     2026-10-01, #52): Authentik's proxy outpost passes the ID token its
     proxy provider issued. A proxy provider has no signing key, so the
@@ -3413,7 +3414,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   both), `AUTH_PROXY_TRUSTED` (comma-separated IP addresses and CIDR
   ranges of the proxy; required with `AUTH_PROXY_HEADER`, optional with
   the JWT), `AUTH_PROXY_NAME_HEADER`, `AUTH_PROXY_EMAIL_HEADER`,
-  `AUTH_PROXY_GROUPS_HEADER` (plain mode, optional),
+  `AUTH_PROXY_GROUPS_HEADER` (plain mode, optional; groups separated by
+  `,` or `|`),
   `AUTH_PROXY_JWT_SECRET`, `AUTH_PROXY_JWT_ISSUER`,
   `AUTH_PROXY_JWT_AUDIENCE` (all three required with the JWT header),
   `AUTH_PROXY_LINK` (`identity` | `username`; default `username`),

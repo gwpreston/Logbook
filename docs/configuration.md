@@ -69,6 +69,33 @@ variable. The redirect URI to register is
 | `OIDC_LOGOUT` | `false` | Also sign out at the provider. Register `{APP_URL}{APP_BASE_PATH}/login` there as the post-logout redirect URI. |
 | `AUTH_LOCAL_LOGIN` | `true` | Password sign-in. `false` leaves only SSO. First-run setup still creates a local admin, and `php bin/auth.php login-link <username>` still works. |
 
+## Header sign-in
+
+Sign-in from a forward-auth proxy such as Authelia or an Authentik outpost
+(Phase 23.2). See [sso.md](sso.md#header-sign-in), and read its warning
+first: the app must be reachable only through the proxy. Off unless
+`AUTH_PROXY_HEADER` or `AUTH_PROXY_JWT_HEADER` is set (never both). A header
+without what it needs, an invalid trusted entry, an unknown
+`AUTH_PROXY_LINK` or a logout URL that isn't http(s) stops the app, on the
+web and on the command line, with a message naming the variable.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `AUTH_PROXY_HEADER` | *(empty: off)* | The header holding the username, e.g. `Remote-User` (Authelia) or `X-authentik-username`. Letters, digits and dashes only. |
+| `AUTH_PROXY_TRUSTED` | *(empty)* | Comma-separated IP addresses and CIDR ranges the proxy connects from, e.g. `172.18.0.0/16, 10.0.0.5, fd00::/8`. **Required** with `AUTH_PROXY_HEADER`; optional with the JWT, and enforced when set. Only the connecting address counts, never `X-Forwarded-For`. |
+| `AUTH_PROXY_NAME_HEADER` | *(empty)* | Display name for a user created by header sign-in. |
+| `AUTH_PROXY_EMAIL_HEADER` | *(empty)* | Reminder email address for a user created by header sign-in. |
+| `AUTH_PROXY_GROUPS_HEADER` | *(empty)* | Groups, separated by `,` (Authelia) or `\|` (Authentik), for the two groups variables below. |
+| `AUTH_PROXY_JWT_HEADER` | *(empty: off)* | Instead of the plain header: Authentik's signed `X-authentik-jwt`. Username, name, email and groups then come from its claims. |
+| `AUTH_PROXY_JWT_SECRET` | *(empty)* | Required with the JWT header: the proxy provider's client secret (HS256, at least 32 characters). It can mint tokens: keep it secret. |
+| `AUTH_PROXY_JWT_ISSUER` | *(empty)* | Required with the JWT header: the application's issuer, exactly (e.g. `https://authentik.example.com/application/o/logbook/`). |
+| `AUTH_PROXY_JWT_AUDIENCE` | *(empty)* | Required with the JWT header: the proxy provider's client ID. |
+| `AUTH_PROXY_LINK` | `username` | `username`: a proxy account reaches the user with the same username (and no proxy account yet). `identity`: only once that user links it from the banner while signed in. |
+| `AUTH_PROXY_AUTO_CREATE` | `false` | Create a member (no password) for a proxy account nobody has. |
+| `AUTH_PROXY_ALLOWED_GROUPS` | *(empty: everyone)* | Comma-separated: only members of these groups may sign in through the proxy. |
+| `AUTH_PROXY_ADMIN_GROUPS` | *(empty)* | Comma-separated: admin is set from these groups whenever header sign-in signs someone in, both ways. The last admin is never demoted. |
+| `AUTH_PROXY_LOGOUT_URL` | *(empty)* | Where *Sign out* sends a session that came from the header, e.g. `https://auth.example.com/logout`. Without it, a page explains that sign-out happens at the proxy. |
+
 ## REST API
 
 See [api.md](api.md).

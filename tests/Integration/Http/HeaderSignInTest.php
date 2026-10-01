@@ -211,6 +211,8 @@ final class HeaderSignInTest extends AppTestCase
         $member = $this->viaProxy($app, ['Remote-User' => 'owner', 'Remote-Groups' => 'people, logbook']);
         self::assertSame('/', $member->get('/')->getHeaderLine('Location'));
         self::assertSame(200, $member->get('/')->getStatusCode());
+        $authentik = $this->viaProxy($app, ['Remote-User' => 'owner', 'Remote-Groups' => 'people|logbook'], '198.51.100.7');
+        self::assertSame('/', self::location($authentik), 'Authentik separates groups with "|"');
     }
 
     public function testAdminFollowsTheGroupsButTheLastAdminStays(): void

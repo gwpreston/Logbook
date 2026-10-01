@@ -127,7 +127,8 @@ final readonly class ProxyHeaders
      */
     private static function list(string $value): array
     {
-        $items = preg_split('/\s*,\s*/', trim($value), -1, PREG_SPLIT_NO_EMPTY);
+        // Authelia separates groups with commas, Authentik's outpost with "|".
+        $items = preg_split('/\s*[,|]\s*/', trim($value), -1, PREG_SPLIT_NO_EMPTY);
 
         return $items === false ? [] : $items;
     }
