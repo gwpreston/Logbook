@@ -16,7 +16,10 @@ use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Number\Decimal;
 use LogicException;
 use Psr\Clock\ClockInterface;
 
@@ -36,6 +39,9 @@ final readonly class ReminderService
         private ClockInterface $clock,
         private FeatureToggles $features,
         private VehicleAccess $access,
+        private OdometerService $odometer,
+        private ReminderSettingsStore $settings,
+        private UserDirectory $directory,
     ) {
     }
 
@@ -161,7 +167,7 @@ final readonly class ReminderService
      */
     public function updateManual(User $user, Reminder $reminder, ManualReminderData $data): Reminder
     {
-        $newOccurrence = $reminder->dueOn != $data->dueOn;
+        $newOccurrence = $reminder->dueOn != $data->dueOn || !self::sameKm($reminder->dueKm, $data->dueKm);
         $status = $newOccurrence
             ? $this->statusFor($user, $data)
             : ReminderRules::next($reminder->status, $this->statusFor($user, $data));
@@ -180,11 +186,33 @@ final readonly class ReminderService
         $this->reminders->delete($reminder->id);
     }
 
+    /**
+     * Judged by the vehicle owner's today and lead distance, as sync judges
+     * it (spec.md §7.6), so saving and the next sync agree.
+     */
     private function statusFor(User $user, ManualReminderData $data): ReminderStatus
     {
-        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        $vehicle = $this->vehicles->findById($data->vehicleId);
+        $owner = $vehicle === null || $vehicle->userId === $user->id
+            ? $user
+            : ($this->directory->find($vehicle->userId) ?? $user);
+        $today = LocalTime::today($this->clock, $owner->preferences->timeZone());
+        $history = $data->dueKm === null || $vehicle === null ? null : $this->odometer->history($vehicle);
 
-        return ReminderRules::statusForDate($data->dueOn, $today, $data->leadTimeDays);
+        return ReminderRules::manual(
+            $data->dueOn,
+            $data->dueKm,
+            $today,
+            $data->leadTimeDays,
+            $history?->latest()?->readingKm,
+            $history?->averageKmPerDay(),
+            $this->settings->reminderPreferences($owner->id)->scheduleKm,
+        )->status;
+    }
+
+    private static function sameKm(?string $a, ?string $b): bool
+    {
+        return ($a === null || $b === null) ? $a === $b : Decimal::compare($a, $b) === 0;
     }
 
     /**

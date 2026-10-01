@@ -41,10 +41,10 @@ final readonly class EditReminderAction
         }
 
         if ($request->getMethod() !== 'POST') {
-            return $this->page->render($request, $response, ManualReminderForm::values($reminder), $reminder);
+            return $this->page->render($request, $response, ManualReminderForm::values($reminder, $user->preferences), $reminder);
         }
 
-        $data = ManualReminderForm::parse(RequestContext::form($request), RequestContext::locale($request), $vehicleIds);
+        $data = ManualReminderForm::parse(RequestContext::form($request), $user->preferences, $vehicleIds);
         if ($data instanceof ValidationErrors) {
             return $this->page->render($request, $response, RequestContext::formValues($request), $reminder, $data, 422);
         }

@@ -121,6 +121,7 @@ final class JsonInput
     public const array REMINDER_FIELDS = [
         'title' => 'title',
         'due_on' => 'due_on',
+        'due_odometer' => 'due_odometer',
         'lead_time_days' => 'lead_time_days',
         'notes' => 'notes',
     ];
@@ -451,19 +452,21 @@ final class JsonInput
         int $defaultLeadDays,
     ): array|ValidationErrors {
         $errors = new ValidationErrors();
-        self::unknownFields($body, array_keys(self::REMINDER_FIELDS), $errors);
+        self::unknownFields($body, [...array_keys(self::REMINDER_FIELDS), 'distance_unit'], $errors);
 
         $lead = self::decimal($body, 'lead_time_days', $errors);
         $input = [
             'vehicle_id' => (string) $vehicleId,
             'title' => self::text($body, 'title', $errors),
             'due_on' => self::text($body, 'due_on', $errors),
+            'due_odometer' => self::decimal($body, 'due_odometer', $errors),
             'lead_time_days' => array_key_exists('lead_time_days', $body) ? $lead : (string) $defaultLeadDays,
             'notes' => self::text($body, 'notes', $errors),
         ];
+        $distance = self::distanceUnit($body, $owner, $errors);
 
         return $errors->isEmpty()
-            ? ['input' => $input, 'preferences' => self::preferences($owner, $owner->distanceUnit, $owner->volumeUnit)]
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
             : $errors;
     }
 

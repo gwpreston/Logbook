@@ -370,7 +370,7 @@ final readonly class DraftWriter
                 ...($reminder->notes === null ? [] : [self::field('note', $reminder->notes)]),
             ],
             [],
-            ManualReminderForm::values($reminder),
+            ManualReminderForm::values($reminder, $user->preferences),
         );
     }
 

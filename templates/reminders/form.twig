@@ -8,6 +8,7 @@
 {% set active_nav = 'reminders' %}
 {% set editing = reminder is not null %}
 {% set heading = (editing ? 'reminders.edit_title' : 'reminders.add_title')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
 
 {% block title %}{{ heading }} · {{ parent() }}{% endblock %}
 
@@ -32,7 +33,11 @@
                 {{ ui.select('vehicle_id', 'reminders.field.vehicle'|trans, values, errors, vehicle_options, {required: true}) }}
                 {{ ui.input('title', 'reminders.field.title'|trans, values, errors, {required: true, maxlength: 150, hint: 'reminders.hint.title'|trans}) }}
                 <div class="form-row">
-                    {{ ui.input('due_on', 'reminders.field.due_on'|trans, values, errors, {type: 'date', required: true}) }}
+                    {{ ui.input('due_on', 'reminders.field.due_on'|trans, values, errors, {type: 'date', optional: true}) }}
+                    {{ ui.input('due_odometer', 'reminders.field.due_odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                </div>
+                <p class="field__hint">{{ 'reminders.hint.due'|trans }}</p>
+                <div class="form-row">
                     {{ ui.input('lead_time_days', 'reminders.field.lead_time_days'|trans, values, errors, {type: 'number', required: true, step: 1, min: 0, max: 365, inputmode: 'numeric', suffix: 'reminders.days_suffix'|trans, hint: 'reminders.hint.lead_time_days'|trans}) }}
                 </div>
                 <div class="field">

@@ -81,7 +81,9 @@ final readonly class ReminderSync
 
         // Archived vehicles raise nothing, so their reminders fall out below.
         $owners = [];
+        $vehicles = [];
         foreach ($this->vehicles->listByIds($active) as $vehicle) {
+            $vehicles[$vehicle->id] = $vehicle;
             $owner = $vehicle->userId === $user->id ? $user : $this->directory->find($vehicle->userId) ?? $user;
             $owners[$vehicle->id] = $owner;
             $today = LocalTime::today($this->clock, $owner->preferences->timeZone());
@@ -139,13 +141,26 @@ final readonly class ReminderSync
             $this->reminders->delete($orphan->id);
         }
 
+        $histories = [];
         foreach ($this->reminders->listOpenManualForVehicles($active) as $manual) {
-            if ($manual->dueOn === null) {
+            if ($manual->dueOn === null && $manual->dueKm === null) {
                 continue;
             }
             $owner = $owners[$manual->vehicleId] ?? $user;
             $today = LocalTime::today($this->clock, $owner->preferences->timeZone());
-            $status = ReminderRules::statusForDate($manual->dueOn, $today, $manual->leadTimeDays);
+            $history = null;
+            if ($manual->dueKm !== null && isset($vehicles[$manual->vehicleId])) {
+                $history = $histories[$manual->vehicleId] ??= $this->odometer->history($vehicles[$manual->vehicleId]);
+            }
+            $status = ReminderRules::manual(
+                $manual->dueOn,
+                $manual->dueKm,
+                $today,
+                $manual->leadTimeDays,
+                $history?->latest()?->readingKm,
+                $history?->averageKmPerDay(),
+                $this->settings->reminderPreferences($owner->id)->scheduleKm,
+            )->status;
             if ($status !== $manual->status) {
                 $this->reminders->setStatus($manual->id, $status, $this->clock->now());
             }

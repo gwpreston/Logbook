@@ -1416,11 +1416,16 @@ return [
             'vehicle' => 'Fahrzeug',
             'title' => 'Woran erinnern',
             'due_on' => 'Fällig am',
+            'due_odometer' => 'Fällig bei',
             'lead_time_days' => 'Erinnere mich',
             'notes' => 'Notizen',
         ],
+        'validation' => [
+            'date_or_odometer' => 'Gib ein Datum, einen Kilometerstand oder beides ein.',
+        ],
         'hint' => [
             'title' => 'Z. B. „Kfz-Steuer zahlen“, „Winterreifen aufziehen“.',
+            'due' => 'Ein Datum, ein Kilometerstand oder beides: was zuerst eintritt. Ein Kilometerstand wird anhand deiner üblichen Fahrleistung in den Kalender eingeordnet.',
             'lead_time_days' => 'So viele Tage vor dem Termin gilt sie als fällig (0 = am Tag selbst).',
         ],
         'settings' => [

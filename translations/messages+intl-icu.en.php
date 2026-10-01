@@ -1418,11 +1418,16 @@ return [
             'vehicle' => 'Vehicle',
             'title' => 'What to remember',
             'due_on' => 'Due on',
+            'due_odometer' => 'Due at',
             'lead_time_days' => 'Remind me',
             'notes' => 'Notes',
         ],
+        'validation' => [
+            'date_or_odometer' => 'Enter a date, an odometer reading, or both.',
+        ],
         'hint' => [
             'title' => 'E.g. “Pay road tax”, “Winter tyres on”.',
+            'due' => 'A date, an odometer reading, or both: whichever comes first. A reading is placed on the calendar from your usual mileage.',
             'lead_time_days' => 'Days before the due date it counts as due (0 = on the day).',
         ],
         'settings' => [

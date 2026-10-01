@@ -450,9 +450,6 @@ final class AttachmentTest extends AppTestCase
         self::assertSame(0, AttachmentService::fileLimit(0));
     }
 
-    /**
-     * @return list<UploadedFile> a PDF, a PNG and another PDF
-     */
     public function testAPhotoIsStoredUprightWithoutItsGpsAndThePdfAsUploaded(): void
     {
         $app = $this->createApp();
@@ -472,6 +469,9 @@ final class AttachmentTest extends AppTestCase
         self::assertSame(self::PDF, (string) file_get_contents($this->uploadDir() . '/' . $pdf->storedPath));
     }
 
+    /**
+     * @return list<UploadedFile> a PDF, a PNG and another PDF
+     */
     private function three(): array
     {
         return [

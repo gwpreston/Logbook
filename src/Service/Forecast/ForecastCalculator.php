@@ -9,6 +9,8 @@ use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Maintenance\DonePoint;
 use Logbook\Domain\Reminder\Reminder;
+use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Service\Reminder\ReminderRules;
 use Logbook\Service\Maintenance\DueState;
 use Logbook\Service\Maintenance\DueStatus;
 use Logbook\Service\Maintenance\DueTrigger;
@@ -302,11 +304,24 @@ final class ForecastCalculator
         );
     }
 
+    /**
+     * A manual reminder: on its date, or, due at an odometer, on the sooner
+     * of its date and the day the distance is projected to be reached
+     * (spec.md §7.6); undated while an odometer-only one has no projection.
+     */
     private static function reminder(VehicleSources $vehicle, Reminder $reminder, ForecastHorizon $horizon): ?ForecastItem
     {
-        if ($reminder->dueOn === null) {
+        if ($reminder->dueOn === null && $reminder->dueKm === null) {
             return null;
         }
+        $due = ReminderRules::manual(
+            $reminder->dueOn,
+            $reminder->dueKm,
+            $horizon->today,
+            $reminder->leadTimeDays,
+            $vehicle->currentKm,
+            $vehicle->kmPerDay,
+        );
 
         return new ForecastItem(
             vehicle: $vehicle->vehicle,
@@ -315,10 +330,10 @@ final class ForecastCalculator
             title: $reminder->title,
             category: null,
             icon: $reminder->icon(),
-            dueOn: $reminder->dueOn,
-            dueKm: null,
-            projected: false,
-            overdue: $reminder->dueOn < $horizon->today,
+            dueOn: $due->on,
+            dueKm: $reminder->dueKm,
+            projected: $due->projected,
+            overdue: $due->status === ReminderStatus::Overdue,
             cost: null,
             currency: $vehicle->currency,
         );

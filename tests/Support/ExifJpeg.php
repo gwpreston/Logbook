@@ -14,6 +14,9 @@ final class ExifJpeg
     /**
      * A $width × $height JPEG, left half red and right half blue, with EXIF
      * Orientation $orientation and a GPS latitude of 54° 35' N.
+     *
+     * @param int<1, max> $width
+     * @param int<1, max> $height
      */
     public static function make(int $width = 40, int $height = 20, int $orientation = 6): string
     {

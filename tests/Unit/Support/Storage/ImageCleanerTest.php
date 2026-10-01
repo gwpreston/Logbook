@@ -28,6 +28,7 @@ final class ImageCleanerTest extends TestCase
 
         $exif = exif_read_data($this->path, null, true);
         self::assertIsArray($exif);
+        self::assertIsArray($exif['IFD0'] ?? null);
         self::assertSame(6, $exif['IFD0']['Orientation'] ?? null);
         self::assertArrayHasKey('GPS', $exif);
     }
@@ -51,8 +52,7 @@ final class ImageCleanerTest extends TestCase
 
         ImageCleaner::clean($this->path, 'image/jpeg');
 
-        [$width, $height] = (array) getimagesize($this->path);
-        self::assertSame([20, 40], [$width, $height]);
+        self::assertSame([20, 40], array_slice((array) getimagesize($this->path), 0, 2));
         $image = imagecreatefromjpeg($this->path);
         self::assertNotFalse($image);
         // The left half (red) is now the top half.

@@ -1473,15 +1473,20 @@ iCal/webcal feed so items appear in the user's calendar.
   `docs/phases/open-questions.md` #82): a manual reminder has a due date, a
   *Due at* odometer (typed in the owner's distance unit, stored in
   `due_km`), or both; at least one. It is judged like a schedule,
-  whichever comes first: *overdue* once the date has passed or the
-  vehicle's latest reading is at or past the odometer; *due* within its
-  lead time in days, or within the owner's schedule lead distance of the
-  odometer. The odometer is placed on the calendar by the §7.4 projection
-  (a week of history), computed when read and never stored; the list, the
-  calendar feed and *Coming up* use the sooner of the two dates, and a
-  reminder with only an odometer and no projection yet is listed "at
-  48,000 mi" with no date (and left out of the calendar feed). Editing the
-  form keeps both fields; neither is required on its own.
+  whichever comes first (`ReminderRules::manual()`, through §7.4's
+  `DueState`): *overdue* once the date has passed or the vehicle's latest
+  reading is past the odometer; *due* within its lead time in days of the
+  sooner of its date and the odometer's projected date (§7.4 projection,
+  a week of history; computed when judged, never stored), or within the
+  owner's schedule lead distance of the odometer; otherwise *upcoming*,
+  as is one with only an odometer and no reading yet. Sync re-judges it
+  as readings arrive, under the vehicle owner's lead distance and today.
+  The reminders list shows its date, or "Due at 48,000 mi" when it has
+  none; *Coming up* places it on the sooner of the date and the
+  projection; the calendar feed lists only reminders with a date. A
+  changed date or odometer is a new occurrence. Neither field is required
+  on its own; one of them is ("Enter a date, an odometer reading, or
+  both.").
 - **Sync.** Generated reminders are reconciled with their sources whenever
   the reminder list, the calendar feed or the scheduled task reads them: a
   new source adds a reminder, a changed one updates it, a removed one

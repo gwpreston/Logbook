@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.12.0",
+    "version": "1.13.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -4311,15 +4311,27 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "title",
-          "due_on"
+          "title"
         ],
+        "description": "At least one of due_on and due_odometer: whichever comes first.",
         "properties": {
           "title": {
             "type": "string"
           },
           "due_on": {
             "$ref": "#/components/schemas/Date"
+          },
+          "due_odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "The odometer it is due at, in distance_unit."
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
           },
           "lead_time_days": {
             "type": "integer",

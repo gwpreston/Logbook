@@ -262,6 +262,53 @@ final class ReminderPagesTest extends ReminderTestCase
     }
 
     /**
+     * A manual reminder due at an odometer (spec.md §7.6, Phase 26.4): kept
+     * as a distance, judged whichever comes first, overdue once a reading
+     * passes it, and shown "Due at …" while it has no date.
+     */
+    public function testAManualReminderCanBeDueAtAnOdometer(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $readings = '/vehicles/' . $golf->id . '/odometer/new';
+        $browser->post($readings, ['recorded_at' => '2026-09-01T09:00', 'reading' => '10000']);
+        $browser->post($readings, ['recorded_at' => '2026-09-20T09:00', 'reading' => '10300']);
+
+        $form = self::body($browser->get('/reminders/new'));
+        self::assertStringContainsString('name="due_odometer"', $form);
+
+        $neither = $browser->post('/reminders/new', [
+            'vehicle_id' => (string) $golf->id,
+            'title' => 'Front pads',
+            'lead_time_days' => '7',
+        ]);
+        self::assertSame(422, $neither->getStatusCode());
+        self::assertStringContainsString('Enter a date, an odometer reading, or both.', self::body($neither));
+
+        $browser->post('/reminders/new', [
+            'vehicle_id' => (string) $golf->id,
+            'title' => 'Front pads',
+            'due_odometer' => '12000',
+            'lead_time_days' => '7',
+        ]);
+        $reminder = $this->onlyReminder($app);
+        self::assertNull($reminder->dueOn);
+        self::assertNotNull($reminder->dueKm);
+        self::assertSame(ReminderStatus::Upcoming, $reminder->status);
+        self::assertStringContainsString('Due at 12,000', self::body($browser->get('/reminders')));
+        self::assertStringContainsString(
+            'name="due_odometer" type="number" value="12000"',
+            self::body($browser->get('/reminders/' . $reminder->id . '/edit')),
+        );
+
+        $browser->post($readings, ['recorded_at' => '2026-09-26T09:00', 'reading' => '12010']);
+        $browser->get('/reminders');
+        self::assertSame(ReminderStatus::Overdue, $this->onlyReminder($app)->status, 'past the odometer');
+    }
+
+    /**
      * The manual reminder form opens as a desktop modal (spec.md §5, Phase
      * 21.1): the form alone with the header, errors inside the dialog, a
      * save answered with the location.
