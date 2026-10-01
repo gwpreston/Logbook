@@ -6,6 +6,7 @@ namespace Logbook\Service\Ai\Draft;
 
 use DateTimeImmutable;
 use IntlDateFormatter;
+use NumberFormatter;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseCategory;
@@ -135,6 +136,20 @@ final readonly class Resolver
     public function number(User $user, string $value): ?string
     {
         return DecimalParser::parse(trim($value), $user->preferences->locale);
+    }
+
+    /**
+     * Whether a number could be read two ways: "72.341" is 72.341 to the
+     * forms, but a German writer may mean 72,341 (thousands grouped with
+     * "."). The model's arguments are copied from prose, not typed into a
+     * number field, so such a value is asked about rather than guessed.
+     */
+    public function isAmbiguous(User $user, string $value): bool
+    {
+        $formatter = new NumberFormatter($user->preferences->locale, NumberFormatter::DECIMAL);
+
+        return $formatter->getSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL) === '.'
+            && preg_match('/^\d{1,3}(\.\d{3})+$/', trim($value)) === 1;
     }
 
     /**

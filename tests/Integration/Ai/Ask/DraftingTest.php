@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Ai\Ask;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Ai\Draft\DraftState;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Tyre\TyreChangeData;
+use Logbook\Domain\Tyre\TyreData;
+use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -21,7 +25,10 @@ use Logbook\Service\Ai\Draft\DraftStore;
 use Logbook\Service\Ai\Provider\ToolDefinition;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\Tyre\NewTyre;
+use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\ConsumptionUnit;
 use Logbook\Support\Units\DistanceUnit;
@@ -282,6 +289,143 @@ final class DraftingTest extends AskTestCase
         ], 'Getankt: 51,5 Liter Super E10 zu 1,799 €');
         self::id($reply);
         self::assertSame("92,65\u{a0}€", self::fields($reply)['Gesamt'], '51.5 × 1.799 = 92.6485, Logbook\'s total');
+    }
+
+    public function testANumberReadableTwoWaysIsAskedAbout(): void
+    {
+        $german = new DisplayPreferences(
+            'de_DE',
+            'Europe/Berlin',
+            DistanceUnit::Kilometre,
+            VolumeUnit::Litre,
+            ConsumptionUnit::LitresPer100Km,
+            'EUR',
+        );
+        [$this->app] = $this->askApp([], $german);
+        $golf = $this->vehicle($this->app, 'Volkswagen', 'Golf');
+        $this->browser = $this->browserFor($this->app, 'owner');
+        $reply = $this->draft(
+            'draft_reading',
+            ['vehicle' => $golf->id, 'odometer' => '72.341'],
+            'Kilometerstand 72.341',
+        );
+        self::assertSame('ask_user', $reply['status'], 'a decimal to the forms, likely 72,341 km to the writer');
+        self::assertSame(0, $this->rows($this->app, 'ai_drafts'));
+    }
+
+    public function testTwoDraftsInOneTurnDoNotSeeEachOther(): void
+    {
+        $arguments = [
+            'vehicle' => $this->bmw->id,
+            'odometer' => '72341',
+            'volume' => '40',
+            'total_cost' => '56',
+            'date' => '2026-10-14',
+        ];
+        $this->provider->queue(
+            Script::tools(['draft_fill_up', $arguments], ['draft_fill_up', $arguments]),
+            Script::answer('Two cards.'),
+        );
+        $this->browser->post('/ask', ['question' => 'I filled up twice']);
+        $replies = $this->toolReplies(count($this->provider->requests) - 1);
+        self::assertCount(2, $replies);
+        foreach ($replies as $reply) {
+            self::assertStringContainsString('"status":"ok"', $reply, 'the first draft was rolled back before the second');
+        }
+        self::assertSame(2, $this->rows($this->app, 'ai_drafts'), 'one card each');
+    }
+
+    public function testCardsWorkBehindASubpath(): void
+    {
+        [$this->app] = $this->askApp(['APP_BASE_PATH' => '/logbook']);
+        $bmw = $this->vehicle($this->app, 'BMW', '320i');
+        $this->browser = $this->browserFor($this->app, 'owner');
+        $this->provider->queue(
+            Script::tools(['draft_reading', ['vehicle' => $bmw->id, 'odometer' => '72341']]),
+            Script::answer('Check the card.'),
+        );
+        $posted = $this->browser->post('/logbook/ask', ['question' => 'The BMW is on 72,341']);
+        $page = (string) $this->browser->follow($posted)->getBody();
+        self::assertMatchesRegularExpression('#action="/logbook/ask/drafts/(\d+)/add"#', $page);
+        preg_match('#/logbook/ask/drafts/(\d+)/add#', $page, $m);
+        $id = $m[1] ?? self::fail('No Add on the card');
+        self::assertStringContainsString('href="/logbook/vehicles/' . $bmw->id . '/odometer/new?draft=' . $id . '"', $page);
+
+        $added = $this->browser->post('/logbook/ask/drafts/' . $id . '/add', []);
+        self::assertStringStartsWith('/logbook/ask/threads/', $added->getHeaderLine('Location'));
+        self::assertStringEndsWith('#draft-' . $id, $added->getHeaderLine('Location'));
+        self::assertSame(1, $this->rows($this->app, 'odometer_readings'));
+    }
+
+    public function testEditPrefillsEverySevenFormsAndSavingClosesTheCard(): void
+    {
+        $this->document($this->app, $this->bmw, ComplianceType::Inspection, '2026-03-11', '2027-03-10', '54.85');
+        $this->fitFronts();
+        $vehicle = '/vehicles/' . $this->bmw->id;
+        $kinds = [
+            'fuel' => [
+                'draft_fill_up',
+                ['odometer' => '72341', 'volume' => '40', 'total_cost' => '56'],
+                $vehicle . '/fuel/new',
+                'fuel_entries',
+            ],
+            'odometer' => ['draft_reading', ['odometer' => '72400'], $vehicle . '/odometer/new', 'odometer_readings'],
+            'maintenance' => [
+                'draft_service_record',
+                ['category' => 'brakes', 'title' => 'Pads', 'cost' => '145'],
+                $vehicle . '/maintenance/new',
+                'maintenance_entries',
+            ],
+            'document' => [
+                'draft_document',
+                ['type' => 'insurance', 'provider' => 'Admiral', 'start' => 'today', 'term' => 'a year'],
+                $vehicle . '/documents/new',
+                'compliance_documents',
+            ],
+            'expense' => [
+                'draft_expense',
+                ['category' => 'parking', 'amount' => '6.50'],
+                $vehicle . '/expenses/new',
+                'expense_entries',
+            ],
+            'tyre_check' => [
+                'draft_tyre_check',
+                ['odometer' => '72500', 'depths' => ['fl' => '5.5', 'fr' => '5.6']],
+                $vehicle . '/tyres/check',
+                'tyre_changes',
+            ],
+            'reminder' => ['draft_reminder', ['title' => 'Wash it', 'due' => '2026-12-01'], '/reminders/new', 'reminders'],
+        ];
+        $store = $this->service($this->app, DraftStore::class);
+        foreach ($kinds as $kind => [$tool, $arguments, $form, $table]) {
+            $id = self::id($this->draft($tool, ['vehicle' => $this->bmw->id] + $arguments));
+            $html = (string) $this->browser->get($form . '?draft=' . $id)->getBody();
+            self::assertStringContainsString('name="draft" value="' . $id . '"', $html, $kind);
+            self::assertStringContainsString('from your message', $html, $kind);
+
+            $before = $this->rows($this->app, $table);
+            $values = $store->get($this->owner, $id)->formValues;
+            $saved = $this->browser->post($form, $values + ['draft' => (string) $id]);
+            self::assertSame(303, $saved->getStatusCode(), $kind . ': ' . self::body($saved));
+            self::assertGreaterThan($before, $this->rows($this->app, $table), $kind);
+            self::assertSame(DraftState::Added, $store->get($this->owner, $id)->state($this->clock()->now()), $kind);
+        }
+    }
+
+    private function fitFronts(): void
+    {
+        $fitted = LocalTime::parseDate('2026-06-01');
+        self::assertNotNull($fitted);
+        $this->service($this->app, TyreChangeService::class)->existing(
+            $this->bmw,
+            new TyreChangeData($fitted, '40000.000'),
+            [
+                new NewTyre(TyrePosition::FrontLeft, new TyreData('Michelin', 'Primacy 4'), '7.000'),
+                new NewTyre(TyrePosition::FrontRight, new TyreData('Michelin', 'Primacy 4'), '7.000'),
+            ],
+            new DateTimeZone('Europe/London'),
+            'en_GB',
+        );
     }
 
     public function testAddJudgesTheDraftOnTheDataAsItIsThen(): void

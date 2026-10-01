@@ -4010,7 +4010,10 @@ entries by message*.
   resolves them. A fill-up or reading dated today is timed now; one on
   another day is timed at local noon on it (the time is part of the
   duplicate key). Numbers are read as the user's forms read them, so a
-  German user's "51,5" and "1.234,5" are 51.5 and 1234.5. Words for grades and categories match in order: the
+  German user's "51,5" and "1.234,5" are 51.5 and 1234.5. A number that
+  could be read two ways in the user's language (a German "72.341": a
+  decimal to the forms, but likely 72,341 km) is asked about, never
+  guessed. Words for grades and categories match in order: the
   exact code, then the label or short label in the user's language or
   English, then a translated synonym list ("super unleaded" → E5 98). A
   word that matches more than one, or none, goes back as a question. A

@@ -249,6 +249,9 @@ abstract class DraftTool implements AskTool
         if ($value === null) {
             return null;
         }
+        if ($this->resolver->isAmbiguous($user, $value)) {
+            throw new DraftQuestion($this->kit->t('ask.draft.question.ambiguous_number', ['words' => $value]));
+        }
 
         return $this->resolver->number($user, $value)
             ?? throw new DraftQuestion($this->kit->t('ask.draft.question.number', ['words' => $value]));

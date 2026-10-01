@@ -3416,6 +3416,7 @@ return [
                 'date' => 'Logbook kann das Datum »{words}« nicht lesen. An welchem Tag war das?',
                 'time' => 'Logbook kann die Uhrzeit »{words}« nicht lesen. Wann war das?',
                 'number' => 'Logbook kann »{words}« nicht als Zahl lesen.',
+                'ambiguous_number' => 'Ist »{words}« eine ganze Zahl mit Tausenderpunkt oder eine Dezimalzahl? Schreib sie ohne Punkt, oder mit Komma für Dezimalstellen.',
                 'term' => 'Logbook kann »{words}« nicht als Zeitraum lesen. Wie lange, zum Beispiel ein Jahr oder 6 Monate?',
                 'no_document' => 'Für {vehicle} gibt es kein gültiges Dokument »{type}« mit Ablaufdatum. Wann ist es fällig?',
                 'no_schedule' => 'Es gibt keinen Wartungsplan »{words}« mit Fälligkeit. Wann ist es fällig?',

@@ -3429,6 +3429,7 @@ return [
                 'date' => 'Logbook can’t read the date “{words}”. Which day was it?',
                 'time' => 'Logbook can’t read the time “{words}”. What time was it?',
                 'number' => 'Logbook can’t read “{words}” as a number.',
+                'ambiguous_number' => 'Is “{words}” a whole number with thousands grouped by points, or a decimal? Write it without the point, or with a comma for decimals.',
                 'term' => 'Logbook can’t read “{words}” as a length of time. How long, for example a year or 6 months?',
                 'no_document' => 'There is no current {type} with an expiry date for {vehicle}. When is it due?',
                 'no_schedule' => 'There is no schedule called “{words}” with a due date. When is it due?',

@@ -237,6 +237,12 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
   CSV import never had: the same date and depths; an open manual reminder
   with the same title and due date. They were chosen while building: the
   owner decided that the endpoints exist (#76), not their keys.
+- **A number readable two ways is asked about.** The forms read a German
+  "72.341" as 72.341, and drafts follow the forms. But a model copies the
+  number from prose, where a German writer usually means 72,341 km. So a
+  draft asks back, never guesses.
+- Further tests: *Edit* on all seven create forms, cards behind a
+  subpath, and two drafts in one turn that don't see each other.
 - **Tyre form choices** are built by `Service\Tyre\TyreFormContexts`,
   shared by the page, the API's tread check and the draft.
 
