@@ -16,12 +16,12 @@ use GdImage;
 final class ImageCleaner
 {
     /** Larger images are refused: decoding them would not fit in memory. */
-    public const int MAX_PIXELS = 100_000_000;
+    public const int MAX_PIXELS = 50_000_000;
 
     private const int JPEG_QUALITY = 90;
     private const int WEBP_QUALITY = 90;
     /** Bytes per pixel GD needs for a true-colour image, with room to rotate. */
-    private const int BYTES_PER_PIXEL = 10;
+    private const int BYTES_PER_PIXEL = 9;
 
     private function __construct()
     {

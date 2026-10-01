@@ -6,6 +6,65 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.8.0] — 2026-10-01
+
+Phase 26.4: **reading receipts and documents**. Photograph a garage
+invoice, a fuel receipt or an MOT certificate, or choose a PDF, and
+Logbook fills in the right form with each value marked and the words it
+came from beside it. You check it and save it; the file is attached to the
+entry. **Nothing is saved until you press Save**, and a model that fails
+still leaves you the form with your file attached.
+
+### Added
+- **Scan a receipt or document** from *Log entry*, the phone app's *Scan*
+  shortcut (it opens the camera) and *Fill from a file* on the service
+  record, document and fill-up forms. The Scan page says which connection
+  reads the file and where it runs.
+- **One request reads and sorts the file**: a service or repair invoice
+  becomes a service record (VAT, labour and parts in the details, a
+  category from the work, a schedule it may complete suggested); a fuel or
+  charging receipt a fill-up; an MOT certificate an *Inspection* document
+  with its expiry and mileage (a failed test an *Other* document that
+  never replaces the current MOT); insurance an *Insurance* document; a
+  V5C a page of ticked updates to the vehicle; anything else an *Other*
+  document. *Read it as* another kind maps the same reading again.
+- **Logbook reads the values, not the model**: dates in your day/month
+  order, with "Check the date: 4 May or 5 April?" when a date reads both
+  ways; amounts, readings and units converted to yours; a date in the
+  future or before the vehicle's first registration left empty with the
+  reason. The vehicle is matched by its plate, with a warning when the
+  document is for another one.
+- **Recommended work and MOT advisories** are offered as reminders after
+  saving, one press each or *Add all*; a distance ("in about 5,000 miles")
+  is kept as a distance.
+- **Manual reminders due at an odometer**, a date, or both, whichever
+  comes first, on the form and in the API (`due_odometer`; OpenAPI
+  1.13.0).
+- Text PDFs are read as text (`smalot/pdfparser`), photos and scanned PDFs
+  as pictures on the vision model; scanned PDFs are turned into pictures
+  with Ghostscript (in the Docker image) or Imagick.
+- `bin/ai-eval.php --scans` scores the configured models on twenty
+  synthetic documents, per kind.
+
+### Changed
+- **Every photo you upload is now turned upright and stored without its
+  EXIF data**, GPS position included: attachments, vehicle photos and
+  scans. Files stored before 2.8.0 are left as they were.
+
+### Upgrade notes
+- One migration (`pending_uploads`). It rolls back. Scanned files wait 24
+  hours for their entry, then are deleted; they are not in backups.
+- **PHP's `gd` (JPEG, PNG, WebP) and `exif` extensions are now
+  required.** The Docker image has them on amd64 and arm64. On bare PHP,
+  install them first (`apt install php8.4-gd`); Composer refuses to
+  install without them.
+- The Docker image now includes **Ghostscript**, for scanned PDFs. On bare
+  PHP it is optional (`GHOSTSCRIPT_BINARY`, default `gs`); without it, a
+  scanned PDF asks for a photo instead.
+- Reading files follows the *Read receipts* module (Settings → Modules)
+  and needs a model for *Reading receipts and documents* (one that takes
+  images, for photos) or *Reading text PDFs* on Settings → AI.
+
 ## [2.7.0] — 2026-10-01
 
 Phase 26.3: **adding entries by message**. Tell *Ask Logbook* what you did
@@ -1519,7 +1578,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.8.0...HEAD
+[2.8.0]: https://github.com/gwpreston16/Logbook/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/gwpreston16/Logbook/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/gwpreston16/Logbook/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/gwpreston16/Logbook/compare/v2.4.0...v2.5.0

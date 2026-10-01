@@ -12,7 +12,7 @@ use Logbook\Tests\Support\ScanFiles;
 /**
  * The real renderer (spec.md §7.27): Ghostscript turns a scanned PDF's
  * pages into JPEGs. Skipped where `gs` is not installed; CI and the Docker
- * image have it. `GHOSTSCRIPT_BINARY=` (empty) turns it off.
+ * image have it. `GHOSTSCRIPT_BINARY=off` turns it off.
  */
 final class GhostscriptRendererTest extends AppTestCase
 {
@@ -36,9 +36,9 @@ final class GhostscriptRendererTest extends AppTestCase
         self::assertSame('image/jpeg', $size['mime']);
     }
 
-    public function testAnEmptySettingTurnsGhostscriptOff(): void
+    public function testOffTurnsGhostscriptOff(): void
     {
-        $app = $this->createApp(['GHOSTSCRIPT_BINARY' => '']);
+        $app = $this->createApp(['GHOSTSCRIPT_BINARY' => 'off']);
 
         self::assertFalse($this->service($app, GhostscriptRenderer::class)->isAvailable());
         $renderers = $this->service($app, PdfRenderers::class);

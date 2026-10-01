@@ -4311,18 +4311,24 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   extraction again without a second request.
 - **The prefilled form:** the normal create form, with each scanned field
   marked "From the file, check" and its evidence as a hint ("'Total due
-  £184.50'"), the file listed as already attached (with *Remove*, which
-  leaves it unattached), and a thumbnail beside the form on wide screens
-  (the first page for a PDF when rendered). The form carries the pending
-  upload's token, and the entry's create action claims it in the entry's
-  transaction: the file becomes the entry's attachment, and the row goes.
-  A token that is expired, claimed or another user's is ignored, and the
-  form says the file was not kept. The user can add further files as
-  usual.
+  £184.50'"), linked to the field by `aria-describedby`; the file listed
+  as already attached (with *Don't attach it*, which saves the entry
+  without it and deletes it); and, for a photo, a thumbnail beside the
+  form on wide screens (served to its user only by `/scan/{token}/file`).
+  A notice at the top says what it was read as, repeats any warning (a
+  failed test, another currency, another vehicle's plate with a link to
+  that vehicle's form) and offers *Read it as* the other kinds, which
+  maps the same reading again with no second request. The form carries
+  the pending upload's token; the create action claims it once (§6
+  PendingUpload) and attaches a copy of the file with the entry's own
+  files, so the 10-file limit counts it. A token that is expired, already
+  claimed or another user's is ignored: the form opens without it. The
+  user can add further files as usual.
 - **Recommended work** (service invoices' recommendations, and an
-  inspection's advisories): after the entry is saved, a card on the page
-  it returns to offers each as a manual reminder (§7.6), *Add reminder*
-  per line and *Add all*:
+  inspection's advisories): saving the entry goes on to its card
+  (`/scan/{token}/reminders`), which offers each as a manual reminder
+  (§7.6), *Add reminder* per line and *Add all*, and *Not now* back to
+  where the save would have gone:
   - a date is taken as is;
   - a distance is stored as a distance (decided 2026-10-01,
     `docs/phases/open-questions.md` #82): *Due at* = the entry's odometer
@@ -4346,7 +4352,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   no tools; its answer is only a form's values; nothing saves without
   *Save*.
 - **Logging:** each request is in the usage log (§7.25) under its task;
-  with `AI_LOG_CONTENT=true` the extracted JSON is logged, never the file.
+  with `AI_LOG_CONTENT=true` the request's text (a text PDF's text, after
+  redaction) and the answer are logged, never an image.
 - `bin/ai-eval.php --scans` runs the fixture set (`tests/Fixtures/scans/`)
   against the configured models and reports field accuracy per kind.
 - **Not in scope:** saving without the form; a parts inventory or a VAT
@@ -4537,7 +4544,7 @@ Real environment variables override `.env`; an empty value counts as unset.
   it and verifies every connection). API keys typed as `env:NAME` read
   that variable at call time.
 - Reading files (§7.27, Phase 26.4): `GHOSTSCRIPT_BINARY` (default `gs`,
-  looked up on `PATH`; empty turns Ghostscript off). Imagick is used when
+  looked up on `PATH`; `off` turns Ghostscript off). Imagick is used when
   the extension is loaded and Ghostscript is not found. With neither, a
   scanned PDF asks for a photo instead.
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),

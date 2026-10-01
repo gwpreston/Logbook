@@ -23,6 +23,17 @@ declare(strict_types=1);
  * in CI: paste its summary into the pull request for each model tried.
  * Threads it creates, and their drafts, are deleted at the end.
  *
+ * With --scans (Phase 26.4, spec.md §7.27) it reads the scan fixture set
+ * (tests/Fixtures/scans: twenty synthetic invoices, receipts and
+ * certificates) with the configured `read_document` and `read_text`
+ * models instead, and reports per kind whether the kind was right and how
+ * many fields matched the expected reply (dates, amounts and readings
+ * compared as Logbook reads them, text without case or spacing). It also
+ * checks that no 11-digit reference survives a registration document.
+ * Nothing is written but the usage log.
+ *
+ *   php bin/ai-eval.php --scans [--user=demo] [--only=1,15] [--verbose]
+ *
  * Exit code: 0 ran, 1 could not run, 2 usage.
  */
 
@@ -41,12 +52,20 @@ use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Ai\Provider\ToolCall;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\UserDisplayScope;
+use Logbook\Service\Ai\Scan\Extraction;
+use Logbook\Service\Ai\Scan\Extractor;
+use Logbook\Service\Ai\Scan\FilePreparer;
+use Logbook\Service\Ai\Scan\PrintedDate;
+use Logbook\Service\Ai\Scan\PrintedNumber;
+use Logbook\Service\Ai\Scan\ScanAvailability;
+use Logbook\Service\Ai\Scan\Scrubber;
+use Logbook\Support\Number\Decimal;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$options = getopt('', ['user:', 'only:', 'verbose', 'help']);
+$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'help']);
 if (isset($options['help'])) {
-    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--user=demo] [--only=1,5,12] [--verbose]\n");
+    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans] [--user=demo] [--only=1,5,12] [--verbose]\n");
     exit(0);
 }
 $username = is_string($options['user'] ?? null) ? $options['user'] : 'demo';
@@ -69,6 +88,9 @@ if (!$user instanceof User) {
     fwrite(STDERR, sprintf("There is no user \"%s\".\n", $username));
     fwrite(STDERR, "Seed the demo data with ./bin/dev-setup.sh --with-sample-data.\n");
     exit(1);
+}
+if (isset($options['scans'])) {
+    exit(evaluateScans($get, $user, $only, $verbose));
 }
 $availability = $get(AskAvailability::class);
 assert($availability instanceof AskAvailability);
@@ -344,4 +366,130 @@ exit(0);
 function normalise(string $text): string
 {
     return str_replace(["\u{00A0}", "\u{202F}"], ' ', $text);
+}
+
+/**
+ * The scan fixture set against the configured models (--scans).
+ *
+ * @param Closure(class-string): object $get
+ * @param list<int> $only fixture numbers
+ */
+function evaluateScans(Closure $get, User $user, array $only, bool $verbose): int
+{
+    $availability = $get(ScanAvailability::class);
+    assert($availability instanceof ScanAvailability);
+    if (!$availability->isAvailable($user)) {
+        fwrite(STDERR, "Reading files is not available to that user: set a model for reading documents in Settings → AI.\n");
+
+        return 1;
+    }
+    $preparer = $get(FilePreparer::class);
+    $extractor = $get(Extractor::class);
+    assert($preparer instanceof FilePreparer && $extractor instanceof Extractor);
+    $connection = $availability->connection();
+    printf("Reading with %s (%s)\n\n", $connection->name ?? '?', $connection?->location->value ?? '?');
+
+    $dir = dirname(__DIR__) . '/tests/Fixtures/scans';
+    $byKind = [];
+    $leaks = 0;
+    foreach (glob($dir . '/[0-9][0-9]-*.json') ?: [] as $jsonPath) {
+        $name = basename($jsonPath, '.json');
+        if ($only !== [] && !in_array((int) substr($name, 0, 2), $only, true)) {
+            continue;
+        }
+        $fixture = json_decode((string) file_get_contents($jsonPath), true);
+        if (!is_array($fixture) || !is_string($fixture['file'] ?? null) || !is_array($fixture['reply'] ?? null)) {
+            continue;
+        }
+        $expected = $fixture['reply'];
+        $locale = is_string($fixture['locale'] ?? null) ? $fixture['locale'] : 'en_GB';
+        $mime = str_ends_with($fixture['file'], '.pdf') ? 'application/pdf' : 'image/jpeg';
+        $path = (string) tempnam(sys_get_temp_dir(), 'logbook-eval-');
+        file_put_contents($path, (string) file_get_contents($dir . '/' . $fixture['file']));
+        $started = microtime(true);
+        try {
+            $read = $extractor->extract($user, $preparer->prepare($path, $mime));
+        } finally {
+            unlink($path);
+        }
+        $seconds = microtime(true) - $started;
+
+        $kind = is_string($expected['kind'] ?? null) ? $expected['kind'] : 'other';
+        $byKind[$kind] ??= ['files' => 0, 'kind_ok' => 0, 'fields' => 0, 'fields_ok' => 0, 'failed' => 0, 'seconds' => 0.0];
+        $byKind[$kind]['files']++;
+        $byKind[$kind]['seconds'] += $seconds;
+        if (!$read instanceof Extraction) {
+            $byKind[$kind]['failed']++;
+            printf("%-28s  failed: %s\n", $name, $read->value);
+            continue;
+        }
+        $kindOk = $read->kind->value === $kind;
+        $byKind[$kind]['kind_ok'] += $kindOk ? 1 : 0;
+        $fields = is_array($expected['fields'] ?? null) ? $expected['fields'] : [];
+        $wrong = [];
+        foreach ($fields as $field => $want) {
+            if (!is_array($want) || !is_string($want['value'] ?? null) || $field === 'title' && $kind === 'registration') {
+                continue;
+            }
+            $byKind[$kind]['fields']++;
+            $got = $read->value((string) $field);
+            if ($got !== null && sameValue($want['value'], $got, $locale)) {
+                $byKind[$kind]['fields_ok']++;
+            } else {
+                $wrong[] = sprintf('%s: wanted "%s", got "%s"', $field, $want['value'], $got ?? '');
+            }
+        }
+        if ($kind === 'registration' && Scrubber::hasReference((string) json_encode($read->toArray()))) {
+            $leaks++;
+        }
+        printf(
+            "%-28s  kind %s  fields %d/%d  %.1f s\n",
+            $name,
+            $kindOk ? 'ok' : 'WRONG (' . $read->kind->value . ')',
+            count($fields) - count($wrong),
+            count($fields),
+            $seconds,
+        );
+        if ($verbose) {
+            foreach ($wrong as $line) {
+                printf("      %s\n", $line);
+            }
+        }
+    }
+
+    printf("\n%-18s %6s %8s %10s %8s %8s\n", 'Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file');
+    foreach ($byKind as $kind => $row) {
+        printf(
+            "%-18s %6d %8d %9d%% %8d %8.1f\n",
+            $kind,
+            $row['files'],
+            $row['kind_ok'],
+            (int) round(100 * $row['fields_ok'] / max(1, $row['fields'])),
+            $row['failed'],
+            $row['seconds'] / max(1, $row['files']),
+        );
+    }
+    printf("Registration references in the output: %s\n", $leaks > 0 ? $leaks . ' (WRONG)' : 'none');
+
+    return 0;
+}
+
+/**
+ * Whether a read value is the expected one: as dates, as numbers, else as text.
+ */
+function sameValue(string $want, string $got, string $locale): bool
+{
+    $date = PrintedDate::read($want, $locale);
+    if ($date !== null) {
+        return PrintedDate::read($got, $locale)?->date == $date->date;
+    }
+    $number = PrintedNumber::read($want, $locale);
+    if ($number !== null) {
+        $read = PrintedNumber::read($got, $locale);
+
+        return $read !== null && Decimal::compare($read, $number) === 0;
+    }
+    $plain = static fn (string $t): string => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $t)));
+
+    return $plain($want) === $plain($got);
 }

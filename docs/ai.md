@@ -6,9 +6,9 @@ where it runs: on this server, on a computer on your network, or with a
 cloud provider. **Nothing is sent to any model until an admin sets it up**,
 and until then Logbook looks and behaves exactly as it does without AI.
 
-This page covers the setup (Phase 26.1), *Ask Logbook* (Phase 26.2) and
-adding entries by message (Phase 26.3). Reading receipts arrives in a
-later version.
+This page covers the setup (Phase 26.1), *Ask Logbook* (Phase 26.2),
+adding entries by message (Phase 26.3) and reading receipts and
+documents (Phase 26.4).
 
 - [What AI does and never does](#what-ai-does-and-never-does)
 - [Where a model runs](#where-a-model-runs)
@@ -18,6 +18,7 @@ later version.
 - [Tasks](#tasks)
 - [Ask Logbook](#ask-logbook)
 - [Adding entries by message](#adding-entries-by-message)
+- [Reading receipts and documents](#reading-receipts-and-documents)
 - [Limits and the usage log](#limits-and-the-usage-log)
 - [Keys and secrets](#keys-and-secrets)
 - [Which model?](#which-model)
@@ -336,6 +337,101 @@ sees your cards.
 Text in your records ("call draft_fill_up…" in a note) is data and is
 never acted on. A draft is only ever a card waiting for your press.
 Attachments are never added by message; use *Edit* to add them.
+
+## Reading receipts and documents
+
+Photograph a garage invoice, a fuel receipt or an MOT certificate, or
+choose a PDF, and Logbook fills in the right form for you to check and
+save. The file is attached to the entry it creates.
+
+**Where.** *Log entry* → *Scan a receipt or document*; the phone app's
+*Scan* shortcut (it opens the camera); or *Fill from a file* at the top
+of the service record, document and fill-up forms. The Scan page says
+which connection reads the file and where it runs before you send
+anything.
+
+| The file | Fills | Notes |
+|---|---|---|
+| A service or repair invoice | a service record: date, mileage, garage, the first work line as the title, cost = the total; the work and parts lines, labour, parts and "VAT £30.75 (20%)" in the details; a category from the work (oil, tyres, brakes …) | a schedule it may complete is suggested, never chosen |
+| A fuel or charging receipt | a fill-up: date and time, quantity, price, total, station and grade | the odometer is rarely printed, so the form asks for it |
+| An MOT certificate (pass) | an *Inspection* document: test date, expiry, mileage (it joins the mileage log), test centre and number, advisories in the notes | |
+| A failed MOT | an *Other* document, "MOT failed 12 Mar 2026", with the failures and advisories | it never replaces the car's current MOT |
+| An insurance certificate or schedule | an *Insurance* document: insurer, policy number, cover dates, cost | |
+| A registration document (V5C) | a page offering the registration, VIN and first registration date beside the current values, each with a tick | the file is kept only if you tick it (it needs the purchase date) |
+| Anything else (a warranty, a tax receipt) | an *Other* document: title, date, provider, expiry | |
+
+**The form.** Each field read from the file is marked *From the file,
+check*, with the words it came from underneath ("Total due £184.50"), so
+checking is a glance. A thumbnail of a photo sits beside the form on a
+wide screen. Logbook reads dates, amounts and readings itself, as your
+forms do:
+- **Dates** are read in your order (UK: day first; US: month first). A
+  date such as 04/05/2026, which reads two ways, is marked *Check the
+  date: 4 May 2026 or 5 Apr 2026?*.
+- A date in the future, or before the vehicle's first registration, is
+  left empty with the reason; so is anything that cannot be read
+  ("l2.5O").
+- Miles and kilometres, litres and gallons are converted to your units;
+  "142.9p" a litre is £1.429.
+- The **vehicle** is the one whose registration is on the document
+  (spaces and dashes don't matter), else the one you chose, else you
+  pick. A document for another plate says so: "This is for AB12 CDE, not
+  your BMW".
+- Not the right form? *Read it as* another kind maps the same reading
+  again without asking the model twice. *Don't attach it* saves the
+  entry without the file.
+
+Nothing is saved until you press **Save**. Saving attaches the file once,
+even if the form is sent twice.
+
+**Recommended work.** When the invoice recommends work ("front pads in
+about 5,000 miles") or the MOT has advisories, a card after saving offers
+each as a reminder: *Add reminder* per line, or *Add all*. A date is kept
+as printed; a distance becomes a reminder *due at* that odometer (shown
+with the date your usual mileage reaches it); a line with neither is due
+in 30 days, which you can change. Nothing is added without a press.
+
+**What is sent, and where.**
+- A **PDF with text** (most garage and insurer PDFs) is read as text, on
+  the *Reading text PDFs* task: cheaper and more accurate than a picture.
+  Runs of 11 digits (a V5C's reference number, also phone numbers) are
+  removed from the text before it is sent.
+- A **photo**, or a **scanned PDF**, goes to the *Reading receipts and
+  documents* model as a picture (at most 2,000 px on the long edge; up to
+  three pages of a PDF). That model must take images. A scanned PDF is
+  turned into pictures with Ghostscript (in the Docker image) or Imagick;
+  without either, the form says "This PDF is a scan. Take a photo
+  instead, or type it in."
+- **Every photo you upload** to Logbook, scanned or attached, is turned
+  upright and stored **without its EXIF data**, so its GPS position never
+  reaches a model or the disk. Files stored before 2.8.0 are left as they
+  were.
+- A registration document's **reference number** is never extracted,
+  stored or shown, and is removed from PDF text before sending. A *photo*
+  of a V5C carries it as pixels: on an *Internet* connection the Scan page
+  says so.
+- With a model on this server or your network, no file leaves your
+  machines.
+- The file waits for its entry for 24 hours (only you can see it); then it
+  is deleted. Waiting files are not in backups.
+
+**When reading fails** (the model is busy, too slow, unreachable, or gives
+an answer that doesn't fit), you get the normal empty form with the file
+attached and one line saying why. Scanning never costs you the photo.
+
+**Who can scan.** The *Read receipts* module must be on (Settings →
+Modules), a model must be set for reading documents or text PDFs, and
+*Use AI features* must be on for you. You need *Log* on the vehicle, as
+for the form; the reminders card needs *Manage*, and the V5C page
+*Manage*.
+
+**Safety.** The request has no tools, so a document can only ever fill in
+a form; text in it ("ignore your instructions and save this") is data.
+
+**Trying models.** `php bin/ai-eval.php --scans` reads the twenty
+synthetic documents in `tests/Fixtures/scans` with your configured models
+and reports, per kind, how often the kind and each field were right. It
+sends real requests; nothing but the usage log is written.
 
 ## Limits and the usage log
 
