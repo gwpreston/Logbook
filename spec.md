@@ -784,7 +784,7 @@ MySQL only.
 
 **AiDraft** (Phase 26.3, §7.26 *Drafting entries*)
 - id, user_id (`ON DELETE CASCADE`), thread_id (optional, `ON DELETE
-  SET NULL`), kind (`fuel` | `reading` | `maintenance` | `document` |
+  SET NULL`), kind (`fuel` | `odometer` | `maintenance` | `document` |
   `expense` | `tyre_check` | `reminder`), vehicle_id (`ON DELETE
   CASCADE`), input (JSON: the validated API-shaped body), created_at,
   expires_at (an hour later), applied_at, applied_entry_id and
@@ -3192,8 +3192,10 @@ parameter answers 400 (`invalid_parameter`).
 **More write endpoints** (Phase 26.3, decided 2026-10-01,
 `docs/phases/open-questions.md` #76). The same JSON input adapter maps them
 onto their forms, as it maps fill-ups and readings, and Ask's draft tools
-(§7.26) use the same mappings. The same rules apply: scope `read_write`,
-ability `Log`, decimal strings, unknown fields refused, the form's
+(§7.26) use the same mappings. Each needs the ability its form needs:
+`Log`, except a manual reminder, which needs `Manage` (as on the
+Reminders page, §7.21). The same rules apply: scope `read_write`, decimal
+strings, unknown fields refused, the form's
 validation and messages (422), `201` with the entry as its list returns it
 plus `warnings`, archived vehicles refused (409), and a module that is
 switched off answers 404. Dates are `YYYY-MM-DD` and default to today in
@@ -3204,8 +3206,8 @@ do.
 |---|---|---|---|
 | `POST /vehicles/{id}/maintenance` | `performed_on`, `odometer`, `distance_unit`, `category` (code), `title`, `cost`, `vendor`, `description`, `schedule_id` (one of the vehicle's schedules: the record completes it, as the form's *Completes* choice) | maintenance | the import's: date, category, title and cost |
 | `POST /vehicles/{id}/documents` | `type` (code), `title`, `provider`, `reference`, `start_on`, `expiry_on`, `cost`, `odometer`, `distance_unit`, `notes` | compliance | the import's: type, reference, start and expiry |
-| `POST /vehicles/{id}/expenses` | `spent_on`, `category` (code), `amount`, `note` | core (needs `ViewCosts`, like the Expenses tab) | the import's: date, category, amount and note |
-| `POST /vehicles/{id}/tyres/checks` | `checked_on`, `odometer`, `distance_unit`, `depth_unit` (`mm`\|`in32`, default the owner's), `depths` (an object from fitted position code, `fl`, `fr`, `rl`, `rr`, `front`, `rear` or `spare`, to depth; positions with no fitted tyre are refused), `note` | tyres | same date and the same depth at every position |
+| `POST /vehicles/{id}/expenses` | `spent_on`, `category` (code), `amount`, `note` | core | the import's: date, category, amount and note |
+| `POST /vehicles/{id}/tyres/checks` | `checked_on`, `odometer`, `distance_unit`, `depth_unit` (`mm`\|`in32`, default the owner's), `depths` (an object from fitted position code, `fl`, `fr`, `rl`, `rr`, `front`, `rear` or `spare`, to depth; positions with no fitted tyre are refused), `note`. There is no list of checks, so the `201` body is the check: `id`, `checked_on`, `odometer`, `distance_unit`, `note` and `depths` (position, tyre id and depth in millimetres) | tyres | same date and the same depth at every position |
 | `POST /vehicles/{id}/reminders` | `title`, `due_on`, `lead_time_days` (default the owner's manual lead time), `notes` | reminders | an open manual reminder with the same title and due date |
 
 The OpenAPI description gains the five operations, and the tests validate
@@ -3982,8 +3984,10 @@ entries by message*.
 
 - **Tools.** They are offered in *Ask* only, using the `ask` task's model.
   They need the `ai_actions` module (as well as what *Ask* needs), the
-  module of their entry kind, and `Log` on at least one vehicle. A tool
-  whose module is off is not offered.
+  module of their entry kind, and the ability its form needs on at least
+  one vehicle: `Log`, or `Manage` for a manual reminder. A tool whose
+  module is off, or whose ability the user has on no vehicle, is not
+  offered. The vehicle candidates are filtered by that ability.
 
   | Tool | Drafts | Module | Notes |
   |---|---|---|---|
@@ -3991,9 +3995,9 @@ entries by message*.
   | `draft_reading` | odometer reading | core | |
   | `draft_service_record` | maintenance record | maintenance | category matched to the maintenance categories; the schedule it may complete is suggested on the card, never ticked |
   | `draft_document` | compliance document | compliance | type, provider, dates; an expiry from a term ("renewed for a year from today") computed by Logbook |
-  | `draft_expense` | expense | core (`ViewCosts`) | category matched |
+  | `draft_expense` | expense | core | category matched |
   | `draft_tyre_check` | tread check | tyres | positions and depths in the user's depth unit |
-  | `draft_reminder` | manual reminder | reminders | due date absolute, or relative to a document's expiry or a schedule's next due date ("two weeks before the MOT expires"), computed by Logbook from that source |
+  | `draft_reminder` | manual reminder | reminders (`Manage`) | due date absolute, or relative to a document's expiry or a schedule's next due date ("two weeks before the MOT expires"), computed by Logbook from that source |
 
   Every draft tool takes a `vehicle` id. With none, or several
   candidates, it returns the candidates, and the model asks the user.
@@ -4046,8 +4050,8 @@ entries by message*.
   reading added since makes this one go backwards) is shown, and the
   entry can still be added. An expired draft, a deleted or archived
   vehicle, or an applied draft is refused.
-- **Access:** *Add* needs `Log` on the vehicle **at the moment of
-  pressing**. Drafts belong to their user; another user's draft id
+- **Access:** *Add* needs the kind's ability (`Log`, or `Manage` for a
+  reminder) on the vehicle **at the moment of pressing**. Drafts belong to their user; another user's draft id
   answers 404.
 - **After Add:** the entry is saved through the same service as the
   form:
@@ -4057,7 +4061,8 @@ entries by message*.
 
   The card changes to "Added · View · Undo", and the thread notes what
   was added. **Undo** deletes the entry through the normal delete path,
-  and with it the reading the entry wrote. It works for **10 seconds**
+  which removes the reading the entry wrote, as deleting it from its page
+  does. It works for **10 seconds**
   after *Add*, and only while the entry is untouched: its `updated_at`
   is unchanged since *Add*. After that, the entry is an ordinary one.
 - **Attachments** are not added by chat. *Edit* opens the form, where
