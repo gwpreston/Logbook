@@ -357,7 +357,7 @@ anything.
 | An MOT certificate (pass) | an *Inspection* document: test date, expiry, mileage (it joins the mileage log), test centre and number, advisories in the notes | |
 | A failed MOT | an *Other* document, "MOT failed 12 Mar 2026", with the failures and advisories | it never replaces the car's current MOT |
 | An insurance certificate or schedule | an *Insurance* document: insurer, policy number, cover dates, cost | |
-| A registration document (V5C) | a page offering the registration, VIN and first registration date beside the current values, each with a tick | the file is kept only if you tick it (it needs the purchase date) |
+| A registration document (V5C) | a page offering the registration, VIN and first registration date beside the current values, each with a tick | the file is kept only if you tick it, as a *Registration* document, which the sale pack never offers |
 | Anything else (a warranty, a tax receipt) | an *Other* document: title, date, provider, expiry | |
 
 **The form.** Each field read from the file is marked *From the file,

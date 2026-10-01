@@ -13,8 +13,11 @@ use Logbook\Service\Ai\Scan\Mapper;
 use Logbook\Service\Ai\Scan\ScanReader;
 use Logbook\Service\Ai\Scan\VehicleMatcher;
 use Logbook\Service\Attachment\PendingUploads;
-use Logbook\Service\Vehicle\OwnershipFiles;
-use Logbook\Service\Vehicle\PaperworkNeedsDate;
+use Logbook\Domain\Compliance\ComplianceDocumentData;
+use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Feature\Feature;
+use Logbook\Service\Compliance\ComplianceService;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -32,8 +35,10 @@ use Slim\Exception\HttpNotFoundException;
  * details offered as updates to the vehicle (spec.md §7.27): registration,
  * VIN and first registration date beside the current values, each with
  * its own tick, saved through the vehicle edit's own parser. The file is
- * kept with the purchase paperwork only when the user ticks it, since it
- * carries the document reference; otherwise it is deleted. Needs `Manage`.
+ * kept only when the user ticks it, since it carries the document
+ * reference: on a `registration` document, which the sale pack never
+ * offers (PaperworkKind::NEVER_OFFERED). Otherwise it is deleted. Needs
+ * `Manage`, and the compliance module for keeping the file.
  */
 final readonly class ScanVehicleAction
 {
@@ -46,6 +51,8 @@ final readonly class ScanVehicleAction
         private VehicleAccess $access,
         private Mapper $mapper,
         private VehicleService $vehicles,
+        private ComplianceService $compliance,
+        private FeatureToggles $features,
         private ScanPrefill $prefill,
         private Redirector $redirect,
         private View $view,
@@ -104,19 +111,26 @@ final readonly class ScanVehicleAction
         if ($data instanceof ValidationErrors) {
             return $this->render($request, $response, $upload, $vehicle, $rows, $data, 422);
         }
-        $keep = ($input[self::KEEP] ?? '') === '1' && $vehicle->data->purchaseDate !== null;
+        $keep = ($input[self::KEEP] ?? '') === '1' && $this->canKeep();
         $files = $keep ? $this->prefill->files($request, new PendingUploads()) : new PendingUploads();
 
-        try {
-            [$updated, $claimed] = $this->prefill->save(
-                $request,
-                $files,
-                fn (PendingUploads $files): Vehicle
-                    => $this->vehicles->update($user, $vehicle, $data, new OwnershipFiles($files)),
-            );
-        } catch (PaperworkNeedsDate) {
-            return $this->render($request, $response, $upload, $vehicle, $rows, null, 422);
-        }
+        [$updated, $claimed] = $this->prefill->save(
+            $request,
+            $files,
+            function (PendingUploads $files) use ($user, $vehicle, $data, $keep): Vehicle {
+                $updated = $this->vehicles->update($user, $vehicle, $data);
+                if ($keep) {
+                    $this->compliance->create(
+                        $updated,
+                        new ComplianceDocumentData(ComplianceType::Registration),
+                        $user->preferences->timeZone(),
+                        $files,
+                    );
+                }
+
+                return $updated;
+            },
+        );
         RequestContext::session($request)->flash('success', 'vehicle.updated', ['name' => $updated->name()]);
 
         return $this->prefill->after(
@@ -126,6 +140,11 @@ final readonly class ScanVehicleAction
             null,
             $this->redirect->toRoute('vehicles.show', ['id' => (string) $updated->id]),
         );
+    }
+
+    private function canKeep(): bool
+    {
+        return $this->features->isEnabled(Feature::Compliance);
     }
 
     private function vehicle(ServerRequestInterface $request, ScanUpload $upload): Vehicle
@@ -175,7 +194,7 @@ final readonly class ScanVehicleAction
             'vehicle' => $vehicle,
             'rows' => $rows,
             'errors' => $errors?->all() ?? [],
-            'can_keep' => $vehicle->data->purchaseDate !== null,
+            'can_keep' => $this->canKeep(),
         ], $status);
     }
 }

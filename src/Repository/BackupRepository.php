@@ -188,8 +188,9 @@ final readonly class BackupRepository
             foreach (array_reverse(self::TABLES) as $table) {
                 $connection->createQueryBuilder()->delete($table)->executeStatement();
             }
-            // Every session belonged to the replaced accounts.
+            // Every session, and every scan waiting for an entry, belonged to the replaced accounts.
             $connection->createQueryBuilder()->delete('sessions')->executeStatement();
+            $connection->createQueryBuilder()->delete('pending_uploads')->executeStatement();
 
             foreach (self::TABLES as $table) {
                 foreach ($data[$table] ?? [] as $row) {

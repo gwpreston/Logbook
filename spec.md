@@ -816,8 +816,9 @@ MySQL only.
   the commit (a failed save keeps it). A saved row keeps only what the
   recommendations card needs until it expires. Deleted, with any file, by
   the scheduled task once expired. **Not in backups** or exports, and its
-  files (`UPLOAD_PATH/pending`) are left out of backups and of a
-  restore's file swap.
+  files (`UPLOAD_PATH/pending`) are left out of backups. A restore
+  deletes every row and file, as the accounts they belonged to are
+  replaced.
 
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
@@ -4297,11 +4298,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     current values, each with its own tick (ticked where it differs,
     unticked and marked "Same" where it matches); *Update the vehicle*
     saves only the ticked values through the vehicle edit's own parser.
-    The file is **not attached** unless the user ticks *Keep the file
-    with the purchase paperwork* (a warning explains why: it carries the
-    document reference, and the sale pack never offers it); that tick
-    needs the vehicle's purchase date (§7.12). Unticked, the pending
-    upload is deleted.
+    The file is **not attached** unless the user ticks *Keep the file as
+    a registration document* (a warning explains why: it carries the
+    document reference). Ticked, it is saved on a new `registration`
+    document, which the sale pack never offers (§7.19); the tick needs
+    the compliance module. Unticked, the pending upload is deleted.
   - **Other → `other` document:** title, start = the date, provider,
     expiry.
   A kind whose module is off on the vehicle (fuel, maintenance,

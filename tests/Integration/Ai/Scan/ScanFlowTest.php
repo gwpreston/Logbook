@@ -344,7 +344,7 @@ final class ScanFlowTest extends ScanTestCase
         })());
         $html = self::body($page);
         self::assertStringContainsString('never reads it', html_entity_decode($html));
-        self::assertStringContainsString('add the purchase date to the vehicle first', $html, 'no purchase date, no keeping');
+        self::assertStringContainsString('Keep the file as a registration document', $html);
         $token = substr((string) preg_replace('#^/scan/([a-f0-9]{32}).*$#', '$1', (string) end($path)), 0, 32);
 
         $saved = $this->browser->post('/scan/' . $token . '/vehicle?vehicle=' . $leaf->id, [
@@ -359,6 +359,57 @@ final class ScanFlowTest extends ScanTestCase
         self::assertSame('EV70 LTR', $updated->data->registration);
         self::assertSame(0, $this->rows('attachments'), 'not kept unless ticked');
         self::assertNull($this->pending($token)->storedPath);
+    }
+
+    /**
+     * Kept, the V5C goes on a registration document, which the sale pack
+     * never offers; it is stored stripped, once, and the pending file goes.
+     */
+    public function testAKeptRegistrationDocumentIsNeverInTheSalePack(): void
+    {
+        $golf = $this->garage['Golf'];
+        $fixture = ScanFixture::load('15-v5c-photo');
+        $this->reply($fixture->reply);
+        [, $path] = $this->land($this->scan($fixture->bytes(), 'v5c.jpg', 'image/jpeg'));
+        $token = substr((string) preg_replace('#^/scan/([a-f0-9]{32}).*$#', '$1', (string) end($path)), 0, 32);
+        $pendingFile = $this->uploadDir() . '/' . $this->pending($token)->storedPath;
+
+        $this->browser->post('/scan/' . $token . '/vehicle?vehicle=' . $golf->id, [
+            'scan' => $token,
+            'update' => ['vin'],
+            'scan_keep' => '1',
+        ]);
+
+        $documents = $this->service($this->app, ComplianceDocumentRepository::class)->listForVehicle($golf->id);
+        self::assertCount(1, $documents);
+        self::assertSame(ComplianceType::Registration, $documents[0]->data->type);
+        $files = $this->service($this->app, AttachmentRepository::class)
+            ->listForOwner($golf->id, AttachmentOwner::Compliance, $documents[0]->id);
+        self::assertCount(1, $files);
+        self::assertFalse(ExifJpeg::hasExif((string) file_get_contents($this->uploadDir() . '/' . $files[0]->storedPath)));
+        self::assertSame([], $this->service($this->app, AttachmentRepository::class)
+            ->listForOwner($golf->id, AttachmentOwner::Purchase, $golf->id), 'not with the purchase paperwork');
+        self::assertFileDoesNotExist($pendingFile);
+        self::assertContains('registration', \Logbook\Service\SalePack\PaperworkKind::NEVER_OFFERED);
+
+        $pack = self::body($this->browser->get('/vehicles/' . $golf->id . '/sale-pack'));
+        self::assertStringNotContainsString('v5c.jpg', $pack, 'the sale pack never offers it');
+    }
+
+    public function testARestoreClearsScansWaitingForAnEntry(): void
+    {
+        [, $token] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());
+        $path = $this->uploadDir() . '/' . $this->pending($token)->storedPath;
+        $repository = $this->service($this->app, \Logbook\Repository\BackupRepository::class);
+
+        $data = [];
+        foreach (\Logbook\Repository\BackupRepository::TABLES as $table) {
+            $data[$table] = $repository->rows($table);
+        }
+        $repository->replaceAll($data);
+
+        self::assertSame(0, $this->rows('pending_uploads'));
+        self::assertFileExists($path, 'the file swap is the service\'s: see BackupTest');
     }
 
     public function testScanningIsOnlyThereWhenItIsAvailable(): void

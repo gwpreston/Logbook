@@ -275,9 +275,13 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
 - **The V5C has its own page** (`/scan/{token}/vehicle`), not the vehicle
   edit form. It lists each found value beside the current one, ticked
   where they differ, and saves through `VehicleForm::parse()` with the
-  rest of the vehicle unchanged. *Keep the file with the purchase
-  paperwork* is offered only when the vehicle has a purchase date (§7.12
-  needs one).
+  rest of the vehicle unchanged. *Keep the file* saves it on a new
+  `registration` document rather than with the purchase paperwork: the
+  sale pack can offer purchase paperwork, but never registration
+  documents (`PaperworkKind::NEVER_OFFERED`), which is what the warning
+  promises.
+- **A restore clears pending scans**, rows and files, with the sessions:
+  they belonged to the accounts being replaced.
 - **The recommendations card is a page** (`/scan/{token}/reminders`),
   where the save goes when there is anything to offer. *Not now* returns
   to where the save would have gone. A recommendation with a distance is
