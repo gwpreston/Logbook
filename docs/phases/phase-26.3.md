@@ -196,6 +196,7 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 - [x] `CHANGELOG.md` **2.7.0**: adding entries from a message. No
       configuration; one migration.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Tag `v2.7.0` once merged.
 
 ---
 
