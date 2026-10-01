@@ -2,7 +2,7 @@
 
 *When Authelia or Authentik already guards the door, don't ask twice.*
 
-Status: 📋 planned · releases **v2.3.0** with Phase 23.1 · file lives in
+Status: 🚧 in progress · releases **v2.3.0** with Phase 23.1 · file lives in
 `docs/phases/`
 
 Many self-hosters put every app behind a forward-auth proxy: Authelia with
@@ -28,10 +28,13 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
 2. The header is trusted only when the **connecting address** (not
    `X-Forwarded-For`) is in `AUTH_PROXY_TRUSTED`.
 3. Users are found through a `proxy` identity or by username, with optional
-   creation and group-based admin, sharing Phase 23.1's rules.
-4. The session follows the header: a different user or a missing header
+   creation and group-based admin, sharing Phase 23.1's rules. A signed-in
+   user can link an unlinked proxy account from a banner.
+4. Authentik's signed `X-authentik-jwt` header as a second mode, which
+   needs no trusted network (decided 2026-10-01).
+5. The session follows the header: a different user or a missing header
    ends it.
-5. Deployment guides for Authelia (nginx, Traefik, Caddy) and Authentik
+6. Deployment guides for Authelia (nginx, Traefik, Caddy) and Authentik
    (proxy outpost).
 
 ## Not in scope
@@ -39,8 +42,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
 - Header sign-in for the API, calendar feed or `/health`. They keep their
   tokens, and forward-auth usually exempts them.
 - Trusting `X-Forwarded-For` or `Forwarded` to work out the client address.
-- mTLS or signed headers (for example, validating an Authentik JWT header).
-  A possible later hardening.
+- mTLS, and RS256/ES256 proxy JWTs checked against a key set. (Authentik's
+  HS256 JWT header *is* in scope; see *Decisions*.)
 
 ---
 
@@ -65,6 +68,12 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
   `AUTH_PROXY_ADMIN_GROUPS` (as Phase 23.1's).
 - `AUTH_PROXY_LOGOUT_URL` (optional): where *Sign out* sends the browser,
   for example Authelia's logout page.
+- `AUTH_PROXY_JWT_HEADER`, `AUTH_PROXY_JWT_SECRET`, `AUTH_PROXY_JWT_ISSUER`,
+  `AUTH_PROXY_JWT_AUDIENCE`: the signed-JWT mode (see spec §7.9 for the
+  checks). Never together with `AUTH_PROXY_HEADER`.
+
+The text that went into `spec.md` §7.9 and §9 is the authoritative one;
+this section is the draft it came from.
 
 ### §7.9 Authentication: header sign-in
 
@@ -110,6 +119,21 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
 
 ## Decisions (and why)
 
+- **Authentik's JWT header is built here** (owner, 2026-10-01). Checked in
+  Authentik's source: a proxy provider always has `signing_key = None`
+  (`ProxyProvider.set_oauth_defaults()`), so `OAuth2Provider.jwt_key`
+  falls back to HS256 keyed by the provider's **client secret**, with no
+  `kid` and an empty key set; the outpost passes the raw ID token as
+  `X-authentik-jwt`. The owner confirmed building it on that basis:
+  `AUTH_PROXY_JWT_HEADER`, `_SECRET`, `_ISSUER`, `_AUDIENCE`; HS256 only;
+  claims instead of plain headers; `AUTH_PROXY_TRUSTED` optional (and
+  enforced when set); never together with `AUTH_PROXY_HEADER`.
+- **Linking while signed in** (owner, 2026-10-01): a password or OIDC
+  session that meets a valid header for an unlinked proxy account shows a
+  *Link your proxy account* banner. This is how `identity` mode links.
+- **An unlinked header leaves a password session alone** (owner,
+  2026-10-01). Only a header that resolves to another user replaces it.
+
 - **Connecting address only.** `X-Forwarded-For` is the header an attacker
   would forge next. The proxy that adds the username header is the one
   connecting, so its address is the trustworthy fact.
@@ -145,7 +169,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
       CLI).
 - [ ] `Middleware\ProxyAuthMiddleware` and `Service\Auth\ProxySignIn`
       (resolution, groups, session following). Reuse Phase 23.1's identity
-      repository, JIT welcome form and group sync.
+      repository, JIT welcome form and group sync (`OidcUsers` generalised
+      over a provider policy rather than copied).
+- [ ] `ProxyJwtValidator` (HS256 only, `iss`, `aud`, `exp`, `iat`),
+      separate from the OIDC `TokenValidator`, which keeps refusing HS*.
+- [ ] *Link your proxy account* banner and `POST /auth/proxy/link`.
 - [ ] Sign-out redirect; sign-in page notice; Settings → Users method.
 - [ ] Translations (en, de).
 
@@ -154,7 +182,18 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
       a CIDR range signs in; from an untrusted address it is ignored and
       logged once per hour; `X-Forwarded-For` naming a trusted address from
       an untrusted peer is ignored.
-- [ ] Boot refuses a header without a trusted list.
+- [ ] Boot refuses a header without a trusted list, both headers, a JWT
+      header without its secret, issuer or audience, an invalid trusted
+      entry, an unknown link mode.
+- [ ] **JWT:** a valid token signs in from any address; a wrong secret,
+      another algorithm (`none`, RS256), a wrong issuer or audience and an
+      expired token are each refused; with a trusted list the address is
+      still checked.
+- [ ] **Linking banner:** shown for an unlinked header in a password
+      session, links on POST, not shown when the user already has a proxy
+      identity or is outside the allowed groups.
+- [ ] `Remote_User` (underscore) from a client is never read as
+      `Remote-User` behind the nginx example.
 - [ ] **Resolution:** identity, username linking, `identity` mode refusing
       unlinked users, JIT, allowed groups, admin sync and the last-admin
       guard, a disabled user refused.
@@ -195,4 +234,16 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.9 and
   plain username header, when the outpost sends one? It removes the
   trusted-network requirement for Authentik users, at the cost of a second
   code path.
+  *Decided 2026-10-01: build it in this phase, as HS256 with the proxy
+  provider's client secret (what Authentik actually sends), the trusted
+  list optional in that mode. See* Decisions.
 - **Default `AUTH_PROXY_LINK`:** `username` (drafted) or `identity`?
+  *Decided 2026-10-01: `username`.*
+- **How does `identity` mode link?** (found while starting the phase: the
+  draft had no way to create a proxy identity except by username.)
+  *Decided 2026-10-01: a* Link your proxy account *banner for a signed-in
+  user who arrives with an unlinked header.*
+- **A password session meets a header for an unlinked account:** keep it or
+  end it? (found while starting the phase)
+  *Decided 2026-10-01: keep it; only a header for another user replaces
+  it.*

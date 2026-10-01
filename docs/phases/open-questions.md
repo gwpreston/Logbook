@@ -21,7 +21,9 @@ undecided. The owner answered every *Needs a decision* item on 2026-09-30,
 together with the open questions of Phases 21.1 and 21.2 (#37–#42), and
 Phase 22's on the same day before it started (#43–#47). Phase 22's
 question found while building (#48) and Phase 23.1's (#49–#51) were
-answered on 2026-10-01, before Phase 23.1 started.
+answered on 2026-10-01, before Phase 23.1 started, and Phase 23.2's
+(#52–#55, two of them found while starting it) on the same day, before
+Phase 23.2 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -76,6 +78,10 @@ answered on 2026-10-01, before Phase 23.1 started.
 | 49 | [23.1](phase-23.1.md) | OIDC client library, or a JWT library with the checks written here? | Decided | `firebase/php-jwt` plus `symfony/http-client`; every check written and tested here (spec §4). | 2026-10-01 |
 | 50 | [23.1](phase-23.1.md) | More than one OIDC provider? | Parked | One provider; more in spec §12. | 2026-10-01 |
 | 51 | [23.1](phase-23.1.md) | `OIDC_LINK=email` on a verified email? | Parked | No, while Logbook doesn't verify its own emails; spec §12. | 2026-10-01 |
+| 52 | [23.2](phase-23.2.md) | Validate Authentik's signed JWT header? | Scheduled | Yes, in [Phase 23.2](phase-23.2.md): HS256 with the proxy provider's client secret (what Authentik sends), `AUTH_PROXY_TRUSTED` optional in that mode (spec §7.9, §9). | 2026-10-01 |
+| 53 | [23.2](phase-23.2.md) | Default `AUTH_PROXY_LINK`? | Decided | `username` (spec §7.9, §9). | 2026-10-01 |
+| 54 | [23.2](phase-23.2.md) | How does `identity` mode link a proxy account? | Scheduled | A *Link your proxy account* banner for a signed-in user with an unlinked header, in [Phase 23.2](phase-23.2.md) (spec §7.9). | 2026-10-01 |
+| 55 | [23.2](phase-23.2.md) | A header for an unlinked account in a password session? | Decided | The session stays; only a header for another user replaces it (spec §7.9). | 2026-10-01 |
 
 ## Other loose ends found in the review
 
