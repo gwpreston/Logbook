@@ -97,13 +97,14 @@ final readonly class OidcSignIn
 
     /**
      * @param array<array-key, mixed> $query the callback's query parameters
+     * @param string $ip the client address, for the log (fail2ban, like password failures)
      */
-    public function complete(Session $session, array $query): OidcResult
+    public function complete(Session $session, array $query, string $ip = 'unknown'): OidcResult
     {
         try {
             return $this->finish($session, $query);
         } catch (OidcFailure $e) {
-            $this->logger->notice('Single sign-on failed: {reason}', ['reason' => $e->getMessage()]);
+            $this->logger->notice('Single sign-on failed from {ip}: {reason}', ['ip' => $ip, 'reason' => $e->getMessage()]);
 
             return OidcResult::failed();
         }

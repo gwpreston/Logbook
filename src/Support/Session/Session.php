@@ -76,11 +76,14 @@ final class Session
 
     /**
      * Start an authenticated session under a new id (fixation protection).
-     * CSRF tokens issued before sign-in are discarded.
+     * CSRF tokens issued before sign-in are discarded, and so is what a
+     * previous sign-in left (its single sign-on ID token, a pending welcome).
      */
     public function signIn(int $userId): void
     {
         $this->regenerate();
+        $this->remove(self::SSO);
+        $this->remove(self::WELCOME);
         $this->set(self::USER_ID, $userId);
     }
 

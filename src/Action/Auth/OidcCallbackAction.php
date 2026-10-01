@@ -37,7 +37,8 @@ final readonly class OidcCallbackAction
         $session = RequestContext::session($request);
         $query = $request->getQueryParams();
         $purpose = $this->oidc->purposeOf($session, $query);
-        $result = $this->oidc->complete($session, $query);
+        $ip = $request->getServerParams()['REMOTE_ADDR'] ?? null;
+        $result = $this->oidc->complete($session, $query, is_string($ip) ? $ip : 'unknown');
         $name = ['name' => $this->settings->oidc->providerName];
 
         if ($purpose === OidcPurpose::Link && RequestContext::user($request) !== null) {

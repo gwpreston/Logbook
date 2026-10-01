@@ -2807,7 +2807,7 @@ return [
         'only_way_in' => 'Das ist dein einziger Weg zur Anmeldung, daher kann es nicht getrennt werden.',
         'linked' => 'Dein {name}-Konto ist verknüpft. Du kannst dich jetzt damit anmelden.',
         'link_taken' => 'Dieses {name}-Konto ist bereits mit einem anderen Logbook-Benutzer verknüpft.',
-        'already_linked' => 'Du hast bereits ein {name}-Konto verknüpft. Trenne es zuerst.',
+        'already_linked' => 'Dein {name}-Konto ist bereits verknüpft. Trenne es zuerst, um ein anderes zu verknüpfen.',
         'link_not_allowed' => 'Dieses {name}-Konto gehört zu keiner Gruppe, die Logbook benutzen darf.',
         'link_failed' => 'Das Verknüpfen deines {name}-Kontos hat nicht geklappt. Versuche es noch einmal.',
         'unlinked' => 'Dein {name}-Konto ist getrennt.',

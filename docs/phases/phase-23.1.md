@@ -2,7 +2,7 @@
 
 *Sign in with the Authelia, Authentik or Keycloak you already run.*
 
-Status: ✅ complete (Keycloak checked by hand; Authentik and Authelia not yet) · ships with Phase 23.2 as **v2.3.0** · file lives in
+Status: 🚧 in progress (built and tested; Authentik and Authelia not yet checked by hand) · ships with Phase 23.2 as **v2.3.0** · file lives in
 `docs/phases/`
 
 Self-hosters often run an identity provider already. This phase lets
@@ -229,7 +229,9 @@ none until they set one, and cannot sign in locally until then.
       kept in `docker/sso/`.
       *Keycloak 26.4 checked 2026-10-01 (`docker/sso/keycloak`): link, sign
       in back to the page asked for with allowed and admin groups set, an
-      unlinked account refused, sign-out at Keycloak back to sign-in.
+      unlinked account refused, sign-out at Keycloak back to sign-in;
+      then in Chrome: *Link* (a POST answered by the redirect to Keycloak),
+      *Sign in with Keycloak*, and *Sign out* ending the Keycloak session.
       Authentik and Authelia are still to be checked before the v2.3.0
       release (Phase 23.2).*
 

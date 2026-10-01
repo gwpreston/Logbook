@@ -382,7 +382,8 @@ final class SingleSignOnTest extends AppTestCase
 
         $second = $browser->post('/settings/sso/link')->getHeaderLine('Location');
         $again = $browser->get($idp->authorize($second, ['sub' => 'sub-2']));
-        self::assertStringContainsString('You already have a Authentik account linked.', self::body($browser->follow($again)));
+        $page = self::body($browser->follow($again));
+        self::assertStringContainsString('Your Authentik account is already linked. Unlink it first', $page);
 
         $partner = $this->browserFor($app, 'partner');
         $theirStart = $partner->post('/settings/sso/link')->getHeaderLine('Location');
@@ -540,6 +541,25 @@ final class SingleSignOnTest extends AppTestCase
         $password = $this->browserFor($app, 'owner');
         $password->get('/settings');
         self::assertSame('/login', $password->post('/logout')->getHeaderLine('Location'), 'a password session signs out locally');
+    }
+
+    public function testASignInOnTopOfAnSsoSessionForgetsItsIdToken(): void
+    {
+        [$app, $idp] = $this->ssoApp(['OIDC_LOGOUT' => 'true']);
+        $this->resetDatabase($app);
+        $this->link($app, $this->createOwner($app), 'sub-owner');
+        $member = $this->createMember($app);
+        $browser = new TestBrowser($app);
+        $this->ssoSignIn($browser, $idp, ['sub' => 'sub-owner']);
+
+        $link = $this->service($app, \Logbook\Service\Auth\LoginLinks::class)->create($member);
+        self::assertNotNull($link);
+        $path = (string) parse_url($link->url, PHP_URL_PATH);
+        $browser->get($path);
+        $browser->post($path);
+        $browser->get('/settings');
+
+        self::assertSame('/login', $browser->post('/logout')->getHeaderLine('Location'), 'not the owner\'s id_token_hint');
     }
 
     public function testWithoutAnEndSessionEndpointOrOidcLogoutSignOutIsLocal(): void

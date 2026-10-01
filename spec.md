@@ -1731,7 +1731,8 @@ can see. Guide: `docs/sso.md`.
     60 seconds of leeway; `nonce` matches.
   Any failure shows "Sign-in with {name} didn't work. Try again, or sign
   in with your password" (the password part only when local sign-in is
-  on); the specific reason is logged, never shown. Claims are read from
+  on); the specific reason is logged with the client address (as failed
+  password sign-ins are), never shown. Claims are read from
   the ID token; when the username claim, or a groups claim that a groups
   variable needs, is missing from it (Authelia leaves them out by
   default), they are read once from the `userinfo_endpoint` with the
@@ -1745,12 +1746,13 @@ can see. Guide: `docs/sso.md`.
   3. Else, with `OIDC_AUTO_CREATE=true`: a new member is created (username
      from the claim, sanitised to the username rules, suffixed if taken;
      display name from `name`; locale from `locale` when supported, else
-     `APP_LOCALE`; no password). They land on a short welcome form (time
-     zone, unit preset, currency), as invitations do.
+     `APP_LOCALE`; no password). They land once on a short welcome form
+     (`/welcome`: language, time zone, unit preset, currency, or *Skip*),
+     as invitations ask, then go on to the page asked for.
   4. Else: "Your {name} account isn't linked to Logbook. Ask an admin to
      invite you, then link it from Settings → Account."
 - **Groups:** with `OIDC_ALLOWED_GROUPS`, a user in none of them is
-  refused (message as 4). With `OIDC_ADMIN_GROUPS`, `is_admin` is set
+  refused (message as 4), and cannot link an account either. With `OIDC_ADMIN_GROUPS`, `is_admin` is set
   from them at every SSO sign-in, both ways, except that the last active
   admin is never demoted (logged). Without these variables groups are
   ignored and admin stays as set in the app.
@@ -1761,11 +1763,13 @@ can see. Guide: `docs/sso.md`.
 - **Linking** (Settings → Account → *Single sign-on*): *Link {name}
   account* runs the flow for the signed-in user and stores the identity;
   it is refused if that identity belongs to someone else, and replaces
-  nothing (unlink first). *Unlink* is refused while it is the user's only
+  nothing (unlink first). A link flow that returns to a session now signed
+  in as another user links nothing. *Unlink* is refused while it is the user's only
   way in (no password and local sign-in on, or local sign-in off).
 - **Passwords for SSO users:** *Set a password* (no current password
   asked, as there is none) appears when local sign-in is on. Setting or
-  changing it signs out other sessions, as today.
+  changing it signs out other sessions, as today. With
+  `AUTH_LOCAL_LOGIN=false` the password card is hidden.
 - **Sign-out:** local sign-out as today. With `OIDC_LOGOUT=true`, a
   session from SSO and an `end_session_endpoint`, the browser then goes
   there with `id_token_hint`, `client_id` and `post_logout_redirect_uri`
@@ -1773,9 +1777,14 @@ can see. Guide: `docs/sso.md`.
   provider).
 - **Break-glass:** `php bin/auth.php login-link <username>` prints a
   one-time sign-in link (`{APP_URL}{APP_BASE_PATH}/login/link/{token}`,
-  10 minutes, keyed hash stored as invitations are, kind `login`). It
-  works with `AUTH_LOCAL_LOGIN=false` and the provider down, never for a
-  disabled user, and its creation and use are logged at notice level.
+  10 minutes, keyed hash stored as invitations are, kind `login`).
+  Opening it shows a *Sign in as {name}* button; the POST uses it up, so a
+  link preview cannot. A new link replaces the user's earlier one; an open
+  one is listed on Settings → Users and can be revoked there. It works with
+  `AUTH_LOCAL_LOGIN=false` and the provider down, never for a disabled
+  user, and its creation and use are logged at notice level. Signing in
+  drops what an earlier sign-in in the same browser left (its ID token, a
+  pending welcome).
 - **Setup** (first run) is unchanged: it always creates a local admin with
   a password, whatever the SSO settings.
 - **Admin view:** Settings → Users shows each user's sign-in methods

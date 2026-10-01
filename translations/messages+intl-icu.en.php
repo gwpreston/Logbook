@@ -2809,7 +2809,7 @@ return [
         'only_way_in' => 'This is your only way to sign in, so it can\'t be unlinked.',
         'linked' => 'Your {name} account is linked. You can sign in with it now.',
         'link_taken' => 'That {name} account is already linked to another Logbook user.',
-        'already_linked' => 'You already have a {name} account linked. Unlink it first.',
+        'already_linked' => 'Your {name} account is already linked. Unlink it first to link another.',
         'link_not_allowed' => 'That {name} account isn\'t in a group allowed to use Logbook.',
         'link_failed' => 'Linking your {name} account didn\'t work. Try again.',
         'unlinked' => 'Your {name} account is unlinked.',

@@ -88,6 +88,11 @@ as usual, then go to **Settings → Account → Single sign-on** and choose
 > `{issuer}/.well-known/openid-configuration` in a browser and copy the
 > `issuer` value from there.
 
+Keycloak has been checked end to end against a real install
+([docker/sso](../docker/sso/README.md)). The Authentik and Authelia
+steps follow their current documentation and have not been run against a
+real install yet.
+
 ### Authentik
 
 1. **Applications → Providers → Create → OAuth2/OpenID Provider.**
