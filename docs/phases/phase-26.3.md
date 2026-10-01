@@ -145,7 +145,7 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
       checks and manual reminders, onto their forms' fields.
 - [ ] `POST /api/v1/vehicles/{id}/maintenance`, `/documents`,
       `/expenses`, `/tyres/checks` and `/reminders` through `ApiWriter`:
-      module gating, `Log` (and `ViewCosts` for expenses), archived 409,
+      module gating, `Log` (`Manage` for reminders, as the form), archived 409,
       duplicate keys as spec §7.20.
 - [ ] OpenAPI operations and schemas; response validation tests;
       `docs/api.md` examples.
@@ -182,7 +182,8 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
       parse them.
 - [ ] Re-validation at *Add* (a newer reading makes the draft's reading
       backwards → warning shown, still addable; a deleted vehicle → refused).
-- [ ] Access: no `Log` → no draft tools offered; losing `Log` between draft
+- [ ] Access: no `Log` → no draft tools offered (no `Manage` → no
+      `draft_reminder`); losing `Log` between draft
       and press → refused; another user's draft → 404.
 - [ ] Undo within 10 seconds deletes; after, or after an edit, it doesn't.
 - [ ] **Injection:** a tool result or stored note asking for a draft does
