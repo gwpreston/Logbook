@@ -200,6 +200,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7, §7.18,
       admin adds a connection; privacy notes.
 - [x] Bump `VERSION`, rebuild assets, update the README (status,
       documentation table gains `docs/ai.md`).
+- [x] Tag `v2.6.0` once merged.
 
 ---
 
