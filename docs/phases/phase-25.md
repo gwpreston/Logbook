@@ -197,7 +197,7 @@ first.
       back to the defaults; changing a threshold changes the verdict.
 - [x] Free fill-ups (price 0) never flagged and never in the median.
 - [x] Query count bounded for the dashboard.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB; migrate, full rollback, migrate first).
 
 ### Sample data
 - [x] `DemoDataSeeder`: a slow economy drift on the self-charging hybrid
