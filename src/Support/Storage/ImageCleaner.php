@@ -1,0 +1,164 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Logbook\Support\Storage;
+
+use GdImage;
+
+/**
+ * Every photo upload is turned upright from its EXIF orientation and
+ * re-encoded without its metadata (spec.md §7.12): GD writes no EXIF, XMP,
+ * IPTC or text chunks, so a receipt photographed on the driveway no longer
+ * records where the house is. Scans also get a downscaled JPEG copy to send
+ * to a model (§7.27).
+ */
+final class ImageCleaner
+{
+    /** Larger images are refused: decoding them would not fit in memory. */
+    public const int MAX_PIXELS = 100_000_000;
+
+    private const int JPEG_QUALITY = 90;
+    private const int WEBP_QUALITY = 90;
+    /** Bytes per pixel GD needs for a true-colour image, with room to rotate. */
+    private const int BYTES_PER_PIXEL = 10;
+
+    private function __construct()
+    {
+    }
+
+    /**
+     * Rewrite the image at $path in place, upright and without metadata.
+     * False when it cannot be decoded (the caller refuses the file).
+     */
+    public static function clean(string $path, string $mime): bool
+    {
+        $image = self::open($path, $mime);
+        if ($image === null) {
+            return false;
+        }
+
+        $written = match ($mime) {
+            'image/jpeg' => imagejpeg($image, $path, self::JPEG_QUALITY),
+            'image/png' => imagepng($image, $path, 9),
+            'image/webp' => imagewebp($image, $path, self::WEBP_QUALITY),
+            default => false,
+        };
+        clearstatcache(true, $path);
+
+        return $written;
+    }
+
+    /**
+     * The image upright, scaled so its long edge is at most $maxEdge, as
+     * JPEG bytes (transparency on white). Null when it cannot be decoded.
+     */
+    public static function downscaledJpeg(string $path, string $mime, int $maxEdge, int $quality = 85): ?string
+    {
+        $image = self::open($path, $mime);
+        if ($image === null) {
+            return null;
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $scale = min(1.0, $maxEdge / max($width, $height));
+        $w = max(1, (int) round($width * $scale));
+        $h = max(1, (int) round($height * $scale));
+
+        $canvas = imagecreatetruecolor($w, $h);
+        if ($canvas === false) {
+            return null;
+        }
+        imagefill($canvas, 0, 0, (int) imagecolorallocate($canvas, 255, 255, 255));
+        imagecopyresampled($canvas, $image, 0, 0, 0, 0, $w, $h, $width, $height);
+
+        ob_start();
+        $ok = imagejpeg($canvas, null, $quality);
+        $bytes = (string) ob_get_clean();
+
+        return $ok && $bytes !== '' ? $bytes : null;
+    }
+
+    private static function open(string $path, string $mime): ?GdImage
+    {
+        $info = @getimagesize($path);
+        if ($info === false || $info[0] < 1 || $info[1] < 1 || $info[0] * $info[1] > self::MAX_PIXELS) {
+            return null;
+        }
+        self::makeRoomFor($info[0] * $info[1]);
+
+        $image = match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($path),
+            'image/png' => @imagecreatefrompng($path),
+            'image/webp' => @imagecreatefromwebp($path),
+            default => false,
+        };
+        if (!$image instanceof GdImage) {
+            return null;
+        }
+        if (!imageistruecolor($image)) {
+            imagepalettetotruecolor($image);
+        }
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+
+        return $mime === 'image/jpeg' ? self::upright($image, self::orientation($path)) : $image;
+    }
+
+    /**
+     * The EXIF orientation (1–8) of a JPEG, 1 when there is none.
+     */
+    private static function orientation(string $path): int
+    {
+        if (!function_exists('exif_read_data')) {
+            return 1;
+        }
+        $exif = @exif_read_data($path, 'IFD0');
+        $value = is_array($exif) ? ($exif['Orientation'] ?? 1) : 1;
+
+        return is_int($value) && $value >= 1 && $value <= 8 ? $value : 1;
+    }
+
+    private static function upright(GdImage $image, int $orientation): GdImage
+    {
+        if (in_array($orientation, [5, 6, 7, 8], true)) {
+            $rotated = imagerotate($image, $orientation <= 6 ? -90 : 90, 0);
+            $image = $rotated instanceof GdImage ? $rotated : $image;
+        } elseif ($orientation === 3 || $orientation === 4) {
+            $rotated = imagerotate($image, 180, 0);
+            $image = $rotated instanceof GdImage ? $rotated : $image;
+        }
+        // 4 is a vertical flip: the half-turn above, then a mirror.
+        if (in_array($orientation, [2, 4, 5, 7], true)) {
+            imageflip($image, IMG_FLIP_HORIZONTAL);
+        }
+
+        return $image;
+    }
+
+    private static function makeRoomFor(int $pixels): void
+    {
+        $needed = $pixels * self::BYTES_PER_PIXEL + memory_get_usage() + 32 * 1024 * 1024;
+        $limit = self::bytes((string) ini_get('memory_limit'));
+        if ($limit !== -1 && $limit < $needed) {
+            @ini_set('memory_limit', (string) $needed);
+        }
+    }
+
+    private static function bytes(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '' || $value === '-1') {
+            return -1;
+        }
+        $number = (int) $value;
+
+        return match (strtolower(substr($value, -1))) {
+            'g' => $number * 1024 * 1024 * 1024,
+            'm' => $number * 1024 * 1024,
+            'k' => $number * 1024,
+            default => $number,
+        };
+    }
+}

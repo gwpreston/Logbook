@@ -224,7 +224,7 @@ final readonly class AttachmentService
             $this->files->store($upload->file, self::DIRECTORY, $checked->extension),
             self::displayName($upload->file->getClientFilename(), $checked->extension),
             $checked->mime,
-            (int) $upload->file->getSize(),
+            (int) ($checked->size ?? $upload->file->getSize()),
         );
     }
 
