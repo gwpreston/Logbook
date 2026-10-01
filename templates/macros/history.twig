@@ -35,6 +35,8 @@
         {%- set parts = parts|merge([item.labelKey|trans]|merge(item.note ? [item.note] : [])) -%}
     {%- elseif item.kind.value == 'tyre' -%}
         {%- set parts = item.tyres|map(m => trans(m.message, m.parameters)) -%}
+    {%- elseif item.kind.value == 'incident' -%}
+        {%- set parts = item.damage is empty ? [] : [item.damage|map(k => k|trans)|join(', ')] -%}
     {%- elseif item.kind.value == 'document' -%}
         {%- if item.label != '' %}{% set parts = parts|merge([item.labelKey|trans]) %}{% endif -%}
         {%- if item.expiresOn %}{% set parts = parts|merge(['history.expires'|trans({date: item.expiresOn|local_date})]) %}{% endif -%}
@@ -53,7 +55,9 @@
 {%- endmacro %}
 
 {# One line. Options: show_vehicle (the fleet page), return_to, costs
-   (default on), link (default on; off for the print view). #}
+   (default on), link (default on; off for the print view), part_of
+   (default on: a linked record's "Part of" its incident; off where
+   incidents are left out, as in print without them and the sale pack). #}
 {% macro row(item, opts = {}) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import 'macros/fuel.twig' as fuel_ui %}
@@ -63,9 +67,10 @@
     {% set own_amount = (opts.costs ?? true) and can_see_amount(item.vehicle, item.createdBy) %}
     {% set summary = history.summary(item) %}
     {# A milestone opens the vehicle, a valuation its page: both Manage; entries their own rule (spec.md §7.21). #}
-    {% set editable = item.kind.value in ['milestone', 'valuation'] ? can_vehicle(item.vehicle, 'manage') : can_change(item.vehicle, item.createdBy) %}
+    {# An incident opens its page, which anyone who can view the vehicle may see (spec.md §7.29). #}
+    {% set editable = item.kind.value == 'incident' or (item.kind.value in ['milestone', 'valuation'] ? can_vehicle(item.vehicle, 'manage') : can_change(item.vehicle, item.createdBy)) %}
     {% set tag = (opts.link ?? true) and editable ? 'a' : 'div' %}
-    <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}" data-modal{% endif %}>
+    <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}"{% if item.kind.value != 'incident' %} data-modal{% endif %}{% endif %}>
         <span class="list__icon" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
         <span class="list__body">
             <span class="list__title">{{ history.title(item, costs) }}{% if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif %}</span>
@@ -76,6 +81,12 @@
             </span>
             {%- if item.kind.value == 'maintenance' and item.tyres is not empty %}
                 <span class="list__meta history-row__tyres">{{ ui.icon('tire_repair') }}{{ item.tyres|map(m => trans(m.message, m.parameters))|join(' · ') }}</span>
+            {%- endif %}
+            {%- if item.linked is not empty %}
+                <span class="list__meta history-row__tyres">{{ ui.icon('link') }}{{ item.linked|map(r => (r.isKey ? r.title|trans : r.title) ~ ' (' ~ r.date|local_date ~ ')')|join(' · ') }}</span>
+            {%- endif %}
+            {%- if item.partOfKey and (opts.part_of ?? true) %}
+                <span class="list__meta history-row__tyres">{{ ui.icon('car_crash') }}{{ 'history.part_of'|trans({incident: 'incident.name'|trans({type: item.partOfKey|trans, date: item.partOfDate|local_date})}) }}</span>
             {%- endif %}
             {%- if item.kind.value != 'milestone' and (opts.link ?? true) %}{{ ui.added_by(item.vehicle, item.createdBy) }}{% endif %}
         </span>

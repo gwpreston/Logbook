@@ -20,6 +20,8 @@ enum HistoryChip: string
     case Documents = 'documents';
     case Expenses = 'expenses';
     case Mileage = 'mileage';
+    /** Incidents (Phase 27.1, spec.md §7.29). */
+    case Incidents = 'incidents';
     /** The only place trips are listed (Phase 22, spec.md §7.22). */
     case Trips = 'trips';
 
@@ -67,6 +69,7 @@ enum HistoryChip: string
             self::Expenses => [ActivityKind::Expense],
             self::Mileage => [ActivityKind::Odometer],
             self::Trips => [ActivityKind::Trip],
+            self::Incidents => [ActivityKind::Incident],
         };
     }
 
@@ -78,6 +81,7 @@ enum HistoryChip: string
             self::Documents => Feature::Compliance,
             self::Tyres => Feature::Tyres,
             self::Trips => Feature::Trips,
+            self::Incidents => Feature::Incidents,
             self::Everything, self::Expenses, self::Mileage => null,
         };
     }
@@ -101,6 +105,7 @@ enum HistoryChip: string
             self::Expenses => 'payments',
             self::Mileage => 'speed',
             self::Trips => 'route',
+            self::Incidents => 'car_crash',
         };
     }
 }

@@ -48,6 +48,7 @@ final readonly class OwnershipCost
         public int $months,
         /** Kilometres driven in the period (canonical decimal), or null. */
         public ?string $distanceKm,
+        /** Net of insurance payouts (Phase 27.1): what the running costs came to. */
         public Money $running,
         public int $count,
         public array $groups,
@@ -67,6 +68,8 @@ final readonly class OwnershipCost
         public bool $perMonthIsPartial,
         /** The owner's local day of the first reading, or null without one. */
         private ?DateTimeImmutable $mileageStart,
+        /** Insurance payouts in the period, taken off the running costs (spec.md §7.29). */
+        public ?Money $payouts = null,
     ) {
     }
 
@@ -74,6 +77,7 @@ final readonly class OwnershipCost
      * @param list<CostItem> $items the vehicle's ledger lines, any date, oldest first
      * @param list<OdometerReading> $readings the vehicle's mileage series, oldest first
      * @param DateTimeImmutable $today calendar date in the owner's time zone
+     * @param list<InsurancePayout> $payouts the vehicle's, any date
      * @return self|null null when the period has no start (no purchase date,
      *                   nothing logged) or starts after it ends
      */
@@ -84,6 +88,7 @@ final readonly class OwnershipCost
         Depreciation $depreciation,
         DateTimeImmutable $today,
         DateTimeZone $zone,
+        array $payouts = [],
     ): ?self {
         $currency = $depreciation->currency;
         [$from, $start] = self::start($vehicle, $items, $readings, $zone);
@@ -107,11 +112,19 @@ final readonly class OwnershipCost
             $byGroup[$item->group()->value] = $byGroup[$item->group()->value]->add($item->amount);
             $count++;
         }
+        $received = $zero;
+        foreach ($payouts as $payout) {
+            if ($period->contains($payout->date)) {
+                $received = $received->add($payout->amount);
+            }
+        }
+        $gross = $running;
+        $running = $running->subtract($received);
         $groups = array_map(
             static fn (CostGroup $g): GroupTotal => new GroupTotal(
                 $g,
                 $byGroup[$g->value],
-                $running->micros === 0 ? 0.0 : $byGroup[$g->value]->micros / $running->micros * 100,
+                $gross->micros === 0 ? 0.0 : $byGroup[$g->value]->micros / $gross->micros * 100,
             ),
             CostGroup::cases(),
         );
@@ -173,6 +186,7 @@ final readonly class OwnershipCost
             perMonth: $perMonth,
             perMonthIsPartial: $perMonth !== null && $depreciationPerMonth === null,
             mileageStart: $readings === [] ? null : LocalTime::dateOf($readings[0]->recordedAt, $zone),
+            payouts: $received->isZero() ? null : $received,
         );
     }
 

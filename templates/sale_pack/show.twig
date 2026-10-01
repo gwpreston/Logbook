@@ -34,6 +34,11 @@
             {% include 'sale_pack/_mileage_notice.twig' %}
         {% endif %}
 
+        {# A write-off is never hidden in a way that looks deliberate (spec.md §7.29): the seller is told. #}
+        {% if pack.writeOff and pack.incidents is null %}
+            <div class="alert alert--warning no-print sale-pack__notice" role="note">{{ ui.icon('warning') }}<span>{{ 'sale_pack.write_off.notice'|trans({category: pack.writeOff.labelKey()|trans}) }}</span></div>
+        {% endif %}
+
         <article class="card history-print__sheet sale-pack__sheet">
             {% if pack.hasCover() %}
                 {% include 'sale_pack/_cover.twig' %}

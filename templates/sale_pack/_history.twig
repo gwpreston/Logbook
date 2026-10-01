@@ -11,7 +11,7 @@
     {% import 'macros/ui.twig' as ui %}
     {% import 'macros/history.twig' as history %}
     <li class="history-print__item">
-        {{ history.row(item, {link: false, costs: item.milestone ? false : pack.options.costs}) }}
+        {{ history.row(item, {link: false, costs: item.milestone ? false : pack.options.costs, part_of: false}) }}
         {% set description = item.kind.value == 'maintenance' ? (pack.descriptions[item.entryId] ?? null) : null %}
         {% if description %}<p class="sale-pack__description">{{ description }}</p>{% endif %}
         {% set owner = item.filesOwner() %}
@@ -46,6 +46,35 @@
             </ol>
         {% endif %}
     {% endfor %}
+
+    {# Incidents (Phase 27.1, *Include incidents*): what was damaged and who repaired it, nothing about the claim. #}
+    {% if pack.incidents is not null %}
+        <h3 class="sale-pack__group">{{ 'sale_pack.history.incidents'|trans }}</h3>
+        {% if pack.incidents is empty %}
+            <p class="muted">{{ 'sale_pack.history.none'|trans }}</p>
+        {% else %}
+            <ol class="list history-print__list">
+                {% for incident in pack.incidents %}
+                    <li class="history-print__item">
+                        <div class="list__item">
+                            <span class="list__icon">{{ ui.icon('car_crash') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ incident.type.labelKey()|trans }}</span>
+                                <span class="list__meta">
+                                    {{- incident.date|local_date -}}
+                                    {%- if incident.damageAreas is not empty %} · {{ incident.damageAreas|map(a => a.labelKey()|trans)|join(', ') }}{% endif -%}
+                                    {%- if incident.severity %} · {{ incident.severity.labelKey()|trans }}{% endif -%}
+                                </span>
+                                {% for repair in incident.repairs %}
+                                    <span class="list__meta history-row__tyres">{{ ui.icon('build') }}{{ 'sale_pack.incident.repaired'|trans({title: repair.title, date: repair.date|local_date}) }}{% if repair.vendor %} · {{ repair.vendor }}{% endif %}</span>
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+    {% endif %}
 </section>
 
 {% if pack.timeline is not null %}

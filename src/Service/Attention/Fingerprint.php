@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Attention;
 
+use Logbook\Domain\Incident\Incident;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerReading;
@@ -40,6 +41,19 @@ final class Fingerprint
             $latest->id,
             $latest->data->valuedOn->format('Y-m-d'),
             $latest->data->amount,
+        ]);
+    }
+
+    /**
+     * A waiting claim's status and latest update: news, or a new status, re-judges.
+     */
+    public static function claim(Incident $incident): string
+    {
+        return self::hash([
+            'claim',
+            $incident->id,
+            $incident->data->claim->status->value,
+            $incident->data->claim->updatedOn?->format('Y-m-d'),
         ]);
     }
 

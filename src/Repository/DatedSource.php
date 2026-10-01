@@ -18,6 +18,7 @@ enum DatedSource
     case TyreChange;
     case Valuation;
     case Trip;
+    case Incident;
 
     public function isInstant(): bool
     {

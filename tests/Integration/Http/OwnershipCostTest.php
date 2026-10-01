@@ -193,7 +193,7 @@ final class OwnershipCostTest extends AppTestCase
         self::assertSame([
             'Vehicle', 'Registration', 'Currency', 'Owned from', 'Owned to', 'Started', 'Sold', 'Distance owned (Miles)',
             'Running costs: Fuel', 'Running costs: Maintenance', 'Running costs: Documents', 'Running costs: Other',
-            'Running costs', 'Depreciation', 'Depreciation to', 'Total',
+            'Insurance payouts', 'Running costs', 'Depreciation', 'Depreciation to', 'Total',
             'Running per distance (per mi)', 'Depreciation per distance (per mi)', 'Total per distance (per mi)',
             'Running per month', 'Depreciation per month', 'Total per month',
         ], $rows[0]);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\SalePack;
 
+use Logbook\Domain\Incident\WriteOffCategory;
 use DateTimeImmutable;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -61,6 +62,15 @@ final readonly class SalePack
         public string $currency,
         /** *First MOT due* while there is no inspection document (Phase 21.2); null with `compliance` off. */
         public ?DateTimeImmutable $firstInspection = null,
+        /**
+         * The *Incidents* group, newest first, with *Include incidents* (Phase 27.1); null otherwise.
+         *
+         * @var list<SalePackIncident>|null
+         */
+        public ?array $incidents = null,
+        /** The latest write-off on record (`incidents` on), shown or noticed (spec.md §7.29). */
+        public ?WriteOffCategory $writeOff = null,
+        public ?DateTimeImmutable $writeOffOn = null,
     ) {
     }
 

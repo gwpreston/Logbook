@@ -476,6 +476,7 @@ return [
         ],
     ],
     'history' => [
+        'part_of' => 'Part of: {incident}',
         'title' => 'History',
         'fleet_title' => 'Vehicle history',
         'fleet_lead' => 'Everything logged across your vehicles, newest first.',
@@ -502,6 +503,7 @@ return [
             'documents' => 'Documents',
             'expenses' => 'Expenses',
             'mileage' => 'Mileage',
+            'incidents' => 'Incidents',
             'trips' => 'Trips',
         ],
         'years_label' => 'Other years',
@@ -2009,6 +2011,13 @@ return [
             'linked_expenses' => 'Linked expenses',
             'linked_tyre_changes' => 'Linked tyre changes',
         ],
+        'report' => [
+            'title' => 'Incidents',
+            'count' => 'Incidents',
+            'linked' => 'Incident-related spend',
+            'payouts' => 'Payouts received',
+            'hint' => 'Incident-related spend is already in the totals above, under each cost’s own group.',
+        ],
         'history' => [
             'title' => 'Claims history',
             'link' => 'Claims history',
@@ -2058,6 +2067,8 @@ return [
             'owned_for' => 'Owned for',
             'distance' => 'Distance owned',
             'running' => 'Running costs',
+            'payouts' => 'Insurance payouts',
+            'payouts_short' => 'after {amount} insurance payouts',
             'depreciation' => 'Depreciation',
             'total' => 'Total so far',
             'per_distance' => 'Per distance',
@@ -2182,6 +2193,10 @@ return [
             'title' => 'Valued {months, plural, one {# month} other {# months}} ago',
             'detail' => 'Last valued on {date}. Add a new valuation for an up-to-date figure.',
         ],
+        'claim' => [
+            'title' => '{has_number, select, yes {Claim {number}} other {A claim}}{has_insurer, select, yes { with {insurer}} other {}}: no update for {days, plural, one {# day} other {# days}}',
+            'detail' => '{type}, {date}. Chase the insurer, or record their latest news.',
+        ],
         // Phase 25: trend and cost checks (spec.md §7.24 items 7–9).
         'drift' => [
             'title' => 'Economy is about {percent}% worse over the last {electric, select, yes {{tanks, plural, one {# charge} other {# charges}}} other {{tanks, plural, one {# tank} other {# tanks}}}} than your 12-month average ({recent} against {baseline})',
@@ -2216,6 +2231,7 @@ return [
             'add_reading' => 'Add reading',
             'mileage' => 'Open Mileage',
             'add_valuation' => 'Add valuation',
+            'open_claim' => 'Open claim',
             'hide' => 'Hide',
         ],
         'show_all' => 'Show all ({count})',
@@ -2381,6 +2397,7 @@ return [
             'distance_owned' => 'Distance owned ({unit})',
             'running_group' => 'Running costs: {group}',
             'running' => 'Running costs',
+            'insurance_payouts' => 'Insurance payouts',
             'depreciation' => 'Depreciation',
             'depreciation_to' => 'Depreciation to',
             'expected_cost' => 'Expected cost',
@@ -2906,6 +2923,8 @@ return [
             'notice' => 'The photo may show your number plate, house or street. Check it before you share the pack.',
         ],
         'options' => [
+            'incidents' => 'Include incidents',
+            'incidents_hint' => 'What was damaged and how it was repaired. Never the fault, the claim, payouts, the driver or the other party.',
             'legend' => 'Include',
             'due' => 'Show what’s due next',
             'due_hint' => 'Buyers ask anyway. Costs are never shown.',
@@ -2962,6 +2981,7 @@ return [
             'check_entry' => 'Open the entry',
         ],
         'source' => [
+            'incident_photo' => 'Incident photo',
             'service_invoice' => 'Service invoice',
             'service_record' => 'Service record',
             'document' => '{type} certificate',
@@ -2976,6 +2996,7 @@ return [
             'other' => 'Document',
         ],
         'history' => [
+            'incidents' => 'Incidents',
             'title' => 'History',
             'services' => 'Service and repairs',
             'documents' => 'Inspections and certificates',
@@ -2992,6 +3013,7 @@ return [
                 'photo' => 'Dashboard photos',
                 'purchase' => 'Purchase paperwork',
                 'insurance' => 'Insurance',
+                'incident_photos' => 'Incident photos (cleaned of when and where they were taken)',
             ],
             'never' => 'Registration documents, sale paperwork, valuations, fill-ups and expenses are never included.',
             'warning' => 'Invoices often show your name and address. Check them before you send them.',
@@ -3007,6 +3029,14 @@ return [
             'empty' => 'No files were chosen.',
             'filename' => '{name} paperwork',
             'missing' => 'This file is missing from the server and is not in the ZIP.',
+        ],
+        'write_off' => [
+            'label' => 'Write-off',
+            'recorded' => 'Recorded as {category} ({date})',
+            'notice' => 'This vehicle has a {category} record. A buyer’s vehicle history check will show it.',
+        ],
+        'incident' => [
+            'repaired' => 'Repaired: {title}, {date}',
         ],
     ],
     'sharing' => [

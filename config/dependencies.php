@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Logbook\Service\Incident\IncidentTwigExtension;
 use Doctrine\DBAL\Connection;
 use Logbook\Service\Ai\Ask\AskTwigExtension;
 use Logbook\Service\Ai\Scan\PdfRenderer;
@@ -195,6 +196,9 @@ return [
         $scan = $c->get(ScanTwigExtension::class);
         assert($scan instanceof ScanTwigExtension);
         $twig->addExtension($scan);
+        $incidents = $c->get(IncidentTwigExtension::class);
+        assert($incidents instanceof IncidentTwigExtension);
+        $twig->addExtension($incidents);
 
         return $twig;
     },

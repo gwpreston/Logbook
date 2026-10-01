@@ -162,6 +162,7 @@ final class AttentionThresholdsTest extends TestCase
                 AttentionKind::DriftElectric,
                 AttentionKind::FuelPrice,
                 AttentionKind::MaintenanceCost,
+                AttentionKind::StalledClaim,
             ],
             array_values(array_filter(AttentionKind::cases(), static fn (AttentionKind $k): bool => $k->isHideable())),
         );

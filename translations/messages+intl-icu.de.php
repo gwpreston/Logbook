@@ -475,6 +475,7 @@ return [
         ],
     ],
     'history' => [
+        'part_of' => 'Gehört zu: {incident}',
         'title' => 'Verlauf',
         'fleet_title' => 'Fahrzeughistorie',
         'fleet_lead' => 'Alles, was zu deinen Fahrzeugen erfasst wurde, das Neueste zuerst.',
@@ -501,6 +502,7 @@ return [
             'documents' => 'Dokumente',
             'expenses' => 'Ausgaben',
             'mileage' => 'Kilometerstand',
+            'incidents' => 'Schäden',
             'trips' => 'Fahrten',
         ],
         'years_label' => 'Andere Jahre',
@@ -2007,6 +2009,13 @@ return [
             'linked_expenses' => 'Verknüpfte Ausgaben',
             'linked_tyre_changes' => 'Verknüpfte Reifenwechsel',
         ],
+        'report' => [
+            'title' => 'Schäden',
+            'count' => 'Schäden',
+            'linked' => 'Ausgaben für Schäden',
+            'payouts' => 'Erhaltene Zahlungen',
+            'hint' => 'Die Ausgaben für Schäden sind in den Summen oben schon enthalten, jeweils in ihrer eigenen Gruppe.',
+        ],
         'history' => [
             'title' => 'Schadenhistorie',
             'link' => 'Schadenhistorie',
@@ -2056,6 +2065,8 @@ return [
             'owned_for' => 'Besitzdauer',
             'distance' => 'Strecke im Besitz',
             'running' => 'Betriebskosten',
+            'payouts' => 'Versicherungszahlungen',
+            'payouts_short' => 'nach {amount} Versicherungszahlungen',
             'depreciation' => 'Wertverlust',
             'total' => 'Gesamtkosten bisher',
             'per_distance' => 'Pro Strecke',
@@ -2180,6 +2191,10 @@ return [
             'title' => 'Vor {months, plural, one {# Monat} other {# Monaten}} bewertet',
             'detail' => 'Zuletzt bewertet am {date}. Für einen aktuellen Wert eine neue Bewertung erfassen.',
         ],
+        'claim' => [
+            'title' => '{has_number, select, yes {Schaden {number}} other {Ein Versicherungsfall}}{has_insurer, select, yes { bei {insurer}} other {}}: seit {days, plural, one {# Tag} other {# Tagen}} keine Nachricht',
+            'detail' => '{type}, {date}. Beim Versicherer nachfragen oder die letzte Nachricht eintragen.',
+        ],
         // Phase 25: Trend- und Kostenprüfungen (spec.md §7.24, Punkte 7–9).
         'drift' => [
             'title' => 'Der Verbrauch ist über {electric, select, yes {{tanks, plural, one {den letzten Ladevorgang} other {die letzten # Ladevorgänge}}} other {{tanks, plural, one {die letzte Tankfüllung} other {die letzten # Tankfüllungen}}}} etwa {percent} % schlechter als dein 12-Monats-Schnitt ({recent} statt {baseline})',
@@ -2214,6 +2229,7 @@ return [
             'add_reading' => 'Kilometerstand erfassen',
             'mileage' => 'Kilometer öffnen',
             'add_valuation' => 'Bewertung erfassen',
+            'open_claim' => 'Schaden öffnen',
             'hide' => 'Ausblenden',
         ],
         'show_all' => 'Alle anzeigen ({count})',
@@ -2379,6 +2395,7 @@ return [
             'distance_owned' => 'Strecke im Besitz ({unit})',
             'running_group' => 'Betriebskosten: {group}',
             'running' => 'Betriebskosten',
+            'insurance_payouts' => 'Versicherungszahlungen',
             'depreciation' => 'Wertverlust',
             'depreciation_to' => 'Wertverlust bis',
             'expected_cost' => 'Erwartete Kosten',
@@ -2904,6 +2921,8 @@ return [
             'notice' => 'Das Foto kann dein Kennzeichen, dein Haus oder deine Straße zeigen. Prüfe es, bevor du die Mappe weitergibst.',
         ],
         'options' => [
+            'incidents' => 'Schäden einbeziehen',
+            'incidents_hint' => 'Was beschädigt und wie es repariert wurde. Nie die Schuld, der Versicherungsfall, Zahlungen, der Fahrer oder der Unfallgegner.',
             'legend' => 'Einschließen',
             'due' => 'Anstehendes zeigen',
             'due_hint' => 'Käufer fragen ohnehin danach. Kosten werden nie gezeigt.',
@@ -2960,6 +2979,7 @@ return [
             'check_entry' => 'Eintrag öffnen',
         ],
         'source' => [
+            'incident_photo' => 'Schadenfoto',
             'service_invoice' => 'Werkstattrechnung',
             'service_record' => 'Wartungseintrag',
             'document' => '{type}-Bescheinigung',
@@ -2974,6 +2994,7 @@ return [
             'other' => 'Dokument',
         ],
         'history' => [
+            'incidents' => 'Schäden',
             'title' => 'Historie',
             'services' => 'Wartung und Reparaturen',
             'documents' => 'Prüfungen und Bescheinigungen',
@@ -2990,6 +3011,7 @@ return [
                 'photo' => 'Fotos vom Tacho',
                 'purchase' => 'Kaufunterlagen',
                 'insurance' => 'Versicherung',
+                'incident_photos' => 'Schadenfotos (ohne Aufnahmezeit und -ort)',
             ],
             'never' => 'Zulassungsdokumente, Verkaufsunterlagen, Bewertungen, Tankbelege und Ausgaben sind nie enthalten.',
             'warning' => 'Rechnungen zeigen oft Ihren Namen und Ihre Adresse. Prüfen Sie sie vor dem Senden.',
@@ -3005,6 +3027,14 @@ return [
             'empty' => 'Es wurden keine Dateien ausgewählt.',
             'filename' => '{name} Unterlagen',
             'missing' => 'Diese Datei fehlt auf dem Server und ist nicht in der ZIP-Datei.',
+        ],
+        'write_off' => [
+            'label' => 'Totalschaden',
+            'recorded' => 'Erfasst als {category} ({date})',
+            'notice' => 'Für dieses Fahrzeug ist {category} erfasst. Eine Fahrzeughistorie-Abfrage des Käufers zeigt das.',
+        ],
+        'incident' => [
+            'repaired' => 'Repariert: {title}, {date}',
         ],
     ],
     'sharing' => [

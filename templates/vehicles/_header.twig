@@ -58,6 +58,8 @@
             {% if vehicle.isArchived() %}
                 <span class="pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.archived_on'|trans({date: vehicle.archivedAt|instant_date}) }}</span>
             {% endif %}
+            {% set written_off = write_off(vehicle) %}
+            {% if written_off %}<span class="pill pill--overdue" title="{{ 'incident.field.write_off'|trans }}">{{ ui.icon('car_crash') }}{{ written_off.labelKey()|trans }}</span>{% endif %}
         </div>
         {% if active_tab == 'overview' %}
             <h1>{{ vehicle.name() }}</h1>

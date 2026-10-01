@@ -63,6 +63,21 @@ final readonly class ActivityItem
         public ?int $createdBy = null,
         /** A trip's whole distance in km (Phase 22). */
         public ?string $distanceKm = null,
+        /**
+         * An incident's damaged areas and severity, as translation keys (Phase 27.1).
+         *
+         * @var list<string>
+         */
+        public array $damage = [],
+        /**
+         * On an incident: the records linked to it, oldest first (its second line).
+         *
+         * @var list<array{title: string, isKey: bool, date: DateTimeImmutable}>
+         */
+        public array $linked = [],
+        /** On a linked record: its incident's type (translation key) and date. */
+        public ?string $partOfKey = null,
+        public ?DateTimeImmutable $partOfDate = null,
     ) {
     }
 

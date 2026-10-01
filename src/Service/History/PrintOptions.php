@@ -36,8 +36,9 @@ final readonly class PrintOptions
         $picked = $sent ? (is_array($query['kinds'] ?? null) ? $query['kinds'] : []) : null;
         $chosen = array_values(array_filter(
             $available,
+            // Fill-ups and incidents are off until ticked (spec.md §7.16, §7.29).
             static fn (HistoryChip $chip): bool => $picked === null
-                ? $chip !== HistoryChip::Fuel
+                ? $chip !== HistoryChip::Fuel && $chip !== HistoryChip::Incidents
                 : in_array($chip->value, $picked, true),
         ));
 

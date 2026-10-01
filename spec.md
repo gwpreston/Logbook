@@ -4721,12 +4721,16 @@ nothing is counted twice (§6 Incident).
     date, vehicle and type, with the other columns as "Not shared with
     you".
 - **History** (§7.16): an *Incidents* chip (`?kind=incidents`). Incident
-  rows show under *Everything* and *Incidents* with their linked records
-  nested beneath them, as linked tyre changes are under service records;
-  a linked record still counts under its own chip, shown there on its
-  own with "Part of: Parked damage, 12 Mar 2025". The print view leaves
-  incidents out unless *Include incidents* is ticked (off by default),
-  and then shows only date, type, damage and the linked repairs.
+  rows show under *Everything* and *Incidents* with the summary everyone
+  may see (date, type, damage) and their linked records as a second line
+  ("Rear bumper (20 Mar 2026) · Hire car (21 Mar 2026)"), as a linked
+  tyre change is a service record's second line. Unlike a tyre change, a
+  linked record keeps its own row on its own date, with "Part of: Parked
+  damage, 14 Mar 2026", since a repair is often weeks later. The print
+  view leaves incidents out unless the *Incidents* kind is ticked (off by
+  default), and then shows only date, type, damage and the linked
+  records; without it, and in the sale pack, the "Part of" note is left
+  out too.
 - **Sale pack** (§7.19): *Include incidents* (off by default). With it
   on, an *Incidents* group lists each incident's date, type, damage
   areas, severity and its linked repairs (date and vendor), and the ZIP

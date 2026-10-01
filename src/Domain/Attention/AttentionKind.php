@@ -31,6 +31,8 @@ enum AttentionKind: string
     case FuelPrice = 'fuel_price';
     /** A maintenance record far above its category's usual (Phase 25). */
     case MaintenanceCost = 'maintenance_cost';
+    /** A claim waiting for news for more than 30 days (Phase 27.1, §7.29). */
+    case StalledClaim = 'stalled_claim';
 
     public function severity(): AttentionSeverity
     {

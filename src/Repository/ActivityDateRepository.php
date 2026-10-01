@@ -132,6 +132,7 @@ final readonly class ActivityDateRepository
             DatedSource::TyreChange => 'tyre_changes',
             DatedSource::Valuation => 'vehicle_valuations',
             DatedSource::Trip => 'trips',
+            DatedSource::Incident => 'incidents',
         };
     }
 
@@ -145,6 +146,7 @@ final readonly class ActivityDateRepository
             DatedSource::TyreChange => 'done_on',
             DatedSource::Valuation => 'valued_on',
             DatedSource::Trip => 'travelled_on',
+            DatedSource::Incident => 'occurred_on',
         };
     }
 }

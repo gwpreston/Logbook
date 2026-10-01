@@ -217,6 +217,24 @@
             {{ trips_ui.business_table(business, 'trip.report.title'|trans) }}
         {% endif %}
 
+        {% if incident_lines is not empty %}
+            <section class="card" aria-labelledby="incidents-heading">
+                <div class="card__header">
+                    <h2 id="incidents-heading" class="card__title">{{ 'incident.report.title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('incidents.history') }}">{{ 'incident.history.title'|trans }}</a>
+                </div>
+                <dl class="details">
+                    {% for line in incident_lines %}
+                        {% if incident_lines|length > 1 %}<div><dt><strong>{{ line.currency }}</strong></dt><dd></dd></div>{% endif %}
+                        <div><dt>{{ 'incident.report.count'|trans }}</dt><dd class="tabular">{{ line.count|number }}</dd></div>
+                        <div><dt>{{ 'incident.report.linked'|trans }}</dt><dd class="tabular">{{ line.linked|money }}</dd></div>
+                        <div><dt>{{ 'incident.report.payouts'|trans }}</dt><dd class="tabular">{{ line.payouts|money }}</dd></div>
+                    {% endfor %}
+                </dl>
+                <p class="field__hint">{{ 'incident.report.hint'|trans }}</p>
+            </section>
+        {% endif %}
+
         {% if rows is not empty %}
             <section class="card" aria-labelledby="costs-heading">
                 <div class="card__header">

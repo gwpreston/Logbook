@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Report;
 
+use Logbook\Domain\Feature\Feature;
+use Logbook\Repository\IncidentRepository;
+use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Support\Money\Money;
 use DateTimeImmutable;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Odometer\OdometerReading;
@@ -28,7 +32,31 @@ final readonly class OwnershipService
         private CostLedger $ledger,
         private OdometerReadingRepository $readings,
         private ValuationService $valuations,
+        private IncidentRepository $incidents,
+        private FeatureToggles $features,
     ) {
+    }
+
+    /**
+     * The vehicle's insurance payouts, when incidents are on (spec.md §7.29).
+     *
+     * @return list<InsurancePayout>
+     */
+    public function payouts(User $user, Vehicle $vehicle): array
+    {
+        if (!$this->features->isEnabled(Feature::Incidents)) {
+            return [];
+        }
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $payouts = [];
+        foreach ($this->incidents->listForVehicle($vehicle->id) as $incident) {
+            $payout = $incident->data->claim->payout;
+            if ($payout !== null) {
+                $payouts[] = new InsurancePayout($incident->data->occurredOn, Money::of($payout, $currency), $incident->id);
+            }
+        }
+
+        return $payouts;
     }
 
     /**
@@ -51,6 +79,7 @@ final readonly class OwnershipService
             $depreciation,
             $today,
             $user->preferences->timeZone(),
+            $this->payouts($user, $vehicle),
         );
     }
 
@@ -79,7 +108,15 @@ final readonly class OwnershipService
                 $zone,
                 $currency,
             );
-            $cost = OwnershipCost::of($vehicle, $items[$vehicle->id] ?? [], $readings, $depreciation, $today, $zone);
+            $cost = OwnershipCost::of(
+                $vehicle,
+                $items[$vehicle->id] ?? [],
+                $readings,
+                $depreciation,
+                $today,
+                $zone,
+                $this->payouts($user, $vehicle),
+            );
             if ($cost !== null) {
                 $byCurrency[$currency][] = $cost;
             }

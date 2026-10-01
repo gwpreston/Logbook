@@ -193,6 +193,64 @@ final readonly class IncidentRepository
         return $links;
     }
 
+    /**
+     * What the records linked to some incidents are, for History's second
+     * line (spec.md §7.16): a service record's title, an expense's note or
+     * category, a tyre change's kind, with each record's date. A tyre change
+     * that follows its service record is left out (the record stands for it).
+     *
+     * @param list<int> $incidentIds
+     * @return array<int, list<array{title: string, isKey: bool, date: DateTimeImmutable}>> by incident, oldest first
+     */
+    public function linkedSummaries(array $incidentIds): array
+    {
+        if ($incidentIds === []) {
+            return [];
+        }
+        $sources = [
+            ['maintenance_entries', 'performed_on', 'title', null],
+            ['expense_entries', 'spent_on', 'note', 'category'],
+            ['tyre_changes', 'done_on', null, 'kind'],
+        ];
+        $by = [];
+        foreach ($sources as [$table, $date, $text, $code]) {
+            $query = $this->connection->createQueryBuilder()
+                ->select('incident_id', $date . ' AS on_date')
+                ->from($table)
+                ->where('incident_id IN (:incidents)')
+                ->setParameter('incidents', $incidentIds, ArrayParameterType::INTEGER);
+            if ($text !== null) {
+                $query->addSelect($text . ' AS text');
+            }
+            if ($code !== null) {
+                $query->addSelect($code . ' AS code');
+            }
+            if ($table === 'tyre_changes') {
+                $query->andWhere('maintenance_entry_id IS NULL');
+            }
+            foreach ($query->fetchAllAssociative() as $row) {
+                $words = $text === null ? null : Row::nullableString($row, 'text');
+                $key = match ($table) {
+                    'expense_entries' => 'expense.category.' . Row::string($row, 'code'),
+                    'tyre_changes' => 'tyre.kind_short.' . Row::string($row, 'code'),
+                    default => '',
+                };
+                $by[Row::int($row, 'incident_id')][] = [
+                    'title' => $words ?? $key,
+                    'isKey' => $words === null,
+                    'date' => Row::nullableDate($row, 'on_date')
+                        ?? throw new UnexpectedValueException('A linked record has no date.'),
+                ];
+            }
+        }
+        foreach ($by as $id => $records) {
+            usort($records, static fn (array $a, array $b): int => $a['date'] <=> $b['date']);
+            $by[$id] = $records;
+        }
+
+        return $by;
+    }
+
     private static function openFirst(Incident $a, Incident $b): int
     {
         return ($a->data->status === IncidentStatus::Open ? 0 : 1) <=> ($b->data->status === IncidentStatus::Open ? 0 : 1);

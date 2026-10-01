@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Report;
 
+use Logbook\Service\Incident\IncidentReport;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Service\Feature\FeatureToggles;
@@ -36,6 +37,7 @@ final readonly class ReportAction
         private ClockInterface $clock,
         private FeatureToggles $features,
         private BusinessMileage $business,
+        private IncidentReport $incidents,
     ) {
     }
 
@@ -60,6 +62,8 @@ final readonly class ReportAction
             'charts' => array_map($this->charts->monthly(...), $report->currencies),
             'filter_query' => $filter->toQuery(),
             'ownership_query' => OwnershipReportAction::query($filter),
+            // Incidents (Phase 27.1, spec.md §7.29): spend itself is unchanged.
+            'incident_lines' => $this->incidents->lines($user, $report),
             // Business mileage (Phase 22, spec.md §7.7), with trips on.
             'business' => $this->features->isEnabled(Feature::Trips)
                 ? $this->business->build(

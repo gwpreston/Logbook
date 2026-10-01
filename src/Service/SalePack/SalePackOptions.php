@@ -36,6 +36,8 @@ final readonly class SalePackOptions
         public array $exclude = [],
         public ?array $keep = null,
         public bool $photo = false,
+        /** *Include incidents* (Phase 27.1): off unless ticked. */
+        public bool $incidents = false,
     ) {
     }
 
@@ -63,6 +65,7 @@ final readonly class SalePackOptions
             exclude: self::ids($query['exclude'] ?? null),
             keep: ($query['choose'] ?? '') === '1' ? self::ids($query['keep'] ?? null) : null,
             photo: ($query['photo'] ?? '') === '1',
+            incidents: ($query['incidents'] ?? '') === '1',
         );
     }
 
@@ -98,6 +101,7 @@ final readonly class SalePackOptions
             $this->kinds,
             $exclude,
             photo: $this->photo,
+            incidents: $this->incidents,
         );
     }
 
@@ -133,6 +137,7 @@ final readonly class SalePackOptions
             'timeline' => $this->timeline ? '1' : '',
             'costs' => $this->costs ? '1' : '',
             'photo' => $this->photo ? '1' : '',
+            'incidents' => $this->incidents ? '1' : '',
             'kinds' => array_map(static fn (PaperworkKind $kind): string => $kind->value, $this->kinds),
             'exclude' => array_map(strval(...), $this->exclude),
         ], static fn (string|array $value): bool => $value !== '' && $value !== []);

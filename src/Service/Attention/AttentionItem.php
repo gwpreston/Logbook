@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Attention;
 
+use Logbook\Service\Incident\IncidentView;
 use DateTimeImmutable;
 use Logbook\Domain\Attention\AttentionKind;
 use Logbook\Domain\Attention\AttentionSeverity;
@@ -48,6 +49,8 @@ final readonly class AttentionItem
         public ?PriceFinding $price = null,
         /** The record and the cost it was compared with (MaintenanceCost). */
         public ?CostFinding $cost = null,
+        /** The incident whose claim is waiting (StalledClaim), seen with its details. */
+        public ?IncidentView $incident = null,
         /** The vehicle's currency, for the amounts in a price or cost title. */
         public ?string $currency = null,
         /** What was judged (hideable kinds). */
