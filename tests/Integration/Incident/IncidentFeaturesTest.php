@@ -383,4 +383,23 @@ final class IncidentFeaturesTest extends AppTestCase
         self::assertSame([], $stalled);
         self::assertStringNotContainsString('Insurance payouts', self::body($this->browser->get('/vehicles/' . $id)));
     }
+
+    public function testAViewerWithoutTheDetailsGetsThePhotoStripped(): void
+    {
+        $photo = ExifJpeg::make(40, 20, 6);
+        $incident = $this->log(files: $this->photo($photo));
+        $file = $this->service($this->app, AttachmentRepository::class)
+            ->listForOwner($this->golf->id, AttachmentOwner::Incident, $incident->id)[0];
+        $url = '/vehicles/' . $this->golf->id . '/attachments/' . $file->id;
+        $viewer = $this->createMember($this->app, 'viewer');
+        $this->service($this->app, VehicleShareRepository::class)
+            ->insert($this->golf->id, $viewer->id, ShareLevel::View, true, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+
+        $own = self::body($this->browser->get($url));
+        self::assertSame($photo, $own, 'the owner gets it as taken');
+
+        $theirs = self::body($this->browserFor($this->app, 'viewer')->get($url));
+        self::assertFalse(ExifJpeg::hasExif($theirs), 'no GPS for someone who may not see the location');
+        self::assertSame([20, 40], array_slice((array) getimagesizefromstring($theirs), 0, 2), 'upright');
+    }
 }

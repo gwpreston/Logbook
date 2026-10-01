@@ -2354,7 +2354,11 @@ outside web root, served via an authenticated handler; type/size validated.
   taken, including when and where. They are cleaned only if you share
   them in a sale pack." A copy that leaves through the sale pack ZIP
   (§7.19) is turned upright and stripped as every other photo is, as it
-  is written; the stored file is unchanged. A file scanned for an
+  is written; the stored file is unchanged. Served in the app, the
+  original goes only to those who may see the incident's details (§7.29
+  *Access*); anyone else who can view the vehicle gets an upright,
+  stripped copy made as it is served (decided 2026-10-01,
+  `docs/phases/open-questions.md` #104). A file scanned for an
   incident (Phase 27.2) is a document, not a damage photo, and is
   stripped as every scan is.
 - **Pending uploads** (Phase 26.4): a scanned file (§7.27) is checked by

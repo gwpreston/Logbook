@@ -336,6 +336,12 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §6, §7.2,
   **Decided 2026-10-01 (#103):** the tyre change follows its record's
   incident; one with no record is linked on its own (spec §7.29).
 
+- *(Found while building.)* **Who gets an incident photo's GPS?** The
+  location is a detail field, but every viewer could open the photos.
+  **Decided 2026-10-01 (#104):** the original only for those who see the
+  details; anyone else gets an upright, stripped copy made as it is served
+  (spec §7.12).
+
 ## What changed while starting
 
 - The phase was split into 27.1 and 27.2 (#102); the file was renamed

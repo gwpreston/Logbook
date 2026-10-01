@@ -68,4 +68,34 @@ final readonly class FileResponder
 
         return sprintf('attachment; filename="%s"; filename*=UTF-8\'\'%s', $ascii, rawurlencode($name));
     }
+
+    /**
+     * Bytes made for this response (an incident photo stripped for a viewer
+     * without its details, spec.md §7.12), with the same headers as send().
+     */
+    public function sendBytes(
+        ServerRequestInterface $request,
+        ResponseInterface $response,
+        string $bytes,
+        string $mime,
+        string $version,
+        ?string $downloadName = null,
+    ): ResponseInterface {
+        $etag = '"' . $version . '"';
+        $response = $response
+            ->withHeader('ETag', $etag)
+            ->withHeader('Cache-Control', 'private, max-age=31536000, immutable')
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+
+        if ($request->getHeaderLine('If-None-Match') === $etag) {
+            return $response->withStatus(304);
+        }
+
+        return $response
+            ->withHeader('Content-Type', $mime)
+            ->withHeader('Content-Length', (string) strlen($bytes))
+            ->withHeader('Content-Disposition', $downloadName === null ? 'inline' : self::attachment($downloadName))
+            ->withBody($this->streams->createStream($bytes));
+    }
 }
