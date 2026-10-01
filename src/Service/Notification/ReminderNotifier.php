@@ -9,6 +9,8 @@ use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Repository\ReminderRepository;
+use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Attention\AttentionList;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderService;
@@ -45,6 +47,8 @@ final readonly class ReminderNotifier
         private ClockInterface $clock,
         private LoggerInterface $logger,
         private VehicleAccess $access,
+        private AttentionList $attention,
+        private VehicleRepository $vehicles,
     ) {
     }
 
@@ -125,9 +129,10 @@ final readonly class ReminderNotifier
 
     /**
      * The monthly digest, on the first run of a month in the user's time
-     * zone, of the vehicles they receive reminders for. A month with nothing
-     * due counts as done; one whose digest could not be delivered is retried
-     * on the next run.
+     * zone, of the vehicles they receive reminders for: what is due, then
+     * the *Needs attention* checks they would see there (Phase 24). A month
+     * with nothing due and nothing to check counts as done; one whose digest
+     * could not be delivered is retried on the next run.
      */
     private function sendDigest(
         User $user,
@@ -146,13 +151,20 @@ final readonly class ReminderNotifier
             static fn (ReminderEntry $e): bool => $e->reminder->status === ReminderStatus::Overdue
                 || ($e->reminder->dueOn !== null && $e->reminder->dueOn <= $endOfMonth),
         ));
-        if ($entries === []) {
+        // The reminders were synced at the start of the run.
+        $checks = $this->attention->forVehicles(
+            $user,
+            $this->vehicles->listByIds($this->access->recipientVehicleIds($user)),
+            sync: false,
+        )->checks();
+        if ($entries === [] && $checks === []) {
             $this->settings->markDigestSent($user->id, $month);
 
             return false;
         }
 
-        $report = $this->dispatcher->dispatch($this->composer->digest($user, $entries, $today), $recipient, $preferences);
+        $digest = $this->composer->digest($user, $entries, $today, $checks);
+        $report = $this->dispatcher->dispatch($digest, $recipient, $preferences);
         if (!$report->anyDelivered()) {
             return false;
         }

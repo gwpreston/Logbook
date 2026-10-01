@@ -1,0 +1,133 @@
+{#
+ # Needs attention fragments (spec.md §7.24). Import with:
+ # {% import 'macros/attention.twig' as attention_ui %}
+ # `wording` is a Service\Attention\AttentionWording; each item a
+ # Service\Attention\AttentionItem, already filtered for the viewer.
+ #}
+
+{# Where the main action goes: the entry form for overdue work (prefilled),
+   the reading's edit form, the fill-ups to check, a new reading, the
+   Mileage tab, a new valuation. #}
+{% macro action_url(item) -%}
+    {%- set id = item.vehicle.id -%}
+    {%- if item.kind.value == 'overdue' -%}
+        {%- set source = item.forecast.source.value -%}
+        {%- if source == 'schedule' -%}
+            {{ url_for('maintenance.create', {id: id}, {schedule: item.forecast.sourceId}) }}
+        {%- elseif source == 'document' -%}
+            {{ url_for('compliance.create', {id: id}, {type: item.forecast.category}) }}
+        {%- elseif source == 'first_inspection' -%}
+            {{ url_for('compliance.create', {id: id}, {type: 'inspection'}) }}
+        {%- elseif source == 'tyres' -%}
+            {{ url_for('tyres.change', {id: id, kind: 'fit'}) }}
+        {%- endif -%}
+    {%- elseif item.kind.value == 'reading' -%}
+        {{ url_for('odometer.edit', {id: id, reading: item.subjectId}) }}
+    {%- elseif item.kind.value == 'economy' -%}
+        {{ url_for('fuel.index', {id: id}, {check: 1}) }}
+    {%- elseif item.kind.value == 'mileage_stale' -%}
+        {{ url_for('odometer.create', {id: id}) }}
+    {%- elseif item.kind.value == 'trips_exceed' -%}
+        {{ url_for('odometer.index', {id: id}) }}
+    {%- elseif item.kind.value == 'valuation_stale' -%}
+        {{ url_for('valuations.create', {id: id}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# The main action's label. #}
+{% macro action_label(item) -%}
+    {%- if item.kind.value == 'overdue' -%}{{ 'attention.action.log_it'|trans }}
+    {%- elseif item.kind.value == 'reading' -%}{{ 'attention.action.fix'|trans }}
+    {%- elseif item.kind.value == 'economy' -%}{{ 'attention.action.review'|trans }}
+    {%- elseif item.kind.value == 'mileage_stale' -%}{{ 'attention.action.add_reading'|trans }}
+    {%- elseif item.kind.value == 'trips_exceed' -%}{{ 'attention.action.mileage'|trans }}
+    {%- else -%}{{ 'attention.action.add_valuation'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# One item: icon, its Now / Check label as text, the title, the detail
+   and its actions. `opts`: show_vehicle, csrf, return_to. #}
+{% macro row(item, wording, opts = {}) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as attention_ui %}
+    {% set title = wording.title(item) %}
+    {% set severity = item.severity().value %}
+    {% set manual = item.kind.value == 'overdue' and item.forecast.source.value == 'reminder' %}
+    {% set modal = item.kind.value in ['overdue', 'reading', 'mileage_stale', 'valuation_stale'] %}
+    <li class="attention-item attention-item--{{ severity }}">
+        <div class="list__item">
+            <span class="list__icon{{ severity == 'now' ? ' list__icon--danger' : ' list__icon--warning' }}">{{ ui.icon(item.icon) }}</span>
+            <span class="list__body">
+                <span class="list__title">{{ title }}</span>
+                <span class="list__meta">
+                    {%- if opts.show_vehicle ?? false %}{{ item.vehicle.name() }} · {% endif -%}
+                    {{ wording.detail(item) }}
+                </span>
+            </span>
+            <span class="list__end"><span class="pill attention-item__label pill--{{ severity == 'now' ? 'overdue' : 'soon' }}">{{ wording.label(item) }}</span></span>
+        </div>
+        {% if item.canAct or item.canDismiss or item.canHide %}
+        <div class="btn-row attention-item__actions">
+            {% if item.canAct %}
+                {% if manual %}
+                    <form method="post" action="{{ url_for('reminders.status', {reminder: item.reminderId, action: 'done'}) }}">
+                        {{ ui.csrf(opts.csrf ?? null) }}
+                        {{ ui.return_field(opts.return_to ?? '') }}
+                        <button type="submit" class="btn btn--sm btn--soft">{{ ui.icon('check_circle') }}{{ 'reminders.action.done'|trans }}<span class="visually-hidden">: {{ title }}</span></button>
+                    </form>
+                {% else %}
+                    <a class="btn btn--sm btn--soft" href="{{ attention_ui.action_url(item) }}"{% if modal %} data-modal{% endif %}>{{ ui.icon(item.kind.value == 'overdue' ? 'check_circle' : 'edit') }}{{ attention_ui.action_label(item) }}<span class="visually-hidden">: {{ title }}</span></a>
+                {% endif %}
+            {% endif %}
+            {% if item.canDismiss %}
+                <form method="post" action="{{ url_for('reminders.status', {reminder: item.reminderId, action: 'dismiss'}) }}">
+                    {{ ui.csrf(opts.csrf ?? null) }}
+                    {{ ui.return_field(opts.return_to ?? '') }}
+                    <button type="submit" class="btn btn--sm btn--ghost">{{ ui.icon('close') }}{{ 'reminders.action.dismiss'|trans }}<span class="visually-hidden">: {{ title }}</span></button>
+                </form>
+            {% endif %}
+            {% if item.canHide %}
+                <form method="post" action="{{ url_for('attention.hide', {id: item.vehicle.id}) }}">
+                    {{ ui.csrf(opts.csrf ?? null) }}
+                    {{ ui.return_field(opts.return_to ?? '') }}
+                    <input type="hidden" name="kind" value="{{ item.kind.value }}">
+                    <input type="hidden" name="subject" value="{{ item.subjectId }}">
+                    <input type="hidden" name="fingerprint" value="{{ item.fingerprint }}">
+                    <button type="submit" class="btn btn--sm btn--ghost">{{ ui.icon('visibility_off') }}{{ 'attention.action.hide'|trans }}<span class="visually-hidden">: {{ title }}</span></button>
+                </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </li>
+{%- endmacro %}
+
+{# The overview card and the dashboard widget's list: the first `shown`
+   items, the rest behind "Show all (N)" (a <details>, without JS). #}
+{% macro list(items, wording, shown, opts = {}) -%}
+    {% import _self as attention_ui %}
+    <ul class="list attention-list">
+        {% for item in items|slice(0, shown) %}
+            {{ attention_ui.row(item, wording, opts) }}
+        {% endfor %}
+    </ul>
+    {% if items|length > shown %}
+        <details class="disclosure attention-more">
+            <summary class="disclosure__summary">{{ 'attention.show_all'|trans({count: items|length}) }}</summary>
+            <ul class="list attention-list">
+                {% for item in items|slice(shown) %}
+                    {{ attention_ui.row(item, wording, opts) }}
+                {% endfor %}
+            </ul>
+        </details>
+    {% endif %}
+{%- endmacro %}
+
+{# "Needs attention" marker beside "N due" on garage cards and tiles: an
+   icon and the words, with the count in its accessible label. #}
+{% macro marker(count, class = '') -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% if count > 0 %}
+        {% set text = 'attention.marker_label'|trans({count: count}) %}
+        <span class="attention-marker{{ class ? ' ' ~ class }}" title="{{ text }}"><span aria-hidden="true">{{ ui.icon('warning') }}{{ 'attention.marker'|trans }}</span><span class="visually-hidden">{{ text }}</span></span>
+    {% endif %}
+{%- endmacro %}

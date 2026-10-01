@@ -18,8 +18,9 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  *
  *   {"event": "reminders"|"digest"|"test", "title": …, "message": …,
  *    "url": …, "urgent": bool, "items": [{"reminder_id", "title",
- *    "detail", "status", "due_on"}], "user": {"id", "username",
- *    "display_name"}}
+ *    "detail", "status", "due_on"}], "attention": [{"vehicle_id",
+ *    "vehicle", "kind", "title"}] (the digest's checks, Phase 24; else
+ *    empty), "user": {"id", "username", "display_name"}}
  */
 final readonly class WebhookChannel implements NotificationChannel
 {
@@ -66,6 +67,7 @@ final readonly class WebhookChannel implements NotificationChannel
                 'url' => $notification->url,
                 'urgent' => $notification->urgent,
                 'items' => array_map(static fn (NotificationItem $i): array => $i->toArray(), $notification->items),
+                'attention' => $notification->attention,
                 'user' => ['id' => $recipient->userId, 'username' => $recipient->username, 'display_name' => $recipient->name],
             ],
         ]);

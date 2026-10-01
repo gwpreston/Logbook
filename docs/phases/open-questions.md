@@ -23,7 +23,8 @@ Phase 22's on the same day before it started (#43–#47). Phase 22's
 question found while building (#48) and Phase 23.1's (#49–#51) were
 answered on 2026-10-01, before Phase 23.1 started, and Phase 23.2's
 (#52–#55, two of them found while starting it) on the same day, before
-Phase 23.2 started.
+Phase 23.2 started. Phase 24's (#56–#58) were answered on 2026-10-01,
+before it started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -82,6 +83,9 @@ Phase 23.2 started.
 | 53 | [23.2](phase-23.2.md) | Default `AUTH_PROXY_LINK`? | Decided | `username` (spec §7.9, §9). | 2026-10-01 |
 | 54 | [23.2](phase-23.2.md) | How does `identity` mode link a proxy account? | Decided | A *Link your proxy account* banner for a signed-in user with an unlinked header, built in this phase (spec §7.9). | 2026-10-01 |
 | 55 | [23.2](phase-23.2.md) | A header for an unlinked account in a password session? | Decided | The session stays; only a header for another user replaces it (spec §7.9). | 2026-10-01 |
+| 56 | [24](phase-24.md) | *Needs attention*: due-soon items as well as overdue? | Decided | No, overdue only; due-soon work stays in *Coming up* and the reminders (spec §7.24). | 2026-10-01 |
+| 57 | [24](phase-24.md) | A *Needs attention* section in the monthly digest? | Decided | Yes, built in this phase: the recipient's *Check* items after the due reminders; a month with checks and nothing due still sends (spec §7.11, §7.24). | 2026-10-01 |
+| 58 | [24](phase-24.md) | Stale mileage and valuation thresholds: constants or settings? | Decided | Built in this phase: user settings, the vehicle owner's: 60 days and 12 months by default, on Settings → Reminders; the §7.1 stale-value hint follows them (spec §7.1, §7.24). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

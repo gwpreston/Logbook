@@ -1426,7 +1426,7 @@ return [
         'settings' => [
             'title' => 'Erinnerungen und Benachrichtigungen',
             'link' => 'Vorlaufzeiten, Benachrichtigungen und Kalender',
-            'link_hint' => 'Wie früh Erinnerungen fällig werden, wohin sie gesendet werden, und ein Kalender-Abo.',
+            'link_hint' => 'Wie früh Erinnerungen fällig werden, wann Kilometerstand und Bewertungen als veraltet gelten, wohin Erinnerungen gesendet werden, und ein Kalender-Abo.',
             'lead_heading' => 'Vorlaufzeiten',
             'lead_intro' => 'Wie früh etwas als fällig gilt. Die Fahrzeugseiten nutzen dieselben Vorlaufzeiten.',
             'schedule_days' => 'Wartung: Tage vorher',
@@ -1450,7 +1450,7 @@ return [
             'gotify_token_hint' => 'Optional. Dein eigenes Token auf dem Gotify des Servers ersetzt für dich GOTIFY_TOKEN.',
             'gotify_token_hint_member' => 'Ein Anwendungstoken auf dem Gotify dieses Servers. Das Token des Servers ist nur für Admins.',
             'digest' => 'Monatliche Übersicht',
-            'digest_hint' => 'Zu Monatsbeginn eine Zusammenfassung von allem, was in diesem Monat fällig ist. Sie wird nur gesendet, wenn ein Kanal eingerichtet ist und etwas fällig ist.',
+            'digest_hint' => 'Zu Monatsbeginn eine Zusammenfassung von allem, was in diesem Monat fällig ist, und von dem, was geprüft werden sollte. Sie wird nur gesendet, wenn ein Kanal eingerichtet ist und etwas fällig ist oder Handlungsbedarf besteht.',
             'when_sent' => 'Der Server prüft alle 15 Minuten. Jede Erinnerung wird einmal gesendet, wenn sie fällig wird, und noch einmal, wenn sie überfällig ist.',
             'save' => 'Einstellungen speichern',
             'saved' => 'Deine Einstellungen für Erinnerungen wurden gespeichert.',
@@ -1912,6 +1912,68 @@ return [
         'no_records' => 'Noch nichts erfasst',
         'chart_date' => 'Datum',
     ],
+    // Handlungsbedarf (Phase 24, spec.md §7.24): was jetzt nicht stimmt. Nie eine Punktzahl.
+    'attention' => [
+        'title' => 'Handlungsbedarf',
+        'severity' => [
+            'now' => 'Jetzt',
+            'check' => 'Prüfen',
+        ],
+        'overdue' => [
+            'at' => 'Überfällig bei {odometer}',
+        ],
+        'reading' => [
+            'backwards' => 'Stand vom {date} ({odometer}) ist niedriger als der davor',
+            'jump' => 'Stand vom {date} ({odometer}) liegt {distance} über dem davor',
+            'detail' => [
+                'backwards' => 'Der Stand davor war {previous} am {date}.',
+                'jump' => 'Der Stand davor war {previous} am {date}. Ist eine Ziffer falsch?',
+            ],
+        ],
+        'economy' => [
+            'title' => '{count, plural, one {# Tankvorgang wirkt ungewöhnlich} other {# Tankvorgänge wirken ungewöhnlich}}',
+            'detail' => 'Ein vergessener Tankvorgang oder ein Tippfehler verfälscht die Verbrauchswerte.',
+        ],
+        'mileage' => [
+            'title' => 'Kein Kilometerstand seit {date}',
+            'none' => 'Noch kein Kilometerstand',
+            'detail' => 'Wartungen nach Laufleistung und Reifenverschleiß lassen sich nicht vorausberechnen.',
+        ],
+        'trips' => [
+            'title' => 'Die Dienstfahrten ergeben mehr als das Kilometerbuch',
+            'detail' => 'Für dieses Steuerjahr einen Kilometerstand erfassen oder eine Fahrt korrigieren.',
+        ],
+        'valuation' => [
+            'title' => 'Vor {months, plural, one {# Monat} other {# Monaten}} bewertet',
+            'detail' => 'Zuletzt bewertet am {date}. Für einen aktuellen Wert eine neue Bewertung erfassen.',
+        ],
+        'line' => '{vehicle}: {title}',
+        'action' => [
+            'log_it' => 'Erfassen',
+            'fix' => 'Korrigieren',
+            'review' => 'Ansehen',
+            'add_reading' => 'Kilometerstand erfassen',
+            'mileage' => 'Kilometer öffnen',
+            'add_valuation' => 'Bewertung erfassen',
+            'hide' => 'Ausblenden',
+        ],
+        'show_all' => 'Alle anzeigen ({count})',
+        'marker' => 'Handlungsbedarf',
+        'marker_label' => '{count, plural, one {Handlungsbedarf: # Punkt} other {Handlungsbedarf: # Punkte}}',
+        'nothing' => 'Kein Handlungsbedarf',
+        'more' => '{count, plural, one {# weiterer in den Fahrzeugübersichten.} other {# weitere in den Fahrzeugübersichten.}}',
+        'hidden' => 'Ausgeblendet. Es erscheint wieder, wenn sich die Daten ändern.',
+        'changed' => 'Das hat sich seit dem Laden der Seite geändert, daher wurde nichts ausgeblendet. Bitte noch einmal ansehen.',
+        'settings' => [
+            'heading' => 'Handlungsbedarf',
+            'intro' => 'Wann Übersicht und Dashboard den Kilometerstand oder eine Bewertung als veraltet melden. Ein geteiltes Fahrzeug nutzt die Einstellungen seines Besitzers.',
+            'mileage_days' => 'Kilometerstand veraltet nach',
+            'mileage_days_hint' => 'Nur für Fahrzeuge mit einer Wartung nach Laufleistung oder einer Verschleißschätzung der Reifen. 7–365 Tage.',
+            'valuation_months' => 'Bewertung veraltet nach',
+            'valuation_months_hint' => 'Gilt auch für den Hinweis auf der Karte Besitz. 1–60 Monate.',
+            'months_suffix' => 'Monate',
+        ],
+    ],
     'coming_up' => [
         'title' => 'Demnächst',
         'period' => '{from} – {to}',
@@ -2226,6 +2288,7 @@ return [
             'mileage' => 'Fahrleistung',
             'recent_activity' => 'Letzte Aktivität',
             'business_mileage' => 'Dienstliche Kilometer',
+            'needs_attention' => 'Handlungsbedarf',
         ],
         'link' => [
             'garage' => 'Garage',
@@ -2297,6 +2360,7 @@ return [
         ],
         'item_title' => '{name} — {vehicle}',
         'item_line' => '• {title}: {detail}',
+        'attention_line' => '• {line}',
         'reminders' => [
             'title_one' => '{item}: {when}',
             'title_many' => '{count} Erinnerungen brauchen Aufmerksamkeit',
@@ -2305,6 +2369,9 @@ return [
         'digest' => [
             'title' => 'Fällig im {month}',
             'intro' => '{count, plural, one {Eine Sache ist bis Ende {month} fällig:} other {# Sachen sind bis Ende {month} fällig:}}',
+            'title_checks' => '{month}: {count, plural, one {ein Punkt braucht Aufmerksamkeit} other {# Punkte brauchen Aufmerksamkeit}}',
+            'nothing_due' => 'In {month} ist nichts fällig.',
+            'attention' => '{count, plural, one {Ein Punkt braucht Aufmerksamkeit:} other {# Punkte brauchen Aufmerksamkeit:}}',
         ],
         'test' => [
             'title' => 'Logbook-Testbenachrichtigung',

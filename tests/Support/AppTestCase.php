@@ -130,6 +130,7 @@ abstract class AppTestCase extends TestCase
             'sessions',
             'invitations',
             'user_identities',
+            'attention_hidden',
             'reminder_deliveries',
             'vehicle_shares',
             'vehicle_valuations',

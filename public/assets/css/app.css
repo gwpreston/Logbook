@@ -2413,6 +2413,28 @@ a.list__title:hover {
     display: contents;
 }
 
+/* Needs attention (Phase 24, spec.md §7.24): the overview card and the widget. */
+.list__icon--danger {
+    background: var(--red-soft);
+    color: var(--red);
+}
+
+.attention-item__actions {
+    padding: 0 var(--space-2) var(--space-2) calc(2.375rem + var(--space-3) + var(--space-2));
+}
+
+.attention-item__actions form {
+    display: contents;
+}
+
+.attention-more {
+    margin-top: var(--space-2);
+}
+
+.card--attention {
+    border-color: var(--amber);
+}
+
 /* A choice the server cannot offer (e.g. an unconfigured notification channel). */
 .toggle--disabled {
     cursor: not-allowed;
@@ -2909,7 +2931,7 @@ a.list__title:hover {
     font-size: var(--fs-xs);
 }
 
-/* "N due" badge: garage cards (on the photo) and dashboard tiles (text only). */
+/* "N due" badge: garage cards (on the photo, in .vehicle-card__flags) and dashboard tiles (text only). */
 .due-badge {
     display: inline-flex;
     align-items: center;
@@ -2933,11 +2955,50 @@ a.list__title:hover {
     background: none;
 }
 
-.vehicle-card__due {
+/* "N due" and the Needs attention marker together on a garage card's photo (Phase 24). */
+.vehicle-card__flags {
     position: absolute;
     top: var(--space-3);
     right: var(--space-3);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+.vehicle-card__flags > * {
     box-shadow: var(--shadow);
+}
+
+/* Needs attention marker (spec.md §7.24): icon and words, never colour alone. */
+.attention-marker {
+    display: inline-flex;
+    align-items: center;
+    height: 1.625rem;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--amber);
+    font-size: var(--fs-xs);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.attention-marker > [aria-hidden] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.attention-marker .icon {
+    width: 1em;
+    height: 1em;
+}
+
+.attention-marker--text {
+    height: auto;
+    padding: 0;
+    background: none;
 }
 
 .vehicle-card__stats {
@@ -3032,6 +3093,7 @@ a.list__title:hover {
 
 .vehicle-tile__meta {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-2);

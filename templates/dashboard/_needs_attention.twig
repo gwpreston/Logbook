@@ -1,0 +1,18 @@
+{# Needs attention across the vehicle filter (spec.md §7.8, §7.24): up to
+   eight items, Now first, each naming its vehicle. The widget keeps its
+   place when there is nothing to show. #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attention.twig' as attention_ui %}
+{% set items = dashboard.attention ? dashboard.attention.first(8) : [] %}
+{% if items is empty %}
+    <p class="widget__ok">{{ ui.icon('check_circle') }}{{ 'attention.nothing'|trans }}</p>
+{% else %}
+    <ul class="list attention-list">
+        {% for item in items %}
+            {{ attention_ui.row(item, attention_wording, {show_vehicle: not selected, csrf: csrf, return_to: current_path}) }}
+        {% endfor %}
+    </ul>
+    {% if dashboard.attention.items|length > items|length %}
+        <p class="field__hint">{{ 'attention.more'|trans({count: dashboard.attention.items|length - items|length}) }}</p>
+    {% endif %}
+{% endif %}

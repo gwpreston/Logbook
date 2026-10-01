@@ -188,6 +188,12 @@ final class Decimal
             return $scaled === null ? null : self::fromScaledInt($scaled, $to);
         }
 
+        // 10^19 and up is beyond a PHP int: a zero stays zero, anything else
+        // takes the caller's float fallback (multiply() of two long scales).
+        if ($from - $to > 18) {
+            return $value === 0 ? self::fromScaledInt(0, $to) : null;
+        }
+
         return self::fromScaledInt(self::roundedDivision($value, 10 ** ($from - $to)), $to);
     }
 

@@ -3,6 +3,7 @@
 {% import 'macros/maintenance.twig' as maint %}
 {% import 'macros/compliance.twig' as docs %}
 {% import 'macros/history.twig' as history %}
+{% import 'macros/attention.twig' as attention_ui %}
 
 {% set active_nav = 'garage' %}
 {% set data = vehicle.data %}
@@ -18,6 +19,16 @@
 
         {% if vehicle.isArchived() %}
             <div class="alert alert--warning" role="status">{{ ui.icon('inventory_2') }}<span>{{ 'vehicle.archived_notice'|trans }}</span></div>
+        {% endif %}
+
+        {# What is wrong now, first; hidden when nothing is (spec.md §7.24). #}
+        {% if attention is not empty %}
+            <section class="card card--attention" aria-labelledby="attention-heading">
+                <div class="card__header">
+                    <h2 id="attention-heading" class="card__title">{{ ui.icon('fact_check') }}{{ 'attention.title'|trans }}</h2>
+                </div>
+                {{ attention_ui.list(attention, attention_wording, 5, {csrf: csrf, return_to: current_path}) }}
+            </section>
         {% endif %}
 
         <dl class="stats">

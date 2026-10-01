@@ -6,6 +6,58 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.4.0] — 2026-10-01
+
+Phase 24: **Needs attention**, one short list of what is wrong right now,
+with the fix one tap away. It is deliberately not a health score: the
+list is facts Logbook already works out, in a fixed order, and it
+disappears when nothing is wrong.
+
+### Added
+- **Needs attention** on each vehicle's overview, first and hidden when
+  empty: *Now*, overdue work from *Coming up* (services past a limit,
+  expired documents, worn or old tyres, overdue manual reminders, the first
+  MOT); then *Check*, data that looks wrong (readings the Mileage tab flags,
+  unconfirmed unusual fill-ups as one line, mileage not updated where
+  distance-based services or tyre wear need it, business trips beyond the
+  mileage log, a stale valuation). Each item has its *Now* or *Check* label
+  in words and its fix: *Log it* (prefilled), *Fix*, *Review*, *Add
+  reading*, *Add valuation*, and *Dismiss* through its reminder.
+- **Hide** on a reading, stale-mileage or stale-valuation check that is
+  genuinely fine. It stays hidden only while the data it judged is
+  unchanged, per user.
+- A **Needs attention** dashboard widget across the vehicle filter, and a
+  *Needs attention* marker on the garage cards and *Your vehicles* tiles.
+- **Thresholds** on Settings → Reminders: *Mileage not updated after*
+  (default 60 days) and *Valuation is stale after* (default 12 months).
+  A shared vehicle uses its owner's. The Ownership card's stale-value hint
+  follows the same setting.
+- The **monthly digest** lists your *Check* items after what is due, and
+  is sent in a month with checks even when nothing is due. The webhook's
+  JSON gains an `attention` list; `items` is unchanged.
+
+### Changed
+- *Done* and *Dismiss* on a reminder return to the page they were pressed
+  on (the reminder list, or the overview's card).
+- The demo data has an overdue service on the motorbike and an
+  18-month-old valuation on the Corolla.
+
+### Fixed
+- *Coming up* (and so the overview and dashboard) no longer fails for a
+  vehicle whose fill-ups all cost 0: a fuel cost of 0 per distance
+  overflowed an exact decimal multiplication.
+
+### Upgrade notes
+- **One migration** adds `attention_hidden` (the checks each user has
+  hidden). It rolls back cleanly on every engine, and rolling back also
+  removes the `attention.thresholds` settings. Backups include the table;
+  a 2.4.0 backup restores only into 2.4.0.
+- The **Needs attention** widget is appended to dashboards you have
+  already arranged. Move it with *Customise*. New layouts put it first.
+- The digest may now arrive in a month where nothing is due, when
+  something needs checking. Switch the digest off in Settings → Reminders
+  if you would rather not.
+
 ## [2.3.0] — 2026-10-01
 
 Phases 23.1 and 23.2: sign in with the identity provider you already run.
@@ -1323,7 +1375,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/gwpreston16/Logbook/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/gwpreston16/Logbook/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/gwpreston16/Logbook/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/gwpreston16/Logbook/compare/v2.0.0...v2.1.0

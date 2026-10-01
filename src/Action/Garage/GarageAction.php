@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Garage;
 
+use Logbook\Service\Attention\AttentionList;
 use Logbook\Service\Reminder\DueCounter;
 use Logbook\Service\Sharing\SharingService;
 use Logbook\Service\User\UserDirectory;
@@ -30,6 +31,7 @@ final readonly class GarageAction
         private DueCounter $counter,
         private SharingService $sharing,
         private UserDirectory $directory,
+        private AttentionList $attention,
     ) {
     }
 
@@ -38,7 +40,9 @@ final readonly class GarageAction
         $user = RequestContext::requireUser($request);
         $showArchived = ($request->getQueryParams()['archived'] ?? '') === '1';
         $vehicles = $this->vehicles->listFleet($user, $showArchived);
-        $snapshots = $this->snapshots->of($vehicles, $this->counter->counts($user));
+        // Needs attention first: it brings the reminders up to date (spec.md §7.24).
+        $attention = $this->attention->forVehicles($user, $vehicles)->counts();
+        $snapshots = $this->snapshots->of($vehicles, $this->counter->counts($user), $attention);
         $own = array_values(array_filter($snapshots, static fn (VehicleSnapshot $s): bool => $s->vehicle->userId === $user->id));
         $shared = [];
         foreach ($snapshots as $snapshot) {

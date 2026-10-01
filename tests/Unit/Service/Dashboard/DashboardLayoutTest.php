@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 final class DashboardLayoutTest extends TestCase
 {
     private const array DEFAULT = [
-        'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet',
+        'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet',
         'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage',
     ];
 
@@ -34,7 +34,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'compliance', 'spend', 'reminders', 'coming_up', 'recent_fuel',
+                'compliance', 'spend', 'needs_attention', 'reminders', 'coming_up', 'recent_fuel',
                 'fleet', 'efficiency', 'mileage', 'recent_activity', 'business_mileage',
             ],
             $layout->toArray()['order'],
@@ -51,19 +51,19 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'reminders', 'spend', 'coming_up', 'recent_fuel', 'fleet',
+                'needs_attention', 'reminders', 'spend', 'coming_up', 'recent_fuel', 'fleet',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage',
             ],
             $layout->move(DashboardWidget::Spend, -1)->toArray()['order'],
         );
         self::assertSame(
             [
-                'reminders', 'coming_up', 'recent_fuel', 'spend', 'fleet',
+                'needs_attention', 'reminders', 'coming_up', 'recent_fuel', 'spend', 'fleet',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage',
             ],
             $layout->move(DashboardWidget::Spend, 1)->toArray()['order'],
         );
-        self::assertSame(self::DEFAULT, $layout->move(DashboardWidget::Reminders, -1)->toArray()['order']);
+        self::assertSame(self::DEFAULT, $layout->move(DashboardWidget::NeedsAttention, -1)->toArray()['order']);
         self::assertSame(self::DEFAULT, $layout->move(DashboardWidget::BusinessMileage, 1)->toArray()['order']);
     }
 
@@ -75,7 +75,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'spend', 'fleet', 'reminders', 'coming_up', 'recent_fuel',
+                'spend', 'fleet', 'needs_attention', 'reminders', 'coming_up', 'recent_fuel',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage',
             ],
             $layout->toArray()['order'],

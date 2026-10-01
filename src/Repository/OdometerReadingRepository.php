@@ -46,6 +46,39 @@ final readonly class OdometerReadingRepository
     }
 
     /**
+     * Who added each reading of a vehicle: a manual reading's own author, a
+     * derived one's owning entry's (spec.md §6 *Entry authorship*). One
+     * query, joining the four owning tables.
+     *
+     * @return array<int, int|null> by reading id
+     */
+    public function authorsForVehicle(int $vehicleId): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('r.id', 'r.created_by AS own', 'f.created_by AS fuel', 'm.created_by AS maintenance')
+            ->addSelect('c.created_by AS document', 't.created_by AS tyre')
+            ->from(self::TABLE, 'r')
+            ->leftJoin('r', 'fuel_entries', 'f', 'f.id = r.fuel_entry_id')
+            ->leftJoin('r', 'maintenance_entries', 'm', 'm.id = r.maintenance_entry_id')
+            ->leftJoin('r', 'compliance_documents', 'c', 'c.id = r.compliance_document_id')
+            ->leftJoin('r', 'tyre_changes', 't', 't.id = r.tyre_change_id')
+            ->where('r.vehicle_id = :vehicle')
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->fetchAllAssociative();
+
+        $authors = [];
+        foreach ($rows as $row) {
+            $authors[Row::int($row, 'id')] = Row::nullableInt($row, 'own')
+                ?? Row::nullableInt($row, 'fuel')
+                ?? Row::nullableInt($row, 'maintenance')
+                ?? Row::nullableInt($row, 'document')
+                ?? Row::nullableInt($row, 'tyre');
+        }
+
+        return $authors;
+    }
+
+    /**
      * The manual readings of several vehicles between two instants.
      *
      * @param list<int> $vehicleIds

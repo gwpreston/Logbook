@@ -14,6 +14,8 @@ final readonly class Notification
 {
     /**
      * @param list<NotificationItem> $items
+     * @param list<array{vehicle_id: int, vehicle: string, kind: string, title: string}> $attention the digest's
+     *        *Needs attention* checks (Phase 24, spec.md §7.11)
      */
     public function __construct(
         public NotificationKind $kind,
@@ -26,6 +28,7 @@ final readonly class Notification
         /** Something is overdue: channels with priorities may raise it. */
         public bool $urgent = false,
         public array $items = [],
+        public array $attention = [],
     ) {
     }
 

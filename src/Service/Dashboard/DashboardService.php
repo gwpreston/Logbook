@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Dashboard;
 
 use Logbook\Service\Trip\ClaimReportService;
+use Logbook\Service\Attention\AttentionList;
 use DateTimeImmutable;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
@@ -65,6 +66,7 @@ final readonly class DashboardService
         private ComingUp $comingUp,
         private VehicleAccess $access,
         private ClaimReportService $claims,
+        private AttentionList $attention,
     ) {
     }
 
@@ -112,6 +114,14 @@ final readonly class DashboardService
         $needsCounts = $show(DashboardWidget::Fleet) || $selected !== null;
         $counts = $needsCounts ? $this->dueCounter->counts($user) : null;
 
+        // Needs attention (spec.md §7.24): one pass over the filter, for the
+        // widget and the tiles' markers. The reminders were synced above if
+        // they were read; *Coming up* is shared when its widget shows too.
+        $comingUp = $show(DashboardWidget::ComingUp) ? $this->comingUp->forecast($user, $scope) : null;
+        $attention = $show(DashboardWidget::NeedsAttention) || $show(DashboardWidget::Fleet)
+            ? $this->attention->forVehicles($user, $scope, sync: $overview === null, forecast: $comingUp)
+            : null;
+
         return new Dashboard(
             layout: $layout,
             available: $available,
@@ -121,7 +131,9 @@ final readonly class DashboardService
             pinned: $selected !== null && $counts !== null
                 ? $this->pinned($user, $selected, $this->snapshots->of([$selected], $counts)[0], $efficiency, $overview, $today)
                 : null,
-            fleet: $show(DashboardWidget::Fleet) && $counts !== null ? $this->snapshots->of($active, $counts) : [],
+            fleet: $show(DashboardWidget::Fleet) && $counts !== null
+                ? $this->snapshots->of($active, $counts, $attention?->counts() ?? [])
+                : [],
             reminders: $show(DashboardWidget::Reminders) ? $overview : null,
             spendThisMonth: $thisMonth,
             spendLastMonth: $lastMonth,
@@ -130,10 +142,11 @@ final readonly class DashboardService
             compliance: $show(DashboardWidget::Compliance) ? $this->compliance($user, $scope, $today) : [],
             mileage: $show(DashboardWidget::Mileage) ? $this->mileage($user, $scope, $today) : null,
             activity: $show(DashboardWidget::RecentActivity) ? $this->activity->latest($user, $scope) : [],
-            comingUp: $show(DashboardWidget::ComingUp) ? $this->comingUp->forecast($user, $scope) : null,
+            comingUp: $comingUp,
             businessMileage: $show(DashboardWidget::BusinessMileage)
                 ? $this->claims->thisYear($user, $today, $selected !== null ? [$selected->id] : [])
                 : null,
+            attention: $show(DashboardWidget::NeedsAttention) ? $attention : null,
         );
     }
 
