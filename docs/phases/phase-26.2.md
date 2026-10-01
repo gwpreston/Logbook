@@ -192,7 +192,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7, §7.18,
       into the PR for each model tried.
 - [ ] **Evaluation results** for at least one local and one cloud model, in
       the PR (no model was reachable while building).
-- [x] Integration suite green on every engine.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB: 1963 tests, migrate, full rollback and migrate again first).
 
 ### Release (with Phase 26.1)
 - [x] `CHANGELOG.md` **2.6.0**: AI connections (local, network and cloud)
