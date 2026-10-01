@@ -31,7 +31,7 @@ use Logbook\Support\Number\Decimal;
 final readonly class Depreciation
 {
     public const int MIN_DAYS = VehicleAge::MIN_DAYS_FOR_AVERAGE;
-    /** A valuation older than this (unless sold) earns the stale hint. */
+    /** A valuation older than this (unless sold) earns the stale hint: the default of the owner's setting (§7.24). */
     public const int STALE_MONTHS = 12;
     /** Average Gregorian month, for the part-month after whole months. */
     private const string DAYS_PER_MONTH = '30.436875';
@@ -71,6 +71,7 @@ final readonly class Depreciation
         DateTimeImmutable $today,
         DateTimeZone $zone,
         string $currency,
+        int $staleAfterMonths = self::STALE_MONTHS,
     ): self {
         $points = self::series($vehicle, $valuations);
         $current = self::current($points);
@@ -113,7 +114,9 @@ final readonly class Depreciation
             $fraction,
             $perYear,
             $perKm,
-            $vehicle->data->saleDate === null ? self::staleMonths($current, $today) : null,
+            $vehicle->data->saleDate === null && $current->kind === ValuePointKind::Valuation
+                ? self::staleMonths($current->date, $today, $staleAfterMonths)
+                : null,
         );
     }
 
@@ -195,16 +198,21 @@ final readonly class Depreciation
     }
 
     /**
-     * Whole months since the current valuation when it is more than
-     * STALE_MONTHS old; null when fresh or when the value is the sale price
-     * (a sold vehicle takes no more valuations, so it is never stale).
+     * Whole months since a valuation once it is older than $after months
+     * (spec.md §7.1 *Stale value*; the owner's setting from Phase 24,
+     * §7.24), else null.
+     *
+     * @param DateTimeImmutable $today calendar date in the owner's time zone
      */
-    private static function staleMonths(ValuePoint $current, DateTimeImmutable $today): ?int
-    {
-        if ($current->kind !== ValuePointKind::Valuation || LocalTime::addMonths($current->date, self::STALE_MONTHS) >= $today) {
+    public static function staleMonths(
+        DateTimeImmutable $valuedOn,
+        DateTimeImmutable $today,
+        int $after = self::STALE_MONTHS,
+    ): ?int {
+        if (LocalTime::addMonths($valuedOn, $after) >= $today) {
             return null;
         }
-        $age = VehicleAge::between($current->date, $today);
+        $age = VehicleAge::between($valuedOn, $today);
 
         return $age->years * 12 + $age->months;
     }

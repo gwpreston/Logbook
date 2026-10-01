@@ -1428,7 +1428,7 @@ return [
         'settings' => [
             'title' => 'Reminders and notifications',
             'link' => 'Lead times, notifications and calendar',
-            'link_hint' => 'How early reminders come due, where they are sent, and a calendar feed.',
+            'link_hint' => 'How early reminders come due, when mileage and valuations count as out of date, where reminders are sent, and a calendar feed.',
             'lead_heading' => 'Lead times',
             'lead_intro' => 'How early something counts as due. The vehicle pages use the same lead times.',
             'schedule_days' => 'Maintenance: days before',
@@ -1452,7 +1452,7 @@ return [
             'gotify_token_hint' => 'Optional. Your own token on the server’s Gotify replaces GOTIFY_TOKEN for you.',
             'gotify_token_hint_member' => 'An application token on this server’s Gotify. The server’s token is for admins only.',
             'digest' => 'Monthly digest',
-            'digest_hint' => 'At the start of each month, a summary of everything due that month. It is sent only when a channel is set up and something is due.',
+            'digest_hint' => 'At the start of each month, a summary of everything due that month and anything that needs checking. It is sent only when a channel is set up and something is due or needs attention.',
             'when_sent' => 'The server checks every 15 minutes. Each reminder is sent once when it comes due and once more if it becomes overdue.',
             'save' => 'Save settings',
             'saved' => 'Your reminder settings were saved.',
@@ -1914,6 +1914,68 @@ return [
         'no_records' => 'Nothing recorded yet',
         'chart_date' => 'Date',
     ],
+    // Needs attention (Phase 24, spec.md §7.24): what is wrong now. Never a score.
+    'attention' => [
+        'title' => 'Needs attention',
+        'severity' => [
+            'now' => 'Now',
+            'check' => 'Check',
+        ],
+        'overdue' => [
+            'at' => 'Overdue at {odometer}',
+        ],
+        'reading' => [
+            'backwards' => 'Reading on {date} ({odometer}) is lower than the one before',
+            'jump' => 'Reading on {date} ({odometer}) is {distance} more than the one before',
+            'detail' => [
+                'backwards' => 'The reading before it was {previous} on {date}.',
+                'jump' => 'The reading before it was {previous} on {date}. Is a digit off?',
+            ],
+        ],
+        'economy' => [
+            'title' => '{count, plural, one {# fill-up looks unusual} other {# fill-ups look unusual}}',
+            'detail' => 'A missed fill-up or a typo throws the economy figures out.',
+        ],
+        'mileage' => [
+            'title' => 'No mileage logged since {date}',
+            'none' => 'No mileage logged yet',
+            'detail' => 'Distance-based services and tyre wear can’t be projected.',
+        ],
+        'trips' => [
+            'title' => 'Business trips add up to more than the mileage log',
+            'detail' => 'Add an odometer reading, or correct a trip, for this tax year.',
+        ],
+        'valuation' => [
+            'title' => 'Valued {months, plural, one {# month} other {# months}} ago',
+            'detail' => 'Last valued on {date}. Add a new valuation for an up-to-date figure.',
+        ],
+        'line' => '{vehicle}: {title}',
+        'action' => [
+            'log_it' => 'Log it',
+            'fix' => 'Fix',
+            'review' => 'Review',
+            'add_reading' => 'Add reading',
+            'mileage' => 'Open Mileage',
+            'add_valuation' => 'Add valuation',
+            'hide' => 'Hide',
+        ],
+        'show_all' => 'Show all ({count})',
+        'marker' => 'Needs attention',
+        'marker_label' => '{count, plural, one {Needs attention: # item} other {Needs attention: # items}}',
+        'nothing' => 'Nothing needs attention',
+        'more' => '{count, plural, one {# more on the vehicle overviews.} other {# more on the vehicle overviews.}}',
+        'hidden' => 'Hidden. It comes back if that data changes.',
+        'changed' => 'That has changed since the page loaded, so nothing was hidden. Have another look.',
+        'settings' => [
+            'heading' => 'Needs attention',
+            'intro' => 'When the overview and the dashboard flag the mileage or a valuation as out of date. A shared vehicle uses its owner’s settings.',
+            'mileage_days' => 'Mileage not updated after',
+            'mileage_days_hint' => 'Only for vehicles with a distance-based service or a tyre wear estimate. 7–365 days.',
+            'valuation_months' => 'Valuation is stale after',
+            'valuation_months_hint' => 'Also the hint on the Ownership card. 1–60 months.',
+            'months_suffix' => 'months',
+        ],
+    ],
     'coming_up' => [
         'title' => 'Coming up',
         'period' => '{from} – {to}',
@@ -2228,6 +2290,7 @@ return [
             'mileage' => 'Mileage',
             'recent_activity' => 'Recent activity',
             'business_mileage' => 'Business mileage',
+            'needs_attention' => 'Needs attention',
         ],
         'link' => [
             'garage' => 'Garage',
@@ -2299,6 +2362,7 @@ return [
         ],
         'item_title' => '{name} — {vehicle}',
         'item_line' => '• {title}: {detail}',
+        'attention_line' => '• {line}',
         'reminders' => [
             'title_one' => '{item}: {when}',
             'title_many' => '{count} reminders need attention',
@@ -2307,6 +2371,9 @@ return [
         'digest' => [
             'title' => 'Due in {month}',
             'intro' => '{count, plural, one {One thing is due by the end of {month}:} other {# things are due by the end of {month}:}}',
+            'title_checks' => '{month}: {count, plural, one {one thing needs attention} other {# things need attention}}',
+            'nothing_due' => 'Nothing is due in {month}.',
+            'attention' => '{count, plural, one {One thing needs attention:} other {# things need attention:}}',
         ],
         'test' => [
             'title' => 'Logbook test notification',

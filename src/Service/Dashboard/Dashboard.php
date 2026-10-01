@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Dashboard;
 
 use Logbook\Service\Trip\ClaimReport;
+use Logbook\Service\Attention\AttentionReport;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\History\ActivityItem;
@@ -47,6 +48,8 @@ final readonly class Dashboard
         public ?Forecast $comingUp = null,
         /** The signed-in user's claim for this tax year (Phase 22). */
         public ?ClaimReport $businessMileage = null,
+        /** Needs attention across the filter (Phase 24); null while the widget is hidden. */
+        public ?AttentionReport $attention = null,
     ) {
     }
 

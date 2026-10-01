@@ -88,7 +88,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 23.1 identities, the Phase 22 trip tables,
+        // Newest first: the Phase 24 hidden checks, the Phase 23.1 identities, the Phase 22 trip tables,
         // the Phase 21.2 first MOT date, the Phase 19 users and sharing, the Phase 18.2 API
         // keys, the Phase 14.1 valuations table, the Phase 13 economy confirmation, the Phase 12
         // purchase and sale paperwork (no schema change), the Phase 11.2
@@ -98,6 +98,10 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($schema->tablesExist(['attention_hidden']));
+        Migrator::run('rollback');
+        self::assertFalse($schema->tablesExist(['attention_hidden']), 'rollback must drop the hidden checks');
+
         self::assertTrue($schema->tablesExist(['user_identities']));
         Migrator::run('rollback');
         self::assertFalse($schema->tablesExist(['user_identities']), 'rollback must drop the identities');

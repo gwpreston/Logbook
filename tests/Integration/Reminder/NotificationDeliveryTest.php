@@ -93,6 +93,7 @@ final class NotificationDeliveryTest extends ReminderTestCase
                 'status' => 'due',
                 'due_on' => '2026-10-09',
             ]],
+            'attention' => [],
             'user' => ['id' => $this->owner($app)->id, 'username' => 'owner', 'display_name' => 'Pat Owner'],
         ], $hook[0]['json']);
 

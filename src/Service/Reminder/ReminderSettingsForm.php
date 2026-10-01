@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Reminder;
 
+use Logbook\Service\Attention\AttentionThresholds;
 use Logbook\Service\Notification\Channel\NtfyChannel;
 use Logbook\Service\Notification\NotificationPreferences;
 use Logbook\Support\Display\DisplayPreferences;
@@ -14,7 +15,8 @@ use Logbook\Support\Validation\Validator;
 /**
  * Settings → Reminders form: lead times (the distance in the owner's unit),
  * which channels to use, their email address, personal ntfy topic URL and
- * Gotify token (Phase 19), and the digest.
+ * Gotify token (Phase 19), the digest, and the *Needs attention*
+ * thresholds (Phase 24; left blank, the defaults).
  */
 final class ReminderSettingsForm
 {
@@ -30,6 +32,7 @@ final class ReminderSettingsForm
         ReminderPreferences $reminders,
         NotificationPreferences $notifications,
         DisplayPreferences $display,
+        AttentionThresholds $attention = new AttentionThresholds(),
     ): array {
         return [
             'schedule_days' => (string) $reminders->scheduleDays,
@@ -40,13 +43,15 @@ final class ReminderSettingsForm
             'email' => $notifications->email ?? '',
             'ntfy_url' => $notifications->ntfyUrl ?? '',
             'gotify_token' => $notifications->gotifyToken ?? '',
+            'mileage_days' => (string) $attention->mileageDays,
+            'valuation_months' => (string) $attention->valuationMonths,
         ];
     }
 
     /**
      * @param array<array-key, mixed> $input
      * @param list<string> $channelKeys the channels that can be chosen
-     * @return array{0: ReminderPreferences, 1: NotificationPreferences}|ValidationErrors
+     * @return array{0: ReminderPreferences, 1: NotificationPreferences, 2: AttentionThresholds}|ValidationErrors
      */
     public static function parse(array $input, DisplayPreferences $display, array $channelKeys): array|ValidationErrors
     {
@@ -67,6 +72,18 @@ final class ReminderSettingsForm
             $validator->addError('ntfy_url', 'reminders.settings.ntfy_url_invalid');
         }
         $gotifyToken = $validator->string('gotify_token', false, self::TOKEN_MAX);
+        $mileageDays = $validator->integer(
+            'mileage_days',
+            false,
+            AttentionThresholds::MIN_MILEAGE_DAYS,
+            AttentionThresholds::MAX_MILEAGE_DAYS,
+        );
+        $valuationMonths = $validator->integer(
+            'valuation_months',
+            false,
+            AttentionThresholds::MIN_VALUATION_MONTHS,
+            AttentionThresholds::MAX_VALUATION_MONTHS,
+        );
 
         $submitted = $input['channels'] ?? [];
         $channels = is_array($submitted)
@@ -94,6 +111,10 @@ final class ReminderSettingsForm
                 $manualDays,
             ),
             new NotificationPreferences($channels, $email, $validator->checkbox('digest'), $ntfyUrl, $gotifyToken),
+            new AttentionThresholds(
+                $mileageDays ?? AttentionThresholds::DEFAULT_MILEAGE_DAYS,
+                $valuationMonths ?? AttentionThresholds::DEFAULT_VALUATION_MONTHS,
+            ),
         ];
     }
 }

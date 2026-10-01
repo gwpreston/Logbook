@@ -57,6 +57,8 @@ final readonly class BackupRepository
         'trips',
         'saved_journeys',
         'mileage_rate_sets',
+        // Phase 24: the data checks each user has hidden (Needs attention).
+        'attention_hidden',
     ];
 
     /**

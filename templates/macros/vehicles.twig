@@ -2,20 +2,25 @@
  # Vehicle fragments. Import with: {% import 'macros/vehicles.twig' as vehicles %}
  #}
 
-{# Garage card (spec.md §7.1): photo with the due badge, plate, fuel type,
+{# Garage card (spec.md §7.1): photo with the due badge and the Needs
+   attention marker (§7.24), plate, fuel type,
    name, and a footer with the odometer and average economy. The whole card
    is one link. `snapshot` is a Service\Vehicle\VehicleSnapshot; `shared`
    ({owner, level}) names the owner of a vehicle shared with the viewer. #}
 {% macro card(snapshot, shared = null) -%}
     {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attention.twig' as attention_ui %}
     {% set vehicle = snapshot.vehicle %}
     <a class="vehicle-card{{ vehicle.isArchived() ? ' vehicle-card--archived' : '' }}" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
         <div class="vehicle-card__media">
             {{ ui.vehicle_photo(vehicle) }}
             {% if vehicle.isArchived() %}
                 <span class="vehicle-card__badge pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.status.archived'|trans }}</span>
-            {% else %}
-                {{ ui.due_badge(snapshot.due, 'vehicle-card__due') }}
+            {% elseif snapshot.due.total() > 0 or snapshot.attention > 0 %}
+                <span class="vehicle-card__flags">
+                    {{ ui.due_badge(snapshot.due) }}
+                    {{ attention_ui.marker(snapshot.attention) }}
+                </span>
             {% endif %}
         </div>
         <div class="vehicle-card__body">
@@ -47,9 +52,11 @@
 {%- endmacro %}
 
 {# Dashboard "Your vehicles" tile (spec.md §7.8): photo with the plate over
-   its lower-left corner, name, descriptive line, odometer and "N due". #}
+   its lower-left corner, name, descriptive line, odometer, "N due" and
+   the Needs attention marker. #}
 {% macro tile(snapshot) -%}
     {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attention.twig' as attention_ui %}
     {% set vehicle = snapshot.vehicle %}
     <a class="vehicle-tile" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
         <span class="vehicle-tile__media">
@@ -62,6 +69,7 @@
             <span class="vehicle-tile__meta">
                 <span class="tabular">{{ snapshot.latest ? snapshot.latest.readingKm|distance : 'dashboard.fleet.no_odometer'|trans }}</span>
                 {{ ui.due_badge(snapshot.due, 'due-badge--text') }}
+                {{ attention_ui.marker(snapshot.attention, 'attention-marker--text') }}
             </span>
         </span>
     </a>

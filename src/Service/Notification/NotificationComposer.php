@@ -8,6 +8,8 @@ use DateTimeImmutable;
 use IntlDateFormatter;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
+use Logbook\Service\Attention\AttentionItem;
+use Logbook\Service\Attention\AttentionWording;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderWording;
 use Logbook\Support\Display\UserDisplayScope;
@@ -26,6 +28,7 @@ final readonly class NotificationComposer
         private UserDisplayScope $scope,
         private ReminderWording $wording,
         private AbsoluteUrl $urls,
+        private AttentionWording $attention,
     ) {
     }
 
@@ -59,14 +62,16 @@ final readonly class NotificationComposer
 
     /**
      * "What's due this month": open reminders due by the end of the month,
-     * overdue ones included.
+     * overdue ones included, then (Phase 24) the *Needs attention* checks
+     * on the same vehicles. Either list may be empty, not both.
      *
-     * @param non-empty-list<ReminderEntry> $entries
+     * @param list<ReminderEntry> $entries
+     * @param list<AttentionItem> $checks
      * @param DateTimeImmutable $today the owner's calendar date
      */
-    public function digest(User $user, array $entries, DateTimeImmutable $today): Notification
+    public function digest(User $user, array $entries, DateTimeImmutable $today, array $checks = []): Notification
     {
-        return $this->scope->run($user, function () use ($entries, $today): Notification {
+        return $this->scope->run($user, function () use ($entries, $today, $checks): Notification {
             // Stand-alone month name ("October 2026"); the date is a calendar date, so UTC.
             $formatter = new IntlDateFormatter(
                 $this->translator->getLocale(),
@@ -78,14 +83,37 @@ final readonly class NotificationComposer
             );
             $month = (string) $formatter->format($today);
             $items = $this->items($entries, $today);
+            $message = $items === []
+                ? $this->translator->trans('notifications.digest.nothing_due', ['month' => $month])
+                : $this->lines($items, 'notifications.digest.intro', ['count' => count($items), 'month' => $month]);
+            if ($checks !== []) {
+                $lines = ['', $this->translator->trans('notifications.digest.attention', ['count' => count($checks)]), ''];
+                foreach ($checks as $check) {
+                    $lines[] = $this->translator->trans('notifications.attention_line', [
+                        'line' => $this->attention->line($check),
+                    ]);
+                }
+                $message .= "\n" . implode("\n", $lines);
+            }
 
             return new Notification(
                 kind: NotificationKind::Digest,
-                title: $this->translator->trans('notifications.digest.title', ['month' => $month]),
-                message: $this->lines($items, 'notifications.digest.intro', ['count' => count($items), 'month' => $month]),
+                title: $items === []
+                    ? $this->translator->trans('notifications.digest.title_checks', [
+                        'month' => $month,
+                        'count' => count($checks),
+                    ])
+                    : $this->translator->trans('notifications.digest.title', ['month' => $month]),
+                message: $message,
                 url: $this->urls->route('reminders.index'),
                 urgent: false,
                 items: $items,
+                attention: array_map(fn (AttentionItem $c): array => [
+                    'vehicle_id' => $c->vehicle->id,
+                    'vehicle' => $c->vehicle->name(),
+                    'kind' => $c->kind->value,
+                    'title' => $this->attention->title($c),
+                ], $checks),
             );
         });
     }

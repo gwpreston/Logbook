@@ -35,6 +35,16 @@
                 </div>
             </section>
 
+            {# Core: shown with the reminders module off too (spec.md §7.24). #}
+            <section class="card" aria-labelledby="attention-heading">
+                <h2 id="attention-heading" class="card__title">{{ 'attention.settings.heading'|trans }}</h2>
+                <p class="field__hint">{{ 'attention.settings.intro'|trans }}</p>
+                <div class="form-row">
+                    {{ ui.input('mileage_days', 'attention.settings.mileage_days'|trans, values, errors, {type: 'number', step: 1, min: 7, max: 365, inputmode: 'numeric', suffix: days, hint: 'attention.settings.mileage_days_hint'|trans}) }}
+                    {{ ui.input('valuation_months', 'attention.settings.valuation_months'|trans, values, errors, {type: 'number', step: 1, min: 1, max: 60, inputmode: 'numeric', suffix: 'attention.settings.months_suffix'|trans, hint: 'attention.settings.valuation_months_hint'|trans}) }}
+                </div>
+            </section>
+
             {% if feature_enabled('reminders') %}
             <section class="card" aria-labelledby="channels-heading">
                 <h2 id="channels-heading" class="card__title">{{ 'reminders.settings.channels_heading'|trans }}</h2>

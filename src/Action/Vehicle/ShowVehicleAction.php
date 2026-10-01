@@ -9,6 +9,9 @@ use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attention\AttentionList;
+use Logbook\Service\Attention\AttentionSettingsStore;
+use Logbook\Service\Attention\AttentionWording;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Compliance\FirstInspection;
@@ -41,7 +44,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * stands, the tyres fitted, and the vehicle's details and ownership (with
  * paperclips for the purchase and sale paperwork, the latest value, the
  * depreciation and the value over time), its cost of ownership, and what
- * is coming up in the next 12 months. Before the first MOT certificate, the
+ * is coming up in the next 12 months, with what needs attention first. Before the first MOT certificate, the
  * documents card shows the *First MOT due* date, or offers to set one.
  * Each area has its own tab.
  */
@@ -71,6 +74,9 @@ final readonly class ShowVehicleAction
         private ForecastWording $forecastWording,
         private FirstInspection $firstInspection,
         private FirstInspectionPrompt $firstInspectionPrompt,
+        private AttentionList $attention,
+        private AttentionWording $attentionWording,
+        private AttentionSettingsStore $attentionSettings,
     ) {
     }
 
@@ -95,7 +101,18 @@ final readonly class ShowVehicleAction
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $valuations = $this->valuations->forVehicle($vehicle);
         $zone = $user->preferences->timeZone();
-        $depreciation = Depreciation::of($vehicle, $valuations, $odometer->readings, $today, $zone, $currency);
+        // The owner's threshold for the stale-value hint, as Needs attention uses (spec.md §7.24).
+        $depreciation = Depreciation::of(
+            $vehicle,
+            $valuations,
+            $odometer->readings,
+            $today,
+            $zone,
+            $currency,
+            $this->attentionSettings->thresholds($vehicle->userId)->valuationMonths,
+        );
+        // Core too; an archived vehicle raises nothing (spec.md §7.18, §7.24).
+        $comingUp = $vehicle->isArchived() ? null : $this->comingUp->forecast($user, [$vehicle]);
 
         return $this->view->render($request, $response, 'vehicles/show.twig', [
             'vehicle' => $vehicle,
@@ -123,8 +140,9 @@ final readonly class ShowVehicleAction
             'has_valuations' => $valuations !== [],
             // Core, like the Expenses tab: shown whatever modules are on (spec.md §7.1).
             'ownership_cost' => $this->ownership->forVehicle($user, $vehicle, $odometer->readings, $depreciation, $today),
-            // Core too; an archived vehicle raises nothing (spec.md §7.18).
-            'coming_up' => $vehicle->isArchived() ? null : $this->comingUp->forecast($user, [$vehicle]),
+            'coming_up' => $comingUp,
+            'attention' => $comingUp === null ? [] : $this->attention->forVehicles($user, [$vehicle], forecast: $comingUp)->items,
+            'attention_wording' => $this->attentionWording,
             'forecast_wording' => $this->forecastWording,
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).

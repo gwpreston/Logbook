@@ -13,7 +13,8 @@ use Slim\Exception\HttpNotFoundException;
 
 /**
  * POST /reminders/{reminder}/{done|dismiss|reopen} — one-click forms on the
- * reminder list (work without JS).
+ * reminder list (work without JS) and on *Needs attention* (spec.md §7.24),
+ * which sends `return` to come back to the page it was on.
  */
 final readonly class ReminderStatusAction
 {
@@ -43,6 +44,6 @@ final readonly class ReminderStatusAction
         };
         RequestContext::session($request)->flash('success', 'reminders.status_changed.' . $action);
 
-        return $this->redirect->toRoute('reminders.index');
+        return $this->redirect->backOr($request, 'reminders.index');
     }
 }

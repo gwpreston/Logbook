@@ -171,7 +171,10 @@ final class DesignAlignmentTest extends AppTestCase
         self::assertStringContainsString('status-dot--ok" title="All up to date"', $html);
         self::assertStringNotContainsString('Mondeo', $html, 'archived vehicles are not listed');
         // The garage card badge counts the same.
-        self::assertMatchesRegularExpression('~due-badge--overdue vehicle-card__due"[^>]*>2 due<~', $html);
+        self::assertMatchesRegularExpression(
+            '~vehicle-card__flags">\s*<span class="due-badge due-badge--overdue"[^>]*>2 due<~',
+            $html,
+        );
 
         // Reminders switched off: no badge, no dots.
         $this->service($app, FeatureToggles::class)->save([]);

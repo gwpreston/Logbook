@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Service\Attention\AttentionSettingsStore;
 use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Notification\NotificationChannel;
@@ -17,8 +18,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Renders Settings → Reminders: lead times, notification channels, digest
- * and the calendar feed.
+ * Renders Settings → Reminders: lead times, the *Needs attention*
+ * thresholds, notification channels, digest and the calendar feed.
  */
 final readonly class ReminderSettingsPage
 {
@@ -30,6 +31,7 @@ final readonly class ReminderSettingsPage
         private ReminderSettingsStore $settings,
         private ChannelRegistry $channels,
         private CalendarFeed $feed,
+        private AttentionSettingsStore $attention,
     ) {
     }
 
@@ -67,6 +69,7 @@ final readonly class ReminderSettingsPage
                 $this->settings->reminderPreferences($user->id),
                 $notifications,
                 $user->preferences,
+                $this->attention->thresholds($user->id),
             ),
             'digest' => $values === null ? $notifications->digest : ($values['digest'] ?? '') !== '',
             'errors' => $errors?->all() ?? [],

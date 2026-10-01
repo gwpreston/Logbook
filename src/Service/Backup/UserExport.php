@@ -88,6 +88,11 @@ final class UserExport
         // Phase 22: the user's own saved journeys and mileage rates.
         $out['saved_journeys'] = $keep('saved_journeys', static fn (array $row): bool => $row['user_id'] === $user);
         $out['mileage_rate_sets'] = $keep('mileage_rate_sets', static fn (array $row): bool => $row['user_id'] === $user);
+        // Phase 24: the checks they hid on their own vehicles.
+        $out['attention_hidden'] = $keep(
+            'attention_hidden',
+            static fn (array $row): bool => $row['user_id'] === $user && in_array($row['vehicle_id'], $vehicles, true),
+        );
 
         $files = array_values(array_filter([
             ...array_column($out['vehicles'], 'photo_path'),

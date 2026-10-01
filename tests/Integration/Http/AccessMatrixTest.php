@@ -67,6 +67,8 @@ final class AccessMatrixTest extends AppTestCase
         'vehicles.show' => self::VIEW,
         'vehicles.edit' => self::MANAGE,
         'vehicles.first_inspection' => self::MANAGE,
+        // Phase 24: Log may hide a check they could fix; the service judges which.
+        'attention.hide' => self::LOG,
         'vehicles.delete' => self::OWN,
         'vehicles.archive' => self::OWN,
         'vehicles.restore' => self::OWN,

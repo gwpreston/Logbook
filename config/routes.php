@@ -23,6 +23,7 @@ use Logbook\Action\Api\UpcomingAction as ApiUpcomingAction;
 use Logbook\Action\Api\VehicleSummaryAction as ApiSummaryAction;
 use Logbook\Action\Attachment\DeleteAttachmentAction;
 use Logbook\Action\Attachment\ShowAttachmentAction;
+use Logbook\Action\Attention\HideAttentionAction;
 use Logbook\Action\Auth\InviteAction;
 use Logbook\Action\Auth\LoginAction;
 use Logbook\Action\Auth\LoginLinkAction;
@@ -300,6 +301,10 @@ return static function (App $app): void {
         $group->post('/vehicles/{id:[0-9]+}/first-inspection', FirstInspectionPromptAction::class)
             ->setName('vehicles.first_inspection')
             ->setArgument($ability, VehicleAbility::Manage->value);
+        // Needs attention (spec.md §7.24): core; the check is judged again before it is hidden.
+        $group->post('/vehicles/{id:[0-9]+}/attention/hide', HideAttentionAction::class)
+            ->setName('attention.hide')
+            ->setArgument($ability, VehicleAbility::Log->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/delete', DeleteVehicleAction::class)->setName('vehicles.delete')
             ->setArgument($ability, VehicleAbility::Own->value);
         $group->post('/vehicles/{id:[0-9]+}/archive', ArchiveVehicleAction::class)->setName('vehicles.archive')

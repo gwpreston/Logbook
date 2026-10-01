@@ -28,13 +28,14 @@ final readonly class VehicleSnapshots
 
     /**
      * @param list<Vehicle> $vehicles
+     * @param array<int, int> $attention *Needs attention* item counts by vehicle id (AttentionReport::counts())
      * @return list<VehicleSnapshot> in the same order
      */
-    public function of(array $vehicles, DueCounts $counts): array
+    public function of(array $vehicles, DueCounts $counts, array $attention = []): array
     {
         $fuel = $this->features->isEnabled(Feature::Fuel);
 
-        return array_map(function (Vehicle $vehicle) use ($counts, $fuel): VehicleSnapshot {
+        return array_map(function (Vehicle $vehicle) use ($counts, $fuel, $attention): VehicleSnapshot {
             $kind = $vehicle->data->fuelType->isElectric() ? EnergyKind::Electric : EnergyKind::Liquid;
 
             return new VehicleSnapshot(
@@ -42,6 +43,7 @@ final readonly class VehicleSnapshots
                 $this->odometer->history($vehicle)->latest(),
                 $fuel ? $this->fuel->history($vehicle)->summary($kind) : null,
                 $counts->forVehicle($vehicle->id), // archived vehicles are never counted
+                $attention[$vehicle->id] ?? 0,
             );
         }, $vehicles);
     }

@@ -11,7 +11,8 @@ use Logbook\Service\Reminder\VehicleDueCount;
 
 /**
  * A vehicle at a glance (spec.md §7.1, §7.8): current odometer, average
- * economy of its main kind of energy, and what is due. The garage cards and
+ * economy of its main kind of energy, what is due and whether anything
+ * needs attention. The garage cards and
  * the dashboard's vehicle tiles.
  */
 final readonly class VehicleSnapshot
@@ -22,6 +23,8 @@ final readonly class VehicleSnapshot
         /** Null while fuel is switched off or nothing was logged. */
         public ?EconomySummary $economy,
         public VehicleDueCount $due,
+        /** How many *Needs attention* items it has for the viewer (spec.md §7.24). */
+        public int $attention = 0,
     ) {
     }
 
