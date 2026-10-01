@@ -232,7 +232,7 @@ final class GroundingCheck
      */
     private function withoutDates(string $text, string $locale): string
     {
-        $text = (string) preg_replace(
+        $text = preg_replace(
             [
                 '/\b\d{4}-\d{2}-\d{2}\b/u',
                 '/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/u',
@@ -240,20 +240,21 @@ final class GroundingCheck
             ],
             ' ',
             $text,
-        );
+        ) ?? $text;
         $names = implode('|', array_map(static fn (string $m): string => preg_quote($m, '/'), $this->monthNames($locale)));
         if ($names === '') {
             return $text;
         }
 
-        return (string) preg_replace(
-            [
-                '/\b\d{1,2}(?:st|nd|rd|th)?\.?\s+(?:of\s+)?(?=(?:' . $names . ')\b)/iu',
-                '/(?<=\b(?:' . $names . '))\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/iu',
-            ],
+        // No variable-length lookbehind: older PCRE2 builds refuse it. A
+        // regex that fails leaves the text as it was rather than blank.
+        $text = preg_replace(
+            '/\b\d{1,2}(?:st|nd|rd|th)?\.?\s+(?:of\s+)?(?=(?:' . $names . ')\b)/iu',
             ' ',
             $text,
-        );
+        ) ?? $text;
+
+        return preg_replace('/\b(' . $names . ')\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/iu', '$1 ', $text) ?? $text;
     }
 
     /**
