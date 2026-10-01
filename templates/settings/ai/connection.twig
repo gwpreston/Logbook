@@ -1,0 +1,190 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ai.twig' as ai %}
+
+{#
+ # One AI connection (spec.md §7.25): where it runs and the acknowledgement,
+ # its secrets' states (never values), *Test*, and its models with their
+ # capabilities. Only added models are offered to tasks.
+ #}
+{% set active_nav = 'settings' %}
+{% set added = models|filter(m => m.added) %}
+
+{% block title %}{{ connection.name }} · {{ 'ai.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.ai') }}">{{ ui.icon('chevron_left') }}{{ 'ai.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ connection.name }}</h1>
+                <p class="page-header__lead">{{ ai.location(connection.location) }} {{ connection.adapter.labelKey()|trans }} · <span class="tabular">{{ connection.baseUrl }}</span>{% if not connection.enabled %} · {{ 'ai.connection.disabled'|trans }}{% endif %}</p>
+            </div>
+            <div class="btn-row">
+                <a class="btn" href="{{ url_for('settings.ai.connections.edit', {connection: connection.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+            </div>
+        </header>
+
+        {% if needs_acknowledgement %}
+            <form class="form" method="post" action="{{ url_for('settings.ai.connections.acknowledge', {connection: connection.id}) }}">
+                {{ ui.csrf(csrf) }}
+                <section class="card" aria-labelledby="ack-heading" data-ai-acknowledge>
+                    <h2 id="ack-heading" class="card__title">{{ ui.icon('public') }}{{ 'ai.acknowledge.heading'|trans }}</h2>
+                    <p class="muted">{{ 'ai.acknowledge.lead'|trans }}</p>
+                    <label class="toggle">
+                        <input type="checkbox" name="acknowledge" value="1" required>
+                        <span class="toggle__text"><span class="toggle__title">{{ ai.acknowledgement_text(connection.host(), gateway) }}</span></span>
+                    </label>
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary">{{ ui.icon('check_circle') }}{{ 'ai.acknowledge.save'|trans }}</button>
+                    </div>
+                </section>
+            </form>
+        {% elseif connection.location.value == 'internet' %}
+            <p class="muted">{{ 'ai.acknowledge.given'|trans({host: connection.host(), when: connection.acknowledgedAt|local_datetime}) }}</p>
+        {% endif %}
+
+        <section class="card" aria-labelledby="details-heading">
+            <h2 id="details-heading" class="card__title">{{ ui.icon('info') }}{{ 'ai.connection.details'|trans }}</h2>
+            <dl class="details">
+                <div><dt>{{ 'ai.connection.api_key'|trans }}</dt><dd>{{ ai.secret_state(secrets['api_key'] ?? null) }}</dd></div>
+                {% for name in connection.headerNames %}
+                    <div><dt>{{ name }}</dt><dd>{{ ai.secret_state(secrets['header:' ~ name] ?? null) }}</dd></div>
+                {% endfor %}
+                <div><dt>{{ 'ai.connection.timeout'|trans }}</dt><dd>{{ 'ai.connection.seconds'|trans({count: connection.timeoutSeconds}) }}</dd></div>
+                <div><dt>{{ 'ai.connection.max_request'|trans }}</dt><dd>{{ 'units.file.mb'|trans({value: connection.maxRequestMb}) }}</dd></div>
+                <div><dt>{{ 'ai.connection.verify_tls'|trans }}</dt><dd>{{ (connection.verifyTls ? 'ai.connection.tls_on' : 'ai.connection.tls_off')|trans }}</dd></div>
+                <div><dt>{{ 'ai.usage.this_month'|trans }}</dt><dd>
+                    {{- 'ai.usage.line'|trans({calls: usage.calls ?? 0, tokens: usage ? usage.tokens() : 0, failures: usage.failures ?? 0}) -}}
+                    {%- if connection.monthlyTokenCap is not null %} · {{ 'ai.usage.cap'|trans({cap: connection.monthlyTokenCap}) }}{% endif -%}
+                </dd></div>
+            </dl>
+        </section>
+
+        <form class="form" method="post" action="{{ url_for('settings.ai.connections.test', {connection: connection.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card" aria-labelledby="test-heading">
+                <h2 id="test-heading" class="card__title">{{ ui.icon('science') }}{{ 'ai.test.heading'|trans }}</h2>
+                <p class="muted">{{ 'ai.test.lead'|trans }}</p>
+                <div class="field">
+                    <label class="field__label" for="f-test-model">{{ 'ai.test.model'|trans }}</label>
+                    <select class="select" id="f-test-model" name="model">
+                        <option value="">{{ 'ai.test.list_only'|trans }}</option>
+                        {% for model in added %}
+                            <option value="{{ model.id }}"{% if model.id ~ '' == selected_model %} selected{% endif %}>{{ model.displayName() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary">{{ ui.icon('science') }}{{ 'ai.test.run'|trans }}</button>
+                </div>
+            </section>
+        </form>
+
+        <section class="card" aria-labelledby="models-heading">
+            <h2 id="models-heading" class="card__title">{{ ui.icon('smart_toy') }}{{ 'ai.models.heading'|trans({count: model_count}) }}</h2>
+            <p class="muted">{{ 'ai.models.lead'|trans }}</p>
+            <div class="btn-row">
+                <form method="post" action="{{ url_for('settings.ai.connections.models', {connection: connection.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <input type="hidden" name="do" value="refresh">
+                    <button type="submit" class="btn">{{ ui.icon('sync') }}{{ 'ai.models.refresh'|trans }}</button>
+                </form>
+            </div>
+            <form class="form" method="post" action="{{ url_for('settings.ai.connections.models', {connection: connection.id}) }}">
+                {{ ui.csrf(csrf) }}
+                <input type="hidden" name="do" value="add">
+                <div class="field">
+                    <label class="field__label" for="f-model-name">{{ 'ai.models.add_by_name'|trans }}</label>
+                    <div class="input-group">
+                        <input class="input" id="f-model-name" name="name" type="text" maxlength="200" spellcheck="false" autocomplete="off" required aria-describedby="f-model-name-hint">
+                        <button type="submit" class="btn btn--soft">{{ ui.icon('add') }}{{ 'ai.models.add'|trans }}</button>
+                    </div>
+                    <p class="field__hint" id="f-model-name-hint">{{ 'ai.models.add_by_name_hint'|trans }}</p>
+                </div>
+            </form>
+            {% if model_count > 0 %}
+                <form class="form" method="get" action="{{ url_for('settings.ai.connections.show', {connection: connection.id}) }}" role="search">
+                    <div class="field">
+                        <label class="field__label" for="f-q">{{ 'ai.models.search'|trans }}</label>
+                        <div class="input-group">
+                            <input class="input" id="f-q" name="q" type="search" value="{{ search }}" maxlength="100" spellcheck="false">
+                            <button type="submit" class="btn btn--soft">{{ 'ai.models.search_go'|trans }}</button>
+                        </div>
+                    </div>
+                </form>
+            {% endif %}
+
+            {% if models is empty %}
+                <p class="muted">{{ (search ? 'ai.models.no_match' : 'ai.models.none')|trans }}</p>
+            {% else %}
+                <ul class="list" data-ai-models>
+                    {% for model in models %}
+                        <li data-ai-model="{{ model.name }}">
+                            <div class="list__item">
+                                <span class="list__icon">{{ ui.icon(model.added ? 'check_circle' : 'smart_toy') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ model.displayName() }}{% if model.label %} <span class="muted">({{ model.name }})</span>{% endif %}</span>
+                                    <span class="list__meta">
+                                        {{- (model.added ? 'ai.models.state_added' : 'ai.models.state_listed')|trans -}}
+                                        {%- if model.added and not model.listed %} · {{ 'ai.models.state_typed'|trans }}{% endif -%}
+                                        {%- if model.jsonMode %} · {{ 'ai.models.json_mode'|trans({mode: model.jsonMode.value}) }}{% endif -%}
+                                    </span>
+                                    {% if model.testedAt %}
+                                        <span class="list__meta">{{ 'ai.test.tested'|trans({when: model.testedAt|local_datetime}) }}</span>
+                                        <ul class="ai-test-results">
+                                            {% for result in model.testResults %}
+                                                <li>
+                                                    {{ ui.icon(result.ok ? 'check_circle' : 'error') }}
+                                                    <span>{{ ('ai.test.step.' ~ result.step)|trans }}: {{ (result.ok ? 'ai.test.ok' : 'ai.test.failed_short')|trans }} · {{ 'ai.test.ms'|trans({ms: result.ms}) }}</span>
+                                                    {% if result.error %}<span class="muted">{{ result.error }}</span>{% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </span>
+                                <span class="list__end">
+                                    <form method="post" action="{{ url_for('settings.ai.connections.models', {connection: connection.id}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <input type="hidden" name="q" value="{{ search }}">
+                                        {% if model.added %}
+                                            <input type="hidden" name="do" value="remove">
+                                            <input type="hidden" name="model" value="{{ model.id }}">
+                                            <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('close') }}{{ 'ai.models.remove'|trans }}<span class="visually-hidden">: {{ model.name }}</span></button>
+                                        {% else %}
+                                            <input type="hidden" name="do" value="add">
+                                            <input type="hidden" name="name" value="{{ model.name }}">
+                                            <button type="submit" class="btn btn--soft btn--sm">{{ ui.icon('add') }}{{ 'ai.models.add'|trans }}<span class="visually-hidden">: {{ model.name }}</span></button>
+                                        {% endif %}
+                                    </form>
+                                </span>
+                            </div>
+                            {% if model.added %}
+                                <form class="form ai-capabilities" method="post" action="{{ url_for('settings.ai.connections.models', {connection: connection.id}) }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <input type="hidden" name="do" value="capabilities">
+                                    <input type="hidden" name="model" value="{{ model.id }}">
+                                    <input type="hidden" name="q" value="{{ search }}">
+                                    <fieldset class="fieldset">
+                                        <legend class="field__label">{{ 'ai.capability.legend'|trans({name: model.name}) }}</legend>
+                                        <div class="btn-row">
+                                            {% for capability in ['tools', 'images', 'json'] %}
+                                                <label class="toggle">
+                                                    <input type="checkbox" name="capabilities[]" value="{{ capability }}"{% if attribute(model, capability) %} checked{% endif %}>
+                                                    <span class="toggle__text"><span class="toggle__title">{{ ('ai.capability.' ~ capability)|trans }}</span></span>
+                                                </label>
+                                            {% endfor %}
+                                            <button type="submit" class="btn btn--sm">{{ ui.icon('save') }}{{ 'form.save'|trans }}<span class="visually-hidden">: {{ model.name }}</span></button>
+                                        </div>
+                                    </fieldset>
+                                </form>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if more_models %}<p class="muted">{{ 'ai.models.more'|trans({count: 200}) }}</p>{% endif %}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

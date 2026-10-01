@@ -93,6 +93,16 @@ use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\SalePack\DownloadPaperworkAction;
 use Logbook\Action\SalePack\ShowSalePackAction;
 use Logbook\Action\Settings\AdminTransferAction;
+use Logbook\Action\Settings\Ai\AiAcknowledgeAction;
+use Logbook\Action\Settings\Ai\AiConnectionAction;
+use Logbook\Action\Settings\Ai\AiConnectionDeleteAction;
+use Logbook\Action\Settings\Ai\AiConnectionFormAction;
+use Logbook\Action\Settings\Ai\AiModelsAction;
+use Logbook\Action\Settings\Ai\AiSettingsAction;
+use Logbook\Action\Settings\Ai\AiTasksAction;
+use Logbook\Action\Settings\Ai\AiTestAction;
+use Logbook\Action\Settings\Ai\AiThisHostAction;
+use Logbook\Action\Settings\AiUseAction;
 use Logbook\Action\Settings\ApiKeysAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
@@ -277,7 +287,7 @@ return static function (App $app): void {
         ->add(ProxyAuthMiddleware::class);
 
     // Signed-in pages.
-    $app->group('', function (Group $group) use ($module, $ability, $instance): void {
+    $app->group('', function (Group $group) use ($module, $ability, $instance, $settings): void {
         $group->get('/', HomeAction::class)->setName('home');
         $group->post('/logout', LogoutAction::class)->setName('logout');
         // Once, after an account is created on first single sign-on (spec.md §7.9).
@@ -588,6 +598,41 @@ return static function (App $app): void {
         $group->post('/settings/sso/link', OidcLinkAction::class)->setName('settings.sso.link');
         $group->post('/settings/sso/{identity:[0-9]+}/unlink', OidcUnlinkAction::class)->setName('settings.sso.unlink');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');
+
+        // AI (spec.md §7.25, Phase 26.1): not routed at all with AI_ENABLED=false.
+        if ($settings->ai->enabled) {
+            // One's own *Use AI features* switch; 404 until AI is set up.
+            $group->post('/settings/ai-use', AiUseAction::class)->setName('settings.ai_use');
+            // Settings → AI: admins only, and 404 (not 403) to anyone else.
+            $group->group('/settings/ai', function (Group $ai) use ($instance): void {
+                $manage = InstanceAbility::ManageAi->value;
+                $ai->get('', AiSettingsAction::class)->setName('settings.ai')->setArgument($instance, $manage);
+                $ai->post('/tasks', AiTasksAction::class)->setName('settings.ai.tasks')->setArgument($instance, $manage);
+                $ai->post('/this-host', AiThisHostAction::class)->setName('settings.ai.this_host')
+                    ->setArgument($instance, $manage);
+                $ai->map(['GET', 'POST'], '/connections/new', AiConnectionFormAction::class)
+                    ->setName('settings.ai.connections.create')
+                    ->setArgument($instance, $manage);
+                $ai->get('/connections/{connection:[0-9]+}', AiConnectionAction::class)
+                    ->setName('settings.ai.connections.show')
+                    ->setArgument($instance, $manage);
+                $ai->map(['GET', 'POST'], '/connections/{connection:[0-9]+}/edit', AiConnectionFormAction::class)
+                    ->setName('settings.ai.connections.edit')
+                    ->setArgument($instance, $manage);
+                $ai->map(['GET', 'POST'], '/connections/{connection:[0-9]+}/delete', AiConnectionDeleteAction::class)
+                    ->setName('settings.ai.connections.delete')
+                    ->setArgument($instance, $manage);
+                $ai->post('/connections/{connection:[0-9]+}/acknowledge', AiAcknowledgeAction::class)
+                    ->setName('settings.ai.connections.acknowledge')
+                    ->setArgument($instance, $manage);
+                $ai->post('/connections/{connection:[0-9]+}/models', AiModelsAction::class)
+                    ->setName('settings.ai.connections.models')
+                    ->setArgument($instance, $manage);
+                $ai->post('/connections/{connection:[0-9]+}/test', AiTestAction::class)
+                    ->setName('settings.ai.connections.test')
+                    ->setArgument($instance, $manage);
+            });
+        }
     })->add(InstanceAccessMiddleware::class)
         ->add(VehicleAccessMiddleware::class)
         ->add(CsrfMiddleware::class)

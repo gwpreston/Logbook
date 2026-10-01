@@ -35,6 +35,11 @@ final class FeatureToggleTest extends ReminderTestCase
 
         $html = self::body($browser->get('/settings/modules'));
         foreach (Feature::cases() as $feature) {
+            if ($feature->isAi()) {
+                // Not listed until AI is set up (Phase 26.1).
+                self::assertStringNotContainsString('name="' . $feature->value . '"', $html);
+                continue;
+            }
             if ($feature === Feature::Trips) {
                 // Off until switched on (Phase 22).
                 self::assertStringNotContainsString('name="trips" value="1" checked', $html);
@@ -55,6 +60,10 @@ final class FeatureToggleTest extends ReminderTestCase
                 'reports' => false,
                 'tyres' => false,
                 'trips' => false,
+                // Not on the page, so kept as they were.
+                'ai_ask' => true,
+                'ai_actions' => true,
+                'ai_scan' => true,
             ],
             $this->service($app, FeatureToggles::class)->all(),
         );

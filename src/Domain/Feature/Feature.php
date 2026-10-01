@@ -17,6 +17,11 @@ enum Feature: string
     case Reports = 'reports';
     case Tyres = 'tyres';
     case Trips = 'trips';
+    // AI features (Phase 26.1, spec.md §7.25): on by default but inert, and
+    // not listed, until a task is assigned.
+    case AiAsk = 'ai_ask';
+    case AiActions = 'ai_actions';
+    case AiScan = 'ai_scan';
 
     /**
      * The environment variable holding the default, e.g. FEATURES_FUEL.
@@ -45,6 +50,18 @@ enum Feature: string
             self::Reports => 'bar_chart',
             self::Tyres => 'tire_repair',
             self::Trips => 'route',
+            self::AiAsk => 'forum',
+            self::AiActions => 'smart_toy',
+            self::AiScan => 'document_scanner',
         };
+    }
+
+    /**
+     * An AI feature's module: listed on Settings → Modules only while AI
+     * is set up (spec.md §7.10, §7.25).
+     */
+    public function isAi(): bool
+    {
+        return in_array($this, [self::AiAsk, self::AiActions, self::AiScan], true);
     }
 }

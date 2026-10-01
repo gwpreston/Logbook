@@ -1,0 +1,159 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ai.twig' as ai %}
+
+{#
+ # Settings → AI (spec.md §7.25; admins only): connections with where they
+ # run, the task routing, this month's use and this server's addresses.
+ # Nothing here shows a secret.
+ #}
+{% set active_nav = 'settings' %}
+{% set task_errors = task_errors ?? {} %}
+{% set task_values = task_values ?? task_form %}
+{% set this_host_errors = this_host_errors ?? {} %}
+
+{% block title %}{{ 'ai.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'ai.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'ai.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if log_content %}
+            <div class="alert alert--warning" role="alert" data-ai-log-content>{{ ui.icon('warning') }}<span>{{ 'ai.log_content_warning'|trans }}</span></div>
+        {% endif %}
+        {% if not set_up %}
+            <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ 'ai.off_until_set_up'|trans }}</span></div>
+        {% endif %}
+
+        <section class="card" aria-labelledby="ai-connections-heading">
+            <h2 id="ai-connections-heading" class="card__title">{{ ui.icon('smart_toy') }}{{ 'ai.connections.heading'|trans }}</h2>
+            {% if rows is empty %}
+                <p class="muted">{{ 'ai.connections.none'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for row in rows %}
+                        {% set connection = row.connection %}
+                        <li>
+                            <a class="list__item" href="{{ url_for('settings.ai.connections.show', {connection: connection.id}) }}">
+                                <span class="list__icon">{{ ui.icon(connection.location.icon()) }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ connection.name }}{% if not connection.enabled %} <span class="muted">· {{ 'ai.connection.disabled'|trans }}</span>{% endif %}</span>
+                                    <span class="list__meta">{{ connection.adapter.labelKey()|trans }} · {{ connection.host() }}</span>
+                                    <span class="list__meta">
+                                        {{- 'ai.usage.line'|trans({calls: row.usage.calls ?? 0, tokens: row.usage ? row.usage.tokens() : 0, failures: row.usage.failures ?? 0}) -}}
+                                        {%- if connection.monthlyTokenCap is not null %} · {{ 'ai.usage.cap'|trans({cap: connection.monthlyTokenCap}) }}{% endif -%}
+                                    </span>
+                                    {% if row.needs_acknowledgement %}<span class="list__meta"><strong>{{ 'ai.acknowledge.needed'|trans }}</strong></span>{% endif %}
+                                    {% if row.paused %}<span class="list__meta"><strong>{{ 'ai.usage.paused'|trans }}</strong></span>{% endif %}
+                                    {% for slot, state in row.secrets %}
+                                        {% if state.state in ['unreadable', 'unset'] %}<span class="list__meta">{{ ai.secret_state(state) }}</span>{% endif %}
+                                    {% endfor %}
+                                </span>
+                                <span class="list__end">{{ ai.location(connection.location) }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="btn-row">
+                <a class="btn btn--primary" href="{{ url_for('settings.ai.connections.create') }}">{{ ui.icon('add') }}{{ 'ai.connections.add'|trans }}</a>
+            </div>
+        </section>
+
+        <form class="form" method="post" action="{{ url_for('settings.ai.tasks') }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card" aria-labelledby="ai-tasks-heading">
+                <h2 id="ai-tasks-heading" class="card__title">{{ ui.icon('tune') }}{{ 'ai.task.heading'|trans }}</h2>
+                <p class="muted">{{ 'ai.task.lead'|trans }}</p>
+                {% if task_errors is not empty %}
+                    <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                {% endif %}
+                {% for row in tasks %}
+                    {% set task = row.task %}
+                    {% set field = 'model_' ~ task.value %}
+                    {% set current = task_values[field] ?? '' %}
+                    <fieldset class="fieldset" data-ai-task="{{ task.value }}">
+                        <legend class="field__label">{{ task.labelKey()|trans }}</legend>
+                        <p class="field__hint" id="f-{{ field }}-hint">
+                            {{ ('ai.task.hint.' ~ task.value)|trans }}
+                            {% if row.active and row.connection %} {{ 'ai.task.runs_on'|trans({connection: row.connection.name}) }} {{ ai.location(row.connection.location) }}{% endif %}
+                            {% if not row.own and row.model and row.active %} {{ 'ai.task.uses_ask'|trans }}{% endif %}
+                            {% if not row.active %} <strong>{{ 'ai.task.off'|trans }}</strong>{% endif %}
+                        </p>
+                        <div class="field">
+                            <label class="field__label visually-hidden" for="f-{{ field }}">{{ 'ai.task.model'|trans }}</label>
+                            <select class="select" id="f-{{ field }}" name="{{ field }}" aria-describedby="f-{{ field }}-hint{% if task_errors[field] ?? null %} f-{{ field }}-error{% endif %}">
+                                <option value="">{{ (task.value == 'read_text' ? 'ai.task.none_read_text' : 'ai.task.none')|trans }}</option>
+                                {% for choice in row.choices %}
+                                    <option value="{{ choice.model.id }}"{% if choice.model.id ~ '' == current ~ '' %} selected{% endif %}{% if not choice.fits %} disabled{% endif %}>
+                                        {{- choice.model.displayName() }} · {{ choice.connection.name ?? '' }}{% if not choice.fits %} ({{ 'ai.task.lacks'|trans({needs: task.needs()|map(c => c.labelKey()|trans)|join(', ')}) }}){% endif -%}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {{ ui.field_error(task_errors, field) }}
+                        </div>
+                        <div class="form-row">
+                            {{ ui.input('temperature_' ~ task.value, 'ai.task.temperature'|trans, task_values, task_errors, {type: 'number', step: '0.01', min: 0, max: 2, inputmode: 'decimal', optional: true}) }}
+                            {{ ui.input('max_tokens_' ~ task.value, 'ai.task.max_tokens'|trans, task_values, task_errors, {type: 'number', step: 1, min: 1, max: 32768, inputmode: 'numeric', optional: true}) }}
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary">{{ ui.icon('check_circle') }}{{ 'ai.task.save'|trans }}</button>
+                </div>
+            </section>
+        </form>
+
+        <section class="card" aria-labelledby="ai-usage-heading">
+            <h2 id="ai-usage-heading" class="card__title">{{ ui.icon('bar_chart') }}{{ 'ai.usage.heading'|trans }}</h2>
+            <p class="muted">{{ 'ai.usage.since'|trans({date: month_start|local_date}) }} {{ 'ai.usage.no_content'|trans }}</p>
+            {% if task_usage is empty %}
+                <p class="muted">{{ 'ai.usage.none'|trans }}</p>
+            {% else %}
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr>
+                            <th scope="col">{{ 'ai.usage.task'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'ai.usage.calls'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'ai.usage.tokens'|trans }}</th>
+                            <th scope="col" class="table__num">{{ 'ai.usage.failures'|trans }}</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for line in task_usage %}
+                                <tr>
+                                    <th scope="row">{{ ('ai.task.' ~ line.key)|trans }}</th>
+                                    <td class="table__num tabular">{{ line.calls|number }}</td>
+                                    <td class="table__num tabular">{{ line.tokens()|number }}</td>
+                                    <td class="table__num tabular">{{ line.failures|number }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+
+        <form class="form" method="post" action="{{ url_for('settings.ai.this_host') }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card" aria-labelledby="ai-host-heading">
+                <h2 id="ai-host-heading" class="card__title">{{ ui.icon('dns') }}{{ 'ai.this_host.heading'|trans }}</h2>
+                <div class="field">
+                    <label class="field__label" for="f-this_host">{{ 'ai.this_host.label'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-this_host" name="this_host" rows="3" spellcheck="false"{{ ui.described_by('this_host', this_host_errors, true) }}>{{ this_host_value ?? this_host }}</textarea>
+                    <p class="field__hint" id="f-this_host-hint">{{ 'ai.this_host.hint'|trans }}</p>
+                    {{ ui.field_error(this_host_errors, 'this_host') }}
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                </div>
+            </section>
+        </form>
+    </div>
+{% endblock %}

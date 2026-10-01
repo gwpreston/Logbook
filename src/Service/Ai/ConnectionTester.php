@@ -55,6 +55,7 @@ final readonly class ConnectionTester
 
     public function __construct(
         private AiGateway $gateway,
+        private AiModelsRefresh $refresh,
         private AiModelRepository $models,
         private ClockInterface $clock,
     ) {
@@ -71,9 +72,7 @@ final readonly class ConnectionTester
         $stopped = false;
 
         $this->step($results, TestStep::List, function () use ($connection, &$listed): void {
-            $models = $this->gateway->listModels($connection);
-            $listed = count($models);
-            $this->models->syncListed($connection->id, $models, $this->clock->now());
+            $listed = $this->refresh->refresh($connection);
         }, $stopped);
 
         if ($model === null || $stopped) {

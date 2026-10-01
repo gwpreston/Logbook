@@ -1,0 +1,27 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{# Confirm deleting an AI connection (spec.md §7.25). #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'ai.connection.delete_title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.ai.connections.show', {connection: connection.id}) }}">{{ ui.icon('chevron_left') }}{{ connection.name }}</a>
+        <header class="page-header">
+            <div><h1 class="page-header__title">{{ 'ai.connection.delete_title'|trans }}</h1></div>
+        </header>
+        <form class="form" method="post" action="{{ url_for('settings.ai.connections.delete', {connection: connection.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card">
+                <p>{{ 'ai.connection.delete_confirm'|trans({name: connection.name}) }}</p>
+                <p class="muted">{{ 'ai.connection.delete_effects'|trans }}</p>
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--danger btn--lg">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</button>
+                <a class="btn btn--lg" href="{{ url_for('settings.ai.connections.show', {connection: connection.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

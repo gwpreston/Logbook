@@ -21,6 +21,20 @@ final readonly class TestReport
     ) {
     }
 
+    /**
+     * @return array{step: string, ok: bool, ms: int, error: ?string}|null
+     */
+    public function firstFailure(): ?array
+    {
+        foreach ($this->results as $result) {
+            if (!$result['ok']) {
+                return $result;
+            }
+        }
+
+        return null;
+    }
+
     public function passed(): bool
     {
         foreach ($this->results as $result) {

@@ -189,6 +189,27 @@
             </section>
         {% endif %}
 
+        {# *Use AI features* (spec.md §7.25 *Users*): only once AI is set up. #}
+        {% if ai.set_up %}
+            <form class="form" method="post" action="{{ url_for('settings.ai_use') }}" id="ai">
+                {{ ui.csrf(csrf) }}
+                <section class="card" aria-labelledby="ai-use-heading" data-ai-use>
+                    <h2 id="ai-use-heading" class="card__title">{{ ui.icon('smart_toy') }}{{ 'ai.use.heading'|trans }}</h2>
+                    <input type="hidden" name="use_ai" value="0">
+                    <label class="toggle">
+                        <input type="checkbox" name="use_ai" value="1"{% if ai.on %} checked{% endif %} aria-describedby="f-use-ai-hint">
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'ai.use.label'|trans }}</span>
+                            <span class="toggle__hint" id="f-use-ai-hint">{{ 'ai.use.hint'|trans }}</span>
+                        </span>
+                    </label>
+                    <div class="btn-row">
+                        <button type="submit" class="btn">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                    </div>
+                </section>
+            </form>
+        {% endif %}
+
         <section class="card" aria-labelledby="reminders-heading">
             <h2 id="reminders-heading" class="card__title">{{ 'reminders.settings.title'|trans }}</h2>
             <ul class="list">
@@ -239,7 +260,7 @@
             </ul>
         </section>
 
-        {% if can_instance('manage_modules') or can_instance('backup') or can_instance('manage_users') %}
+        {% if can_instance('manage_modules') or can_instance('backup') or can_instance('manage_users') or (ai.enabled and can_instance('manage_ai')) %}
         <section class="card" aria-labelledby="data-heading">
             <h2 id="data-heading" class="card__title">{{ 'settings.data_heading'|trans }}</h2>
             <ul class="list">
@@ -262,6 +283,18 @@
                         <span class="list__body">
                             <span class="list__title">{{ 'modules.link'|trans }}</span>
                             <span class="list__meta">{{ 'modules.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                {% endif %}
+                {% if ai.enabled and can_instance('manage_ai') %}
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.ai') }}">
+                        <span class="list__icon">{{ ui.icon('smart_toy') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'ai.link'|trans }}</span>
+                            <span class="list__meta">{{ 'ai.link_hint'|trans }}</span>
                         </span>
                         {{ ui.icon('arrow_forward', 'list__trail') }}
                     </a>
