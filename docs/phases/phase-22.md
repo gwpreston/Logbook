@@ -405,6 +405,8 @@ Update §12: remove the trip-log line.
   logs a saved journey by `journey_id`, but no endpoint lists the journeys,
   so the id comes from the journey's edit link. Add
   `GET /api/v1/journeys`?
+  *Decided 2026-10-01: yes, built in [Phase 23.1](phase-23.1.md) (spec
+  §7.20).*
 
 ## Changed while building it
 

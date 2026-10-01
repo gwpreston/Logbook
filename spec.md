@@ -62,6 +62,7 @@ each vehicle costs.*
 | JS | Alpine.js + Chart.js + SortableJS | Progressive enhancement, no SPA, no runtime Node |
 | i18n | symfony/translation | ICU, pluralization, multi-locale |
 | Auth | PHP sessions + Argon2id + slim/csrf | Standard, secure, no external IdP needed |
+| Single sign-on (Phase 23.1) | `firebase/php-jwt` (JWS and JWKS) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -564,7 +565,9 @@ MySQL only.
 
 **User**
 - id, username (stored lower-case, so sign-in is case-insensitive on every
-  engine), password_hash (Argon2id), display name, locale, timezone, and the
+  engine), password_hash (Argon2id; nullable from Phase 23.1: a user
+  created through single sign-on has none until they set one, and cannot
+  sign in with a password until then), display name, locale, timezone, and the
   unit preferences: distance unit (`km`|`mi`), volume unit
   (`l`|`gal_uk`|`gal_us`), consumption unit (`l_per_100km`|`km_per_l`|
   `mpg_uk`|`mpg_us`), tread depth unit (`mm`|`in32`, 32nds of an inch;
@@ -599,6 +602,18 @@ MySQL only.
   null for an invite), username (reserved by an open invite),
   display_name, is_admin, expires_at (7 days), used_at, revoked_at,
   created_at (UTC). Not in backups: links are for this install, now.
+  Phase 23.1 adds the kind `login`: the break-glass sign-in link from
+  `bin/auth.php login-link` (user_id and created_by both that user, 10
+  minutes).
+
+**UserIdentity** (Phase 23.1, §7.9)
+- id, user_id (`ON DELETE CASCADE`), provider (`oidc`; `proxy` from Phase
+  23.2), issuer (the `iss` URL, up to 255), subject (the `sub`, up to
+  255), last_login_at (UTC, optional), created_at (UTC). `(provider,
+  issuer, subject)` is unique, so a provider account links to at most one
+  user. A user may have several identities. In backups and the user
+  export. Rolling the migration back is refused while any user has no
+  password, with a message naming them.
 
 **ReminderDelivery** (Phase 19, §7.11)
 - id, reminder_id (`ON DELETE CASCADE`), user_id (`ON DELETE CASCADE`),
@@ -627,7 +642,9 @@ MySQL only.
   token itself is never stored), user_id (optional), data (JSON), created_at,
   last_activity_at (UTC). Expires after 30 days without activity.
   Disabling or deleting a user, or an admin's password reset, deletes
-  their sessions (Phase 19).
+  their sessions (Phase 19). A session started through single sign-on
+  remembers that (and, only with `OIDC_LOGOUT`, the ID token for the
+  provider's sign-out) (Phase 23.1).
 
 **ApiKey** (Phase 18.2)
 - id, user_id (`ON DELETE CASCADE`), name (up to 100), token_hash
@@ -1669,6 +1686,106 @@ First-run setup creates the initial account. CSRF on all forms.
   message as a wrong one. The auth guard and the current-user middleware
   treat a disabled user's session as signed out. Last sign-in is shown
   from sessions; nothing else is recorded.
+
+**Single sign-on with OpenID Connect** (Phase 23.1)
+
+Logbook can act as an OpenID Connect client of one provider (Authelia,
+Authentik and Keycloak are documented and tested; any standard provider
+works). SSO only changes how someone proves who they are, never what they
+can see. Guide: `docs/sso.md`.
+
+- **Configuration** (§9): `OIDC_ISSUER` (setting it switches SSO on),
+  `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_PROVIDER_NAME` (button
+  text, default "SSO"), `OIDC_SCOPES` (default `openid profile email`),
+  `OIDC_USERNAME_CLAIM` (default `preferred_username`),
+  `OIDC_GROUPS_CLAIM` (default `groups`), `OIDC_LINK` (`explicit` |
+  `username`, default `explicit`), `OIDC_AUTO_CREATE` (default `false`),
+  `OIDC_ALLOWED_GROUPS` and `OIDC_ADMIN_GROUPS` (comma-separated,
+  optional), `OIDC_LOGOUT` (default `false`), `AUTH_LOCAL_LOGIN` (default
+  `true`). The redirect URI to register at the provider is
+  `{APP_URL}{APP_BASE_PATH}/auth/oidc/callback`. Settings → Users shows it
+  with a copy button, and whether SSO is configured.
+- **Discovery** is fetched from
+  `{OIDC_ISSUER}/.well-known/openid-configuration` on first use and cached
+  under `var/cache` for 24 hours. The JWKS is cached likewise and
+  re-fetched once when a token's `kid` is unknown. The discovered `issuer`
+  must equal `OIDC_ISSUER` exactly, or SSO is refused and the reason
+  logged. These are the only outbound requests SSO makes, and only when
+  an admin configures it.
+- **Sign-in page:** with SSO configured, a *Sign in with {name}* button
+  above the password form. With `AUTH_LOCAL_LOGIN=false` the password
+  form is gone (a password POST is refused) and the page shows only the
+  button.
+- **Flow:** `GET /auth/oidc/start?next=…` stores in the (pre-sign-in)
+  session `state`, `nonce`, the PKCE verifier and the checked `next`
+  (local paths only, as the sign-in redirect), then redirects to the
+  authorization endpoint (`response_type=code`, S256 challenge).
+  `GET /auth/oidc/callback` checks `state` (single use, 10 minutes),
+  exchanges the code at the token endpoint with the client secret
+  (`client_secret_basic`, or `client_secret_post` when that is the only
+  method offered) and the verifier, and validates the ID token:
+  - the signature uses a key from the JWKS, with RS256, PS256, ES256 or
+    EdDSA only (`none` and HS* are refused);
+  - `iss` equals the issuer; `aud` contains the client id; `azp` equals it
+    when present; `exp` is in the future and `iat` not in the future, with
+    60 seconds of leeway; `nonce` matches.
+  Any failure shows "Sign-in with {name} didn't work. Try again, or sign
+  in with your password" (the password part only when local sign-in is
+  on); the specific reason is logged, never shown. Claims are read from
+  the ID token; when the username claim, or a groups claim that a groups
+  variable needs, is missing from it (Authelia leaves them out by
+  default), they are read once from the `userinfo_endpoint` with the
+  access token, whose `sub` must equal the ID token's.
+- **Finding the user:**
+  1. An identity with this issuer and `sub` → that user.
+  2. Else, with `OIDC_LINK=username`: a user whose username equals the
+     username claim (lower-cased) and who has **no** OIDC identity yet is
+     linked. Only safe with a provider whose usernames only admins can
+     set, as the docs say.
+  3. Else, with `OIDC_AUTO_CREATE=true`: a new member is created (username
+     from the claim, sanitised to the username rules, suffixed if taken;
+     display name from `name`; locale from `locale` when supported, else
+     `APP_LOCALE`; no password). They land on a short welcome form (time
+     zone, unit preset, currency), as invitations do.
+  4. Else: "Your {name} account isn't linked to Logbook. Ask an admin to
+     invite you, then link it from Settings → Account."
+- **Groups:** with `OIDC_ALLOWED_GROUPS`, a user in none of them is
+  refused (message as 4). With `OIDC_ADMIN_GROUPS`, `is_admin` is set
+  from them at every SSO sign-in, both ways, except that the last active
+  admin is never demoted (logged). Without these variables groups are
+  ignored and admin stays as set in the app.
+- **After sign-in:** exactly as a password sign-in: the session is
+  regenerated, CSRF rotated, it returns to `next`, and a disabled user is
+  refused with the generic failure message. The identity's last_login_at
+  is updated.
+- **Linking** (Settings → Account → *Single sign-on*): *Link {name}
+  account* runs the flow for the signed-in user and stores the identity;
+  it is refused if that identity belongs to someone else, and replaces
+  nothing (unlink first). *Unlink* is refused while it is the user's only
+  way in (no password and local sign-in on, or local sign-in off).
+- **Passwords for SSO users:** *Set a password* (no current password
+  asked, as there is none) appears when local sign-in is on. Setting or
+  changing it signs out other sessions, as today.
+- **Sign-out:** local sign-out as today. With `OIDC_LOGOUT=true`, a
+  session from SSO and an `end_session_endpoint`, the browser then goes
+  there with `id_token_hint`, `client_id` and `post_logout_redirect_uri`
+  = the sign-in page (`{APP_URL}{APP_BASE_PATH}/login`, to register at the
+  provider).
+- **Break-glass:** `php bin/auth.php login-link <username>` prints a
+  one-time sign-in link (`{APP_URL}{APP_BASE_PATH}/login/link/{token}`,
+  10 minutes, keyed hash stored as invitations are, kind `login`). It
+  works with `AUTH_LOCAL_LOGIN=false` and the provider down, never for a
+  disabled user, and its creation and use are logged at notice level.
+- **Setup** (first run) is unchanged: it always creates a local admin with
+  a password, whatever the SSO settings.
+- **Admin view:** Settings → Users shows each user's sign-in methods
+  (*Password*, *{name}*), and an admin can remove a user's identity
+  (refused, like *Unlink*, when it is their only way in).
+- **Not in this version** (decided 2026-10-01): more than one provider
+  (#50), linking by email (#51), SAML and LDAP, back- or front-channel
+  logout, refresh tokens (Logbook keeps its own session and never calls
+  the provider after sign-in), SSO for the API or calendar feed (they keep
+  their tokens).
 
 ### 7.10 Feature toggles
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
@@ -2809,6 +2926,11 @@ needs `Log` and a `read_write` key) and `GET /api/v1/trips/claim` (the
 claim report's figures for the key's user). A POST goes through the form's
 parser, takes `journey_id` for a saved journey, and is safe to retry by
 the import's duplicate key. With `trips` off, every trip path answers 404.
+`GET /api/v1/journeys` (Phase 23.1, decided 2026-10-01, #48) lists the key
+user's saved journeys in their Settings → Trips order (`id`, `from_place`,
+`to_place`, `distance_km` one way, `distance_unit`, `is_return`,
+`is_business`, `purpose`), so a Shortcut can offer them and log one by
+`journey_id`.
 
 **Not in this version:** editing or deleting through the API, other
 writes, attachments, OAuth or sessions, webhooks for new entries, reports
@@ -3163,6 +3285,17 @@ Real environment variables override `.env`; an empty value counts as unset.
   `/api/v1` path a 404), `API_CORS_ORIGINS` (comma-separated origins
   allowed to call the API from a browser; default none)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
+- Single sign-on (§7.9, Phase 23.1): `OIDC_ISSUER` (SSO is configured
+  when set), `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_PROVIDER_NAME`
+  (default `SSO`), `OIDC_SCOPES` (default `openid profile email`),
+  `OIDC_USERNAME_CLAIM` (default `preferred_username`),
+  `OIDC_GROUPS_CLAIM` (default `groups`), `OIDC_LINK` (`explicit` |
+  `username`; default `explicit`), `OIDC_AUTO_CREATE` (default `false`),
+  `OIDC_ALLOWED_GROUPS`, `OIDC_ADMIN_GROUPS` (comma-separated; default
+  none), `OIDC_LOGOUT` (default `false`); `AUTH_LOCAL_LOGIN` (password
+  sign-in; default `true`). A half-set configuration (issuer without
+  client id or secret) or an unknown `OIDC_LINK` stops the app at start
+  with a message naming the variable.
 - `BACKUP_PATH` (pre-restore backups and `bin/backup.php create`; default
   `var/backups`, Docker `/data/backups`), `MAX_RESTORE_MB` (largest backup
   accepted by the restore form; default 256, and PHP's upload limits must
@@ -3229,7 +3362,10 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
-- OIDC/SSO (Authelia, Authentik, Keycloak) and reverse-proxy header auth.
+- Reverse-proxy header auth (planned as Phase 23.2).
+- Single sign-on (Phase 23.1): more than one OIDC provider (#50); linking
+  an SSO account by a verified email (`OIDC_LINK=email`) once Logbook
+  verifies its own email addresses (#51).
 - Personal fuel-tank entity, VIN decode/registration lookup,
   OBD-II / vehicle-API mileage import.
 - Server-side PDF (emailed reports, one-file sale pack with invoices
@@ -3414,6 +3550,14 @@ task breakdowns live in the per-phase files; this is the map.
   print and CSV (§7.23); the Mileage tab and Reports split, cost per
   business mile, a dashboard widget, a *Trips* history chip only, CSV,
   API and backup; one migration; release v2.2.0.
+- **Phase 23.1 — Single sign-on with OpenID Connect.** One OIDC provider
+  by environment variables and discovery; authorization code flow with
+  PKCE, `state` and `nonce`; full ID token validation (`firebase/php-jwt`);
+  explicit linking from Settings → Account, optionally by username;
+  optional creation on first sign-in and admin from groups; local sign-in
+  switchable off with a CLI break-glass link; optional provider sign-out
+  (§6 UserIdentity, §7.9, §9). Also `GET /api/v1/journeys` (§7.20). One
+  migration. Ships with Phase 23.2 as v2.3.0.
 
 ---
 

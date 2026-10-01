@@ -2,7 +2,7 @@
 
 *Sign in with the Authelia, Authentik or Keycloak you already run.*
 
-Status: 📋 planned · ships with Phase 23.2 as **v2.3.0** · file lives in
+Status: 🚧 in progress · ships with Phase 23.2 as **v2.3.0** · file lives in
 `docs/phases/`
 
 Self-hosters often run an identity provider already. This phase lets
@@ -174,10 +174,12 @@ none until they set one, and cannot sign in locally until then.
 - [ ] `.env.example` and `docs/configuration.md`: every new variable.
 
 ### Dependencies
-- [ ] Choose an OIDC or JWT library (see *Open questions*). Requirements:
+- [ ] `firebase/php-jwt` (decided 2026-10-01, see *Open questions*),
+      with `symfony/http-client` (already a dependency) for discovery and
+      the token exchange. Requirements it meets:
       pure PHP, maintained, PHP 8.4 and 8.5, PSR-18 or its own HTTP client
       without extensions beyond `openssl` and `sodium` (EdDSA), JWKS
-      support, and no framework coupling. Pin it and record the choice in
+      support, and no framework coupling. Pin it; the choice is in
       `spec.md` §4.
 
 ### Migration
@@ -196,6 +198,9 @@ none until they set one, and cannot sign in locally until then.
       Settings → Users sign-in methods and the redirect URI.
 - [ ] `bin/auth.php login-link`.
 - [ ] Translations (en, de).
+- [ ] `GET /api/v1/journeys` (Phase 22's open question, decided
+      2026-10-01): the key user's saved journeys, in the OpenAPI document
+      and `docs/api.md`, tested.
 
 ### Tests
 - [ ] **A test identity provider** in PHPUnit: an in-process fake issuing
@@ -240,8 +245,16 @@ none until they set one, and cannot sign in locally until then.
 - **Library:** use a dedicated OIDC client library, or `league/oauth2-client`
   plus a JWT and JWKS library with the validation written here? The first
   is less code; the second keeps every check visible and tested.
+  *Decided 2026-10-01: `firebase/php-jwt` for signatures and the JWKS,
+  with `symfony/http-client` (already a dependency) for discovery and the
+  token exchange. No `league/oauth2-client`: every check is written and
+  tested here.*
 - **More than one provider:** needed (for example, Authentik for the family
   and Keycloak at work), or is one enough?
+  *Decided 2026-10-01: one. More than one is parked in spec §12; the
+  identity table's `(provider, issuer, subject)` key leaves room for it.*
 - **Email linking:** should `OIDC_LINK=email` exist, matching a verified
   (`email_verified: true`) email to the user's reminder email address? It
   is off in this draft because Logbook doesn't verify its own emails.
+  *Decided 2026-10-01: no. Parked in spec §12 until Logbook verifies its
+  own email addresses.*
