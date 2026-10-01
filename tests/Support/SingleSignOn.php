@@ -29,6 +29,8 @@ trait SingleSignOn
     protected function ssoApp(array $env = [], string $issuer = FakeIdentityProvider::ISSUER): array
     {
         $app = $this->createApp($env + [
+            // Pinned: the redirect URI is built from it, and dev containers set their own.
+            'APP_URL' => 'http://localhost:8080',
             'OIDC_ISSUER' => $issuer,
             'OIDC_CLIENT_ID' => FakeIdentityProvider::CLIENT_ID,
             'OIDC_CLIENT_SECRET' => FakeIdentityProvider::CLIENT_SECRET,

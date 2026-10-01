@@ -62,7 +62,7 @@ each vehicle costs.*
 | JS | Alpine.js + Chart.js + SortableJS | Progressive enhancement, no SPA, no runtime Node |
 | i18n | symfony/translation | ICU, pluralization, multi-locale |
 | Auth | PHP sessions + Argon2id + slim/csrf | Standard, secure, no external IdP needed |
-| Single sign-on (Phase 23.1) | `firebase/php-jwt` (JWS and JWKS) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
+| Single sign-on (Phase 23.1) | `firebase/php-jwt` (JWS and JWKS; `phpseclib/phpseclib` for its PS256) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |

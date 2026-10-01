@@ -150,7 +150,7 @@
 
         {% if sso %}
             <section class="card" id="sso" aria-labelledby="sso-heading">
-                <h2 id="sso-heading" class="card__title">{{ ui.icon('verified_user') }}{{ 'sso.card_title'|trans }}</h2>
+                <h2 id="sso-heading" class="card__title">{{ 'sso.card_title'|trans }}</h2>
                 {% if sso.identities is empty %}
                     <p class="muted">{{ 'sso.card_lead'|trans({name: sso.name}) }}</p>
                     <form method="post" action="{{ url_for('settings.sso.link') }}">

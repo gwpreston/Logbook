@@ -2,7 +2,7 @@
 
 *Sign in with the Authelia, Authentik or Keycloak you already run.*
 
-Status: 🚧 in progress · ships with Phase 23.2 as **v2.3.0** · file lives in
+Status: ✅ complete (Keycloak checked by hand; Authentik and Authelia not yet) · ships with Phase 23.2 as **v2.3.0** · file lives in
 `docs/phases/`
 
 Self-hosters often run an identity provider already. This phase lets
@@ -166,15 +166,15 @@ none until they set one, and cannot sign in locally until then.
 ## Tasks
 
 ### Spec and docs
-- [ ] §6, §7.9 and §9 in `spec.md`; the Phase 23.1 line in §13; remove the
+- [x] §6, §7.9 and §9 in `spec.md`; the Phase 23.1 line in §13; remove the
       OIDC line from §12.
-- [ ] `docs/sso.md`: client setup in Authelia, Authentik and Keycloak (the
+- [x] `docs/sso.md`: client setup in Authelia, Authentik and Keycloak (the
       client type, redirect URI and scopes; the groups claim and how each
       emits it), linking modes and their risk, and break-glass.
-- [ ] `.env.example` and `docs/configuration.md`: every new variable.
+- [x] `.env.example` and `docs/configuration.md`: every new variable.
 
 ### Dependencies
-- [ ] `firebase/php-jwt` (decided 2026-10-01, see *Open questions*),
+- [x] `firebase/php-jwt` (decided 2026-10-01, see *Open questions*),
       with `symfony/http-client` (already a dependency) for discovery and
       the token exchange. Requirements it meets:
       pure PHP, maintained, PHP 8.4 and 8.5, PSR-18 or its own HTTP client
@@ -183,49 +183,55 @@ none until they set one, and cannot sign in locally until then.
       `spec.md` §4.
 
 ### Migration
-- [ ] `user_identities`; `users.password_hash` nullable. Every engine,
+- [x] `user_identities`; `users.password_hash` nullable. Every engine,
       reversible. Rollback is refused while any user has no password, with
       a message naming them. Moves the schema version; backups include the
       table.
 
 ### Code
-- [ ] `Service\Auth\Oidc\Discovery` (cache, issuer check),
+- [x] `Service\Auth\Oidc\Discovery` (cache, issuer check),
       `Service\Auth\Oidc\TokenValidator`, `Service\Auth\Oidc\OidcSignIn`
       (flow state, user resolution, groups, JIT).
-- [ ] `Action\Auth\OidcStart`, `OidcCallback`, `OidcLink`, `OidcUnlink`;
+- [x] `Action\Auth\OidcStart`, `OidcCallback`, `OidcLink`, `OidcUnlink`;
       welcome form for JIT users.
-- [ ] Sign-in page changes; Settings → Account *Single sign-on* card;
+- [x] Sign-in page changes; Settings → Account *Single sign-on* card;
       Settings → Users sign-in methods and the redirect URI.
-- [ ] `bin/auth.php login-link`.
-- [ ] Translations (en, de).
-- [ ] `GET /api/v1/journeys` (Phase 22's open question, decided
+- [x] `bin/auth.php login-link`.
+- [x] Translations (en, de).
+- [x] `GET /api/v1/journeys` (Phase 22's open question, decided
       2026-10-01): the key user's saved journeys, in the OpenAPI document
       and `docs/api.md`, tested.
 
 ### Tests
-- [ ] **A test identity provider** in PHPUnit: an in-process fake issuing
+- [x] **A test identity provider** in PHPUnit: an in-process fake issuing
       discovery, JWKS and tokens signed with test keys (RS256, ES256,
       EdDSA), so the suite needs no network.
-- [ ] **Token validation:** a good token passes. Each of these fails: wrong
+- [x] **Token validation:** a good token passes. Each of these fails: wrong
       signature, `alg: none`, HS256, unknown `kid` (refetch then fail),
       wrong `iss`, wrong `aud`, wrong `azp`, expired, `iat` in the future
       beyond leeway, nonce mismatch, replayed `state`, `state` older than
       10 minutes.
-- [ ] **Resolution:** existing identity; username linking (and not when the
+- [x] **Resolution:** existing identity; username linking (and not when the
       user already has an identity); JIT on and off; allowed groups; admin
       sync both ways and the last-admin guard; a disabled user refused.
-- [ ] **Linking:** link, refused when taken, unlink refused when it is the
+- [x] **Linking:** link, refused when taken, unlink refused when it is the
       only way in.
-- [ ] `AUTH_LOCAL_LOGIN=false`: the form is gone and a password POST is
+- [x] `AUTH_LOCAL_LOGIN=false`: the form is gone and a password POST is
       refused; break-glass works once and expires.
-- [ ] `return` open-redirect attempts ignored; works under
+- [x] `return` open-redirect attempts ignored; works under
       `APP_BASE_PATH`; session fixation (the id changes at sign-in).
-- [ ] RP logout URL built correctly; without an `end_session_endpoint`,
+- [x] RP logout URL built correctly; without an `end_session_endpoint`,
       local sign-out only.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL,
+      MariaDB: 1603 tests each, 2026-10-01).
 - [ ] **Manual interop check** (in the PR): against real Authelia,
       Authentik and Keycloak containers, with the `docker-compose` examples
       kept in `docker/sso/`.
+      *Keycloak 26.4 checked 2026-10-01 (`docker/sso/keycloak`): link, sign
+      in back to the page asked for with allowed and admin groups set, an
+      unlinked account refused, sign-out at Keycloak back to sign-in.
+      Authentik and Authelia are still to be checked before the v2.3.0
+      release (Phase 23.2).*
 
 ---
 
@@ -258,3 +264,40 @@ none until they set one, and cannot sign in locally until then.
   is off in this draft because Logbook doesn't verify its own emails.
   *Decided 2026-10-01: no. Parked in spec §12 until Logbook verifies its
   own email addresses.*
+
+## Changed while building it
+
+- **`next`, not `return`.** The start takes `?next=`, the same parameter
+  and the same local-path check as the sign-in redirect (`SafeRedirect`).
+- **Userinfo when claims are missing.** Claims come from the ID token, but
+  when the username claim (or a groups claim a groups variable needs) is
+  missing, they are read once from `userinfo_endpoint` with the access
+  token, whose `sub` must equal the ID token's. Recent Authelia versions
+  leave `preferred_username` and `groups` out of the ID token by default.
+- **PS256 needs `phpseclib/phpseclib`** (pure PHP): `firebase/php-jwt`
+  verifies RSASSA-PSS only through it. Added and recorded in spec §4.
+- **Client authentication:** `client_secret_basic` with each part
+  form-urlencoded (RFC 6749 §2.3.1), or `client_secret_post` when that is
+  all the provider offers.
+- **Break-glass links reuse `invitations`** with kind `login` (10 minutes,
+  `created_by` the user), at `/login/link/{token}`. Opening the link shows a
+  *Sign in as …* button and the POST uses it up, so a link preview or
+  prefetch can't spend it. A new link replaces the user's earlier one, and
+  Settings → Users lists an open one (revocable). Rolling the migration
+  back deletes them, as the version before can't read the kind.
+- **Linking replaces nothing:** a user who already has an identity is told
+  to unlink first (*AlreadyLinked*), and a link flow that comes back to a
+  session now signed in as someone else links nothing.
+- **Allowed groups apply to linking too**, not only to sign-in.
+- **The flow state is per state value** (up to five pending, for several
+  tabs), used up on the first callback whatever happens next.
+- **Half-set configuration stops the app** at start (an issuer without a
+  client id or secret, scopes without `openid`, an unknown `OIDC_LINK`),
+  naming the variable.
+- **With `AUTH_LOCAL_LOGIN=false`** Settings → Account hides the password
+  card, and the sign-in page explains the break-glass command when SSO isn't
+  configured either.
+- **Discovery and keys are cached per URL** under `var/cache/oidc`
+  (atomic writes), and `OIDC_ISSUER` is compared untrimmed: Authentik's
+  issuer ends in `/`.
+

@@ -1,0 +1,21 @@
+# Keycloak for checking Logbook's single sign-on by hand (docs/sso.md).
+# Development mode, in-memory, with a realm "logbook" imported:
+#   client  logbook / secret logbook-test-secret (confidential, PKCE S256)
+#   users   pat / pat-password (groups logbook, logbook-admins)
+#           sam / sam-password (group logbook)
+#
+#   docker compose -f docker/sso/keycloak/compose.yml up -d
+#   issuer: http://localhost:8180/realms/logbook   (admin console: admin / admin)
+name: logbook-sso-keycloak
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    command: ["start-dev", "--import-realm", "--http-port=8180"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./realm-logbook.json:/opt/keycloak/data/import/realm-logbook.json:ro

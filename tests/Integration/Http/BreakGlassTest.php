@@ -50,7 +50,7 @@ final class BreakGlassTest extends AppTestCase
 
     public function testWithLocalSignInOffAndNoSsoThePageSaysHowToGetIn(): void
     {
-        $app = $this->createApp(['AUTH_LOCAL_LOGIN' => 'false']);
+        $app = $this->createApp(['AUTH_LOCAL_LOGIN' => 'false', 'APP_URL' => 'http://localhost:8080']);
         $this->resetDatabase($app);
         $this->createOwner($app);
 
@@ -91,7 +91,7 @@ final class BreakGlassTest extends AppTestCase
 
     public function testABreakGlassLinkExpiresAfterTenMinutesAndANewOneReplacesIt(): void
     {
-        $app = $this->createApp(['AUTH_LOCAL_LOGIN' => 'false']);
+        $app = $this->createApp(['AUTH_LOCAL_LOGIN' => 'false', 'APP_URL' => 'http://localhost:8080']);
         $clock = $this->pinClock($app, '2026-10-01T10:00:00Z');
         $this->resetDatabase($app);
         $owner = $this->createOwner($app);
@@ -135,7 +135,8 @@ final class BreakGlassTest extends AppTestCase
 
         [$code, $stdout, $stderr] = self::command('login-link', 'Pat');
         self::assertSame(0, $code, $stderr);
-        self::assertMatchesRegularExpression('~^http://localhost:8080/login/link/[A-Za-z0-9_-]{43}\n$~', $stdout);
+        // The command reads APP_URL from the environment it runs in.
+        self::assertMatchesRegularExpression('~^https?://[^/\s]+/login/link/[A-Za-z0-9_-]{43}\n$~', $stdout);
         self::assertStringContainsString('valid for 10 minutes', $stderr);
         self::assertSame(200, $this->get($app, (string) parse_url(trim($stdout), PHP_URL_PATH))->getStatusCode());
 

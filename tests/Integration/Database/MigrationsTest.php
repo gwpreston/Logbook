@@ -415,11 +415,14 @@ final class MigrationsTest extends AppTestCase
     public function testUserAndSessionColumns(): void
     {
         $users = $this->columnsOrSkip('users');
-        $columns = ['username', 'password_hash', 'display_name', 'locale', 'timezone'];
+        $columns = ['username', 'display_name', 'locale', 'timezone'];
         $columns = [...$columns, 'distance_unit', 'volume_unit', 'consumption_unit', 'currency', 'theme'];
         foreach ($columns as $required) {
             self::assertTrue($users[$required]->getNotnull(), sprintf('users.%s must be NOT NULL', $required));
         }
+        // Phase 23.1: a user created through single sign-on has no password.
+        self::assertFalse($users['password_hash']->getNotnull(), 'users.password_hash is nullable');
+        self::assertSame(255, $users['password_hash']->getLength(), 'and keeps its length');
         self::assertInstanceOf(DateTimeType::class, $users['created_at']->getType());
 
         $sessions = $this->columns('sessions');
