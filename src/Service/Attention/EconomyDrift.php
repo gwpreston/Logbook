@@ -44,7 +44,8 @@ final class EconomyDrift
 
     /**
      * @param int $percent flagged at least this much worse
-     * @param (Closure(): list<DateTimeImmutable>)|null $tyreFits when tyres were fitted (local dates; tyres on), asked only for a finding
+     * @param (Closure(): list<DateTimeImmutable>)|null $tyreFits when tyres were fitted (local dates;
+     *        tyres on), asked only for a finding
      * @param bool $serviceOverdue a service schedule is overdue (maintenance on)
      */
     public static function of(

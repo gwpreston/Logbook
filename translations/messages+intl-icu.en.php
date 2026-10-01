@@ -1964,7 +1964,7 @@ return [
         ],
         'ratio' => '{direction, select, times {about {ratio}× your usual {usual}} above {about {percent}% above your usual {usual}} other {about {percent}% below your usual {usual}}}',
         'price' => [
-            'title' => '{electric, select, yes {Charge} other {Fill-up}} on {date}: {price}, {ratio}',
+            'title' => '{electric, select, yes {Charge on} other {Fill-up on}} {date}: {price}, {ratio}',
             'detail' => 'Check the price or the volume.',
             'digit' => 'An extra or missing digit? Check the price or the volume.',
         ],

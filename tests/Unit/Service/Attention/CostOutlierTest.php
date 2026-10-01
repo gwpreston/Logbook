@@ -103,7 +103,10 @@ final class CostOutlierTest extends TestCase
 
         self::assertSame($same, Fingerprint::cost($record));
         self::assertNotSame($same, Fingerprint::cost($this->record('2026-03-14', '640', id: $record->id)));
-        self::assertNotSame($same, Fingerprint::cost($this->record('2026-03-14', '6400', MaintenanceCategory::Repair, $record->id)));
+        self::assertNotSame(
+            $same,
+            Fingerprint::cost($this->record('2026-03-14', '6400', MaintenanceCategory::Repair, $record->id)),
+        );
     }
 
     // --- Helpers -----------------------------------------------------------

@@ -241,7 +241,15 @@ final class PriceOutlierTest extends TestCase
         return new FuelEntry(
             $fill->id,
             $fill->vehicleId,
-            new FuelEntryData($d->filledAt, $d->odometerKm, $d->fuel, $volume ?? $d->volume, $price ?? $d->pricePerUnit, $total ?? $d->totalCost, grade: $d->grade),
+            new FuelEntryData(
+                $d->filledAt,
+                $d->odometerKm,
+                $d->fuel,
+                $volume ?? $d->volume,
+                $price ?? $d->pricePerUnit,
+                $total ?? $d->totalCost,
+                grade: $d->grade,
+            ),
             $fill->createdAt,
             $fill->updatedAt,
         );

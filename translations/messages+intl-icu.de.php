@@ -1962,7 +1962,7 @@ return [
         ],
         'ratio' => '{direction, select, times {etwa {ratio}× so viel wie üblich ({usual})} above {etwa {percent} % über dem Üblichen ({usual})} other {etwa {percent} % unter dem Üblichen ({usual})}}',
         'price' => [
-            'title' => '{electric, select, yes {Ladevorgang} other {Tankvorgang}} am {date}: {price}, {ratio}',
+            'title' => '{electric, select, yes {Ladevorgang am} other {Tankvorgang am}} {date}: {price}, {ratio}',
             'detail' => 'Preis oder Menge prüfen.',
             'digit' => 'Eine Ziffer zu viel oder zu wenig? Preis oder Menge prüfen.',
         ],

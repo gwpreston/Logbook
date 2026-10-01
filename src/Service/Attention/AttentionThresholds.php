@@ -106,7 +106,15 @@ final readonly class AttentionThresholds
     }
 
     /**
-     * @return array{mileage_days: int, valuation_months: int, drift_percent: int, drift_percent_electric: int, price_percent: int, cost_multiple: int, cost_floor: int}
+     * @return array{
+     *     mileage_days: int,
+     *     valuation_months: int,
+     *     drift_percent: int,
+     *     drift_percent_electric: int,
+     *     price_percent: int,
+     *     cost_multiple: int,
+     *     cost_floor: int,
+     * }
      */
     public function toArray(): array
     {

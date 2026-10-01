@@ -117,7 +117,8 @@ final readonly class AttentionWording
                 'date' => $this->formatter->date($drift->tyresFittedOn),
             ]);
         }
-        foreach (['winter' => $drift->winter, 'service' => $drift->serviceOverdue, 'short' => $drift->shortTanks] as $key => $holds) {
+        $facts = ['winter' => $drift->winter, 'service' => $drift->serviceOverdue, 'short' => $drift->shortTanks];
+        foreach ($facts as $key => $holds) {
             if ($holds) {
                 $causes[] = $this->translator->trans('attention.drift.cause.' . $key);
             }

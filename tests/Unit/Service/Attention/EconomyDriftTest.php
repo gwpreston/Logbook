@@ -95,7 +95,15 @@ final class EconomyDriftTest extends TestCase
     public function testWinterAgainstASummerBaselineIsFlaggedWithTheSeasonWording(): void
     {
         $now = '2027-02-20 12:00';
-        $fills = $this->series(8, '5.0', '6.0', recentFrom: '2026-12-10', baselineFrom: '2026-03-01', recentEvery: 15, baselineEvery: 30);
+        $fills = $this->series(
+            8,
+            '5.0',
+            '6.0',
+            recentFrom: '2026-12-10',
+            baselineFrom: '2026-03-01',
+            recentEvery: 15,
+            baselineEvery: 30,
+        );
 
         $finding = $this->judge($fills, now: $now);
         self::assertNotNull($finding);
@@ -107,7 +115,16 @@ final class EconomyDriftTest extends TestCase
     {
         $now = '2027-02-20 12:00';
         // Last winter at 6.0, then a summer at 5.0, then this winter at 6.0.
-        $fills = $this->series(4, '6.0', '5.0', recentCount: 8, recentFrom: '2026-03-15', baselineFrom: '2025-12-10', recentEvery: 30, baselineEvery: 15);
+        $fills = $this->series(
+            4,
+            '6.0',
+            '5.0',
+            recentCount: 8,
+            recentFrom: '2026-03-15',
+            baselineFrom: '2025-12-10',
+            recentEvery: 30,
+            baselineEvery: 15,
+        );
         $fills = $this->append($fills, ['2026-12-10', '2026-12-25', '2027-01-09', '2027-01-24', '2027-02-08'], '6.0');
 
         $finding = $this->judge($fills, now: $now);
@@ -117,7 +134,16 @@ final class EconomyDriftTest extends TestCase
     public function testFlaggedWhenThisWinterIsWorseThanLastWinterToo(): void
     {
         $now = '2027-02-20 12:00';
-        $fills = $this->series(4, '6.0', '5.0', recentCount: 8, recentFrom: '2026-03-15', baselineFrom: '2025-12-10', recentEvery: 30, baselineEvery: 15);
+        $fills = $this->series(
+            4,
+            '6.0',
+            '5.0',
+            recentCount: 8,
+            recentFrom: '2026-03-15',
+            baselineFrom: '2025-12-10',
+            recentEvery: 30,
+            baselineEvery: 15,
+        );
         $fills = $this->append($fills, ['2026-12-10', '2026-12-25', '2027-01-09', '2027-01-24', '2027-02-08'], '7.0');
 
         $finding = $this->judge($fills, now: $now);
@@ -267,21 +293,40 @@ final class EconomyDriftTest extends TestCase
         $start = new DateTimeImmutable($baselineFrom . ' 09:00', $this->zone);
         $fills = [$this->fill($start->modify('-' . $baselineEvery . ' days'), 0, '40', $fuel, $baselineGrade)];
         for ($i = 0; $i < $baseline; $i++) {
-            $fills[] = $this->fill($start->modify('+' . ($i * $baselineEvery) . ' days'), 600, self::litres($before, 600), $fuel, $baselineGrade);
+            $fills[] = $this->fill(
+                $start->modify('+' . ($i * $baselineEvery) . ' days'),
+                600,
+                self::litres($before, 600),
+                $fuel,
+                $baselineGrade,
+            );
         }
         $recent = new DateTimeImmutable($recentFrom . ' 09:00', $this->zone);
         for ($i = 0; $i < $recentCount; $i++) {
-            $fills[] = $this->fill($recent->modify('+' . ($i * $recentEvery) . ' days'), $recentKm, self::litres($after, $recentKm), $fuel, $recentGrade);
+            $fills[] = $this->fill(
+                $recent->modify('+' . ($i * $recentEvery) . ' days'),
+                $recentKm,
+                self::litres($after, $recentKm),
+                $fuel,
+                $recentGrade,
+            );
         }
         if ($recentGrade !== null && $baseline > 0) {
             // A segment burns its opening fill's grade: the first recent
             // segment opens on the last baseline fill, so that one is the
             // recent grade too.
             $last = $fills[$baseline];
-            $fills[$baseline] = $this->fill($last->data->filledAt, 0, $last->data->volume, $fuel, $recentGrade, $last->data->odometerKm);
+            $fills[$baseline] = $this->fill(
+                $last->data->filledAt,
+                0,
+                $last->data->volume,
+                $fuel,
+                $recentGrade,
+                $last->data->odometerKm,
+            );
         }
 
-        return $fills;
+        return array_values($fills);
     }
 
     /**
@@ -292,7 +337,13 @@ final class EconomyDriftTest extends TestCase
     private function append(array $fills, array $dates, string $figure, Fuel $fuel = Fuel::Petrol): array
     {
         foreach ($dates as $date) {
-            $fills[] = $this->fill(new DateTimeImmutable($date . ' 09:00', $this->zone), 600, self::litres($figure, 600), $fuel, null);
+            $fills[] = $this->fill(
+                new DateTimeImmutable($date . ' 09:00', $this->zone),
+                600,
+                self::litres($figure, 600),
+                $fuel,
+                null,
+            );
         }
 
         return $fills;
@@ -317,7 +368,14 @@ final class EconomyDriftTest extends TestCase
         // Push the later odometers on by 90 km so the rest stay 600 km.
         return array_map(
             fn (FuelEntry $f): FuelEntry => in_array($f, $shift, true)
-                ? $this->fill($f->data->filledAt, 0, $f->data->volume, $f->data->fuel, $f->data->grade, (string) ((int) $f->data->odometerKm + 90))
+                ? $this->fill(
+                    $f->data->filledAt,
+                    0,
+                    $f->data->volume,
+                    $f->data->fuel,
+                    $f->data->grade,
+                    (string) ((int) $f->data->odometerKm + 90),
+                )
                 : $f,
             $fills,
         );

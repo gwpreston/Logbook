@@ -33,7 +33,8 @@
     {%- elseif item.kind.value == 'valuation_stale' -%}
         {{ url_for('valuations.create', {id: id}) }}
     {%- elseif item.kind.value in ['drift_liquid', 'drift_electric'] -%}
-        {{ url_for('fuel.index', {id: id}) }}#economy-{{ item.drift.kind.value }}
+        {%- set trend = '#economy-' ~ item.drift.kind.value -%}
+        {{ url_for('fuel.index', {id: id}) }}{{ trend }}
     {%- elseif item.kind.value == 'fuel_price' -%}
         {{ url_for('fuel.edit', {id: id, entry: item.subjectId}) }}
     {%- elseif item.kind.value == 'maintenance_cost' -%}

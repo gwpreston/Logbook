@@ -30,7 +30,8 @@ final class PriceOutlier
 
     /**
      * @param list<FuelEntry> $entries the vehicle's fill-ups
-     * @param Closure(): list<FuelEntry> $owners the owner's fill-ups on every vehicle in this one's currency (this one's included)
+     * @param Closure(): list<FuelEntry> $owners the owner's fill-ups on every vehicle in this one's
+     *        currency (this one's included)
      * @param int $percent flagged when more than this far above or below the median
      * @return list<PriceFinding> oldest first
      */

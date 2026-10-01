@@ -20,11 +20,20 @@ use PHPUnit\Framework\TestCase;
  */
 final class AttentionThresholdsTest extends TestCase
 {
-    private const array DEFAULT_CHECKS = ['drift_percent' => 10, 'drift_percent_electric' => 15, 'price_percent' => 35, 'cost_multiple' => 3, 'cost_floor' => 100];
+    private const array DEFAULT_CHECKS = [
+        'drift_percent' => 10,
+        'drift_percent_electric' => 15,
+        'price_percent' => 35,
+        'cost_multiple' => 3,
+        'cost_floor' => 100,
+    ];
 
     public function testDefaultsAndAStoredRowReadSafely(): void
     {
-        self::assertSame(['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS, (new AttentionThresholds())->toArray());
+        self::assertSame(
+            ['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS,
+            (new AttentionThresholds())->toArray(),
+        );
         self::assertSame(
             ['mileage_days' => 90, 'valuation_months' => 24] + self::DEFAULT_CHECKS,
             AttentionThresholds::fromArray(['mileage_days' => 90, 'valuation_months' => 24])->toArray(),
@@ -35,10 +44,22 @@ final class AttentionThresholdsTest extends TestCase
             AttentionThresholds::fromArray(['mileage_days' => 3, 'valuation_months' => '24'])->toArray(),
             'out of range or not an int: the default',
         );
-        self::assertSame(['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS, AttentionThresholds::fromArray('garbage')->toArray());
+        self::assertSame(
+            ['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS,
+            AttentionThresholds::fromArray('garbage')->toArray(),
+        );
 
-        $checks = ['drift_percent' => 20, 'drift_percent_electric' => 25, 'price_percent' => 50, 'cost_multiple' => 5, 'cost_floor' => 0];
-        self::assertSame(['mileage_days' => 60, 'valuation_months' => 12] + $checks, AttentionThresholds::fromArray($checks)->toArray());
+        $checks = [
+            'drift_percent' => 20,
+            'drift_percent_electric' => 25,
+            'price_percent' => 50,
+            'cost_multiple' => 5,
+            'cost_floor' => 0,
+        ];
+        self::assertSame(
+            ['mileage_days' => 60, 'valuation_months' => 12] + $checks,
+            AttentionThresholds::fromArray($checks)->toArray(),
+        );
         self::assertSame(
             ['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS,
             AttentionThresholds::fromArray([
@@ -61,15 +82,33 @@ final class AttentionThresholdsTest extends TestCase
         self::assertIsArray($parsed);
         self::assertSame(['mileage_days' => 90, 'valuation_months' => 6] + self::DEFAULT_CHECKS, $parsed[2]->toArray());
 
-        $checks = ['drift_percent' => '12', 'drift_percent_electric' => '20', 'price_percent' => '40', 'cost_multiple' => '4', 'cost_floor' => '250'];
+        $checks = [
+            'drift_percent' => '12',
+            'drift_percent_electric' => '20',
+            'price_percent' => '40',
+            'cost_multiple' => '4',
+            'cost_floor' => '250',
+        ];
         $custom = ReminderSettingsForm::parse($input + $checks, $display, []);
         self::assertIsArray($custom);
         self::assertSame(
-            ['drift_percent' => 12, 'drift_percent_electric' => 20, 'price_percent' => 40, 'cost_multiple' => 4, 'cost_floor' => 250],
+            [
+                'drift_percent' => 12,
+                'drift_percent_electric' => 20,
+                'price_percent' => 40,
+                'cost_multiple' => 4,
+                'cost_floor' => 250,
+            ],
             array_slice($custom[2]->toArray(), 2),
         );
         $wrong = ReminderSettingsForm::parse(
-            $input + ['drift_percent' => '4', 'drift_percent_electric' => '51', 'price_percent' => '95', 'cost_multiple' => '1', 'cost_floor' => '-1'],
+            $input + [
+                'drift_percent' => '4',
+                'drift_percent_electric' => '51',
+                'price_percent' => '95',
+                'cost_multiple' => '1',
+                'cost_floor' => '-1',
+            ],
             $display,
             [],
         );
@@ -80,7 +119,11 @@ final class AttentionThresholdsTest extends TestCase
 
         $blank = ReminderSettingsForm::parse($input + ['mileage_days' => '', 'valuation_months' => ''], $display, []);
         self::assertIsArray($blank);
-        self::assertSame(['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS, $blank[2]->toArray(), 'blank: the defaults');
+        self::assertSame(
+            ['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS,
+            $blank[2]->toArray(),
+            'blank: the defaults',
+        );
 
         $errors = ReminderSettingsForm::parse($input + ['mileage_days' => '6', 'valuation_months' => '61'], $display, []);
         self::assertInstanceOf(ValidationErrors::class, $errors);
