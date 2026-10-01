@@ -2,7 +2,7 @@
 
 *Photograph the garage invoice; check the form; save.*
 
-Status: 🚧 in progress · releases **v2.8.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.8.0** · file lives in `docs/phases/`
 
 Typing a service invoice is the most tedious job in Logbook, and it is
 the one most often skipped. This phase reads a photo or PDF of an invoice,
@@ -221,7 +221,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
       form; nothing saves without *Save*.
 - [x] `bin/ai-eval.php --scans` runs the fixture set against the configured
       models and reports field accuracy per kind.
-- [ ] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB).
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB).
 
 ### Release
 - [x] `CHANGELOG.md` **2.8.0**: reading receipts and documents. Upgrade
