@@ -2,7 +2,7 @@
 
 *Use Logbook from Claude Desktop, or any assistant that speaks MCP.*
 
-Status: 📋 planned · releases **v2.9.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.9.0** · file lives in `docs/phases/`
 
 Phases 26.2 and 26.3 define Logbook's tools: read tools over its services,
 and draft tools for new entries. This phase exposes the **same tools** over
@@ -159,5 +159,43 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.20,
 
 - **stdio bridge:** worth shipping `bin/mcp-stdio.php` now for clients that
   can't send headers, or wait until one is needed?
+  **Decided 2026-10-01 (#87):** wait. `docs/mcp.md` shows `mcp-remote`
+  (`npx mcp-remote <url> --header "Authorization: Bearer …"`), which needs
+  Node on the client machine only. The PHP bridge is in spec §12. Checking
+  showed why it matters: Claude's custom connectors connect from
+  Anthropic's servers (public HTTPS only), and their request-header
+  option is still a limited beta.
 - **Direct writes:** should `log_fill_up` and `add_reading` also become
   drafts over MCP, for consistency with the chat?
+  **Decided 2026-10-01 (#88):** no, direct writes for `read_write` keys,
+  through the API's write path. Every other kind is a draft.
+- *(Found while starting.)* **Which protocol versions?** The current MCP
+  revision, `2026-07-28`, is stateless and has no `initialize`; clients on
+  `2025-11-25` and earlier still send it.
+  **Decided 2026-10-01 (#89):** dual-era. `2026-07-28` statelessly, and
+  `initialize` for `2025-11-25` and `2025-06-18`, also stateless (no
+  session id, which that transport makes optional) (spec §7.28).
+- *(Found while starting.)* **The MCP PHP SDK or our own?** `mcp/sdk`
+  (v0.8.1) is experimental until 1.0, adds five dependencies and registers
+  tools by attribute.
+  **Decided 2026-10-01 (#90):** our own small implementation, tested
+  against the specification's JSON schemas (spec §4, §7.28).
+- *(Found while starting.)* **What switches MCP off for a user?** Draft
+  tools needed `ai_actions` (#78), and *Use AI features* (#67) is per
+  user.
+  **Decided 2026-10-01 (#91):** only `MCP_ENABLED`, `API_ENABLED` and the
+  key; each tool needs its own module. The AI modules and *Use AI
+  features* don't apply (spec §7.28).
+
+## What changed while starting
+
+- `/ask` answers 404 unless Ask is available (AI set up, `ai_ask`, *Use
+  AI features*), so MCP drafts are reviewed on the dashboard's *Drafts to
+  review* in every case and on `/ask` when Ask is available. Their buttons
+  don't need Ask.
+- The draft tools' descriptions and results tell the model about a card
+  in the chat. Over MCP every tool has its own description (`mcp.tool.*`,
+  en and de), and the draft results point to the dashboard instead.
+- The roadmap's *After 1.0* list had no MCP line left to remove.
+- `GET`/`DELETE` answer 405, responses are always JSON (no SSE), and
+  results are `cacheScope: "private"` with `ttlMs: 0`.

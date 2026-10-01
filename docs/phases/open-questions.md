@@ -33,6 +33,8 @@ and Phase 26.3's (#74–#78, three of them found while starting it) on the
 same day, before Phase 26.3 started, and Phase 26.4's (#79–#84, two of
 them found while starting it) on the same day, before Phase 26.4 started;
 two found while building it (#85, #86) were answered the same day.
+Phase 26.5's (#87–#91, three of them found while starting it) were
+answered on 2026-10-01, before Phase 26.5 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -122,6 +124,11 @@ two found while building it (#85, #86) were answered the same day.
 | 84 | [26.4](phase-26.4.md) | PDF text extractor (found while starting) | Decided | `smalot/pdfparser`, pinned, LGPL-3.0, unmodified through Composer (spec §4). | 2026-10-01 |
 | 85 | [26.4](phase-26.4.md) | A V5C photo sends its reference as pixels (found while building) | Decided | Accept and warn: text redacted before sending, never extracted or stored; the Scan page names where the file goes and warns on *Internet*. Criterion 4 reworded (spec §7.27). | 2026-10-01 |
 | 86 | [26.4](phase-26.4.md) | *Fill from* a file already attached? (found while building) | Decided | New files only: the create forms link to Scan for that vehicle and form (spec §7.27). | 2026-10-01 |
+| 87 | [26.5](phase-26.5.md) | Ship a `bin/mcp-stdio.php` bridge now? | Parked | No: `docs/mcp.md` documents `mcp-remote` (Node on the client only); the PHP bridge in spec §12. | 2026-10-01 |
+| 88 | [26.5](phase-26.5.md) | `log_fill_up` and `add_reading` over MCP: direct writes or drafts? | Decided | Direct writes for `read_write` keys, through the API's write path; every other kind is a draft (spec §7.28). | 2026-10-01 |
+| 89 | [26.5](phase-26.5.md) | Which MCP protocol versions? (found while starting) | Decided | Dual-era: `2026-07-28`, and `initialize` for `2025-11-25` and `2025-06-18`; stateless in both, no session id (spec §7.28). | 2026-10-01 |
+| 90 | [26.5](phase-26.5.md) | The MCP PHP SDK or our own? (found while starting) | Decided | Our own small implementation, tested against the specification's JSON schemas (spec §4, §7.28). | 2026-10-01 |
+| 91 | [26.5](phase-26.5.md) | What switches MCP off for a user? (found while starting) | Decided | `MCP_ENABLED`, `API_ENABLED` and the key; each tool needs its own module; the AI modules and *Use AI features* don't apply (spec §7.28). | 2026-10-01 |
 
 ## Other loose ends found in the review
 
