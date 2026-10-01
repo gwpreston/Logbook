@@ -231,14 +231,14 @@ final class SingleSignOnTest extends AppTestCase
         $this->link($app, $member, 'sub-member');
 
         $this->ssoSignIn(new TestBrowser($app), $idp, ['sub' => 'sub-member', 'groups' => ['logbook-admins']]);
-        self::assertTrue($this->users($app)->find($member->id)?->isAdmin ?? false, 'promoted');
+        self::assertTrue($this->isAdmin($app, $member->id), 'promoted');
 
         $this->ssoSignIn(new TestBrowser($app), $idp, ['sub' => 'sub-member', 'groups' => []]);
-        self::assertFalse($this->users($app)->find($member->id)?->isAdmin ?? true, 'demoted');
+        self::assertFalse($this->isAdmin($app, $member->id), 'demoted');
 
         $last = $this->ssoSignIn(new TestBrowser($app), $idp, ['sub' => 'sub-owner', 'groups' => ['other']]);
         self::assertSame('/', $last->getHeaderLine('Location'));
-        self::assertTrue($this->users($app)->find($owner->id)?->isAdmin, 'the last admin is never demoted');
+        self::assertTrue($this->isAdmin($app, $owner->id), 'the last admin is never demoted');
     }
 
     public function testWithoutAdminGroupsTheGroupsChangeNothing(): void
@@ -251,7 +251,7 @@ final class SingleSignOnTest extends AppTestCase
 
         $this->ssoSignIn(new TestBrowser($app), $idp, ['sub' => 'sub-member', 'groups' => ['admins', 'logbook-admins']]);
 
-        self::assertFalse($this->users($app)->find($member->id)?->isAdmin);
+        self::assertFalse($this->isAdmin($app, $member->id));
     }
 
     public function testADisabledUserIsRefused(): void
@@ -615,6 +615,17 @@ final class SingleSignOnTest extends AppTestCase
     private function users(App $app): UserRepository
     {
         return $this->service($app, UserRepository::class);
+    }
+
+    /**
+     * @param App<ContainerInterface> $app
+     */
+    private function isAdmin(App $app, int $userId): bool
+    {
+        $user = $this->users($app)->find($userId);
+        self::assertNotNull($user);
+
+        return $user->isAdmin;
     }
 
     /**
