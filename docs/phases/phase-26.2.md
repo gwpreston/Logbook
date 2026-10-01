@@ -2,7 +2,7 @@
 
 *Ask a question in plain words; get Logbook's own numbers back.*
 
-Status: 📋 planned · releases **v2.6.0** with Phase 26.1 · file lives in
+Status: ✅ complete · released as **v2.6.0** with Phase 26.1 · file lives in
 `docs/phases/`
 
 "When did I last change the oil on the BMW?", "How much did I spend on fuel
@@ -148,56 +148,116 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7, §7.18,
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.26 in `spec.md`; the Phase 26.2 line in §13.
-- [ ] `docs/ai.md`: *Ask Logbook*: what it can answer, how sources and the
+- [x] §7.26 in `spec.md`; the Phase 26.2 line in §13.
+- [x] `docs/ai.md`: *Ask Logbook*: what it can answer, how sources and the
       grounding check work, privacy and retention.
 
 ### Migration
-- [ ] `ai_threads` and `ai_messages` (user, created, role, content, tool
+- [x] `ai_threads` and `ai_messages` (user, created, role, content, tool
       calls and results as JSON, connection and model). Reversible on every
       engine; excluded from backups; scheduler retention.
 
 ### Code
-- [ ] `Service\Ai\Ask\ToolRegistry` and one class per tool (schema,
+- [x] `Service\Ai\Ask\ToolRegistry` and one class per tool (schema,
       access, module check, call into the existing service, and results with
       raw values, display strings and links).
-- [ ] `Service\Ai\Ask\Conversation` (context building, the loop, the
+- [x] `Service\Ai\Ask\Conversation` (context building, the loop, the
       limit, trimming) on Phase 26.1's `AiGateway`.
-- [ ] `Service\Ai\Ask\GroundingCheck` (number extraction and
+- [x] `Service\Ai\Ask\GroundingCheck` (number extraction and
       normalisation for en and de formats).
-- [ ] `Action\Ask\*`: page, POST, threads, delete, feedback. JS
+- [x] `Action\Ask\*`: page, POST, threads, delete, feedback. JS
       progressive enhancement for background posting and progress.
-- [ ] Translations (en, de): the system text, UI and progress lines.
+- [x] Translations (en, de): the system text, UI and progress lines.
 
 ### Tests
-- [ ] **Scripted provider** (a fake adapter replaying a script of tool calls
+- [x] **Scripted provider** (a fake adapter replaying a script of tool calls
       and a final answer) for deterministic tests of the loop, the limit,
       errors and trimming.
-- [ ] **Each tool:** the schema is valid; results match the service's
+- [x] **Each tool:** the schema is valid; results match the service's
       figures for the demo data; access (another user's vehicle → not
       found; no `ViewCosts` → amounts omitted); module off → not offered;
       display strings in km, UK and US preferences and German locale.
-- [ ] **Grounding:** a correct answer passes; an invented "£1,300" is
+- [x] **Grounding:** a correct answer passes; an invented "£1,300" is
       flagged; "1.284,50 €" in German matches `1284.50`; rounding to the
       shown precision matches; question numbers and dates are not flagged.
-- [ ] **Injection:** a service note containing instructions is passed as
+- [x] **Injection:** a service note containing instructions is passed as
       data; no tool can write, whatever the model asks.
-- [ ] Threads: follow-ups carry context; retention; delete; excluded from
+- [x] Threads: follow-ups carry context; retention; delete; excluded from
       backups.
-- [ ] Without JS, the form works end to end.
-- [ ] **Evaluation script** `bin/ai-eval.php`: 40 questions against the demo
+- [x] Without JS, the form works end to end.
+- [x] **Evaluation script** `bin/ai-eval.php`: 40 questions against the demo
       data (your examples among them) with expected tools and figures. It
       runs against the configured `ask` model and reports tool accuracy,
       grounding failures and time. It is not run in CI; results are pasted
       into the PR for each model tried.
-- [ ] Integration suite green on every engine.
+- [ ] **Evaluation results** for at least one local and one cloud model, in
+      the PR (no model was reachable while building).
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB: 1963 tests, migrate, full rollback and migrate again first).
 
 ### Release (with Phase 26.1)
-- [ ] `CHANGELOG.md` **2.6.0**: AI connections (local, network and cloud)
+- [x] `CHANGELOG.md` **2.6.0**: AI connections (local, network and cloud)
       and Ask Logbook. Upgrade notes: migrations; everything is off until an
       admin adds a connection; privacy notes.
-- [ ] Bump `VERSION`, rebuild assets, update the README (status,
+- [x] Bump `VERSION`, rebuild assets, update the README (status,
       documentation table gains `docs/ai.md`).
+
+---
+
+## Changed while building it
+
+- **Reports gained a *Costs* filter** (`group=fuel|maintenance|compliance|other`,
+  spec §7.7), so a source can link to "Reports filtered to fuel and 2025"
+  (acceptance 1). Distance is unchanged, so cost per distance becomes the
+  group's.
+- **Progress** (decided #73): the page sends a random token with the
+  question; the loop records each tool as it starts; the page polls
+  `/ask/progress/{token}`. The POST with `X-Ask: 1` answers JSON (`url` or
+  `error`); without it, a 303 to the answer.
+- **One lock for the whole question:** `AiGateway::session()` holds the
+  user's lock across every model call of a question (up to 10), so a second
+  question is refused for the whole of the first. Each call is still
+  checked and logged on its own.
+- **Every tool runs in a transaction that is always rolled back,** as well
+  as being written to read only. `trips_summary` reads the mileage rates,
+  which write HMRC's rate sets on first use for GB users; under Ask that
+  write is rolled back, and the claim is still valued.
+- **Periods:** `this_month`, `this_year` (1 January to today),
+  `last_12_months` and `all_time` are Reports' own presets, so the link
+  shows the same figure; `last_12_months` is this month and the 11 before,
+  as on Reports, not a rolling year. `last_month`, `last_year`, `tax_year`
+  (the user's own tax year) and `from`/`to` link as custom ranges. Several
+  named vehicles link to the fleet report and are named in the source.
+- **Vehicles in the context and in "all vehicles" include archived ones**
+  (last year's costs include a car sold since); Reports links add
+  `include_archived=1`.
+- **Grounding** also allows the numbers in the context (vehicle names
+  such as "320d", registrations) and in earlier tool results carried into a
+  follow-up.
+- **A deadline:** no model call starts after 240 seconds; the answer is then
+  a timeout with the tool calls so far kept, and the link to the page.
+- **Follow-ups** leave out earlier turns and tool results that drew on a
+  vehicle the user can no longer see (a share removed mid-thread).
+- **Tool limits found:** `vehicle_summary` leaves out reminder counts (the
+  API's summary syncs reminders, a write); `fuel_stats` judges grades over
+  the whole fuel history (the service has no period), and says so;
+  `mileage` gives averages over the whole log; `ownership` without
+  ViewCosts says costs aren't shared, with no figures.
+- **Feedback counts** (`ai_feedback`) are per month in `APP_TIMEZONE`;
+  changing a mark moves the count.
+- **The phone app's quick action** shows once Ask is set up for the
+  install (the manifest is the same for everyone); the page answers 404 to
+  anyone it isn't available to.
+- **Answers** are shown as paragraphs and lists, with `**bold**` kept;
+  everything else is escaped.
+- **Behind a proxy that times out** (often 60 s), the question keeps
+  running (`ignore_user_abort`), the progress JSON gives the answer's
+  thread once it is saved, and the page goes there whatever happened to the
+  POST. `docs/deployment.md` lists the timeouts to raise for no-JS use.
+  `composer start` runs four workers so polls are answered in development.
+- **Grounding:** only plain digits count as a year or a small count;
+  "£1,000" or "1.950 €" is always checked.
+- `phpunit.xml.dist` sets `memory_limit` to 512M: the suite's peak (about
+  123 MB) had reached the CLI default of 128M.
 
 ---
 
@@ -218,8 +278,25 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7, §7.18,
 
 - **Retention default:** 30 days (drafted), or keep nothing beyond the
   session?
+  *Decided 2026-10-01: 30 days by default; each user can choose 1, 7, 30
+  or 90.*
 - **Feedback:** keep only counts (drafted when content logging is off), or
   store the question and answer with a *Not right* mark so an owner can
   review model quality?
+  *Decided 2026-10-01: the mark is stored on the answer already kept in
+  the thread, and is deleted with the thread. Counts are kept as well.
+  Nothing extra is stored, whatever `AI_LOG_CONTENT` says.*
 - **Fleet-wide questions for admins:** should an admin's *Ask* see every
   vehicle on the instance, or only what they see in the app (drafted)?
+  *Answered: only what they see in the app. Admins see their own and
+  shared vehicles only (spec §7.21, open-questions #34;
+  `SharedVehicleAccess`), and the tools go through the same access.*
+
+Found while starting it:
+
+- **Progress without streaming:** answers come back whole (#66), but the
+  page is to show which tools are running.
+  *Decided 2026-10-01: the loop records each tool call on the thread as
+  it starts, and the page polls a small JSON progress URL about once a
+  second. Sessions live in the database, so a poll never waits on the
+  running request.*

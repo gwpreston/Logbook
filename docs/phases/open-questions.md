@@ -27,7 +27,8 @@ Phase 23.2 started. Phase 24's (#56–#58) were answered on 2026-10-01,
 before it started, and Phase 25's (#59–#64, four of them found while
 starting it) on the same day, before Phase 25 started. Phase 26.1's
 (#65–#69, two of them found while starting it) were answered on
-2026-10-01, before Phase 26.1 started.
+2026-10-01, before Phase 26.1 started, and Phase 26.2's (#70–#73, one of
+them found while starting it) on the same day, before Phase 26.2 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -100,6 +101,10 @@ starting it) on the same day, before Phase 25 started. Phase 26.1's
 | 67 | [26.1](phase-26.1.md) | Default for *Use AI features*? | Decided | On for every user once AI is set up; switchable off per user (spec §7.25, user setting `ai.use`). | 2026-10-01 |
 | 68 | [26.1](phase-26.1.md) | A second AI request while one runs: wait or refuse? | Decided | Refused at once ("Still working on your last question"), a lock row per user (spec §7.25 *Limits*, §6 AiBusy). | 2026-10-01 |
 | 69 | [26.1](phase-26.1.md) | Tailscale (100.64.0.0/10): *Your network* or *Internet*? | Decided | *Your network* (spec §7.25 *Where it runs*). | 2026-10-01 |
+| 70 | [26.2](phase-26.2.md) | Ask threads: kept 30 days, or nothing beyond the session? | Decided | 30 days by default; a user setting of 1, 7, 30 or 90 days (spec §7.26). | 2026-10-01 |
+| 71 | [26.2](phase-26.2.md) | Feedback: counts only, or the question and answer with the mark? | Decided | The mark is stored on the thread's answer and deleted with the thread; counts are kept too. Nothing extra is stored, whatever `AI_LOG_CONTENT` says (spec §7.26). | 2026-10-01 |
+| 72 | [26.2](phase-26.2.md) | Does an admin's *Ask* see every vehicle? | Answered | No: only what they see in the app (#34; spec §7.21; `SharedVehicleAccess`). The tools use the same access. | 2026-10-01 |
+| 73 | [26.2](phase-26.2.md) | Progress lines without streaming? | Decided | The loop records each tool call as it starts; the page polls a JSON progress URL about once a second (spec §7.26). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

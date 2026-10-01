@@ -8,6 +8,7 @@ use Closure;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Ai\AiConnection;
+use Logbook\Domain\Ai\AiModel;
 use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\ErrorCode;
 use Logbook\Domain\Ai\JsonMode;
@@ -64,6 +65,59 @@ final readonly class AiGateway
      */
     public function run(User $user, AiTaskName $task, ChatRequest $request): ChatResult
     {
+        [$connection, $model, $request] = $this->route($user, $task, $request);
+
+        return $this->call($user, $task->value, $connection, $model->name, $request);
+    }
+
+    /**
+     * Several calls for one piece of work (an Ask question and its tool
+     * loop) under one hold of the user's lock, so a second question is
+     * refused for the whole of the first, not just while a model answers.
+     * The lock lasts $seconds plus the connection's timeout (the last call
+     * may start just before $seconds run out) plus the grace; every call is
+     * still checked and logged on its own.
+     *
+     * @template T
+     * @param Closure(AiSession): T $work
+     * @return T
+     * @throws AiFailure
+     */
+    public function session(User $user, AiTaskName $task, int $seconds, Closure $work): mixed
+    {
+        [$connection, $model] = $this->route($user, $task, new ChatRequest([]));
+
+        $now = $this->clock->now();
+        $expires = $now->modify(sprintf('+%d seconds', $seconds + $connection->timeoutSeconds + self::LOCK_GRACE));
+        if (!$this->busy->acquire($user->id, $now, $expires)) {
+            $this->logRefusal($user->id, $task->value, $connection->id, $model->name, ErrorCode::Busy);
+            throw $this->failure(ErrorCode::Busy, '', $connection, $model->name);
+        }
+
+        try {
+            return $work(new AiSession(
+                $connection,
+                $model->name,
+                function (ChatRequest $request) use ($user, $task): ChatResult {
+                    [$connection, $model, $request] = $this->route($user, $task, $request);
+
+                    return $this->send($user, $task->value, $connection, $model->name, $request, false);
+                },
+            ));
+        } finally {
+            $this->busy->release($user->id);
+        }
+    }
+
+    /**
+     * The task's connection and model, and the request with the model's
+     * settings filled in.
+     *
+     * @return array{AiConnection, AiModel, ChatRequest}
+     * @throws AiFailure
+     */
+    private function route(User $user, AiTaskName $task, ChatRequest $request): array
+    {
         if (!$this->settings->ai->enabled || !$this->preferences->isOn($user->id)) {
             throw new AiFailure(ErrorCode::Disabled);
         }
@@ -90,7 +144,7 @@ final readonly class AiGateway
             ));
         }
 
-        return $this->call($user, $task->value, $connection, $model->name, $request);
+        return [$connection, $model, $request];
     }
 
     /**
@@ -101,9 +155,24 @@ final readonly class AiGateway
      */
     public function call(?User $user, string $task, AiConnection $connection, string $model, ChatRequest $request): ChatResult
     {
+        return $this->send($user, $task, $connection, $model, $request, true);
+    }
+
+    /**
+     * @throws AiFailure
+     */
+    private function send(
+        ?User $user,
+        string $task,
+        AiConnection $connection,
+        string $model,
+        ChatRequest $request,
+        bool $lock,
+    ): ChatResult {
         $content = $this->settings->ai->logContent ? $request->transcript() : null;
 
         return $this->guarded(
+            $lock ? $user : null,
             $user,
             $task,
             $connection,
@@ -159,6 +228,7 @@ final readonly class AiGateway
      * @return T
      */
     private function guarded(
+        ?User $locking,
         ?User $user,
         string $task,
         AiConnection $connection,
@@ -171,8 +241,8 @@ final readonly class AiGateway
 
         $now = $this->clock->now();
         $expires = $now->modify(sprintf('+%d seconds', $connection->timeoutSeconds + self::LOCK_GRACE));
-        if ($user !== null && !$this->busy->acquire($user->id, $now, $expires)) {
-            $this->logRefusal($user->id, $task, $connection->id, $model, ErrorCode::Busy);
+        if ($locking !== null && !$this->busy->acquire($locking->id, $now, $expires)) {
+            $this->logRefusal($locking->id, $task, $connection->id, $model, ErrorCode::Busy);
             throw $this->failure(ErrorCode::Busy, '', $connection, $model);
         }
 
@@ -195,8 +265,8 @@ final readonly class AiGateway
             ]);
             throw $this->failure($e->error, $detail, $connection, $model);
         } finally {
-            if ($user !== null) {
-                $this->busy->release($user->id);
+            if ($locking !== null) {
+                $this->busy->release($locking->id);
             }
         }
     }

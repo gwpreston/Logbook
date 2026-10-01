@@ -6,6 +6,80 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.6.0] — 2026-10-01
+
+Phases 26.1 and 26.2: **AI, with the model you choose, and Ask Logbook**.
+Logbook can now use a language model wherever it runs: on this server,
+on a computer on your network, or with a cloud provider. The first
+feature that uses it, *Ask Logbook*, answers questions in plain words from
+your own records. **Everything is off until an admin connects a model**;
+until then Logbook looks and behaves exactly as 2.5.0.
+
+### Added
+- **AI connections** (Settings → AI, admins only): any number, through
+  four adapters with no SDK: OpenAI-compatible (Ollama, llama.cpp, LM
+  Studio, vLLM, OpenAI, OpenRouter, Groq, Mistral, Together, DeepSeek and
+  other gateways), Ollama's own API, Anthropic and Google Gemini. Presets
+  fill the address; extra headers for a model behind a proxy; per
+  connection timeout, TLS check (or a CA bundle), largest request and a
+  monthly token cap.
+- **Where data goes, shown:** each connection is labelled *This server*,
+  *Your network* or *Internet* from what its address resolves to, checked
+  again on every request. An internet connection sends nothing until an
+  admin agrees, naming the host; changing the address asks again.
+- **Keys** are encrypted with a key derived from `SESSION_SECRET`, or read
+  from an environment variable (`env:NAME`), and never shown again after
+  saving.
+- **Models** listed from the provider or typed by name, with their
+  capabilities (tools, images, JSON output) from the provider and
+  confirmed by **Test** (a short reply, a tool call, an image, JSON).
+- **Tasks:** each AI job has one model (questions; receipts and
+  documents; text PDFs), so text can stay local while receipts go to a
+  vision model. No automatic fallback: a failure is shown, never sent
+  elsewhere.
+- **Limits and a usage log:** one request at a time per user, the
+  monthly cap, and calls, tokens, times and failures per connection and
+  task, without questions or answers (unless `AI_LOG_CONTENT=true`).
+- **Use AI features** in Settings → Account, on for everyone once AI is set
+  up, and three modules (*Ask Logbook*, *Actions*, *Scan*).
+- **Ask Logbook** (`/ask`, in the sidebar, the phone's header, on the
+  dashboard and in the phone app's quick actions): ask "How much did I
+  spend on fuel last year?", "When did I last change the oil on the
+  Golf?" or "Which car costs me the most per mile?". The model may only
+  call fixed **read-only tools** over Logbook's own services (costs, cost
+  per distance, fuel, maintenance, last done, coming up, documents, tyres,
+  mileage, cost of ownership, trips, needs attention), as the asking user:
+  it sees only the vehicles and amounts you see in the app, never writes
+  SQL and can't change anything.
+- **Sources** under every answer, each tool call in words with its key
+  figures and a link to the page showing the same thing; and a **grounding
+  check** that highlights any figure in the answer that Logbook didn't
+  provide.
+- **Conversations** for follow-ups ("and last year?"), kept 30 days after
+  their last message by default (1, 7, 30 or 90 on the Ask page), with
+  *Delete* and *Delete all*; *Helpful* / *Not right* on each answer.
+- Reports has a **Costs** filter (fuel, maintenance, compliance or other),
+  in the totals, chart, table and CSV.
+- An optional `ai` profile in `docker-compose.yml` runs Ollama beside
+  Logbook.
+- `bin/ai-eval.php` asks 40 questions of the configured model against the
+  demo data and reports tool accuracy, figures, grounding and time.
+
+### Upgrade notes
+- Two migrations (`ai_connections` and its tables; `ai_threads`,
+  `ai_messages`, `ai_progress`, `ai_feedback`). Run them as usual; both
+  roll back.
+- Nothing else to do. AI stays off until an admin adds a connection and
+  gives *Answering questions* a model in Settings → AI. `AI_ENABLED=false`
+  switches it off whatever is configured.
+- **Privacy:** with a model on this server or your network, nothing
+  leaves it. With an internet connection, the question and the records
+  needed to answer it are sent to that provider. Backups carry
+  connections, models and tasks, never keys, the usage log or Ask
+  conversations. See [`docs/ai.md`](docs/ai.md).
+- New settings: `AI_ENABLED`, `AI_LOG_CONTENT` and
+  `AI_ALLOW_INSECURE_TLS` (see `docs/configuration.md`).
+
 ## [2.5.0] — 2026-10-01
 
 Phase 25: **trend and cost checks**. *Needs attention* now spots a car

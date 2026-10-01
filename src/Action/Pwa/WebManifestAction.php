@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Pwa;
 
 use Logbook\Domain\Feature\Feature;
+use Logbook\Service\Ai\Ask\AskAvailability;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\View\AssetPackage;
@@ -24,6 +25,7 @@ final readonly class WebManifestAction
         private AssetPackage $assets,
         private TranslatorInterface $translator,
         private FeatureToggles $features,
+        private AskAvailability $ask,
     ) {
     }
 
@@ -60,6 +62,11 @@ final readonly class WebManifestAction
         }
         if ($this->features->isEnabled(Feature::Trips)) {
             $shortcuts[] = ['name' => $this->translator->trans('nav.log_trip'), 'url' => $base . '/log/new/trip'];
+        }
+        // Ask Logbook (spec.md §7.26) once it is set up; the page itself
+        // answers 404 to anyone it isn't available to.
+        if ($this->ask->isSetUp()) {
+            $shortcuts[] = ['name' => $this->translator->trans('ask.title'), 'url' => $base . '/ask'];
         }
         if ($shortcuts !== []) {
             $manifest['shortcuts'] = $shortcuts;

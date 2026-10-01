@@ -1,0 +1,173 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ai.twig' as ai %}
+
+{#
+ # Ask Logbook (spec.md §7.26): the question box, the open thread with each
+ # answer's sources and grounding marks, and the user's threads. Works as
+ # plain forms; assets/js/ask.js posts in the background and shows progress.
+ #}
+{% set active_nav = 'ask' %}
+
+{% block head %}<script defer src="{{ asset('js/ask.js') }}"></script>{% endblock %}
+
+{% block title %}{{ (thread ? thread.title : 'ask.title'|trans) }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow" data-ask>
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'ask.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'ask.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if connection %}
+            <p class="ask-where" data-ask-where>
+                {{ ai.location(connection.location) }}
+                <span>{{ ('ask.where.' ~ connection.location.value)|trans({connection: connection.name}) }}</span>
+            </p>
+        {% endif %}
+
+        {% if turns is not empty %}
+            <ol class="ask-thread" aria-label="{{ 'ask.thread_label'|trans }}">
+                {% for turn in turns %}
+                    <li class="ask-turn">
+                        {% if turn.question %}
+                            <p class="ask-question"><span class="visually-hidden">{{ 'ask.you_asked'|trans }}</span>{{ turn.question.content }}</p>
+                        {% endif %}
+                        {% if turn.answer %}
+                            {% set answer = turn.answer %}
+                            <article class="card ask-answer" id="answer-{{ answer.id }}" aria-label="{{ 'ask.answer_label'|trans }}">
+                                {% if turn.error %}
+                                    <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ turn.error }}</span></div>
+                                    {% if answer.firstLink() %}
+                                        <p><a href="{{ base_path() }}{{ answer.firstLink() }}">{{ 'ask.error.see_page'|trans }}</a></p>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="ask-answer__text" data-ask-answer>{{ answer.content|ask_answer(answer.ungrounded) }}</div>
+                                    {% if answer.ungrounded is not empty %}
+                                        <div class="alert alert--warning" role="note" data-ask-grounding>
+                                            {{ ui.icon('warning') }}<span>{{ 'ask.grounding.warning'|trans({count: answer.ungrounded|length}) }}</span>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if turn.sources is not empty %}
+                                    <details class="ask-sources" open>
+                                        <summary>{{ 'ask.sources'|trans({count: turn.sources|length}) }}</summary>
+                                        <ul class="ask-sources__list" data-ask-sources>
+                                            {% for source in turn.sources %}
+                                                <li>
+                                                    {% if source.link %}
+                                                        <a href="{{ base_path() }}{{ source.link }}">{{ source.source }}</a>
+                                                    {% else %}
+                                                        {{ source.source }}
+                                                    {% endif %}
+                                                    {% if source.figures is not empty %}
+                                                        <span class="muted"> · {{ source.figures|slice(0, 4)|join(' · ') }}</span>
+                                                    {% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </details>
+                                {% endif %}
+
+                                <footer class="ask-answer__footer">
+                                    {% if answer.connectionName %}
+                                        <span class="muted">{{ 'ask.answered_by'|trans({connection: answer.connectionName, model: answer.model ?? ''}) }}</span>
+                                    {% endif %}
+                                    {% if not turn.error %}
+                                        <button type="button" class="btn btn--ghost" data-ask-copy="answer-{{ answer.id }}" data-copied="{{ 'ask.copied'|trans }}" hidden>{{ ui.icon('content_copy') }}{{ 'ask.copy'|trans }}</button>
+                                        <form method="post" action="{{ url_for('ask.feedback', {message: answer.id}) }}" class="ask-feedback">
+                                            {{ ui.csrf(csrf) }}
+                                            <span class="visually-hidden">{{ 'ask.feedback.label'|trans }}</span>
+                                            <button class="btn btn--ghost" name="mark" value="helpful" aria-pressed="{{ answer.feedback and answer.feedback.value == 'helpful' ? 'true' : 'false' }}">{{ ui.icon('check') }}{{ 'ask.feedback.helpful'|trans }}</button>
+                                            <button class="btn btn--ghost" name="mark" value="not_right" aria-pressed="{{ answer.feedback and answer.feedback.value == 'not_right' ? 'true' : 'false' }}">{{ ui.icon('close') }}{{ 'ask.feedback.not_right'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                </footer>
+                            </article>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+
+        <form class="card form ask-form" method="post" action="{{ url_for('ask.post') }}" data-ask-form data-progress-url="{{ url_for('ask.progress', {token: progress_token}) }}" data-working="{{ 'ask.working'|trans }}" data-failed="{{ 'ask.failed'|trans }}">
+            {{ ui.csrf(csrf) }}
+            <input type="hidden" name="progress" value="{{ progress_token }}">
+            {% if thread %}<input type="hidden" name="thread" value="{{ thread.id }}">{% endif %}
+            <div class="field">
+                <label class="field__label" for="ask-question">{{ (thread ? 'ask.field.follow_up' : 'ask.field.question')|trans }}</label>
+                <textarea class="input" id="ask-question" name="question" rows="3" maxlength="1000" required
+                    {%- if error %} aria-invalid="true" aria-describedby="ask-question-error"{% endif %}
+                    placeholder="{{ 'ask.placeholder'|trans }}">{{ question }}</textarea>
+                {% if error %}<p class="field__error" id="ask-question-error" role="alert">{{ error }}</p>{% endif %}
+            </div>
+            <div class="btn-row">
+                <button class="btn btn--primary" type="submit" data-ask-submit>{{ ui.icon('forum') }}{{ 'ask.submit'|trans }}</button>
+                {% if thread %}<a class="btn" href="{{ url_for('ask') }}">{{ 'ask.new_thread'|trans }}</a>{% endif %}
+            </div>
+            <p class="ask-progress muted" data-ask-progress role="status" aria-live="polite" hidden></p>
+            <p class="field__hint">{{ 'ask.hint'|trans }}</p>
+        </form>
+
+        {% if not thread %}
+            <section class="card" aria-labelledby="ask-examples-heading">
+                <h2 id="ask-examples-heading" class="card__title">{{ ui.icon('info') }}{{ 'ask.examples.heading'|trans }}</h2>
+                <ul class="list">
+                    {% for key in ['fuel_year', 'last_oil', 'cost_per_mile', 'coming_up'] %}
+                        <li><a class="list__item" href="{{ url_for('ask', {}, {q: ('ask.examples.' ~ key)|trans}) }}"><span class="list__body"><span class="list__title">{{ ('ask.examples.' ~ key)|trans }}</span></span></a></li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="ask-threads-heading">
+            <h2 id="ask-threads-heading" class="card__title">{{ ui.icon('history') }}{{ 'ask.threads.heading'|trans }}</h2>
+            {% if threads is empty %}
+                <p class="muted">{{ 'ask.threads.none'|trans }}</p>
+            {% else %}
+                <ul class="list" data-ask-threads>
+                    {% for item in threads %}
+                        <li class="ask-thread-row">
+                            <a class="list__item" href="{{ url_for('ask.thread', {thread: item.id}) }}"{% if thread and thread.id == item.id %} aria-current="page"{% endif %}>
+                                <span class="list__body">
+                                    <span class="list__title">{{ item.title }}</span>
+                                    <span class="list__meta">{{ item.updatedAt|local_datetime }}</span>
+                                </span>
+                            </a>
+                            <form method="post" action="{{ url_for('ask.thread.delete', {thread: item.id}) }}">
+                                {{ ui.csrf(csrf) }}
+                                <button class="btn btn--ghost" type="submit">{{ ui.icon('delete') }}<span>{{ 'ask.threads.delete'|trans }}</span><span class="visually-hidden">: {{ item.title }}</span></button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <details class="ask-delete-all">
+                    <summary class="btn btn--ghost">{{ ui.icon('delete') }}{{ 'ask.threads.delete_all'|trans }}</summary>
+                    <form method="post" action="{{ url_for('ask.threads.delete') }}">
+                        {{ ui.csrf(csrf) }}
+                        <p>{{ 'ask.threads.delete_all_confirm'|trans({count: threads|length}) }}</p>
+                        <button class="btn btn--danger" type="submit">{{ 'ask.threads.delete_all_button'|trans }}</button>
+                    </form>
+                </details>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('ask.retention') }}" class="form ask-retention">
+                {{ ui.csrf(csrf) }}
+                <div class="field">
+                    <label class="field__label" for="ask-retention">{{ 'ask.retention.label'|trans }}</label>
+                    <select class="select" id="ask-retention" name="days" aria-describedby="ask-retention-hint">
+                        {% for days in retention_choices %}
+                            <option value="{{ days }}"{% if days == retention_days %} selected{% endif %}>{{ 'ask.retention.days'|trans({days: days}) }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="field__hint" id="ask-retention-hint">{{ 'ask.retention.hint'|trans }}</p>
+                </div>
+                <button class="btn" type="submit">{{ 'ask.retention.save'|trans }}</button>
+            </form>
+        </section>
+    </div>
+{% endblock %}

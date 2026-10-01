@@ -6,8 +6,8 @@ where it runs: on this server, on a computer on your network, or with a
 cloud provider. **Nothing is sent to any model until an admin sets it up**,
 and until then Logbook looks and behaves exactly as it does without AI.
 
-This page covers the setup (Phase 26.1). The features themselves arrive in
-later versions: *Ask Logbook*, drafting entries and reading receipts.
+This page covers the setup (Phase 26.1) and *Ask Logbook* (Phase 26.2).
+Drafting entries and reading receipts arrive in later versions.
 
 - [What AI does and never does](#what-ai-does-and-never-does)
 - [Where a model runs](#where-a-model-runs)
@@ -15,6 +15,7 @@ later versions: *Ask Logbook*, drafting entries and reading receipts.
 - [Connection recipes](#connection-recipes)
 - [Models, capabilities and Test](#models-capabilities-and-test)
 - [Tasks](#tasks)
+- [Ask Logbook](#ask-logbook)
 - [Limits and the usage log](#limits-and-the-usage-log)
 - [Keys and secrets](#keys-and-secrets)
 - [Which model?](#which-model)
@@ -200,6 +201,79 @@ thinking): some refuse it. A reasoning model also spends part of the
 longest answer on thinking, so keep that generous or empty. A model without what a task needs
 can't be chosen for it. A task without a model switches its features off.
 
+## Ask Logbook
+
+Ask a question in plain words on **Ask** (`/ask`; in the sidebar, the
+header on a phone, the dashboard and the phone app's quick actions):
+"How much did I spend on fuel last year?", "When did I last change the oil
+on the Golf?", "Which car costs me the most per mile?". It shows once the
+*Answering questions* task has a model, the *Ask Logbook* module is on
+(Settings → Modules) and your own *Use AI features* is on. The page names
+where the answer comes from ("Answered by Ollama on the desktop on your
+network").
+
+**What it can answer.** Anything Logbook already shows: costs by period,
+category, month or vehicle; running cost per mile or km; fuel economy,
+volumes, prices and grades; maintenance records and when something was
+last done; what is coming up and what needs attention; documents and
+their expiry; tyres and their wear; mileage; cost of ownership; and, with
+the *Trips* module, business mileage and the claim value. It does not
+know anything outside your records (prices, the weather, general advice)
+and says so.
+
+**How it works.** The model never sees your database and never writes
+SQL. It is given today's date, your units, currency and language, and the
+list of vehicles you can see; then it may call up to 8 read-only tools,
+each backed by the same code as the page that shows the figure. Every tool
+runs **as you**: it sees only the vehicles you see in the app (an admin
+sees their own and shared vehicles, as everywhere else) and leaves out
+amounts you can't see. Tools return finished figures in your units and
+currency ("£1,284.50", "48.3 mpg"), and the model is told to copy them,
+never to convert or add up. Nothing can be added or changed from *Ask*:
+there are no tools that write.
+
+**Sources.** Under each answer, *Sources* lists every tool call in words
+("Costs · All vehicles · 1 Jan 2025 – 31 Dec 2025 · Fuel · by category")
+with its key figures and a link to the page showing the same thing with
+the same filters. Reports has a *Costs* filter for this (fuel,
+maintenance, compliance or other).
+
+**The grounding check.** Every number in an answer is compared with what
+the tools returned, the context and your question, allowing for the
+rounding the answer shows and for local formats (`1,284.50` and
+`1.284,50`). A figure that matches nothing is highlighted, with "Logbook
+didn't provide this figure. Check it against the sources." Dates, years
+and small counts are not checked. The answer is still shown.
+
+**Conversations.** A follow-up ("and last year?") carries the earlier
+questions, answers and tool results of the same conversation (trimmed to
+fit; anything about a vehicle you can no longer see is left out).
+Conversations are kept for **30 days** after their last message; choose 1,
+7, 30 or 90 days on the Ask page. *Delete* and *Delete all* remove them
+at once. They are never in backups or exports.
+
+**Feedback.** *Helpful* and *Not right* are stored on the answer, so they
+go when the conversation goes; a count per month is kept for your own
+review of how well a model does. Nothing else is stored, whatever
+`AI_LOG_CONTENT` says.
+
+**Privacy.** With a model on this server or your network, nothing leaves
+it. With an internet connection, your question and the tool results needed
+to answer it are sent to that provider, as the acknowledgement says.
+
+**Progress and timing.** With JavaScript the page shows what is being
+looked up ("Looking up your costs…") while it works; without it, the form
+posts and the answer page opens when it is ready. A question gives up
+after about four minutes of model calls. If it fails, the page says why
+and links to the page for what was asked, when the question got that far.
+Nothing is retried on another connection.
+
+**Trying a model.** `php bin/ai-eval.php` asks 40 questions of the
+configured model as the demo owner (`./bin/dev-setup.sh
+--with-sample-data`) and reports how often it chose the right tool, whether
+the expected figures appear, how many answers had a flagged figure, and the
+time. It sends real requests, so it is never run automatically.
+
 ## Limits and the usage log
 
 Per connection:
@@ -255,6 +329,7 @@ is current, and try a model with **Test** before relying on it.
 | *on the internet, and an admin hasn't agreed* | Tick the acknowledgement on the connection's page; it is asked again when the address changes |
 | *needs to be entered again* | `SESSION_SECRET` changed, or a backup was restored: type the key again |
 | *answered in a way Logbook couldn't use* | The model doesn't support what was asked (tools, JSON); run Test and untick what fails, or choose another model |
+| *Logbook didn't provide this figure* (Ask) | The model added, converted or rounded a figure itself; check it against the sources, and try a stronger model if it happens often |
 | *redirect … not followed* | Give the address the server redirects to (often a missing or extra `/v1`, or `http` instead of `https`) |
 
 The full error text, with keys removed, is in Logbook's log and in each
