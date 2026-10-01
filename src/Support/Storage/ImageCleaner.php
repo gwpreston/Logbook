@@ -50,6 +50,39 @@ final class ImageCleaner
     }
 
     /**
+     * Whether the image decodes, leaving the file untouched (an incident
+     * photo keeps its metadata, spec.md §7.12).
+     */
+    public static function decodes(string $path, string $mime): bool
+    {
+        return self::open($path, $mime) !== null;
+    }
+
+    /**
+     * The image upright and without metadata, as bytes in its own format,
+     * for a copy that leaves Logbook (an incident photo in the sale pack
+     * ZIP, spec.md §7.19). Null when it cannot be decoded.
+     */
+    public static function cleanedBytes(string $path, string $mime): ?string
+    {
+        $image = self::open($path, $mime);
+        if ($image === null) {
+            return null;
+        }
+
+        ob_start();
+        $written = match ($mime) {
+            'image/jpeg' => imagejpeg($image, null, self::JPEG_QUALITY),
+            'image/png' => imagepng($image, null, 9),
+            'image/webp' => imagewebp($image, null, self::WEBP_QUALITY),
+            default => false,
+        };
+        $bytes = (string) ob_get_clean();
+
+        return $written && $bytes !== '' ? $bytes : null;
+    }
+
+    /**
      * The image upright, scaled so its long edge is at most $maxEdge, as
      * JPEG bytes (transparency on white). Null when it cannot be decoded.
      */

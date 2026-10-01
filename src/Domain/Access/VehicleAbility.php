@@ -23,4 +23,10 @@ enum VehicleAbility: string
     case Own = 'own';
     /** Other drivers' trips and their destinations (Phase 22; Manage and Own). */
     case ViewOthersTrips = 'view_others_trips';
+    /**
+     * An incident's fault, other party, police reference, claim number,
+     * payout, estimate and driver (Phase 27.1; Manage and Own, and the
+     * incident's creator, spec.md §7.29).
+     */
+    case ViewIncidentDetails = 'view_incident_details';
 }

@@ -4690,8 +4690,9 @@ nothing is counted twice (§6 Incident).
   - **A tyre change linked to a service record follows the record**
     (decided 2026-10-01, `docs/phases/open-questions.md` #103): it takes
     the record's incident, its own select is replaced by "Follows the
-    service record", and linking, unlinking or deleting the record moves
-    it with it. A tyre change with no record can be linked on its own.
+    service record", and linking or unlinking the record moves it with
+    it. Deleting the record leaves the change linked on its own. A tyre
+    change with no record can be linked on its own.
     Its cost is the record's (§7.17), so it adds nothing to linked
     costs, which are read from the cost ledger (§7.7) and filtered by
     incident, so they always match Reports.
@@ -4766,8 +4767,12 @@ nothing is counted twice (§6 Incident).
   incident needs `Manage`, as entries do). Fault, the other party, the
   police reference, the claim number, the payout, the estimate and the
   driver are visible to `Manage` and `Own` and to the incident's creator.
-  Others with `View` see the date, type, damage, photos and linked
-  repairs. Amounts also need `ViewCosts`.
+  Others with `View` see the date, type, damage (areas, severity, write-off
+  category), status, photos and linked repairs; everything else (the time,
+  location, description, notes and claim) counts as a detail too. Amounts
+  also need `ViewCosts` (as an entry's own amount, §7.21). One projection
+  (`Service\Incident\IncidentView`) is what every page, export, API
+  answer and tool reads.
 - **API** (§7.20): `GET/POST /api/v1/vehicles/{id}/incidents`, `GET
   /api/v1/incidents/history` (the claims history's filters and rows),
   with the access rules above; a POST's duplicate key is the vehicle,
