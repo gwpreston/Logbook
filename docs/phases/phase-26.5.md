@@ -2,7 +2,7 @@
 
 *Use Logbook from Claude Desktop, or any assistant that speaks MCP.*
 
-Status: 🚧 in progress · releases **v2.9.0** · file lives in `docs/phases/`
+Status: ✅ complete (manual interop check and tag pending) · releases **v2.9.0** · file lives in `docs/phases/`
 
 Phases 26.2 and 26.3 define Logbook's tools: read tools over its services,
 and draft tools for new entries. This phase exposes the **same tools** over
@@ -134,7 +134,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.20,
       expire.
 - [x] Works under `APP_BASE_PATH`; `MCP_ENABLED=false` and
       `API_ENABLED=false` → 404.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine.
 - [ ] **Manual interop check** (in the PR): Claude Desktop and one other MCP
       client, over the LAN and through the reverse proxy.
 
