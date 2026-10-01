@@ -62,6 +62,8 @@ final readonly class AiStatus
      * its model is no longer added, lacks what the task needs, or sits on a
      * disabled connection. `read_text` without its own model uses `ask`'s
      * when that has JSON output.
+     *
+     * @phpstan-impure it reads the settings as they are now
      */
     public function model(AiTaskName $task): ?AiModel
     {
