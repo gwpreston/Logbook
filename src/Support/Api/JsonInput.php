@@ -11,13 +11,15 @@ use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
+use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
 
 /**
- * JSON request bodies → the form input the fill-up, reading and trip forms
- * parse (spec.md §7.20). A new input adapter, like the CSV import's: the forms'
+ * JSON request bodies → the form input the fill-up, reading, trip, service
+ * record, document, expense, tread check and manual reminder forms parse
+ * (spec.md §7.20). A new input adapter, like the CSV import's: the forms'
  * parsers, validation and messages are unchanged.
  *
  * - Numbers are never floats: number tokens are turned into strings before
@@ -72,6 +74,56 @@ final class JsonInput
         'notes' => 'notes',
     ];
     private const array TRIP_EXTRA = ['journey_id'];
+
+    /** API field → form field, for the service record form (Phase 26.3). */
+    public const array MAINTENANCE_FIELDS = [
+        'performed_on' => 'performed_on',
+        'odometer' => 'odometer',
+        'category' => 'category',
+        'title' => 'title',
+        'cost' => 'cost',
+        'vendor' => 'vendor',
+        'description' => 'description',
+        'schedule_id' => 'schedule',
+    ];
+
+    /** API field → form field, for the document form (Phase 26.3). */
+    public const array DOCUMENT_FIELDS = [
+        'type' => 'type',
+        'title' => 'title',
+        'provider' => 'provider',
+        'reference' => 'reference',
+        'start_on' => 'start_on',
+        'expiry_on' => 'expiry_on',
+        'cost' => 'cost',
+        'odometer' => 'odometer',
+        'notes' => 'notes',
+    ];
+
+    /** API field → form field, for the expense form (Phase 26.3). */
+    public const array EXPENSE_FIELDS = [
+        'spent_on' => 'spent_on',
+        'category' => 'category',
+        'amount' => 'amount',
+        'note' => 'note',
+    ];
+
+    /** API field → form field, for *Check tread* (Phase 26.3); depths become `tread_{tyre}`. */
+    public const array TREAD_CHECK_FIELDS = [
+        'checked_on' => 'done_on',
+        'odometer' => 'odometer',
+        'note' => 'note',
+        'depths' => 'depths',
+    ];
+    private const array TREAD_CHECK_EXTRA = ['distance_unit', 'depth_unit'];
+
+    /** API field → form field, for the manual reminder form (Phase 26.3). */
+    public const array REMINDER_FIELDS = [
+        'title' => 'title',
+        'due_on' => 'due_on',
+        'lead_time_days' => 'lead_time_days',
+        'notes' => 'notes',
+    ];
 
     /**
      * The body as an object, numbers as strings.
@@ -252,6 +304,170 @@ final class JsonInput
     }
 
     /**
+     * A service record body as the maintenance form's input.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function maintenance(array $body, DisplayPreferences $owner, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::MAINTENANCE_FIELDS), 'distance_unit'], $errors);
+
+        $input = [
+            'performed_on' => self::text($body, 'performed_on', $errors, $today->format('Y-m-d')),
+            'odometer' => self::decimal($body, 'odometer', $errors),
+            'category' => self::text($body, 'category', $errors),
+            'title' => self::text($body, 'title', $errors),
+            'cost' => self::decimal($body, 'cost', $errors),
+            'vendor' => self::text($body, 'vendor', $errors),
+            'description' => self::text($body, 'description', $errors),
+            'schedule' => self::decimal($body, 'schedule_id', $errors),
+        ];
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A document body as the document form's input. Dates are optional, as
+     * on the form.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function document(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::DOCUMENT_FIELDS), 'distance_unit'], $errors);
+
+        $input = [
+            'type' => self::text($body, 'type', $errors),
+            'title' => self::text($body, 'title', $errors),
+            'provider' => self::text($body, 'provider', $errors),
+            'reference' => self::text($body, 'reference', $errors),
+            'start_on' => self::text($body, 'start_on', $errors),
+            'expiry_on' => self::text($body, 'expiry_on', $errors),
+            'cost' => self::decimal($body, 'cost', $errors),
+            'odometer' => self::decimal($body, 'odometer', $errors),
+            'notes' => self::text($body, 'notes', $errors),
+        ];
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * An expense body as the expense form's input.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function expense(array $body, DisplayPreferences $owner, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::EXPENSE_FIELDS), $errors);
+
+        $input = [
+            'spent_on' => self::text($body, 'spent_on', $errors, $today->format('Y-m-d')),
+            'category' => self::text($body, 'category', $errors),
+            'amount' => self::decimal($body, 'amount', $errors),
+            'note' => self::text($body, 'note', $errors),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $owner->distanceUnit, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A tread check body as *Check tread*'s input: each position's depth
+     * goes to the tyre fitted there (`tread_{id}`). A position with no
+     * fitted tyre is refused, as the form never offers it.
+     *
+     * @param array<string, mixed> $body
+     * @param array<string, int> $fitted position code → fitted tyre id
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function treadCheck(
+        array $body,
+        DisplayPreferences $owner,
+        DateTimeImmutable $today,
+        array $fitted,
+    ): array|ValidationErrors {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::TREAD_CHECK_FIELDS), ...self::TREAD_CHECK_EXTRA], $errors);
+
+        $input = [
+            'done_on' => self::text($body, 'checked_on', $errors, $today->format('Y-m-d')),
+            'odometer' => self::decimal($body, 'odometer', $errors),
+            'note' => self::text($body, 'note', $errors),
+        ];
+        $depths = $body['depths'] ?? [];
+        if (!is_array($depths) || ($depths !== [] && array_is_list($depths))) {
+            $errors->add('depths', 'api.validation.depths');
+            $depths = [];
+        }
+        foreach ($depths as $position => $depth) {
+            $field = 'depths.' . $position;
+            $tyre = $fitted[(string) $position] ?? null;
+            if ($tyre === null) {
+                $errors->add($field, 'api.validation.no_tyre_at_position');
+                continue;
+            }
+            $input['tread_' . $tyre] = self::decimal([$field => $depth], $field, $errors);
+        }
+
+        $distance = self::distanceUnit($body, $owner, $errors);
+        $depthUnit = $owner->depthUnit;
+        $unit = $body['depth_unit'] ?? null;
+        if ($unit !== null) {
+            $depthUnit = is_string($unit) ? DepthUnit::tryFrom($unit) : null;
+            if ($depthUnit === null) {
+                $errors->add('depth_unit', 'validation.choice');
+                $depthUnit = $owner->depthUnit;
+            }
+        }
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit, $depthUnit)]
+            : $errors;
+    }
+
+    /**
+     * A manual reminder body as the reminder form's input, for this vehicle.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function reminder(
+        array $body,
+        DisplayPreferences $owner,
+        int $vehicleId,
+        int $defaultLeadDays,
+    ): array|ValidationErrors {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::REMINDER_FIELDS), $errors);
+
+        $lead = self::decimal($body, 'lead_time_days', $errors);
+        $input = [
+            'vehicle_id' => (string) $vehicleId,
+            'title' => self::text($body, 'title', $errors),
+            'due_on' => self::text($body, 'due_on', $errors),
+            'lead_time_days' => array_key_exists('lead_time_days', $body) ? $lead : (string) $defaultLeadDays,
+            'notes' => self::text($body, 'notes', $errors),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $owner->distanceUnit, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
      * A form's errors under the API's field names.
      *
      * @param array<string, string> $fields API field → form field
@@ -384,8 +600,12 @@ final class JsonInput
     /**
      * The owner's preferences with the request's units, "." decimals and UTC.
      */
-    private static function preferences(DisplayPreferences $owner, DistanceUnit $distance, VolumeUnit $volume): DisplayPreferences
-    {
+    private static function preferences(
+        DisplayPreferences $owner,
+        DistanceUnit $distance,
+        VolumeUnit $volume,
+        ?DepthUnit $depth = null,
+    ): DisplayPreferences {
         return new DisplayPreferences(
             self::LOCALE,
             'UTC',
@@ -395,7 +615,7 @@ final class JsonInput
             $owner->currency,
             $owner->theme,
             $owner->accent,
-            $owner->depthUnit,
+            $depth ?? $owner->depthUnit,
         );
     }
 }

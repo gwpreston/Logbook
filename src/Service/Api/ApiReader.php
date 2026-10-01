@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Api\ApiKey;
+use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Expense\ExpenseEntry;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
@@ -235,6 +236,55 @@ final readonly class ApiReader
             ),
             'cursor' => $page['cursor'],
         ];
+    }
+
+    /**
+     * One service record as the list returns it (a write's response).
+     *
+     * @return array<string, mixed>
+     */
+    public function maintenanceEntry(User $user, Vehicle $vehicle, MaintenanceEntry $entry): array
+    {
+        return Serializer::maintenanceEntry(
+            $entry,
+            $this->vehicles->currencyFor($user, $vehicle),
+            $this->costs($user, $vehicle) || EntryAccess::isOwn($user, $entry->createdBy),
+        );
+    }
+
+    /**
+     * One document, with its status, as the list returns it.
+     *
+     * @return array<string, mixed>
+     */
+    public function document(User $user, Vehicle $vehicle, ComplianceDocument $document): array
+    {
+        foreach ($this->documentStates($user, $vehicle) as $state) {
+            if ($state->document->id === $document->id) {
+                return Serializer::document(
+                    $state,
+                    $this->vehicles->currencyFor($user, $vehicle),
+                    $this->costs($user, $vehicle) || EntryAccess::isOwn($user, $document->createdBy),
+                );
+            }
+        }
+        throw new \LogicException('A document just read is missing from its vehicle.');
+    }
+
+    /**
+     * One expense as the list returns it. The writer typed the amount, so
+     * it is shown; an existing one (a retry) follows ViewCosts and own entries.
+     *
+     * @return array<string, mixed>
+     */
+    public function expenseEntry(User $user, Vehicle $vehicle, ExpenseEntry $entry): array
+    {
+        $out = Serializer::expense($entry, $this->vehicles->currencyFor($user, $vehicle));
+        if (!$this->costs($user, $vehicle) && !EntryAccess::isOwn($user, $entry->createdBy)) {
+            unset($out['amount'], $out['currency']);
+        }
+
+        return $out;
     }
 
     /**

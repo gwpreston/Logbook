@@ -782,6 +782,19 @@ MySQL only.
 - id, month (`YYYY-MM`), mark (`helpful` | `not_right`), total. `(month,
   mark)` is unique. Kept when threads go. **Not in backups.**
 
+**AiDraft** (Phase 26.3, §7.26 *Drafting entries*)
+- id, user_id (`ON DELETE CASCADE`), thread_id (optional, `ON DELETE
+  SET NULL`), kind (`fuel` | `odometer` | `maintenance` | `document` |
+  `expense` | `tyre_check` | `reminder`), vehicle_id (`ON DELETE
+  CASCADE`), input (JSON: the validated API-shaped body), card (JSON:
+  the formatted lines, derived marks and warnings shown on the card),
+  form_values (JSON: the create form's values in the user's units and
+  language, for *Edit*), created_at, expires_at (an hour later),
+  discarded_at, applied_at, applied_entry_id and
+  applied_updated_at (optional; *Undo*'s check that the entry is
+  untouched), all UTC. Deleted by the scheduled task once expired and not
+  applied, or a day after *Add*. **Not in backups** or exports.
+
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
   User-scoped keys include `reminders` (lead times), `notifications`,
@@ -3044,8 +3057,9 @@ available for active and archived vehicles.
 
 A small JSON API for Home Assistant, Apple Shortcuts, Android automations,
 Grafana, Node-RED and OBD tools. It reads what a dashboard or automation
-needs and writes the two things automations log: fill-ups and odometer
-readings. Guides with worked examples are in `docs/api.md`; the OpenAPI
+needs and writes the things automations log: fill-ups and odometer
+readings, and, from Phase 26.3, service records, documents, expenses, tread
+checks and manual reminders. Guides with worked examples are in `docs/api.md`; the OpenAPI
 3.1 description (`docs/api/openapi.json`) is the contract, and the tests
 validate every response against it.
 
@@ -3178,6 +3192,30 @@ parameter answers 400 (`invalid_parameter`).
 - Archived vehicles refuse writes (409, `vehicle_archived`). The forms
   never offer them (the pickers leave them out); the API says so.
 
+**More write endpoints** (Phase 26.3, decided 2026-10-01,
+`docs/phases/open-questions.md` #76). The same JSON input adapter maps them
+onto their forms, as it maps fill-ups and readings, and Ask's draft tools
+(§7.26) use the same mappings. Each needs the ability its form needs:
+`Log`, except a manual reminder, which needs `Manage` (as on the
+Reminders page, §7.21). The same rules apply: scope `read_write`, decimal
+strings, unknown fields refused, the form's
+validation and messages (422), `201` with the entry as its list returns it
+plus `warnings`, archived vehicles refused (409), and a module that is
+switched off answers 404. Dates are `YYYY-MM-DD` and default to today in
+the key owner's time zone. Distances take `distance_unit`, as a reading's
+do.
+
+| Endpoint | Body | Module | Duplicate key (`200`, `"duplicate": true`) |
+|---|---|---|---|
+| `POST /vehicles/{id}/maintenance` | `performed_on`, `odometer`, `distance_unit`, `category` (code), `title`, `cost`, `vendor`, `description`, `schedule_id` (one of the vehicle's schedules: the record completes it, as the form's *Completes* choice) | maintenance | the import's: date, category, title and cost |
+| `POST /vehicles/{id}/documents` | `type` (code), `title`, `provider`, `reference`, `start_on`, `expiry_on`, `cost`, `odometer`, `distance_unit`, `notes` | compliance | the import's: type, reference, start and expiry |
+| `POST /vehicles/{id}/expenses` | `spent_on`, `category` (code), `amount`, `note` | core | the import's: date, category, amount and note |
+| `POST /vehicles/{id}/tyres/checks` | `checked_on`, `odometer`, `distance_unit`, `depth_unit` (`mm`\|`in32`, default the owner's), `depths` (an object from fitted position code, `fl`, `fr`, `rl`, `rr`, `front`, `rear` or `spare`, to depth; positions with no fitted tyre are refused), `note`. There is no list of checks, so the `201` body is the check: `id`, `checked_on`, `odometer`, `distance_unit`, `note` and `depths` (position, tyre id and depth in millimetres) | tyres | same date and the same depth at every position |
+| `POST /vehicles/{id}/reminders` | `title`, `due_on`, `lead_time_days` (default the owner's manual lead time), `notes` | reminders | an open manual reminder with the same title and due date |
+
+The OpenAPI description gains the five operations, and the tests validate
+their responses against it as for the others.
+
 **CORS** is off by default. `API_CORS_ORIGINS` (comma-separated origins)
 allows browser dashboards: those origins get `Access-Control-Allow-Origin`
 on API responses, errors included, and a preflight (`OPTIONS`) answers 204
@@ -3211,8 +3249,9 @@ user's saved journeys in their Settings → Trips order (`id`, `from_place`,
 `is_business`, `purpose`), so a Shortcut can offer them and log one by
 `journey_id`.
 
-**Not in this version:** editing or deleting through the API, other
-writes, attachments, OAuth or sessions, webhooks for new entries, reports
+**Not in this version:** editing or deleting through the API, writes
+beyond those above (valuations, schedules, tyre fitting and changes, trips'
+journeys), attachments, OAuth or sessions, webhooks for new entries, reports
 and ownership figures beyond the summary, per-vehicle keys (Phase 19 lets
 a device have its own user instead).
 
@@ -3937,6 +3976,139 @@ request to any model service.
   page if the question was understood. Nothing is retried on another
   connection.
 
+#### Drafting entries (Phase 26.3)
+
+Ask can **draft** new entries from a sentence ("Filled the BMW with 51
+litres of E10 at £1.39, mileage 72,341"). The model fills in a draft,
+and Logbook validates it with the same code as the forms and the API
+(§7.20), computes the derived values itself, and shows a card. Nothing is
+written until the user presses **Add**. Guide: `docs/ai.md` *Adding
+entries by message*.
+
+- **Tools.** They are offered in *Ask* only, using the `ask` task's model.
+  They need the `ai_actions` module (as well as what *Ask* needs), the
+  module of their entry kind, and the ability its form needs on at least
+  one vehicle: `Log`, or `Manage` for a manual reminder. A tool whose
+  module is off, or whose ability the user has on no vehicle, is not
+  offered. The vehicle candidates are filtered by that ability.
+
+  | Tool | Drafts | Module | Notes |
+  |---|---|---|---|
+  | `draft_fill_up` | fill-up | fuel | any two of volume, price per unit and total; units named or the user's; grade and fuel from words ("E10", "diesel", "rapid charge") matched to the vehicle's codes; partial and missed-previous flags |
+  | `draft_reading` | odometer reading | core | |
+  | `draft_service_record` | maintenance record | maintenance | category matched to the maintenance categories; the schedule it may complete is suggested on the card, never ticked |
+  | `draft_document` | compliance document | compliance | type, provider, dates; an expiry from a term ("renewed for a year from today") computed by Logbook |
+  | `draft_expense` | expense | core | category matched |
+  | `draft_tyre_check` | tread check | tyres | positions and depths in the user's depth unit |
+  | `draft_reminder` | manual reminder | reminders (`Manage`) | due date absolute, or relative to a document's expiry or a schedule's next due date ("two weeks before the MOT expires"), computed by Logbook from that source |
+
+  Every draft tool takes a `vehicle` id. Without one, the user's only
+  candidate is used; with several, the tool returns the candidates, and
+  the model asks the user.
+  Dates are ISO, or words that Logbook resolves in the user's time zone
+  ("today", "yesterday", "last Tuesday", "3 days ago"). The model never
+  resolves them. A fill-up or reading dated today is timed now; one on
+  another day is timed at local noon on it (the time is part of the
+  duplicate key). Numbers are read as the user's forms read them, so a
+  German user's "51,5" and "1.234,5" are 51.5 and 1234.5. A number that
+  could be read two ways in the user's language (a German "72.341": a
+  decimal to the forms, but likely 72,341 km) is asked about, never
+  guessed. Words for grades and categories match in order: the
+  exact code, then the label or short label in the user's language or
+  English, then a translated synonym list ("super unleaded" → E5 98). A
+  word that matches more than one, or none, goes back as a question. A
+  grade from another family, such as diesel for a petrol car, is
+  `invalid`.
+- **A relative reminder gets a fixed date.** Manual reminders have no
+  source (§6 Reminder), so "two weeks before the MOT expires" is turned
+  into a date once, from the current MOT's expiry, and stays put when the
+  MOT is renewed. The card says which document it was worked out from.
+  With no such document or schedule on file, the tool says so and the
+  model asks.
+- **Validation:** each draft goes through the API's input adapter (§7.20)
+  into the form's command, and is validated there. Before that, the tool
+  checks the vehicle through the access policy with the kind's ability,
+  and its module. A vehicle the user can't log on is "not found". The
+  draft is then written through the API's writer inside a transaction that
+  is always rolled back. This gives the derived amounts, the warnings, and
+  the form values for *Edit*, exactly as a save would, and leaves nothing
+  behind. The result goes back to
+  the model as one of three:
+  - `ok`, with the formatted values;
+  - `duplicate`, when the same entry is already logged (the API's duplicate
+    keys, §7.20); the card says so and links to it, with no *Add*;
+  - `needs`, when a required field is missing, such as "the odometer";
+  - `invalid`, with the form's messages.
+  The model then asks the user for what's missing. Nothing is saved at
+  this point.
+- **One card per draft** (decided 2026-10-01, #74). "I filled up twice
+  last week" gives two cards, each with its own *Add*. There is no *Add
+  all*.
+- **Draft card**, shown once a draft is `ok`:
+  - the vehicle (photo, name and registration), what kind of entry it
+    is, and each field **as Logbook computed and formatted it** ("51.00 L
+    E10 95 at £1.390/L = £70.89", "Odometer 72,341 mi");
+  - derived values marked as such ("total worked out from volume and
+    price");
+  - the warnings the form would show: plausibility, the economy check, a
+    reading lower than the last one;
+  - three buttons:
+    - **Add** (a POST with CSRF);
+    - **Edit**, which opens the normal create form with `?draft={id}`,
+      prefilled from the draft's stored form values, in the desktop
+      modal, with those fields marked "from your message". Saving that
+      form closes the draft as applied, so the card no longer offers
+      *Add*;
+    - **Discard**.
+
+  Drafts are stored server-side in `ai_drafts` (§6 AiDraft): user,
+  thread, kind, vehicle, the validated input as JSON, created, expires an
+  hour later, applied entry and applied_at. So the card's POST carries
+  only the draft id. Expired drafts are deleted by the scheduled task.
+  Drafts are left out of backups and exports.
+- **Re-validated at Add.** The draft is claimed once (a conditional
+  update on `applied_at` in the same transaction as the write), so a
+  double press or a second tab never saves twice. A draft that has become
+  invalid since it was drafted shows the form's message instead of saving.
+  One that has become a duplicate saves nothing and says it is already in
+  the log, with nothing to undo. A new warning (a
+  reading added since makes this one go backwards) is shown, and the
+  entry can still be added. An expired draft, a deleted or archived
+  vehicle, or an applied draft is refused.
+- **Access:** *Add* needs the kind's ability (`Log`, or `Manage` for a
+  reminder) and the kind's module on the vehicle **at the moment of
+  pressing**. Drafts belong to their user; another user's draft id
+  answers 404.
+- **After Add:** the entry is saved through the same service as the
+  form:
+  - a fill-up writes its reading in the same transaction;
+  - schedules, reminders and checks follow;
+  - `created_by` is set.
+
+  The card changes to "Added · View · Undo", and the thread notes what
+  was added. **Undo** deletes the entry through the normal delete path,
+  which removes the reading the entry wrote, as deleting it from its page
+  does. It works for **10 seconds**
+  after *Add*, and only while the entry is untouched: its `updated_at`
+  is unchanged since *Add*. After that, the entry is an ordinary one.
+- **Attachments** are not added by chat. *Edit* opens the form, where
+  files can be added (Phase 26.4 reads files).
+- **Instructions inside data are never followed.** Draft tools are
+  offered only in answer to the user's own message in *Ask*, and tool
+  results never enable them. A draft is only ever a card waiting for the
+  user. Nothing applies one except the POST from its card.
+- **Follow-ups** carry the thread's drafts and what became of them
+  (waiting, added, already logged, undone, discarded, expired) in the
+  context, so the conversation knows what was added.
+- **Tools offered:** the model is told, in the system text, to draft only
+  what the user's own message asks for, to pass on their words, never to
+  say an entry is saved, and to ask exactly the question a tool returns.
+- `bin/ai-eval.php` has 30 drafting cases beside the 40 questions, and
+  checks that no entry was written without *Add*.
+- **Not in scope:** editing or deleting existing entries by chat;
+  changing settings by chat (parked, #75, §12); several entries in one
+  press.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -4193,6 +4365,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   .xlsx claim export (#44).
 - A `van` vehicle type (#46). Vans are logged as `car`, which has the same
   approved mileage rates.
+- Settings by chat (Phase 26.3, #75): changing lead times, units or
+  modules from *Ask* ("set my MOT reminder to two weeks"). Settings stay
+  forms only until then.
 
 ---
 
@@ -4410,6 +4585,15 @@ task breakdowns live in the per-phase files; this is the map.
   units, sources with links, a grounding check on every number, threads
   kept 30 days by default, progress by polling (§6 AiThread … AiFeedback,
   §7.26). One migration. Release v2.6.0 with Phase 26.1.
+- **Phase 26.3 — Drafting entries + v2.7 release.** *Ask* drafts a
+  fill-up, reading, service record, document, expense, tread check or
+  manual reminder from a sentence. The draft is mapped through the API's
+  input adapter onto the form's command and validated there. Logbook works
+  out the derived amounts and the dates, and resolves vehicles, grades
+  and categories, asking back when unsure. One card per draft with *Add* /
+  *Edit* / *Discard*, re-validated at *Add*, and *Undo* for 10 seconds.
+  The five new kinds also get `POST /api/v1` endpoints (§6 AiDraft, §7.20,
+  §7.26). One migration. Release v2.7.0.
 
 ---
 

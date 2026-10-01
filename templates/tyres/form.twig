@@ -86,6 +86,7 @@
         {% else %}
         <form class="form" method="post" action="{{ url_for('tyres.change', {id: vehicle.id, kind: kind.value}) }}">
             {{ ui.csrf(csrf) }}
+            {% include 'ask/_draft_notice.twig' %}
             {{ ui.return_field(return_to) }}
 
             <section class="card">

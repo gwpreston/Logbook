@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Expense;
 
+use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Service\Expense\ExpenseEntryForm;
 use Logbook\Service\Expense\ExpenseService;
@@ -23,6 +25,7 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class CreateExpenseAction
 {
     public function __construct(
+        private DraftPrefill $prefill,
         private VehicleService $vehicles,
         private ExpenseService $expenses,
         private ExpenseFormPage $page,
@@ -43,6 +46,7 @@ final readonly class CreateExpenseAction
 
         if ($request->getMethod() !== 'POST') {
             $defaults = ExpenseEntryForm::defaults(LocalTime::today($this->clock, $user->preferences->timeZone()));
+            $defaults = $this->prefill->values($request, DraftKind::Expense, $vehicle->id, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
@@ -57,6 +61,7 @@ final readonly class CreateExpenseAction
         }
 
         $this->expenses->create($vehicle, $data, $files);
+        $this->prefill->saved($request);
         RequestContext::session($request)->flash('success', 'expense.created');
 
         return $this->redirect->backOr($request, 'expenses.index', ['id' => (string) $vehicle->id]);

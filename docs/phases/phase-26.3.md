@@ -2,7 +2,7 @@
 
 *"Filled the BMW with 51 litres of E10 at £1.39, mileage 72,341." Add?*
 
-Status: 📋 planned · releases **v2.7.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.7.0** · file lives in `docs/phases/`
 
 Ask Logbook can read. This phase lets it **draft** new entries from a
 sentence: a fill-up, an odometer reading, a service record, a document, an
@@ -22,6 +22,9 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 
 1. **Draft tools** for seven entry kinds, each mapped through the Phase
    18.2 JSON input adapter to the same commands and validation as the forms.
+   The adapter covers fill-ups, readings and trips today. It gains the
+   other five kinds, and each of them also becomes a `POST /api/v1`
+   endpoint (decided 2026-10-01, #76).
 2. A **draft card** in the conversation: the parsed values, as Logbook
    computed and formatted them, the warnings, and *Add* / *Edit* /
    *Discard*.
@@ -111,61 +114,137 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
   pressing. The press is judged on the data as it is then.
 - **A short undo.** It turns a quick press into a safe one, without making
   AI entries different from any other.
+- **One press per entry** (decided 2026-10-01, #74). Each draft has its
+  own card and its own *Add*. A bad draft never holds up the others, and
+  each save is confirmed on its own.
+- **Settings by chat are parked** (decided 2026-10-01, #75) in spec §12.
+  Settings stay forms only.
+- **The new adapter mappings are API endpoints too** (decided 2026-10-01,
+  #76). Maintenance, documents, expenses, tread checks and manual
+  reminders can be written through `/api/v1`. They follow the rules the
+  fill-up and reading writes already follow (spec §7.20 *More write
+  endpoints*).
+- **Answered from the app while starting** (#77–#78):
+  - Manual reminders have no source, so a relative reminder gets a fixed
+    date, worked out once.
+  - Each draft tool needs its entry kind's module as well as
+    `ai_actions`, and uses the `ask` task's model. There is no new task.
+  - Every entry table has `updated_at`, so *Undo*'s "untouched" check
+    compares it with the value at *Add*. This needs no extra migration.
 
 ---
 
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.26 *Drafting entries* in `spec.md`; the Phase 26.3 line in §13.
-- [ ] `docs/ai.md`: *Adding entries by message*, with examples per kind.
+- [x] §7.26 *Drafting entries* in `spec.md`; the Phase 26.3 line in §13.
+- [x] `docs/ai.md`: *Adding entries by message*, with examples per kind.
+
+### API (decided 2026-10-01, #76)
+- [x] `JsonInput` field maps for maintenance, documents, expenses, tread
+      checks and manual reminders, onto their forms' fields.
+- [x] `POST /api/v1/vehicles/{id}/maintenance`, `/documents`,
+      `/expenses`, `/tyres/checks` and `/reminders` through `ApiWriter`:
+      module gating, `Log` (`Manage` for reminders, as the form), archived 409,
+      duplicate keys as spec §7.20.
+- [x] OpenAPI operations and schemas; response validation tests;
+      `docs/api.md` examples (`ApiMoreWritesTest`; `TyreFormContexts` now
+      builds the tyre form's choices for the page and the API alike).
 
 ### Migration
-- [ ] `ai_drafts`, reversible on every engine, excluded from backups, and
+- [x] `ai_drafts`, reversible on every engine, excluded from backups, and
       cleared by the scheduler after expiry.
 
 ### Code
-- [ ] One draft tool per kind (schema, resolution, adapter call, result
+- [x] One draft tool per kind (schema, resolution, adapter call, result
       shape).
-- [ ] `Service\Ai\Draft\Resolver`: vehicle candidates, grade and category
+- [x] `Service\Ai\Draft\Resolver`: vehicle candidates, grade and category
       matching (exact code, then name, then synonyms in a translated list:
       "super unleaded" → E5 98), and relative dates.
-- [ ] `Service\Ai\Draft\DraftStore`: create, re-validate, apply, expire,
+- [x] `Service\Ai\Draft\DraftStore`: create, re-validate, apply, expire,
       undo.
-- [ ] Card partial; `Action\Ask\ApplyDraft`, `DiscardDraft`, `UndoDraft`;
-      *Edit* prefill through each form's existing prefill parameters (the
-      same as a reminder's *Done* link).
-- [ ] Translations (en, de): card text and synonym lists.
+- [x] Card partial; one `Action\Ask\DraftAction` for *Add*, *Discard*
+      and *Undo*; *Edit* through `?draft={id}` on each create form
+      (`Action\Ask\DraftPrefill`), as the forms had no field prefill.
+- [x] Translations (en, de): card text and synonym lists.
 
 ### Tests
-- [ ] **Your example:** "I filled the BMW with 51 litres of E10 at £1.39 a
+- [x] **Your example:** "I filled the BMW with 51 litres of E10 at £1.39 a
       litre. The mileage is 72,341" gives a card with £70.89 computed by
       Logbook, odometer 72,341 mi, and E10 95 matched. *Add* saves one
       fill-up and one reading.
-- [ ] **"Remind me to book the MOT two weeks before it expires"** gives a
+- [x] **"Remind me to book the MOT two weeks before it expires"** gives a
       manual reminder dated 14 days before the current MOT's expiry,
       computed from the document. With no MOT on file, the model is told so
       and asks.
-- [ ] Missing fields → `needs`; invalid values → the form's messages; two
+- [x] Missing fields → `needs`; invalid values → the form's messages; two
       BMWs → candidates and a question.
-- [ ] Gallons, miles, kWh and German decimal commas parsed as the forms
+- [x] Gallons, miles, kWh and German decimal commas parsed as the forms
       parse them.
-- [ ] Re-validation at *Add* (a newer reading makes the draft's reading
+- [x] Re-validation at *Add* (a newer reading makes the draft's reading
       backwards → warning shown, still addable; a deleted vehicle → refused).
-- [ ] Access: no `Log` → no draft tools offered; losing `Log` between draft
+- [x] Access: no `Log` → no draft tools offered (no `Manage` → no
+      `draft_reminder`); losing `Log` between draft
       and press → refused; another user's draft → 404.
-- [ ] Undo within 10 seconds deletes; after, or after an edit, it doesn't.
-- [ ] **Injection:** a tool result or stored note asking for a draft does
+- [x] Undo within 10 seconds deletes; after, or after an edit, it doesn't.
+- [x] **Injection:** a tool result or stored note asking for a draft does
       nothing; drafts never apply without the POST.
-- [ ] `bin/ai-eval.php` gains 30 drafting cases.
-- [ ] Integration suite green on every engine.
+- [x] `bin/ai-eval.php` gains 30 drafting cases.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB).
 
 ### Release
-- [ ] `CHANGELOG.md` **2.7.0**: adding entries from a message. No
+- [x] `CHANGELOG.md` **2.7.0**: adding entries from a message. No
       configuration; one migration.
-- [ ] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Bump `VERSION`, rebuild assets, update the README status.
 
 ---
+
+## Changed while building it
+
+- **Validation by a rolled-back write.** A draft tool runs inside Ask's
+  always-rolled-back transaction, so it writes the entry through the
+  API's writer there. That gives the form's validation, the derived
+  amount, the warnings (odometer, economy check, deeper tread) and the
+  form values for *Edit*, exactly as a save would. Then the rollback
+  leaves nothing behind. The registry keeps the draft (`ai_drafts`)
+  after the rollback. `ToolsReadOnlyTest` covers every draft tool:
+  every table is as it was, except `ai_drafts`.
+- **Access and modules are checked by the drafting code**, as the API's
+  routes check them: the kind's module, `Log` (or `Manage` for a manual
+  reminder, as on the Reminders page), not archived. They are checked
+  again at *Add*.
+- **Duplicates.** The API's writer returns an entry already logged instead
+  of writing it again. A draft that is a duplicate comes back as
+  `duplicate`, with no card. One that has become a duplicate by the time
+  *Add* is pressed saves nothing, says so on the card, and has nothing to
+  undo.
+- **Claimed once.** *Add* claims the draft with a conditional update in
+  the same transaction as the write, so a double press or a second tab
+  saves once. Saving the *Edit* form closes the draft as added.
+- **`ai_drafts` gained `card`, `form_values` and `discarded_at`** beside
+  the columns the phase listed, and `kind` uses `odometer` (as
+  `LogKind`), not `reading`.
+- **The card's price shows every place** ("£1.390/L") and the volume two
+  places ("51.00 L"). `DisplayFormatter::unitPrice()` and `volume()` take
+  that as an option; elsewhere they are unchanged.
+- **A fill-up or reading dated today is timed now; another day at local
+  noon** unless a time is said. Without a vehicle id, the user's only
+  candidate is used.
+- **The API's validation errors carry the form's `ValidationErrors`**
+  (`ApiProblem::$validation`), so drafts get the messages in the user's
+  language, with their parameters.
+- **Tread checks and manual reminders have new duplicate keys**, which the
+  CSV import never had: the same date and depths; an open manual reminder
+  with the same title and due date. They were chosen while building: the
+  owner decided that the endpoints exist (#76), not their keys.
+- **A number readable two ways is asked about.** The forms read a German
+  "72.341" as 72.341, and drafts follow the forms. But a model copies the
+  number from prose, where a German writer usually means 72,341 km. So a
+  draft asks back, never guesses.
+- Further tests: *Edit* on all seven create forms, cards behind a
+  subpath, and two drafts in one turn that don't see each other.
+- **Tyre form choices** are built by `Service\Tyre\TyreFormContexts`,
+  shared by the page, the API's tread check and the draft.
 
 ## Acceptance criteria
 
@@ -184,5 +263,20 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 
 - **Several drafts at once:** "I filled up twice last week" gives two cards.
   Add an *Add both* button, or keep one press per entry (drafted)?
+  **Decided 2026-10-01 (#74):** one press per entry, with no *Add all*.
 - **Settings by chat:** is "set my MOT reminder to two weeks" as a lead-time
   change wanted later, or should settings stay forms only?
+  **Decided 2026-10-01 (#75):** parked in spec §12. Settings stay forms
+  only for now.
+- *(Found while starting.)* **The five new adapter mappings: API endpoints
+  too?** **Decided 2026-10-01 (#76):** yes. `POST /api/v1` endpoints for
+  maintenance, documents, expenses, tread checks and manual reminders
+  (spec §7.20).
+- *(Found while starting.)* **A relative reminder: a fixed date, or one
+  that follows the document?** **Answered (#77):** a fixed date. Manual
+  reminders have no source (`reminders.source_id` is empty for manual
+  rows), and the phase says the date is computed from the source.
+- *(Found while starting.)* **Module gating per kind and the model used.**
+  **Answered (#78):** each tool needs its kind's module (spec §7.10) as
+  well as `ai_actions`. The tools run in *Ask*, on the `ask` task's model
+  (spec §7.25 already lists drafting under `ask`).

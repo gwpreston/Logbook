@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
+use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Domain\Maintenance\MaintenanceSchedule;
@@ -29,6 +31,7 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class CreateMaintenanceEntryAction
 {
     public function __construct(
+        private DraftPrefill $prefill,
         private VehicleService $vehicles,
         private MaintenanceService $maintenance,
         private ScheduleService $schedules,
@@ -52,6 +55,7 @@ final readonly class CreateMaintenanceEntryAction
         if ($request->getMethod() !== 'POST') {
             $today = LocalTime::today($this->clock, $user->preferences->timeZone());
             $defaults = MaintenanceEntryForm::defaults($today, $this->requestedSchedule($request, $vehicle));
+            $defaults = $this->prefill->values($request, DraftKind::Maintenance, $vehicle->id, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
@@ -67,6 +71,7 @@ final readonly class CreateMaintenanceEntryAction
         }
 
         $entry = $this->maintenance->create($vehicle, $data, $user->preferences->timeZone(), $files);
+        $this->prefill->saved($request);
         $session = RequestContext::session($request);
         $session->flash('success', 'maintenance.created', ['title' => $entry->data->title]);
         $this->warnings->queue($session, $this->maintenance->odometerWarning($vehicle, $entry));

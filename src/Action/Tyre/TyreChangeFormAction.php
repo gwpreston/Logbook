@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
+use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Tyre\TyreChangeKind;
@@ -33,6 +35,7 @@ use Slim\Exception\HttpNotFoundException;
 final readonly class TyreChangeFormAction
 {
     public function __construct(
+        private DraftPrefill $prefill,
         private VehicleService $vehicles,
         private TyreChangeService $changes,
         private TyreFormPage $page,
@@ -62,6 +65,9 @@ final readonly class TyreChangeFormAction
             $set = $request->getQueryParams()['set'] ?? null;
             $fitSet = is_string($set) && ctype_digit($set) ? (int) $set : null;
             $values = $this->page->defaults($vehicle, $kind, $context, $values, $fitSet);
+            if ($kind === TyreChangeKind::Check) {
+                $values = $this->prefill->values($request, DraftKind::TyreCheck, $vehicle->id, $values);
+            }
 
             return $this->page->render($request, $response, $vehicle, $kind, $context, $currency, $values);
         }
@@ -77,6 +83,7 @@ final readonly class TyreChangeFormAction
 
         try {
             $change = $this->changes->record($vehicle, $parsed, $preferences->timeZone(), $preferences->locale);
+            $this->prefill->saved($request);
         } catch (TyreChangeRefused $refused) {
             $errors = $this->page->errors($refused);
 

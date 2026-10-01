@@ -6,6 +6,42 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.7.0] — 2026-10-01
+
+Phase 26.3: **adding entries by message**. Tell *Ask Logbook* what you did
+("Filled the BMW with 51 litres of E10 at £1.39, mileage 72,341") and it
+drafts the entry as a card for you to check. Logbook, not the model, works
+out the total, the dates and the units, and validates the draft with the
+same code as the form. **Nothing is saved until you press Add.**
+
+### Added
+- **Draft tools** in *Ask* for a fill-up or charge, an odometer reading,
+  a service record, a document, an expense, a tread check and a manual
+  reminder. Vehicles, grades ("super unleaded" → E5 98) and categories
+  are matched by Logbook, with a question back when unsure. Dates are
+  worked out in your time zone ("yesterday", "last Tuesday", "two weeks
+  before the MOT expires"), and numbers are read as your forms read them
+  ("51,5" in German).
+- **Draft cards** under the answer. Each field is shown as Logbook
+  formatted it, values it worked out are marked, and the form's warnings
+  are shown. *Add* saves the entry as the form would; *Edit* opens the
+  normal form prefilled, marked "from your message"; *Discard* drops it.
+  After *Add*, *Undo* works for 10 seconds while the entry is untouched.
+- **API writes** for the same kinds: `POST /api/v1/vehicles/{id}/maintenance`,
+  `/documents`, `/expenses`, `/tyres/checks` and `/reminders`. They use the
+  forms' validation, are safe to retry, and are in the OpenAPI
+  description (1.12.0).
+- `bin/ai-eval.php` gains 30 drafting cases, and checks that no entry is
+  written without *Add*.
+
+### Upgrade notes
+- One migration (`ai_drafts`). It rolls back. Drafts are not in backups
+  and expire after an hour.
+- No new configuration. Drafting follows the *Draft entries* module
+  (Settings → Modules, on by default once AI is set up) and the module of
+  each kind of entry. It needs *Log* on the vehicle, or *Manage* for a
+  reminder.
+
 ## [2.6.0] — 2026-10-01
 
 Phases 26.1 and 26.2: **AI, with the model you choose, and Ask Logbook**.

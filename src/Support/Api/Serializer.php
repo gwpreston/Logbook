@@ -16,6 +16,8 @@ use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Domain\Trip\Trip;
+use Logbook\Domain\Tyre\TyreChange;
+use Logbook\Domain\Tyre\TyreChangeLine;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Compliance\DocumentState;
@@ -326,6 +328,32 @@ final class Serializer
             'expiry_on' => self::date($document->data->expiryOn),
             'status' => $state->status->value,
             'days_left' => $state->daysLeft,
+        ];
+    }
+
+    /**
+     * A tread check (Phase 26.3): the depth measured at each position, mm.
+     *
+     * @return array<string, mixed>
+     */
+    public static function treadCheck(TyreChange $check): array
+    {
+        $data = $check->data;
+
+        return [
+            'id' => $check->id,
+            'vehicle_id' => $check->vehicleId,
+            'checked_on' => self::date($data->doneOn),
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'note' => $data->note,
+            'depths' => array_map(static fn (TyreChangeLine $line): array => [
+                'position' => $line->position?->value,
+                'tyre_id' => $line->tyreId,
+                'depth_mm' => self::dec($line->treadMm, 3),
+            ], $check->lines),
+            'created_at' => self::instant($check->createdAt),
+            'updated_at' => self::instant($check->updatedAt),
         ];
     }
 

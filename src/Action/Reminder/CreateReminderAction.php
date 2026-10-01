@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Reminder;
 
+use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Reminder\ManualReminderForm;
 use Logbook\Service\Reminder\ReminderService;
@@ -21,6 +23,7 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class CreateReminderAction
 {
     public function __construct(
+        private DraftPrefill $prefill,
         private ReminderService $reminders,
         private ReminderSettingsStore $settings,
         private ReminderFormPage $page,
@@ -39,6 +42,7 @@ final readonly class CreateReminderAction
                 ? (int) $wanted
                 : ($vehicleIds[0] ?? null);
             $defaults = ManualReminderForm::defaults($this->settings->reminderPreferences($user->id), $vehicle);
+            $defaults = $this->prefill->values($request, DraftKind::Reminder, null, $defaults);
 
             return $this->page->render($request, $response, $defaults);
         }
@@ -49,6 +53,7 @@ final readonly class CreateReminderAction
         }
 
         $reminder = $this->reminders->createManual($user, $data);
+        $this->prefill->saved($request);
         RequestContext::session($request)->flash('success', 'reminders.created', ['title' => $reminder->title]);
 
         return $this->redirect->toRoute('reminders.index');

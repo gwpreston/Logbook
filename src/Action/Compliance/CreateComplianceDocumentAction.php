@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Compliance;
 
+use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Domain\Compliance\ComplianceType;
@@ -24,6 +26,7 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class CreateComplianceDocumentAction
 {
     public function __construct(
+        private DraftPrefill $prefill,
         private VehicleService $vehicles,
         private ComplianceService $compliance,
         private ComplianceFormPage $page,
@@ -45,6 +48,7 @@ final readonly class CreateComplianceDocumentAction
         if ($request->getMethod() !== 'POST') {
             $type = $request->getQueryParams()['type'] ?? null;
             $defaults = ComplianceDocumentForm::defaults(is_string($type) ? ComplianceType::tryFrom($type) : null);
+            $defaults = $this->prefill->values($request, DraftKind::Document, $vehicle->id, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
@@ -59,6 +63,7 @@ final readonly class CreateComplianceDocumentAction
         }
 
         $document = $this->compliance->create($vehicle, $data, $user->preferences->timeZone(), $files);
+        $this->prefill->saved($request);
         $session = RequestContext::session($request);
         $session->flash('success', 'compliance.created');
         $this->warnings->queue($session, $this->compliance->odometerWarning($vehicle, $document));

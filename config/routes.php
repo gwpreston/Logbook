@@ -11,8 +11,13 @@ use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
 use Logbook\Action\Api\ListTripsAction as ApiTripsAction;
 use Logbook\Action\Api\ListTyresAction as ApiTyresAction;
 use Logbook\Action\Api\ListVehiclesAction as ApiVehiclesAction;
+use Logbook\Action\Api\LogDocumentAction as ApiLogDocumentAction;
+use Logbook\Action\Api\LogExpenseAction as ApiLogExpenseAction;
 use Logbook\Action\Api\LogFuelAction as ApiLogFuelAction;
+use Logbook\Action\Api\LogMaintenanceAction as ApiLogMaintenanceAction;
 use Logbook\Action\Api\LogReadingAction as ApiLogReadingAction;
+use Logbook\Action\Api\LogReminderAction as ApiLogReminderAction;
+use Logbook\Action\Api\LogTreadCheckAction as ApiLogTreadCheckAction;
 use Logbook\Action\Api\LogTripAction as ApiLogTripAction;
 use Logbook\Action\Api\MeAction as ApiMeAction;
 use Logbook\Action\Api\OpenApiAction;
@@ -95,6 +100,7 @@ use Logbook\Action\SalePack\ShowSalePackAction;
 use Logbook\Action\Settings\AdminTransferAction;
 use Logbook\Action\Ask\AskAction;
 use Logbook\Action\Ask\AskFeedbackAction;
+use Logbook\Action\Ask\DraftAction as AskDraftAction;
 use Logbook\Action\Ask\AskPostAction;
 use Logbook\Action\Ask\AskProgressAction;
 use Logbook\Action\Ask\AskRetentionAction;
@@ -246,6 +252,13 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/expenses', ApiExpensesAction::class)->setName('api.expenses.index')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                // Phase 26.3: as the expense form, Log is enough to add one.
+                $keyed->post('/vehicles/{id:[0-9]+}/expenses', ApiLogExpenseAction::class)->setName('api.expenses.create')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                // A manual reminder needs Manage, as on the Reminders page (spec.md §7.21).
+                $keyed->post('/vehicles/{id:[0-9]+}/reminders', ApiLogReminderAction::class)->setName('api.reminders.create')
+                    ->setArgument($ability, VehicleAbility::Manage->value)
+                    ->add($module(Feature::Reminders));
                 $keyed->group('', function (Group $fuel) use ($ability): void {
                     $fuel->get('/vehicles/{id:[0-9]+}/fuel', ApiFuelAction::class)->setName('api.fuel.index')
                         ->setArgument($ability, VehicleAbility::View->value);
@@ -260,6 +273,17 @@ return static function (App $app): void {
                     ->add($module(Feature::Compliance));
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
                     ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Tyres));
+                $keyed->post('/vehicles/{id:[0-9]+}/maintenance', ApiLogMaintenanceAction::class)
+                    ->setName('api.maintenance.create')
+                    ->setArgument($ability, VehicleAbility::Log->value)
+                    ->add($module(Feature::Maintenance));
+                $keyed->post('/vehicles/{id:[0-9]+}/documents', ApiLogDocumentAction::class)->setName('api.documents.create')
+                    ->setArgument($ability, VehicleAbility::Log->value)
+                    ->add($module(Feature::Compliance));
+                $keyed->post('/vehicles/{id:[0-9]+}/tyres/checks', ApiLogTreadCheckAction::class)
+                    ->setName('api.tyres.checks.create')
+                    ->setArgument($ability, VehicleAbility::Log->value)
                     ->add($module(Feature::Tyres));
                 // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.
                 $keyed->group('', function (Group $trips) use ($ability): void {
@@ -618,6 +642,8 @@ return static function (App $app): void {
             $group->get('/ask/threads/{thread:[0-9]+}', AskAction::class)->setName('ask.thread');
             $group->post('/ask/threads/{thread:[0-9]+}/delete', AskThreadDeleteAction::class)->setName('ask.thread.delete');
             $group->post('/ask/messages/{message:[0-9]+}/feedback', AskFeedbackAction::class)->setName('ask.feedback');
+            // Drafting entries (Phase 26.3): a card's buttons; the draft is the user's own or not found.
+            $group->post('/ask/drafts/{draft:[0-9]+}/{action:add|discard|undo}', AskDraftAction::class)->setName('ask.draft');
             // Settings → AI: admins only, and 404 (not 403) to anyone else.
             $group->group('/settings/ai', function (Group $ai) use ($instance): void {
                 $manage = InstanceAbility::ManageAi->value;

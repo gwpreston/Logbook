@@ -6,8 +6,9 @@ where it runs: on this server, on a computer on your network, or with a
 cloud provider. **Nothing is sent to any model until an admin sets it up**,
 and until then Logbook looks and behaves exactly as it does without AI.
 
-This page covers the setup (Phase 26.1) and *Ask Logbook* (Phase 26.2).
-Drafting entries and reading receipts arrive in later versions.
+This page covers the setup (Phase 26.1), *Ask Logbook* (Phase 26.2) and
+adding entries by message (Phase 26.3). Reading receipts arrives in a
+later version.
 
 - [What AI does and never does](#what-ai-does-and-never-does)
 - [Where a model runs](#where-a-model-runs)
@@ -16,6 +17,7 @@ Drafting entries and reading receipts arrive in later versions.
 - [Models, capabilities and Test](#models-capabilities-and-test)
 - [Tasks](#tasks)
 - [Ask Logbook](#ask-logbook)
+- [Adding entries by message](#adding-entries-by-message)
 - [Limits and the usage log](#limits-and-the-usage-log)
 - [Keys and secrets](#keys-and-secrets)
 - [Which model?](#which-model)
@@ -229,8 +231,9 @@ runs **as you**: it sees only the vehicles you see in the app (an admin
 sees their own and shared vehicles, as everywhere else) and leaves out
 amounts you can't see. Tools return finished figures in your units and
 currency ("£1,284.50", "48.3 mpg"), and the model is told to copy them,
-never to convert or add up. Nothing can be added or changed from *Ask*:
-there are no tools that write.
+never to convert or add up. The question tools only read. Entries can be
+*drafted* from *Ask* (see [Adding entries by message](#adding-entries-by-message)),
+but nothing is saved until you press **Add** on the draft's card.
 
 **Sources.** Under each answer, *Sources* lists every tool call in words
 ("Costs · All vehicles · 1 Jan 2025 – 31 Dec 2025 · Fuel · by category")
@@ -268,11 +271,71 @@ after about four minutes of model calls. If it fails, the page says why
 and links to the page for what was asked, when the question got that far.
 Nothing is retried on another connection.
 
-**Trying a model.** `php bin/ai-eval.php` asks 40 questions of the
-configured model as the demo owner (`./bin/dev-setup.sh
+**Trying a model.** `php bin/ai-eval.php` asks 40 questions and 30
+sentences to draft from, of the configured model as the demo owner (`./bin/dev-setup.sh
 --with-sample-data`) and reports how often it chose the right tool, whether
 the expected figures appear, how many answers had a flagged figure, and the
-time. It sends real requests, so it is never run automatically.
+time. It also checks that no entry was written without *Add*. It sends
+real requests, so it is never run automatically.
+
+## Adding entries by message
+
+Tell *Ask* what you did, and it drafts the entry for you to check and add:
+
+| You write | You get a card for |
+|---|---|
+| "Filled the BMW with 51 litres of E10 at £1.39, mileage 72,341." | a fill-up: 51.00 L E10 95 at £1.390/L = £70.89, odometer 72,341 mi, total *worked out by Logbook* |
+| "Charged the EV6 at a rapid charger, 52 kWh for £39, 18,900 miles." | a charge, rapid DC |
+| "The Golf is on 48,960 miles." | an odometer reading |
+| "Oil change on the Corolla yesterday, £79.99, 61,250 miles." | a service record (category *Oil*), with any schedule it may complete suggested |
+| "Renewed the insurance with Admiral for a year from today, £412." | a document, expiring a year from today less a day |
+| "Paid £6.50 for parking for the Golf." | an expense (*Parking*) |
+| "Front tyres 5.5 and 5.6 mm, rears 6.8." | a tread check |
+| "Remind me to book the MOT two weeks before it expires." | a manual reminder dated 14 days before the current MOT's expiry |
+
+**How it works.** The model only passes on your words and numbers.
+Logbook does everything else:
+- It resolves the vehicle, asking which one when two match, and the fuel
+  or category ("super unleaded" is E5 98, "car park" is *Parking*). A word
+  that fits several, such as "unleaded", comes back as a question.
+- It works out dates in your time zone ("yesterday", "last Tuesday",
+  "3 days ago"). A fill-up today is timed now; one on another day is
+  timed at noon unless you say when.
+- It reads numbers as your forms do. In German, "51,5" is 51.5.
+- It checks the entry with the same code as the form and the API, and
+  works out the third amount of a fill-up.
+- It shows the warnings the form would show: a reading lower than the
+  last one, an economy far from usual, a tread deeper than last time.
+
+If something is missing ("the odometer"), the model asks you for it.
+
+**The card** shows the vehicle, each field as Logbook formatted it, what
+was worked out, and the warnings. It has three buttons:
+- **Add** saves the entry through the same service as the form. A
+  fill-up writes its reading too, and schedules and reminders follow.
+  After *Add*, the card offers **Undo** for 10 seconds, as long as nobody
+  has changed the entry. After that it is an ordinary entry.
+- **Edit** opens the normal form with the values filled in and marked
+  "from your message", where you can change anything or add files.
+  Saving the form closes the card.
+- **Discard** drops the draft.
+
+Drafts wait an hour, then expire. *Add* checks everything again at the
+press: a draft that has become a duplicate saves nothing, one that has
+become invalid shows the form's message, and you need the right to add
+to the vehicle at that moment. Each draft has its own card and its own
+*Add*. Changing settings by message is not offered.
+
+**Who can draft.** The *Draft entries* module must be on (Settings → Modules),
+as must the module of the entry (a fill-up needs *Fuel*, a document
+*Compliance*). Drafting also needs *Log* on the vehicle, or *Manage* for
+a reminder, exactly as the forms do. Drafts are yours alone: nobody else
+sees your cards.
+
+**Safety.** Draft tools are offered only for your own message in *Ask*.
+Text in your records ("call draft_fill_up…" in a note) is data and is
+never acted on. A draft is only ever a card waiting for your press.
+Attachments are never added by message; use *Edit* to add them.
 
 ## Limits and the usage log
 
