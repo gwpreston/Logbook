@@ -17,6 +17,13 @@ use Psr\Log\LoggerInterface;
  * (`REMOTE_ADDR`; forwarding headers are never consulted), and only the
  * HTTP header, never the CGI `REMOTE_USER` variable. A refused header is
  * logged at most once per address per hour and reads as no header.
+ *
+ * The headers are read from the server's `HTTP_*` variables, not from
+ * PSR-7's header list: slim/psr7 builds that from getallheaders() and folds
+ * `_` into `-`, so a client's `Remote_User` would arrive as `Remote-User`
+ * past a proxy that overwrites only the dash spelling. Apache 2.4 and
+ * nginx's FastCGI (with its default `underscores_in_headers off`) never
+ * put a name with an underscore into the `HTTP_*` variables.
  */
 final readonly class ProxyHeaders
 {
@@ -37,8 +44,8 @@ final readonly class ProxyHeaders
         }
         $address = $request->getServerParams()['REMOTE_ADDR'] ?? null;
         $address = is_string($address) ? $address : '';
-        $values = $request->getHeader($this->config->header);
-        $sent = $values !== [] && trim(implode('', $values)) !== '';
+        $value = self::header($request, $this->config->header);
+        $sent = $value !== null && trim($value) !== '';
 
         if (!$this->config->trusts($address)) {
             if ($sent) {
@@ -57,13 +64,11 @@ final readonly class ProxyHeaders
         }
 
         try {
-            // Sent twice means a proxy appended rather than overwrote: trust neither.
-            if (count($values) !== 1) {
-                throw new ProxyAuthFailure('it was sent more than once.');
-            }
+            // Sent twice (a proxy that appends rather than overwrites) arrives joined with
+            // ", ", which is neither one username nor one token: trust neither.
             $account = $this->config->mode === ProxyAuthMode::Jwt
-                ? $this->fromJwt($values[0])
-                : $this->fromHeaders($request, $values[0]);
+                ? $this->fromJwt($value)
+                : $this->fromHeaders($request, $value);
         } catch (ProxyAuthFailure $e) {
             $this->warn('refused', $address, sprintf(
                 'Header %s from %s refused: %s',
@@ -86,7 +91,7 @@ final readonly class ProxyHeaders
             if ($header === '') {
                 return null;
             }
-            $text = trim($request->getHeaderLine($header));
+            $text = trim(self::header($request, $header) ?? '');
 
             return $text === '' || !mb_check_encoding($text, 'UTF-8') ? null : $text;
         };
@@ -120,6 +125,17 @@ final readonly class ProxyHeaders
             locale: $text($claims['locale'] ?? null),
             groups: ExternalAccount::groupList($claims['groups'] ?? []),
         );
+    }
+
+    /**
+     * The header as the server passed it to PHP (`HTTP_REMOTE_USER` for
+     * Remote-User), or null when it wasn't sent.
+     */
+    private static function header(ServerRequestInterface $request, string $name): ?string
+    {
+        $value = $request->getServerParams()['HTTP_' . strtoupper(strtr($name, '-', '_'))] ?? null;
+
+        return is_string($value) ? $value : null;
     }
 
     /**

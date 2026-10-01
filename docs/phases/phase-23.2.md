@@ -193,7 +193,8 @@ this section is the draft it came from.
       session, links on POST, not shown when the user already has a proxy
       identity or is outside the allowed groups.
 - [x] `Remote_User` (underscore) from a client is never read as
-      `Remote-User` behind the nginx example.
+      `Remote-User` behind the nginx example (smoke test), nor by the app
+      itself from a trusted address (`testTheUnderscoreSpellingIsNeverReadAsTheHeader`).
 - [x] **Resolution:** identity, username linking, `identity` mode refusing
       unlinked users, JIT, allowed groups, admin sync and the last-admin
       guard, a disabled user refused.
@@ -250,9 +251,17 @@ this section is the draft it came from.
   refused headers) and per proxy account (not linked), in
   `var/cache/log-throttle` (`Support\Log\LogThrottle`), because the
   middleware asks on every request. Old files are swept now and then.
+- **The headers come from the server's `HTTP_*` variables**, not PSR-7's
+  header list. slim/psr7 builds that list from `getallheaders()` and folds
+  `_` into `-`. In the Docker image a client's `Remote_User` is in
+  `getallheaders()` but not in `$_SERVER` (checked in the container), so it
+  would have reached the app as `Remote-User` past any proxy that
+  overwrites only the dash spelling (an Authelia bypass rule, Traefik or
+  Caddy). The tests' browser now hands PHP its headers as Apache does.
 - **A header sent twice is refused**, as is a value with a comma, control
-  characters, non-UTF-8 or over 255 bytes: a proxy that appends instead of
-  overwriting must not let the client's value through.
+  characters, non-UTF-8 or over 255 bytes. Sent twice, it arrives joined
+  with ", ", so a proxy that appends instead of overwriting can't let the
+  client's value through.
 - **Header names are checked at start** (letters, digits and dashes), so
   `Remote_User` can't be configured, and JWT variables without the JWT
   header, or a secret shorter than 32 characters (firebase/php-jwt's HS256

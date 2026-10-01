@@ -320,10 +320,14 @@ sign-in or an OIDC client to set up.
 >    authenticating it, because the client's own header then travels
 >    through unchanged.
 >
-> PHP reads `Remote_User` and `Remote-User` as the same header. nginx drops
-> header names with underscores by default (`underscores_in_headers off`),
-> and so do Apache and the Authentik outpost. Behind anything else, make
-> sure the underscore spelling is stripped too.
+> **Underscores.** A client can send `Remote_User`, which many tools treat
+> as `Remote-User`. Logbook reads the proxy's headers from the variables
+> the web server hands PHP (`HTTP_REMOTE_USER`), and Apache 2.4 (the Docker
+> image) never puts a header with an underscore there. On a bare-PHP
+> install with nginx and php-fpm, keep nginx's default
+> `underscores_in_headers off`, which drops them. PHP's built-in
+> development server (`composer start`) doesn't drop them, so never put it
+> behind a real proxy.
 
 It is off unless `AUTH_PROXY_HEADER` (or `AUTH_PROXY_JWT_HEADER`) is set.
 The app refuses to start with a header and no `AUTH_PROXY_TRUSTED`, and
@@ -535,7 +539,9 @@ AUTH_PROXY_TRUSTED=172.29.71.20
   Keep it out of logs and backups of `.env`, as you would a password.
 - **A captured token works until it expires** (the provider's *Token
   validity*), from anywhere if `AUTH_PROXY_TRUSTED` is empty. When it
-  expires, the Logbook session ends with it and the outpost signs in again.
+  expires, the Logbook session ends with it. The outpost's own session
+  lasts the same validity (plus a second), so it signs in again at
+  Authentik and passes on a fresh token.
   Keep the validity short, and set `AUTH_PROXY_TRUSTED` too when you can.
 - With forward auth, also pass `X-authentik-jwt` on: add it to Traefik's
   `authResponseHeaders` or Caddy's `copy_headers`, or to nginx's
@@ -546,8 +552,7 @@ AUTH_PROXY_TRUSTED=172.29.71.20
 | The log says | Fix |
 |---|---|
 | Header Remote-User from 172.x.y.z ignored: not a trusted proxy | That is the proxy's address as Logbook sees it: put it (or its subnet) in `AUTH_PROXY_TRUSTED`. If it is your browser's address instead, the request bypassed the proxy. |
-| Header … refused: it was sent more than once | The proxy appended its header to the client's instead of replacing it. Use `proxy_set_header` (nginx) or the examples above. |
-| Header … refused: the value is not one username | A comma or control characters in the value: the wrong header is configured, or it was sent twice. |
+| Header … refused: the value is not one username | A comma or control characters in the value. Either the wrong header is configured, or it arrived twice (joined with a comma) because the proxy appended its header to the client's instead of replacing it. Use `proxy_set_header` (nginx) or the examples above. |
 | Header X-authentik-jwt … refused: the JWT's issuer "…" is not AUTH_PROXY_JWT_ISSUER | Copy the issuer from the token (or the application's OpenID configuration) exactly, trailing slash included. |
 | … the JWT was refused: Signature verification failed | `AUTH_PROXY_JWT_SECRET` isn't the provider's client secret. |
 | … the JWT has expired | The outpost passed on an old token. Check the server clocks, and the provider's token validity. |
@@ -556,6 +561,11 @@ AUTH_PROXY_TRUSTED=172.29.71.20
 "Your sign-in proxy didn't send a user" on the sign-in page means a
 trusted proxy sent the request without the header. The proxy isn't
 authenticating that path, or it is passing the header under another name.
+
+"Too many redirects" through the proxy means the browser isn't keeping
+Logbook's session cookie, so every page signs in again and redirects to
+itself. Usually `SESSION_SECURE=true` (or an `https` `APP_URL`) while the
+browser reaches Logbook over plain `http`.
 
 ## Upgrading and rolling back
 

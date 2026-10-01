@@ -152,7 +152,15 @@ final class TestBrowser
      */
     private function request(string $method, string $path, array $fields, array $files, array $headers = []): ResponseInterface
     {
-        $request = (new ServerRequestFactory())->createServerRequest($method, $path, ['REMOTE_ADDR' => $this->remoteAddress])
+        // As Apache 2.4 hands them to PHP: every header also an HTTP_* variable,
+        // except names with an underscore, which it drops there (and only there).
+        $server = ['REMOTE_ADDR' => $this->remoteAddress];
+        foreach ($headers + $this->defaultHeaders as $name => $value) {
+            if (!str_contains($name, '_')) {
+                $server['HTTP_' . strtoupper(strtr($name, '-', '_'))] = $value;
+            }
+        }
+        $request = (new ServerRequestFactory())->createServerRequest($method, $path, $server)
             ->withCookieParams($this->cookies);
         foreach ($headers + $this->defaultHeaders as $name => $value) {
             $request = $request->withHeader($name, $value);

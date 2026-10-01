@@ -78,9 +78,9 @@ Phase 23.2 started.
 | 49 | [23.1](phase-23.1.md) | OIDC client library, or a JWT library with the checks written here? | Decided | `firebase/php-jwt` plus `symfony/http-client`; every check written and tested here (spec §4). | 2026-10-01 |
 | 50 | [23.1](phase-23.1.md) | More than one OIDC provider? | Parked | One provider; more in spec §12. | 2026-10-01 |
 | 51 | [23.1](phase-23.1.md) | `OIDC_LINK=email` on a verified email? | Parked | No, while Logbook doesn't verify its own emails; spec §12. | 2026-10-01 |
-| 52 | [23.2](phase-23.2.md) | Validate Authentik's signed JWT header? | Scheduled | Yes, in [Phase 23.2](phase-23.2.md): HS256 with the proxy provider's client secret (what Authentik sends), `AUTH_PROXY_TRUSTED` optional in that mode (spec §7.9, §9). | 2026-10-01 |
+| 52 | [23.2](phase-23.2.md) | Validate Authentik's signed JWT header? | Decided | Yes, built in this phase: HS256 with the proxy provider's client secret (what Authentik sends), `AUTH_PROXY_TRUSTED` optional in that mode (spec §7.9, §9). | 2026-10-01 |
 | 53 | [23.2](phase-23.2.md) | Default `AUTH_PROXY_LINK`? | Decided | `username` (spec §7.9, §9). | 2026-10-01 |
-| 54 | [23.2](phase-23.2.md) | How does `identity` mode link a proxy account? | Scheduled | A *Link your proxy account* banner for a signed-in user with an unlinked header, in [Phase 23.2](phase-23.2.md) (spec §7.9). | 2026-10-01 |
+| 54 | [23.2](phase-23.2.md) | How does `identity` mode link a proxy account? | Decided | A *Link your proxy account* banner for a signed-in user with an unlinked header, built in this phase (spec §7.9). | 2026-10-01 |
 | 55 | [23.2](phase-23.2.md) | A header for an unlinked account in a password session? | Decided | The session stays; only a header for another user replaces it (spec §7.9). | 2026-10-01 |
 
 ## Other loose ends found in the review

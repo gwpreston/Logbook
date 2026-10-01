@@ -57,9 +57,11 @@ Guide: [docs/sso.md](docs/sso.md).
 - Header sign-in is safe only when the app is reachable **only through
   the proxy** and the proxy **sets the header on every request**. Read the
   warning in [docs/sso.md](docs/sso.md#header-sign-in) before switching it
-  on. PHP reads `Remote_User` as `Remote-User`, so the proxy must drop
-  underscore headers too (nginx, Apache and the Authentik outpost do by
-  default).
+  on. A client's `Remote_User` (underscore) is never read as `Remote-User`:
+  Logbook reads the server's `HTTP_*` variables, which Apache 2.4 (the
+  Docker image) and nginx with php-fpm (by default) never fill from an
+  underscore name. PHP's built-in development server does, so never put it
+  behind a real proxy.
 - With the JWT mode, `AUTH_PROXY_JWT_SECRET` can mint tokens, and a
   captured token works until it expires. Set `AUTH_PROXY_TRUSTED` as well
   when you can.

@@ -108,6 +108,20 @@ final class HeaderSignInTest extends AppTestCase
         self::assertCount(1, self::logLines($log, 'Header Remote-User from 10.0.0.5 refused'), 'once per address per hour');
     }
 
+    public function testTheUnderscoreSpellingIsNeverReadAsTheHeader(): void
+    {
+        [$app] = $this->proxyApp();
+        $this->createOwner($app);
+        // slim/psr7 folds Remote_User into Remote-User; the server's HTTP_* variables don't have it.
+        $browser = $this->viaProxy($app, ['Remote_User' => 'owner']);
+
+        self::assertStringStartsWith('/login', self::location($browser));
+        $psr7 = (new \Slim\Psr7\Factory\ServerRequestFactory())->createServerRequest('GET', '/')
+            ->withHeader('Remote_User', 'owner');
+        self::assertSame('owner', $psr7->getHeaderLine('Remote-User'), 'why PSR-7\'s header list is not read');
+        self::assertStringContainsString('data-proxy-notice="missing"', self::body($browser->get('/login')));
+    }
+
     public function testTheCgiRemoteUserVariableIsNeverRead(): void
     {
         [$app] = $this->proxyApp();

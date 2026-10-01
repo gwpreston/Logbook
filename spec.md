@@ -1838,7 +1838,11 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
   any other address the header is ignored and the request goes through
   normal sign-in; a warning is logged at most once per address per hour:
   "Header Remote-User from 203.0.113.9 ignored: not a trusted proxy".
-  Only the HTTP header is read, never the CGI `REMOTE_USER` variable.
+  Only the HTTP header is read, never the CGI `REMOTE_USER` variable, and
+  it is read from the server's `HTTP_*` variables (`HTTP_REMOTE_USER`),
+  not from the PSR-7 header list, which folds a client's `Remote_User` into
+  `Remote-User`. Apache 2.4 and nginx with php-fpm (by default) never put
+  an underscore name into those variables.
 - **Finding the user:** the plain value is trimmed and lower-cased (empty,
   or longer than 255 characters, counts as missing). Then, as §7.9 *Finding
   the user* with the `proxy` provider:
