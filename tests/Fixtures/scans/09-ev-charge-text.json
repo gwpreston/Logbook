@@ -1,0 +1,58 @@
+{
+    "file": "09-ev-charge-text.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "fuel_receipt",
+        "fields": {
+            "date": {
+                "value": "11/10/2026",
+                "evidence": "Started 11/10/2026 19:20"
+            },
+            "time": {
+                "value": "19:20",
+                "evidence": "19:20"
+            },
+            "registration": {
+                "value": "EV70 LTR",
+                "evidence": "Vehicle EV70 LTR"
+            },
+            "vendor": {
+                "value": "VoltLane",
+                "evidence": "VoltLane charging receipt"
+            },
+            "grade": {
+                "value": "rapid charge",
+                "evidence": "rapid, 50 kW"
+            },
+            "volume": {
+                "value": "31.6",
+                "evidence": "Energy delivered 31.6 kWh"
+            },
+            "volume_unit": {
+                "value": "kWh",
+                "evidence": "31.6 kWh"
+            },
+            "price_per_unit": {
+                "value": "£0.79",
+                "evidence": "£0.79/kWh"
+            },
+            "total": {
+                "value": "£24.96",
+                "evidence": "Total £24.96"
+            }
+        }
+    },
+    "expect": {
+        "form": "fuel",
+        "vehicle": "Leaf",
+        "values": {
+            "filled_at": "2026-10-11T19:20",
+            "volume": "31.6",
+            "price": "0.79",
+            "total": "24.96"
+        }
+    }
+}

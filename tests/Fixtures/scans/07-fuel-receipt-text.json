@@ -1,0 +1,55 @@
+{
+    "file": "07-fuel-receipt-text.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": "BMW",
+    "reply": {
+        "kind": "fuel_receipt",
+        "fields": {
+            "date": {
+                "value": "10/10/2026",
+                "evidence": "10/10/2026 17:05"
+            },
+            "time": {
+                "value": "17:05",
+                "evidence": "17:05"
+            },
+            "vendor": {
+                "value": "Northgate Service Station",
+                "evidence": "Northgate Service Station"
+            },
+            "grade": {
+                "value": "Diesel B7",
+                "evidence": "Diesel B7"
+            },
+            "volume": {
+                "value": "55.02",
+                "evidence": "55.02 litres"
+            },
+            "volume_unit": {
+                "value": "litres",
+                "evidence": "55.02 litres"
+            },
+            "price_per_unit": {
+                "value": "£1.519",
+                "evidence": "£1.519 per litre"
+            },
+            "total": {
+                "value": "£83.58",
+                "evidence": "Total £83.58"
+            }
+        }
+    },
+    "expect": {
+        "form": "fuel",
+        "vehicle": null,
+        "values": {
+            "filled_at": "2026-10-10T17:05",
+            "volume": "55.02",
+            "price": "1.519",
+            "total": "83.58",
+            "fuel": "diesel:b7"
+        }
+    }
+}

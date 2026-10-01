@@ -133,12 +133,17 @@ final readonly class Mapper
         $choice = null;
         $grade = $reading->value('grade');
         if ($grade !== null) {
+            // A phrase naming a grade ("B7") beats one naming only the fuel ("Diesel").
             foreach (self::phrases([$grade]) as $phrase) {
                 $found = $this->resolver->fuel($user, $vehicle, $phrase);
-                if (is_array($found) && $found['fuel'] !== null) {
+                if (!is_array($found) || $found['fuel'] === null) {
+                    continue;
+                }
+                if ($found['grade'] !== null) {
                     $choice = new FuelChoice($found['fuel'], $found['grade']);
                     break;
                 }
+                $choice ??= new FuelChoice($found['fuel']);
             }
             if ($choice !== null) {
                 $form->set('fuel', $choice->value(), $reading->evidence('grade') ?? $grade);

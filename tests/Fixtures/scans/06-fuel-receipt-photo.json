@@ -1,0 +1,55 @@
+{
+    "file": "06-fuel-receipt-photo.jpg",
+    "type": "photo",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": "Golf",
+    "reply": {
+        "kind": "fuel_receipt",
+        "fields": {
+            "date": {
+                "value": "14/10/2026",
+                "evidence": "14/10/2026 08:42"
+            },
+            "time": {
+                "value": "08:42",
+                "evidence": "14/10/2026 08:42"
+            },
+            "vendor": {
+                "value": "Shoreline Fuels",
+                "evidence": "SHORELINE FUELS"
+            },
+            "grade": {
+                "value": "Unleaded",
+                "evidence": "Pump 3 UNLEADED"
+            },
+            "volume": {
+                "value": "42.18",
+                "evidence": "42.18 L"
+            },
+            "volume_unit": {
+                "value": "L",
+                "evidence": "42.18 L"
+            },
+            "price_per_unit": {
+                "value": "142.9p",
+                "evidence": "@ 142.9p/L"
+            },
+            "total": {
+                "value": "GBP 60.28",
+                "evidence": "TOTAL GBP 60.28"
+            }
+        }
+    },
+    "expect": {
+        "form": "fuel",
+        "vehicle": null,
+        "values": {
+            "filled_at": "2026-10-14T08:42",
+            "volume": "42.18",
+            "price": "1.429",
+            "total": "60.28",
+            "station": "Shoreline Fuels"
+        }
+    }
+}

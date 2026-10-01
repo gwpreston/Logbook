@@ -1,0 +1,42 @@
+{
+    "file": "18-other-vehicle-invoice.jpg",
+    "type": "photo",
+    "locale": "en_GB",
+    "chosen": "Golf",
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "05/10/2026",
+                "evidence": "Date 05/10/2026"
+            },
+            "registration": {
+                "value": "QQ99 NOP",
+                "evidence": "Reg QQ99 NOP"
+            },
+            "vendor": {
+                "value": "Quayside Motors",
+                "evidence": "QUAYSIDE MOTORS"
+            },
+            "total": {
+                "value": "GBP 32.00",
+                "evidence": "Total GBP 32.00"
+            }
+        },
+        "lines": {
+            "work": [
+                "Wiper blades fitted"
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "Golf",
+        "values": {
+            "performed_on": "2026-10-05",
+            "cost": "32"
+        },
+        "warning": "This is for QQ99 NOP, not your Volkswagen Golf."
+    }
+}
