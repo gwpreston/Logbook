@@ -144,7 +144,7 @@ final readonly class MaintenanceEntryRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'schedule_id', 'performed_on', 'odometer_km', 'category', 'title')
-            ->addSelect('description', 'cost', 'vendor', 'created_at', 'updated_at', 'created_by')
+            ->addSelect('description', 'cost', 'vendor', 'created_at', 'updated_at', 'created_by', 'incident_id')
             ->from(self::TABLE);
     }
 
@@ -206,6 +206,7 @@ final readonly class MaintenanceEntryRepository
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
             createdBy: Row::nullableInt($row, 'created_by'),
+            incidentId: Row::nullableInt($row, 'incident_id'),
         );
     }
 }

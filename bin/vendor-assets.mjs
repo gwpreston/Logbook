@@ -48,6 +48,7 @@ const icons = [
   'block',
   'build',
   'calendar_month',
+  'car_crash',
   'car_repair',
   'check',
   'check_circle',

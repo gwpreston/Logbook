@@ -43,6 +43,7 @@
                     {{ ui.input('amount', 'expense.field.amount'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'expense.hint.amount'|trans}) }}
                 </div>
                 {{ ui.input('note', 'expense.field.note'|trans, values, errors, {optional: true, maxlength: 500, hint: 'expense.hint.note'|trans}) }}
+                {% include 'incidents/_picker.twig' %}
             </section>
 
             {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}

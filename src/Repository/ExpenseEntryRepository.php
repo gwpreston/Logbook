@@ -119,6 +119,7 @@ final readonly class ExpenseEntryRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'spent_on', 'category', 'amount', 'note', 'created_at', 'updated_at', 'created_by')
+            ->addSelect('incident_id')
             ->from(self::TABLE);
     }
 
@@ -155,6 +156,7 @@ final readonly class ExpenseEntryRepository
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
             createdBy: Row::nullableInt($row, 'created_by'),
+            incidentId: Row::nullableInt($row, 'incident_id'),
         );
     }
 }

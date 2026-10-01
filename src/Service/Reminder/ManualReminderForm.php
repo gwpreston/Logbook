@@ -18,7 +18,7 @@ use Logbook\Support\Validation\Validator;
  */
 final class ManualReminderForm
 {
-    private const int TITLE_MAX = 150;
+    public const int TITLE_MAX = 150;
     private const int NOTES_MAX = 1000;
     private const int KM_SCALE = 3;
 

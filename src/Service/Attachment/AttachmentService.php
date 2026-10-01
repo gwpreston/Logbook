@@ -117,9 +117,15 @@ final readonly class AttachmentService
             ?? throw new AttachmentNotFound(sprintf('Attachment %d not found.', $id));
     }
 
-    public function check(UploadedFileInterface $file): FileUpload
+    /**
+     * @param AttachmentOwner|null $owner what the file will belong to: an
+     *                                    incident's photos keep their metadata
+     */
+    public function check(UploadedFileInterface $file, ?AttachmentOwner $owner = null): FileUpload
     {
-        return FileUpload::check($file, $this->maxBytes(), UploadKind::Document);
+        $kind = $owner === AttachmentOwner::Incident ? UploadKind::Evidence : UploadKind::Document;
+
+        return FileUpload::check($file, $this->maxBytes(), $kind);
     }
 
     /**

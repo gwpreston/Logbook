@@ -58,6 +58,13 @@ final readonly class AttentionWording
             AttentionKind::DriftLiquid, AttentionKind::DriftElectric => $this->driftTitle($item->drift),
             AttentionKind::FuelPrice => $this->priceTitle($item->price, $item->currency ?? ''),
             AttentionKind::MaintenanceCost => $this->costTitle($item->cost, $item->currency ?? ''),
+            AttentionKind::StalledClaim => $this->translator->trans('attention.claim.title', [
+                'has_number' => ($item->incident->claimNumber ?? null) === null ? 'no' : 'yes',
+                'number' => $item->incident->claimNumber ?? '',
+                'has_insurer' => ($item->incident->insurer ?? null) === null ? 'no' : 'yes',
+                'insurer' => $item->incident->insurer ?? '',
+                'days' => $item->days ?? 0,
+            ]),
         };
     }
 
@@ -90,6 +97,10 @@ final readonly class AttentionWording
             AttentionKind::MaintenanceCost => $this->translator->trans(
                 ($item->cost->digitSlip ?? false) ? 'attention.cost.digit' : 'attention.cost.detail',
             ),
+            AttentionKind::StalledClaim => $this->translator->trans('attention.claim.detail', [
+                'type' => $item->incident === null ? '' : $this->translator->trans($item->incident->type->labelKey()),
+                'date' => $this->formatter->date($item->incident?->occurredOn),
+            ]),
         };
     }
 

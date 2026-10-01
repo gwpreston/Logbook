@@ -1,0 +1,69 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
+{% import 'macros/incidents.twig' as incidents_ui %}
+
+{#
+ # The Incidents tab (spec.md §7.29): open incidents first, then newest
+ # first, each with its badges, damage and net cost (with costs).
+ #}
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'incident.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'incidents'} %}
+
+        <div class="toolbar list-toolbar">
+            <h1 class="section-title">{{ 'incident.title'|trans }}</h1>
+            <div class="btn-row list-toolbar__actions">
+                <a class="btn btn--ghost" href="{{ url_for('incidents.history', {}, {vehicle: vehicle.id}) }}">{{ ui.icon('history') }}{{ 'incident.history.link'|trans }}</a>
+                {% if can_vehicle(vehicle, 'manage') %}
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'incidents'}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+                {% endif %}
+                {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+                    <a class="btn btn--primary" href="{{ url_for('incidents.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'incident.add'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <section class="card" aria-labelledby="incidents-heading">
+            <h2 id="incidents-heading" class="visually-hidden">{{ 'incident.title'|trans }}</h2>
+            {% if incidents is empty %}
+                <div class="empty">
+                    {{ ui.icon('car_crash') }}
+                    <p class="empty__title">{{ 'incident.empty_title'|trans }}</p>
+                    <p>{{ 'incident.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for incident in incidents %}
+                        {% set own_amount = can_see_amount(vehicle, incident.createdBy) %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon('car_crash') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">
+                                    <a href="{{ url_for('incidents.show', {id: vehicle.id, incident: incident.id}) }}">{{ incident.type.labelKey()|trans }}</a>
+                                </span>
+                                <span class="list__meta truncate">
+                                    {{- incident.occurredOn|local_date }}
+                                    {%- set damage = incidents_ui.damage(incident)|trim %}{% if damage %} · {{ damage }}{% endif -%}
+                                </span>
+                                <span class="list__meta">{{ incidents_ui.badges(incident) }}</span>
+                                {{ ui.added_by(vehicle, incident.createdBy) }}
+                            </span>
+                            <span class="list__end">
+                                {{ paperclip.count(attachment_counts.of('incident', incident.id)) }}
+                                {% if own_amount and incident.costs and incident.costs.count > 0 %}
+                                    <span class="list__amount tabular">{{ (incident.showsPayouts() ? incident.costs.net : incident.costs.linked)|money }}</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {{ ui.pagination(pagination, 'incidents.index', {id: vehicle.id}) }}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

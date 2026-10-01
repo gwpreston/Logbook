@@ -32,6 +32,7 @@
             <div class="btn-row">
                 {{ ui.print_button() }}
                 <a class="btn" href="{{ url_for('reports.ownership', {}, ownership_query) }}">{{ ui.icon('sell') }}{{ 'ownership.report_title'|trans }}</a>
+                {% if feature_enabled('incidents') %}<a class="btn" href="{{ url_for('incidents.history') }}">{{ ui.icon('car_crash') }}{{ 'incident.history.title'|trans }}</a>{% endif %}
                 <a class="btn" href="{{ url_for('reports.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
             </div>
         </header>
@@ -214,6 +215,24 @@
 
         {% if business and not business.isEmpty() %}
             {{ trips_ui.business_table(business, 'trip.report.title'|trans) }}
+        {% endif %}
+
+        {% if incident_lines is not empty %}
+            <section class="card" aria-labelledby="incidents-heading">
+                <div class="card__header">
+                    <h2 id="incidents-heading" class="card__title">{{ 'incident.report.title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('incidents.history') }}">{{ 'incident.history.title'|trans }}</a>
+                </div>
+                <dl class="details">
+                    {% for line in incident_lines %}
+                        {% if incident_lines|length > 1 %}<div><dt><strong>{{ line.currency }}</strong></dt><dd></dd></div>{% endif %}
+                        <div><dt>{{ 'incident.report.count'|trans }}</dt><dd class="tabular">{{ line.count|number }}</dd></div>
+                        <div><dt>{{ 'incident.report.linked'|trans }}</dt><dd class="tabular">{{ line.linked|money }}</dd></div>
+                        <div><dt>{{ 'incident.report.payouts'|trans }}</dt><dd class="tabular">{{ line.payouts|money }}</dd></div>
+                    {% endfor %}
+                </dl>
+                <p class="field__hint">{{ 'incident.report.hint'|trans }}</p>
+            </section>
         {% endif %}
 
         {% if rows is not empty %}

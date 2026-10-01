@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\History;
 
+use Logbook\Domain\Incident\DamageArea;
+use Logbook\Domain\Incident\Incident;
+use Logbook\Repository\IncidentRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\VehicleAbility;
@@ -77,6 +80,7 @@ final readonly class ActivityFeed
         private ValuationRepository $valuations,
         private TripRepository $trips,
         private VehicleAccess $access,
+        private IncidentRepository $incidents,
     ) {
     }
 
@@ -223,6 +227,20 @@ final readonly class ActivityFeed
             ));
         }
 
+        // Incidents (Phase 27.1): their rows, and the "Part of" note on the records they link.
+        $incidentsOn = $enabled[Feature::Incidents->value];
+        $incidentsOf = [];
+        if ($incidentsOn) {
+            foreach ($this->incidents->listForVehicles($ids) as $incident) {
+                $incidentsOf[$incident->id] = $incident;
+            }
+        }
+        $incidents = $query->includes(ActivityKind::Incident)
+            ? array_values(array_filter($incidentsOf, static fn (Incident $i): bool => $query->covers($i->data->occurredOn)))
+            : [];
+        $linkedSummaries = $this->incidents->linkedSummaries(array_map(static fn (Incident $i): int => $i->id, $incidents));
+        $partOf = static fn (?int $incidentId): ?Incident => $incidentId === null ? null : ($incidentsOf[$incidentId] ?? null);
+
         $milestones = [];
         if ($query->includes(ActivityKind::Milestone)) {
             foreach ($query->vehicles as $vehicle) {
@@ -246,6 +264,7 @@ final readonly class ActivityFeed
             AttachmentOwner::Expense->value => array_map(static fn ($e): int => $e->id, $expenses),
             AttachmentOwner::Valuation->value => array_map(static fn ($v): int => $v->id, $valuations),
             AttachmentOwner::Trip->value => array_map(static fn (Trip $t): int => $t->id, $trips),
+            AttachmentOwner::Incident->value => array_map(static fn (Incident $i): int => $i->id, $incidents),
             AttachmentOwner::Purchase->value => $paperwork(AttachmentOwner::Purchase),
             AttachmentOwner::Sale->value => $paperwork(AttachmentOwner::Sale),
         ]));
@@ -314,6 +333,8 @@ final readonly class ActivityFeed
                 tyres: $tyresOn
                     ? array_map(static fn (TyreChange $c): TranslatableMessage => $summaries[$c->id], $linkedTo[$entry->id] ?? [])
                     : [],
+                partOfKey: $partOf($entry->incidentId)?->data->type->labelKey(),
+                partOfDate: $partOf($entry->incidentId)?->data->occurredOn,
             );
         }
         foreach ($ownChanges as $change) {
@@ -330,6 +351,8 @@ final readonly class ActivityFeed
                 odometerKm: $change->data->odometerKm,
                 tyres: [$summaries[$change->id]],
                 createdBy: $change->createdBy,
+                partOfKey: $partOf($change->incidentId)?->data->type->labelKey(),
+                partOfDate: $partOf($change->incidentId)?->data->occurredOn,
             );
         }
         foreach ($documents as $document) {
@@ -367,6 +390,8 @@ final readonly class ActivityFeed
                 note: $data->note,
                 files: $counts->of(AttachmentOwner::Expense, $expense->id),
                 createdBy: $expense->createdBy,
+                partOfKey: $partOf($expense->incidentId)?->data->type->labelKey(),
+                partOfDate: $partOf($expense->incidentId)?->data->occurredOn,
             );
         }
         foreach ($valuations as $valuation) {
@@ -402,6 +427,28 @@ final readonly class ActivityFeed
                 files: $counts->of(AttachmentOwner::Trip, $trip->id),
                 createdBy: $trip->createdBy,
                 distanceKm: $data->distanceKm,
+            );
+        }
+        foreach ($incidents as $incident) {
+            $data = $incident->data;
+            // The summary everyone may see (spec.md §7.29 Access): the date, type and damage.
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Incident,
+                vehicle: $vehicles[$incident->vehicleId],
+                entryId: $incident->id,
+                date: $data->occurredOn,
+                createdAt: $incident->createdAt,
+                label: '',
+                labelKey: $data->type->labelKey(),
+                icon: 'car_crash',
+                currency: $currencies[$incident->vehicleId],
+                files: $counts->of(AttachmentOwner::Incident, $incident->id),
+                createdBy: $incident->createdBy,
+                damage: [
+                    ...array_map(static fn (DamageArea $area): string => $area->labelKey(), $data->damageAreas),
+                    ...($data->severity === null ? [] : [$data->severity->labelKey()]),
+                ],
+                linked: $linkedSummaries[$incident->id] ?? [],
             );
         }
         foreach ($milestones as [$vehicle, $milestone, $date, $price]) {

@@ -60,6 +60,7 @@ final class FeatureToggleTest extends ReminderTestCase
                 'reports' => false,
                 'tyres' => false,
                 'trips' => false,
+                'incidents' => false,
                 // Not on the page, so kept as they were.
                 'ai_ask' => true,
                 'ai_actions' => true,

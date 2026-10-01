@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\SalePack;
 
+use Logbook\Domain\Incident\Incident;
+use Logbook\Repository\IncidentRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Attachment\Attachment;
@@ -60,6 +62,7 @@ final readonly class PaperworkSelector
         private OdometerReadingRepository $readings,
         private FeatureToggles $features,
         private TranslatorInterface $translator,
+        private IncidentRepository $incidents,
     ) {
     }
 
@@ -73,7 +76,11 @@ final readonly class PaperworkSelector
 
     public function select(User $user, Vehicle $vehicle, SalePackOptions $options): PaperworkSelection
     {
-        $offered = $this->offered();
+        // Incident photos are offered only while incidents are included.
+        $offered = array_values(array_filter(
+            $this->offered(),
+            static fn (PaperworkKind $kind): bool => $kind !== PaperworkKind::IncidentPhoto || $options->incidents,
+        ));
         $chosen = array_values(array_filter($offered, $options->includes(...)));
         $zone = $user->preferences->timeZone();
 
@@ -95,6 +102,13 @@ final readonly class PaperworkSelector
                 if ($reading->isManual()) {
                     $readings[$reading->id] = $reading;
                 }
+            }
+        }
+
+        $incidents = [];
+        if (in_array(PaperworkKind::IncidentPhoto, $chosen, true)) {
+            foreach ($this->incidents->listForVehicle($vehicle->id) as $incident) {
+                $incidents[$incident->id] = $incident;
             }
         }
 
@@ -120,6 +134,7 @@ final readonly class PaperworkSelector
                 AttachmentOwner::Sale,
                 AttachmentOwner::Valuation,
                 AttachmentOwner::Trip => null,
+                AttachmentOwner::Incident => $this->incidentPhoto($attachment, $incidents[$attachment->ownerId] ?? null),
             };
             if ($file !== null && in_array($file['kind'], $chosen, true)) {
                 $files[] = $file;
@@ -149,6 +164,30 @@ final readonly class PaperworkSelector
         }
 
         return new PaperworkSelection($offered, $chosen, $result);
+    }
+
+    /**
+     * An incident's photo: images only (a PDF there is usually a letter
+     * about the claim), named by the incident's type.
+     *
+     * @return Found|null
+     */
+    private function incidentPhoto(Attachment $attachment, ?Incident $incident): ?array
+    {
+        if ($incident === null || !$attachment->isImage()) {
+            return null;
+        }
+        $type = $this->translator->trans($incident->data->type->labelKey());
+
+        return [
+            'attachment' => $attachment,
+            'kind' => PaperworkKind::IncidentPhoto,
+            'date' => $incident->data->occurredOn,
+            'odometerKm' => null,
+            'entry' => $type,
+            'label' => $this->translator->trans('sale_pack.source.incident_photo'),
+            'what' => $type,
+        ];
     }
 
     /**

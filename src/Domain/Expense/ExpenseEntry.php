@@ -20,6 +20,8 @@ final readonly class ExpenseEntry
         public DateTimeImmutable $updatedAt,
         /** Who added it (Phase 19); null = the vehicle's owner, or a former user. */
         public ?int $createdBy = null,
+        /** The incident it is part of (Phase 27.1, spec.md §7.29). */
+        public ?int $incidentId = null,
     ) {
     }
 }

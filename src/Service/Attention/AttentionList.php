@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Attention;
 
+use Logbook\Repository\IncidentRepository;
+use Logbook\Service\Incident\IncidentAccess;
 use DateTimeImmutable;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Attention\AttentionKind;
@@ -54,6 +56,9 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class AttentionList
 {
+    /** A claim waiting longer than this many days is raised (spec.md §7.24 item 10). */
+    public const int STALLED_CLAIM_DAYS = 30;
+
     public function __construct(
         private FeatureToggles $features,
         private ReminderSync $sync,
@@ -73,6 +78,8 @@ final readonly class AttentionList
         private VehicleAccess $access,
         private UserDirectory $directory,
         private ClockInterface $clock,
+        private IncidentRepository $incidents,
+        private IncidentAccess $incidentAccess,
     ) {
     }
 
@@ -279,6 +286,10 @@ final readonly class AttentionList
             }
         }
 
+        if ($enabled[Feature::Incidents->value]) {
+            array_push($items, ...$this->stalledClaims($user, $vehicle, $ownerToday));
+        }
+
         $serviceOverdue = $enabled[Feature::Maintenance->value] && array_filter(
             $overdue,
             static fn (ForecastItem $i): bool => $i->source === ForecastSource::Schedule,
@@ -359,6 +370,43 @@ final readonly class AttentionList
         }
 
         return false;
+    }
+
+    /**
+     * Claims told to the insurer, or open, with no news for more than
+     * STALLED_CLAIM_DAYS (spec.md §7.24 item 10), as the user may see them:
+     * the title names the claim, so only with its details.
+     *
+     * @return list<AttentionItem>
+     */
+    private function stalledClaims(User $user, Vehicle $vehicle, DateTimeImmutable $today): array
+    {
+        $items = [];
+        foreach ($this->incidents->listForVehicle($vehicle->id) as $incident) {
+            if (
+                !$incident->data->claim->status->isAwaitingNews()
+                || !$this->incidentAccess->seesDetails($user, $vehicle, $incident)
+            ) {
+                continue;
+            }
+            $days = LocalTime::daysBetween($incident->lastClaimNews(), $today);
+            if ($days <= self::STALLED_CLAIM_DAYS) {
+                continue;
+            }
+            $items[] = new AttentionItem(
+                kind: AttentionKind::StalledClaim,
+                vehicle: $vehicle,
+                subjectId: $incident->id,
+                icon: 'car_crash',
+                days: $days,
+                incident: $this->incidentAccess->view($user, $vehicle, $incident),
+                fingerprint: Fingerprint::claim($incident),
+                canAct: true,
+                canHide: true,
+            );
+        }
+
+        return $items;
     }
 
     /**

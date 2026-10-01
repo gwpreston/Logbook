@@ -71,7 +71,7 @@
                 <ol class="list history-print__list">
                     {% for item in items %}
                         <li class="history-print__item">
-                            {{ history.row(item, {link: false, costs: costs}) }}
+                            {{ history.row(item, {link: false, costs: costs, part_of: 'incidents' in chosen|map(c => c.value)}) }}
                             {% set owner = item.filesOwner() %}
                             {% set files = owner ? attachments.of(owner, item.entryId) : [] %}
                             {% if files is not empty %}

@@ -60,7 +60,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [26.3](docs/phases/phase-26.3.md) | Actions: say it, check it, add it + v2.7 release | ✅ |
 | [26.4](docs/phases/phase-26.4.md) | Read receipts and documents + v2.8 release | ✅ |
 | [26.5](docs/phases/phase-26.5.md) | MCP server + v2.9 release | ✅ |
-| [27](docs/phases/phase-27.md) | Incidents, damage and insurance claims + v2.10 release | 📋 |
+| [27.1](docs/phases/phase-27.1.md) | Incidents, damage and insurance claims | ✅ |
+| [27.2](docs/phases/phase-27.2.md) | Total loss and reading claim letters + v2.10 release | 📋 |
 | [28.1](docs/phases/phase-28.1.md) | Scheduled jobs in Settings | 📋 |
 | [28.2](docs/phases/phase-28.2.md) | Update check and dashboard banner + v2.11 release | 📋 |
 
@@ -572,21 +573,32 @@ the cloud.*
 
 → [`phase-26.5.md`](docs/phases/phase-26.5.md)
 
-## Phase 27 — Incidents, damage and insurance claims + v2.10 release
+## Phase 27.1 — Incidents, damage and insurance claims
 *What happened, what was fixed, what the insurer did, and the five-year
 answer your next quote will ask for.*
 
-- Incidents with type, fault, damage, photos, driver, the other party and
-  the claim (number, status, excess, payout, no-claims effect, write-off
-  category), linking existing repairs, expenses and tyre changes rather
-  than copying their costs.
+- Incidents with type, fault, damage, photos (EXIF kept), driver, the
+  other party and the claim (number, status, excess, payout, no-claims
+  effect, write-off category), linking existing repairs, expenses and
+  tyre changes rather than copying their costs.
 - A claims history across every vehicle, sold ones included, printable for
   insurance quotes.
 - An optional incident summary in the sale pack (repairs only, never claim
-  details); ownership net of payouts; stalled claims in *Needs attention*.
-- Release **v2.10.0**.
+  details); ownership net of payouts; stalled claims in *Needs attention*;
+  the API, Ask and MCP.
 
-→ [`phase-27.md`](docs/phases/phase-27.md)
+→ [`phase-27.1.md`](docs/phases/phase-27.1.md)
+
+## Phase 27.2 — Total loss and reading claim letters + v2.10 release
+*When the insurer pays out for the car, and the letters in between.*
+
+- Archiving offers *Written off* for a settled write-off, with the
+  settlement as the sale price, counted once in ownership.
+- Scanning reads insurer claim letters into the matching incident and
+  repair estimates into a new estimate field (never counted in costs).
+- Release **v2.10.0** (Phases 27.1 and 27.2).
+
+→ [`phase-27.2.md`](docs/phases/phase-27.2.md)
 
 ## Phase 28.2 — Update check and dashboard banner + v2.11 release
 *Know when a new Logbook is out, without anything updating itself.*

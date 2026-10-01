@@ -30,6 +30,7 @@ enum ShareLevel: string
                 VehicleAbility::Manage,
                 VehicleAbility::ViewCosts,
                 VehicleAbility::ViewOthersTrips,
+                VehicleAbility::ViewIncidentDetails,
             ],
         };
     }

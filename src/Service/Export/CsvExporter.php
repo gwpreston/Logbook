@@ -18,6 +18,9 @@ use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\ValuationRepository;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Service\Expense\CostItem;
+use Logbook\Service\Incident\ClaimsHistoryReport;
+use Logbook\Repository\IncidentRepository;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\Forecast\ForecastItem;
 use Logbook\Service\Forecast\ForecastWording;
@@ -61,6 +64,8 @@ final readonly class CsvExporter
         private ValuationRepository $valuations,
         private ForecastWording $wording,
         private TripRepository $trips,
+        private IncidentRepository $incidents,
+        private UserDirectory $directory,
     ) {
     }
 
@@ -76,6 +81,7 @@ final readonly class CsvExporter
             ExportModule::TyreChanges => $this->tyreChangesTable($user, $vehicle),
             ExportModule::Valuations => $this->valuationsTable($user, $vehicle),
             ExportModule::Trips => $this->tripsTable($user, $vehicle),
+            ExportModule::Incidents => $this->incidentsTable($user, $vehicle),
         };
 
         return new CsvTable(
@@ -207,6 +213,7 @@ final readonly class CsvExporter
             $this->yesNo($cost->vehicle->data->saleDate !== null),
             $cost->distanceKm === null ? null : CsvNumber::distance($cost->distanceKm, $unit),
             ...array_map(static fn (GroupTotal $g): ?string => $money($g->amount), $cost->groups),
+            $money($cost->payouts),
             $money($cost->running),
             $money($cost->depreciationCost),
             $cost->valuedOn()?->format('Y-m-d'),
@@ -234,6 +241,7 @@ final readonly class CsvExporter
                     'export.column.running_group',
                     ['group' => $this->t('expense.group.' . $g->value)],
                 ], CostGroup::cases()),
+                'export.column.insurance_payouts',
                 'export.column.running',
                 'export.column.depreciation',
                 'export.column.depreciation_to',
@@ -623,6 +631,98 @@ final readonly class CsvExporter
     }
 
     /**
+     * The vehicle's incidents, oldest first (spec.md §7.13): every field but
+     * the other party; the odometer in the owner's unit; links as the
+     * linked records' ids. Exporting is `Manage`, which sees every detail.
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function incidentsTable(User $user, Vehicle $vehicle): array
+    {
+        $unit = $user->preferences->distanceUnit;
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $readings = [];
+        foreach ($this->odometer->listForVehicle($vehicle->id) as $reading) {
+            if ($reading->incidentId !== null) {
+                $readings[$reading->incidentId] = Decimal::trim($unit->fromKmDecimal($reading->readingKm, 3));
+            }
+        }
+        $links = $this->incidents->linksForVehicle($vehicle->id);
+        $money = static fn (?string $amount): ?string => $amount === null ? null : CsvNumber::money($amount, $currency);
+        $rows = [];
+        foreach (array_reverse($this->incidents->listForVehicle($vehicle->id)) as $incident) {
+            $data = $incident->data;
+            $claim = $data->claim;
+            $linked = $links[$incident->id] ?? [];
+            $rows[] = [
+                $data->occurredOn->format('Y-m-d'),
+                $data->occurredAtTime,
+                $data->location,
+                $this->t($data->type->labelKey()),
+                $this->t($data->fault->labelKey()),
+                $data->description,
+                implode('; ', array_map(fn ($area): string => $this->t($area->labelKey()), $data->damageAreas)),
+                $data->severity === null ? null : $this->t($data->severity->labelKey()),
+                $readings[$incident->id] ?? null,
+                $data->driverUserId === null ? $data->driverName : $this->directory->displayName($data->driverUserId),
+                $data->policeReference,
+                $this->t($data->status->labelKey()),
+                $data->closedOn?->format('Y-m-d'),
+                $data->writeOff->isWrittenOff() ? $this->t($data->writeOff->labelKey()) : null,
+                $this->t($claim->status->labelKey()),
+                $claim->insurer,
+                $claim->claimNumber,
+                $money($claim->excess),
+                $money($claim->payout),
+                $currency,
+                $this->t($claim->ncdAffected->labelKey()),
+                $claim->updatedOn?->format('Y-m-d'),
+                $data->notes,
+                self::ids($linked['maintenance'] ?? []),
+                self::ids($linked['expense'] ?? []),
+                self::ids($linked['tyre'] ?? []),
+            ];
+        }
+
+        return [$this->headers([
+            'export.column.date',
+            'incident.column.time',
+            'incident.column.location',
+            'incident.column.type',
+            'incident.column.fault',
+            'incident.column.description',
+            'incident.column.damage',
+            'incident.column.severity',
+            ['export.column.odometer', ['unit' => $this->t('units.symbol.' . $unit->value)]],
+            'incident.column.driver',
+            'incident.column.police_reference',
+            'incident.column.status',
+            'incident.column.closed_on',
+            'incident.column.write_off',
+            'incident.column.claim_status',
+            'incident.column.insurer',
+            'incident.column.claim_number',
+            'incident.column.excess',
+            'incident.column.payout',
+            'export.column.currency',
+            'incident.column.ncd',
+            'incident.column.claim_updated_on',
+            'export.column.notes',
+            'incident.column.linked_maintenance',
+            'incident.column.linked_expenses',
+            'incident.column.linked_tyre_changes',
+        ]), $rows];
+    }
+
+    /**
+     * @param list<int> $ids
+     */
+    private static function ids(array $ids): ?string
+    {
+        return $ids === [] ? null : implode('; ', $ids);
+    }
+
+    /**
      * A claim report's rows, oldest first (spec.md §7.23): distances in each
      * rate set's unit, amounts as plain decimals; a trip that crosses the
      * threshold gives both rates ("100 @ 0.55; 50 @ 0.25").
@@ -677,6 +777,58 @@ final readonly class CsvExporter
                 'export.column.passenger_amount',
                 'export.column.amount',
                 'export.column.currency',
+            ]),
+            $rows,
+        );
+    }
+
+    /**
+     * The claims history (spec.md §7.29): what an insurer asks, never the
+     * other party. A row whose details the user may not see keeps its date,
+     * vehicle and type, the rest empty.
+     */
+    public function claimsHistory(ClaimsHistoryReport $report): CsvTable
+    {
+        $rows = [];
+        foreach ($report->rows as $row) {
+            $incident = $row->incident;
+            $rows[] = [
+                $incident->occurredOn->format('Y-m-d'),
+                $row->vehicle->name(),
+                $row->vehicle->data->registration,
+                $this->t($incident->type->labelKey()),
+                $incident->fault === null ? null : $this->t($incident->fault->labelKey()),
+                $row->driver,
+                $incident->claimStatus === null ? null : $this->t($incident->claimStatus->labelKey()),
+                $incident->insurer,
+                $incident->claimNumber,
+                $incident->payout === null ? null : CsvNumber::money($incident->payout, $row->currency),
+                $incident->payout === null ? null : $row->currency,
+                $incident->ncdAffected === null ? null : $this->t($incident->ncdAffected->labelKey()),
+                $incident->writeOff->isWrittenOff() ? $this->t($incident->writeOff->labelKey()) : null,
+            ];
+        }
+
+        return new CsvTable(
+            sprintf(
+                'claims-history-%s-to-%s.csv',
+                $report->from?->format('Y-m-d') ?? 'start',
+                $report->until->format('Y-m-d'),
+            ),
+            $this->headers([
+                'export.column.date',
+                'export.column.vehicle',
+                'export.column.registration',
+                'incident.column.type',
+                'incident.column.fault',
+                'incident.column.driver',
+                'incident.column.claim_status',
+                'incident.column.insurer',
+                'incident.column.claim_number',
+                'incident.column.payout',
+                'export.column.currency',
+                'incident.column.ncd',
+                'incident.column.write_off',
             ]),
             $rows,
         );

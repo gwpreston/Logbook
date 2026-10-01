@@ -23,6 +23,9 @@
                 {%- else -%}{{ dash }}{%- endif -%}
             </dd></div>
             <div><dt>{{ 'history.printed_on'|trans }}</dt><dd>{{ pack.today|local_date }}</dd></div>
+            {% if pack.writeOff and pack.incidents is not null %}
+                <div><dt>{{ 'sale_pack.write_off.label'|trans }}</dt><dd>{{ 'sale_pack.write_off.recorded'|trans({category: pack.writeOff.labelKey()|trans, date: pack.writeOffOn|local_date}) }}</dd></div>
+            {% endif %}
         </dl>
     </header>
 

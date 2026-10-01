@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Draft;
 
+use Logbook\Service\Incident\IncidentService;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\AiDraft;
 use Logbook\Domain\Ai\Draft\DraftKind;
@@ -55,6 +56,7 @@ final readonly class DraftStore
         private TyreChangeService $tyreChanges,
         private ReminderService $reminders,
         private ClockInterface $clock,
+        private IncidentService $incidents,
     ) {
     }
 
@@ -254,6 +256,13 @@ final readonly class DraftStore
                         return false;
                     }
                     $this->expenses->delete($vehicle, $expense);
+                    break;
+                case DraftKind::Incident:
+                    $incident = $this->incidents->get($vehicle, $entryId);
+                    if (!$untouched($incident->updatedAt)) {
+                        return false;
+                    }
+                    $this->incidents->delete($vehicle, $incident);
                     break;
                 case DraftKind::TyreCheck:
                     $check = $this->tyreChanges->get($vehicle, $entryId);

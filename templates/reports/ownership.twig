@@ -100,7 +100,10 @@
                                         {%- elseif cost.start.value == 'first_logged' %}<br><span class="muted">{{ 'ownership.start.first_logged'|trans }}</span>{% endif -%}
                                     </td>
                                     <td class="table__num tabular">{{ cost.distanceKm is not null ? cost.distanceKm|distance : dash }}</td>
-                                    <td class="table__num tabular">{{ cost.running|money }}</td>
+                                    <td class="table__num tabular">
+                                        {{- cost.running|money -}}
+                                        {%- if cost.payouts %}<br><span class="muted">{{ 'ownership.row.payouts_short'|trans({amount: cost.payouts|money}) }}</span>{% endif -%}
+                                    </td>
                                     <td class="table__num tabular">{{ own.depreciation(cost) }}</td>
                                     <td class="table__num tabular">
                                         {%- if cost.total is not null -%}

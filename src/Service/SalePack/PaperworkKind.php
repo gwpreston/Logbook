@@ -22,6 +22,8 @@ enum PaperworkKind: string
     /** The purchase paperwork, on the *Bought* milestone. */
     case Purchase = 'purchase';
     case Insurance = 'insurance';
+    /** Incident photos (Phase 27.1): only with *Include incidents*, stripped as they are written. */
+    case IncidentPhoto = 'incident_photos';
 
     /**
      * Never offered, and never read from a request: registration documents
@@ -38,7 +40,7 @@ enum PaperworkKind: string
     {
         return match ($this) {
             self::Service, self::Inspection, self::Photo => true,
-            self::Purchase, self::Insurance => false,
+            self::Purchase, self::Insurance, self::IncidentPhoto => false,
         };
     }
 
@@ -50,6 +52,7 @@ enum PaperworkKind: string
         return match ($this) {
             self::Service => Feature::Maintenance,
             self::Inspection, self::Insurance => Feature::Compliance,
+            self::IncidentPhoto => Feature::Incidents,
             self::Photo, self::Purchase => null,
         };
     }

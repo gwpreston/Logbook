@@ -24,6 +24,8 @@ enum LogKind: string
     case Tyre = 'tyre';
     /** *Check tread*, beside *Tyre change* (Phase 11.2). */
     case TyreCheck = 'tyre_check';
+    /** An incident (Phase 27.1). */
+    case Incident = 'incident';
 
     /**
      * The vehicle's add form (route name; takes the vehicle `id`).
@@ -47,6 +49,7 @@ enum LogKind: string
             self::Schedule => 'maintenance.schedules.create',
             self::Tyre, self::TyreCheck => 'tyres.change',
             self::Trip => 'trips.create',
+            self::Incident => 'incidents.create',
         };
     }
 
@@ -75,6 +78,7 @@ enum LogKind: string
             self::Document => Feature::Compliance,
             self::Tyre, self::TyreCheck => Feature::Tyres,
             self::Trip => Feature::Trips,
+            self::Incident => Feature::Incidents,
             self::Odometer, self::Expense => null,
         };
     }
@@ -91,6 +95,7 @@ enum LogKind: string
             self::Tyre => 'tire_repair',
             self::TyreCheck => 'fact_check',
             self::Trip => 'route',
+            self::Incident => 'car_crash',
         };
     }
 
@@ -103,7 +108,7 @@ enum LogKind: string
             self::Fuel => 'accent',
             self::Odometer, self::Trip => 'text',
             self::Maintenance, self::Schedule, self::Tyre, self::TyreCheck => 'c-maint',
-            self::Expense => 'c-other',
+            self::Expense, self::Incident => 'c-other',
             self::Document => 'c-ins',
         };
     }

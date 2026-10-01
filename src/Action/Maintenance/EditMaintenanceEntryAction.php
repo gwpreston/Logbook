@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
+use Logbook\Action\Incident\IncidentPicker;
+use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
@@ -34,6 +36,7 @@ final readonly class EditMaintenanceEntryAction
         private Redirector $redirect,
         private TyreFormPage $tyreErrors,
         private EntryGuard $guard,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -49,7 +52,7 @@ final readonly class EditMaintenanceEntryAction
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 
         if ($request->getMethod() !== 'POST') {
-            $values = MaintenanceEntryForm::values($entry, $user->preferences);
+            $values = $this->incidents->current($entry->incidentId, MaintenanceEntryForm::values($entry, $user->preferences));
 
             return $this->page->render($request, $response, $vehicle, $currency, $values, $entry);
         }
@@ -73,6 +76,7 @@ final readonly class EditMaintenanceEntryAction
 
             return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422);
         }
+        $this->incidents->save($vehicle, LinkKind::Maintenance, $entry->id, $input);
         $session = RequestContext::session($request);
         $session->flash('success', 'maintenance.updated', ['title' => $updated->data->title]);
         $this->warnings->queue($session, $this->maintenance->odometerWarning($vehicle, $updated));

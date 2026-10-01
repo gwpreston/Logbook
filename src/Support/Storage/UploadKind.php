@@ -12,6 +12,8 @@ enum UploadKind
 {
     case Image;
     case Document;
+    /** An incident's photos and files: kept as uploaded (spec.md §7.12, Phase 27.1). */
+    case Evidence;
 
     private const array IMAGE_TYPES = [
         'image/jpeg' => 'jpg',
@@ -28,7 +30,7 @@ enum UploadKind
     {
         return match ($this) {
             self::Image => self::IMAGE_TYPES,
-            self::Document => self::IMAGE_TYPES + ['application/pdf' => 'pdf'],
+            self::Document, self::Evidence => self::IMAGE_TYPES + ['application/pdf' => 'pdf'],
         };
     }
 
@@ -39,7 +41,16 @@ enum UploadKind
     {
         return match ($this) {
             self::Image => 'upload.not_an_image',
-            self::Document => 'upload.not_a_document',
+            self::Document, self::Evidence => 'upload.not_a_document',
         };
+    }
+
+    /**
+     * Whether a photo is stored exactly as uploaded, EXIF and all, rather
+     * than turned upright and stripped (decided 2026-10-01, #96).
+     */
+    public function keepsMetadata(): bool
+    {
+        return $this === self::Evidence;
     }
 }

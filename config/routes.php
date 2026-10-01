@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
+use Logbook\Action\Api\IncidentHistoryAction as ApiIncidentHistoryAction;
+use Logbook\Action\Api\ListIncidentsAction as ApiIncidentsAction;
 use Logbook\Action\Api\ListJourneysAction as ApiJourneysAction;
+use Logbook\Action\Api\LogIncidentAction as ApiLogIncidentAction;
 use Logbook\Action\Api\ListMaintenanceAction as ApiMaintenanceAction;
 use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
 use Logbook\Action\Api\ListTripsAction as ApiTripsAction;
@@ -143,6 +146,14 @@ use Logbook\Action\Sharing\ChangeShareAction;
 use Logbook\Action\Sharing\MyShareAction;
 use Logbook\Action\Sharing\SharingAction;
 use Logbook\Action\Sharing\TransferVehicleAction;
+use Logbook\Action\Incident\ClaimsHistoryAction;
+use Logbook\Action\Incident\ClaimsHistoryExportAction;
+use Logbook\Action\Incident\CreateIncidentAction;
+use Logbook\Action\Incident\DeleteIncidentAction;
+use Logbook\Action\Incident\EditIncidentAction;
+use Logbook\Action\Incident\IncidentListAction;
+use Logbook\Action\Incident\LinkIncidentRecordAction;
+use Logbook\Action\Incident\ShowIncidentAction;
 use Logbook\Action\Trip\ClaimExportAction;
 use Logbook\Action\Trip\ClaimReportAction;
 use Logbook\Action\Trip\CreateTripAction;
@@ -300,6 +311,16 @@ return static function (App $app): void {
                     $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
                     $trips->get('/journeys', ApiJourneysAction::class)->setName('api.journeys');
                 })->add($module(Feature::Trips));
+                // Incidents (spec.md §7.20, §7.29): the access rules of IncidentAccess.
+                $keyed->group('', function (Group $incidents) use ($ability): void {
+                    $incidents->get('/vehicles/{id:[0-9]+}/incidents', ApiIncidentsAction::class)
+                        ->setName('api.incidents.index')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $incidents->post('/vehicles/{id:[0-9]+}/incidents', ApiLogIncidentAction::class)
+                        ->setName('api.incidents.create')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $incidents->get('/incidents/history', ApiIncidentHistoryAction::class)->setName('api.incidents.history');
+                })->add($module(Feature::Incidents));
             })->add(VehicleAccessMiddleware::class)
                 ->add(ApiAuthMiddleware::class);
         })->add(ApiErrorMiddleware::class);
@@ -346,7 +367,7 @@ return static function (App $app): void {
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
         $group->get('/log/new', LogEntryAction::class)->setName('log.chooser');
-        $kinds = 'odometer|maintenance|expense|document|schedule|tyre|tyre_check|trip';
+        $kinds = 'odometer|maintenance|expense|document|schedule|tyre|tyre_check|trip|incident';
         $group->get('/log/new/{kind:' . $kinds . '}', LogPickVehicleAction::class)
             ->setName('log.pick');
 
@@ -498,6 +519,25 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
             })->add($module(Feature::Trips));
 
+            // Incidents (spec.md §7.29). Editing someone else's needs Manage (EntryGuard).
+            $vehicle->group('/incidents', function (Group $incidents) use ($ability): void {
+                $incidents->get('', IncidentListAction::class)->setName('incidents.index')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $incidents->map(['GET', 'POST'], '/new', CreateIncidentAction::class)->setName('incidents.create')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                $incidents->get('/{incident:[0-9]+}', ShowIncidentAction::class)->setName('incidents.show')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $incidents->map(['GET', 'POST'], '/{incident:[0-9]+}/edit', EditIncidentAction::class)
+                    ->setName('incidents.edit')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                $incidents->map(['GET', 'POST'], '/{incident:[0-9]+}/delete', DeleteIncidentAction::class)
+                    ->setName('incidents.delete')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+                $incidents->post('/{incident:[0-9]+}/links', LinkIncidentRecordAction::class)
+                    ->setName('incidents.links')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+            })->add($module(Feature::Incidents));
+
             $vehicle->group('', function (Group $documents) use ($ability): void {
                 $documents->get('/documents', ComplianceListAction::class)->setName('compliance.index')
                     ->setArgument($ability, VehicleAbility::View->value);
@@ -537,7 +577,7 @@ return static function (App $app): void {
                 ->setArgument($ability, VehicleAbility::Manage->value);
 
             // Export and import check the module's toggle themselves (one route, several modules).
-            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations|trips}';
+            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations|trips|incidents}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module')
                 ->setArgument($ability, VehicleAbility::Manage->value);
@@ -588,6 +628,12 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/tyres', TyreSettingsAction::class)
             ->setName('settings.tyres')
             ->add($module(Feature::Tyres));
+
+        // The claims history, every vehicle the user can see (spec.md §7.29).
+        $group->group('', function (Group $incidents): void {
+            $incidents->get('/incidents/history', ClaimsHistoryAction::class)->setName('incidents.history');
+            $incidents->get('/incidents/history.csv', ClaimsHistoryExportAction::class)->setName('incidents.history.export');
+        })->add($module(Feature::Incidents));
 
         // The signed-in user's own claim and trip settings (spec.md §7.23).
         $group->group('', function (Group $trips): void {

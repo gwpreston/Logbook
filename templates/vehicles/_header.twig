@@ -6,7 +6,7 @@
  # tab is its own URL, so tabs work without JS and survive a hard refresh.
  #
  # Expects: vehicle, active_tab ('overview' | 'history' | 'odometer' | 'trips' | 'fuel' |
- # 'maintenance' | 'tyres' | 'compliance' | 'expenses').
+ # 'maintenance' | 'tyres' | 'compliance' | 'expenses' | 'incidents').
  #}
 {% import 'macros/ui.twig' as ui %}
 {% set data = vehicle.data %}
@@ -20,6 +20,7 @@
     {route: 'tyres.index', key: 'tyres', icon: 'tire_repair', label: 'vehicle.tab.tyres', feature: 'tyres'},
     {route: 'compliance.index', key: 'compliance', icon: 'verified_user', label: 'vehicle.tab.compliance', feature: 'compliance'},
     {route: 'expenses.index', key: 'expenses', icon: 'payments', label: 'vehicle.tab.expenses'},
+    {route: 'incidents.index', key: 'incidents', icon: 'car_crash', label: 'vehicle.tab.incidents', feature: 'incidents'},
 ]|filter(tab => tab.feature is not defined or feature_enabled(tab.feature)) %}
 
 <div class="toolbar">
@@ -57,6 +58,8 @@
             {% if vehicle.isArchived() %}
                 <span class="pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.archived_on'|trans({date: vehicle.archivedAt|instant_date}) }}</span>
             {% endif %}
+            {% set written_off = write_off(vehicle) %}
+            {% if written_off %}<span class="pill pill--overdue" title="{{ 'incident.field.write_off'|trans }}">{{ ui.icon('car_crash') }}{{ written_off.labelKey()|trans }}</span>{% endif %}
         </div>
         {% if active_tab == 'overview' %}
             <h1>{{ vehicle.name() }}</h1>

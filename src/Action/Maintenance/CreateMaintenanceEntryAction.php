@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
+use Logbook\Action\Incident\IncidentPicker;
+use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\Ask\DraftPrefill;
 use Logbook\Action\Scan\ScanPrefill;
 use Logbook\Domain\Ai\Scan\ScanTarget;
@@ -45,6 +47,7 @@ final readonly class CreateMaintenanceEntryAction
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
         private ClockInterface $clock,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -62,6 +65,7 @@ final readonly class CreateMaintenanceEntryAction
             $defaults = MaintenanceEntryForm::defaults($today, $this->requestedSchedule($request, $vehicle));
             $defaults = $this->prefill->values($request, DraftKind::Maintenance, $vehicle->id, $defaults);
             $defaults = $this->scan->values($request, ScanTarget::Maintenance, $vehicle, $defaults);
+            $defaults = $this->incidents->prefill($request, $vehicle, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
@@ -86,6 +90,7 @@ final readonly class CreateMaintenanceEntryAction
                 $files,
             ),
         );
+        $this->incidents->save($vehicle, LinkKind::Maintenance, $entry->id, $input);
         $this->prefill->saved($request);
         $session = RequestContext::session($request);
         $session->flash('success', 'maintenance.created', ['title' => $entry->data->title]);

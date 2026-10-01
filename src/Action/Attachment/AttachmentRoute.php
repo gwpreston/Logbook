@@ -54,6 +54,7 @@ final class AttachmentRoute
             AttachmentOwner::Purchase, AttachmentOwner::Sale => ['vehicles.edit', ['id' => $vehicle]],
             AttachmentOwner::Valuation => ['valuations.edit', ['id' => $vehicle, 'entry' => $owner]],
             AttachmentOwner::Trip => ['trips.edit', ['id' => $vehicle, 'entry' => $owner]],
+            AttachmentOwner::Incident => ['incidents.edit', ['id' => $vehicle, 'incident' => $owner]],
         };
     }
 }

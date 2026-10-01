@@ -1,0 +1,26 @@
+{#
+ # *Part of an incident* (spec.md §7.29) on the maintenance, expense and tyre
+ # change forms. Expects: incident_options (empty: the module is off, and
+ # nothing is shown), values; optional follows_record (a tyre change linked
+ # to a service record takes that record's incident, #103).
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% if incident_options|default([]) is not empty or (values.incident_id ?? '') != '' %}
+    {% if follows_record|default(false) %}
+        <p class="field__hint">{{ ui.icon('link') }}{{ 'incident.picker.follows'|trans }}</p>
+    {% elseif incident_options|default([]) is not empty %}
+        {% set chosen = values.incident_id ?? '' %}
+        <div class="field">
+            <label class="field__label" for="f-incident_id">{{ 'incident.picker.label'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+            <select class="select" id="f-incident_id" name="incident_id">
+                <option value="">{{ 'incident.picker.none'|trans }}</option>
+                {% for option in incident_options|filter(o => o.open) %}
+                    <option value="{{ option.id }}"{% if chosen == option.id ~ '' %} selected{% endif %}>{{ 'incident.name'|trans({type: option.type|trans, date: option.date|local_date}) }}</option>
+                {% endfor %}
+                {% for option in incident_options|filter(o => not o.open) %}
+                    <option value="{{ option.id }}"{% if chosen == option.id ~ '' %} selected{% endif %}>{{ 'incident.name'|trans({type: option.type|trans, date: option.date|local_date}) }} ({{ 'incident.status.closed'|trans }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    {% endif %}
+{% endif %}

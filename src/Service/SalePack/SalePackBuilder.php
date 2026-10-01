@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\SalePack;
 
+use Logbook\Domain\Incident\Incident;
+use Logbook\Repository\IncidentRepository;
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
@@ -66,6 +68,7 @@ final readonly class SalePackBuilder
         private PaperworkSelector $paperwork,
         private FeatureToggles $features,
         private ClockInterface $clock,
+        private IncidentRepository $incidents,
     ) {
     }
 
@@ -116,6 +119,9 @@ final readonly class SalePackBuilder
             static fn (ActivityItem $item): bool => $item->kind === $kind,
         ));
         $services = $of(ActivityKind::Maintenance);
+        [$incidents, $writeOff] = $enabled[Feature::Incidents->value]
+            ? $this->incidents($vehicle, $options, $entries)
+            : [null, null];
 
         return new SalePack(
             vehicle: $vehicle,
@@ -152,7 +158,58 @@ final readonly class SalePackBuilder
             attachments: $this->attachments->index($vehicle),
             workCost: $options->costs ? self::workCost($services, $currency) : null,
             currency: $currency,
+            incidents: $incidents,
+            writeOff: $writeOff?->data->writeOff,
+            writeOffOn: $writeOff?->data->occurredOn,
         );
+    }
+
+    /**
+     * The *Incidents* group (with the option on) and the latest incident
+     * with a write-off category: repairs are the linked service records,
+     * by date and vendor; nothing about the claim (spec.md §7.29).
+     *
+     * @param array<int, MaintenanceEntry> $entries the vehicle's service records (maintenance on)
+     * @return array{0: list<SalePackIncident>|null, 1: Incident|null}
+     */
+    private function incidents(Vehicle $vehicle, SalePackOptions $options, array $entries): array
+    {
+        $all = $this->incidents->listForVehicles([$vehicle->id]);
+        $writeOff = null;
+        foreach ($all as $incident) {
+            if ($incident->data->writeOff->isWrittenOff()) {
+                $writeOff = $incident;
+                break;
+            }
+        }
+        if (!$options->incidents) {
+            return [null, $writeOff];
+        }
+
+        $repairs = [];
+        foreach ($entries as $entry) {
+            if ($entry->incidentId !== null) {
+                $repairs[$entry->incidentId][] = [
+                    'date' => $entry->data->performedOn,
+                    'title' => $entry->data->title,
+                    'vendor' => $entry->data->vendor,
+                ];
+            }
+        }
+        $group = [];
+        foreach ($all as $incident) {
+            $own = $repairs[$incident->id] ?? [];
+            usort($own, static fn (array $a, array $b): int => $a['date'] <=> $b['date']);
+            $group[] = new SalePackIncident(
+                $incident->data->occurredOn,
+                $incident->data->type,
+                $incident->data->damageAreas,
+                $incident->data->severity,
+                $own,
+            );
+        }
+
+        return [$group, $writeOff];
     }
 
     public static function isInspection(?ComplianceType $type): bool

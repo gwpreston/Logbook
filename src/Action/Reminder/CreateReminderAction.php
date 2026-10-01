@@ -42,6 +42,11 @@ final readonly class CreateReminderAction
                 ? (int) $wanted
                 : ($vehicleIds[0] ?? null);
             $defaults = ManualReminderForm::defaults($this->settings->reminderPreferences($user->id), $vehicle);
+            // A suggested title, as an incident's *Add reminder* gives (spec.md §7.29).
+            $title = $request->getQueryParams()['title'] ?? null;
+            if (is_string($title) && trim($title) !== '' && mb_strlen($title) <= ManualReminderForm::TITLE_MAX) {
+                $defaults['title'] = trim($title);
+            }
             $defaults = $this->prefill->values($request, DraftKind::Reminder, null, $defaults);
 
             return $this->page->render($request, $response, $defaults);

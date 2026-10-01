@@ -71,8 +71,11 @@ final readonly class FileUpload
         if (!is_string($mime) || !isset($types[$mime]) || !self::contentMatches($path, $mime)) {
             return self::invalid($kind->typeError());
         }
-        if ($mime !== 'application/pdf' && !ImageCleaner::clean($path, $mime)) {
-            return self::invalid($kind->typeError());
+        if ($mime !== 'application/pdf') {
+            $decodes = $kind->keepsMetadata() ? ImageCleaner::decodes($path, $mime) : ImageCleaner::clean($path, $mime);
+            if (!$decodes) {
+                return self::invalid($kind->typeError());
+            }
         }
         $stored = filesize($path);
 

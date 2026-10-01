@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Attachment;
 
+use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Repository\IncidentRepository;
+use Logbook\Service\Incident\IncidentAccess;
+use Logbook\Support\Storage\ImageCleaner;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Support\Http\FileResponder;
 use Logbook\Support\Http\RequestContext;
@@ -24,6 +28,8 @@ final readonly class ShowAttachmentAction
         private AttachmentService $attachments,
         private TripFileGuard $tripFiles,
         private FileResponder $files,
+        private IncidentRepository $incidents,
+        private IncidentAccess $incidentAccess,
     ) {
     }
 
@@ -41,6 +47,25 @@ final readonly class ShowAttachmentAction
         }
 
         $download = !$attachment->isImage() || ($request->getQueryParams()['download'] ?? '') === '1';
+
+        // An incident photo is kept as taken (spec.md §7.12): who may not see
+        // the incident's location gets it upright and stripped (decided 2026-10-01, #104).
+        if ($attachment->ownerType === AttachmentOwner::Incident && $attachment->isImage()) {
+            $incident = $this->incidents->find($vehicle->id, $attachment->ownerId);
+            $user = RequestContext::requireUser($request);
+            if ($incident === null || !$this->incidentAccess->seesDetails($user, $vehicle, $incident)) {
+                $bytes = ImageCleaner::cleanedBytes($path, $attachment->mime) ?? throw new HttpNotFoundException($request);
+
+                return $this->files->sendBytes(
+                    $request,
+                    $response,
+                    $bytes,
+                    $attachment->mime,
+                    $attachment->version() . '-clean',
+                    $download ? $attachment->filename : null,
+                );
+            }
+        }
 
         return $this->files->send(
             $request,

@@ -82,6 +82,7 @@ final class SharedVehicleAccessTest extends AppTestCase
                 VehicleAbility::Manage,
                 VehicleAbility::ViewCosts,
                 VehicleAbility::ViewOthersTrips,
+                VehicleAbility::ViewIncidentDetails,
             ],
         ];
     }

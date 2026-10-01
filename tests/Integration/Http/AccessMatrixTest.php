@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Domain\Incident\IncidentData;
+use Logbook\Domain\Incident\IncidentType;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Repository\TripRepository;
 use DateTimeImmutable;
@@ -18,6 +20,7 @@ use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleShareRepository;
+use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
@@ -118,6 +121,13 @@ final class AccessMatrixTest extends AppTestCase
         'trips.create' => self::LOG,
         'trips.edit' => self::OTHERS_TRIP,
         'trips.delete' => self::OTHERS_TRIP,
+        // Incidents (Phase 27.1): the owner's, so Log may view but not change it.
+        'incidents.index' => self::VIEW,
+        'incidents.create' => self::LOG,
+        'incidents.show' => self::VIEW,
+        'incidents.edit' => self::MANAGE,
+        'incidents.delete' => self::MANAGE,
+        'incidents.links' => self::MANAGE,
         'valuations.index' => self::COSTS,
         'valuations.create' => self::MANAGE,
         'valuations.edit' => self::MANAGE,
@@ -242,6 +252,12 @@ final class AccessMatrixTest extends AppTestCase
         ), new DateTimeImmutable('2026-09-10T18:00:00Z'), $owner->id);
         $reminder = $this->service($app, ReminderService::class)
             ->createManual($owner, new ManualReminderData($vehicle->id, 'Wash', $day('2026-10-10'), 7));
+        $incident = $this->service($app, IncidentService::class)->create(
+            $vehicle,
+            new IncidentData($day('2026-09-08'), IncidentType::ParkedDamage),
+            null,
+            new DateTimeZone('Europe/London'),
+        );
         $now = '2026-09-01 00:00:00';
         $db->insert('tyre_sets', ['vehicle_id' => $vehicle->id, 'name' => 'Winters', 'created_at' => $now, 'updated_at' => $now]);
         $set = (int) $db->lastInsertId();
@@ -288,6 +304,7 @@ final class AccessMatrixTest extends AppTestCase
             'tyre' => $tyre,
             'attachment' => $attachment,
             'reminder' => $reminder->id,
+            'incident' => $incident->id,
             'member' => $memberIds['view'] ?? 0,
             // {entry} is a different kind per route: see requestFor().
             'entry' => $fill->id,

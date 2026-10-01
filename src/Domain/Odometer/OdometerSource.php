@@ -16,6 +16,7 @@ enum OdometerSource: string
     case Maintenance = 'maintenance';
     case Document = 'document';
     case Tyre = 'tyre';
+    case Incident = 'incident';
 
     /**
      * Icon name in the vendored sprite (assets/vendor/icons.svg).
@@ -28,6 +29,7 @@ enum OdometerSource: string
             self::Maintenance => 'build',
             self::Document => 'verified_user',
             self::Tyre => 'tire_repair',
+            self::Incident => 'car_crash',
         };
     }
 }

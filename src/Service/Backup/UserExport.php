@@ -30,6 +30,7 @@ final class UserExport
         'expense_entries',
         'vehicle_valuations',
         'trips',
+        'incidents',
     ];
 
     /** Author columns, set to the exported user. */
@@ -74,6 +75,20 @@ final class UserExport
                 $keep($table, static fn (array $row): bool => in_array($row['vehicle_id'], $vehicles, true)),
             );
         }
+        // Phase 27.1: a driver who is another user here is kept by name.
+        $names = array_column($tables['users'] ?? [], 'display_name', 'id');
+        $out['incidents'] = array_map(
+            static function (array $row) use ($user, $names): array {
+                $driver = $row['driver_user_id'] ?? null;
+                if ($driver !== null && $driver !== $user) {
+                    $row['driver_name'] ??= $names[$driver] ?? null;
+                    $row['driver_user_id'] = null;
+                }
+
+                return $row;
+            },
+            $out['incidents'],
+        );
         $changes = array_column($out['tyre_changes'], 'id');
         $out['tyre_change_lines'] = $keep(
             'tyre_change_lines',

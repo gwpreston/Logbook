@@ -32,6 +32,8 @@ final readonly class OdometerReading
         public ?int $tyreChangeId = null,
         /** Who added a manual reading (Phase 19); a derived one's author is its entry's. */
         public ?int $createdBy = null,
+        /** The incident whose odometer this is (Phase 27.1). */
+        public ?int $incidentId = null,
     ) {
     }
 
@@ -53,6 +55,7 @@ final readonly class OdometerReading
             $this->fuelEntryId !== null => [AttachmentOwner::Fuel, $this->fuelEntryId],
             $this->maintenanceEntryId !== null => [AttachmentOwner::Maintenance, $this->maintenanceEntryId],
             $this->complianceDocumentId !== null => [AttachmentOwner::Compliance, $this->complianceDocumentId],
+            $this->incidentId !== null => [AttachmentOwner::Incident, $this->incidentId],
             default => [AttachmentOwner::Odometer, $this->id],
         };
     }

@@ -34,7 +34,11 @@ same day, before Phase 26.3 started, and Phase 26.4's (#79–#84, two of
 them found while starting it) on the same day, before Phase 26.4 started;
 two found while building it (#85, #86) were answered the same day.
 Phase 26.5's (#87–#91, three of them found while starting it) were
-answered on 2026-10-01, before Phase 26.5 started.
+answered on 2026-10-01, before Phase 26.5 started. Phase 27's
+(#92–#103, eight of them found while starting it) were answered on
+2026-10-01, before Phase 27.1 started; the phase was split into 27.1 and
+27.2, and #98–#101 belong to 27.2. One found while building it (#104)
+was answered the same day.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -129,6 +133,19 @@ answered on 2026-10-01, before Phase 26.5 started.
 | 89 | [26.5](phase-26.5.md) | Which MCP protocol versions? (found while starting) | Decided | Dual-era: `2026-07-28`, and `initialize` for `2025-11-25` and `2025-06-18`; stateless in both, no session id (spec §7.28). | 2026-10-01 |
 | 90 | [26.5](phase-26.5.md) | The MCP PHP SDK or our own? (found while starting) | Decided | Our own small implementation, tested against the specification's JSON schemas (spec §4, §7.28). | 2026-10-01 |
 | 91 | [26.5](phase-26.5.md) | What switches MCP off for a user? (found while starting) | Decided | `MCP_ENABLED`, `API_ENABLED` and the key; each tool needs its own module; the AI modules and *Use AI features* don't apply (spec §7.28). | 2026-10-01 |
+| 92 | [27.1](phase-27.1.md) | Write-off in the sale pack: only with incidents, or always? | Decided | Only when incidents are included; otherwise a screen-only notice tells the seller (spec §7.29). | 2026-10-01 |
+| 93 | [27.1](phase-27.1.md) | Total loss: archive as *Written off*? | Scheduled | Yes, in [Phase 27.2](phase-27.2.md): the settlement as the sale price, the incident linked (spec §7.29 *Total loss*). | 2026-10-01 |
+| 94 | [27.1](phase-27.1.md) | `incidents` module on by default? | Decided | On by default, switchable (spec §7.10). | 2026-10-01 |
+| 95 | [27.1](phase-27.1.md) | AI reading of insurer letters and repair estimates? | Scheduled | Yes, in [Phase 27.2](phase-27.2.md): scan kinds `claim_letter` and `repair_estimate` (spec §7.27, §7.29). | 2026-10-01 |
+| 96 | [27.1](phase-27.1.md) | How are incident photos stored, given every photo is stripped? (found while starting) | Decided | The original bytes after the same checks, not rotated; stripped only as a copy leaves through the sale pack ZIP (spec §7.12). | 2026-10-01 |
+| 97 | [27.1](phase-27.1.md) | `draft_incident` over MCP? (found while starting) | Decided | Yes, as a draft for `read_write` keys (spec §7.28). | 2026-10-01 |
+| 98 | [27.2](phase-27.2.md) | A total-loss settlement in ownership: sale price or payout? (found while starting) | Decided | The sale price; left out of *Insurance payouts*, with a note, so it counts once (spec §7.7, §7.29). | 2026-10-01 |
+| 99 | [27.2](phase-27.2.md) | How does archiving offer *Written off*? (found while starting) | Decided | A disposal reason (`sold` \| `written_off`); one click unless a settled write-off exists, then a confirm page with the sale prefilled (spec §6, §7.29). | 2026-10-01 |
+| 100 | [27.2](phase-27.2.md) | A scanned claim letter matching an incident: update or create? (found while starting) | Decided | Update: the matching incident's edit form, by claim number; *Update from a letter* on the incident page (spec §7.27, §7.29). | 2026-10-01 |
+| 101 | [27.2](phase-27.2.md) | Store a repair estimate? (found while starting) | Decided | Yes, `repair_estimate` on the incident, shown as information and never counted (spec §6, §7.29). | 2026-10-01 |
+| 102 | [27.1](phase-27.1.md) | One phase or two, after #93 and #95? (found while starting) | Decided | Two: 27.1 incidents; 27.2 total loss, reading letters and the v2.10.0 release. | 2026-10-01 |
+| 103 | [27.1](phase-27.1.md) | A tyre change linked to a service record: which carries the incident? (found while starting) | Decided | The change follows its record's incident; an unlinked change is linked on its own; costs read from the ledger (spec §7.29). | 2026-10-01 |
+| 104 | [27.1](phase-27.1.md) | Who gets an incident photo's GPS? (found while building) | Decided | The original only for those who see the incident's details; anyone else gets an upright, stripped copy as it is served (spec §7.12). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

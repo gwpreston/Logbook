@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Draft;
 
+use Logbook\Domain\Incident\DamageArea;
+use Logbook\Service\Api\ApiIncidents;
+use Logbook\Service\Incident\IncidentForm;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Compliance\ComplianceDocument;
@@ -55,6 +58,7 @@ final readonly class DraftWriter
         private ScheduleService $schedules,
         private DisplayFormatter $format,
         private TranslatorInterface $translator,
+        private ApiIncidents $incidents,
     ) {
     }
 
@@ -100,6 +104,7 @@ final readonly class DraftWriter
                 DraftKind::Expense => $this->expense($user, $vehicle, $input),
                 DraftKind::TyreCheck => $this->treadCheck($user, $vehicle, $input),
                 DraftKind::Reminder => $this->reminder($user, $vehicle, $input),
+                DraftKind::Incident => $this->incident($user, $vehicle, $input),
             };
         } catch (ApiProblem $problem) {
             if ($problem->validation !== null) {
@@ -305,6 +310,48 @@ final readonly class DraftWriter
             ],
             [],
             ExpenseEntryForm::values($entry),
+        );
+    }
+
+    /**
+     * An incident (Phase 27.1): its date, type, damage and claim on the card.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function incident(User $user, Vehicle $vehicle, array $input): DraftWritten
+    {
+        $result = $this->incidents->logIncident($user, $vehicle, $input);
+        $incident = $result['incident'];
+        $data = $incident->data;
+        $type = $this->t($data->type->labelKey());
+        $fields = [
+            self::field('date', $this->format->date($data->occurredOn)),
+            self::field('type', $type),
+        ];
+        if ($data->damageAreas !== []) {
+            $fields[] = self::field('damage', implode(', ', array_map(
+                fn (DamageArea $area): string => $this->t($area->labelKey()),
+                $data->damageAreas,
+            )));
+        }
+        $fields[] = self::field('fault', $this->t($data->fault->labelKey()));
+        if ($data->claim->status->isClaim()) {
+            $fields[] = self::field('claim', $this->t($data->claim->status->labelKey()));
+        }
+        if ($data->claim->insurer !== null) {
+            $fields[] = self::field('insurer', $data->claim->insurer);
+        }
+
+        return $this->written(
+            DraftKind::Incident,
+            $incident->id,
+            $incident->updatedAt,
+            $result['duplicate'],
+            [],
+            $this->t('ask.draft.summary.incident', ['type' => $type, 'date' => $this->format->date($data->occurredOn)]),
+            $fields,
+            [],
+            IncidentForm::flatValues(IncidentForm::values($incident, $result['odometerKm'], $user->preferences)),
         );
     }
 

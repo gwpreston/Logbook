@@ -39,6 +39,8 @@
         {{ url_for('fuel.edit', {id: id, entry: item.subjectId}) }}
     {%- elseif item.kind.value == 'maintenance_cost' -%}
         {{ url_for('maintenance.edit', {id: id, entry: item.subjectId}) }}
+    {%- elseif item.kind.value == 'stalled_claim' -%}
+        {{ url_for('incidents.show', {id: id, incident: item.subjectId}) }}
     {%- endif -%}
 {%- endmacro %}
 
@@ -51,6 +53,7 @@
     {%- elseif item.kind.value == 'trips_exceed' -%}{{ 'attention.action.mileage'|trans }}
     {%- elseif item.kind.value in ['drift_liquid', 'drift_electric'] -%}{{ 'attention.action.view_economy'|trans }}
     {%- elseif item.kind.value in ['fuel_price', 'maintenance_cost'] -%}{{ 'attention.action.fix'|trans }}
+    {%- elseif item.kind.value == 'stalled_claim' -%}{{ 'attention.action.open_claim'|trans }}
     {%- else -%}{{ 'attention.action.add_valuation'|trans }}
     {%- endif -%}
 {%- endmacro %}

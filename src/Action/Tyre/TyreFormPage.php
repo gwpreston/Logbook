@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
+use Logbook\Action\Incident\IncidentPicker;
 use DateTimeImmutable;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\Tyre\TyreChangeKind;
@@ -33,6 +34,7 @@ final readonly class TyreFormPage
         private OdometerService $odometer,
         private TyreFormContexts $contexts,
         private DisplayFormatter $formatter,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -137,7 +139,9 @@ final readonly class TyreFormPage
                 : [],
             'latest' => $this->odometer->history($vehicle)->latest(),
             'tyres_by_id' => $byId,
-        ], $status);
+            // Part of an incident (spec.md §7.29): a change linked to a service record follows it.
+            'follows_record' => $change?->data->maintenanceEntryId !== null,
+        ] + (IncidentPicker::takesIncident($kind) ? $this->incidents->context($vehicle) : ['incident_options' => []]), $status);
     }
 
     /**

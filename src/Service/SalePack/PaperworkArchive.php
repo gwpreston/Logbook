@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\SalePack;
 
+use Logbook\Support\Storage\ImageCleaner;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Attachment\AttachmentService;
@@ -48,7 +49,18 @@ final readonly class PaperworkArchive
                 continue;
             }
             // The entry's day at noon, so file managers sort the files by it.
-            $entries[] = ZipEntry::file($file->name, $path, $file->date->setTime(12, 0));
+            $modified = $file->date->setTime(12, 0);
+            if ($file->kind === PaperworkKind::IncidentPhoto) {
+                // Kept as taken in Logbook; the copy that leaves is upright and stripped (spec.md §7.12).
+                $cleaned = ImageCleaner::cleanedBytes($path, $file->attachment->mime);
+                if ($cleaned === null) {
+                    $lines[] = $this->line($file, true);
+                    continue;
+                }
+                $entries[] = ZipEntry::text($file->name, $cleaned, $modified);
+            } else {
+                $entries[] = ZipEntry::file($file->name, $path, $modified);
+            }
             $lines[] = $this->line($file, false);
         }
 

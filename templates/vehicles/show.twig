@@ -315,6 +315,9 @@
                             {% for group in cost.spentGroups() %}
                                 <br><span class="muted">{{ ('expense.group.' ~ group.group.value)|trans }} <span class="tabular">{{ group.amount|money }}</span></span>
                             {% endfor %}
+                            {% if cost.payouts %}
+                                <br><span class="muted">{{ 'ownership.row.payouts'|trans }} <span class="tabular">−{{ cost.payouts|money }}</span></span>
+                            {% endif %}
                         </dd>
                     </div>
                     {% if cost.isComplete() %}

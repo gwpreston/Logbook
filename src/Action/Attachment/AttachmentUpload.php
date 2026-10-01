@@ -36,14 +36,19 @@ final readonly class AttachmentUpload
     /**
      * The files chosen in the input named $field, each checked; empty when
      * the input was left empty.
+     *
+     * @param AttachmentOwner|null $owner what the files will belong to (spec.md §7.12)
      */
-    public function fromRequest(ServerRequestInterface $request, string $field = self::FIELD): PendingUploads
-    {
+    public function fromRequest(
+        ServerRequestInterface $request,
+        string $field = self::FIELD,
+        ?AttachmentOwner $owner = null,
+    ): PendingUploads {
         $given = $request->getUploadedFiles()[$field] ?? [];
         $pending = [];
         foreach (is_array($given) ? $given : [$given] as $file) {
             if ($file instanceof UploadedFileInterface && FileUpload::wasProvided($file)) {
-                $pending[] = new PendingUpload($file, $this->attachments->check($file));
+                $pending[] = new PendingUpload($file, $this->attachments->check($file, $owner));
             }
         }
 
