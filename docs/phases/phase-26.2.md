@@ -2,7 +2,7 @@
 
 *Ask a question in plain words; get Logbook's own numbers back.*
 
-Status: 📋 planned · releases **v2.6.0** with Phase 26.1 · file lives in
+Status: 🚧 in progress · releases **v2.6.0** with Phase 26.1 · file lives in
 `docs/phases/`
 
 "When did I last change the oil on the BMW?", "How much did I spend on fuel
@@ -218,8 +218,25 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7, §7.18,
 
 - **Retention default:** 30 days (drafted), or keep nothing beyond the
   session?
+  *Decided 2026-10-01: 30 days by default; each user can choose 1, 7, 30
+  or 90.*
 - **Feedback:** keep only counts (drafted when content logging is off), or
   store the question and answer with a *Not right* mark so an owner can
   review model quality?
+  *Decided 2026-10-01: the mark is stored on the answer already kept in
+  the thread, and is deleted with the thread. Counts are kept as well.
+  Nothing extra is stored, whatever `AI_LOG_CONTENT` says.*
 - **Fleet-wide questions for admins:** should an admin's *Ask* see every
   vehicle on the instance, or only what they see in the app (drafted)?
+  *Answered: only what they see in the app. Admins see their own and
+  shared vehicles only (spec §7.21, open-questions #34;
+  `SharedVehicleAccess`), and the tools go through the same access.*
+
+Found while starting it:
+
+- **Progress without streaming:** answers come back whole (#66), but the
+  page is to show which tools are running.
+  *Decided 2026-10-01: the loop records each tool call on the thread as
+  it starts, and the page polls a small JSON progress URL about once a
+  second. Sessions live in the database, so a poll never waits on the
+  running request.*
