@@ -24,4 +24,5 @@ enum AttachmentOwner: string
     case Sale = 'sale';
     case Valuation = 'valuation';
     case Trip = 'trip';
+    case Incident = 'incident';
 }

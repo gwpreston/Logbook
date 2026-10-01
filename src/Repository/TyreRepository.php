@@ -393,7 +393,7 @@ final readonly class TyreRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'kind', 'done_on', 'odometer_km', 'maintenance_entry_id', 'note')
-            ->addSelect('created_at', 'updated_at', 'created_by')
+            ->addSelect('created_at', 'updated_at', 'created_by', 'incident_id')
             ->from(self::CHANGES)
             ->orderBy('id');
     }
@@ -447,6 +447,7 @@ final readonly class TyreRepository
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
             createdBy: Row::nullableInt($row, 'created_by'),
+            incidentId: Row::nullableInt($row, 'incident_id'),
         ), $rows);
     }
 

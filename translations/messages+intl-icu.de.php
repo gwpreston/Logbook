@@ -2477,6 +2477,10 @@ return [
                 'title' => 'Fahrten und Kilometerabrechnung',
                 'hint' => 'Dienstfahrten, Kilometersätze, die Abrechnung und die Aufteilung in dienstlich und privat. Aus, bis du es einschaltest.',
             ],
+            'incidents' => [
+                'title' => 'Schäden und Versicherungsfälle',
+                'hint' => 'Unfälle, Schäden und Diebstahl, die Reparaturen dazu, Schadenmeldungen und die Schadenhistorie für Versicherungsangebote.',
+            ],
             // KI (spec.md §7.25): nur aufgeführt, solange KI eingerichtet ist.
             'ai_ask' => [
                 'title' => 'Logbook fragen',

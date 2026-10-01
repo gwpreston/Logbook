@@ -56,12 +56,13 @@ final readonly class OdometerReadingRepository
     {
         $rows = $this->connection->createQueryBuilder()
             ->select('r.id', 'r.created_by AS own', 'f.created_by AS fuel', 'm.created_by AS maintenance')
-            ->addSelect('c.created_by AS document', 't.created_by AS tyre')
+            ->addSelect('c.created_by AS document', 't.created_by AS tyre', 'i.created_by AS incident')
             ->from(self::TABLE, 'r')
             ->leftJoin('r', 'fuel_entries', 'f', 'f.id = r.fuel_entry_id')
             ->leftJoin('r', 'maintenance_entries', 'm', 'm.id = r.maintenance_entry_id')
             ->leftJoin('r', 'compliance_documents', 'c', 'c.id = r.compliance_document_id')
             ->leftJoin('r', 'tyre_changes', 't', 't.id = r.tyre_change_id')
+            ->leftJoin('r', 'incidents', 'i', 'i.id = r.incident_id')
             ->where('r.vehicle_id = :vehicle')
             ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
             ->fetchAllAssociative();
@@ -72,7 +73,8 @@ final readonly class OdometerReadingRepository
                 ?? Row::nullableInt($row, 'fuel')
                 ?? Row::nullableInt($row, 'maintenance')
                 ?? Row::nullableInt($row, 'document')
-                ?? Row::nullableInt($row, 'tyre');
+                ?? Row::nullableInt($row, 'tyre')
+                ?? Row::nullableInt($row, 'incident');
         }
 
         return $authors;
@@ -170,6 +172,7 @@ final readonly class OdometerReadingRepository
             'maintenance_entry_id' => ParameterType::INTEGER,
             'compliance_document_id' => ParameterType::INTEGER,
             'tyre_change_id' => ParameterType::INTEGER,
+            'incident_id' => ParameterType::INTEGER,
         ]);
 
         return (int) $this->connection->lastInsertId();
@@ -198,7 +201,7 @@ final readonly class OdometerReadingRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'reading_km', 'recorded_at', 'source', 'note', 'fuel_entry_id')
-            ->addSelect('maintenance_entry_id', 'compliance_document_id', 'tyre_change_id')
+            ->addSelect('maintenance_entry_id', 'compliance_document_id', 'tyre_change_id', 'incident_id')
             ->addSelect('created_at', 'updated_at', 'created_by')
             ->from(self::TABLE);
     }
@@ -210,6 +213,7 @@ final readonly class OdometerReadingRepository
             OdometerSource::Maintenance => 'maintenance_entry_id',
             OdometerSource::Document => 'compliance_document_id',
             OdometerSource::Tyre => 'tyre_change_id',
+            OdometerSource::Incident => 'incident_id',
             OdometerSource::Manual => throw new LogicException('Manual readings have no owning entry.'),
         };
     }
@@ -247,6 +251,7 @@ final readonly class OdometerReadingRepository
             complianceDocumentId: Row::nullableInt($row, 'compliance_document_id'),
             tyreChangeId: Row::nullableInt($row, 'tyre_change_id'),
             createdBy: Row::nullableInt($row, 'created_by'),
+            incidentId: Row::nullableInt($row, 'incident_id'),
         );
     }
 }

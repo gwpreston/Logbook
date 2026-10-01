@@ -45,6 +45,8 @@ final readonly class CostItem
         public ?FuelGrade $grade = null,
         /** Who added the source entry (Phase 19); null = a former user. */
         public ?int $createdBy = null,
+        /** The incident the source record is part of (Phase 27.1, spec.md §7.29). */
+        public ?int $incidentId = null,
     ) {
     }
 
@@ -94,6 +96,7 @@ final readonly class CostItem
             icon: $entry->data->category->icon(),
             title: $entry->data->title,
             createdBy: $entry->createdBy,
+            incidentId: $entry->incidentId,
         );
     }
 
@@ -141,6 +144,7 @@ final readonly class CostItem
             icon: $entry->data->category->icon(),
             title: $entry->data->note,
             createdBy: $entry->createdBy,
+            incidentId: $entry->incidentId,
         );
     }
 

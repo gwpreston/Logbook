@@ -31,7 +31,8 @@ enum EvidenceSource: string
             OdometerSource::Document => self::Document,
             OdometerSource::Tyre => self::Tyre,
             OdometerSource::Manual => self::Photo,
-            OdometerSource::Fuel => null,
+            // An incident is not the buyer's evidence (spec.md §7.29: only its repairs are).
+            OdometerSource::Fuel, OdometerSource::Incident => null,
         };
     }
 

@@ -245,6 +245,7 @@ final class Serializer
                 OdometerSource::Maintenance => $reading->maintenanceEntryId,
                 OdometerSource::Document => $reading->complianceDocumentId,
                 OdometerSource::Tyre => $reading->tyreChangeId,
+                OdometerSource::Incident => $reading->incidentId,
             },
             'note' => $reading->note,
             'created_at' => self::instant($reading->createdAt),

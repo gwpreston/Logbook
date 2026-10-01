@@ -2479,6 +2479,10 @@ return [
                 'title' => 'Trips and mileage claims',
                 'hint' => 'Business trips, mileage rates, the claim report and the business and private split. Off until you switch it on.',
             ],
+            'incidents' => [
+                'title' => 'Incidents and claims',
+                'hint' => 'Accidents, damage and theft, the repairs they caused, insurance claims and the claims history for insurance quotes.',
+            ],
             // AI (spec.md §7.25): listed only while AI is set up.
             'ai_ask' => [
                 'title' => 'Ask Logbook',

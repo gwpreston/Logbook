@@ -119,7 +119,8 @@ final readonly class PaperworkSelector
                 AttachmentOwner::Expense,
                 AttachmentOwner::Sale,
                 AttachmentOwner::Valuation,
-                AttachmentOwner::Trip => null,
+                AttachmentOwner::Trip,
+                AttachmentOwner::Incident => null,
             };
             if ($file !== null && in_array($file['kind'], $chosen, true)) {
                 $files[] = $file;

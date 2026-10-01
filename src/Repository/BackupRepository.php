@@ -35,9 +35,11 @@ final readonly class BackupRepository
         'vehicles',
         'fuel_entries',
         'maintenance_schedules',
-        'maintenance_entries',
         // Before the readings: a document's odometer reading refers to it.
         'compliance_documents',
+        // Phase 27.1: after the policy it claims on, before the records it links.
+        'incidents',
+        'maintenance_entries',
         // Tyres (Phase 11.1): a change refers to its service record, and a
         // change's odometer reading to the change, so they come before the readings.
         'tyre_sets',
