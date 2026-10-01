@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Domain\Incident\IncidentData;
+use Logbook\Domain\Incident\IncidentType;
+use Logbook\Repository\IncidentRepository;
 use Logbook\Domain\Trip\SavedJourneyData;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Repository\MileageRateSetRepository;
@@ -65,6 +68,12 @@ final class ExportUserTest extends AppTestCase
         }
         $this->service($app, VehicleShareRepository::class)
             ->insert($golf->id, $member->id, ShareLevel::Log, false, true, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+        // Incidents (Phase 27.1): on their vehicle, driven by the owner, who is not in their install.
+        $this->service($app, IncidentRepository::class)->insert($mini->id, new IncidentData(
+            new DateTimeImmutable('2026-09-04'),
+            IncidentType::ParkedDamage,
+            driverUserId: $this->owner($app)->id,
+        ), $at, $member->id);
 
         $file = tempnam(sys_get_temp_dir(), 'logbook-export-') . '.zip';
         $this->file = $file;
@@ -90,6 +99,16 @@ final class ExportUserTest extends AppTestCase
         self::assertCount(1, $rows('trips'), 'the trips on their vehicle');
         self::assertCount(1, $rows('saved_journeys'), 'their saved journeys');
         self::assertCount(2, $rows('mileage_rate_sets'), 'their rates');
+        $incidents = $rows('incidents');
+        self::assertCount(1, $incidents, 'the incidents on their vehicle');
+        $columns = json_decode((string) $zip->getFromName('database/incidents.json'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($columns);
+        self::assertIsArray($columns['columns'] ?? null);
+        self::assertIsArray($incidents[0]);
+        $names = array_values(array_filter($columns['columns'], is_string(...)));
+        $incident = array_combine($names, $incidents[0]);
+        self::assertNull($incident['driver_user_id'], 'another user here is not in their install');
+        self::assertSame('Pat Owner', $incident['driver_name'], 'kept by name');
         $zip->close();
 
         // Restored, it is an install of their own: they are its admin and own everything.

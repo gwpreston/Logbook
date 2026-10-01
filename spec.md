@@ -5016,8 +5016,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   token; admins' default, a user can set their own), `GOTIFY_PRIORITY` (0–10, default 5; overdue
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
-  `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES` (default true;
-  see §7.10), `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,
+  `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES`,
+  `FEATURES_INCIDENTS` (Phase 27.1) (default true; see §7.10),
+  `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,
   `FEATURES_AI_ACTIONS`, `FEATURES_AI_SCAN` (default true; §7.25)
 - AI (§7.25, Phase 26.1): `AI_ENABLED` (default `true`; `false` hides
   Settings → AI, every AI switch and entry point, and sends nothing,

@@ -97,6 +97,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/mcp.md](docs/mcp.md) | The MCP server: Claude Desktop, Claude Code and other assistants, keys and scopes, on your network or behind your reverse proxy, drafts to review |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
 | [docs/trips.md](docs/trips.md) | Trips and mileage claims: logging, saved journeys, the business and private split, mileage rates, the claim report and what the figures mean |
+| [docs/incidents.md](docs/incidents.md) | Incidents, damage and insurance claims: logging, photos kept as taken, linking repairs so costs count once, the claim, the claims history for insurance quotes and what the sale pack shows |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in each release, with upgrade notes |

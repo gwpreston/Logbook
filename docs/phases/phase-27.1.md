@@ -3,7 +3,7 @@
 *What happened, what was fixed, what the insurer did, and the five-year
 answer your next quote will ask for.*
 
-Status: 🚧 in progress · no release of its own (**v2.10.0** ships with
+Status: ✅ complete · no release of its own (**v2.10.0** ships with
 [Phase 27.2](phase-27.2.md)) · file lives in `docs/phases/`
 
 Today a scrape, a break-in or a pothole leaves only its repair behind: a
@@ -206,72 +206,72 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §6, §7.2,
 - [x] §6, §7.29 and the touched sections (§7.1, §7.7, §7.10, §7.12,
       §7.13, §7.16, §7.19, §7.20, §7.24, §7.26, §7.27, §7.28, Phase 14.2's
       ownership) in `spec.md`; the Phase 27.1 and 27.2 lines in §13.
-- [ ] `docs/incidents.md`: logging an incident, linking records, claims
+- [x] `docs/incidents.md`: logging an incident, linking records, claims
       history for insurance quotes, what the sale pack shows.
 
 ### Migrations (every engine, each reversible)
-- [ ] `incidents`; `incident_id` on `maintenance_entries`, `expense_entries`
+- [x] `incidents`; `incident_id` on `maintenance_entries`, `expense_entries`
       and `tyre_changes`; reading source `incident`; attachment owner type
       `incident`. Rollback unlinks and drops (photo files stay under
       `UPLOAD_PATH`, as earlier rollbacks do).
 
 ### Code
-- [ ] `Domain\Incident\*` (entity, enums), `Repository\IncidentRepository`.
-- [ ] The `incidents` module (`Feature::Incidents`, on by default).
-- [ ] Uploads: `incident` attachments skip `ImageCleaner` (stored as
+- [x] `Domain\Incident\*` (entity, enums), `Repository\IncidentRepository`.
+- [x] The `incidents` module (`Feature::Incidents`, on by default).
+- [x] Uploads: `incident` attachments skip `ImageCleaner` (stored as
       uploaded, still content- and decode-checked); the sale pack ZIP
       strips each incident photo as it is written.
-- [ ] `Service\Incident\IncidentService` (create and edit, reading, insurer
+- [x] `Service\Incident\IncidentService` (create and edit, reading, insurer
       default from the current policy, closing), `IncidentCosts` (linked,
       payouts, net), `ClaimsHistory`.
-- [ ] Links: the *Part of an incident* select on the three forms, and the
+- [x] Links: the *Part of an incident* select on the three forms, and the
       *Link a record* picker.
-- [ ] Tab, form, incident page, claims history page (print and CSV); the
+- [x] Tab, form, incident page, claims history page (print and CSV); the
       History chip and nesting; the sale pack group, ZIP EXIF stripping and
       write-off line; the overview badge; Reports section; ownership line;
       the Needs attention kind.
-- [ ] Access rules in the Phase 18.1 policy (a `ViewIncidentDetails`
+- [x] Access rules in the Phase 18.1 policy (a `ViewIncidentDetails`
       ability).
-- [ ] API endpoints (and the OpenAPI document); the Ask tool and draft
+- [x] API endpoints (and the OpenAPI document); the Ask tool and draft
       tool in `ToolRegistry`; `draft_incident` in MCP's drafts, with its
       `mcp.tool.*` description.
-- [ ] Translations (en, de), with the write-off categories named as in the
+- [x] Translations (en, de), with the write-off categories named as in the
       UK and explained in German as *Versicherungs-Totalschaden-Kategorie*.
 
 ### Tests
-- [ ] **No double counting:** a £1,400 repair linked to an incident counts
+- [x] **No double counting:** a £1,400 repair linked to an incident counts
       once in Reports, ownership and the sale pack; unlinking changes
       nothing in Reports.
-- [ ] Net cost with and without payouts; a payout above the linked costs
+- [x] Net cost with and without payouts; a payout above the linked costs
       shows the label; 0 excess valid.
-- [ ] Ownership net of payouts, with the line.
-- [ ] Claims history: includes archived and sold vehicles; the 5-year
+- [x] Ownership net of payouts, with the line.
+- [x] Claims history: includes archived and sold vehicles; the 5-year
       default by calendar date; *Claims only*; driver filter; the other party
       never in print or CSV.
-- [ ] Sale pack: off by default; on shows repairs and never fault, claim,
+- [x] Sale pack: off by default; on shows repairs and never fault, claim,
       payout, driver or other party; the write-off line; the seller notice
       when off; ZIP photos without EXIF; stored photos keep EXIF (byte for
       byte the upload).
-- [ ] History nesting and the print view option.
-- [ ] Needs attention: raised at 31 days without an update, not at 29; gone
+- [x] History nesting and the print view option.
+- [x] Needs attention: raised at 31 days without an update, not at 29; gone
       when settled or updated; hide fingerprint.
-- [ ] The insurer default comes from the policy current on the incident
+- [x] The insurer default comes from the policy current on the incident
       date.
-- [ ] Access matrix: detail fields for Manage, Own and the creator only;
+- [x] Access matrix: detail fields for Manage, Own and the creator only;
       View sees the summary; `ViewCosts` gates amounts; API and Ask follow
       the same rules.
-- [ ] Deleting an incident unlinks and keeps records; deleting a linked
+- [x] Deleting an incident unlinks and keeps records; deleting a linked
       record leaves the incident.
-- [ ] Module off: tab, chooser, form selects, history chip, sale pack
+- [x] Module off: tab, chooser, form selects, history chip, sale pack
       option, Reports section, attention kind and API routes all gone;
       data kept.
-- [ ] MCP: `incidents` listed for every key, `draft_incident` for
+- [x] MCP: `incidents` listed for every key, `draft_incident` for
       `read_write` keys only, saved as a draft.
-- [ ] Integration suite green on every engine; migrations roll back on every
+- [x] Integration suite green on every engine; migrations roll back on every
       engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: on the Golf, a 2024 non-fault parked-damage
+- [x] `DemoDataSeeder`: on the Golf, a 2024 non-fault parked-damage
       incident, claim settled, a bumper repair linked, photos, and the other
       party's insurer. On the motorbike, link the existing damaged-tyre
       replacement to a pothole incident (not claimed). On the archived car,
@@ -347,3 +347,32 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §6, §7.2,
   is an expense the owner links); a claims history row whose details the
   user may not see shows "Not shared with you"; incident photos in the
   ZIP are their own kind, off by default.
+
+## What changed while building
+
+- **History:** a linked record keeps its own row on its own date with
+  "Part of: …", and the incident row lists its linked records as a second
+  line. A repair is often weeks after the incident, so it can't fold into
+  the incident's row the way a tyre change folds into its same-day service
+  record. The "Part of" note is left out of print unless *Incidents* is
+  ticked, and always out of the sale pack (spec §7.29).
+- **Access:** besides the listed detail fields, the time, location,
+  description, notes and the whole claim count as details. Viewers see the
+  date, type, damage, write-off, status, photos and linked records. One
+  projection (`IncidentView`) is what every page, export, API answer and
+  tool reads.
+- **Claims history** is linked from the Reports page header, as the
+  ownership report is (the navigation has no *Reports* group), and from the
+  Incidents tab.
+- **Reports** count incidents for *All time* from the first incident, not
+  from the first cost.
+- **Deleting a service record** leaves its tyre change linked to the
+  incident on its own (spec #103 wording).
+- **Demo data:** the pothole is on the Golf, linked to its damaged-tyre
+  replacement of 22 Aug 2026. The demo bike's tyre was replaced for wear.
+- **API:** amounts and ids are strings, as elsewhere; `GET
+  /incidents/history` takes `years`, `from`/`to`, `vehicle_id`, `driver`,
+  `claims_only`, `fault`. OpenAPI 1.14.0.
+- *Edit* on a `draft_incident` card carries the damage areas comma-joined
+  and splits them back on the form.
+

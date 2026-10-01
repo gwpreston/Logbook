@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Domain\Incident\Claim;
+use Logbook\Domain\Incident\ClaimStatus;
+use Logbook\Domain\Incident\DamageArea;
+use Logbook\Domain\Incident\IncidentData;
+use Logbook\Domain\Incident\IncidentType;
+use Logbook\Domain\Incident\LinkKind;
+use Logbook\Service\Incident\IncidentService;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Service\Trip\RateProvider;
 use Logbook\Service\Trip\TripService;
@@ -114,14 +121,21 @@ final class BackupTest extends AppTestCase
         $browser = $this->signedIn($app);
         $this->populate($app);
         $before = $this->snapshot($app);
-        self::assertCount(10, $before['files'], 'the photo and nine attachments');
+        self::assertCount(11, $before['files'], 'the photo and ten attachments');
         $owners = array_column($before['tables']['attachments'], 'owner_type');
         sort($owners);
         self::assertSame(
-            ['compliance', 'expense', 'maintenance', 'maintenance', 'odometer', 'purchase', 'sale', 'trip', 'valuation'],
+            [
+                'compliance', 'expense', 'incident', 'maintenance', 'maintenance',
+                'odometer', 'purchase', 'sale', 'trip', 'valuation',
+            ],
             $owners,
         );
         self::assertCount(1, $before['tables']['trips'], 'trips travel too (Phase 22)');
+        self::assertCount(1, $before['tables']['incidents'], 'incidents travel too (Phase 27.1)');
+        self::assertContains('incident', array_column($before['tables']['odometer_readings'], 'source'));
+        $links = array_filter(array_column($before['tables']['maintenance_entries'], 'incident_id'));
+        self::assertNotEmpty($links, 'with their links');
         self::assertCount(1, $before['tables']['saved_journeys']);
         self::assertCount(2, $before['tables']['mileage_rate_sets']);
         self::assertContains('trips', array_column($before['tables']['settings'], 'name'));
@@ -162,7 +176,7 @@ final class BackupTest extends AppTestCase
         $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
         self::assertSame('logbook-backup', $manifest['format']);
         self::assertSame(1, $manifest['tables']['vehicles']);
-        self::assertSame(10, $manifest['files']);
+        self::assertSame(11, $manifest['files']);
         self::assertFalse($zip->getFromName('database/sessions.json'), 'sessions are never backed up');
         $zip->close();
 
@@ -238,7 +252,7 @@ final class BackupTest extends AppTestCase
         $file = $this->backupDir . '/nightly.zip';
         mkdir($this->backupDir);
         $manifest = $backups->create($file);
-        self::assertSame(10, $manifest->files);
+        self::assertSame(11, $manifest->files);
 
         $this->resetDatabase($app);
         foreach ($this->service($app, FileStorage::class)->all() as $relative) {
@@ -413,6 +427,15 @@ final class BackupTest extends AppTestCase
             passengers: 2,
         ), $this->files([[(string) base64_decode(self::PNG), 'toll.png']]), saveJourney: true);
         self::assertTrue($this->service($app, RateProvider::class)->ensure($owner));
+        // Incidents (Phase 27.1): one with a reading and a photo, the service record linked.
+        $incident = $this->service($app, IncidentService::class)->create($golf, new IncidentData(
+            occurredOn: $day('2026-09-12'),
+            type: IncidentType::ParkedDamage,
+            damageAreas: [DamageArea::Rear],
+            otherPartyName: 'A. Driver',
+            claim: new Claim(ClaimStatus::Settled, 'Aviva', claimNumber: '4417', payout: '100.000'),
+        ), '1600.000', $zone, $this->files([[(string) base64_decode(self::PNG), 'scrape.png']]));
+        $this->service($app, IncidentService::class)->link($golf, LinkKind::Maintenance, $service->id, $incident);
         $due = LocalTime::parseDate('2026-10-01');
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));

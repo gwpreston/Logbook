@@ -153,6 +153,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedPaperwork($now);
         $this->seedValuations($now);
         $this->seedSalePack($now);
+        $this->seedIncidents($now, $userId);
         $this->seedTrips($now, $userId);
         $this->seedPartner($now, $userId);
 
@@ -1090,6 +1091,161 @@ final class DemoDataSeeder extends AbstractSeed
         $attach('odometer', $photo, 'Dashboard 2021-03-14.png', $png, 'image/png');
 
         $this->table('attachments')->insert($attachments)->saveData();
+    }
+
+    /**
+     * Incidents (Phase 27.1, spec.md §7.29): on the Golf, a 2024 parked
+     * scrape that was not the owner's fault, claimed and settled, with its
+     * bumper repair linked, two photos and the other party's insurer; and
+     * the pothole behind August's damaged tyre, not claimed, linked to that
+     * tyre change. On the sold Fiesta, an old at-fault collision with a
+     * claim, so the claims history lists a vehicle no longer owned.
+     */
+    private function seedIncidents(string $now, int $userId): void
+    {
+        $ids = $this->vehicleIds();
+        $golf = $ids['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
+        $fiesta = $ids['WR14 FNE'] ?? throw new RuntimeException('The demo Fiesta is missing.');
+
+        $scrape = $this->incidentRow($golf, $now, $userId, [
+            'occurred_on' => '2024-06-12',
+            'occurred_at_time' => '17:40',
+            'location' => 'Abbey Centre car park, Newtownabbey',
+            'type' => 'parked_damage',
+            'fault' => 'not_at_fault',
+            'description' => 'Reversed into while parked; the other driver left a note.',
+            'damage_areas' => '["rear","left"]',
+            'severity' => 'minor',
+            'other_party_name' => 'J. Morrow',
+            'other_party_registration' => 'KX17 ABC',
+            'other_party_insurer' => 'Admiral',
+            'closed_on' => '2024-07-30',
+            'claim_status' => 'settled',
+            'insurer' => 'Admiral',
+            'claim_number' => 'ADM-2406-118734',
+            'excess' => '0.000',
+            'payout' => '640.000',
+            'ncd_affected' => 'no',
+            'claim_updated_on' => '2024-07-30',
+        ]);
+        $this->insertRow('maintenance_entries', [
+            'vehicle_id' => $golf,
+            'performed_on' => '2024-06-24',
+            'category' => 'bodywork',
+            'title' => 'Rear bumper and quarter panel repair',
+            'description' => 'Bumper reshaped and painted, scuff on the left quarter blended.',
+            'cost' => '640.000',
+            'vendor' => 'Smart Repair Belfast',
+            'odometer_km' => null,
+            'created_by' => $userId,
+            'incident_id' => $scrape,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $pothole = $this->incidentRow($golf, $now, $userId, [
+            'occurred_on' => '2026-08-21',
+            'location' => 'A6, near Antrim',
+            'type' => 'pothole',
+            'damage_areas' => '["wheels"]',
+            'severity' => 'minor',
+            'description' => 'Hit a pothole in the rain; the rear left tyre bulged.',
+            'closed_on' => '2026-08-22',
+        ]);
+        foreach ($this->fetchAll('SELECT id, vehicle_id, done_on, kind FROM tyre_changes') as $row) {
+            if (
+                is_array($row)
+                && self::intValue($row['vehicle_id'] ?? null) === $golf
+                && substr(self::stringValue($row['done_on'] ?? ''), 0, 10) === '2026-08-22'
+            ) {
+                $this->execute('UPDATE tyre_changes SET incident_id = ? WHERE id = ?', [$pothole, self::intValue($row['id'])]);
+            }
+        }
+
+        $this->incidentRow($fiesta, $now, $userId, [
+            'occurred_on' => '2022-11-03',
+            'occurred_at_time' => '08:10',
+            'location' => 'Doagh Road roundabout',
+            'type' => 'collision',
+            'fault' => 'at_fault',
+            'description' => 'Ran into the back of a van in slow traffic.',
+            'damage_areas' => '["front"]',
+            'severity' => 'major',
+            'driver_user_id' => $userId,
+            'closed_on' => '2023-01-16',
+            'claim_status' => 'settled',
+            'insurer' => 'Direct Line',
+            'claim_number' => 'DL-2211-0457',
+            'excess' => '250.000',
+            'payout' => '1850.000',
+            'ncd_affected' => 'yes',
+            'claim_updated_on' => '2023-01-16',
+        ]);
+
+        // Two photos of the scrape: kept as taken (spec.md §7.12).
+        $png = (string) base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        );
+        $directory = Kernel::settings()->uploadPath . '/attachments';
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            return;
+        }
+        foreach (['Rear bumper.png', 'Left quarter.png'] as $name) {
+            $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.png';
+            file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $png);
+            $this->insertRow('attachments', [
+                'vehicle_id' => $golf,
+                'owner_type' => 'incident',
+                'owner_id' => $scrape,
+                'filename' => $name,
+                'mime' => 'image/png',
+                'size' => strlen($png),
+                'stored_path' => $stored,
+                'uploaded_at' => $now,
+                'uploaded_by' => $userId,
+            ]);
+        }
+    }
+
+    /**
+     * One incident row, every column in the same order (Phinx inserts by position).
+     *
+     * @param array<string, mixed> $values
+     */
+    private function incidentRow(int $vehicle, string $now, int $userId, array $values): int
+    {
+        return $this->insertRow('incidents', array_merge([
+            'vehicle_id' => $vehicle,
+            'created_by' => $userId,
+            'occurred_on' => '',
+            'occurred_at_time' => null,
+            'location' => null,
+            'type' => 'other',
+            'fault' => 'unknown',
+            'description' => null,
+            'damage_areas' => '[]',
+            'severity' => null,
+            'driver_user_id' => $userId,
+            'driver_name' => null,
+            'other_party_name' => null,
+            'other_party_registration' => null,
+            'other_party_insurer' => null,
+            'police_reference' => null,
+            'status' => 'closed',
+            'closed_on' => null,
+            'write_off_category' => 'none',
+            'notes' => null,
+            'claim_status' => 'not_claimed',
+            'insurer' => null,
+            'insurance_document_id' => null,
+            'claim_number' => null,
+            'excess' => null,
+            'payout' => null,
+            'ncd_affected' => 'unknown',
+            'claim_updated_on' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $values));
     }
 
     /**
