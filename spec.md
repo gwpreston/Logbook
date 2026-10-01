@@ -3890,10 +3890,23 @@ request to any model service.
   page showing the same figure with the same filters. Lists are capped
   (50 rows) with a total count. Module-off tools are not offered. A
   vehicle the user can't see is "not found", and amounts without
-  `ViewCosts` are omitted, exactly as the API does.
+  `ViewCosts` are omitted, exactly as the API does. Each call runs in a
+  database transaction that is always rolled back, so not even a write
+  hidden in a service a tool uses can land. "All vehicles" includes
+  archived ones.
+  - **Periods:** `this_month`, `this_year` (1 January to today),
+    `last_12_months` (this month and the 11 before, as Reports' *12
+    months*) and `all_time` link to Reports' own presets; `last_month`,
+    `last_year`, `tax_year` (the user's tax year, §7.23) and `from`/`to`
+    link as custom ranges. One named vehicle links to its report; several
+    link to the fleet's and are named in the source. A category links with
+    the *Costs* filter (§7.7).
 - **Loop:** up to **8** tool calls per question, then an answer. A model
   that asks for more gets "Answer with what you have". Tool errors are
-  returned to the model as plain messages ("No vehicle with that id").
+  returned to the model as plain messages ("No vehicle with that id"). The
+  whole question holds the user's one-at-a-time lock (§7.25), and no model
+  call starts after 240 seconds: the answer is then a timeout, with the tool
+  calls made so far.
 - **Answer page:** the answer text; **Sources** under it, listing each tool
   call in words ("Costs · BMW 320d · 1 Jan – 31 Dec 2026 · by category")
   with its key figures and a link; the connection and model; *Copy*; and a
@@ -3903,7 +3916,8 @@ request to any model service.
   stored, whatever `AI_LOG_CONTENT` says (decided 2026-10-01, #71).
 - **Grounding check:** every number in the answer (digits with optional
   separators, decimals, currency symbols, units) is matched against the
-  display strings and raw values the tools returned, normalised for
+  display strings and raw values the tools returned (and the numbers in the
+  context, such as "320d", and in earlier results carried into a follow-up), normalised for
   separators and rounding to the shown precision. Unmatched numbers, other
   than dates, years and small counts (1–12) the question itself contained,
   are highlighted with "Logbook didn't provide this figure. Check it

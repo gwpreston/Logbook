@@ -9,14 +9,15 @@ use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Repository\BackupRepository;
+use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Trip\TripService;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 
 /**
- * No tool B writes anything, whatever it is asked (spec.md §7.26 *Tests*).
+ * No tool writes anything, whatever it is asked (spec.md §7.26 *Tests*).
  */
-final class ToolsBReadOnlyTest extends ToolsBTestCase
+final class ToolsReadOnlyTest extends ToolsBTestCase
 {
     public function testEveryToolLeavesEveryTableAsItWas(): void
     {
@@ -32,9 +33,21 @@ final class ToolsBReadOnlyTest extends ToolsBTestCase
             '40',
             purpose: 'Client visit',
         ));
+        $this->maintenance($app, $golf, '2026-07-01', 'Oil and filter', '120.00', '19500');
+        $this->reading($app, $golf, '20500', '2026-09-20T09:00:00Z');
         $before = $this->counts($app);
 
         $calls = [
+            ['find_vehicles', ['query' => 'Golf']],
+            ['vehicle_summary', ['vehicle' => $golf->id]],
+            ['costs', ['period' => 'all_time', 'group_by' => 'month']],
+            ['cost_per_distance', ['period' => 'this_year']],
+            ['fuel_stats', ['vehicle' => $golf->id, 'period' => 'all_time']],
+            ['fuel_stats', []],
+            ['maintenance', ['vehicle' => $golf->id, 'text' => 'oil']],
+            ['last_done', ['vehicle' => $golf->id, 'category' => 'service']],
+            ['mileage', ['vehicle' => $golf->id, 'period' => 'this_year']],
+            ['ownership', ['vehicle' => $golf->id]],
             ['coming_up', []],
             ['coming_up', ['vehicles' => [$golf->id], 'horizon_months' => 3]],
             ['documents', ['vehicle' => $golf->id]],
@@ -50,6 +63,7 @@ final class ToolsBReadOnlyTest extends ToolsBTestCase
         }
 
         self::assertSame($before, $this->counts($app));
+        self::assertCount(14, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
     }
 
     /**

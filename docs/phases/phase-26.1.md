@@ -3,7 +3,7 @@
 *Use whichever model you trust: on this server, on your network, or in
 the cloud.*
 
-Status: 🚧 in progress · ships with Phase 26.2 as **v2.6.0** · file lives in
+Status: ✅ complete · released with Phase 26.2 as **v2.6.0** · file lives in
 `docs/phases/`
 
 This phase adds no feature a user sees on its own. It builds what every AI

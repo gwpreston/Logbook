@@ -148,56 +148,109 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7, §7.18,
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.26 in `spec.md`; the Phase 26.2 line in §13.
-- [ ] `docs/ai.md`: *Ask Logbook*: what it can answer, how sources and the
+- [x] §7.26 in `spec.md`; the Phase 26.2 line in §13.
+- [x] `docs/ai.md`: *Ask Logbook*: what it can answer, how sources and the
       grounding check work, privacy and retention.
 
 ### Migration
-- [ ] `ai_threads` and `ai_messages` (user, created, role, content, tool
+- [x] `ai_threads` and `ai_messages` (user, created, role, content, tool
       calls and results as JSON, connection and model). Reversible on every
       engine; excluded from backups; scheduler retention.
 
 ### Code
-- [ ] `Service\Ai\Ask\ToolRegistry` and one class per tool (schema,
+- [x] `Service\Ai\Ask\ToolRegistry` and one class per tool (schema,
       access, module check, call into the existing service, and results with
       raw values, display strings and links).
-- [ ] `Service\Ai\Ask\Conversation` (context building, the loop, the
+- [x] `Service\Ai\Ask\Conversation` (context building, the loop, the
       limit, trimming) on Phase 26.1's `AiGateway`.
-- [ ] `Service\Ai\Ask\GroundingCheck` (number extraction and
+- [x] `Service\Ai\Ask\GroundingCheck` (number extraction and
       normalisation for en and de formats).
-- [ ] `Action\Ask\*`: page, POST, threads, delete, feedback. JS
+- [x] `Action\Ask\*`: page, POST, threads, delete, feedback. JS
       progressive enhancement for background posting and progress.
-- [ ] Translations (en, de): the system text, UI and progress lines.
+- [x] Translations (en, de): the system text, UI and progress lines.
 
 ### Tests
-- [ ] **Scripted provider** (a fake adapter replaying a script of tool calls
+- [x] **Scripted provider** (a fake adapter replaying a script of tool calls
       and a final answer) for deterministic tests of the loop, the limit,
       errors and trimming.
-- [ ] **Each tool:** the schema is valid; results match the service's
+- [x] **Each tool:** the schema is valid; results match the service's
       figures for the demo data; access (another user's vehicle → not
       found; no `ViewCosts` → amounts omitted); module off → not offered;
       display strings in km, UK and US preferences and German locale.
-- [ ] **Grounding:** a correct answer passes; an invented "£1,300" is
+- [x] **Grounding:** a correct answer passes; an invented "£1,300" is
       flagged; "1.284,50 €" in German matches `1284.50`; rounding to the
       shown precision matches; question numbers and dates are not flagged.
-- [ ] **Injection:** a service note containing instructions is passed as
+- [x] **Injection:** a service note containing instructions is passed as
       data; no tool can write, whatever the model asks.
-- [ ] Threads: follow-ups carry context; retention; delete; excluded from
+- [x] Threads: follow-ups carry context; retention; delete; excluded from
       backups.
-- [ ] Without JS, the form works end to end.
-- [ ] **Evaluation script** `bin/ai-eval.php`: 40 questions against the demo
+- [x] Without JS, the form works end to end.
+- [x] **Evaluation script** `bin/ai-eval.php`: 40 questions against the demo
       data (your examples among them) with expected tools and figures. It
       runs against the configured `ask` model and reports tool accuracy,
       grounding failures and time. It is not run in CI; results are pasted
       into the PR for each model tried.
-- [ ] Integration suite green on every engine.
+- [ ] **Evaluation results** for at least one local and one cloud model, in
+      the PR (no model was reachable while building).
+- [x] Integration suite green on every engine.
 
 ### Release (with Phase 26.1)
-- [ ] `CHANGELOG.md` **2.6.0**: AI connections (local, network and cloud)
+- [x] `CHANGELOG.md` **2.6.0**: AI connections (local, network and cloud)
       and Ask Logbook. Upgrade notes: migrations; everything is off until an
       admin adds a connection; privacy notes.
-- [ ] Bump `VERSION`, rebuild assets, update the README (status,
+- [x] Bump `VERSION`, rebuild assets, update the README (status,
       documentation table gains `docs/ai.md`).
+
+---
+
+## Changed while building it
+
+- **Reports gained a *Costs* filter** (`group=fuel|maintenance|compliance|other`,
+  spec §7.7), so a source can link to "Reports filtered to fuel and 2025"
+  (acceptance 1). Distance is unchanged, so cost per distance becomes the
+  group's.
+- **Progress** (decided #73): the page sends a random token with the
+  question; the loop records each tool as it starts; the page polls
+  `/ask/progress/{token}`. The POST with `X-Ask: 1` answers JSON (`url` or
+  `error`); without it, a 303 to the answer.
+- **One lock for the whole question:** `AiGateway::session()` holds the
+  user's lock across every model call of a question (up to 10), so a second
+  question is refused for the whole of the first. Each call is still
+  checked and logged on its own.
+- **Every tool runs in a transaction that is always rolled back,** as well
+  as being written to read only. `trips_summary` reads the mileage rates,
+  which write HMRC's rate sets on first use for GB users; under Ask that
+  write is rolled back, and the claim is still valued.
+- **Periods:** `this_month`, `this_year` (1 January to today),
+  `last_12_months` and `all_time` are Reports' own presets, so the link
+  shows the same figure; `last_12_months` is this month and the 11 before,
+  as on Reports, not a rolling year. `last_month`, `last_year`, `tax_year`
+  (the user's own tax year) and `from`/`to` link as custom ranges. Several
+  named vehicles link to the fleet report and are named in the source.
+- **Vehicles in the context and in "all vehicles" include archived ones**
+  (last year's costs include a car sold since); Reports links add
+  `include_archived=1`.
+- **Grounding** also allows the numbers in the context (vehicle names
+  such as "320d", registrations) and in earlier tool results carried into a
+  follow-up.
+- **A deadline:** no model call starts after 240 seconds; the answer is then
+  a timeout with the tool calls so far kept, and the link to the page.
+- **Follow-ups** leave out earlier turns and tool results that drew on a
+  vehicle the user can no longer see (a share removed mid-thread).
+- **Tool limits found:** `vehicle_summary` leaves out reminder counts (the
+  API's summary syncs reminders, a write); `fuel_stats` judges grades over
+  the whole fuel history (the service has no period), and says so;
+  `mileage` gives averages over the whole log; `ownership` without
+  ViewCosts says costs aren't shared, with no figures.
+- **Feedback counts** (`ai_feedback`) are per month in `APP_TIMEZONE`;
+  changing a mark moves the count.
+- **The phone app's quick action** shows once Ask is set up for the
+  install (the manifest is the same for everyone); the page answers 404 to
+  anyone it isn't available to.
+- **Answers** are shown as paragraphs and lists, with `**bold**` kept;
+  everything else is escaped.
+- `phpunit.xml.dist` sets `memory_limit` to 512M: the suite's peak (about
+  123 MB) had reached the CLI default of 128M.
 
 ---
 
