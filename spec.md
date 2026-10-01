@@ -4687,6 +4687,14 @@ nothing is counted twice (§6 Incident).
   first, each "12 Mar 2025 · Parked damage"), preselected when the form
   is opened from an incident. A record of another vehicle's incident is
   refused.
+  - **A tyre change linked to a service record follows the record**
+    (decided 2026-10-01, `docs/phases/open-questions.md` #103): it takes
+    the record's incident, its own select is replaced by "Follows the
+    service record", and linking, unlinking or deleting the record moves
+    it with it. A tyre change with no record can be linked on its own.
+    Its cost is the record's (§7.17), so it adds nothing to linked
+    costs, which are read from the cost ledger (§7.7) and filtered by
+    incident, so they always match Reports.
 - **Claims history** (`/incidents/history`, module on, from the main
   navigation's *Reports* group and the Incidents tab): every incident on
   every vehicle the user can see, **including archived and sold ones**

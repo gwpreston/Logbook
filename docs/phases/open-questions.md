@@ -35,7 +35,7 @@ them found while starting it) on the same day, before Phase 26.4 started;
 two found while building it (#85, #86) were answered the same day.
 Phase 26.5's (#87–#91, three of them found while starting it) were
 answered on 2026-10-01, before Phase 26.5 started. Phase 27's
-(#92–#102, seven of them found while starting it) were answered on
+(#92–#103, eight of them found while starting it) were answered on
 2026-10-01, before Phase 27.1 started; the phase was split into 27.1 and
 27.2, and #98–#101 belong to 27.2.
 
@@ -143,6 +143,7 @@ answered on 2026-10-01, before Phase 26.5 started. Phase 27's
 | 100 | [27.2](phase-27.2.md) | A scanned claim letter matching an incident: update or create? (found while starting) | Decided | Update: the matching incident's edit form, by claim number; *Update from a letter* on the incident page (spec §7.27, §7.29). | 2026-10-01 |
 | 101 | [27.2](phase-27.2.md) | Store a repair estimate? (found while starting) | Decided | Yes, `repair_estimate` on the incident, shown as information and never counted (spec §6, §7.29). | 2026-10-01 |
 | 102 | [27.1](phase-27.1.md) | One phase or two, after #93 and #95? (found while starting) | Decided | Two: 27.1 incidents; 27.2 total loss, reading letters and the v2.10.0 release. | 2026-10-01 |
+| 103 | [27.1](phase-27.1.md) | A tyre change linked to a service record: which carries the incident? (found while starting) | Decided | The change follows its record's incident; an unlinked change is linked on its own; costs read from the ledger (spec §7.29). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

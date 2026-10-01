@@ -331,6 +331,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §6, §7.2,
   [Phase 27.2](phase-27.2.md) is total loss, reading claim letters and
   estimates, and the v2.10.0 release.
 
+- *(Found while starting.)* **A tyre change linked to a service record,
+  and incidents:** which of the two is linked?
+  **Decided 2026-10-01 (#103):** the tyre change follows its record's
+  incident; one with no record is linked on its own (spec §7.29).
+
 ## What changed while starting
 
 - The phase was split into 27.1 and 27.2 (#102); the file was renamed
