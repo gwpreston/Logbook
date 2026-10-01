@@ -1559,6 +1559,10 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   driven.
 - **Archived vehicles** are left out of fleet reports unless
   `include_archived=1` is ticked; picking one explicitly always includes it.
+- **Costs filter** (Phase 26.2): `group=fuel|maintenance|compliance|other`
+  keeps only that group's ledger lines, in the totals, the chart, the
+  table and the CSV. Distance is unchanged, so cost per distance becomes
+  that group's (fuel cost per mile). Ask Logbook's sources link to it.
 - **Currencies:** amounts are never converted. When the vehicles in a report
   use more than one currency, each currency gets its own totals, chart and
   table, with its own cost per distance (distance of its vehicles only).

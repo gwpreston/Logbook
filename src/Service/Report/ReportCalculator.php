@@ -45,7 +45,8 @@ final class ReportCalculator
         }
         $items = array_values(array_filter(
             $items,
-            static fn (CostItem $item): bool => isset($covered[$item->vehicle->id]),
+            static fn (CostItem $item): bool => isset($covered[$item->vehicle->id])
+                && ($filter->group === null || $item->group() === $filter->group),
         ));
 
         $period = $filter->period->resolve($items === [] ? null : $items[0]->date);

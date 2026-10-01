@@ -1853,6 +1853,7 @@ return [
         'period_label' => 'Zeitraum',
         'archived_included' => 'inklusive archivierter Fahrzeuge',
         'in_currency' => 'In {currency}',
+        'group_all' => 'Alle Kosten',
         'apply' => 'Bericht anzeigen',
         'reset' => 'Zurücksetzen',
         'range' => [
@@ -1865,6 +1866,7 @@ return [
         ],
         'field' => [
             'vehicle' => 'Fahrzeug',
+            'group' => 'Kosten',
             'include_archived' => 'Archivierte Fahrzeuge einbeziehen',
             'from' => 'Von',
             'to' => 'Bis',

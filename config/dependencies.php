@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use Logbook\Service\Ai\Ask\Tool;
+use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Access\AccessTwigExtension;
 use Logbook\Service\Access\AdminInstanceAccess;
 use Logbook\Service\Access\InstanceAccess;
@@ -204,6 +206,14 @@ return [
         'phpMaxFileUploads',
         (int) (ini_get('max_file_uploads') === false ? 20 : ini_get('max_file_uploads')),
     ),
+
+    // Ask Logbook's read-only tools (spec.md §7.26, Phase 26.2), in the order offered.
+    ToolRegistry::class => autowire()->constructorParameter('tools', [
+        get(Tool\FindVehicles::class),
+        get(Tool\Costs::class),
+        get(Tool\CostPerDistance::class),
+        get(Tool\Maintenance::class),
+    ]),
 
     // Single sign-on (spec.md §7.9, Phase 23.1).
     OidcConfig::class => static fn (ContainerInterface $c): OidcConfig => $settingsOf($c)->oidc,

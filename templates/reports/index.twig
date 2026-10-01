@@ -51,6 +51,15 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div class="field">
+                    <label class="field__label" for="f-group">{{ 'report.field.group'|trans }}</label>
+                    <select class="select" id="f-group" name="group">
+                        <option value="">{{ 'report.group_all'|trans }}</option>
+                        {% for group in cost_groups %}
+                            <option value="{{ group.value }}"{% if filter.group == group %} selected{% endif %}>{{ ('expense.group.' ~ group.value)|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <label class="checkbox report-filter__archived">
                     <input type="checkbox" name="include_archived" value="1"{% if filter.includeArchived %} checked{% endif %}>
                     <span>{{ 'report.field.include_archived'|trans }}</span>

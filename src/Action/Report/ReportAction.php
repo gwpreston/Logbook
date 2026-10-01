@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Report;
 
+use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Trip\BusinessMileage;
@@ -54,6 +55,7 @@ final readonly class ReportAction
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,
             'ranges' => ReportRange::cases(),
+            'cost_groups' => CostGroup::cases(),
             'all_vehicles' => $this->vehicles->listWith($user, VehicleAbility::ViewCosts, true),
             'charts' => array_map($this->charts->monthly(...), $report->currencies),
             'filter_query' => $filter->toQuery(),
