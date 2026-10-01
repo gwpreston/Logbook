@@ -79,6 +79,15 @@ final readonly class FileUpload
         return new self($mime, $types[$mime], $stored === false ? $size : $stored, null);
     }
 
+    /**
+     * A file this check accepted before (a pending scan, spec.md §7.27),
+     * now being attached: it is not decoded and re-encoded a second time.
+     */
+    public static function accepted(string $mime, string $extension, int $size): self
+    {
+        return new self($mime, $extension, $size, null);
+    }
+
     public function isValid(): bool
     {
         return $this->error === null;

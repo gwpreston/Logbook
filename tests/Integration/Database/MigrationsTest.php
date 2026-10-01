@@ -61,6 +61,7 @@ final class MigrationsTest extends AppTestCase
         'ai_progress',
         'ai_feedback',
         'ai_drafts',
+        'pending_uploads',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -100,7 +101,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 26.3 drafts, the Phase 26.2 Ask tables, the Phase 26.1 AI tables, the Phase 24 hidden checks,
+        // Newest first: the Phase 26.4 pending uploads, the Phase 26.3 drafts, the Phase 26.2 Ask tables, the Phase 26.1 AI tables, the Phase 24 hidden checks,
         // the Phase 23.1 identities,
         // the Phase 22 trip tables,
         // the Phase 21.2 first MOT date, the Phase 19 users and sharing, the Phase 18.2 API
@@ -112,6 +113,10 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        self::assertTrue($schema->tablesExist(['pending_uploads']));
+        Migrator::run('rollback');
+        self::assertFalse($schema->tablesExist(['pending_uploads']), 'rollback must drop the pending uploads');
+
         self::assertTrue($schema->tablesExist(['ai_drafts']));
         Migrator::run('rollback');
         self::assertFalse($schema->tablesExist(['ai_drafts']), 'rollback must drop the drafts');

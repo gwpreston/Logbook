@@ -4514,3 +4514,147 @@ a.list__title:hover {
     gap: var(--space-1);
     margin: 0;
 }
+
+/* Reading files (spec.md §7.27, Phase 26.4) */
+
+.log-choice--scan {
+    flex-direction: row;
+    align-items: center;
+    height: auto;
+    margin-bottom: var(--space-3);
+}
+
+.log-choice__hint {
+    display: block;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 400;
+}
+
+.scan-fill {
+    margin: 0;
+}
+
+.scan-notice {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-lg);
+    background: var(--accent-soft);
+}
+
+@media (min-width: 48rem) {
+    .scan-notice:has(.scan-notice__thumb) {
+        grid-template-columns: 9rem 1fr;
+        align-items: start;
+    }
+}
+
+.scan-notice__thumb {
+    display: none;
+}
+
+@media (min-width: 48rem) {
+    .scan-notice__thumb {
+        display: block;
+    }
+}
+
+.scan-notice__thumb img {
+    display: block;
+    width: 100%;
+    max-height: 14rem;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.scan-notice__body {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.scan-notice__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--fs-md);
+}
+
+.scan-notice__lead,
+.scan-notice__kinds {
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.scan-notice__file {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.scan-notice__remove {
+    margin-left: auto;
+}
+
+.field__from-file {
+    margin-left: var(--space-1);
+}
+
+.field__scan {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+}
+
+.field__evidence,
+.field__check {
+    display: flex;
+    gap: var(--space-1);
+    align-items: flex-start;
+    margin: 0;
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+}
+
+.field__evidence {
+    color: var(--muted);
+}
+
+.field__check {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.field__evidence .icon,
+.field__check .icon {
+    flex: none;
+    margin-top: 0.15em;
+}
+
+.scan-reading[hidden] {
+    display: none;
+}
+
+.scan-offer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.scan-offer .list__body {
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.scan-offer form {
+    margin: 0;
+}

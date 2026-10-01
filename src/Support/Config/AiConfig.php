@@ -17,6 +17,8 @@ final readonly class AiConfig
         public bool $logContent = false,
         /** `AI_ALLOW_INSECURE_TLS`: false forces TLS verification on every connection. */
         public bool $allowInsecureTls = true,
+        /** `GHOSTSCRIPT_BINARY`: renders scanned PDFs for reading (spec.md §7.27); '' turns it off. */
+        public string $ghostscriptBinary = 'gs',
     ) {
     }
 
@@ -26,6 +28,7 @@ final readonly class AiConfig
             enabled: $env->bool('AI_ENABLED', true),
             logContent: $env->bool('AI_LOG_CONTENT', false),
             allowInsecureTls: $env->bool('AI_ALLOW_INSECURE_TLS', true),
+            ghostscriptBinary: trim($env->string('GHOSTSCRIPT_BINARY', 'gs')),
         );
     }
 }

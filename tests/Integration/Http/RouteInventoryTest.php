@@ -96,6 +96,13 @@ final class RouteInventoryTest extends AppTestCase
         'ask.feedback',
         // Phase 26.3: a draft card's buttons, one's own drafts only; the kind's ability is checked at the press.
         'ask.draft',
+        // Phase 26.4: scanning, one's own scans only (404 unless scanning is available); the vehicle's
+        // ability is checked by the form a scan opens, the card (Manage) and the vehicle page (Manage).
+        'scan',
+        'scan.result',
+        'scan.file',
+        'scan.reminders',
+        'scan.vehicle',
     ];
 
     /** Signed in; every vehicle they show comes from the policy's visible ids (VehicleService::listFleet / listWith). */

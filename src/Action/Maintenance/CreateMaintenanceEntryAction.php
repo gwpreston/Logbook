@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Action\Scan\ScanPrefill;
+use Logbook\Domain\Ai\Scan\ScanTarget;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
+use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Maintenance\MaintenanceSchedule;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
@@ -32,6 +36,7 @@ final readonly class CreateMaintenanceEntryAction
 {
     public function __construct(
         private DraftPrefill $prefill,
+        private ScanPrefill $scan,
         private VehicleService $vehicles,
         private MaintenanceService $maintenance,
         private ScheduleService $schedules,
@@ -56,13 +61,14 @@ final readonly class CreateMaintenanceEntryAction
             $today = LocalTime::today($this->clock, $user->preferences->timeZone());
             $defaults = MaintenanceEntryForm::defaults($today, $this->requestedSchedule($request, $vehicle));
             $defaults = $this->prefill->values($request, DraftKind::Maintenance, $vehicle->id, $defaults);
+            $defaults = $this->scan->values($request, ScanTarget::Maintenance, $vehicle, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
 
         $input = RequestContext::form($request);
         $data = MaintenanceEntryForm::parse($input, $user->preferences, $this->page->scheduleIds($vehicle));
-        $files = $this->upload->fromRequest($request);
+        $files = $this->scan->files($request, $this->upload->fromRequest($request));
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
@@ -70,13 +76,24 @@ final readonly class CreateMaintenanceEntryAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
         }
 
-        $entry = $this->maintenance->create($vehicle, $data, $user->preferences->timeZone(), $files);
+        [$entry, $claimed] = $this->scan->save(
+            $request,
+            $files,
+            fn (PendingUploads $files): MaintenanceEntry => $this->maintenance->create(
+                $vehicle,
+                $data,
+                $user->preferences->timeZone(),
+                $files,
+            ),
+        );
         $this->prefill->saved($request);
         $session = RequestContext::session($request);
         $session->flash('success', 'maintenance.created', ['title' => $entry->data->title]);
         $this->warnings->queue($session, $this->maintenance->odometerWarning($vehicle, $entry));
 
-        return $this->redirect->backOr($request, 'maintenance.index', ['id' => (string) $vehicle->id]);
+        $done = $this->redirect->backOr($request, 'maintenance.index', ['id' => (string) $vehicle->id]);
+
+        return $this->scan->after($request, $claimed, $vehicle, $entry->data->odometerKm, $done);
     }
 
     /**

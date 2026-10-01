@@ -34,6 +34,8 @@
               action="{{ editing ? url_for('compliance.edit', {id: vehicle.id, document: document.id}) : url_for('compliance.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
             {% include 'ask/_draft_notice.twig' %}
+            {% include 'scan/_notice.twig' %}
+            {% include 'scan/_fill_link.twig' with {for: 'document'} %}
             {{ ui.return_field(return_to) }}
 
             <section class="card">
@@ -53,8 +55,9 @@
                     {{ ui.input('odometer', 'compliance.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, hint: 'compliance.hint.odometer'|trans}) }}
                 </div>
                 <div class="field">
-                    <label class="field__label" for="f-notes">{{ 'compliance.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    <label class="field__label" for="f-notes">{{ 'compliance.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span>{{ ui.from_message('notes', values) }}</label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000"{{ ui.described_by('notes', errors, false, values) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.scan_note('notes', values) }}
                     {{ ui.field_error(errors, 'notes') }}
                 </div>
             </section>

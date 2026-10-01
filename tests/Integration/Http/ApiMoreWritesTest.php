@@ -196,7 +196,10 @@ final class ApiMoreWritesTest extends AppTestCase
         $entry = ApiClient::json($response)->doc('entry');
         self::assertSame([null, '80467.200'], [$entry->get('due_on'), $entry->get('due_odometer')]);
 
-        $retry = $this->api->post($this->path('reminders'), ['title' => 'Front pads', 'due_odometer' => '80467.2', 'distance_unit' => 'km']);
+        $retry = $this->api->post(
+            $this->path('reminders'),
+            ['title' => 'Front pads', 'due_odometer' => '80467.2', 'distance_unit' => 'km'],
+        );
         self::assertSame(200, $retry->getStatusCode(), 'the same odometer in km is the same reminder');
 
         $neither = $this->api->post($this->path('reminders'), ['title' => 'Something']);

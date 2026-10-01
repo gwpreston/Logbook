@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
 use Logbook\Service\Ai\Ask\AskTwigExtension;
+use Logbook\Service\Ai\Scan\PdfRenderer;
+use Logbook\Service\Ai\Scan\PdfRenderers;
+use Logbook\Service\Ai\Scan\ScanTwigExtension;
 use Logbook\Service\Ai\Ask\Tool;
 use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Access\AccessTwigExtension;
@@ -98,6 +101,8 @@ return [
     // Who may do what (spec.md §5 Access policy): owners, shares and admins (Phase 19).
     VehicleAccess::class => get(SharedVehicleAccess::class),
     InstanceAccess::class => get(AdminInstanceAccess::class),
+    // Reading files (spec.md §7.27): Ghostscript, else Imagick, else none.
+    PdfRenderer::class => get(PdfRenderers::class),
 
     LoggerInterface::class => static function (ContainerInterface $c) use ($settingsOf): LoggerInterface {
         $config = $settingsOf($c);
@@ -186,6 +191,9 @@ return [
         $ask = $c->get(AskTwigExtension::class);
         assert($ask instanceof AskTwigExtension);
         $twig->addExtension($ask);
+        $scan = $c->get(ScanTwigExtension::class);
+        assert($scan instanceof ScanTwigExtension);
+        $twig->addExtension($scan);
 
         return $twig;
     },

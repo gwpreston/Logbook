@@ -1,0 +1,5 @@
+{% import 'macros/ui.twig' as ui %}
+{# *Fill from a file* on a create form (spec.md §7.27): opens Scan for this vehicle and form. `for` is the form. #}
+{% if not editing and not (values.scan ?? null) and scan_available() %}
+    <p class="scan-fill"><a class="btn btn--sm" href="{{ url_for('scan', {}, {vehicle: vehicle.id, for: for}) }}">{{ ui.icon('document_scanner') }}{{ 'scan.fill_from_file'|trans }}</a></p>
+{% endif %}

@@ -30,6 +30,8 @@
               action="{{ editing ? url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) : url_for('maintenance.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
             {% include 'ask/_draft_notice.twig' %}
+            {% include 'scan/_notice.twig' %}
+            {% include 'scan/_fill_link.twig' with {for: 'maintenance'} %}
             {{ ui.return_field(return_to) }}
 
             <section class="card">
@@ -53,8 +55,9 @@
                         {hint: 'maintenance.hint.schedule'|trans}) }}
                 {% endif %}
                 <div class="field">
-                    <label class="field__label" for="f-description">{{ 'maintenance.field.description'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-                    <textarea class="textarea" id="f-description" name="description" rows="4" maxlength="2000"{{ ui.described_by('description', errors, false) }}>{{ values.description ?? '' }}</textarea>
+                    <label class="field__label" for="f-description">{{ 'maintenance.field.description'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span>{{ ui.from_message('description', values) }}</label>
+                    <textarea class="textarea" id="f-description" name="description" rows="4" maxlength="2000"{{ ui.described_by('description', errors, false, values) }}>{{ values.description ?? '' }}</textarea>
+                    {{ ui.scan_note('description', values) }}
                     {{ ui.field_error(errors, 'description') }}
                 </div>
             </section>

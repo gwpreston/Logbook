@@ -1,0 +1,19 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{# The form a scan needs is off, or the user may not change the vehicle (spec.md §7.27): the file waits 24 hours. #}
+{% set active_nav = 'log' %}
+{% set heading = ('scan.kind.' ~ kind.value)|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header"><h1 class="page-header__title">{{ heading }}</h1></header>
+        <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ feature ? 'scan.module_off'|trans({module: ('modules.module.' ~ feature.value ~ '.title')|trans}) : 'scan.cannot_manage'|trans({vehicle: vehicle.name()}) }}</span></p>
+        <p class="scan-notice__kinds">{{ 'scan.notice.other_kind'|trans }}
+            {% for other in ['service_invoice', 'fuel_receipt', 'inspection', 'insurance', 'other']|filter(k => k != kind.value) %}
+                <a href="{{ url_for('scan.result', {token: upload.token}, {as: other, vehicle: vehicle.id}) }}">{{ ('scan.kind.' ~ other)|trans }}</a>{% if not loop.last %} · {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+{% endblock %}

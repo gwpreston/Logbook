@@ -6,6 +6,7 @@ namespace Logbook\Action\Pwa;
 
 use Logbook\Domain\Feature\Feature;
 use Logbook\Service\Ai\Ask\AskAvailability;
+use Logbook\Service\Ai\Scan\ScanAvailability;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\View\AssetPackage;
@@ -26,6 +27,7 @@ final readonly class WebManifestAction
         private TranslatorInterface $translator,
         private FeatureToggles $features,
         private AskAvailability $ask,
+        private ScanAvailability $scan,
     ) {
     }
 
@@ -63,8 +65,11 @@ final readonly class WebManifestAction
         if ($this->features->isEnabled(Feature::Trips)) {
             $shortcuts[] = ['name' => $this->translator->trans('nav.log_trip'), 'url' => $base . '/log/new/trip'];
         }
-        // Ask Logbook (spec.md §7.26) once it is set up; the page itself
-        // answers 404 to anyone it isn't available to.
+        // Reading files (spec.md §7.27) and Ask Logbook (§7.26) once they are
+        // set up; the pages answer 404 to anyone they aren't available to.
+        if ($this->scan->isSetUp()) {
+            $shortcuts[] = ['name' => $this->translator->trans('scan.shortcut'), 'url' => $base . '/scan'];
+        }
         if ($this->ask->isSetUp()) {
             $shortcuts[] = ['name' => $this->translator->trans('ask.title'), 'url' => $base . '/ask'];
         }
