@@ -33,6 +33,7 @@
         <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('compliance.edit', {id: vehicle.id, document: document.id}) : url_for('compliance.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {% include 'ask/_draft_notice.twig' %}
             {{ ui.return_field(return_to) }}
 
             <section class="card">

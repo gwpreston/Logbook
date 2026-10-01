@@ -100,6 +100,7 @@ use Logbook\Action\SalePack\ShowSalePackAction;
 use Logbook\Action\Settings\AdminTransferAction;
 use Logbook\Action\Ask\AskAction;
 use Logbook\Action\Ask\AskFeedbackAction;
+use Logbook\Action\Ask\DraftAction as AskDraftAction;
 use Logbook\Action\Ask\AskPostAction;
 use Logbook\Action\Ask\AskProgressAction;
 use Logbook\Action\Ask\AskRetentionAction;
@@ -641,6 +642,8 @@ return static function (App $app): void {
             $group->get('/ask/threads/{thread:[0-9]+}', AskAction::class)->setName('ask.thread');
             $group->post('/ask/threads/{thread:[0-9]+}/delete', AskThreadDeleteAction::class)->setName('ask.thread.delete');
             $group->post('/ask/messages/{message:[0-9]+}/feedback', AskFeedbackAction::class)->setName('ask.feedback');
+            // Drafting entries (Phase 26.3): a card's buttons; the draft is the user's own or not found.
+            $group->post('/ask/drafts/{draft:[0-9]+}/{action:add|discard|undo}', AskDraftAction::class)->setName('ask.draft');
             // Settings → AI: admins only, and 404 (not 403) to anyone else.
             $group->group('/settings/ai', function (Group $ai) use ($instance): void {
                 $manage = InstanceAbility::ManageAi->value;

@@ -1,0 +1,63 @@
+{% import 'macros/ui.twig' as ui %}
+{#
+ # A drafted entry's card (spec.md §7.26 *Draft card*): each field as
+ # Logbook computed and formatted it, derived values marked, the form's
+ # warnings, and Add / Edit / Discard. Once added: Added · View · Undo.
+ # `item` comes from AskPage::cards(). Plain forms; works without JS.
+ #}
+{% set draft = item.draft %}
+{% set card = item.card %}
+<section class="draft-card draft-card--{{ item.state }}" id="draft-{{ draft.id }}" aria-labelledby="draft-{{ draft.id }}-title" data-draft-card>
+    <header class="draft-card__header">
+        {% if item.vehicle %}{{ ui.vehicle_photo(item.vehicle, 'draft-card__photo') }}{% endif %}
+        <div>
+            <p class="draft-card__label muted">{{ 'ask.draft.card_label'|trans }}</p>
+            <h3 class="draft-card__title" id="draft-{{ draft.id }}-title">{{ card.title ?? '' }} · {{ card.vehicle ?? '' }}{% if card.registration ?? null %} <span class="muted">{{ card.registration }}</span>{% endif %}</h3>
+        </div>
+    </header>
+
+    {% if card.summary ?? null %}<p class="draft-card__summary">{{ card.summary }}</p>{% endif %}
+
+    <dl class="draft-card__fields">
+        {% for field in card.fields ?? [] %}
+            <div>
+                <dt>{{ field.label }}</dt>
+                <dd>{{ field.value }}{% if field.derived %} <span class="draft-card__derived">{{ 'ask.draft.derived_mark'|trans }}</span>{% endif %}</dd>
+            </div>
+        {% endfor %}
+    </dl>
+
+    {% for note in card.notes ?? [] %}<p class="field__hint">{{ note }}</p>{% endfor %}
+    {% for warning in card.warnings ?? [] %}
+        <div class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ warning }}</span></div>
+    {% endfor %}
+
+    <div class="draft-card__actions" role="group" aria-label="{{ card.title ?? '' }}">
+        {% if item.state == 'waiting' %}
+            <form method="post" action="{{ url_for('ask.draft', {draft: draft.id, action: 'add'}) }}">
+                {{ ui.csrf(csrf) }}
+                <button class="btn btn--primary" type="submit">{{ ui.icon('add') }}{{ 'ask.draft.add'|trans }}</button>
+            </form>
+            <a class="btn" href="{{ url_for(item.edit[0], item.edit[1], item.edit[2]) }}" data-modal>{{ ui.icon('edit') }}{{ 'ask.draft.edit'|trans }}</a>
+            <form method="post" action="{{ url_for('ask.draft', {draft: draft.id, action: 'discard'}) }}">
+                {{ ui.csrf(csrf) }}
+                <button class="btn btn--ghost" type="submit">{{ ui.icon('close') }}{{ 'ask.draft.discard'|trans }}</button>
+            </form>
+        {% elseif item.state == 'added' %}
+            <p class="draft-card__status" role="status">{{ ui.icon('check_circle') }}{{ (card.duplicate ?? false) ? 'ask.draft.duplicate'|trans : 'ask.draft.added'|trans }}</p>
+            <a class="btn btn--ghost" href="{{ url_for(item.view[0], item.view[1]) }}">{{ 'ask.draft.view'|trans }}</a>
+            {% if item.can_undo %}
+                <form method="post" action="{{ url_for('ask.draft', {draft: draft.id, action: 'undo'}) }}" data-draft-undo="{{ item.undo_seconds }}">
+                    {{ ui.csrf(csrf) }}
+                    <button class="btn btn--ghost" type="submit">{{ ui.icon('undo') }}{{ 'ask.draft.undo'|trans }}</button>
+                </form>
+            {% endif %}
+        {% elseif item.state == 'undone' %}
+            <p class="draft-card__status muted" role="status">{{ 'ask.draft.undone'|trans }}</p>
+        {% elseif item.state == 'discarded' %}
+            <p class="draft-card__status muted" role="status">{{ 'ask.draft.discarded'|trans }}</p>
+        {% else %}
+            <p class="draft-card__status muted" role="status">{{ 'ask.draft.expired'|trans }}</p>
+        {% endif %}
+    </div>
+</section>

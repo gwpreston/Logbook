@@ -26,6 +26,7 @@
 
         <form class="form" method="post" action="{{ editing ? url_for('reminders.edit', {reminder: reminder.id}) : url_for('reminders.create') }}">
             {{ ui.csrf(csrf) }}
+            {% include 'ask/_draft_notice.twig' %}
 
             <section class="card">
                 {{ ui.select('vehicle_id', 'reminders.field.vehicle'|trans, values, errors, vehicle_options, {required: true}) }}

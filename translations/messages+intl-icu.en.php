@@ -3384,6 +3384,7 @@ return [
             ],
             'derived_mark' => 'worked out by Logbook',
             'from_message' => 'from your message',
+            'edit_notice' => 'Filled in from your message in Ask. Check it, add any files, and save.',
             'warning' => [
                 'odometer_backwards' => 'The odometer is lower than the reading before it.',
                 'odometer_jump' => 'The odometer rose by more than 2,000 km a day since the reading before it.',

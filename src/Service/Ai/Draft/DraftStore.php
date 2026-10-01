@@ -82,6 +82,24 @@ final readonly class DraftStore
     }
 
     /**
+     * What the thread's drafts became, for a follow-up's context ("the
+     * conversation notes what was added", spec.md §7.26).
+     *
+     * @return list<array{draft_id: int, kind: string, state: string, summary: string}>
+     */
+    public function notes(User $user, int $threadId): array
+    {
+        $now = $this->clock->now();
+
+        return array_map(static fn (AiDraft $draft): array => [
+            'draft_id' => $draft->id,
+            'kind' => $draft->kind->value,
+            'state' => ($draft->card['duplicate'] ?? false) === true ? 'already_logged' : $draft->state($now)->value,
+            'summary' => is_string($draft->card['summary'] ?? null) ? $draft->card['summary'] : '',
+        ], $this->drafts->forThread($user->id, $threadId));
+    }
+
+    /**
      * *Add*: write the draft as it stands now, once.
      *
      * @throws DraftNotFound|DraftRefused|DraftInvalid
@@ -103,6 +121,9 @@ final readonly class DraftStore
             $vehicle = $this->writer->vehicle($user, $draft->kind, $draft->vehicleId);
             $written = $this->writer->write($user, $vehicle, $draft->kind, $draft->input);
             // An entry already logged is not this card's: there is nothing to undo.
+            if ($written->duplicate) {
+                $this->drafts->updateCard($draft->id, ['duplicate' => true] + $draft->card);
+            }
             $this->drafts->recordEntry(
                 $draft->id,
                 $written->duplicate ? null : $written->entryId,

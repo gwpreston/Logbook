@@ -98,6 +98,11 @@
     {% if ids is not empty %} aria-describedby="{{ ids|join(' ') }}"{% endif %}{% if errors[name] ?? null %} aria-invalid="true"{% endif %}
 {%- endmacro %}
 
+{# "from your message" beside a field an Ask draft filled in (spec.md §7.26 *Edit*). #}
+{% macro from_message(name, values) -%}
+    {% if name in ((values._from_message ?? '')|split(',')) %} <span class="field__from-message">{{ 'ask.draft.from_message'|trans }}</span>{% endif %}
+{%- endmacro %}
+
 {# Label + input + hint + error.
    opts: type, required, optional (shows "optional"), hint, autocomplete, inputmode,
          step, min, max, maxlength, suffix (unit shown after the input), placeholder, readonly #}
@@ -105,7 +110,7 @@
     {% import _self as ui %}
     {% set hint = opts.hint ?? null %}
     <div class="field">
-        <label class="field__label" for="f-{{ name }}">{{ label }}{% if opts.optional ?? false %} <span class="field__optional">{{ 'form.optional'|trans }}</span>{% endif %}</label>
+        <label class="field__label" for="f-{{ name }}">{{ label }}{% if opts.optional ?? false %} <span class="field__optional">{{ 'form.optional'|trans }}</span>{% endif %}{{ ui.from_message(name, values) }}</label>
         {% if opts.suffix ?? null %}<div class="input-group">{% endif %}
         <input class="input" id="f-{{ name }}" name="{{ name }}" type="{{ opts.type ?? 'text' }}"
             {%- if opts.type ?? 'text' != 'password' %} value="{{ values[name] ?? '' }}"{% endif %}
@@ -131,7 +136,7 @@
     {% set hint = opts.hint ?? null %}
     {% set current = values[name] ?? '' %}
     <div class="field">
-        <label class="field__label" for="f-{{ name }}">{{ label }}</label>
+        <label class="field__label" for="f-{{ name }}">{{ label }}{{ ui.from_message(name, values) }}</label>
         <select class="select" id="f-{{ name }}" name="{{ name }}"{% if opts.required ?? false %} required{% endif %}{{ ui.described_by(name, errors, hint) }}>
             {% for option in options %}
                 <option value="{{ option.value }}"{% if option.value == current %} selected{% endif %}>{{ option.label }}</option>

@@ -94,6 +94,8 @@ final class RouteInventoryTest extends AppTestCase
         'ask.thread.delete',
         'ask.threads.delete',
         'ask.feedback',
+        // Phase 26.3: a draft card's buttons, one's own drafts only; the kind's ability is checked at the press.
+        'ask.draft',
     ];
 
     /** Signed in; every vehicle they show comes from the policy's visible ids (VehicleService::listFleet / listWith). */

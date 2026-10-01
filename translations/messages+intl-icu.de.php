@@ -3371,6 +3371,7 @@ return [
             ],
             'derived_mark' => 'von Logbook ausgerechnet',
             'from_message' => 'aus deiner Nachricht',
+            'edit_notice' => 'Aus deiner Nachricht in »Logbook fragen« ausgefüllt. Prüf die Angaben, füg bei Bedarf Dateien hinzu und speichere.',
             'warning' => [
                 'odometer_backwards' => 'Der Kilometerstand ist niedriger als der vorige.',
                 'odometer_jump' => 'Der Kilometerstand ist seit dem vorigen um mehr als 2.000 km pro Tag gestiegen.',

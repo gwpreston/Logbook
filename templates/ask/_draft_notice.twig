@@ -1,0 +1,10 @@
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Inside a create form opened from an Ask draft's *Edit* (spec.md §7.26):
+ # carries the draft id back, so saving closes the card, and says where the
+ # values came from. `values` is the form's values.
+ #}
+{% if values.draft ?? null %}
+    <input type="hidden" name="draft" value="{{ values.draft }}">
+    <div class="alert alert--info" role="note">{{ ui.icon('smart_toy') }}<span>{{ 'ask.draft.edit_notice'|trans }}</span></div>
+{% endif %}

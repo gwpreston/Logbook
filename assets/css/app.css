@@ -4411,3 +4411,106 @@ a.list__title:hover {
         margin-top: 3mm;
     }
 }
+
+/* Ask: draft cards (Phase 26.3, spec.md §7.26 *Draft card*). */
+.draft-card {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.draft-card--added {
+    border-left-color: var(--green);
+}
+
+.draft-card--discarded,
+.draft-card--expired,
+.draft-card--undone {
+    border-left-color: var(--border);
+    opacity: 0.85;
+}
+
+.draft-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.draft-card__photo {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.draft-card__label,
+.draft-card__title {
+    margin: 0;
+}
+
+.draft-card__title {
+    font-size: var(--fs-md);
+    overflow-wrap: anywhere;
+}
+
+.draft-card__summary {
+    margin: 0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.draft-card__fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.draft-card__fields div {
+    min-width: 0;
+}
+
+.draft-card__fields dt {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+}
+
+.draft-card__fields dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+}
+
+.draft-card__derived,
+.field__from-message {
+    display: inline-block;
+    padding: 0 var(--space-1);
+    border-radius: 3px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+}
+
+.draft-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.draft-card__actions form {
+    margin: 0;
+}
+
+.draft-card__status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+}

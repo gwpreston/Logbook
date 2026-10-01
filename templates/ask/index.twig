@@ -53,6 +53,10 @@
                                     {% endif %}
                                 {% endif %}
 
+                                {% for item in turn.drafts ?? [] %}
+                                    {% include 'ask/_draft_card.twig' %}
+                                {% endfor %}
+
                                 {% if turn.sources is not empty %}
                                     <details class="ask-sources" open>
                                         <summary>{{ 'ask.sources'|trans({count: turn.sources|length}) }}</summary>

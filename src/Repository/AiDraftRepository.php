@@ -87,6 +87,25 @@ final readonly class AiDraftRepository
     }
 
     /**
+     * A thread's drafts, oldest first.
+     *
+     * @return list<AiDraft>
+     */
+    public function forThread(int $userId, int $threadId): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('*')
+            ->from(self::TABLE)
+            ->where('user_id = :user', 'thread_id = :thread')
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('thread', $threadId, ParameterType::INTEGER)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
      * Mark a waiting draft as being applied. False when it was applied,
      * discarded or expired meanwhile: then nothing may be written.
      */
@@ -112,6 +131,16 @@ final readonly class AiDraftRepository
             'applied_entry_id' => $entryId,
             'applied_updated_at' => $updatedAt === null ? null : $this->time($updatedAt),
         ], ['id' => $id], ['applied_entry_id' => ParameterType::INTEGER]);
+    }
+
+    /**
+     * Replace what the card shows (an *Add* that found the entry already logged).
+     *
+     * @param array<string, mixed> $card
+     */
+    public function updateCard(int $id, array $card): void
+    {
+        $this->connection->update(self::TABLE, ['card' => self::json($card)], ['id' => $id]);
     }
 
     /**

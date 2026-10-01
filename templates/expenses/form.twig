@@ -29,6 +29,7 @@
         <form class="form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('expenses.edit', {id: vehicle.id, entry: entry.id}) : url_for('expenses.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {% include 'ask/_draft_notice.twig' %}
             {{ ui.return_field(return_to) }}
 
             {# The finance hint shows while Finance and lease is picked (always, without JS). #}

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Fuel;
 
+use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
@@ -22,6 +24,7 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class CreateFuelEntryAction
 {
     public function __construct(
+        private DraftPrefill $prefill,
         private VehicleService $vehicles,
         private FuelService $fuel,
         private FuelFormPage $page,
@@ -44,6 +47,7 @@ final readonly class CreateFuelEntryAction
         if ($request->getMethod() !== 'POST') {
             $entries = $this->fuel->entries($vehicle);
             $defaults = FuelEntryForm::defaults($vehicle, $this->clock->now(), $user->preferences, $entries);
+            $defaults = $this->prefill->values($request, DraftKind::Fuel, $vehicle->id, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
@@ -58,6 +62,7 @@ final readonly class CreateFuelEntryAction
         }
 
         $entry = $this->fuel->create($vehicle, $data, $files);
+        $this->prefill->saved($request);
         $this->flash->queue(RequestContext::session($request), $vehicle, $entry, 'fuel.created');
 
         return $this->redirect->backOr($request, 'fuel.index', ['id' => (string) $vehicle->id]);

@@ -17,6 +17,7 @@ use Logbook\Repository\AiThreadRepository;
 use Logbook\Service\Ai\AiFailure;
 use Logbook\Service\Ai\AiGateway;
 use Logbook\Service\Ai\AiSession;
+use Logbook\Service\Ai\Draft\DraftStore;
 use Logbook\Service\Ai\Provider\ChatMessage;
 use Logbook\Service\Ai\Provider\ChatRequest;
 use Logbook\Service\Ai\Provider\ChatResult;
@@ -55,6 +56,7 @@ final readonly class Conversation
         private UserDisplayScope $display,
         private TranslatorInterface $translator,
         private ClockInterface $clock,
+        private DraftStore $drafts,
     ) {
     }
 
@@ -99,7 +101,7 @@ final readonly class Conversation
         $asked = $this->threads->addMessage($thread, AskRole::User, $question, $this->clock->now());
 
         $fleet = $this->kit->fleet($user);
-        $context = $this->context($user, $fleet);
+        $context = $this->context($user, $fleet, $this->drafts->notes($user, $thread->id));
         $carried = $this->carriedRuns($earlier, $fleet);
         $system = $this->system($context, $carried);
         $messages = [...$this->history($earlier, $fleet), ChatMessage::user($question)];
@@ -196,8 +198,9 @@ final readonly class Conversation
      * units and currency, and the vehicles they can see.
      *
      * @param list<Vehicle> $fleet
+     * @param list<array<string, mixed>> $drafts what this thread's drafts became (Phase 26.3)
      */
-    private function context(User $user, array $fleet): string
+    private function context(User $user, array $fleet, array $drafts = []): string
     {
         $preferences = $user->preferences;
 
@@ -210,6 +213,7 @@ final readonly class Conversation
             'consumption_unit' => $preferences->consumptionUnit->value,
             'currency' => $preferences->currency,
             'vehicles' => array_map($this->kit->vehicleRow(...), $fleet),
+            ...($drafts === [] ? [] : ['drafts_in_this_conversation' => $drafts]),
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
     }
 
