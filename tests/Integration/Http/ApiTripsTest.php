@@ -365,6 +365,37 @@ final class ApiTripsTest extends AppTestCase
         self::assertSame(404, $this->api->get('/trips/claim?vehicles[]=999999')->getStatusCode());
     }
 
+    public function testSavedJourneysAreListedInTheUsersOrder(): void
+    {
+        $belfast = $this->journey($this->owner, new SavedJourneyData('Ballymena', 'Belfast', '45.25', true, 'Site visit'));
+        $larne = $this->journey($this->owner, new SavedJourneyData('Ballymena', 'Larne', '30', false, null, false));
+        $this->service($this->app, SavedJourneyService::class)->move($this->owner, $larne, -1);
+        $member = $this->createMember($this->app);
+        $this->journey($member, new SavedJourneyData('Antrim', 'Lisburn', '20'));
+
+        $list = ApiClient::json($this->api->get('/journeys'));
+
+        self::assertSame([$larne->id, $belfast->id], $list->column('id', 'items'), 'their own, in their order');
+        $first = $list->doc('items', 1);
+        self::assertSame(
+            ['Ballymena', 'Belfast', 'Ballymena → Belfast → Ballymena', '45.250', true, true, 'Site visit'],
+            [
+                $first->get('from'),
+                $first->get('to'),
+                $first->get('journey'),
+                $first->get('distance_km'),
+                $first->get('is_return'),
+                $first->get('is_business'),
+                $first->get('purpose'),
+            ],
+        );
+        self::assertNull($list->get('items', 0, 'purpose'));
+        self::assertFalse($list->get('items', 0, 'is_business'));
+
+        $logged = $this->api->post($this->trips, ['journey_id' => $list->int('items', 1, 'id'), 'travelled_on' => '2026-09-28']);
+        self::assertSame(201, $logged->getStatusCode(), 'an id from the list logs a trip');
+    }
+
     public function testWithTripsOffEveryTripPathIsNotFound(): void
     {
         $app = $this->createApp();
@@ -373,6 +404,7 @@ final class ApiTripsTest extends AppTestCase
         self::assertSame(404, $api->get($this->trips)->getStatusCode());
         self::assertSame(404, $api->post($this->trips, self::trip())->getStatusCode());
         self::assertSame(404, $api->get('/trips/claim')->getStatusCode());
+        self::assertSame(404, $api->get('/journeys')->getStatusCode());
         self::assertFalse(ApiClient::json($api->get('/me'))->get('modules', 'trips'));
     }
 }

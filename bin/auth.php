@@ -36,7 +36,8 @@ if ($command !== 'login-link' || $username === '' || count($args) > 3) {
     exit(2);
 }
 
-$container = Kernel::createContainer(Kernel::settings());
+// The whole app, so the link can be built from its route (and APP_BASE_PATH).
+$container = Kernel::createApp(Kernel::settings())->getContainer();
 $users = $container->get(UserRepository::class);
 $links = $container->get(LoginLinks::class);
 assert($users instanceof UserRepository);
