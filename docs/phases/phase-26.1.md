@@ -3,7 +3,7 @@
 *Use whichever model you trust: on this server, on your network, or in
 the cloud.*
 
-Status: 📋 planned · ships with Phase 26.2 as **v2.6.0** · file lives in
+Status: 🚧 in progress · ships with Phase 26.2 as **v2.6.0** · file lives in
 `docs/phases/`
 
 This phase adds no feature a user sees on its own. It builds what every AI
@@ -302,8 +302,23 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §9 and
 - **Per-user connections:** should members be able to add their own cloud
   key (their own account, their own cost), or are connections admin-only
   (drafted)?
+  *Decided 2026-10-01: admin-only. Members use the admins' connections.*
 - **Streaming:** stream answers to the browser (faster to first word, more
   moving parts behind proxies), or return them whole (drafted, with a
   progress indicator)?
+  *Decided 2026-10-01: returned whole, with a progress indicator.*
 - **Default for *Use AI features*:** on for every user once an admin
   enables AI (drafted), or off until each user opts in?
+  *Decided 2026-10-01: on for every user once AI is set up; each user can
+  switch it off in Settings → Account.*
+
+Found while starting it:
+
+- **A second request while one is running:** the spec said it "waits or
+  is refused".
+  *Decided 2026-10-01: refused at once with "Still working on your last
+  question" (a lock row per user; no PHP worker is held waiting).*
+- **Tailscale and other 100.64.0.0/10 addresses:** not RFC 1918, so they
+  would be *Internet* and need the acknowledgement.
+  *Decided 2026-10-01: Your network. Tailscale is a common way to reach a
+  home GPU box, and its traffic stays between one's own devices.*
