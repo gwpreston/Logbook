@@ -101,7 +101,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 26.5 draft source, the Phase 26.4 pending uploads, the Phase 26.3 drafts, the Phase 26.2 Ask tables,
+        // Newest first: the Phase 26.5 draft source, the Phase 26.4 pending uploads, the Phase 26.3 drafts,
+        // the Phase 26.2 Ask tables,
         // the Phase 26.1 AI tables, the Phase 24 hidden checks,
         // the Phase 23.1 identities,
         // the Phase 22 trip tables,

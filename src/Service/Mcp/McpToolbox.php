@@ -153,6 +153,17 @@ final readonly class McpToolbox
             unset($data['say']);
             $status = is_string($result->data['status'] ?? null) ? $result->data['status'] : '';
             $say = $result->data['say'] ?? null;
+            $kind = self::WRITES[$name] ?? null;
+            if ($status === 'duplicate' && $kind !== null && count($result->vehicleIds) === 1) {
+                // Logged already: nothing new, and where to see it.
+                $link = $this->entriesLink($kind, $result->vehicleIds[0]);
+
+                return self::success($data + [
+                    'vehicle' => ['id' => $result->vehicleIds[0]],
+                    'say' => $this->translator->trans('mcp.say.duplicate', ['link' => $link]),
+                    'link' => $link,
+                ]);
+            }
 
             return self::answer(
                 $data + ['say' => is_string($say) ? $say : $this->translator->trans('mcp.say.' . $status)],
@@ -232,8 +243,7 @@ final readonly class McpToolbox
             ], true);
         }
 
-        $route = $proposal->kind === DraftKind::Fuel ? 'fuel.index' : 'odometer.index';
-        $link = $this->urls->route($route, ['id' => (string) $vehicle->id]);
+        $link = $this->entriesLink($proposal->kind, $vehicle->id);
 
         return self::success([
             'status' => $written->duplicate ? 'duplicate' : 'logged',
@@ -274,6 +284,14 @@ final readonly class McpToolbox
             'say' => $this->translator->trans('mcp.say.draft_saved', ['link' => $link]),
             'link' => $link,
         ]);
+    }
+
+    /**
+     * The vehicle's fill-ups or mileage log, where a direct write shows.
+     */
+    private function entriesLink(DraftKind $kind, int $vehicleId): string
+    {
+        return $this->urls->route($kind === DraftKind::Fuel ? 'fuel.index' : 'odometer.index', ['id' => (string) $vehicleId]);
     }
 
     /**

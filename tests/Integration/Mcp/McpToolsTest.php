@@ -227,6 +227,9 @@ final class McpToolsTest extends AppTestCase
 
         $again = McpClient::structured($mcp->legacy('tools/call', ['name' => 'log_fill_up', 'arguments' => $arguments]));
         self::assertSame('duplicate', $again->get('status'), 'a retry, even from the other era, logs nothing new');
+        self::assertSame($logged->get('link'), $again->get('link'), 'and says where it is');
+        self::assertFalse(McpClient::result($mcp->modern('tools/call', ['name' => 'log_fill_up', 'arguments' => $arguments]))
+            ->get('isError'));
 
         self::assertEquals(2, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM fuel_entries'));
         self::assertEquals(0, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM ai_drafts'), 'never a draft');

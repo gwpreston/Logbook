@@ -48,6 +48,11 @@ final readonly class EndpointAction
     {
         $origin = strtolower(rtrim($request->getHeaderLine('Origin'), '/'));
         if ($origin !== '' && !in_array($origin, $this->settings->apiCorsOrigins, true)) {
+            // Named, so an owner whose client sends one knows what to add to API_CORS_ORIGINS.
+            $this->logger->warning('MCP request refused from origin {origin}, which is not in API_CORS_ORIGINS', [
+                'origin' => mb_substr($origin, 0, 200),
+            ]);
+
             return $this->error(new McpError(
                 McpError::FORBIDDEN_ORIGIN,
                 'This origin may not use the MCP server. See API_CORS_ORIGINS.',

@@ -4410,9 +4410,13 @@ with its own model. No connection in Settings → AI is needed or used.
   request's user, with the access policy and display preferences applied
   exactly as for the API, so a key never sees more than its user. `Origin`,
   when sent, must be one of `API_CORS_ORIGINS`, or the request is a 403
-  (DNS-rebinding protection); the API's CORS (preflight and
-  `Access-Control-Allow-Origin`) covers `/mcp` too, with the MCP headers
-  allowed.
+  (DNS-rebinding protection; the refused origin is logged); the API's CORS
+  (preflight and `Access-Control-Allow-Origin`) covers `/mcp` too, with the
+  MCP headers allowed. These refusals come before the message is read, so
+  their JSON-RPC errors have no id and use Logbook's own codes, outside the
+  reserved range: -31401 (401), -31403 (403), -31429 (429).
+  **Settings → API keys** shows the MCP address beside the API's, while
+  `/mcp` is routed.
 - **What switches it off for a user** (decided 2026-10-01, #91): only
   `MCP_ENABLED`, `API_ENABLED` and the key. Each tool needs its own
   module (`fuel`, `maintenance`, …) as on the pages and the API; the AI
@@ -4428,8 +4432,10 @@ with its own model. No connection in Settings → AI is needed or used.
     (decided 2026-10-01, #88): the Ask draft tools' arguments and
     resolution (vehicle, words, dates, numbers), then the API's write path
     (§7.20) for real: validation, the derived amount, duplicate-safe
-    retries (an entry logged already is returned with `duplicate: true`),
-    and warnings. The result says "Logged", with the entry's link.
+    retries (an entry logged already is not written again: the result's
+    `status` is `duplicate`), and warnings. The result says "Logged" (or
+    that it was logged already), with the link to the vehicle's fill-ups or
+    mileage log.
   - `read_write` keys also get `draft_service_record`, `draft_document`,
     `draft_expense`, `draft_tyre_check` and `draft_reminder`: validated as
     in §7.26 *Drafting entries*, then kept as a draft from MCP (§6
@@ -4437,9 +4443,11 @@ with its own model. No connection in Settings → AI is needed or used.
     saved. Open {link} to add it.", the link going to the dashboard card.
   - Tool descriptions are written for an MCP client's model, translated
     to the key user's language (`mcp.tool.*`). Unknown tools, and tools
-    the key can't use, are a JSON-RPC -32602; a tool's own refusal (a
-    vehicle the user can't see, an invalid entry, a question back) is a
-    result with `isError: true` and the message.
+    the key can't use, are a JSON-RPC -32602. A tool's own refusal (a
+    vehicle the user can't see, an invalid entry) is a result with
+    `isError: true` and the message; a question back (which vehicle,
+    missing details, a date or number to confirm) is an ordinary result
+    with its `status` and what to ask.
 - **Drafts to review:** waiting MCP drafts are listed on the dashboard
   (*Drafts to review*, above the widgets, while there are any) and on
   `/ask` when Ask is available, each as the §7.26 draft card with *Add*,

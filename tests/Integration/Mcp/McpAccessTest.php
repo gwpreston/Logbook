@@ -53,6 +53,8 @@ final class McpAccessTest extends AppTestCase
     public function testFailedKeysAreThrottledWithTheApisCounter(): void
     {
         $app = $this->createApp();
+        // A fixed clock, so Retry-After is exactly the block's length.
+        $this->pinClock($app, '2026-10-01T09:00:00Z');
         $this->resetDatabase($app);
         $owner = $this->createOwner($app);
         $bad = new McpClient($app, 'lbk_' . str_repeat('A', 43));
@@ -171,6 +173,11 @@ final class McpAccessTest extends AppTestCase
             self::assertNull($row['content'], 'never any content, whatever AI_LOG_CONTENT says');
             self::assertNull($row['connection_id']);
         }
+
+        // Settings → AI's usage tables take the rows without a connection.
+        $settings = $this->browserFor($app, 'owner')->get('/settings/ai');
+        self::assertSame(200, $settings->getStatusCode());
+        self::assertStringContainsString('MCP clients', (string) $settings->getBody());
     }
 
     public function testTheKeysPageShowsTheMcpAddress(): void
