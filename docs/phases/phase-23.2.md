@@ -2,7 +2,7 @@
 
 *When Authelia or Authentik already guards the door, don't ask twice.*
 
-Status: 🚧 in progress · releases **v2.3.0** with Phase 23.1 · file lives in
+Status: 🚧 in progress (built and tested; real Authelia and Authentik not yet checked by hand) · releases **v2.3.0** with Phase 23.1 · file lives in
 `docs/phases/`
 
 Many self-hosters put every app behind a forward-auth proxy: Authelia with
@@ -152,70 +152,119 @@ this section is the draft it came from.
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.9 and §9 in `spec.md`; the Phase 23.2 line in §13.
-- [ ] `docs/sso.md` gains *Header sign-in*: a warning box (the app must be
+- [x] §7.9 and §9 in `spec.md`; the Phase 23.2 line in §13.
+- [x] `docs/sso.md` gains *Header sign-in*: a warning box (the app must be
       unreachable except through the proxy, and the proxy must overwrite
       the header on every request), then worked configs for Authelia with
       nginx `auth_request`, Traefik `forwardAuth` and Caddy `forward_auth`,
       and an Authentik proxy outpost, each exempting `/api/`, `/calendar/`
       and `/health` from forward auth.
-- [ ] `docker/nginx` example updated; `.env.example` and
+- [x] `docker/nginx` example updated; `.env.example` and
       `docs/configuration.md` gain every new variable.
 
 ### Code
-- [ ] `Support\Net\IpRange` (IPv4 and IPv6 CIDR matching, parsed at boot).
-- [ ] Boot-time configuration check (header set without a trusted list →
+- [x] `Support\Net\IpRange` (IPv4 and IPv6 CIDR matching, parsed at boot).
+- [x] Boot-time configuration check (header set without a trusted list →
       refuse to start with a clear message, in the web entry point and the
       CLI).
-- [ ] `Middleware\ProxyAuthMiddleware` and `Service\Auth\ProxySignIn`
+- [x] `Middleware\ProxyAuthMiddleware` and `Service\Auth\ProxySignIn`
       (resolution, groups, session following). Reuse Phase 23.1's identity
       repository, JIT welcome form and group sync (`OidcUsers` generalised
       over a provider policy rather than copied).
-- [ ] `ProxyJwtValidator` (HS256 only, `iss`, `aud`, `exp`, `iat`),
+- [x] `ProxyJwtValidator` (HS256 only, `iss`, `aud`, `exp`, `iat`),
       separate from the OIDC `TokenValidator`, which keeps refusing HS*.
-- [ ] *Link your proxy account* banner and `POST /auth/proxy/link`.
-- [ ] Sign-out redirect; sign-in page notice; Settings → Users method.
-- [ ] Translations (en, de).
+- [x] *Link your proxy account* banner and `POST /auth/proxy/link`.
+- [x] Sign-out redirect; sign-in page notice; Settings → Users method.
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] **Trust:** a header from a trusted IPv4 address, an IPv6 address and
+- [x] **Trust:** a header from a trusted IPv4 address, an IPv6 address and
       a CIDR range signs in; from an untrusted address it is ignored and
       logged once per hour; `X-Forwarded-For` naming a trusted address from
       an untrusted peer is ignored.
-- [ ] Boot refuses a header without a trusted list, both headers, a JWT
+- [x] Boot refuses a header without a trusted list, both headers, a JWT
       header without its secret, issuer or audience, an invalid trusted
       entry, an unknown link mode.
-- [ ] **JWT:** a valid token signs in from any address; a wrong secret,
+- [x] **JWT:** a valid token signs in from any address; a wrong secret,
       another algorithm (`none`, RS256), a wrong issuer or audience and an
       expired token are each refused; with a trusted list the address is
       still checked.
-- [ ] **Linking banner:** shown for an unlinked header in a password
+- [x] **Linking banner:** shown for an unlinked header in a password
       session, links on POST, not shown when the user already has a proxy
       identity or is outside the allowed groups.
-- [ ] `Remote_User` (underscore) from a client is never read as
+- [x] `Remote_User` (underscore) from a client is never read as
       `Remote-User` behind the nginx example.
-- [ ] **Resolution:** identity, username linking, `identity` mode refusing
+- [x] **Resolution:** identity, username linking, `identity` mode refusing
       unlinked users, JIT, allowed groups, admin sync and the last-admin
       guard, a disabled user refused.
-- [ ] **Session following:** another user's header replaces the session; a
+- [x] **Session following:** another user's header replaces the session; a
       missing header ends a header-based session; a password session
       survives requests without a header; fixation (the id changes on
       every switch).
-- [ ] Never active on the API, calendar feed, `/health` or assets.
-- [ ] Sign-out with and without `AUTH_PROXY_LOGOUT_URL`.
-- [ ] Works under `APP_BASE_PATH`.
-- [ ] Integration suite green on every engine.
-- [ ] **Smoke test:** `bin/smoke-test.sh` gains a header-auth run behind the
+- [x] Never active on the API, calendar feed, `/health` or assets.
+- [x] Sign-out with and without `AUTH_PROXY_LOGOUT_URL`.
+- [x] Works under `APP_BASE_PATH`.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL,
+      MariaDB: 1691 tests each, 2026-10-01).
+- [x] **Smoke test:** `bin/smoke-test.sh` gains a header-auth run behind the
       nginx example, with the header sent by nginx only.
+      *`bin/smoke-test.sh header` (and in CI): `docker/nginx/forward-auth-example.conf`
+      unchanged, a stub for Authelia, nginx at a fixed address; the header
+      straight to the app ignored, a client's `Remote-User` and
+      `Remote_User` replaced, the API exempt, a user switch at the proxy,
+      sign-out to `AUTH_PROXY_LOGOUT_URL`. Passed 2026-10-01.*
 
 ### Release (with Phase 23.1)
-- [ ] `CHANGELOG.md` **2.3.0**: OIDC sign-in and header sign-in. Upgrade
+- [x] `CHANGELOG.md` **2.3.0**: OIDC sign-in and header sign-in. Upgrade
       notes: one migration (identities, nullable passwords); everything is
       off until configured; the security notes for header sign-in.
-- [ ] Bump `VERSION`, rebuild assets, update the README (status, the
-      documentation table gains `docs/sso.md`).
+- [x] Bump `VERSION`, rebuild assets, update the README (status, the
+      documentation table gains `docs/sso.md`). *(Assets rebuilt: nothing
+      changed, as this phase adds no CSS or JS.)*
+- [ ] Phase 23.1's manual check against real Authentik and Authelia, and
+      the same for header sign-in (an Authelia forward-auth stack and an
+      Authentik outpost, including its `X-authentik-jwt`), before tagging
+      `v2.3.0`.
+- [ ] Tag `v2.3.0` once merged.
 
 ---
+
+## Changed while building it
+
+- **A shared resolution engine.** Phase 23.1's `OidcUsers` became
+  `Service\Auth\External\ExternalUsers` with an `ExternalPolicy` per way of
+  signing in (provider, username linking, creation, groups, the variables
+  the log names). OIDC and the proxy use the same steps, and `OidcUsers`
+  only reads claims. The outcome types (`OidcOutcome`, `OidcResult`) are
+  shared as they are.
+- **Every session change answers with a redirect** (the same page for a
+  GET, home otherwise). The locale and display middlewares run before the
+  route groups, so the page would otherwise be drawn for the previous user.
+  A post that brings a switch is never applied. (Spec §7.9 updated.)
+- **The sign-out page is the logout response itself** (200), not a redirect
+  to sign-in, which the header would sign straight back into.
+- **Groups separated by `,` or `|`:** Authelia sends `Remote-Groups` with
+  commas, while Authentik's outpost joins `X-authentik-groups` with `|`
+  (checked in its source, `src/outpost/proxy/headers.rs`).
+- **Refusals logged at most once an hour** per address (untrusted or
+  refused headers) and per proxy account (not linked), in
+  `var/cache/log-throttle` (`Support\Log\LogThrottle`), because the
+  middleware asks on every request. Old files are swept now and then.
+- **A header sent twice is refused**, as is a value with a comma, control
+  characters, non-UTF-8 or over 255 bytes: a proxy that appends instead of
+  overwriting must not let the client's value through.
+- **Header names are checked at start** (letters, digits and dashes), so
+  `Remote_User` can't be configured, and JWT variables without the JWT
+  header, or a secret shorter than 32 characters (firebase/php-jwt's HS256
+  minimum), stop the app too.
+- **Nothing happens before first-run setup**, so creation can't make a
+  first user who isn't an admin.
+- **The email header** becomes a created user's reminder email address
+  (`ReminderSettingsStore::startNewUser`). OIDC still keeps no email (#51).
+- **nginx's `$remote_user` is built in**, so the example names its
+  variables `$authelia_*`. The smoke test caught this.
+- **Settings → Account's card** lists proxy accounts too, and appears
+  whenever the user has a linked account, even with OIDC unconfigured.
 
 ## Acceptance criteria
 
