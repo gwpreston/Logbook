@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Ai;
 
 use Logbook\Repository\AiBusyRepository;
+use Logbook\Repository\AiDraftRepository;
 use Logbook\Repository\AiProgressRepository;
 use Logbook\Repository\AiRequestRepository;
 use Logbook\Repository\AiThreadRepository;
@@ -28,6 +29,7 @@ final readonly class AiHousekeeping
         private AiBusyRepository $busy,
         private AiThreadRepository $threads,
         private AiProgressRepository $progress,
+        private AiDraftRepository $drafts,
         private AiPreferences $preferences,
         private ClockInterface $clock,
     ) {
@@ -41,6 +43,8 @@ final readonly class AiHousekeeping
         $now = $this->clock->now();
         $this->busy->deleteExpired($now);
         $this->progress->deleteBefore($now->modify(sprintf('-%d minutes', self::PROGRESS_MINUTES)));
+        // Drafts (Phase 26.3): unapplied ones once expired, applied ones a day after Add.
+        $this->drafts->deleteExpired($now);
         foreach ($this->threads->userIds() as $userId) {
             $days = $this->preferences->retentionDays($userId);
             $this->threads->deleteBefore($userId, $now->modify(sprintf('-%d days', $days)));

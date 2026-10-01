@@ -128,7 +128,7 @@ final readonly class Conversation
                 break;
             }
             $messages[] = $result->toMessage();
-            foreach ($this->runTools($user, $result, $runs, $token) as [$call, $content]) {
+            foreach ($this->runTools($user, $result, $runs, $token, $thread->id) as [$call, $content]) {
                 $messages[] = ChatMessage::toolResult($call, $content);
             }
         }
@@ -168,7 +168,7 @@ final readonly class Conversation
      * @param-out list<ToolRun> $runs
      * @return list<array{\Logbook\Service\Ai\Provider\ToolCall, string}>
      */
-    private function runTools(User $user, ChatResult $result, array &$runs, ?string $token): array
+    private function runTools(User $user, ChatResult $result, array &$runs, ?string $token, int $threadId): array
     {
         $replies = [];
         foreach ($result->toolCalls as $call) {
@@ -183,7 +183,7 @@ final readonly class Conversation
                     $this->clock->now(),
                 );
             }
-            $run = $this->tools->run($user, $call);
+            $run = $this->tools->run($user, $call, $threadId);
             $runs[] = $run;
             $replies[] = [$call, $run->content()];
         }

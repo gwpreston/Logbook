@@ -786,8 +786,11 @@ MySQL only.
 - id, user_id (`ON DELETE CASCADE`), thread_id (optional, `ON DELETE
   SET NULL`), kind (`fuel` | `odometer` | `maintenance` | `document` |
   `expense` | `tyre_check` | `reminder`), vehicle_id (`ON DELETE
-  CASCADE`), input (JSON: the validated API-shaped body), created_at,
-  expires_at (an hour later), applied_at, applied_entry_id and
+  CASCADE`), input (JSON: the validated API-shaped body), card (JSON:
+  the formatted lines, derived marks and warnings shown on the card),
+  form_values (JSON: the create form's values in the user's units and
+  language, for *Edit*), created_at, expires_at (an hour later),
+  discarded_at, applied_at, applied_entry_id and
   applied_updated_at (optional; *Undo*'s check that the entry is
   untouched), all UTC. Deleted by the scheduled task once expired and not
   applied, or a day after *Add*. **Not in backups** or exports.
@@ -4003,7 +4006,10 @@ entries by message*.
   candidates, it returns the candidates, and the model asks the user.
   Dates are ISO, or words that Logbook resolves in the user's time zone
   ("today", "yesterday", "last Tuesday", "3 days ago"). The model never
-  resolves them. Words for grades and categories match in order: the
+  resolves them. A fill-up or reading dated today is timed now; one on
+  another day is timed at local noon on it (the time is part of the
+  duplicate key). Numbers are read as the user's forms read them, so a
+  German user's "51,5" and "1.234,5" are 51.5 and 1234.5. Words for grades and categories match in order: the
   exact code, then the label or short label in the user's language or
   English, then a translated synonym list ("super unleaded" → E5 98). A
   word that matches more than one, or none, goes back as a question. A
@@ -4016,9 +4022,17 @@ entries by message*.
   With no such document or schedule on file, the tool says so and the
   model asks.
 - **Validation:** each draft goes through the API's input adapter (§7.20)
-  into the form's command, and is validated there. The result goes back to
+  into the form's command, and is validated there. Before that, the tool
+  checks the vehicle through the access policy with the kind's ability,
+  and its module. A vehicle the user can't log on is "not found". The
+  draft is then written through the API's writer inside a transaction that
+  is always rolled back. This gives the derived amounts, the warnings, and
+  the form values for *Edit*, exactly as a save would, and leaves nothing
+  behind. The result goes back to
   the model as one of three:
   - `ok`, with the formatted values;
+  - `duplicate`, when the same entry is already logged (the API's duplicate
+    keys, §7.20); the card says so and links to it, with no *Add*;
   - `needs`, when a required field is missing, such as "the odometer";
   - `invalid`, with the form's messages.
   The model then asks the user for what's missing. Nothing is saved at
@@ -4036,8 +4050,11 @@ entries by message*.
     reading lower than the last one;
   - three buttons:
     - **Add** (a POST with CSRF);
-    - **Edit**, which opens the normal form prefilled, in the desktop
-      modal, with the draft's values marked "from your message";
+    - **Edit**, which opens the normal create form with `?draft={id}`,
+      prefilled from the draft's stored form values, in the desktop
+      modal, with those fields marked "from your message". Saving that
+      form closes the draft as applied, so the card no longer offers
+      *Add*;
     - **Discard**.
 
   Drafts are stored server-side in `ai_drafts` (§6 AiDraft): user,
@@ -4045,13 +4062,18 @@ entries by message*.
   hour later, applied entry and applied_at. So the card's POST carries
   only the draft id. Expired drafts are deleted by the scheduled task.
   Drafts are left out of backups and exports.
-- **Re-validated at Add.** A draft that has become invalid since it was
-  drafted shows the form's message instead of saving. A new warning (a
+- **Re-validated at Add.** The draft is claimed once (a conditional
+  update on `applied_at` in the same transaction as the write), so a
+  double press or a second tab never saves twice. A draft that has become
+  invalid since it was drafted shows the form's message instead of saving.
+  One that has become a duplicate saves nothing and says it is already in
+  the log, with nothing to undo. A new warning (a
   reading added since makes this one go backwards) is shown, and the
   entry can still be added. An expired draft, a deleted or archived
   vehicle, or an applied draft is refused.
 - **Access:** *Add* needs the kind's ability (`Log`, or `Manage` for a
-  reminder) on the vehicle **at the moment of pressing**. Drafts belong to their user; another user's draft id
+  reminder) and the kind's module on the vehicle **at the moment of
+  pressing**. Drafts belong to their user; another user's draft id
   answers 404.
 - **After Add:** the entry is saved through the same service as the
   form:

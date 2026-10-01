@@ -71,7 +71,8 @@ final readonly class BackupRepository
      * Tables that are deliberately not backed up. Invitation links (Phase
      * 19) are for this install, now, like sessions. AI secrets, the usage
      * log and the per-user request lock (Phase 26.1) are never carried, nor
-     * Ask Logbook's threads, progress lines and feedback counts (Phase 26.2).
+     * Ask Logbook's threads, progress lines and feedback counts (Phase 26.2),
+     * nor its drafted entries (Phase 26.3).
      */
     public const array EXCLUDED = [
         'sessions',
@@ -84,6 +85,7 @@ final readonly class BackupRepository
         'ai_messages',
         'ai_progress',
         'ai_feedback',
+        'ai_drafts',
     ];
 
     public function __construct(private Connection $connection)

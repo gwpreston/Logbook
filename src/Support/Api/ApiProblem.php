@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Api;
 
+use Logbook\Support\Validation\ValidationErrors;
 use RuntimeException;
 
 /**
@@ -24,6 +25,8 @@ final class ApiProblem extends RuntimeException
         string $detail,
         public readonly array $errors = [],
         public readonly array $headers = [],
+        /** The form's errors with their parameters, for callers in the app itself (Ask's drafts, Phase 26.3). */
+        public readonly ?ValidationErrors $validation = null,
     ) {
         parent::__construct($detail);
     }

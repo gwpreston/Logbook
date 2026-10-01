@@ -94,21 +94,23 @@ final readonly class DisplayFormatter
      *
      * @param string|null $perUnit canonical decimal per litre (or kWh)
      */
-    public function unitPrice(?string $perUnit, string $currency, bool $electric): string
+    public function unitPrice(?string $perUnit, string $currency, bool $electric, bool $fullPrecision = false): string
     {
         if ($perUnit === null || !Decimal::isCanonical($perUnit)) {
             return '';
         }
 
         $digits = Currency::fractionDigits($currency);
+        // A draft card shows the price as stored, every place (spec.md §7.26: "£1.390/L").
+        $least = $fullPrecision ? $digits + 1 : $digits;
         if ($electric) {
-            $price = $this->formatMoney((float) $perUnit, $currency, $digits, $digits + 1);
+            $price = $this->formatMoney((float) $perUnit, $currency, $least, $digits + 1);
 
             return $this->translator->trans('units.price.kwh', ['price' => $price]);
         }
 
         $unit = $this->context->preferences()->volumeUnit;
-        $price = $this->formatMoney((float) $unit->pricePerUnit($perUnit, 6), $currency, $digits, $digits + 1);
+        $price = $this->formatMoney((float) $unit->pricePerUnit($perUnit, 6), $currency, $least, $digits + 1);
 
         return $this->translator->trans('units.price.' . $unit->value, ['price' => $price]);
     }
@@ -211,7 +213,7 @@ final readonly class DisplayFormatter
     /**
      * A volume stored in litres, in the user's volume unit: "45.2 L".
      */
-    public function volume(int|float|string|null $litres, int $maxDecimals = 2): string
+    public function volume(int|float|string|null $litres, int $maxDecimals = 2, int $minDecimals = 0): string
     {
         $value = self::toFloat($litres);
         if ($value === null) {
@@ -221,21 +223,21 @@ final readonly class DisplayFormatter
         $unit = $this->context->preferences()->volumeUnit;
 
         return $this->translator->trans('units.volume.' . $unit->value, [
-            'value' => $this->number($unit->fromLitres($value), $maxDecimals),
+            'value' => $this->number($unit->fromLitres($value), $maxDecimals, $minDecimals),
         ]);
     }
 
     /**
      * Battery capacity or electrical energy: "58 kWh".
      */
-    public function energy(int|float|string|null $kwh, int $maxDecimals = 1): string
+    public function energy(int|float|string|null $kwh, int $maxDecimals = 1, int $minDecimals = 0): string
     {
         $value = self::toFloat($kwh);
         if ($value === null) {
             return '';
         }
 
-        return $this->translator->trans('units.energy.kwh', ['value' => $this->number($value, $maxDecimals)]);
+        return $this->translator->trans('units.energy.kwh', ['value' => $this->number($value, $maxDecimals, $minDecimals)]);
     }
 
     /**
@@ -332,9 +334,11 @@ final readonly class DisplayFormatter
     /**
      * Litres (in the user's volume unit), or kWh for electricity.
      */
-    public function quantity(int|float|string|null $value, bool $electric, int $maxDecimals = 2): string
+    public function quantity(int|float|string|null $value, bool $electric, int $maxDecimals = 2, int $minDecimals = 0): string
     {
-        return $electric ? $this->energy($value, $maxDecimals) : $this->volume($value, $maxDecimals);
+        return $electric
+            ? $this->energy($value, $maxDecimals, $minDecimals)
+            : $this->volume($value, $maxDecimals, $minDecimals);
     }
 
     /**

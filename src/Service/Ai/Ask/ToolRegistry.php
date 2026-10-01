@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Logbook\Domain\Ai\Ask\ToolResult;
 use Logbook\Domain\Ai\Ask\ToolRun;
 use Logbook\Domain\User\User;
+use Logbook\Service\Ai\Draft\DraftStore;
 use Logbook\Service\Ai\Provider\ToolCall;
 use Logbook\Service\Ai\Provider\ToolDefinition;
 use Logbook\Support\Display\UserDisplayScope;
@@ -17,6 +18,8 @@ use Throwable;
 /**
  * The fixed set of Ask tools (spec.md §7.26). Only tools whose module is
  * on are offered; a call to any other name is an error for the model.
+ * The draft tools (Phase 26.3) write only inside the rolled-back
+ * transaction; their drafts are kept here, as cards waiting for *Add*.
  * Each call runs as the asking user, in their units and language, inside a
  * transaction that is always rolled back: the tools only read, and even a
  * write hidden in a service they call never lands.
@@ -34,6 +37,7 @@ final readonly class ToolRegistry
         private Connection $connection,
         private UserDisplayScope $display,
         private LoggerInterface $logger,
+        private DraftStore $drafts,
     ) {
         $byName = [];
         foreach ($tools as $tool) {
@@ -66,7 +70,12 @@ final readonly class ToolRegistry
         return array_keys($this->tools);
     }
 
-    public function run(User $user, ToolCall $call): ToolRun
+    /**
+     * Run one call. A draft tool's validated entry is kept as a card after
+     * the rolled-back transaction (spec.md §7.26 *Drafting entries*), and
+     * its id goes back to the model; nothing else is written.
+     */
+    public function run(User $user, ToolCall $call, ?int $threadId = null): ToolRun
     {
         $tool = $this->tools[$call->name] ?? null;
         if ($tool === null || !$tool->isAvailable($user)) {
@@ -85,6 +94,17 @@ final readonly class ToolRegistry
             $this->logger->error('Ask tool failed', ['tool' => $call->name, 'exception' => $e]);
 
             return new ToolRun($call->id, $call->name, $call->arguments, null, 'The tool failed. Answer without it.');
+        }
+
+        if ($result->draft !== null) {
+            $id = $this->drafts->create($user, $threadId, $result->draft);
+            $result = new ToolResult(
+                ['draft_id' => $id, ...$result->data],
+                $result->source,
+                $result->figures,
+                $result->link,
+                $result->vehicleIds,
+            );
         }
 
         return new ToolRun($call->id, $call->name, $call->arguments, $result, null, $result->vehicleIds);

@@ -30,6 +30,13 @@ final readonly class ValidationProblem
             ];
         }
 
-        return new ApiProblem(422, 'validation_failed', 'Some fields are missing or invalid; see "errors".', $fields);
+        return new ApiProblem(
+            422,
+            'validation_failed',
+            'Some fields are missing or invalid; see "errors".',
+            $fields,
+            [],
+            $errors,
+        );
     }
 }
