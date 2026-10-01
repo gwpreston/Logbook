@@ -129,6 +129,12 @@ abstract class AppTestCase extends TestCase
         $tables = [
             'sessions',
             'invitations',
+            'ai_busy',
+            'ai_requests',
+            'ai_tasks',
+            'ai_models',
+            'ai_secrets',
+            'ai_connections',
             'user_identities',
             'attention_hidden',
             'reminder_deliveries',

@@ -9,9 +9,9 @@ namespace Logbook\Service\Backup;
  * `bin/export-user.php`), for moving someone to an install of their own:
  * their account (an admin there, since it will be the only one), keys and
  * own settings, the vehicles they own with every entry, schedule, reminder,
- * delivery and file. Shares, other users and install-wide settings are left
- * out, and every entry names them as its author: in the new install they
- * added everything.
+ * delivery and file. Shares, other users and install-wide settings (AI
+ * connections among them) are left out, and every entry names them as its
+ * author: in the new install they added everything.
  */
 final class UserExport
 {
@@ -93,6 +93,11 @@ final class UserExport
             'attention_hidden',
             static fn (array $row): bool => $row['user_id'] === $user && in_array($row['vehicle_id'], $vehicles, true),
         );
+
+        // Phase 26.1: AI connections are the install's, not the user's.
+        $out['ai_connections'] = [];
+        $out['ai_models'] = [];
+        $out['ai_tasks'] = [];
 
         $files = array_values(array_filter([
             ...array_column($out['vehicles'], 'photo_path'),

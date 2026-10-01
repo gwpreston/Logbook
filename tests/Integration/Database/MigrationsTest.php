@@ -49,6 +49,13 @@ final class MigrationsTest extends AppTestCase
         'saved_journeys',
         'mileage_rate_sets',
         'user_identities',
+        'attention_hidden',
+        'ai_connections',
+        'ai_secrets',
+        'ai_models',
+        'ai_tasks',
+        'ai_requests',
+        'ai_busy',
     ];
 
     /** Tables with a Phase 19 created_by column. */
