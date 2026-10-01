@@ -1,0 +1,53 @@
+{
+    "file": "02-service-invoice-photo.jpg",
+    "type": "photo",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "22/08/2026",
+                "evidence": "Date 22/08/2026"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Reg AB12 CDE"
+            },
+            "odometer": {
+                "value": "47,610",
+                "evidence": "Odometer 47,610"
+            },
+            "vendor": {
+                "value": "Kestrel Autos",
+                "evidence": "KESTREL AUTOS"
+            },
+            "total": {
+                "value": "GBP 129.00",
+                "evidence": "Total GBP 129.00"
+            },
+            "currency": {
+                "value": "GBP",
+                "evidence": "GBP"
+            }
+        },
+        "lines": {
+            "work": [
+                "Interim service",
+                "Oil and filter"
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "Golf",
+        "values": {
+            "performed_on": "2026-08-22",
+            "odometer": "47610",
+            "cost": "129",
+            "title": "Interim service",
+            "category": "service"
+        }
+    }
+}

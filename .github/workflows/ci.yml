@@ -22,7 +22,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
-          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
           coverage: none
           tools: composer:v2
       - uses: actions/cache@v4
@@ -90,7 +90,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
           coverage: none
           tools: composer:v2
       - uses: actions/cache@v4
@@ -98,6 +98,8 @@ jobs:
           path: ~/.composer/cache
           key: composer-${{ hashFiles('composer.lock') }}
       - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Ghostscript for the scanned-PDF tests (spec §7.27)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ghostscript
       - name: Migrations apply, fully roll back, and re-apply
         run: |
           vendor/bin/phinx migrate  -e testing

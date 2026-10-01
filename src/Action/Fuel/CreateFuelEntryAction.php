@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Logbook\Action\Fuel;
 
 use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Action\Scan\ScanPrefill;
+use Logbook\Domain\Ai\Scan\ScanTarget;
+use Logbook\Domain\Fuel\FuelEntry;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Service\Fuel\FuelEntryForm;
@@ -25,6 +29,7 @@ final readonly class CreateFuelEntryAction
 {
     public function __construct(
         private DraftPrefill $prefill,
+        private ScanPrefill $scan,
         private VehicleService $vehicles,
         private FuelService $fuel,
         private FuelFormPage $page,
@@ -48,12 +53,13 @@ final readonly class CreateFuelEntryAction
             $entries = $this->fuel->entries($vehicle);
             $defaults = FuelEntryForm::defaults($vehicle, $this->clock->now(), $user->preferences, $entries);
             $defaults = $this->prefill->values($request, DraftKind::Fuel, $vehicle->id, $defaults);
+            $defaults = $this->scan->values($request, ScanTarget::Fuel, $vehicle, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
 
         $data = FuelEntryForm::parse(RequestContext::form($request), $user->preferences, $currency);
-        $files = $this->upload->fromRequest($request);
+        $files = $this->scan->files($request, $this->upload->fromRequest($request));
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
@@ -61,10 +67,16 @@ final readonly class CreateFuelEntryAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
         }
 
-        $entry = $this->fuel->create($vehicle, $data, $files);
+        [$entry, $claimed] = $this->scan->save(
+            $request,
+            $files,
+            fn (PendingUploads $files): FuelEntry => $this->fuel->create($vehicle, $data, $files),
+        );
         $this->prefill->saved($request);
         $this->flash->queue(RequestContext::session($request), $vehicle, $entry, 'fuel.created');
 
-        return $this->redirect->backOr($request, 'fuel.index', ['id' => (string) $vehicle->id]);
+        $done = $this->redirect->backOr($request, 'fuel.index', ['id' => (string) $vehicle->id]);
+
+        return $this->scan->after($request, $claimed, $vehicle, $entry->data->odometerKm, $done);
     }
 }

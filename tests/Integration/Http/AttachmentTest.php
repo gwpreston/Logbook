@@ -27,6 +27,7 @@ use Logbook\Support\Storage\FileUpload;
 use Logbook\Support\Storage\UploadKind;
 use Logbook\Support\View\View;
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\ExifJpeg;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
@@ -447,6 +448,25 @@ final class AttachmentTest extends AppTestCase
         self::assertSame(10, AttachmentService::fileLimit(10));
         self::assertSame(4, AttachmentService::fileLimit(4), 'PHP would drop the fifth silently');
         self::assertSame(0, AttachmentService::fileLimit(0));
+    }
+
+    public function testAPhotoIsStoredUprightWithoutItsGpsAndThePdfAsUploaded(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+
+        $photo = $this->upload(ExifJpeg::make(40, 20, 6), 'receipt.jpg', 'image/jpeg');
+        $browser->post('/vehicles/' . $golf->id . '/expenses/new', ['note' => 'Car park'] + self::PARKING, [
+            'attachments' => [$photo, $this->upload(self::PDF, 'ticket.pdf')],
+        ]);
+
+        [$jpeg, $pdf] = $this->attachments($app, $golf);
+        $stored = (string) file_get_contents($this->uploadDir() . '/' . $jpeg->storedPath);
+        self::assertFalse(ExifJpeg::hasExif($stored), 'no EXIF, so no GPS, is stored');
+        self::assertSame([20, 40], array_slice((array) getimagesizefromstring($stored), 0, 2), 'turned upright');
+        self::assertSame(strlen($stored), $jpeg->size, 'the size is the stored file\'s');
+        self::assertSame(self::PDF, (string) file_get_contents($this->uploadDir() . '/' . $pdf->storedPath));
     }
 
     /**

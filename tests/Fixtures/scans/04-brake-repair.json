@@ -1,0 +1,61 @@
+{
+    "file": "04-brake-repair.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "30 September 2026",
+                "evidence": "Date: 30 September 2026"
+            },
+            "registration": {
+                "value": "XY34 ZZZ",
+                "evidence": "Registration XY34 ZZZ"
+            },
+            "odometer": {
+                "value": "63,480",
+                "evidence": "Odometer 63,480 mi"
+            },
+            "odometer_unit": {
+                "value": "mi",
+                "evidence": "63,480 mi"
+            },
+            "vendor": {
+                "value": "Redcliffe Tyre and Brake",
+                "evidence": "Redcliffe Tyre and Brake"
+            },
+            "total": {
+                "value": "£312.40",
+                "evidence": "Total £312.40"
+            }
+        },
+        "lines": {
+            "work": [
+                "Front brake pads and discs replaced",
+                "Brake fluid changed"
+            ],
+            "recommendations": [
+                {
+                    "text": "Rear tyres need replacing",
+                    "distance": null,
+                    "distance_unit": null,
+                    "date": "15/01/2027"
+                }
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "BMW",
+        "values": {
+            "performed_on": "2026-09-30",
+            "odometer": "63480",
+            "cost": "312.4",
+            "category": "brakes"
+        },
+        "recommendations": 1
+    }
+}

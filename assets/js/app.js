@@ -14,6 +14,28 @@
     });
 
     /*
+     * Scan (spec.md §7.27): reading a file takes a while, so the page says
+     * so while the ordinary form posts. Nothing else changes: without JS
+     * the form posts all the same.
+     */
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-scan-form')) {
+            return;
+        }
+        var button = form.querySelector('[data-scan-submit]');
+        var status = form.querySelector('[data-scan-status]');
+        if (status && button) {
+            status.textContent = button.getAttribute('data-scan-reading') || '';
+            status.hidden = false;
+        }
+        if (button) {
+            // After this tick, so the button's own name still submits.
+            window.setTimeout(function () { button.disabled = true; }, 0);
+        }
+    });
+
+    /*
      * Charts: <canvas data-chart="{...}"> holds a Support\View\LineChart —
      * time series whose values are already in the user's units. Colours come
      * from the CSS tokens, so charts follow the light/dark theme.

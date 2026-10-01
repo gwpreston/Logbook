@@ -13,6 +13,10 @@ use Psr\Http\Message\UploadedFileInterface;
  * or the browser-supplied type — against the kind's accepted types and the
  * size limit (MAX_UPLOAD_MB). Images must also decode to sane dimensions;
  * PDFs must start with a PDF header.
+ *
+ * An accepted image is also cleaned in place (spec.md §7.12): turned
+ * upright and re-encoded without its metadata (EXIF, GPS included), so
+ * whatever stores or reads it afterwards only ever sees the clean file.
  */
 final readonly class FileUpload
 {
@@ -21,6 +25,8 @@ final readonly class FileUpload
     private function __construct(
         public ?string $mime,
         public ?string $extension,
+        /** Bytes of the accepted file (after cleaning an image). */
+        public ?int $size,
         /** Translation key of the problem, or null when the file is acceptable. */
         public ?string $error,
     ) {
@@ -65,8 +71,21 @@ final readonly class FileUpload
         if (!is_string($mime) || !isset($types[$mime]) || !self::contentMatches($path, $mime)) {
             return self::invalid($kind->typeError());
         }
+        if ($mime !== 'application/pdf' && !ImageCleaner::clean($path, $mime)) {
+            return self::invalid($kind->typeError());
+        }
+        $stored = filesize($path);
 
-        return new self($mime, $types[$mime], null);
+        return new self($mime, $types[$mime], $stored === false ? $size : $stored, null);
+    }
+
+    /**
+     * A file this check accepted before (a pending scan, spec.md §7.27),
+     * now being attached: it is not decoded and re-encoded a second time.
+     */
+    public static function accepted(string $mime, string $extension, int $size): self
+    {
+        return new self($mime, $extension, $size, null);
     }
 
     public function isValid(): bool
@@ -95,6 +114,6 @@ final readonly class FileUpload
 
     private static function invalid(string $error): self
     {
-        return new self(null, null, $error);
+        return new self(null, null, null, $error);
     }
 }

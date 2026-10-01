@@ -1,0 +1,46 @@
+{
+    "file": "15-v5c-photo.jpg",
+    "type": "photo",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "registration",
+        "fields": {
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "A Registration mark AB12 CDE"
+            },
+            "first_registration": {
+                "value": "01/03/2018",
+                "evidence": "B Date of first registration 01 03 2018"
+            },
+            "make": {
+                "value": "Volkswagen",
+                "evidence": "D.1 Make VOLKSWAGEN"
+            },
+            "model": {
+                "value": "Golf",
+                "evidence": "D.3 Model GOLF"
+            },
+            "vin": {
+                "value": "WVWZZZ1KZAW123456",
+                "evidence": "E VIN WVWZZZ1KZAW123456"
+            },
+            "title": {
+                "value": "V5C 12345678901",
+                "evidence": "Document reference number 12345678901"
+            }
+        }
+    },
+    "expect": {
+        "form": "vehicle",
+        "vehicle": "Golf",
+        "values": {
+            "registration": "AB12 CDE",
+            "vin": "WVWZZZ1KZAW123456",
+            "first_registered_on": "2018-03-01"
+        },
+        "no_reference": "12345678901"
+    }
+}

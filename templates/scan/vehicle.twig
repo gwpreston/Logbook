@@ -1,0 +1,71 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # A registration document's details as updates to the vehicle (spec.md
+ # §7.27): each found value beside the current one, with its own tick.
+ # The file is kept only when ticked (it carries the document reference),
+ # on a registration document, which the sale pack never offers.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'scan.vehicle.title'|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'scan.vehicle.lead'|trans }}</p>
+            </div>
+        </header>
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span>
+                <ul>{% for field, error in errors %}<li>{{ trans(error.key, error.params) }}</li>{% endfor %}</ul>
+            </div>
+        {% endif %}
+        <form class="form" method="post" action="{{ url_for('scan.vehicle', {token: upload.token}, {vehicle: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <input type="hidden" name="scan" value="{{ upload.token }}">
+            <fieldset class="card fieldset">
+                <legend class="card__title fieldset__legend">{{ 'scan.vehicle.legend'|trans }}</legend>
+                {% if rows is empty %}<p class="muted">{{ 'scan.vehicle.nothing'|trans }}</p>{% endif %}
+                {% for row in rows %}
+                    {% if row.found %}
+                        <label class="toggle">
+                            <input type="checkbox" name="update[]" value="{{ row.field }}"{% if not row.same %} checked{% endif %}>
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ ('scan.vehicle.field.' ~ row.field)|trans }}: <strong>{{ row.found_date ? row.found_date|local_date : row.found }}</strong></span>
+                                <span class="toggle__hint">
+                                    {{ row.same ? 'scan.vehicle.same'|trans : (row.current ? 'scan.vehicle.was'|trans({value: row.current}) : 'scan.vehicle.none'|trans) }}
+                                    {% if row.evidence %} · “{{ row.evidence }}”{% endif %}
+                                </span>
+                                {% if row.check %}<span class="field__check">{{ ui.icon('warning') }}<span>{{ row.check }}</span></span>{% endif %}
+                            </span>
+                        </label>
+                    {% elseif row.problem %}
+                        <p class="field__check">{{ ui.icon('warning') }}<span>{{ ('scan.vehicle.field.' ~ row.field)|trans }}: {{ row.problem }}</span></p>
+                    {% endif %}
+                {% endfor %}
+            </fieldset>
+            <section class="card">
+                <p class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'scan.vehicle.reference_warning'|trans }}</span></p>
+                {% if can_keep %}
+                    <label class="checkbox">
+                        <input type="checkbox" name="scan_keep" value="1">
+                        <span>{{ 'scan.vehicle.keep'|trans }}</span>
+                    </label>
+                {% else %}
+                    <p class="field__hint">{{ 'scan.vehicle.keep_needs_date'|trans }}</p>
+                {% endif %}
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'scan.vehicle.submit'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

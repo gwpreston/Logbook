@@ -1,0 +1,16 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{# A scan still being read (spec.md §7.27): the page looks again every few seconds; nothing is lost if it is left. #}
+{% set active_nav = 'log' %}
+{% set heading = 'scan.title'|trans %}
+
+{% block head %}{{ parent() }}<meta http-equiv="refresh" content="3">{% endblock %}
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header"><h1 class="page-header__title">{{ heading }}</h1></header>
+        <p class="alert alert--info" role="status">{{ ui.icon('document_scanner') }}<span>{{ 'scan.still_reading'|trans({name: upload.filename}) }}</span></p>
+        <p><a class="btn" href="{{ url_for('scan.result', {token: upload.token}) }}">{{ 'scan.look_again'|trans }}</a></p>
+    </div>
+{% endblock %}

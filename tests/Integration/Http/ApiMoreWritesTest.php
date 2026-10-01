@@ -185,6 +185,28 @@ final class ApiMoreWritesTest extends AppTestCase
         self::assertSame($entry->int('id'), ApiClient::json($retry)->int('entry', 'id'));
     }
 
+    public function testAManualReminderCanBeDueAtAnOdometerInTheRequestsUnit(): void
+    {
+        $response = $this->api->post($this->path('reminders'), [
+            'title' => 'Front pads',
+            'due_odometer' => '50000',
+            'distance_unit' => 'mi',
+        ]);
+        self::assertSame(201, $response->getStatusCode(), self::body($response));
+        $entry = ApiClient::json($response)->doc('entry');
+        self::assertSame([null, '80467.200'], [$entry->get('due_on'), $entry->get('due_odometer')]);
+
+        $retry = $this->api->post(
+            $this->path('reminders'),
+            ['title' => 'Front pads', 'due_odometer' => '80467.2', 'distance_unit' => 'km'],
+        );
+        self::assertSame(200, $retry->getStatusCode(), 'the same odometer in km is the same reminder');
+
+        $neither = $this->api->post($this->path('reminders'), ['title' => 'Something']);
+        self::assertSame(422, $neither->getStatusCode());
+        self::assertStringContainsString('due_on', self::body($neither));
+    }
+
     public function testATreadCheckMeasuresTheFittedTyresInTheRequestsUnit(): void
     {
         $this->fitFronts();

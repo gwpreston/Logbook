@@ -47,7 +47,7 @@ final readonly class CreateReminderAction
             return $this->page->render($request, $response, $defaults);
         }
 
-        $data = ManualReminderForm::parse(RequestContext::form($request), RequestContext::locale($request), $vehicleIds);
+        $data = ManualReminderForm::parse(RequestContext::form($request), $user->preferences, $vehicleIds);
         if ($data instanceof ValidationErrors) {
             return $this->page->render($request, $response, RequestContext::formValues($request), null, $data, 422);
         }

@@ -423,7 +423,8 @@ final readonly class ReminderRepository
         return [
             'title' => $data->title,
             'notes' => $data->notes,
-            'due_on' => $data->dueOn->format('Y-m-d'),
+            'due_on' => $data->dueOn?->format('Y-m-d'),
+            'due_km' => $data->dueKm,
             'lead_time_days' => $data->leadTimeDays,
         ];
     }

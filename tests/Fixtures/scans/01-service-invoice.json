@@ -1,0 +1,98 @@
+{
+    "file": "01-service-invoice.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "12/09/2026",
+                "evidence": "Date: 12/09/2026"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Vehicle: AB12 CDE"
+            },
+            "make_model": {
+                "value": "Volkswagen Golf",
+                "evidence": "Volkswagen Golf"
+            },
+            "odometer": {
+                "value": "48,120",
+                "evidence": "Mileage: 48,120"
+            },
+            "odometer_unit": {
+                "value": "miles",
+                "evidence": "Mileage"
+            },
+            "vendor": {
+                "value": "Brightwater Motors Ltd",
+                "evidence": "Brightwater Motors Ltd"
+            },
+            "total": {
+                "value": "£184.50",
+                "evidence": "Total due £184.50"
+            },
+            "currency": {
+                "value": "£",
+                "evidence": "£184.50"
+            },
+            "labour_total": {
+                "value": "£80.00",
+                "evidence": "Labour £80.00"
+            },
+            "parts_total": {
+                "value": "£73.75",
+                "evidence": "Parts £73.75"
+            },
+            "vat_amount": {
+                "value": "£30.75",
+                "evidence": "VAT 20% £30.75"
+            },
+            "vat_rate": {
+                "value": "20%",
+                "evidence": "VAT 20%"
+            }
+        },
+        "lines": {
+            "work": [
+                "Full service",
+                "Oil and filter change",
+                "Air filter replaced"
+            ],
+            "parts": [
+                "Engine oil 5W-30 4.5 litres 38.25",
+                "Oil filter 12.50",
+                "Air filter 23.00"
+            ],
+            "recommendations": [
+                {
+                    "text": "Front brake pads",
+                    "distance": "5,000",
+                    "distance_unit": "miles",
+                    "date": null
+                }
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "Golf",
+        "values": {
+            "performed_on": "2026-09-12",
+            "odometer": "48120",
+            "vendor": "Brightwater Motors Ltd",
+            "title": "Full service",
+            "category": "service",
+            "cost": "184.5"
+        },
+        "description": [
+            "Oil and filter change",
+            "Labour £80.00 · Parts £73.75",
+            "VAT £30.75 (20%)"
+        ],
+        "recommendations": 1
+    }
+}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Reminder;
 
 use DateTimeImmutable;
+use Logbook\Domain\Maintenance\NextDue;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Service\Maintenance\DueState;
 use Logbook\Service\Maintenance\DueStatus;
@@ -30,6 +31,34 @@ final class ReminderRules
             $daysLeft <= $leadDays => ReminderStatus::Due,
             default => ReminderStatus::Upcoming,
         };
+    }
+
+    /**
+     * A manual reminder due on a date, at an odometer reading, or both,
+     * judged like a schedule, whichever comes first (spec.md §7.6): overdue
+     * once the date has passed or the latest reading is past the odometer;
+     * due within its lead time in days or the owner's lead distance;
+     * upcoming otherwise, and also while an odometer-only reminder has no
+     * reading to judge against.
+     *
+     * @param string|null $currentKm the vehicle's latest reading, km
+     * @param float|null $kmPerDay average daily distance (§7.4 projection)
+     */
+    public static function manual(
+        ?DateTimeImmutable $dueOn,
+        ?string $dueKm,
+        DateTimeImmutable $today,
+        int $leadDays,
+        ?string $currentKm = null,
+        ?float $kmPerDay = null,
+        string $leadKm = DueState::SOON_KM,
+    ): ManualDue {
+        if ($dueKm === null && $dueOn !== null) {
+            return new ManualDue(self::statusForDate($dueOn, $today, $leadDays), $dueOn, false);
+        }
+        $state = DueState::evaluate(new NextDue($dueOn, $dueKm), $today, $currentKm, $kmPerDay, $leadDays, $leadKm);
+
+        return new ManualDue(self::statusForSchedule($state) ?? ReminderStatus::Upcoming, $state->dueOn, $state->projected);
     }
 
     /**

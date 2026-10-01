@@ -1,0 +1,66 @@
+{
+    "file": "10-mot-pass.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "inspection",
+        "fields": {
+            "date": {
+                "value": "01/03/2026",
+                "evidence": "Date of test 01/03/2026"
+            },
+            "expiry": {
+                "value": "28/02/2027",
+                "evidence": "Expiry date 28/02/2027"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Registration number AB12 CDE"
+            },
+            "odometer": {
+                "value": "44,915",
+                "evidence": "Odometer reading 44,915 miles"
+            },
+            "odometer_unit": {
+                "value": "miles",
+                "evidence": "44,915 miles"
+            },
+            "result": {
+                "value": "pass",
+                "evidence": "Test result: PASS"
+            },
+            "reference": {
+                "value": "4417 2290 1186",
+                "evidence": "MOT test number 4417 2290 1186"
+            },
+            "vendor": {
+                "value": "Exe Valley Test Centre",
+                "evidence": "Exe Valley Test Centre"
+            }
+        },
+        "lines": {
+            "advisories": [
+                "Nearside front tyre worn close to legal limit",
+                "Front brake disc worn, pitted or scored"
+            ]
+        }
+    },
+    "expect": {
+        "form": "document",
+        "vehicle": "Golf",
+        "values": {
+            "type": "inspection",
+            "start_on": "2026-03-01",
+            "expiry_on": "2027-02-28",
+            "odometer": "44915",
+            "provider": "Exe Valley Test Centre"
+        },
+        "notes": [
+            "Advisories",
+            "Nearside front tyre worn close to legal limit"
+        ],
+        "recommendations": 2
+    }
+}

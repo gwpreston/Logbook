@@ -1,0 +1,45 @@
+{
+    "file": "05-ambiguous-date-photo.jpg",
+    "type": "photo",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "04/05/2026",
+                "evidence": "Date 04/05/2026"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "AB12 CDE"
+            },
+            "vendor": {
+                "value": "Ford and Sons",
+                "evidence": "FORD AND SONS"
+            },
+            "total": {
+                "value": "GBP 25.00",
+                "evidence": "Total GBP 25.00"
+            }
+        },
+        "lines": {
+            "work": [
+                "Puncture repair"
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "Golf",
+        "values": {
+            "performed_on": "2026-05-04",
+            "cost": "25",
+            "category": "tyres"
+        },
+        "check": {
+            "performed_on": "Check the date: 4 May 2026 or 5 Apr 2026?"
+        }
+    }
+}

@@ -72,7 +72,8 @@ final readonly class BackupRepository
      * 19) are for this install, now, like sessions. AI secrets, the usage
      * log and the per-user request lock (Phase 26.1) are never carried, nor
      * Ask Logbook's threads, progress lines and feedback counts (Phase 26.2),
-     * nor its drafted entries (Phase 26.3).
+     * nor its drafted entries (Phase 26.3), nor scanned files waiting for
+     * their entry (Phase 26.4; their files are left out by FileStorage::all()).
      */
     public const array EXCLUDED = [
         'sessions',
@@ -86,6 +87,7 @@ final readonly class BackupRepository
         'ai_progress',
         'ai_feedback',
         'ai_drafts',
+        'pending_uploads',
     ];
 
     public function __construct(private Connection $connection)
@@ -186,8 +188,9 @@ final readonly class BackupRepository
             foreach (array_reverse(self::TABLES) as $table) {
                 $connection->createQueryBuilder()->delete($table)->executeStatement();
             }
-            // Every session belonged to the replaced accounts.
+            // Every session, and every scan waiting for an entry, belonged to the replaced accounts.
             $connection->createQueryBuilder()->delete('sessions')->executeStatement();
+            $connection->createQueryBuilder()->delete('pending_uploads')->executeStatement();
 
             foreach (self::TABLES as $table) {
                 foreach ($data[$table] ?? [] as $row) {

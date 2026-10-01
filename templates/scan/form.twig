@@ -1,0 +1,64 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ai.twig' as ai %}
+{#
+ # Scan a receipt or document (spec.md §7.27): one photo or PDF, the
+ # vehicle (or let the document decide), and where the file is sent.
+ # A plain multipart form; with JS it says it is reading while it posts.
+ #}
+{% set active_nav = 'log' %}
+{% set heading = 'scan.title'|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'scan.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        {% if connection %}
+            <p class="ask-where">
+                {{ ai.location(connection.location) }}
+                <span>{{ ('scan.where.' ~ connection.location.value)|trans({connection: connection.name}) }}</span>
+            </p>
+            {% if connection.location.value == 'internet' %}
+                <p class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'scan.where.registration_warning'|trans({connection: connection.name}) }}</span></p>
+            {% endif %}
+        {% endif %}
+
+        {% if not has_vehicles %}
+            <p class="empty-state">{{ 'log.no_vehicles'|trans }}</p>
+        {% else %}
+        <form class="form" method="post" enctype="multipart/form-data" action="{{ url_for('scan') }}" data-scan-form>
+            {{ ui.csrf(csrf) }}
+            <input type="hidden" name="for" value="{{ values.for ?? '' }}">
+            <section class="card">
+                <div class="field">
+                    <label class="field__label" for="f-file">{{ 'scan.field.file'|trans }}</label>
+                    {% set native %}<input class="input input--file" id="f-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" required{{ ui.described_by('file', errors, true) }}>{% endset %}
+                    {{ ui.file_drop(native, {max_mb: max_upload_mb}) }}
+                    <p class="field__hint" id="f-file-hint">{{ (reads_pictures ? 'scan.hint.file' : 'scan.hint.file_text_only')|trans({max: max_upload_mb}) }}</p>
+                    {{ ui.field_error(errors, 'file') }}
+                </div>
+                {{ ui.select('vehicle_id', 'scan.field.vehicle'|trans, values, errors, vehicle_options, {hint: 'scan.hint.vehicle'|trans}) }}
+            </section>
+            <p class="field__hint">{{ 'scan.hint.check'|trans }}</p>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg" data-scan-submit data-scan-reading="{{ 'scan.reading'|trans }}">{{ ui.icon('document_scanner') }}{{ 'scan.submit'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('log.chooser') }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+            <p class="scan-reading" data-scan-status role="status" aria-live="polite" hidden></p>
+        </form>
+        {% endif %}
+        {% endblock %}
+    </div>
+{% endblock %}

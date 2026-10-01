@@ -19,6 +19,13 @@
             </div>
         </header>
         {% block modal_body %}
+            {% if scan_available() %}
+                {# Reading files (spec.md §7.27): a photo or PDF fills in the right form. #}
+                <a class="log-choice log-choice--scan" href="{{ url_for('scan') }}">
+                    <span class="log-choice__icon" style="--tone: var(--accent)">{{ ui.icon('document_scanner') }}</span>
+                    <span class="log-choice__label">{{ 'scan.chooser'|trans }}<span class="log-choice__hint">{{ 'scan.chooser_hint'|trans }}</span></span>
+                </a>
+            {% endif %}
             <ul class="log-choices">
                 {% for kind in kinds %}
                     <li>

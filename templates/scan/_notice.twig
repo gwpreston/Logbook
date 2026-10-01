@@ -1,0 +1,41 @@
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Inside a create form opened from a scan (spec.md §7.27 *The prefilled
+ # form*): carries the token back, so saving attaches the file and closes
+ # the scan; says what was read, what to check, and lets the user read it
+ # as another kind or leave the file off. `values` is the form's values,
+ # `vehicle` the form's vehicle.
+ #}
+{% if values.scan ?? null %}
+    <input type="hidden" name="scan" value="{{ values.scan }}">
+    {% if values._scan_kind ?? null %}<input type="hidden" name="scan_kind" value="{{ values._scan_kind }}">{% endif %}
+    <section class="scan-notice" aria-labelledby="scan-notice-title">
+        {% if (values._scan_image ?? '') == '1' %}
+            <a class="scan-notice__thumb" href="{{ url_for('scan.file', {token: values.scan}) }}" target="_blank" rel="noopener">
+                <img src="{{ url_for('scan.file', {token: values.scan}) }}" alt="{{ 'scan.notice.thumb_alt'|trans({name: values._scan_name ?? ''}) }}" loading="lazy">
+            </a>
+        {% endif %}
+        <div class="scan-notice__body">
+            <h2 class="scan-notice__title" id="scan-notice-title">{{ ui.icon('document_scanner') }}<span>{{ (values._scan_kind ?? null) ? ('scan.notice.read_as'|trans({kind: ('scan.kind.' ~ values._scan_kind)|trans})) : 'scan.notice.not_read'|trans }}</span></h2>
+            {% if values._scan_problem ?? null %}
+                <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ values._scan_problem }} {{ 'scan.notice.attached_anyway'|trans }}</span></p>
+            {% else %}
+                <p class="scan-notice__lead">{{ 'scan.notice.check'|trans }}</p>
+            {% endif %}
+            {% for warning in (values._scan_warnings ?? '')|split("\n")|filter(w => w != '') %}
+                <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ warning }}{% if loop.first and (values._scan_other_vehicle ?? null) %} <a href="{{ url_for('scan.result', {token: values.scan}, {vehicle: values._scan_other_vehicle} + ((values._scan_kind ?? null) ? {as: values._scan_kind} : {})) }}">{{ 'scan.notice.use_other_vehicle'|trans }}</a>{% endif %}</span></p>
+            {% endfor %}
+            <p class="scan-notice__file">
+                {{ ui.icon('attach_file') }}<span>{{ 'scan.notice.attached'|trans({name: values._scan_name ?? ''}) }}</span>
+                <label class="checkbox scan-notice__remove"><input type="checkbox" name="scan_remove" value="1"{% if (values.scan_remove ?? '') == '1' %} checked{% endif %}> <span>{{ 'scan.notice.remove'|trans }}</span></label>
+            </p>
+            {% if values._scan_kind ?? null %}
+                <p class="scan-notice__kinds">{{ 'scan.notice.other_kind'|trans }}
+                    {% for kind in ['service_invoice', 'fuel_receipt', 'inspection', 'insurance', 'registration', 'other']|filter(k => k != values._scan_kind) %}
+                        <a href="{{ url_for('scan.result', {token: values.scan}, {as: kind, vehicle: vehicle.id}) }}">{{ ('scan.kind.' ~ kind)|trans }}</a>{% if not loop.last %} · {% endif %}
+                    {% endfor %}
+                </p>
+            {% endif %}
+        </div>
+    </section>
+{% endif %}

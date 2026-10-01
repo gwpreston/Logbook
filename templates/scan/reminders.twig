@@ -1,0 +1,68 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Recommended work as reminders (spec.md §7.27 *Recommended work*): after a
+ # scanned entry is saved, each line offered as a manual reminder. Nothing
+ # is added without a press. Forms work without JS.
+ #}
+{% set active_nav = 'reminders' %}
+{% set heading = 'scan.reminders.title'|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'scan.reminders.lead'|trans }}</p>
+            </div>
+        </header>
+        {% block modal_body %}
+            <section class="card">
+                <ul class="list scan-offers">
+                    {% for item in items %}
+                        <li class="list__item scan-offer">
+                            <div class="list__body">
+                                <span class="list__title">{{ item.text }}</span>
+                                <span class="list__meta">
+                                    {% if item.due_km and item.distance_km %}
+                                        {{ item.projected_on
+                                            ? 'scan.reminders.at_distance_projected'|trans({distance: item.distance_km|distance, date: item.projected_at|local_date})
+                                            : 'scan.reminders.at_distance'|trans({distance: item.distance_km|distance, odometer: item.due_km|distance}) }}
+                                    {% elseif item.due_on %}
+                                        {{ (item.guessed ? 'scan.reminders.guessed' : 'scan.reminders.on')|trans({date: item.due_at|local_date, days: constant('Logbook\\Service\\Ai\\Scan\\Recommendations::DEFAULT_DAYS')}) }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% if item.added %}
+                                <span class="pill pill--valid">{{ ui.icon('check') }}{{ 'scan.reminders.added_one'|trans }}</span>
+                            {% else %}
+                                <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <input type="hidden" name="item" value="{{ loop.index0 }}">
+                                    <button type="submit" class="btn btn--sm">{{ ui.icon('add') }}{{ 'scan.reminders.add'|trans }}<span class="visually-hidden">: {{ item.text }}</span></button>
+                                </form>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            <div class="btn-row">
+                {% if has_open %}
+                    <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <input type="hidden" name="item" value="all">
+                        <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('event_upcoming') }}{{ 'scan.reminders.add_all'|trans }}</button>
+                    </form>
+                {% endif %}
+                <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <input type="hidden" name="item" value="dismiss">
+                    <button type="submit" class="btn btn--lg">{{ (has_open ? 'scan.reminders.skip' : 'scan.reminders.done')|trans }}</button>
+                </form>
+            </div>
+        {% endblock %}
+    </div>
+{% endblock %}

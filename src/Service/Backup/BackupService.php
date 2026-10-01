@@ -375,6 +375,13 @@ final readonly class BackupService
         foreach ($this->files->all() as $relative) {
             $this->files->delete($relative);
         }
+        // Scans waiting for an entry belonged to the replaced accounts (their rows go too).
+        $pending = $this->files->root() . '/' . FileStorage::PENDING_DIRECTORY;
+        if (is_dir($pending)) {
+            foreach (FileStorage::storedFilesIn($pending) as $relative) {
+                @unlink($pending . '/' . $relative);
+            }
+        }
 
         if (is_dir($staging)) {
             foreach (FileStorage::storedFilesIn($staging) as $relative) {

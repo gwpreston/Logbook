@@ -90,17 +90,44 @@
     {% if error %}<p class="field__error" id="f-{{ name }}-error">{{ trans(error.key, error.params) }}</p>{% endif %}
 {%- endmacro %}
 
-{# aria attributes linking an input to its hint and error. #}
-{% macro described_by(name, errors, hint) -%}
+{# aria attributes linking an input to its hint, a scan's note (pass values) and error. #}
+{% macro described_by(name, errors, hint, values = null) -%}
+    {% import _self as ui %}
     {% set ids = [] %}
     {% if hint %}{% set ids = ids|merge(['f-' ~ name ~ '-hint']) %}{% endif %}
+    {% if values is not null and ui.has_scan_note(name, values)|trim == '1' %}{% set ids = ids|merge(['f-' ~ name ~ '-scan']) %}{% endif %}
     {% if errors[name] ?? null %}{% set ids = ids|merge(['f-' ~ name ~ '-error']) %}{% endif %}
     {% if ids is not empty %} aria-describedby="{{ ids|join(' ') }}"{% endif %}{% if errors[name] ?? null %} aria-invalid="true"{% endif %}
 {%- endmacro %}
 
-{# "from your message" beside a field an Ask draft filled in (spec.md §7.26 *Edit*). #}
+{# "from your message" beside a field an Ask draft filled in (spec.md §7.26 *Edit*),
+   "from the file, check" beside one a scan filled in (§7.27). #}
 {% macro from_message(name, values) -%}
     {% if name in ((values._from_message ?? '')|split(',')) %} <span class="field__from-message">{{ 'ask.draft.from_message'|trans }}</span>{% endif %}
+    {%- if name in ((values._from_file ?? '')|split(',')) %} <span class="field__from-message field__from-file">{{ 'scan.from_file'|trans }}</span>{% endif %}
+{%- endmacro %}
+
+{# Under a field a scan touched (spec.md §7.27): the words its value came
+   from, the date to check, why it was left empty, or a suggestion. #}
+{% macro scan_note(name, values) -%}
+    {% import _self as ui %}
+    {% set evidence = values['_evidence:' ~ name] ?? null %}
+    {% set check = values['_check:' ~ name] ?? null %}
+    {% set problem = values['_problem:' ~ name] ?? null %}
+    {% set hint = values['_hint:' ~ name] ?? null %}
+    {% if evidence or check or problem or hint %}
+        <div class="field__scan" id="f-{{ name }}-scan">
+            {% if evidence %}<p class="field__evidence">{{ ui.icon('receipt_long') }}<span><span class="visually-hidden">{{ 'scan.evidence_label'|trans }} </span>“{{ evidence }}”</span></p>{% endif %}
+            {% if check %}<p class="field__check">{{ ui.icon('warning') }}<span>{{ check }}</span></p>{% endif %}
+            {% if problem %}<p class="field__check">{{ ui.icon('warning') }}<span>{{ problem }}</span></p>{% endif %}
+            {% if hint %}<p class="field__hint">{{ hint }}</p>{% endif %}
+        </div>
+    {% endif %}
+{%- endmacro %}
+
+{# Whether a scan left a note under the field (for aria-describedby). #}
+{% macro has_scan_note(name, values) -%}
+    {{- (values['_evidence:' ~ name] ?? values['_check:' ~ name] ?? values['_problem:' ~ name] ?? values['_hint:' ~ name] ?? null) ? '1' : '' -}}
 {%- endmacro %}
 
 {# Label + input + hint + error.
@@ -123,9 +150,10 @@
             {%- if opts.maxlength ?? null %} maxlength="{{ opts.maxlength }}"{% endif %}
             {%- if opts.placeholder ?? null %} placeholder="{{ opts.placeholder }}"{% endif %}
             {%- if opts.readonly ?? false %} readonly{% endif %}
-            {{- ui.described_by(name, errors, hint) }}>
+            {{- ui.described_by(name, errors, hint, values) }}>
         {% if opts.suffix ?? null %}<span class="input-group__suffix" aria-hidden="true">{{ opts.suffix }}</span></div>{% endif %}
         {% if hint %}<p class="field__hint" id="f-{{ name }}-hint">{{ hint }}</p>{% endif %}
+        {{ ui.scan_note(name, values) }}
         {{ ui.field_error(errors, name) }}
     </div>
 {%- endmacro %}
@@ -137,12 +165,13 @@
     {% set current = values[name] ?? '' %}
     <div class="field">
         <label class="field__label" for="f-{{ name }}">{{ label }}{{ ui.from_message(name, values) }}</label>
-        <select class="select" id="f-{{ name }}" name="{{ name }}"{% if opts.required ?? false %} required{% endif %}{{ ui.described_by(name, errors, hint) }}>
+        <select class="select" id="f-{{ name }}" name="{{ name }}"{% if opts.required ?? false %} required{% endif %}{{ ui.described_by(name, errors, hint, values) }}>
             {% for option in options %}
                 <option value="{{ option.value }}"{% if option.value == current %} selected{% endif %}>{{ option.label }}</option>
             {% endfor %}
         </select>
         {% if hint %}<p class="field__hint" id="f-{{ name }}-hint">{{ hint }}</p>{% endif %}
+        {{ ui.scan_note(name, values) }}
         {{ ui.field_error(errors, name) }}
     </div>
 {%- endmacro %}

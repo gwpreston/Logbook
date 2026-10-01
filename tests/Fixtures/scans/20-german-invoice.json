@@ -1,0 +1,62 @@
+{
+    "file": "20-german-invoice.pdf",
+    "type": "text_pdf",
+    "locale": "de_DE",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "12.09.2026",
+                "evidence": "Datum: 12.09.2026"
+            },
+            "registration": {
+                "value": "XY34 ZZZ",
+                "evidence": "Kennzeichen XY34 ZZZ"
+            },
+            "odometer": {
+                "value": "98.405",
+                "evidence": "Kilometerstand 98.405 km"
+            },
+            "odometer_unit": {
+                "value": "km",
+                "evidence": "98.405 km"
+            },
+            "vendor": {
+                "value": "Autohaus Lindenberg GmbH",
+                "evidence": "Autohaus Lindenberg GmbH"
+            },
+            "total": {
+                "value": "1.234,56 €",
+                "evidence": "Gesamtbetrag 1.234,56 €"
+            },
+            "vat_amount": {
+                "value": "197,12 €",
+                "evidence": "MwSt. 197,12 €"
+            },
+            "vat_rate": {
+                "value": "19 %",
+                "evidence": "19 % MwSt."
+            }
+        },
+        "lines": {
+            "work": [
+                "Inspektion mit Ölwechsel",
+                "Bremsflüssigkeit erneuert"
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "BMW",
+        "values": {
+            "performed_on": "2026-09-12",
+            "odometer": "98405",
+            "cost": "1234.56"
+        },
+        "description": [
+            "MwSt."
+        ]
+    }
+}

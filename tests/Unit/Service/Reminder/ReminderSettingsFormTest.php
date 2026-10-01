@@ -86,13 +86,38 @@ final class ReminderSettingsFormTest extends TestCase
     {
         $input = ['vehicle_id' => '9', 'title' => 'Road tax', 'due_on' => '2026-10-01', 'lead_time_days' => '7'];
 
-        self::assertInstanceOf(ValidationErrors::class, ManualReminderForm::parse($input, 'en', [1, 2]));
+        $metric = self::preferences(UnitPreset::Metric);
+        self::assertInstanceOf(ValidationErrors::class, ManualReminderForm::parse($input, $metric, [1, 2]));
 
-        $data = ManualReminderForm::parse(['vehicle_id' => '2'] + $input, 'en', [1, 2]);
+        $data = ManualReminderForm::parse(['vehicle_id' => '2'] + $input, $metric, [1, 2]);
         self::assertNotInstanceOf(ValidationErrors::class, $data);
         self::assertSame(2, $data->vehicleId);
-        self::assertSame('2026-10-01', $data->dueOn->format('Y-m-d'));
+        self::assertSame('2026-10-01', $data->dueOn?->format('Y-m-d'));
+        self::assertNull($data->dueKm);
         self::assertNull($data->notes);
+    }
+
+    public function testAManualReminderIsDueOnADateAtAnOdometerOrBoth(): void
+    {
+        $input = ['vehicle_id' => '1', 'title' => 'Front pads', 'lead_time_days' => '7'];
+        $miles = self::preferences(UnitPreset::Uk);
+
+        $neither = ManualReminderForm::parse($input, $miles, [1]);
+        self::assertInstanceOf(ValidationErrors::class, $neither);
+        self::assertSame('reminders.validation.date_or_odometer', $neither->all()['due_on']['key']);
+
+        $atOdometer = ManualReminderForm::parse($input + ['due_odometer' => '50000'], $miles, [1]);
+        self::assertNotInstanceOf(ValidationErrors::class, $atOdometer);
+        self::assertNull($atOdometer->dueOn);
+        self::assertSame('80467.200', $atOdometer->dueKm, 'typed in miles, stored in km');
+
+        $both = ManualReminderForm::parse($input + ['due_on' => '2027-03-01', 'due_odometer' => '50000'], $miles, [1]);
+        self::assertNotInstanceOf(ValidationErrors::class, $both);
+        self::assertSame('2027-03-01', $both->dueOn?->format('Y-m-d'));
+        self::assertNotNull($both->dueKm);
+
+        $negative = ManualReminderForm::parse($input + ['due_odometer' => '-5'], $miles, [1]);
+        self::assertInstanceOf(ValidationErrors::class, $negative);
     }
 
     private static function preferences(UnitPreset $preset): DisplayPreferences

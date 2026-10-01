@@ -1,0 +1,43 @@
+{
+    "file": "17-warranty-other.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "other",
+        "fields": {
+            "title": {
+                "value": "Battery warranty",
+                "evidence": "Warranty certificate"
+            },
+            "date": {
+                "value": "02/10/2026",
+                "evidence": "Fitted 02/10/2026"
+            },
+            "vendor": {
+                "value": "Ironbridge Batteries",
+                "evidence": "Ironbridge Batteries"
+            },
+            "expiry": {
+                "value": "02/10/2029",
+                "evidence": "Warranty valid until 02/10/2029"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Vehicle AB12 CDE"
+            }
+        }
+    },
+    "expect": {
+        "form": "document",
+        "vehicle": "Golf",
+        "values": {
+            "type": "other",
+            "title": "Battery warranty",
+            "start_on": "2026-10-02",
+            "expiry_on": "2029-10-02",
+            "provider": "Ironbridge Batteries"
+        }
+    }
+}

@@ -23,6 +23,11 @@ use SplFileInfo;
 final readonly class FileStorage
 {
     private const string RELATIVE_PATH = '#^[a-z0-9_-]+(?:/[a-z0-9_-]+)*/[a-f0-9]{32}\.[a-z0-9]{1,5}$#';
+    /**
+     * Scanned files waiting for their entry (spec.md §7.27). They belong to
+     * no entry, so backups leave them out and a restore leaves them alone.
+     */
+    public const string PENDING_DIRECTORY = 'pending';
 
     private string $root;
 
@@ -69,13 +74,32 @@ final readonly class FileStorage
     /**
      * Every stored file under the upload directory, as relative paths.
      * Anything else there (a restore's staging directory, stray files) is
-     * left out.
+     * left out, and so are pending scans.
      *
      * @return list<string>
      */
     public function all(): array
     {
-        return is_dir($this->root) ? self::storedFilesIn($this->root) : [];
+        $files = is_dir($this->root) ? self::storedFilesIn($this->root) : [];
+
+        return array_values(array_filter(
+            $files,
+            static fn (string $relative): bool => !str_starts_with($relative, self::PENDING_DIRECTORY . '/'),
+        ));
+    }
+
+    /**
+     * A copy of a stored file in the system's temporary directory, for an
+     * upload that must leave the original in place until a save commits.
+     */
+    public function temporaryCopy(string $relative, string $prefix = 'logbook-copy-'): string
+    {
+        $copy = tempnam(sys_get_temp_dir(), $prefix);
+        if ($copy === false || !copy($this->absolutePath($relative), $copy)) {
+            throw new RuntimeException(sprintf('Cannot copy "%s".', $relative));
+        }
+
+        return $copy;
     }
 
     /**

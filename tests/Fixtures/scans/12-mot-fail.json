@@ -1,0 +1,59 @@
+{
+    "file": "12-mot-fail.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "inspection",
+        "fields": {
+            "date": {
+                "value": "20/02/2026",
+                "evidence": "Date of test 20/02/2026"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Registration number AB12 CDE"
+            },
+            "odometer": {
+                "value": "44,770",
+                "evidence": "Odometer reading 44,770 miles"
+            },
+            "result": {
+                "value": "fail",
+                "evidence": "Test result: FAIL"
+            },
+            "vendor": {
+                "value": "Exe Valley Test Centre",
+                "evidence": "Exe Valley Test Centre"
+            }
+        },
+        "lines": {
+            "failures": [
+                "Offside rear brake pipe corroded"
+            ],
+            "advisories": [
+                "Exhaust has a minor leak"
+            ]
+        }
+    },
+    "expect": {
+        "form": "document",
+        "vehicle": "Golf",
+        "values": {
+            "type": "other",
+            "title": "MOT failed 20 Feb 2026",
+            "start_on": "2026-02-20"
+        },
+        "absent": [
+            "odometer",
+            "expiry_on"
+        ],
+        "notes": [
+            "Failures",
+            "Offside rear brake pipe corroded",
+            "Advisories"
+        ],
+        "recommendations": 1
+    }
+}

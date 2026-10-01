@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.7.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.8.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -50,7 +50,10 @@ your own server.
 > words from your own records, through read-only tools, with a source and a
 > link for every figure and a check that flags any number Logbook didn't
 > provide, and drafts fill-ups, readings, services, documents, expenses, tread
-> checks and reminders from a sentence as cards you check and add; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
+> checks and reminders from a sentence as cards you check and add, and reads a
+> photo or PDF of an invoice, receipt or certificate into the right form for you
+> to check, with the file attached (photos are always stored without their
+> location data); in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 

@@ -1,0 +1,42 @@
+{
+    "file": "16-v5c-text.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "registration",
+        "fields": {
+            "registration": {
+                "value": "EV70 LTR",
+                "evidence": "A Registration mark EV70 LTR"
+            },
+            "first_registration": {
+                "value": "14/09/2020",
+                "evidence": "B Date of first registration 14/09/2020"
+            },
+            "make": {
+                "value": "Nissan",
+                "evidence": "D.1 Make NISSAN"
+            },
+            "model": {
+                "value": "Leaf",
+                "evidence": "D.3 Model LEAF"
+            },
+            "vin": {
+                "value": "SJNFAAZE1U0123456",
+                "evidence": "E Vehicle identification number SJNFAAZE1U0123456"
+            }
+        }
+    },
+    "expect": {
+        "form": "vehicle",
+        "vehicle": "Leaf",
+        "values": {
+            "registration": "EV70 LTR",
+            "vin": "SJNFAAZE1U0123456",
+            "first_registered_on": "2020-09-14"
+        },
+        "no_reference": "98765 43210 1"
+    }
+}

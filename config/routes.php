@@ -99,6 +99,11 @@ use Logbook\Action\SalePack\DownloadPaperworkAction;
 use Logbook\Action\SalePack\ShowSalePackAction;
 use Logbook\Action\Settings\AdminTransferAction;
 use Logbook\Action\Ask\AskAction;
+use Logbook\Action\Scan\ScanAction;
+use Logbook\Action\Scan\ScanFileAction;
+use Logbook\Action\Scan\ScanRemindersAction;
+use Logbook\Action\Scan\ScanResultAction;
+use Logbook\Action\Scan\ScanVehicleAction;
 use Logbook\Action\Ask\AskFeedbackAction;
 use Logbook\Action\Ask\DraftAction as AskDraftAction;
 use Logbook\Action\Ask\AskPostAction;
@@ -644,6 +649,14 @@ return static function (App $app): void {
             $group->post('/ask/messages/{message:[0-9]+}/feedback', AskFeedbackAction::class)->setName('ask.feedback');
             // Drafting entries (Phase 26.3): a card's buttons; the draft is the user's own or not found.
             $group->post('/ask/drafts/{draft:[0-9]+}/{action:add|discard|undo}', AskDraftAction::class)->setName('ask.draft');
+            // Reading files (spec.md §7.27, Phase 26.4): 404 unless scanning is available; a scan is its user's own.
+            $group->map(['GET', 'POST'], '/scan', ScanAction::class)->setName('scan');
+            $group->get('/scan/{token:[0-9a-f]{32}}', ScanResultAction::class)->setName('scan.result');
+            $group->get('/scan/{token:[0-9a-f]{32}}/file', ScanFileAction::class)->setName('scan.file');
+            $group->map(['GET', 'POST'], '/scan/{token:[0-9a-f]{32}}/reminders', ScanRemindersAction::class)
+                ->setName('scan.reminders');
+            $group->map(['GET', 'POST'], '/scan/{token:[0-9a-f]{32}}/vehicle', ScanVehicleAction::class)
+                ->setName('scan.vehicle');
             // Settings → AI: admins only, and 404 (not 403) to anyone else.
             $group->group('/settings/ai', function (Group $ai) use ($instance): void {
                 $manage = InstanceAbility::ManageAi->value;

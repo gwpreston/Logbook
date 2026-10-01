@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Logbook\Action\Compliance;
 
 use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Action\Scan\ScanPrefill;
+use Logbook\Domain\Ai\Scan\ScanTarget;
+use Logbook\Domain\Compliance\ComplianceDocument;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
@@ -27,6 +31,7 @@ final readonly class CreateComplianceDocumentAction
 {
     public function __construct(
         private DraftPrefill $prefill,
+        private ScanPrefill $scan,
         private VehicleService $vehicles,
         private ComplianceService $compliance,
         private ComplianceFormPage $page,
@@ -49,12 +54,13 @@ final readonly class CreateComplianceDocumentAction
             $type = $request->getQueryParams()['type'] ?? null;
             $defaults = ComplianceDocumentForm::defaults(is_string($type) ? ComplianceType::tryFrom($type) : null);
             $defaults = $this->prefill->values($request, DraftKind::Document, $vehicle->id, $defaults);
+            $defaults = $this->scan->values($request, ScanTarget::Document, $vehicle, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
 
         $data = ComplianceDocumentForm::parse(RequestContext::form($request), $user->preferences);
-        $files = $this->upload->fromRequest($request);
+        $files = $this->scan->files($request, $this->upload->fromRequest($request));
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
@@ -62,12 +68,23 @@ final readonly class CreateComplianceDocumentAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
         }
 
-        $document = $this->compliance->create($vehicle, $data, $user->preferences->timeZone(), $files);
+        [$document, $claimed] = $this->scan->save(
+            $request,
+            $files,
+            fn (PendingUploads $files): ComplianceDocument => $this->compliance->create(
+                $vehicle,
+                $data,
+                $user->preferences->timeZone(),
+                $files,
+            ),
+        );
         $this->prefill->saved($request);
         $session = RequestContext::session($request);
         $session->flash('success', 'compliance.created');
         $this->warnings->queue($session, $this->compliance->odometerWarning($vehicle, $document));
 
-        return $this->redirect->backOr($request, 'compliance.index', ['id' => (string) $vehicle->id]);
+        $done = $this->redirect->backOr($request, 'compliance.index', ['id' => (string) $vehicle->id]);
+
+        return $this->scan->after($request, $claimed, $vehicle, $document->data->odometerKm, $done);
     }
 }

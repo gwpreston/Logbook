@@ -393,7 +393,7 @@ final readonly class ApiWriter
         if ($mapped instanceof ValidationErrors) {
             throw $this->validation->of($mapped);
         }
-        $data = ManualReminderForm::parse($mapped['input'], $mapped['preferences']->locale, [$vehicle->id]);
+        $data = ManualReminderForm::parse($mapped['input'], $mapped['preferences'], [$vehicle->id]);
         if ($data instanceof ValidationErrors) {
             throw $this->validation->of(JsonInput::renamed($data, JsonInput::REMINDER_FIELDS));
         }
@@ -405,7 +405,8 @@ final readonly class ApiWriter
                 $reminder->vehicleId === $vehicle->id
                 && $reminder->source === ReminderSource::Manual
                 && mb_strtolower(trim($reminder->title)) === mb_strtolower(trim($data->title))
-                && $reminder->dueOn?->format('Y-m-d') === $data->dueOn->format('Y-m-d')
+                && $reminder->dueOn?->format('Y-m-d') === $data->dueOn?->format('Y-m-d')
+                && self::sameKm($reminder->dueKm, $data->dueKm)
             ) {
                 return ['entry' => $entry, 'today' => $overview->today, 'duplicate' => true, 'warnings' => []];
             }
@@ -485,5 +486,10 @@ final readonly class ApiWriter
                 'detail' => 'The odometer rose by more than 2,000 km a day since the reading before it.',
             ]],
         };
+    }
+
+    private static function sameKm(?string $a, ?string $b): bool
+    {
+        return ($a === null || $b === null) ? $a === $b : Decimal::compare($a, $b) === 0;
     }
 }

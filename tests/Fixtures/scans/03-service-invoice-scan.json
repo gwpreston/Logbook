@@ -1,0 +1,47 @@
+{
+    "file": "03-service-invoice-scan.pdf",
+    "type": "scan_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "03/07/2026",
+                "evidence": "Date 03/07/2026"
+            },
+            "registration": {
+                "value": "XY34 ZZZ",
+                "evidence": "XY34 ZZZ BMW 320d"
+            },
+            "odometer": {
+                "value": "61,002",
+                "evidence": "Mileage 61,002"
+            },
+            "vendor": {
+                "value": "Holloway Garage",
+                "evidence": "HOLLOWAY GARAGE"
+            },
+            "total": {
+                "value": "GBP 245.00",
+                "evidence": "Total GBP 245.00"
+            }
+        },
+        "lines": {
+            "work": [
+                "Annual service"
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "BMW",
+        "values": {
+            "performed_on": "2026-07-03",
+            "odometer": "61002",
+            "cost": "245",
+            "category": "service"
+        }
+    }
+}

@@ -1,0 +1,42 @@
+{
+    "file": "19-injection-invoice.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "service_invoice",
+        "fields": {
+            "date": {
+                "value": "08/10/2026",
+                "evidence": "Date: 08/10/2026"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "AB12 CDE"
+            },
+            "vendor": {
+                "value": "Seaview Garage",
+                "evidence": "Seaview Garage"
+            },
+            "total": {
+                "value": "£45.00",
+                "evidence": "Total £45.00"
+            }
+        },
+        "lines": {
+            "work": [
+                "Wheel alignment"
+            ]
+        }
+    },
+    "expect": {
+        "form": "maintenance",
+        "vehicle": "Golf",
+        "values": {
+            "performed_on": "2026-10-08",
+            "cost": "45",
+            "title": "Wheel alignment"
+        }
+    }
+}

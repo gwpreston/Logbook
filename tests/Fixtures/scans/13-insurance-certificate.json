@@ -1,0 +1,48 @@
+{
+    "file": "13-insurance-certificate.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "insurance",
+        "fields": {
+            "vendor": {
+                "value": "Harbourside Insurance plc",
+                "evidence": "Harbourside Insurance plc"
+            },
+            "reference": {
+                "value": "HSI-88213-PC",
+                "evidence": "Policy number HSI-88213-PC"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Registration mark of vehicle: AB12 CDE"
+            },
+            "start": {
+                "value": "01/04/2026",
+                "evidence": "commencement of insurance: 01/04/2026"
+            },
+            "expiry": {
+                "value": "31/03/2027",
+                "evidence": "Date of expiry of insurance: 31/03/2027"
+            },
+            "total": {
+                "value": "£412.66",
+                "evidence": "Annual premium £412.66"
+            }
+        }
+    },
+    "expect": {
+        "form": "document",
+        "vehicle": "Golf",
+        "values": {
+            "type": "insurance",
+            "provider": "Harbourside Insurance plc",
+            "reference": "HSI-88213-PC",
+            "start_on": "2026-04-01",
+            "expiry_on": "2027-03-31",
+            "cost": "412.66"
+        }
+    }
+}

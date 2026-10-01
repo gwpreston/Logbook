@@ -17,8 +17,10 @@ FROM php:${PHP_VERSION}-apache AS base
 RUN set -eux; \
     savedAptMark="$(apt-mark showmanual)"; \
     apt-get update; \
-    apt-get install -y --no-install-recommends libicu-dev libpq-dev libzip-dev; \
-    docker-php-ext-install -j"$(nproc)" intl pdo_mysql pdo_pgsql opcache zip; \
+    apt-get install -y --no-install-recommends libicu-dev libpq-dev libzip-dev libjpeg62-turbo-dev libpng-dev libwebp-dev; \
+    # gd (JPEG, PNG, WebP) and exif: every photo upload is turned upright and stripped of its metadata (spec §7.12)
+    docker-php-ext-configure gd --with-jpeg --with-webp; \
+    docker-php-ext-install -j"$(nproc)" intl pdo_mysql pdo_pgsql opcache zip gd exif; \
     # keep only the runtime libraries the compiled extensions link against
     apt-mark auto '.*' > /dev/null; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
@@ -27,7 +29,16 @@ RUN set -eux; \
         | sort -u | xargs -r dpkg-query --search | cut -d: -f1 | sort -u | xargs -r apt-mark manual; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
     rm -rf /var/lib/apt/lists/*; \
-    php -m | grep -qi '^intl$'; php -m | grep -qi '^pdo_pgsql$'; php -m | grep -qi '^pdo_mysql$'; php -m | grep -qi '^pdo_sqlite$'; php -m | grep -qi '^zip$'
+    php -m | grep -qi '^intl$'; php -m | grep -qi '^pdo_pgsql$'; php -m | grep -qi '^pdo_mysql$'; php -m | grep -qi '^pdo_sqlite$'; php -m | grep -qi '^zip$'; php -m | grep -qi '^gd$'; php -m | grep -qi '^exif$'; \
+    php -r 'exit(function_exists("imagecreatefromwebp") && function_exists("imagecreatefromjpeg") ? 0 : 1);'
+
+# Ghostscript renders scanned PDFs for reading (spec §7.27); text PDFs and
+# photos need nothing more.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ghostscript; \
+    rm -rf /var/lib/apt/lists/*; \
+    gs --version
 
 RUN set -eux; \
     a2enmod rewrite headers; \

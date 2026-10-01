@@ -58,7 +58,9 @@ final class VehiclePhotoTest extends AppTestCase
         self::assertSame('image/png', $photo->getHeaderLine('Content-Type'));
         self::assertSame('nosniff', $photo->getHeaderLine('X-Content-Type-Options'));
         self::assertStringStartsWith('private', $photo->getHeaderLine('Cache-Control'));
-        self::assertSame(base64_decode(self::PNG), self::body($photo));
+        // The stored photo is the re-encoded one (spec §7.12): the same image, served as stored.
+        self::assertSame((string) file_get_contents($this->uploadDir() . '/' . $vehicle->photoPath), self::body($photo));
+        self::assertSame([1, 1], array_slice((array) getimagesizefromstring(self::body($photo)), 0, 2));
 
         $cached = $browser->get($photoUrl, ['If-None-Match' => $photo->getHeaderLine('ETag')]);
         self::assertSame(304, $cached->getStatusCode());

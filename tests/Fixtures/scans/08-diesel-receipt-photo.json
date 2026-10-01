@@ -1,0 +1,59 @@
+{
+    "file": "08-diesel-receipt-photo.jpg",
+    "type": "photo",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "fuel_receipt",
+        "fields": {
+            "date": {
+                "value": "09.10.2026",
+                "evidence": "09.10.2026 12:10"
+            },
+            "time": {
+                "value": "12:10",
+                "evidence": "12:10"
+            },
+            "registration": {
+                "value": "XY34 ZZZ",
+                "evidence": "XY34 ZZZ"
+            },
+            "vendor": {
+                "value": "Moorside Garage",
+                "evidence": "MOORSIDE GARAGE"
+            },
+            "grade": {
+                "value": "Diesel",
+                "evidence": "DIESEL"
+            },
+            "volume": {
+                "value": "38.40",
+                "evidence": "DIESEL 38.40 L"
+            },
+            "volume_unit": {
+                "value": "L",
+                "evidence": "38.40 L"
+            },
+            "price_per_unit": {
+                "value": "1.499",
+                "evidence": "1.499 GBP/L"
+            },
+            "total": {
+                "value": "57.56 GBP",
+                "evidence": "TOTAL 57.56 GBP"
+            }
+        }
+    },
+    "expect": {
+        "form": "fuel",
+        "vehicle": "BMW",
+        "values": {
+            "filled_at": "2026-10-09T12:10",
+            "volume": "38.4",
+            "price": "1.499",
+            "total": "57.56",
+            "fuel": "diesel"
+        }
+    }
+}

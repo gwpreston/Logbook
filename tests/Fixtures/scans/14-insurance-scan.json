@@ -1,0 +1,46 @@
+{
+    "file": "14-insurance-scan.pdf",
+    "type": "scan_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "insurance",
+        "fields": {
+            "vendor": {
+                "value": "Lantern Mutual",
+                "evidence": "LANTERN MUTUAL"
+            },
+            "reference": {
+                "value": "LM-00942",
+                "evidence": "Policy LM-00942"
+            },
+            "registration": {
+                "value": "XY34 ZZZ",
+                "evidence": "XY34 ZZZ"
+            },
+            "start": {
+                "value": "15/05/2026",
+                "evidence": "Cover from 15/05/2026"
+            },
+            "expiry": {
+                "value": "14/05/2027",
+                "evidence": "to 14/05/2027"
+            },
+            "total": {
+                "value": "GBP 655.10",
+                "evidence": "Premium GBP 655.10"
+            }
+        }
+    },
+    "expect": {
+        "form": "document",
+        "vehicle": "BMW",
+        "values": {
+            "type": "insurance",
+            "start_on": "2026-05-15",
+            "expiry_on": "2027-05-14",
+            "cost": "655.1"
+        }
+    }
+}

@@ -5,6 +5,8 @@
     "license": "proprietary",
     "require": {
         "php": ">=8.4",
+        "ext-exif": "*",
+        "ext-gd": "*",
         "ext-intl": "*",
         "ext-json": "*",
         "ext-pdo": "*",
@@ -19,6 +21,7 @@
         "slim/csrf": "^1.5",
         "slim/psr7": "^1.8",
         "slim/slim": "^4.15",
+        "smalot/pdfparser": "^2.12",
         "symfony/dotenv": "^8.0",
         "symfony/http-client": "^8.0",
         "symfony/mailer": "^8.0",

@@ -2,7 +2,7 @@
 
 *Photograph the garage invoice; check the form; save.*
 
-Status: 📋 planned · releases **v2.8.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.8.0** · file lives in `docs/phases/`
 
 Typing a service invoice is the most tedious job in Logbook, and it is
 the one most often skipped. This phase reads a photo or PDF of an invoice,
@@ -99,6 +99,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
 >     user chooses to (a warning explains why: the sale pack never offers
 >     it).
 >   - *Other:* title, date, provider, expiry.
+> *(Spec §7.27 as written into `spec.md` on 2026-10-01 supersedes this
+> draft where they differ: the open questions below were decided then.)*
+>
 > - **Mapping to Logbook:**
 >   - **Vehicle:** registration matched exactly (normalised, spaces
 >     removed) against the vehicles the user can log to; else make and
@@ -162,63 +165,151 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.27 in `spec.md`; §7.12 (pending uploads, EXIF stripping); the Phase
+- [x] §7.27 in `spec.md`; §7.12 (pending uploads, EXIF stripping); the Phase
       26.4 line in §13.
-- [ ] `docs/ai.md`: *Reading receipts and documents*: what is read, what is
+- [x] `docs/ai.md`: *Reading receipts and documents*: what is read, what is
       sent where, and model suggestions for vision by location.
 
 ### Dependencies
-- [ ] A pure-PHP PDF text extractor (pin it; record it in §4).
-- [ ] Optional Imagick or Ghostscript for rendering scanned PDFs; the Docker
+- [x] `smalot/pdfparser`, pinned (§4, #84).
+- [x] `ext-gd` and `ext-exif` required; the Docker image builds `gd`
+      (JPEG, PNG, WebP) and `exif` on amd64 and arm64 (#83).
+- [x] Optional Imagick or Ghostscript for rendering scanned PDFs; the Docker
       image includes Ghostscript; bare PHP degrades as described.
 
 ### Migration
-- [ ] `pending_uploads` (user, path, type, size, created, expires,
+- [x] `pending_uploads` (user, path, type, size, created, expires,
       claimed_by). Reversible; scheduler cleanup; excluded from backups.
 
 ### Code
-- [ ] `Service\Ai\Scan\FilePreparer` (EXIF rotate and strip, downscale,
+- [x] Every photo upload rotated upright and stripped in the one upload
+      path (§7.12, #80); vehicle photos too.
+- [x] Manual reminders with a *Due at* odometer: form, status whichever
+      comes first, projection, list, calendar feed, *Coming up*, API
+      `due_odometer` and OpenAPI (§7.6, §7.20, #82). The list shows the
+      date or "Due at …"; the calendar feed lists only dated reminders.
+- [x] `Service\Ai\Scan\FilePreparer` (EXIF rotate and strip, downscale,
       PDF text or render).
-- [ ] `Service\Ai\Scan\Extractor` (schemas, one request, JSON validation,
+- [x] `Service\Ai\Scan\Extractor` (schemas, one request, JSON validation,
       the evidence check, V5C scrubbing).
-- [ ] `Service\Ai\Scan\Mapper` per kind (to form prefill values, vehicle
+- [x] `Service\Ai\Scan\Mapper` per kind (to form prefill values, vehicle
       matching, ambiguous dates, category and schedule suggestions).
-- [ ] `Service\Ai\Scan\Recommendations` (distance to projected date through
+- [x] `Service\Ai\Scan\Recommendations` (distance to projected date through
       the existing projection).
-- [ ] Entry points, prefilled form marks, thumbnail, recommendations card;
+- [x] Entry points, prefilled form marks, thumbnail, recommendations card;
       the phone app's *Scan* action.
-- [ ] Translations (en, de).
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] **Fixture set** (`tests/Fixtures/scans/`): twenty synthetic documents
+- [x] **Fixture set** (`tests/Fixtures/scans/`): twenty synthetic documents
       (invented garages and plates) as text PDFs, scanned PDFs and phone
       photos, each with the expected extraction. The scripted provider
       replays the expected JSON in CI.
-- [ ] Mapping per kind; vehicle matching (exact plate, a plate with spaces,
+- [x] Mapping per kind; vehicle matching (exact plate, a plate with spaces,
       a mismatch warning, unknown); ambiguous dates in GB and US locales;
       future dates dropped.
-- [ ] EXIF: the GPS tag is gone from what is sent and what is stored.
-- [ ] V5C: no reference number in any output or stored text.
-- [ ] Text PDF → `read_text`; scanned PDF → rendered pages; no renderer →
+- [x] EXIF: the GPS tag is gone from what is sent and what is stored.
+- [x] V5C: no reference number in any output or stored text.
+- [x] Text PDF → `read_text`; scanned PDF → rendered pages; no renderer →
       the message.
-- [ ] Pending uploads claimed on save, deleted after 24 hours, never served
+- [x] Pending uploads claimed on save, deleted after 24 hours, never served
       to another user.
-- [ ] Failures leave the file attached to an empty form.
-- [ ] Recommendations: date kept; distance projected with the label; *Add
+- [x] Failures leave the file attached to an empty form.
+- [x] Recommendations: date kept; distance projected with the label; *Add
       reminder* creates a manual reminder.
-- [ ] **Injection:** a document containing instructions produces only a
+- [x] **Injection:** a document containing instructions produces only a
       form; nothing saves without *Save*.
-- [ ] `bin/ai-eval.php --scans` runs the fixture set against the configured
+- [x] `bin/ai-eval.php --scans` runs the fixture set against the configured
       models and reports field accuracy per kind.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB).
 
 ### Release
-- [ ] `CHANGELOG.md` **2.8.0**: reading receipts and documents. Upgrade
+- [x] `CHANGELOG.md` **2.8.0**: reading receipts and documents. Upgrade
       notes: one migration; Ghostscript in the image; EXIF stripped from
       scanned photos.
-- [ ] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Bump `VERSION`, rebuild assets, update the README status.
+- [ ] Tag `v2.8.0` once merged.
 
 ---
+
+## Changed while building it
+
+- **Values as printed, parsed by Logbook** (spec §7.27). The model gives
+  every date, amount and reading exactly as printed, and Logbook parses
+  it in the user's locale. A model that returned ISO dates would have
+  chosen the day/month order itself, and "Check the date: 4 May or 5
+  April?" could never be honest. `PrintedDate` reads numeric dates in the
+  locale's order (from ICU's short pattern), month names in the user's
+  language and English, and ISO. `PrintedNumber` takes currency signs
+  and codes and a unit beside the digits, and refuses anything else
+  ("l2.5O" is not 2.5). The schema is one flat set of fields shared by
+  every kind (each `{value, evidence}`), rather than a branch per kind,
+  which small local models fill more reliably; the Mapper reads only
+  the kind's own fields.
+- **EXIF stripped in the one upload check.** `FileUpload::check()`
+  re-encodes an accepted image in place (`ImageCleaner`, GD), turned
+  upright from its orientation first. So attachments, vehicle photos and
+  scans are all covered, and nothing downstream ever sees the original.
+  A scan's file is not re-encoded again when it is attached
+  (`FileUpload::accepted()`). GD needs memory for big photos, so the
+  limit is raised for the decode (to about 450 MB at most), and images
+  over 50 megapixels are refused (a 48-megapixel phone photo is fine).
+- **Claim once, keep the photo.** Saving claims the pending upload with
+  a conditional update before the entry is written, and releases it if
+  the save fails. A copy of the file goes in with the entry's own files,
+  and the pending file is deleted only after the save succeeded. A second
+  submit of the same form saves without the file. A saved row keeps only
+  the recommendations card, until it expires. Pending files live under
+  `UPLOAD_PATH/pending`, which `FileStorage::all()` leaves out, so
+  backups skip them and a restore leaves them alone. The class is
+  `Domain\Ai\Scan\ScanUpload`, because `Service\Attachment\PendingUpload`
+  already names a chosen file of a form.
+- **The reading is kept before the model is asked.** `POST /scan` stores
+  the file as `reading`, then reads it with `ignore_user_abort`, so a
+  proxy's timeout loses nothing. `/scan/{token}` shows "Still reading",
+  refreshing every three seconds, until it is done.
+- **`/scan/{token}` routes the result**: a vehicle to pick, a form to
+  pick for an unreadable file with no form to go back to, a module that
+  is off, or a redirect to the create form with `?scan=`. *Read it as* is
+  `?as=` on the same URL.
+- **The V5C has its own page** (`/scan/{token}/vehicle`), not the vehicle
+  edit form. It lists each found value beside the current one, ticked
+  where they differ, and saves through `VehicleForm::parse()` with the
+  rest of the vehicle unchanged. *Keep the file* saves it on a new
+  `registration` document rather than with the purchase paperwork: the
+  sale pack can offer purchase paperwork, but never registration
+  documents (`PaperworkKind::NEVER_OFFERED`), which is what the warning
+  promises.
+- **A restore clears pending scans**, rows and files, with the sessions:
+  they belonged to the accounts being replaced.
+- **The recommendations card is a page** (`/scan/{token}/reminders`),
+  where the save goes when there is anything to offer. *Not now* returns
+  to where the save would have gone. A recommendation with a distance is
+  due at the entry's odometer (or the latest reading) plus the distance,
+  kept as a distance (#82). One with neither a date nor a distance is due
+  in 30 days, marked so.
+- **Pictures need a model that takes images.** `read_document` accepts a
+  JSON-only model (for text-only installs), so a photo sent to it fails
+  early ("doesn't take pictures") and nothing is sent.
+- **11-digit runs are removed from all PDF text before sending**, not only
+  from a V5C's. The kind isn't known until the model answers. This also
+  drops UK phone numbers, which nothing needs. Twelve-digit MOT test
+  numbers are untouched.
+- **Ghostscript runs from an argument list** (`proc_open`, no shell),
+  with `-dSAFER`, a three-page limit and a 60-second timeout. Imagick
+  is the fallback, and any Imagick failure (a policy.xml that forbids
+  PDFs) counts as no renderer. Tests use `FakeRenderer`; one real
+  Ghostscript test skips where `gs` is missing (CI installs it, and the
+  image has it).
+- **The fixture set is generated**: `tests/Fixtures/scans/build.php`
+  writes the twenty documents from `manifest.php` with a small PDF
+  writer (a text layer in Helvetica/WinAnsi, or one image per page) and
+  GD photos with an EXIF block holding GPS. Each comes with the model's
+  reply and the expected form. Output is byte-identical between runs.
+- **`bin/ai-eval.php --scans`** scores the configured models per kind (the
+  kind, then each field compared as Logbook reads it) and checks for
+  references left in a registration document's output. It has not yet
+  been run against a real model.
 
 ## Acceptance criteria
 
@@ -229,7 +320,10 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
    mileage, and the advisories are offered as reminders.
 3. A failed or unavailable model still leaves the user with their file on
    an empty form.
-4. No GPS data or V5C reference number leaves the device or is stored.
+4. No GPS data leaves the device or is stored. A V5C reference number is
+   never extracted, stored or sent as text; a photo of a V5C carries it
+   as pixels, and the Scan page says so on an *Internet* connection
+   (#85).
 5. With a local or network model, no file leaves the owner's machines.
 6. Definition of done (CLAUDE.md §11) holds.
 
@@ -237,11 +331,47 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
 
 - **VAT and line items:** keep them in the description (drafted), or add
   `vat_amount` and line items to maintenance records?
+  **Decided 2026-10-01 (#79):** in the description. Work and parts lines,
+  labour and parts totals and "VAT £30.75 (20%)"; cost = total. No
+  schema change.
 - **EXIF on ordinary attachments:** strip it from every photo attachment
   from now on (drafted for scans; the release note says so), or only from
   scanned ones?
+  **Decided 2026-10-01 (#80):** every JPEG, PNG and WebP upload
+  (attachments, vehicle photos, scans) is turned upright and re-encoded
+  without metadata. Files already stored are left alone (spec §7.12).
 - **Failed MOTs:** record a failed test as a document without expiry, as a
   note on the vehicle, or not at all?
+  **Decided 2026-10-01 (#81):** an `other` document, "MOT failed 12 Mar
+  2026", with failures and advisories in its notes and the certificate
+  attached. An `inspection` document without an expiry counts as running
+  latest (`DocumentState`), so it would replace the valid certificate,
+  silence its reminder and hide *First MOT due*; vehicles have no notes
+  field. The advisories are still offered as reminders.
 - **Manual reminders by distance:** add an odometer limit to manual
   reminders, so "in 5,000 miles" is stored as a distance rather than a
   projected date?
+  **Decided 2026-10-01 (#82):** yes. Manual reminders gain an optional
+  *Due at* odometer (`reminders.due_km`, which already exists, so no
+  migration), judged whichever comes first like a schedule, on the form,
+  the API (`due_odometer`) and the scan's recommendations card (spec
+  §7.6, §7.20).
+- *(Found while starting.)* **`gd` and `exif`.** Rotating, stripping and
+  downscaling photos needs them, and the Docker image installs neither.
+  **Decided 2026-10-01 (#83):** both go into the image on every
+  architecture and are required on bare PHP, as `intl` is (Composer
+  `ext-gd`, `ext-exif`), so every photo can be stripped (spec §4, §10).
+- *(Found while starting.)* **Which PDF text extractor?**
+  **Decided 2026-10-01 (#84):** `smalot/pdfparser`, pinned, LGPL-3.0,
+  used unmodified through Composer (spec §4).
+- *(Found while building.)* **A V5C photo sends its reference number as
+  pixels.** Text can be redacted before sending; a picture cannot.
+  **Decided 2026-10-01 (#85):** accept it and warn. Text is redacted
+  before sending and the number is never extracted or stored; the Scan
+  page names where the file goes and, on an *Internet* connection, says a
+  V5C photo carries its reference to that provider. Acceptance criterion
+  4 reworded to match (spec §7.27).
+- *(Found while building.)* **Fill from a file already attached?**
+  **Decided 2026-10-01 (#86):** new files only. The create forms link to
+  Scan for that vehicle and form; attached files are not re-read
+  (spec §7.27).

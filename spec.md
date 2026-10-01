@@ -64,6 +64,7 @@ each vehicle costs.*
 | Auth | PHP sessions + Argon2id + slim/csrf | Standard, secure, no external IdP needed |
 | Single sign-on (Phase 23.1; the proxy JWT's HS256 in 23.2) | `firebase/php-jwt` (JWS and JWKS; `phpseclib/phpseclib` for its PS256) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
 | AI providers (Phase 26.1) | No SDK: `symfony/http-client` with per-request options, libsodium `secretbox` for stored keys, an in-house JSON Schema subset check | Four small adapters cover every runtime and provider; nothing new to install (§5 *AI adapters*) |
+| Reading files (Phase 26.4) | `smalot/pdfparser` (PDF text layer, LGPL-3.0, used unmodified through Composer); PHP's `gd` (JPEG, PNG, WebP) and `exif` for rotating, stripping and downscaling photos (**required**); Ghostscript or Imagick, optional, for rendering scanned PDFs | Pure PHP for text PDFs; every photo upload is re-encoded without its metadata, so `gd` and `exif` are required like `intl` (decided 2026-10-01, `docs/phases/open-questions.md` #83, #84) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -458,7 +459,9 @@ MySQL only.
   occurrence (the due point a generated reminder was raised for, e.g. the
   schedule's stored next-due date and distance), title, notes (manual only),
   due_on (calendar date; empty only for a distance-only schedule that cannot
-  be placed on the calendar yet), due_km (optional), lead_time_days, status
+  be placed on the calendar yet, or a manual reminder due at an odometer
+  only), due_km (optional; for a manual reminder, the odometer it is due at,
+  Phase 26.4: at least one of due_on and due_km), lead_time_days, status
   (`upcoming`|`due`|`overdue`|`dismissed`|`done`), notified_status (the
   status last notified), channels_notified (JSON list of channel keys),
   last_notified_at, closed_at (UTC; when dismissed or done),
@@ -794,6 +797,28 @@ MySQL only.
   applied_updated_at (optional; *Undo*'s check that the entry is
   untouched), all UTC. Deleted by the scheduled task once expired and not
   applied, or a day after *Add*. **Not in backups** or exports.
+
+**PendingUpload** (Phase 26.4, §7.27 *Reading files*)
+- id, user_id (`ON DELETE CASCADE`), token (random, 32 hex; unique; what
+  the form carries), filename (sanitised), mime, size, stored_path (random
+  name under `UPLOAD_PATH/pending`), vehicle_id (optional, the vehicle
+  chosen beforehand; `ON DELETE CASCADE`), target (optional: the form it
+  was started from, `fuel` | `maintenance` | `document`), status
+  (`reading` | `read` | `failed` | `saved`), result (optional JSON: the validated,
+  scrubbed extraction, or the failure code), recommendations (optional
+  JSON: what the saved entry's card still offers), created_at, expires_at
+  (24 hours later), all UTC.
+  A scanned file waiting for the entry it will belong to. Served to its
+  user only; another user's token answers 404. Saving the entry claims it
+  with a conditional update in the entry's transaction (status `saved`,
+  so a double submit attaches it once): the file is copied in as an
+  ordinary attachment of the entry, and the pending file is deleted after
+  the commit (a failed save keeps it). A saved row keeps only what the
+  recommendations card needs until it expires. Deleted, with any file, by
+  the scheduled task once expired. **Not in backups** or exports, and its
+  files (`UPLOAD_PATH/pending`) are left out of backups. A restore
+  deletes every row and file, as the accounts they belonged to are
+  replaced.
 
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
@@ -1430,7 +1455,8 @@ iCal/webcal feed so items appear in the user's calendar.
   point can be judged (§7.4) and every current compliance document with an
   expiry date (a replaced one raises nothing, so renewing clears it); one
   **tyre** reminder per vehicle for worn or ageing tyres (Phase 11.2, below);
-  plus **manual** reminders (vehicle, title, due date, lead time, notes).
+  plus **manual** reminders (vehicle, title, due date and/or due-at
+  odometer, lead time, notes).
   Archived vehicles raise none, and their manual reminders are neither
   listed nor sent until the vehicle is restored.
 - **Lead times** (per owner, Settings → Reminders): days before a schedule
@@ -1449,6 +1475,24 @@ iCal/webcal feed so items appear in the user's calendar.
   date limit and the projected date of its distance limit (§7.4).
   *Dismissed* and *done* are set by the owner and stick to that occurrence;
   *reopen* undoes them.
+- **Manual reminders by distance** (Phase 26.4, decided 2026-10-01,
+  `docs/phases/open-questions.md` #82): a manual reminder has a due date, a
+  *Due at* odometer (typed in the owner's distance unit, stored in
+  `due_km`), or both; at least one. It is judged like a schedule,
+  whichever comes first (`ReminderRules::manual()`, through §7.4's
+  `DueState`): *overdue* once the date has passed or the vehicle's latest
+  reading is past the odometer; *due* within its lead time in days of the
+  sooner of its date and the odometer's projected date (§7.4 projection,
+  a week of history; computed when judged, never stored), or within the
+  owner's schedule lead distance of the odometer; otherwise *upcoming*,
+  as is one with only an odometer and no reading yet. Sync re-judges it
+  as readings arrive, under the vehicle owner's lead distance and today.
+  The reminders list shows its date, or "Due at 48,000 mi" when it has
+  none; *Coming up* places it on the sooner of the date and the
+  projection; the calendar feed lists only reminders with a date. A
+  changed date or odometer is a new occurrence. Neither field is required
+  on its own; one of them is ("Enter a date, an odometer reading, or
+  both.").
 - **Sync.** Generated reminders are reconciled with their sources whenever
   the reminder list, the calendar feed or the scheduled task reads them: a
   new source adds a reminder, a changed one updates it, a removed one
@@ -2207,6 +2251,21 @@ outside web root, served via an authenticated handler; type/size validated.
   (`finfo`, never the name or browser type) — PDF, JPEG, PNG or WebP for
   attachments; images must decode, PDFs must start with a PDF header — and
   limited to `MAX_UPLOAD_MB`; stored under `UPLOAD_PATH` with a random name.
+- **Photos are stripped** (Phase 26.4, decided 2026-10-01,
+  `docs/phases/open-questions.md` #80): every JPEG, PNG and WebP upload
+  (attachments, vehicle photos and scans) is turned upright from its EXIF
+  orientation, then re-encoded without its metadata (EXIF, including GPS,
+  XMP, IPTC and text chunks), so a receipt photographed on the driveway
+  never records where the house is. The stored file keeps its size in
+  pixels (only what a scan sends to a model is downscaled, §7.27); there
+  is no unstripped original kept. PDFs are
+  stored as uploaded. Files stored before 2.8.0 are left as they are.
+  An image that fails to decode is refused as before. ICC colour profiles
+  are dropped with the rest; JPEG is re-encoded at quality 90.
+- **Pending uploads** (Phase 26.4): a scanned file (§7.27) is checked by
+  the same rules and held as a pending upload (§6 PendingUpload) until its
+  entry is saved, then becomes that entry's attachment in the entry's
+  transaction; the 10-file limit counts it. There is no second store.
 - **Several files per save** (Phase 10). The add/edit form of each entry
   that takes files (fill-up, service record, document, expense, manual
   reading, valuation) has one shared input partial — `<input type="file"
@@ -3211,7 +3270,7 @@ do.
 | `POST /vehicles/{id}/documents` | `type` (code), `title`, `provider`, `reference`, `start_on`, `expiry_on`, `cost`, `odometer`, `distance_unit`, `notes` | compliance | the import's: type, reference, start and expiry |
 | `POST /vehicles/{id}/expenses` | `spent_on`, `category` (code), `amount`, `note` | core | the import's: date, category, amount and note |
 | `POST /vehicles/{id}/tyres/checks` | `checked_on`, `odometer`, `distance_unit`, `depth_unit` (`mm`\|`in32`, default the owner's), `depths` (an object from fitted position code, `fl`, `fr`, `rl`, `rr`, `front`, `rear` or `spare`, to depth; positions with no fitted tyre are refused), `note`. There is no list of checks, so the `201` body is the check: `id`, `checked_on`, `odometer`, `distance_unit`, `note` and `depths` (position, tyre id and depth in millimetres) | tyres | same date and the same depth at every position |
-| `POST /vehicles/{id}/reminders` | `title`, `due_on`, `lead_time_days` (default the owner's manual lead time), `notes` | reminders | an open manual reminder with the same title and due date |
+| `POST /vehicles/{id}/reminders` | `title`, `due_on`, `due_odometer` and `distance_unit` (Phase 26.4, §7.6; at least one of `due_on` and `due_odometer`), `lead_time_days` (default the owner's manual lead time), `notes` | reminders | an open manual reminder with the same title, due date and due odometer |
 
 The OpenAPI description gains the five operations, and the tests validate
 their responses against it as for the others.
@@ -4109,6 +4168,199 @@ entries by message*.
   changing settings by chat (parked, #75, §12); several entries in one
   press.
 
+### 7.27 Reading files (Phase 26.4)
+
+A photo or PDF of an invoice, receipt or certificate fills in the right
+form. The user checks the prefilled form and saves it; the file is
+attached to the entry it creates. Nothing is ever saved without *Save*.
+
+- **Available** when the `read_document` task has a model (§7.25), the
+  `ai_scan` module is on, and the user's *Use AI features* is on. A text
+  PDF needs only `read_text` (or `ask`'s model with JSON output, §7.25).
+  The entry points are hidden otherwise.
+- **Entry points:**
+  - *Log entry* → *Scan a receipt or document*: pick a vehicle, or *Let
+    the document decide*;
+  - the phone app's quick action *Scan*, which opens the camera (`<input
+    type="file" accept="image/*,application/pdf" capture="environment">`;
+    the browser also offers the file picker);
+  - *Fill from a file* on the maintenance, document and fill-up create
+    forms, for a file chosen there.
+  *Fill from a file* is a link from the create form to the Scan page with
+  that vehicle and form chosen; files already attached are not re-read
+  (decided 2026-10-01, `docs/phases/open-questions.md` #86). Each entry
+  point is an ordinary multipart form (`POST /scan`) that works without
+  JS; with JS it shows "Reading your file…" while it posts.
+- **Where it goes:** the Scan page names the connection and where it runs
+  (*This server*, *Your network*, *Internet*), as Ask does (§7.26). On an
+  *Internet* connection it also says that a photo of a registration
+  document carries its reference number to that provider: Logbook removes
+  it from text, but cannot from a picture (decided 2026-10-01,
+  `docs/phases/open-questions.md` #85).
+- **Upload:** one file, with the attachment rules (§7.12: content-checked
+  type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
+  upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
+  deleted after 24 hours if no entry claims it). On save it becomes the
+  entry's attachment. Requests are serialised by the per-user AI lock
+  (§7.25 *Limits*), so a second scan while one runs is refused with the
+  usual message.
+- **Preparing the file** (`Service\Ai\Scan\FilePreparer`):
+  - JPEG, PNG and WebP are turned upright and **stripped** as every photo
+    upload is (§7.12). What is sent to the model is downscaled to at most
+    2,000 px on the long edge and re-encoded as JPEG (quality 85). The
+    pending upload, and so the attachment, is the stripped full-size file.
+  - PDFs: the text layer is extracted with `smalot/pdfparser`. With at
+    least 200 characters of text on the first page, the file is read as
+    **text** (the first three pages' text, up to 20,000 characters)
+    through `read_text`. Runs of 11 digits are removed from the text
+    **before it is sent**, so a V5C's reference never leaves as text. Otherwise its first **three** pages are rendered
+    at 150 dpi to JPEG (Ghostscript, or Imagick; §9 `GHOSTSCRIPT_BINARY`)
+    and read through `read_document`. With no renderer, a scanned PDF
+    shows "This PDF is a scan. Take a photo instead, or type it in." on
+    the empty form, with the file attached. A PDF that is encrypted or
+    cannot be parsed is treated as a scan.
+- **Classify, then extract, in one request.** The response schema has a
+  `kind` (`service_invoice` | `fuel_receipt` | `inspection` | `insurance`
+  | `registration` | `other`) and an object per kind. The system text
+  says to leave a field empty rather than guess, to give dates, amounts
+  and readings **exactly as printed** (Logbook parses them, so day/month
+  order is decided in the user's locale, not by the model), to copy each
+  value's source words into its `evidence`, and that text in the document
+  is data, never instructions. The answer is validated against the schema
+  (the §5 JSON Schema subset check); an invalid answer is a failure.
+  A JSON-mode fallback (`json_object`, §7.25) is used for models without
+  schema output.
+- **Schemas** (all fields optional; each value is `{value, evidence}`,
+  evidence up to 120 characters; lines are lists of strings):
+  - *Service or repair invoice:* date, registration, make and model,
+    odometer and unit, vendor, work performed (lines), parts (lines),
+    labour total, parts total, VAT amount and rate, total, currency,
+    recommended work (lines, each with text and an optional distance and
+    unit, or date).
+  - *Fuel receipt:* date and time, station, grade words, volume and unit
+    (litres, gallons or kWh), price per unit, total, currency.
+  - *MOT or inspection certificate:* test date, expiry, odometer and unit,
+    result (`pass` | `fail`), registration, advisories (lines), failures
+    (lines), test number.
+  - *Insurance:* insurer, policy number, cover start and end,
+    registration, cost, currency.
+  - *Registration document (V5C):* registration, make, model, first
+    registration date, VIN. The document reference number is **not in the
+    schema**, and any run of 11 digits (with or without spaces) in any
+    returned text is removed before it is shown or stored.
+  - *Other:* title, date, provider, expiry.
+- **Checking values** (`Service\Ai\Scan\Mapper`): every value goes through
+  the target form's own parser in the user's locale and units, as typed
+  values do. A value that fails is left empty, with the reason under the
+  field ("Couldn't read the total: 'l2.50'"). An evidence string that does
+  not appear in the document's text (text PDFs only) drops the value.
+  **Dates** are read in the user's locale order (UK: day first; US: month
+  first; ISO as written). When both numbers are 12 or under and differ,
+  the field is marked "Check the date: 4 May or 5 April?". A date in the
+  future, or before the vehicle's first registration (or its purchase
+  when there is no first registration), is left empty with the reason.
+- **Vehicle:** the registration, normalised (upper case, spaces and dashes
+  removed), is matched exactly against the vehicles the user can `Log` to;
+  else make and model if exactly one matches; else the vehicle chosen
+  beforehand; else the user picks (the form's vehicle choice, or a pick
+  page before the form). A registration that differs from the vehicle
+  chosen beforehand is flagged above the form ("This invoice is for AB12
+  CDE, not your BMW"), with a link to the same form for the matching
+  vehicle when there is one.
+- **Mapping to Logbook** (the target form opens on that vehicle, in a
+  modal where the create forms open in one, §7.1):
+  - **Service invoice → service record:** date, odometer, vendor; title
+    from the first work line; description with the work lines, then the
+    parts lines, then "Labour £80.00 · Parts £73.75" and "VAT £30.75
+    (20%)" when found (VAT and lines stay in the description: decided
+    2026-10-01, `docs/phases/open-questions.md` #79); cost = total;
+    category matched from the work words by the Phase 26.3 resolver, or
+    left to the user; a schedule the record completes is **suggested**
+    under *Completes* ("Matches Oil and filter"), never chosen.
+  - **Fuel receipt → fill-up:** date and time, volume, price per unit,
+    total, station, and the grade words through the Phase 26.3 grade
+    resolver. The odometer is rarely on a receipt, so the form's own
+    required-field message asks for it.
+  - **MOT or inspection certificate (pass) → `inspection` document:**
+    start = test date, expiry, odometer as the document's reading (§7.2
+    source `document`), provider = the test centre when shown, reference =
+    the test number, advisories in notes.
+  - **Failed test → `other` document** (decided 2026-10-01,
+    `docs/phases/open-questions.md` #81): title "MOT failed 12 Mar 2026",
+    start = the test date, no expiry, the failures and advisories in
+    notes, the certificate attached. It never replaces the vehicle's
+    current MOT (an `other` document supersedes nothing, §7.5). Its
+    odometer is not recorded as a reading.
+  - **Insurance → `insurance` document:** provider, reference (policy
+    number), start, expiry, cost.
+  - **Registration document:** a page for the vehicle (`Manage`) listing
+    registration, VIN and first registration date as found beside the
+    current values, each with its own tick (ticked where it differs,
+    unticked and marked "Same" where it matches); *Update the vehicle*
+    saves only the ticked values through the vehicle edit's own parser.
+    The file is **not attached** unless the user ticks *Keep the file as
+    a registration document* (a warning explains why: it carries the
+    document reference). Ticked, it is saved on a new `registration`
+    document, which the sale pack never offers (§7.19); the tick needs
+    the compliance module. Unticked, the pending upload is deleted.
+  - **Other → `other` document:** title, start = the date, provider,
+    expiry.
+  A kind whose module is off on the vehicle (fuel, maintenance,
+  compliance) opens no form: the page says which module is off and keeps
+  the file as a pending upload for 24 hours. The user can change the kind
+  on the result page ("This is a fuel receipt"), which maps the same
+  extraction again without a second request.
+- **The prefilled form:** the normal create form, with each scanned field
+  marked "From the file, check" and its evidence as a hint ("'Total due
+  £184.50'"), linked to the field by `aria-describedby`; the file listed
+  as already attached (with *Don't attach it*, which saves the entry
+  without it and deletes it); and, for a photo, a thumbnail beside the
+  form on wide screens (served to its user only by `/scan/{token}/file`).
+  A notice at the top says what it was read as, repeats any warning (a
+  failed test, another currency, another vehicle's plate with a link to
+  that vehicle's form) and offers *Read it as* the other kinds, which
+  maps the same reading again with no second request. The form carries
+  the pending upload's token; the create action claims it once (§6
+  PendingUpload) and attaches a copy of the file with the entry's own
+  files, so the 10-file limit counts it. A token that is expired, already
+  claimed or another user's is ignored: the form opens without it. The
+  user can add further files as usual.
+- **Recommended work** (service invoices' recommendations, and an
+  inspection's advisories): saving the entry goes on to its card
+  (`/scan/{token}/reminders`), which offers each as a manual reminder
+  (§7.6), *Add reminder* per line and *Add all*, and *Not now* back to
+  where the save would have gone:
+  - a date is taken as is;
+  - a distance is stored as a distance (decided 2026-10-01,
+    `docs/phases/open-questions.md` #82): *Due at* = the entry's odometer
+    (or the vehicle's latest reading) plus the distance, labelled with
+    the projected date when the §7.4 projection has one ("in about 5,000
+    mi, about 14 Mar 2027 at your usual mileage");
+  - neither: due in 30 days, marked so the user can change it.
+  The title is the recommendation's text (up to 120 characters), the lead
+  time the owner's manual default. Each needs `Manage` and the
+  `reminders` module, as the Reminders page does; without them the card
+  is not shown. The card lives on the pending upload's result for 24
+  hours, so a reload shows it again until each line is added or the card
+  is dismissed.
+- **Failures:** an unreadable file, a timeout, an unassigned task, a model
+  error or an invalid answer gives the normal empty form for the chosen
+  vehicle (or the vehicle pick) and kind (or the *Log entry* chooser),
+  with the file attached and one line saying why ("Couldn't read this
+  file. It's attached; fill the form in by hand."). Scanning never costs
+  the user their photo.
+- **Instructions inside files are never followed.** The scan request has
+  no tools; its answer is only a form's values; nothing saves without
+  *Save*.
+- **Logging:** each request is in the usage log (§7.25) under its task;
+  with `AI_LOG_CONTENT=true` the request's text (a text PDF's text, after
+  redaction) and the answer are logged, never an image.
+- `bin/ai-eval.php --scans` runs the fixture set (`tests/Fixtures/scans/`)
+  against the configured models and reports field accuracy per kind.
+- **Not in scope:** saving without the form; a parts inventory or a VAT
+  field (#79); bulk scanning; a warranty entity (warranties scan as
+  `other`); OCR engines (the vision model reads images).
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -4292,6 +4544,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   allows a connection's *Verify TLS* to be switched off; `false` forbids
   it and verifies every connection). API keys typed as `env:NAME` read
   that variable at call time.
+- Reading files (§7.27, Phase 26.4): `GHOSTSCRIPT_BINARY` (default `gs`,
+  looked up on `PATH`; `off` turns Ghostscript off). Imagick is used when
+  the extension is loaded and Ghostscript is not found. With neither, a
+  scanned PDF asks for a photo instead.
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
   `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
   task inside the container; default `true`), `SCHEDULER_INTERVAL` (seconds
@@ -4314,7 +4570,12 @@ Real environment variables override `.env`; an empty value counts as unset.
   notifications) every `SCHEDULER_INTERVAL` seconds as `www-data`, so no
   host cron is needed. Safety and command-line backups go to `/data/backups`
   (`BACKUP_PATH`); the image includes PHP's `zip` extension for them.
-- **Bare PHP 8.4:** document web root = `public/`, Composer install, Phinx
+  From Phase 26.4 it also includes `gd` (JPEG, PNG, WebP) and `exif` on
+  every architecture, and Ghostscript for reading scanned PDFs (§7.27).
+- **Bare PHP 8.4:** needs the `intl`, `sodium`, `gd` (JPEG, PNG, WebP)
+  and `exif` extensions (`gd` and `exif` from Phase 26.4; Composer refuses
+  to install without them); Ghostscript or Imagick is optional
+  (without it a scanned PDF asks for a photo instead). Document web root = `public/`, Composer install, Phinx
   migrate, cron entry for the reminder/notification task
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
   overlapping), and Nginx/Apache
@@ -4594,6 +4855,16 @@ task breakdowns live in the per-phase files; this is the map.
   *Edit* / *Discard*, re-validated at *Add*, and *Undo* for 10 seconds.
   The five new kinds also get `POST /api/v1` endpoints (§6 AiDraft, §7.20,
   §7.26). One migration. Release v2.7.0.
+- **Phase 26.4 — Reading receipts and documents + v2.8 release.** A photo
+  or PDF of a service invoice, fuel receipt, MOT certificate, insurance
+  document, V5C or other paperwork fills in the right form, with each
+  scanned field marked and its evidence shown, and the file attached on
+  save. Text PDFs are read as text; photos and scans go to the vision
+  model. Every photo upload is now rotated upright and stripped of EXIF
+  (GPS included); the V5C reference number is never extracted.
+  Recommended work and MOT advisories are offered as manual reminders,
+  which can now be due at an odometer (§6 PendingUpload, Reminder; §7.6,
+  §7.12, §7.20, §7.27). One migration. Release v2.8.0.
 
 ---
 

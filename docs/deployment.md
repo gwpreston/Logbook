@@ -117,8 +117,13 @@ described in [notification-channels.md](notification-channels.md).
 
 ### Requirements
 
-- **64-bit** PHP **8.4** (8.5 also works) with `intl`, `pdo`, and `pdo_pgsql` **or**
-  `pdo_mysql` (`pdo_sqlite` for SQLite); Composer 2.
+- **64-bit** PHP **8.4** (8.5 also works) with `intl`, `sodium`, `gd` (with
+  JPEG, PNG and WebP), `exif`, `pdo`, and `pdo_pgsql` **or** `pdo_mysql`
+  (`pdo_sqlite` for SQLite); Composer 2. `gd` and `exif` are required from
+  2.8.0: every photo upload is turned upright and stripped of its EXIF
+  (Debian/Ubuntu: `apt install php8.4-gd`; `exif` is usually built in).
+- Optional: **Ghostscript** (`apt install ghostscript`) or Imagick, to read
+  scanned PDFs when [reading receipts](ai.md#reading-receipts-and-documents).
 - `zip` (`php-zip`) for backup and restore; everything else works without it.
 - PostgreSQL 13+ or MySQL 8.0+ / MariaDB 10.6+ (or SQLite for a trial).
 - Apache 2.4 with `mod_rewrite`, or nginx + php-fpm.

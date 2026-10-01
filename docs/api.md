@@ -197,7 +197,7 @@ Dates are `YYYY-MM-DD` and default to today in your time zone.
 | `POST /vehicles/{id}/documents` | `type` (required: `insurance`, `inspection`, …), `title`, `provider`, `reference`, `start_on`, `expiry_on`, `cost`, `odometer` (needs `start_on`), `distance_unit`, `notes` | Log | same type, reference, start and expiry |
 | `POST /vehicles/{id}/expenses` | `spent_on`, `category` (required: `parking`, `tolls`, …), `amount` (0 is fine), `note` | Log | same date, category, amount and note |
 | `POST /vehicles/{id}/tyres/checks` | `checked_on`, `odometer`, `distance_unit`, `depth_unit` (`mm` or `in32`; default yours), `depths` (required: `{"fl": "6.5", "fr": "6.4"}`, fitted positions only), `note` | Log | same date and the same depth at every position |
-| `POST /vehicles/{id}/reminders` | `title` and `due_on` (required), `lead_time_days` (default your manual lead time), `notes` | Manage | an open manual reminder with the same title and due date |
+| `POST /vehicles/{id}/reminders` | `title` (required); `due_on`, `due_odometer` (in `distance_unit`, default yours; from 2.8.0) or both, at least one, whichever comes first; `lead_time_days` (default your manual lead time), `notes` | Manage | an open manual reminder with the same title, due date and due odometer |
 
 ```sh
 # A service record in miles; it writes its odometer reading, as the form does.
