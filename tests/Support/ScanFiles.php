@@ -54,7 +54,8 @@ final class ScanFiles
             '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
             '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>',
             self::stream(sprintf(
-                '/Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode',
+                '/Type /XObject /Subtype /Image /Width %d /Height %d'
+                    . ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode',
                 $width,
                 $height,
             ), $jpeg),
@@ -128,6 +129,15 @@ final class ScanFiles
 
     private static function ascii(string $text): string
     {
-        return strtr($text, ['£' => 'GBP ', '€' => 'EUR ', '–' => '-', '’' => "'", 'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss']);
+        return strtr($text, [
+            '£' => 'GBP ',
+            '€' => 'EUR ',
+            '–' => '-',
+            '’' => "'",
+            'ä' => 'ae',
+            'ö' => 'oe',
+            'ü' => 'ue',
+            'ß' => 'ss',
+        ]);
     }
 }

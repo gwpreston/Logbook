@@ -15,14 +15,23 @@ use NumberFormatter;
  */
 final class PrintedNumber
 {
+    /** Units and words that may stand beside a printed number. */
+    private const string UNITS = 'p|c|ct|cent|cents|pence|l|ltr|ltrs|litre|litres|liter|liters|kwh'
+        . '|km|kms|mi|miles|mls|gal|gals|gallon|gallons|%';
+
     public static function read(string $printed, string $locale): ?string
     {
         // Spaces and apostrophes group thousands (48 120, 1'234.50).
-        $text = (string) preg_replace("/(?<=\\d)[\\s\\x{00A0}\\x{202F}'’](?=\\d{3}\\b)/u", '', $printed);
-        if (preg_match('/-?\d[\d.,]*/', $text, $m) !== 1) {
+        $text = (string) preg_replace("/(?<=\\d)[\\s\\x{00A0}\\x{202F}'’](?=\\d{3}\\b)/u", '', trim($printed));
+        // Currency signs and codes, and a unit before or after: anything else
+        // beside the digits (a misread "l2.5O") is not a number.
+        $text = (string) preg_replace('/[£€$₹¥]|\b[A-Z]{3}\b/u', ' ', $text);
+        $unit = '/(^|\s|(?<=\d))(' . self::UNITS . ')(\/(' . self::UNITS . '))?(?=\s|$)/iu';
+        $text = trim((string) preg_replace($unit, ' ', $text));
+        if (preg_match('/^-?\d[\d.,]*$/', $text) !== 1) {
             return null;
         }
-        $number = rtrim($m[0], '.,');
+        $number = rtrim($text, '.,');
         $negative = str_starts_with($number, '-');
         $number = ltrim($number, '-');
 

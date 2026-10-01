@@ -44,9 +44,10 @@
             <section class="card">
                 <div class="field">
                     <label class="field__label" for="f-file">{{ 'scan.field.file'|trans }}</label>
-                    {{ ui.file_drop('<input class="input" id="f-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" required' ~ (errors.file is defined ? ' aria-invalid="true" aria-describedby="f-file-hint f-file-error"' : ' aria-describedby="f-file-hint"') ~ '>', {max_mb: max_upload_mb}) }}
+                    {% set native %}<input class="input input--file" id="f-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" required{{ ui.described_by('file', errors, true) }}>{% endset %}
+                    {{ ui.file_drop(native, {max_mb: max_upload_mb}) }}
                     <p class="field__hint" id="f-file-hint">{{ (reads_pictures ? 'scan.hint.file' : 'scan.hint.file_text_only')|trans({max: max_upload_mb}) }}</p>
-                    {% if errors.file is defined %}<p class="field__error" id="f-file-error">{{ errors.file.key|trans }}</p>{% endif %}
+                    {{ ui.field_error(errors, 'file') }}
                 </div>
                 {{ ui.select('vehicle_id', 'scan.field.vehicle'|trans, values, errors, vehicle_options, {hint: 'scan.hint.vehicle'|trans}) }}
             </section>

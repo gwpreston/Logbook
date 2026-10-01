@@ -31,7 +31,6 @@ use Slim\Psr7\UploadedFile;
 abstract class ScanTestCase extends AiTestCase
 {
     protected const string NOW = '2026-10-15T12:00:00Z';
-    protected const string FIXTURES = __DIR__ . '/../Fixtures/scans';
 
     /** @var App<ContainerInterface> */
     protected App $app;
@@ -145,35 +144,6 @@ abstract class ScanTestCase extends AiTestCase
         $this->tempFiles[] = $path;
 
         return new UploadedFile($path, $name, $mime, strlen($bytes), UPLOAD_ERR_OK);
-    }
-
-    /**
-     * A fixture's JSON (manifest.php as build.php wrote it) and its file's bytes.
-     *
-     * @return array{0: array<string, mixed>, 1: string}
-     */
-    protected static function fixture(string $name): array
-    {
-        $json = json_decode((string) file_get_contents(self::FIXTURES . '/' . $name . '.json'), true);
-        self::assertIsArray($json);
-        $file = $json['file'] ?? null;
-        self::assertIsString($file);
-
-        return [$json, (string) file_get_contents(self::FIXTURES . '/' . $file)];
-    }
-
-    /**
-     * @return list<string> every fixture's name, in order
-     */
-    protected static function fixtureNames(): array
-    {
-        $names = array_map(
-            static fn (string $path): string => basename($path, '.json'),
-            glob(self::FIXTURES . '/[0-9][0-9]-*.json') ?: [],
-        );
-        sort($names);
-
-        return $names;
     }
 
     /**

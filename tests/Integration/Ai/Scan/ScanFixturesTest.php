@@ -8,6 +8,7 @@ use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\UnitPreset;
 use Logbook\Tests\Support\ExifJpeg;
 use Logbook\Tests\Support\Html;
+use Logbook\Tests\Support\ScanFixture;
 use Logbook\Tests\Support\ScanTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -26,7 +27,7 @@ final class ScanFixturesTest extends ScanTestCase
      */
     public static function fixtures(): iterable
     {
-        foreach (self::fixtureNames() as $name) {
+        foreach (ScanFixture::names() as $name) {
             yield $name => [$name];
         }
     }
@@ -34,36 +35,25 @@ final class ScanFixturesTest extends ScanTestCase
     #[DataProvider('fixtures')]
     public function testTheDocumentFillsTheRightForm(string $name): void
     {
-        [$fixture, $bytes] = self::fixture($name);
-        $locale = is_string($fixture['locale'] ?? null) ? $fixture['locale'] : 'en_GB';
-        $this->scanApp([], $locale === 'de_DE' ? self::german() : null);
-        $expect = is_array($fixture['expect'] ?? null) ? $fixture['expect'] : [];
-        $reply = is_array($fixture['reply'] ?? null) ? $fixture['reply'] : [];
-        $this->reply($reply);
+        $fixture = ScanFixture::load($name);
+        $this->scanApp([], $fixture->locale === 'de_DE' ? self::german() : null);
+        $this->reply($fixture->reply);
 
-        $fields = [];
-        if (is_string($fixture['chosen'] ?? null)) {
-            $fields['vehicle_id'] = (string) $this->garage[$fixture['chosen']]->id;
-        }
-        $type = (string) ($fixture['type'] ?? '');
-        $file = (string) ($fixture['file'] ?? '');
-        $mime = str_ends_with($file, '.pdf') ? 'application/pdf' : 'image/jpeg';
-        [$page, $path] = $this->land($this->scan($bytes, $file, $mime, $fields));
+        $fields = $fixture->chosen === null ? [] : ['vehicle_id' => (string) $this->garage[$fixture->chosen]->id];
+        [$page, $path] = $this->land($this->scan($fixture->bytes(), $fixture->file, $fixture->mime(), $fields));
 
-        if (($expect['vehicle'] ?? null) === null) {
+        $expectedVehicle = $fixture->expected('vehicle');
+        if ($expectedVehicle === null) {
             self::assertStringContainsString('Which vehicle is it for?', self::body($page), 'the user picks the vehicle');
-            $pick = (string) ($fixture['pick'] ?? 'Golf');
-            $token = self::token($path);
-            [$page, $more] = $this->land($this->browser->get('/scan/' . $token . '?vehicle=' . $this->garage[$pick]->id));
+            $vehicle = $this->garage[$fixture->pick ?? 'Golf'];
+            [$page, $more] = $this->land($this->browser->get('/scan/' . self::token($path) . '?vehicle=' . $vehicle->id));
             $path = [...$path, ...$more];
-            $vehicle = $this->garage[$pick];
         } else {
-            $vehicle = $this->garage[(string) $expect['vehicle']];
+            $vehicle = $this->garage[$expectedVehicle];
         }
         self::assertSame(200, $page->getStatusCode(), implode(' → ', $path));
 
-        $form = (string) ($expect['form'] ?? '');
-        $last = (string) end($path);
+        $form = (string) $fixture->expected('form');
         $expectedPath = match ($form) {
             'maintenance' => '/vehicles/' . $vehicle->id . '/maintenance/new?',
             'fuel' => '/vehicles/' . $vehicle->id . '/fuel/new?',
@@ -71,27 +61,28 @@ final class ScanFixturesTest extends ScanTestCase
             'vehicle' => '/scan/' . self::token($path) . '/vehicle?vehicle=' . $vehicle->id,
             default => self::fail('unknown form ' . $form),
         };
-        self::assertStringStartsWith($expectedPath, $last);
+        self::assertStringStartsWith($expectedPath, (string) end($path));
 
         $html = self::body($page);
         $values = $form === 'vehicle'
             ? $this->vehicleRows($html)
             : Html::formValues(Html::element(Html::document($html), 'form.form'));
-        foreach (is_array($expect['values'] ?? null) ? $expect['values'] : [] as $field => $value) {
-            self::assertSame((string) $value, $values[(string) $field] ?? null, $name . ': ' . $field);
+        foreach ($fixture->expectedMap('values') as $field => $value) {
+            self::assertSame($value, $values[$field] ?? null, $name . ': ' . $field);
         }
-        foreach (is_array($expect['absent'] ?? null) ? $expect['absent'] : [] as $field) {
-            self::assertSame('', $values[(string) $field] ?? '', $name . ': ' . $field . ' is left empty');
+        foreach ($fixture->expectedList('absent') as $field) {
+            self::assertSame('', $values[$field] ?? '', $name . ': ' . $field . ' is left empty');
         }
         $text = $values['description'] ?? $values['notes'] ?? '';
-        foreach (is_array($expect['description'] ?? null) ? $expect['description'] : (is_array($expect['notes'] ?? null) ? $expect['notes'] : []) as $part) {
-            self::assertStringContainsString((string) $part, $text, $name);
+        foreach ([...$fixture->expectedList('description'), ...$fixture->expectedList('notes')] as $part) {
+            self::assertStringContainsString($part, $text, $name);
         }
-        foreach (is_array($expect['check'] ?? null) ? $expect['check'] : [] as $message) {
-            self::assertStringContainsString((string) $message, html_entity_decode($html), $name);
+        foreach ($fixture->expectedMap('check') as $message) {
+            self::assertStringContainsString($message, html_entity_decode($html), $name);
         }
-        if (is_string($expect['warning'] ?? null)) {
-            self::assertStringContainsString($expect['warning'], html_entity_decode($html), $name);
+        $warning = $fixture->expected('warning');
+        if ($warning !== null) {
+            self::assertStringContainsString($warning, html_entity_decode($html), $name);
         }
         if ($form !== 'vehicle') {
             self::assertStringContainsString('field__from-file', $html, 'scanned fields are marked');
@@ -101,7 +92,7 @@ final class ScanFixturesTest extends ScanTestCase
         // What was sent: text for a text PDF, pictures for the rest.
         self::assertCount(1, $this->provider->requests);
         $images = $this->sentImages(0);
-        if ($type === 'text_pdf') {
+        if ($fixture->type === 'text_pdf') {
             self::assertSame([], $images, 'a text PDF is read as text');
             self::assertStringContainsString('<<<', $this->sentText(0));
             self::assertSame('llama3.2:3b', $this->request(0)['model'] ?? null, 'through read_text');
@@ -109,13 +100,14 @@ final class ScanFixturesTest extends ScanTestCase
             self::assertCount(1, $images);
             self::assertFalse(ExifJpeg::hasExif($images[0]), 'no EXIF (and so no GPS) is sent');
             self::assertSame('qwen2.5vl:7b', $this->request(0)['model'] ?? null, 'through read_document');
-            self::assertSame($type === 'scan_pdf' ? 1 : 0, $this->renderer->calls);
+            self::assertSame($fixture->type === 'scan_pdf' ? 1 : 0, $this->renderer->calls);
         }
-        if (is_string($expect['no_reference'] ?? null)) {
-            $reference = $expect['no_reference'];
+        $reference = $fixture->expected('no_reference');
+        if ($reference !== null) {
+            $compact = str_replace(' ', '', $reference);
             self::assertStringNotContainsString($reference, $html, 'the V5C reference is never shown');
-            self::assertStringNotContainsString(str_replace(' ', '', $reference), $this->storedResults());
-            self::assertStringNotContainsString(str_replace(' ', '', $reference), str_replace(' ', '', $this->sentText(0)));
+            self::assertStringNotContainsString($compact, $this->storedResults(), 'nor stored');
+            self::assertStringNotContainsString($compact, str_replace(' ', '', $this->sentText(0)), 'nor sent as text');
         }
     }
 
@@ -155,7 +147,7 @@ final class ScanFixturesTest extends ScanTestCase
     private static function token(array $path): string
     {
         foreach ($path as $location) {
-            if (preg_match('#/scan/([a-f0-9]{32})#', $location, $m) === 1 || preg_match('#[?&]scan=([a-f0-9]{32})#', $location, $m) === 1) {
+            if (preg_match('#(?:/scan/|[?&]scan=)([a-f0-9]{32})#', $location, $m) === 1) {
                 return $m[1];
             }
         }
@@ -166,6 +158,13 @@ final class ScanFixturesTest extends ScanTestCase
     {
         $preset = UnitPreset::Metric;
 
-        return new DisplayPreferences('de_DE', 'Europe/Berlin', $preset->distance(), $preset->volume(), $preset->consumption(), 'EUR');
+        return new DisplayPreferences(
+            'de_DE',
+            'Europe/Berlin',
+            $preset->distance(),
+            $preset->volume(),
+            $preset->consumption(),
+            'EUR',
+        );
     }
 }

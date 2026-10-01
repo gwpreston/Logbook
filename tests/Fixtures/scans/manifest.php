@@ -60,7 +60,9 @@ return [
             'lines' => [
                 'work' => ['Full service', 'Oil and filter change', 'Air filter replaced'],
                 'parts' => ['Engine oil 5W-30 4.5 litres 38.25', 'Oil filter 12.50', 'Air filter 23.00'],
-                'recommendations' => [['text' => 'Front brake pads', 'distance' => '5,000', 'distance_unit' => 'miles', 'date' => null]],
+                'recommendations' => [
+                    ['text' => 'Front brake pads', 'distance' => '5,000', 'distance_unit' => 'miles', 'date' => null],
+                ],
             ],
         ],
         'expect' => [
@@ -105,7 +107,13 @@ return [
         'expect' => [
             'form' => 'maintenance',
             'vehicle' => 'Golf',
-            'values' => ['performed_on' => '2026-08-22', 'odometer' => '47610', 'cost' => '129', 'title' => 'Interim service', 'category' => 'service'],
+            'values' => [
+                'performed_on' => '2026-08-22',
+                'odometer' => '47610',
+                'cost' => '129',
+                'title' => 'Interim service',
+                'category' => 'service',
+            ],
         ],
     ],
     '03-service-invoice-scan' => [
@@ -159,7 +167,9 @@ return [
             ],
             'lines' => [
                 'work' => ['Front brake pads and discs replaced', 'Brake fluid changed'],
-                'recommendations' => [['text' => 'Rear tyres need replacing', 'distance' => null, 'distance_unit' => null, 'date' => '15/01/2027']],
+                'recommendations' => [
+                    ['text' => 'Rear tyres need replacing', 'distance' => null, 'distance_unit' => null, 'date' => '15/01/2027'],
+                ],
             ],
         ],
         'expect' => [
@@ -209,7 +219,13 @@ return [
         'expect' => [
             'form' => 'fuel',
             'vehicle' => null,
-            'values' => ['filled_at' => '2026-10-14T08:42', 'volume' => '42.18', 'price' => '1.429', 'total' => '60.28', 'station' => 'Shoreline Fuels'],
+            'values' => [
+                'filled_at' => '2026-10-14T08:42',
+                'volume' => '42.18',
+                'price' => '1.429',
+                'total' => '60.28',
+                'station' => 'Shoreline Fuels',
+            ],
         ],
     ],
     '07-fuel-receipt-text' => [
@@ -241,7 +257,13 @@ return [
         'expect' => [
             'form' => 'fuel',
             'vehicle' => null,
-            'values' => ['filled_at' => '2026-10-10T17:05', 'volume' => '55.02', 'price' => '1.519', 'total' => '83.58', 'fuel' => 'diesel:b7'],
+            'values' => [
+                'filled_at' => '2026-10-10T17:05',
+                'volume' => '55.02',
+                'price' => '1.519',
+                'total' => '83.58',
+                'fuel' => 'diesel:b7',
+            ],
         ],
     ],
     '08-diesel-receipt-photo' => [
@@ -264,7 +286,13 @@ return [
         'expect' => [
             'form' => 'fuel',
             'vehicle' => 'BMW',
-            'values' => ['filled_at' => '2026-10-09T12:10', 'volume' => '38.4', 'price' => '1.499', 'total' => '57.56', 'fuel' => 'diesel'],
+            'values' => [
+                'filled_at' => '2026-10-09T12:10',
+                'volume' => '38.4',
+                'price' => '1.499',
+                'total' => '57.56',
+                'fuel' => 'diesel',
+            ],
         ],
     ],
     '09-ev-charge-text' => [
@@ -324,12 +352,20 @@ return [
                 'reference' => $field('4417 2290 1186', 'MOT test number 4417 2290 1186'),
                 'vendor' => $field('Exe Valley Test Centre', 'Exe Valley Test Centre'),
             ],
-            'lines' => ['advisories' => ['Nearside front tyre worn close to legal limit', 'Front brake disc worn, pitted or scored']],
+            'lines' => [
+                'advisories' => ['Nearside front tyre worn close to legal limit', 'Front brake disc worn, pitted or scored'],
+            ],
         ],
         'expect' => [
             'form' => 'document',
             'vehicle' => 'Golf',
-            'values' => ['type' => 'inspection', 'start_on' => '2026-03-01', 'expiry_on' => '2027-02-28', 'odometer' => '44915', 'provider' => 'Exe Valley Test Centre'],
+            'values' => [
+                'type' => 'inspection',
+                'start_on' => '2026-03-01',
+                'expiry_on' => '2027-02-28',
+                'odometer' => '44915',
+                'provider' => 'Exe Valley Test Centre',
+            ],
             'notes' => ['Advisories', 'Nearside front tyre worn close to legal limit'],
             'recommendations' => 2,
         ],
@@ -413,7 +449,14 @@ return [
         'expect' => [
             'form' => 'document',
             'vehicle' => 'Golf',
-            'values' => ['type' => 'insurance', 'provider' => 'Harbourside Insurance plc', 'reference' => 'HSI-88213-PC', 'start_on' => '2026-04-01', 'expiry_on' => '2027-03-31', 'cost' => '412.66'],
+            'values' => [
+                'type' => 'insurance',
+                'provider' => 'Harbourside Insurance plc',
+                'reference' => 'HSI-88213-PC',
+                'start_on' => '2026-04-01',
+                'expiry_on' => '2027-03-31',
+                'cost' => '412.66',
+            ],
         ],
     ],
     '14-insurance-scan' => [
@@ -438,7 +481,14 @@ return [
     ],
     '15-v5c-photo' => [
         'type' => 'photo',
-        'lines' => ['VEHICLE REGISTRATION CERTIFICATE V5C', 'Document reference number 12345678901', 'A Registration mark AB12 CDE', 'B Date of first registration 01 03 2018', 'D.1 Make VOLKSWAGEN  D.3 Model GOLF', 'E VIN WVWZZZ1KZAW123456'],
+        'lines' => [
+            'VEHICLE REGISTRATION CERTIFICATE V5C',
+            'Document reference number 12345678901',
+            'A Registration mark AB12 CDE',
+            'B Date of first registration 01 03 2018',
+            'D.1 Make VOLKSWAGEN  D.3 Model GOLF',
+            'E VIN WVWZZZ1KZAW123456',
+        ],
         'reply' => [
             'kind' => 'registration',
             'fields' => [
@@ -509,7 +559,13 @@ return [
         'expect' => [
             'form' => 'document',
             'vehicle' => 'Golf',
-            'values' => ['type' => 'other', 'title' => 'Battery warranty', 'start_on' => '2026-10-02', 'expiry_on' => '2029-10-02', 'provider' => 'Ironbridge Batteries'],
+            'values' => [
+                'type' => 'other',
+                'title' => 'Battery warranty',
+                'start_on' => '2026-10-02',
+                'expiry_on' => '2029-10-02',
+                'provider' => 'Ironbridge Batteries',
+            ],
         ],
     ],
     '18-other-vehicle-invoice' => [
