@@ -28,7 +28,9 @@ before it started, and Phase 25's (#59–#64, four of them found while
 starting it) on the same day, before Phase 25 started. Phase 26.1's
 (#65–#69, two of them found while starting it) were answered on
 2026-10-01, before Phase 26.1 started, and Phase 26.2's (#70–#73, one of
-them found while starting it) on the same day, before Phase 26.2 started.
+them found while starting it) on the same day, before Phase 26.2 started,
+and Phase 26.3's (#74–#78, three of them found while starting it) on the
+same day, before Phase 26.3 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -105,6 +107,11 @@ them found while starting it) on the same day, before Phase 26.2 started.
 | 71 | [26.2](phase-26.2.md) | Feedback: counts only, or the question and answer with the mark? | Decided | The mark is stored on the thread's answer and deleted with the thread; counts are kept too. Nothing extra is stored, whatever `AI_LOG_CONTENT` says (spec §7.26). | 2026-10-01 |
 | 72 | [26.2](phase-26.2.md) | Does an admin's *Ask* see every vehicle? | Answered | No: only what they see in the app (#34; spec §7.21; `SharedVehicleAccess`). The tools use the same access. | 2026-10-01 |
 | 73 | [26.2](phase-26.2.md) | Progress lines without streaming? | Decided | The loop records each tool call as it starts; the page polls a JSON progress URL about once a second (spec §7.26). | 2026-10-01 |
+| 74 | [26.3](phase-26.3.md) | Several drafts at once: *Add all*, or one press per entry? | Decided | One press per entry. Each draft has its own card; there is no *Add all* (spec §7.26 *Drafting entries*). | 2026-10-01 |
+| 75 | [26.3](phase-26.3.md) | Settings by chat (lead times, units, modules)? | Parked | spec §12. Settings stay forms only. | 2026-10-01 |
+| 76 | [26.3](phase-26.3.md) | The five new input-adapter mappings: API endpoints too? | Decided | Yes. `POST /api/v1` for maintenance, documents, expenses, tread checks and manual reminders, built in this phase (spec §7.20 *More write endpoints*). | 2026-10-01 |
+| 77 | [26.3](phase-26.3.md) | A reminder relative to a document: fixed date, or one that follows it? | Answered | A fixed date. Manual reminders have no source (`reminders.source_id` is empty for manual rows, spec §6 Reminder), and the phase computes the date from the source (spec §7.26). | 2026-10-01 |
+| 78 | [26.3](phase-26.3.md) | Draft tools: module gating and model | Answered | Each tool needs its kind's module (`Feature`, spec §7.10) as well as `ai_actions`. They run on the `ask` task's model, which spec §7.25 already lists for drafting. | 2026-10-01 |
 
 ## Other loose ends found in the review
 

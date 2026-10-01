@@ -2,7 +2,7 @@
 
 *"Filled the BMW with 51 litres of E10 at £1.39, mileage 72,341." Add?*
 
-Status: 📋 planned · releases **v2.7.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.7.0** · file lives in `docs/phases/`
 
 Ask Logbook can read. This phase lets it **draft** new entries from a
 sentence: a fill-up, an odometer reading, a service record, a document, an
@@ -22,6 +22,9 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 
 1. **Draft tools** for seven entry kinds, each mapped through the Phase
    18.2 JSON input adapter to the same commands and validation as the forms.
+   The adapter covers fill-ups, readings and trips today. It gains the
+   other five kinds, and each of them also becomes a `POST /api/v1`
+   endpoint (decided 2026-10-01, #76).
 2. A **draft card** in the conversation: the parsed values, as Logbook
    computed and formatted them, the warnings, and *Add* / *Edit* /
    *Discard*.
@@ -111,6 +114,23 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
   pressing. The press is judged on the data as it is then.
 - **A short undo.** It turns a quick press into a safe one, without making
   AI entries different from any other.
+- **One press per entry** (decided 2026-10-01, #74). Each draft has its
+  own card and its own *Add*. A bad draft never holds up the others, and
+  each save is confirmed on its own.
+- **Settings by chat are parked** (decided 2026-10-01, #75) in spec §12.
+  Settings stay forms only.
+- **The new adapter mappings are API endpoints too** (decided 2026-10-01,
+  #76). Maintenance, documents, expenses, tread checks and manual
+  reminders can be written through `/api/v1`. They follow the rules the
+  fill-up and reading writes already follow (spec §7.20 *More write
+  endpoints*).
+- **Answered from the app while starting** (#77–#78):
+  - Manual reminders have no source, so a relative reminder gets a fixed
+    date, worked out once.
+  - Each draft tool needs its entry kind's module as well as
+    `ai_actions`, and uses the `ask` task's model. There is no new task.
+  - Every entry table has `updated_at`, so *Undo*'s "untouched" check
+    compares it with the value at *Add*. This needs no extra migration.
 
 ---
 
@@ -119,6 +139,16 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 ### Spec and docs
 - [ ] §7.26 *Drafting entries* in `spec.md`; the Phase 26.3 line in §13.
 - [ ] `docs/ai.md`: *Adding entries by message*, with examples per kind.
+
+### API (decided 2026-10-01, #76)
+- [ ] `JsonInput` field maps for maintenance, documents, expenses, tread
+      checks and manual reminders, onto their forms' fields.
+- [ ] `POST /api/v1/vehicles/{id}/maintenance`, `/documents`,
+      `/expenses`, `/tyres/checks` and `/reminders` through `ApiWriter`:
+      module gating, `Log` (and `ViewCosts` for expenses), archived 409,
+      duplicate keys as spec §7.20.
+- [ ] OpenAPI operations and schemas; response validation tests;
+      `docs/api.md` examples.
 
 ### Migration
 - [ ] `ai_drafts`, reversible on every engine, excluded from backups, and
@@ -184,5 +214,20 @@ API's input adapter), §7.26 and the forms of each entry kind, and Phases
 
 - **Several drafts at once:** "I filled up twice last week" gives two cards.
   Add an *Add both* button, or keep one press per entry (drafted)?
+  **Decided 2026-10-01 (#74):** one press per entry, with no *Add all*.
 - **Settings by chat:** is "set my MOT reminder to two weeks" as a lead-time
   change wanted later, or should settings stay forms only?
+  **Decided 2026-10-01 (#75):** parked in spec §12. Settings stay forms
+  only for now.
+- *(Found while starting.)* **The five new adapter mappings: API endpoints
+  too?** **Decided 2026-10-01 (#76):** yes. `POST /api/v1` endpoints for
+  maintenance, documents, expenses, tread checks and manual reminders
+  (spec §7.20).
+- *(Found while starting.)* **A relative reminder: a fixed date, or one
+  that follows the document?** **Answered (#77):** a fixed date. Manual
+  reminders have no source (`reminders.source_id` is empty for manual
+  rows), and the phase says the date is computed from the source.
+- *(Found while starting.)* **Module gating per kind and the model used.**
+  **Answered (#78):** each tool needs its kind's module (spec §7.10) as
+  well as `ai_actions`. The tools run in *Ask*, on the `ask` task's model
+  (spec §7.25 already lists drafting under `ask`).
