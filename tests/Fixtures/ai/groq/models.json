@@ -1,0 +1,26 @@
+{
+  "status": 200,
+  "response": {
+    "object": "list",
+    "data": [
+      {
+        "id": "llama-3.3-70b-versatile",
+        "object": "model",
+        "created": 1733447754,
+        "owned_by": "Meta",
+        "active": true,
+        "context_window": 131072,
+        "public_apps": null
+      },
+      {
+        "id": "gemma2-9b-it",
+        "object": "model",
+        "created": 1693721698,
+        "owned_by": "Google",
+        "active": true,
+        "context_window": 8192,
+        "public_apps": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "response": {
+    "object": "list",
+    "data": [
+      {
+        "id": "gpt-5",
+        "object": "model",
+        "created": 1754000000,
+        "owned_by": "system"
+      },
+      {
+        "id": "gpt-5-mini",
+        "object": "model",
+        "created": 1754000000,
+        "owned_by": "system"
+      }
+    ]
+  }
+}

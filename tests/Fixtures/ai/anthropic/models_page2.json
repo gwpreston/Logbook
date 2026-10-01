@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "response": {
+    "data": [
+      {
+        "type": "model",
+        "id": "claude-3-5-haiku-20241022",
+        "display_name": "Claude Haiku 3.5",
+        "created_at": "2024-10-22T00:00:00Z",
+        "capabilities": null
+      }
+    ],
+    "first_id": "claude-3-5-haiku-20241022",
+    "last_id": "claude-3-5-haiku-20241022",
+    "has_more": false
+  }
+}

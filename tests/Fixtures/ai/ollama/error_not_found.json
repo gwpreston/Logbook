@@ -1,0 +1,11 @@
+{
+  "status": 404,
+  "response": {
+    "error": {
+      "message": "model 'llama9' not found",
+      "type": "not_found_error",
+      "param": null,
+      "code": null
+    }
+  }
+}

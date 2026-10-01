@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "request": {
+    "model": "llama3.2:3b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Reply with the single word OK."
+      }
+    ],
+    "max_tokens": 64
+  },
+  "response": {
+    "id": "chatcmpl-123",
+    "object": "chat.completion",
+    "created": 1760000000,
+    "model": "llama3.2:3b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "OK"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 31,
+      "completion_tokens": 2,
+      "total_tokens": 33
+    }
+  }
+}

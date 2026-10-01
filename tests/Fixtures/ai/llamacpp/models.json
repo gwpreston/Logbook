@@ -1,0 +1,42 @@
+{
+  "status": 200,
+  "response": {
+    "models": [
+      {
+        "name": "qwen2.5-vl",
+        "model": "qwen2.5-vl",
+        "modified_at": "",
+        "size": "",
+        "digest": "",
+        "type": "model",
+        "description": "",
+        "tags": [
+          ""
+        ],
+        "capabilities": [
+          "completion",
+          "multimodal"
+        ],
+        "parameters": "",
+        "details": {
+          "parent_model": "",
+          "format": "gguf"
+        }
+      }
+    ],
+    "object": "list",
+    "data": [
+      {
+        "id": "qwen2.5-vl",
+        "aliases": [],
+        "tags": [],
+        "object": "model",
+        "created": 1735142223,
+        "owned_by": "llamacpp",
+        "meta": {
+          "n_ctx": 4096
+        }
+      }
+    ]
+  }
+}

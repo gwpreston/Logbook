@@ -1,0 +1,33 @@
+{
+  "status": 200,
+  "response": {
+    "models": [
+      {
+        "name": "llama3.2:3b",
+        "model": "llama3.2:3b",
+        "modified_at": "2025-10-03T23:34:03.409490317-07:00",
+        "size": 2019393189,
+        "digest": "a80c4f17acd5",
+        "details": {
+          "format": "gguf",
+          "family": "llama",
+          "parameter_size": "3.2B",
+          "quantization_level": "Q4_K_M"
+        }
+      },
+      {
+        "name": "gemma3:12b",
+        "model": "gemma3:12b",
+        "modified_at": "2025-10-03T23:34:03.409490317-07:00",
+        "size": 8149190253,
+        "digest": "f4031aab637d",
+        "details": {
+          "format": "gguf",
+          "family": "gemma3",
+          "parameter_size": "12.2B",
+          "quantization_level": "Q4_K_M"
+        }
+      }
+    ]
+  }
+}

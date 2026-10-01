@@ -1,0 +1,50 @@
+{
+  "status": 200,
+  "request": {
+    "model": "gpt-5",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give the colour \"red\" and the count 3."
+      }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "test_object",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "colour": {
+              "type": "string"
+            },
+            "count": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "colour",
+            "count"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "response": {
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"colour\":\"red\",\"count\":3}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 40,
+      "completion_tokens": 10
+    }
+  }
+}

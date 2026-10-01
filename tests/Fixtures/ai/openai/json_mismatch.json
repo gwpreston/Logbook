@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "response": {
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"colour\":\"red\",\"count\":\"three\"}"
+        },
+        "finish_reason": "stop"
+      }
+    ]
+  }
+}

@@ -25,8 +25,10 @@ enum JsonMode: string
     public static function candidates(AdapterType $adapter): array
     {
         return match ($adapter) {
-            AdapterType::Anthropic => [self::Tool],
-            AdapterType::Gemini => [self::JsonSchema, self::Tool],
+            // Anthropic's `output_config.format`; the newest models refuse a forced tool.
+            AdapterType::Anthropic, AdapterType::Gemini => [self::JsonSchema, self::Tool],
+            // Ollama's /v1 cannot force a tool.
+            AdapterType::Ollama => [self::JsonSchema, self::JsonObject],
             default => [self::JsonSchema, self::JsonObject, self::Tool],
         };
     }

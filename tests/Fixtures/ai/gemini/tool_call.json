@@ -1,0 +1,69 @@
+{
+  "status": 200,
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Add 2 and 3."
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "functionDeclarations": [
+          {
+            "name": "add_numbers",
+            "description": "Adds two whole numbers.",
+            "parametersJsonSchema": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer"
+                },
+                "b": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "response": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "functionCall": {
+                "id": "fc_1",
+                "name": "add_numbers",
+                "args": {
+                  "a": 2,
+                  "b": 3
+                }
+              },
+              "thoughtSignature": "CiQBVKhc7opaque=="
+            }
+          ]
+        },
+        "finishReason": "STOP"
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 90,
+      "candidatesTokenCount": 30,
+      "thoughtsTokenCount": 55,
+      "totalTokenCount": 175
+    }
+  }
+}

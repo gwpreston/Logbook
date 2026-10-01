@@ -19,13 +19,4 @@ enum AdapterType: string
     {
         return 'ai.adapter.' . $this->value;
     }
-
-    /**
-     * Whether the adapter can constrain output to a JSON Schema natively.
-     * Anthropic uses a forced tool call instead.
-     */
-    public function hasJsonSchema(): bool
-    {
-        return $this !== self::Anthropic;
-    }
 }

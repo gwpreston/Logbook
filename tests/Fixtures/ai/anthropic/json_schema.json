@@ -1,0 +1,52 @@
+{
+  "status": 200,
+  "request": {
+    "model": "claude-sonnet-5-5",
+    "max_tokens": 256,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Give the colour \"red\" and the count 3."
+          }
+        ]
+      }
+    ],
+    "output_config": {
+      "format": {
+        "type": "json_schema",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "colour": {
+              "type": "string"
+            },
+            "count": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "colour",
+            "count"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"colour\":\"red\",\"count\":3}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 50,
+      "output_tokens": 12
+    }
+  }
+}

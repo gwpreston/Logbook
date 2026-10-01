@@ -1,0 +1,40 @@
+{
+  "status": 200,
+  "request": {
+    "model": "gpt-5",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are concise."
+      },
+      {
+        "role": "user",
+        "content": "Hello"
+      }
+    ],
+    "temperature": 0.2,
+    "max_completion_tokens": 100
+  },
+  "response": {
+    "id": "chatcmpl-abc",
+    "object": "chat.completion",
+    "created": 1760000000,
+    "model": "gpt-5",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Hi! How can I help?",
+          "refusal": null
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 19,
+      "completion_tokens": 7,
+      "total_tokens": 26
+    }
+  }
+}

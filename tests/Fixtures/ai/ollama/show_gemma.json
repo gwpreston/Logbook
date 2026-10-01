@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "request": {
+    "model": "gemma3:12b"
+  },
+  "response": {
+    "capabilities": [
+      "completion",
+      "vision"
+    ],
+    "details": {
+      "family": "gemma3"
+    }
+  }
+}

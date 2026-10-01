@@ -1,0 +1,11 @@
+{
+  "status": 400,
+  "response": {
+    "type": "error",
+    "error": {
+      "type": "invalid_request_error",
+      "message": "tool_choice: type \"tool\" and \"any\" are not supported for this model."
+    },
+    "request_id": "req_011"
+  }
+}
