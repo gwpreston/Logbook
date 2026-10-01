@@ -406,11 +406,20 @@ final class DemoDataSeeder extends AbstractSeed
                 'vehicle_id' => $bike, 'category' => 'oil', 'title' => 'Clean and lube the chain', 'interval_km' => '804.672',
                 'baseline_done_km' => '20600.000', 'last_done_km' => '20600.000', 'next_due_km' => '21404.672',
             ]),
+            // Phase 24: the bike's yearly service is overdue, so *Needs attention* has a Now item.
+            $schedule([
+                'vehicle_id' => $bike, 'title' => 'Annual service', 'interval_months' => 12,
+                'baseline_done_on' => '2025-08-20', 'last_done_on' => '2025-08-20', 'next_due_on' => '2026-08-20',
+            ]),
         ])->saveData();
 
         $serviceId = 0;
-        foreach ($this->fetchAll('SELECT id, title FROM maintenance_schedules') as $row) {
-            if (is_array($row) && ($row['title'] ?? null) === 'Annual service') {
+        foreach ($this->fetchAll('SELECT id, vehicle_id, title FROM maintenance_schedules') as $row) {
+            if (
+                is_array($row)
+                && ($row['title'] ?? null) === 'Annual service'
+                && self::intValue($row['vehicle_id'] ?? null) === $golf
+            ) {
                 $serviceId = self::intValue($row['id'] ?? null);
             }
         }
@@ -697,12 +706,15 @@ final class DemoDataSeeder extends AbstractSeed
      * online valuation a year apart (the latest with a screenshot), so its
      * *Ownership* card shows depreciation and a value chart; the sold Fiesta
      * has one valuation before its sale, which its sale price overrides.
+     * The Corolla's only valuation is 18 months old: a stale value, on its
+     * Ownership card and in *Needs attention* (Phase 24).
      */
     private function seedValuations(string $now): void
     {
         $ids = $this->vehicleIds();
         $golf = $ids['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
         $fiesta = $ids['WR14 FNE'] ?? throw new RuntimeException('The demo Fiesta is missing.');
+        $corolla = $ids['LK22 VXN'] ?? throw new RuntimeException('The demo Corolla is missing.');
         $valuation = static fn (int $vehicle, string $on, string $amount, string $source, ?string $notes = null): array => [
             'vehicle_id' => $vehicle,
             'valued_on' => $on,
@@ -717,6 +729,7 @@ final class DemoDataSeeder extends AbstractSeed
             $valuation($golf, '2025-03-08', '11200.000', 'Part-exchange offer, Arnold Clark'),
             $valuation($golf, '2026-03-14', '9800.000', 'Auto Trader valuation', 'Online, private sale, good condition'),
             $valuation($fiesta, '2025-10-02', '2300.000', 'We Buy Any Car online valuation'),
+            $valuation($corolla, '2025-03-28', '19500.000', 'Part-exchange offer, Toyota dealer'),
         ])->saveData();
 
         $latest = null;

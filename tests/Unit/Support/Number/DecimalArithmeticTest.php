@@ -74,4 +74,13 @@ final class DecimalArithmeticTest extends TestCase
         self::assertSame('1000000000000000000.000000', Decimal::multiply('999999999.999999', '1000000000.000001', 6));
         self::assertSame('0.500000', Decimal::divide('500000000000.123', '1000000000000', 6));
     }
+
+    public function testLongScalesRoundedToFewPlacesNeverOverflow(): void
+    {
+        // Scales 9 + 12 rounded to 2: dividing by 10^19 is beyond an int.
+        // A fuel cost of 0 per km made *Coming up* fail this way (Phase 24).
+        self::assertSame('0.00', Decimal::multiply('1033.046375995', '0.000000000000', 2));
+        self::assertSame('0.00', Decimal::multiply('-1033.046375995', '0.000000000000', 2));
+        self::assertSame('0.13', Decimal::multiply('1033.046375995', '0.000123456789', 2));
+    }
 }

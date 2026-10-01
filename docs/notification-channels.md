@@ -135,3 +135,10 @@ the shipped channels are exercised with recorded transports in
   on for users created from 2.1.0 on (setup and invitations); users from
   before keep whatever they had, which is off unless they turned it on.
   Everyone can change it under Settings → Reminders.
+- From 2.4.0 the digest also lists the person's *Needs attention* checks
+  (readings or fill-ups that look wrong, mileage or a valuation gone
+  stale) on the same vehicles, as they would see them: none for a View
+  share, and never one they have hidden. A month with checks and nothing
+  due still sends a digest. The webhook's JSON carries them as an
+  `attention` list (`vehicle_id`, `vehicle`, `kind`, `title`) beside
+  `items`, which keeps its shape; for other events the list is empty.

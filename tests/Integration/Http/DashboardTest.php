@@ -103,7 +103,8 @@ final class DashboardTest extends AppTestCase
 
         $html = self::body($browser->get('/'));
         $arranged = [
-            'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel', 'compliance', 'mileage', 'recent_activity',
+            'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel', 'compliance', 'mileage',
+            'recent_activity',
         ];
         self::assertSame($arranged, self::widgetOrder($html), 'hidden: not shown');
         // Customise mode still lists it, folded, so it can be shown again.
@@ -167,7 +168,10 @@ final class DashboardTest extends AppTestCase
 
         $html = self::body($browser->get('/'));
         self::assertSame(
-            ['needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'mileage', 'recent_activity'],
+            [
+                'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'mileage',
+                'recent_activity',
+            ],
             self::widgetOrder($html),
         );
 
