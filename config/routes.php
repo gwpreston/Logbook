@@ -78,6 +78,7 @@ use Logbook\Action\Maintenance\DeleteScheduleAction;
 use Logbook\Action\Maintenance\EditMaintenanceEntryAction;
 use Logbook\Action\Maintenance\EditScheduleAction;
 use Logbook\Action\Maintenance\MaintenanceLogAction;
+use Logbook\Action\Mcp\EndpointAction as McpEndpointAction;
 use Logbook\Action\Odometer\CreateOdometerReadingAction;
 use Logbook\Action\Odometer\DeleteOdometerReadingAction;
 use Logbook\Action\Odometer\EditOdometerReadingAction;
@@ -304,6 +305,14 @@ return static function (App $app): void {
         })->add(ApiErrorMiddleware::class);
     }
 
+    // MCP server (spec.md §7.28, Phase 26.5): like the API, outside the session
+    // and CSRF groups, the key the only way in; JSON-RPC errors throughout. Not
+    // routed (404) unless MCP_ENABLED and API_ENABLED are both on. GET and
+    // DELETE reach the action, which answers 405 as the transport asks.
+    if ($settings->mcpRouted()) {
+        $app->map(['GET', 'POST', 'DELETE'], '/mcp', McpEndpointAction::class)->setName('mcp');
+    }
+
     // Signed-out pages.
     $app->group('', function (Group $group): void {
         $group->map(['GET', 'POST'], '/setup', SetupAction::class)->setName('setup');
@@ -324,6 +333,10 @@ return static function (App $app): void {
     // Signed-in pages.
     $app->group('', function (Group $group) use ($module, $ability, $instance, $settings): void {
         $group->get('/', HomeAction::class)->setName('home');
+        // Drafts an MCP client left (spec.md §7.28): a card's buttons, without Ask or
+        // AI; the draft is the user's own MCP draft or not found. Routed even with
+        // MCP off, so drafts made before still close.
+        $group->post('/drafts/{draft:[0-9]+}/{action:add|discard|undo}', AskDraftAction::class)->setName('drafts.action');
         $group->post('/logout', LogoutAction::class)->setName('logout');
         // Once, after an account is created on first single sign-on (spec.md §7.9).
         $group->map(['GET', 'POST'], '/welcome', WelcomeAction::class)->setName('welcome');

@@ -22,6 +22,10 @@
             </div>
         </header>
 
+        {% if review_drafts is not empty %}
+            {% include 'ask/_review_drafts.twig' with {review_drafts: review_drafts, back: 'ask'} %}
+        {% endif %}
+
         {% if connection %}
             <p class="ask-where" data-ask-where>
                 {{ ai.location(connection.location) }}

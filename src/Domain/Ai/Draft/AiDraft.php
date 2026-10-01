@@ -12,8 +12,6 @@ use DateTimeImmutable;
  */
 final readonly class AiDraft
 {
-    /** How long a draft waits for *Add*. */
-    public const int TTL_SECONDS = 3600;
     /** How long *Undo* is offered after *Add*. */
     public const int UNDO_SECONDS = 10;
 
@@ -37,6 +35,7 @@ final readonly class AiDraft
         public ?DateTimeImmutable $appliedAt = null,
         public ?int $appliedEntryId = null,
         public ?DateTimeImmutable $appliedUpdatedAt = null,
+        public DraftSource $source = DraftSource::Ask,
     ) {
     }
 

@@ -17,6 +17,7 @@ use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Auth\Oidc\OidcCache;
 use Logbook\Service\Feature\FeatureTwigExtension;
+use Logbook\Service\Mcp\McpToolbox;
 use Logbook\Service\Navigation\SidebarTwigExtension;
 use Logbook\Service\Notification\Channel\EmailChannel;
 use Logbook\Service\Notification\Channel\EmailConfig;
@@ -236,6 +237,18 @@ return [
         get(Tool\TripsSummary::class),
         get(Tool\NeedsAttention::class),
         // Drafting entries (Phase 26.3): validated cards for the user's Add, never a write.
+        get(Tool\Draft\DraftFillUp::class),
+        get(Tool\Draft\DraftReading::class),
+        get(Tool\Draft\DraftServiceRecord::class),
+        get(Tool\Draft\DraftDocument::class),
+        get(Tool\Draft\DraftExpense::class),
+        get(Tool\Draft\DraftTyreCheck::class),
+        get(Tool\Draft\DraftReminder::class),
+    ]),
+
+    // The MCP server (spec.md §7.28, Phase 26.5): the read tools come from the
+    // registry; the draft tools back log_fill_up, add_reading and the drafts.
+    McpToolbox::class => autowire()->constructorParameter('draftTools', [
         get(Tool\Draft\DraftFillUp::class),
         get(Tool\Draft\DraftReading::class),
         get(Tool\Draft\DraftServiceRecord::class),

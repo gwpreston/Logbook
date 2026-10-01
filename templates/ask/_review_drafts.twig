@@ -1,0 +1,17 @@
+{% import 'macros/ui.twig' as ui %}
+{#
+ # *Drafts to review* (spec.md §7.28): what an MCP client drafted, waiting
+ # for the user's *Add*, *Edit* or *Discard*. `review_drafts` comes from
+ # DraftCards::cards(); `back` is the page listing them ('home' or 'ask').
+ #}
+<section class="card" id="drafts-to-review" aria-labelledby="drafts-to-review-heading">
+    <div class="card__header">
+        <h2 id="drafts-to-review-heading" class="card__title">{{ ui.icon('smart_toy') }}{{ 'mcp.review.heading'|trans }}</h2>
+    </div>
+    <p class="muted">{{ trans('mcp.review.lead', {count: review_drafts|length}) }}</p>
+    <div class="page__stack">
+        {% for item in review_drafts %}
+            {% include 'ask/_draft_card.twig' with {item: item, back: back} %}
+        {% endfor %}
+    </div>
+</section>

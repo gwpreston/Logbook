@@ -55,6 +55,11 @@
             {% include 'dashboard/_pinned.twig' with {pinned: dashboard.pinned} %}
         {% endif %}
 
+        {% if review_drafts is not empty and not customise %}
+            {# Drafts an MCP client left (spec.md §7.28), above the widgets while there are any. #}
+            {% include 'ask/_review_drafts.twig' with {review_drafts: review_drafts, back: 'home'} %}
+        {% endif %}
+
         {% if not dashboard.hasVehicles() %}
             <section class="card" aria-labelledby="garage-heading">
                 <div class="card__header">
