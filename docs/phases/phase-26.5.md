@@ -2,7 +2,7 @@
 
 *Use Logbook from Claude Desktop, or any assistant that speaks MCP.*
 
-Status: ✅ complete (manual interop check and tag pending) · releases **v2.9.0** · file lives in `docs/phases/`
+Status: ✅ complete (manual interop check pending) · released as **v2.9.0** · file lives in `docs/phases/`
 
 Phases 26.2 and 26.3 define Logbook's tools: read tools over its services,
 and draft tools for new entries. This phase exposes the **same tools** over
@@ -143,7 +143,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.20,
       migration beyond the draft source flag; new optional variable.
 - [x] Bump `VERSION`, update the README (status, documentation table gains
       `docs/mcp.md`).
-- [ ] Tag `v2.9.0` once merged.
+- [x] Tag `v2.9.0` once merged.
 
 ---
 
