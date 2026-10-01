@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Expense;
 
+use Logbook\Action\Incident\IncidentPicker;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Expense\ExpenseCategory;
@@ -22,6 +23,7 @@ final readonly class ExpenseFormPage
     public function __construct(
         private View $view,
         private AttachmentUpload $upload,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -45,6 +47,7 @@ final readonly class ExpenseFormPage
             'values' => $values,
             'errors' => $errors?->all() ?? [],
             'categories' => ExpenseCategory::cases(),
-        ] + $this->upload->formContext($vehicle, AttachmentOwner::Expense, $entry?->id), $status);
+        ] + $this->upload->formContext($vehicle, AttachmentOwner::Expense, $entry?->id)
+            + $this->incidents->context($vehicle), $status);
     }
 }

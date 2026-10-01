@@ -264,6 +264,7 @@
                     <textarea class="textarea" id="f-note" name="note" rows="2" maxlength="500"{{ ui.described_by('note', errors, false) }}>{{ values.note ?? '' }}</textarea>
                     {{ ui.field_error(errors, 'note') }}
                 </div>
+                {% include 'incidents/_picker.twig' %}
             </section>
 
             <div class="btn-row">

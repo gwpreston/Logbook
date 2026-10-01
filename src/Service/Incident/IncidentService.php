@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Incident;
 
+use Logbook\Domain\Tyre\TyreChange;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
@@ -172,6 +173,27 @@ final readonly class IncidentService
     }
 
     /**
+     * Every listed incident's costs, from one read of the ledger.
+     *
+     * @param list<Incident> $incidents of this vehicle
+     * @return array<int, IncidentCosts> by incident id
+     */
+    public function costsFor(User $user, Vehicle $vehicle, array $incidents): array
+    {
+        if ($incidents === []) {
+            return [];
+        }
+        $items = $this->ledger->items($user, [$vehicle]);
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $costs = [];
+        foreach ($incidents as $incident) {
+            $costs[$incident->id] = IncidentCosts::of($incident->id, $items, $incident->data->claim->payout, $currency);
+        }
+
+        return $costs;
+    }
+
+    /**
      * Link a record of the vehicle to the incident, or unlink it (null). A
      * tyre change linked to a service record follows its record (#103), so
      * it is linked through the record instead.
@@ -179,6 +201,24 @@ final readonly class IncidentService
     public function link(Vehicle $vehicle, LinkKind $kind, int $recordId, ?Incident $incident): void
     {
         $this->incidents->setLink($kind, $vehicle->id, $recordId, $incident?->id);
+    }
+
+    /**
+     * A tyre change linked to a service record takes the record's incident
+     * (#103), e.g. after it was linked to another record.
+     */
+    public function followRecord(Vehicle $vehicle, TyreChange $change): void
+    {
+        $record = $change->data->maintenanceEntryId;
+        if ($record === null) {
+            return;
+        }
+        $this->incidents->setLink(
+            LinkKind::Tyre,
+            $vehicle->id,
+            $change->id,
+            $this->incidents->linkOf(LinkKind::Maintenance, $vehicle->id, $record),
+        );
     }
 
     /**

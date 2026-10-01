@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
+use Logbook\Action\Incident\IncidentPicker;
 use Logbook\Action\Ask\DraftPrefill;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Odometer\OdometerWarningFlash;
@@ -44,6 +45,7 @@ final readonly class TyreChangeFormAction
         private Redirector $redirect,
         private ClockInterface $clock,
         private DisplayFormatter $formatter,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -65,6 +67,7 @@ final readonly class TyreChangeFormAction
             $set = $request->getQueryParams()['set'] ?? null;
             $fitSet = is_string($set) && ctype_digit($set) ? (int) $set : null;
             $values = $this->page->defaults($vehicle, $kind, $context, $values, $fitSet);
+            $values = $this->incidents->prefill($request, $vehicle, $values);
             if ($kind === TyreChangeKind::Check) {
                 $values = $this->prefill->values($request, DraftKind::TyreCheck, $vehicle->id, $values);
             }
@@ -83,6 +86,7 @@ final readonly class TyreChangeFormAction
 
         try {
             $change = $this->changes->record($vehicle, $parsed, $preferences->timeZone(), $preferences->locale);
+            $this->incidents->saveTyre($vehicle, $change, $input);
             $this->prefill->saved($request);
         } catch (TyreChangeRefused $refused) {
             $errors = $this->page->errors($refused);

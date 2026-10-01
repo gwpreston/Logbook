@@ -23,10 +23,12 @@ enum ExportModule: string
     case TyreChanges = 'tyre-changes';
     case Valuations = 'valuations';
     case Trips = 'trips';
+    /** Export only (spec.md §7.13 *Incidents*). */
+    case Incidents = 'incidents';
 
     public function isImportable(): bool
     {
-        return !in_array($this, [self::Tyres, self::TyreChanges, self::Valuations], true);
+        return !in_array($this, [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents], true);
     }
 
     /**
@@ -40,6 +42,7 @@ enum ExportModule: string
             self::Documents => Feature::Compliance,
             self::Tyres, self::TyreChanges => Feature::Tyres,
             self::Trips => Feature::Trips,
+            self::Incidents => Feature::Incidents,
             self::Odometer, self::Expenses, self::Valuations => null,
         };
     }
@@ -58,6 +61,7 @@ enum ExportModule: string
             self::Tyres, self::TyreChanges => 'tyres.index',
             self::Valuations => 'valuations.index',
             self::Trips => 'trips.index',
+            self::Incidents => 'incidents.index',
         };
     }
 }

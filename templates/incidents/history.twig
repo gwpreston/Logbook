@@ -1,0 +1,162 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # The claims history (spec.md §7.29): every incident on every vehicle the
+ # user can see, archived and sold ones included, newest first. Printed
+ # through the browser with its own header (§8 *Printing reports*). The
+ # other party is never shown; a row whose details the user may not see
+ # says so.
+ #}
+{% set active_nav = 'reports' %}
+{% set dash = '—' %}
+{% set hidden = 'incident.history.not_shared'|trans %}
+{% set period_label = filter.isRange()
+    ? 'report.period'|trans({from: report.from ? report.from|local_date : dash, to: report.until|local_date})
+    : 'incident.history.last_years'|trans({count: filter.years}) %}
+
+{% block title %}{{ 'incident.history.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack print-report">
+        <header class="print-header print-only">
+            <p class="print-header__eyebrow">{{ 'app.name'|trans }}</p>
+            <p class="print-header__title">{{ 'incident.history.title'|trans }}</p>
+            <dl class="print-header__facts">
+                <div><dt>{{ 'incident.history.for'|trans }}</dt><dd>{{ user.displayName }}</dd></div>
+                <div><dt>{{ 'print.period'|trans }}</dt><dd>{{ period_label }}</dd></div>
+                <div><dt>{{ 'incident.history.showing'|trans }}</dt><dd>{{ (filter.claimsOnly ? 'incident.history.claims_only' : 'incident.history.all')|trans }}</dd></div>
+                <div><dt>{{ 'print.printed'|trans }}</dt><dd>{{ today|local_date }}</dd></div>
+            </dl>
+        </header>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'incident.history.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'incident.history.hint'|trans }}</p>
+            </div>
+            <div class="btn-row">
+                {{ ui.print_button() }}
+                <a class="btn" href="{{ url_for('incidents.history.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+            </div>
+        </header>
+
+        <form class="card report-filter" method="get" action="{{ url_for('incidents.history') }}">
+            <div class="form-row">
+                <div class="field">
+                    <label class="field__label" for="f-years">{{ 'incident.history.field.years'|trans }}</label>
+                    <select class="select" id="f-years" name="years">
+                        {% for years in year_choices %}
+                            <option value="{{ years }}"{% if not filter.isRange() and filter.years == years %} selected{% endif %}>{{ 'incident.history.last_years'|trans({count: years}) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <label class="checkbox">
+                    <input type="checkbox" name="period" value="range"{% if filter.isRange() %} checked{% endif %}>
+                    <span>{{ 'incident.history.field.range'|trans }}</span>
+                </label>
+            </div>
+            <div class="form-row">
+                {{ ui.input('from', 'report.field.from'|trans, {from: filter.from ? filter.from|date('Y-m-d') : ''}, {}, {type: 'date'}) }}
+                {{ ui.input('to', 'report.field.to'|trans, {to: filter.until ? filter.until|date('Y-m-d') : ''}, {}, {type: 'date'}) }}
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label class="field__label" for="f-vehicle">{{ 'incident.history.field.vehicle'|trans }}</label>
+                    <select class="select" id="f-vehicle" name="vehicle">
+                        <option value="">{{ 'incident.history.every_vehicle'|trans }}</option>
+                        {% for vehicle in vehicles %}
+                            <option value="{{ vehicle.id }}"{% if filter.vehicleId == vehicle.id %} selected{% endif %}>{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}{% if vehicle.isArchived() %} ({{ 'incident.history.archived'|trans }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if report.drivers is not empty %}
+                    <div class="field">
+                        <label class="field__label" for="f-driver">{{ 'incident.history.field.driver'|trans }}</label>
+                        <select class="select" id="f-driver" name="driver">
+                            <option value="">{{ 'incident.history.every_driver'|trans }}</option>
+                            {% for key, name in report.drivers %}
+                                <option value="{{ key }}"{% if filter.driver == key %} selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-fault">{{ 'incident.history.field.fault'|trans }}</label>
+                    <select class="select" id="f-fault" name="fault">
+                        <option value="">{{ 'incident.history.any_fault'|trans }}</option>
+                        {% for fault in faults %}
+                            <option value="{{ fault.value }}"{% if filter.fault == fault %} selected{% endif %}>{{ fault.labelKey()|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <label class="checkbox">
+                <input type="checkbox" name="claims" value="1"{% if filter.claimsOnly %} checked{% endif %}>
+                <span>{{ 'incident.history.claims_only'|trans }}</span>
+            </label>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary">{{ ui.icon('check') }}{{ 'report.apply'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url_for('incidents.history') }}">{{ 'report.reset'|trans }}</a>
+            </div>
+        </form>
+
+        {% if report.rows is empty %}
+            <section class="card">
+                <div class="empty">
+                    {{ ui.icon('car_crash') }}
+                    <p class="empty__title">{{ 'incident.history.empty_title'|trans }}</p>
+                    <p>{{ 'incident.history.empty_body'|trans({period: period_label}) }}</p>
+                </div>
+            </section>
+        {% else %}
+            <section class="card" aria-labelledby="claims-rows">
+                <h2 id="claims-rows" class="card__title">{{ 'incident.history.count'|trans({count: report.rows|length}) }}</h2>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ 'export.column.date'|trans }}</th>
+                                <th scope="col">{{ 'export.column.vehicle'|trans }}</th>
+                                <th scope="col">{{ 'incident.column.type'|trans }}</th>
+                                <th scope="col">{{ 'incident.column.fault'|trans }}</th>
+                                <th scope="col">{{ 'incident.column.driver'|trans }}</th>
+                                <th scope="col">{{ 'incident.column.claim_status'|trans }}</th>
+                                <th scope="col">{{ 'incident.column.insurer'|trans }}</th>
+                                <th scope="col">{{ 'incident.column.claim_number'|trans }}</th>
+                                <th scope="col" class="table__num">{{ 'incident.column.payout'|trans }}</th>
+                                <th scope="col">{{ 'incident.column.ncd'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in report.rows %}
+                                {% set incident = row.incident %}
+                                {% set own_amount = can_see_amount(row.vehicle, incident.createdBy) %}
+                                <tr>
+                                    <td class="tabular">{{ incident.occurredOn|local_date }}</td>
+                                    <td>
+                                        <a href="{{ url_for('incidents.show', {id: row.vehicle.id, incident: incident.id}) }}">{{ row.vehicle.name() }}</a>
+                                        {%- if row.vehicle.data.registration %} · {{ row.vehicle.data.registration }}{% endif %}
+                                        {%- if row.vehicle.isArchived() %} <span class="muted">({{ 'incident.history.archived'|trans }})</span>{% endif %}
+                                    </td>
+                                    <td>{{ incident.type.labelKey()|trans }}{% if incident.writeOff.isWrittenOff() %} · {{ incident.writeOff.labelKey()|trans }}{% endif %}</td>
+                                    {% if incident.details %}
+                                        <td>{{ incident.fault.labelKey()|trans }}</td>
+                                        <td>{{ row.driver ?: dash }}</td>
+                                        <td>{{ incident.claimStatus.labelKey()|trans }}</td>
+                                        <td>{{ incident.insurer ?: dash }}</td>
+                                        <td>{{ incident.claimNumber ?: dash }}</td>
+                                        <td class="table__num tabular">{% if own_amount and incident.payout is not null %}{{ incident.payout|money(row.currency) }}{% else %}{{ dash }}{% endif %}</td>
+                                        <td>{{ incident.ncdAffected.labelKey()|trans }}</td>
+                                    {% else %}
+                                        <td colspan="7" class="muted">{{ hidden }}</td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Expense;
 
+use Logbook\Action\Incident\IncidentPicker;
+use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Service\Expense\ExpenseEntryForm;
@@ -27,6 +29,7 @@ final readonly class EditExpenseAction
         private AttachmentUpload $upload,
         private Redirector $redirect,
         private EntryGuard $guard,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -42,7 +45,9 @@ final readonly class EditExpenseAction
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 
         if ($request->getMethod() !== 'POST') {
-            return $this->page->render($request, $response, $vehicle, $currency, ExpenseEntryForm::values($entry), $entry);
+            $values = $this->incidents->current($entry->incidentId, ExpenseEntryForm::values($entry));
+
+            return $this->page->render($request, $response, $vehicle, $currency, $values, $entry);
         }
 
         $data = ExpenseEntryForm::parse(RequestContext::form($request), $user->preferences);
@@ -55,6 +60,7 @@ final readonly class EditExpenseAction
         }
 
         $this->expenses->update($vehicle, $entry, $data, $files);
+        $this->incidents->save($vehicle, LinkKind::Expense, $entry->id, RequestContext::form($request));
         RequestContext::session($request)->flash('success', 'expense.updated');
 
         return $this->redirect->backOr($request, 'expenses.index', ['id' => (string) $vehicle->id]);

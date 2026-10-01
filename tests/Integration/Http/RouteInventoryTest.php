@@ -130,6 +130,9 @@ final class RouteInventoryTest extends AppTestCase
         // Phase 22: the user's own claim, over the vehicles they may see.
         'trips.claim',
         'trips.claim.export',
+        // Phase 27.1: every incident on the vehicles the user can see.
+        'incidents.history',
+        'incidents.history.export',
     ];
 
     public function testEveryRouteIsClassified(): void

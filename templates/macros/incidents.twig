@@ -1,0 +1,25 @@
+{#
+ # Incident fragments (spec.md §7.29). Import with:
+ # {% import 'macros/incidents.twig' as incidents_ui %}
+ # Every macro takes an IncidentView, so a hidden field is simply null.
+ #}
+
+{# The badges of a list row or header: fault, claim status and write-off,
+   each as text (never colour alone). #}
+{% macro badges(incident) -%}
+    {% if incident.status.value == 'open' %}<span class="pill pill--soon">{{ 'incident.status.open'|trans }}</span>{% endif %}
+    {% if incident.fault %}<span class="pill{{ incident.fault.value == 'at_fault' ? ' pill--overdue' : (incident.fault.value == 'not_at_fault' ? ' pill--valid') }}">{{ incident.fault.labelKey()|trans }}</span>{% endif %}
+    {% if incident.claimStatus and incident.claimStatus.isClaim() %}<span class="pill pill--accent">{{ 'incident.claim_badge'|trans({status: incident.claimStatus.labelKey()|trans}) }}</span>{% endif %}
+    {% if incident.writeOff.isWrittenOff() %}<span class="pill pill--overdue">{{ incident.writeOff.labelKey()|trans }}</span>{% endif %}
+{%- endmacro %}
+
+{# "Rear, left" and the severity: the damage, which everyone may see. #}
+{% macro damage(incident) -%}
+    {%- for area in incident.damageAreas -%}{{ area.labelKey()|trans }}{% if not loop.last %}, {% endif %}{%- endfor -%}
+    {%- if incident.severity %}{% if incident.damageAreas is not empty %} · {% endif %}{{ incident.severity.labelKey()|trans }}{% endif -%}
+{%- endmacro %}
+
+{# An incident's one-line name: "Parked damage, 14 Mar 2025". #}
+{% macro name(incident) -%}
+    {{ 'incident.name'|trans({type: incident.type.labelKey()|trans, date: incident.occurredOn|local_date}) }}
+{%- endmacro %}

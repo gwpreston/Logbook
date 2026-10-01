@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Tyre;
 
+use Logbook\Action\Incident\IncidentPicker;
 use Logbook\Action\EntryGuard;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Domain\Odometer\OdometerSource;
@@ -40,6 +41,7 @@ final readonly class EditTyreChangeAction
         private Redirector $redirect,
         private ClockInterface $clock,
         private EntryGuard $guard,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -59,7 +61,7 @@ final readonly class EditTyreChangeAction
 
         if ($request->getMethod() !== 'POST') {
             $context = $this->page->context($vehicle, $today, $change->data->doneOn, $link);
-            $values = TyreChangeForm::values($change, $preferences);
+            $values = $this->incidents->current($change->incidentId, TyreChangeForm::values($change, $preferences));
 
             return $this->page($request, $response, $vehicle, $change, $context, $currency, $values);
         }
@@ -75,6 +77,7 @@ final readonly class EditTyreChangeAction
 
         try {
             $updated = $this->changes->update($vehicle, $change, $data, $preferences->timeZone());
+            $this->incidents->saveTyre($vehicle, $updated, $input);
         } catch (TyreChangeRefused $refused) {
             $errors = $this->page->errors($refused);
 

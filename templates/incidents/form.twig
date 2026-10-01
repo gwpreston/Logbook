@@ -1,0 +1,146 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
+
+{#
+ # Log or edit an incident (spec.md §7.29 *Form*), as a page and a desktop
+ # modal: what happened, the damage, the other party (folded away) and the
+ # insurance claim. Photos are kept as uploaded (§7.12), which the file
+ # card says.
+ #}
+{% set active_nav = 'garage' %}
+{% set editing = incident is not null %}
+{% set heading = (editing ? 'incident.edit_title' : 'incident.add_title')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+{% set ticked = values.damage_areas ?? [] %}
+{% set has_other_party = (values.other_party_name ?? '') != '' or (values.other_party_registration ?? '') != '' or (values.other_party_insurer ?? '') != '' or (values.police_reference ?? '') != '' %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ editing ? url_for('incidents.show', {id: vehicle.id, incident: incident.id}) : url_for('incidents.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'incident.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'incident.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" id="incident-form" method="post" enctype="multipart/form-data"
+              action="{{ editing ? url_for('incidents.edit', {id: vehicle.id, incident: incident.id}) : url_for('incidents.create', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card" aria-labelledby="incident-what">
+                <h2 id="incident-what" class="card__title">{{ 'incident.section.what'|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.input('occurred_on', 'incident.field.occurred_on'|trans, values, errors, {type: 'date', required: true, max: 'now'|date('Y-m-d')}) }}
+                    {{ ui.input('occurred_at_time', 'incident.field.occurred_at_time'|trans, values, errors, {type: 'time', optional: true}) }}
+                </div>
+                {% set types = types|map(t => {value: t.value, label: t.labelKey()|trans}) %}
+                {{ ui.select('type', 'incident.field.type'|trans, values, errors, [{value: '', label: 'incident.choose_type'|trans}]|merge(types), {required: true}) }}
+                {{ ui.input('location', 'incident.field.location'|trans, values, errors, {maxlength: 200, optional: true, hint: 'incident.hint.location'|trans}) }}
+                <div class="field">
+                    <label class="field__label" for="f-description">{{ 'incident.field.description'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-description" name="description" rows="3" maxlength="2000"{{ ui.described_by('description', errors, false) }}>{{ values.description ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'description') }}
+                </div>
+                {{ ui.select('fault', 'incident.field.fault'|trans, values, errors, faults|map(f => {value: f.value, label: f.labelKey()|trans})) }}
+                {{ ui.input('odometer', 'incident.field.odometer'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, optional: true, hint: 'incident.hint.odometer'|trans}) }}
+                <div class="form-row">
+                    {% set driver_options = [{value: '', label: 'incident.driver_none'|trans}] %}
+                    {% for id, name in drivers %}{% set driver_options = driver_options|merge([{value: id ~ '', label: name}]) %}{% endfor %}
+                    {{ ui.select('driver_user_id', 'incident.field.driver'|trans, values, errors, driver_options) }}
+                    {{ ui.input('driver_name', 'incident.field.driver_name'|trans, values, errors, {maxlength: 100, optional: true, hint: 'incident.hint.driver_name'|trans}) }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="incident-damage">
+                <h2 id="incident-damage" class="card__title">{{ 'incident.section.damage'|trans }}</h2>
+                <fieldset class="field fieldset"{% if errors.damage_areas ?? null %} aria-describedby="f-damage_areas-error"{% endif %}>
+                    <legend class="field__label">{{ 'incident.field.damage_areas'|trans }}</legend>
+                    <div class="chip-row">
+                        {% for area in areas %}
+                            <label class="chip">
+                                <input type="checkbox" name="damage_areas[]" value="{{ area.value }}"{% if area.value in ticked %} checked{% endif %}>
+                                <span>{{ area.labelKey()|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {{ ui.field_error(errors, 'damage_areas') }}
+                </fieldset>
+                {{ ui.select('severity', 'incident.field.severity'|trans, values, errors, [{value: '', label: 'incident.severity_none'|trans}]|merge(severities|map(s => {value: s.value, label: s.labelKey()|trans}))) }}
+                {{ ui.select('write_off_category', 'incident.field.write_off'|trans, values, errors, write_offs|map(w => {value: w.value, label: w.labelKey()|trans}), {hint: 'incident.hint.write_off'|trans}) }}
+                {{ files.input(vehicle, attachments, errors, max_upload_mb, max_upload_files, {label: 'incident.field.photos'|trans, hint: 'incident.hint.photos'|trans}) }}
+            </section>
+
+            <section class="card">
+                <details class="disclosure"{% if has_other_party or errors.other_party_name is defined %} open{% endif %}>
+                    <summary class="disclosure__summary">{{ 'incident.section.other_party'|trans }}</summary>
+                    {{ ui.input('other_party_name', 'incident.field.other_party_name'|trans, values, errors, {maxlength: 100, optional: true}) }}
+                    <div class="form-row">
+                        {{ ui.input('other_party_registration', 'incident.field.other_party_registration'|trans, values, errors, {maxlength: 100, optional: true}) }}
+                        {{ ui.input('other_party_insurer', 'incident.field.other_party_insurer'|trans, values, errors, {maxlength: 100, optional: true}) }}
+                    </div>
+                    {{ ui.input('police_reference', 'incident.field.police_reference'|trans, values, errors, {maxlength: 100, optional: true}) }}
+                </details>
+            </section>
+
+            <section class="card" aria-labelledby="incident-insurance">
+                <h2 id="incident-insurance" class="card__title">{{ 'incident.section.insurance'|trans }}</h2>
+                {{ ui.select('claim_status', 'incident.field.claim_status'|trans, values, errors, claim_statuses|map(c => {value: c.value, label: c.labelKey()|trans})) }}
+                <div class="form-row">
+                    {{ ui.input('insurer', 'incident.field.insurer'|trans, values, errors, {maxlength: 100, optional: true}) }}
+                    {% set policy_options = [{value: '', label: 'incident.policy_none'|trans}] %}
+                    {% for policy in policies %}
+                        {% set policy_options = policy_options|merge([{value: policy.id ~ '', label: 'incident.policy_label'|trans({provider: policy.data.provider ?? ('compliance.type.insurance'|trans), start: policy.data.startOn ? policy.data.startOn|local_date : '—', expiry: policy.data.expiryOn ? policy.data.expiryOn|local_date : '—'})}]) %}
+                    {% endfor %}
+                    {{ ui.select('insurance_document_id', 'incident.field.policy'|trans, values, errors, policy_options) }}
+                </div>
+                {% if not editing %}
+                    <p class="field__hint">{{ 'incident.hint.policy_default'|trans }} <a href="{{ url_for('incidents.create', {id: vehicle.id}, {on: values.occurred_on ?? ''}) }}" data-policy-for-date>{{ 'incident.policy_for_date'|trans }}</a></p>
+                {% endif %}
+                {{ ui.input('claim_number', 'incident.field.claim_number'|trans, values, errors, {maxlength: 100, optional: true}) }}
+                <div class="form-row">
+                    {{ ui.input('excess', 'incident.field.excess'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.hint.excess'|trans}) }}
+                    {{ ui.input('payout', 'incident.field.payout'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.hint.payout'|trans}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.select('ncd_affected', 'incident.field.ncd'|trans, values, errors, ncd_effects|map(n => {value: n.value, label: n.labelKey()|trans})) }}
+                    {{ ui.input('claim_updated_on', 'incident.field.claim_updated_on'|trans, values, errors, {type: 'date', optional: true, hint: 'incident.hint.claim_updated_on'|trans}) }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="incident-status">
+                <h2 id="incident-status" class="card__title">{{ 'incident.section.status'|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.select('status', 'incident.field.status'|trans, values, errors, statuses|map(s => {value: s.value, label: s.labelKey()|trans})) }}
+                    {{ ui.input('closed_on', 'incident.field.closed_on'|trans, values, errors, {type: 'date', optional: true, hint: 'incident.hint.closed_on'|trans}) }}
+                </div>
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'incident.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="2" maxlength="2000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'incident.add_submit')|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (editing ? url_for('incidents.show', {id: vehicle.id, incident: incident.id}) : url_for('incidents.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('incidents.delete', {id: vehicle.id, incident: incident.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

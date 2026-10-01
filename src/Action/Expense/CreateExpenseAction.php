@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Expense;
 
+use Logbook\Action\Incident\IncidentPicker;
+use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\Ask\DraftPrefill;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
@@ -32,6 +34,7 @@ final readonly class CreateExpenseAction
         private AttachmentUpload $upload,
         private Redirector $redirect,
         private ClockInterface $clock,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -47,6 +50,7 @@ final readonly class CreateExpenseAction
         if ($request->getMethod() !== 'POST') {
             $defaults = ExpenseEntryForm::defaults(LocalTime::today($this->clock, $user->preferences->timeZone()));
             $defaults = $this->prefill->values($request, DraftKind::Expense, $vehicle->id, $defaults);
+            $defaults = $this->incidents->prefill($request, $vehicle, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
@@ -60,7 +64,8 @@ final readonly class CreateExpenseAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
         }
 
-        $this->expenses->create($vehicle, $data, $files);
+        $entry = $this->expenses->create($vehicle, $data, $files);
+        $this->incidents->save($vehicle, LinkKind::Expense, $entry->id, RequestContext::form($request));
         $this->prefill->saved($request);
         RequestContext::session($request)->flash('success', 'expense.created');
 

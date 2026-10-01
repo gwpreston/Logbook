@@ -4696,8 +4696,9 @@ nothing is counted twice (§6 Incident).
     Its cost is the record's (§7.17), so it adds nothing to linked
     costs, which are read from the cost ledger (§7.7) and filtered by
     incident, so they always match Reports.
-- **Claims history** (`/incidents/history`, module on, from the main
-  navigation's *Reports* group and the Incidents tab): every incident on
+- **Claims history** (`/incidents/history`, module on, linked from the
+  Reports page header, as the ownership report is, and the Incidents
+  tab): every incident on
   every vehicle the user can see, **including archived and sold ones**
   (decided in the phase plan: insurers ask per driver over years, not per
   current car).

@@ -1,0 +1,182 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
+{% import 'macros/incidents.twig' as incidents_ui %}
+
+{#
+ # The incident page (spec.md §7.29): the details as the viewer may see
+ # them (IncidentView: a hidden field is null), the photos as a grid, the
+ # linked records with their costs, *Link a record* and the add buttons.
+ #}
+{% set active_nav = 'garage' %}
+{% set dash = '—' %}
+{% set name = incidents_ui.name(incident) %}
+{% set images = files|filter(f => f.isImage()) %}
+{% set documents = files|filter(f => not f.isImage()) %}
+{# The same check as IncidentAccess::seesAmounts(), which already left them out. #}
+{% set own_amount = can_see_amount(vehicle, incident.createdBy) %}
+
+{% block title %}{{ name }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('incidents.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'incident.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ incident.type.labelKey()|trans }}</h1>
+                <p class="page-header__lead">{{ incident.occurredOn|local_date }}{% if incident.occurredAtTime %}, {{ incident.occurredAtTime }}{% endif %}{% if incident.location %} · {{ incident.location }}{% endif %}</p>
+                <p>{{ incidents_ui.badges(incident) }}</p>
+            </div>
+            {% if can_change %}
+                <div class="btn-row">
+                    <a class="btn" href="{{ url_for('incidents.edit', {id: vehicle.id, incident: incident.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                    {% if can_remind %}
+                        <a class="btn btn--ghost" href="{{ url_for('reminders.create', {}, {vehicle: vehicle.id, title: incident.claimNumber ? 'incident.chase_claim_number'|trans({number: incident.claimNumber}) : 'incident.chase_claim'|trans}) }}">{{ ui.icon('notifications') }}{{ 'incident.add_reminder'|trans }}</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </header>
+
+        <section class="card" aria-labelledby="incident-details">
+            <h2 id="incident-details" class="card__title">{{ 'incident.section.what'|trans }}</h2>
+            <dl class="details">
+                <div><dt>{{ 'incident.field.damage_areas'|trans }}</dt><dd>{{ incidents_ui.damage(incident)|trim ?: dash }}</dd></div>
+                {% if incident.writeOff.isWrittenOff() %}
+                    <div><dt>{{ 'incident.field.write_off'|trans }}</dt><dd>{{ incident.writeOff.labelKey()|trans }}</dd></div>
+                {% endif %}
+                <div><dt>{{ 'incident.field.status'|trans }}</dt><dd>{{ incident.status.labelKey()|trans }}{% if incident.closedOn %} · {{ 'incident.closed_on'|trans({date: incident.closedOn|local_date}) }}{% endif %}</dd></div>
+                {% if odometer %}<div><dt>{{ 'incident.field.odometer'|trans }}</dt><dd class="tabular">{{ odometer|distance(0) }}</dd></div>{% endif %}
+                {% if incident.details %}
+                    <div><dt>{{ 'incident.field.fault'|trans }}</dt><dd>{{ incident.fault.labelKey()|trans }}</dd></div>
+                    <div><dt>{{ 'incident.field.driver'|trans }}</dt><dd>{{ driver ?: dash }}</dd></div>
+                    {% if incident.description %}<div><dt>{{ 'incident.field.description'|trans }}</dt><dd>{{ incident.description|nl2br }}</dd></div>{% endif %}
+                    {% if incident.notes %}<div><dt>{{ 'incident.field.notes'|trans }}</dt><dd>{{ incident.notes|nl2br }}</dd></div>{% endif %}
+                {% endif %}
+            </dl>
+            {% if not incident.details %}<p class="field__hint">{{ 'incident.details_hidden'|trans }}</p>{% endif %}
+        </section>
+
+        {% if incident.details %}
+            <section class="card" aria-labelledby="incident-claim">
+                <h2 id="incident-claim" class="card__title">{{ 'incident.section.insurance'|trans }}</h2>
+                <dl class="details">
+                    <div><dt>{{ 'incident.field.claim_status'|trans }}</dt><dd>{{ incident.claimStatus.labelKey()|trans }}</dd></div>
+                    {% if incident.insurer %}<div><dt>{{ 'incident.field.insurer'|trans }}</dt><dd>{{ incident.insurer }}</dd></div>{% endif %}
+                    {% if incident.claimNumber %}<div><dt>{{ 'incident.field.claim_number'|trans }}</dt><dd>{{ incident.claimNumber }}</dd></div>{% endif %}
+                    {% if own_amount and incident.excess is not null %}<div><dt>{{ 'incident.field.excess'|trans }}</dt><dd class="tabular">{{ incident.excess|money(currency) }}</dd></div>{% endif %}
+                    <div><dt>{{ 'incident.field.ncd'|trans }}</dt><dd>{{ incident.ncdAffected.labelKey()|trans }}</dd></div>
+                    {% if incident.claimUpdatedOn %}<div><dt>{{ 'incident.field.claim_updated_on'|trans }}</dt><dd>{{ incident.claimUpdatedOn|local_date }}</dd></div>{% endif %}
+                </dl>
+                {% if incident.otherPartyName or incident.otherPartyRegistration or incident.otherPartyInsurer or incident.policeReference %}
+                    <h3 class="section-title section-title--sm">{{ 'incident.section.other_party'|trans }}</h3>
+                    <dl class="details">
+                        {% if incident.otherPartyName %}<div><dt>{{ 'incident.field.other_party_name'|trans }}</dt><dd>{{ incident.otherPartyName }}</dd></div>{% endif %}
+                        {% if incident.otherPartyRegistration %}<div><dt>{{ 'incident.field.other_party_registration'|trans }}</dt><dd>{{ incident.otherPartyRegistration }}</dd></div>{% endif %}
+                        {% if incident.otherPartyInsurer %}<div><dt>{{ 'incident.field.other_party_insurer'|trans }}</dt><dd>{{ incident.otherPartyInsurer }}</dd></div>{% endif %}
+                        {% if incident.policeReference %}<div><dt>{{ 'incident.field.police_reference'|trans }}</dt><dd>{{ incident.policeReference }}</dd></div>{% endif %}
+                    </dl>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        {% if own_amount and incident.costs %}
+            <section class="card" aria-labelledby="incident-costs">
+                <h2 id="incident-costs" class="card__title">{{ 'incident.costs.title'|trans }}</h2>
+                <dl class="details">
+                    <div><dt>{{ 'incident.costs.linked'|trans }}</dt><dd class="tabular">{{ incident.costs.linked|money }}</dd></div>
+                    {% if incident.showsPayouts() %}
+                        <div><dt>{{ 'incident.costs.payouts'|trans }}</dt><dd class="tabular">{{ incident.costs.payouts|money }}</dd></div>
+                        <div><dt>{{ 'incident.costs.net'|trans }}</dt><dd class="tabular">{{ incident.costs.net|money }}</dd></div>
+                    {% endif %}
+                </dl>
+                {% if incident.showsPayouts() and incident.costs.receivedMore %}
+                    <p class="field__hint">{{ ui.icon('info') }}{{ 'incident.costs.received_more'|trans }}</p>
+                {% endif %}
+                <p class="field__hint">{{ 'incident.costs.hint'|trans }}</p>
+            </section>
+        {% endif %}
+
+        {% if files is not empty %}
+            <section class="card" aria-labelledby="incident-photos">
+                <h2 id="incident-photos" class="card__title">{{ 'incident.field.photos'|trans }}</h2>
+                {% if images is not empty %}
+                    <ul class="incident-photos">
+                        {% for photo in images %}
+                            <li>
+                                <a href="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}">
+                                    <img src="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}" alt="{{ photo.filename }}" loading="lazy">
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if documents is not empty %}
+                    <ul class="attachment-list">
+                        {% for file in documents %}{{ paperclip.item(vehicle, file) }}{% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="incident-linked">
+            <div class="card__header card__header--wrap">
+                <h2 id="incident-linked" class="card__title">{{ 'incident.linked.title'|trans }}</h2>
+                {% if can_log %}
+                    <div class="btn-row">
+                        {% if feature_enabled('maintenance') %}<a class="btn btn--ghost" href="{{ url_for('maintenance.create', {id: vehicle.id}, {incident: incident.id, category: 'repair'}) }}" data-modal>{{ ui.icon('build') }}{{ 'incident.linked.add_repair'|trans }}</a>{% endif %}
+                        <a class="btn btn--ghost" href="{{ url_for('expenses.create', {id: vehicle.id}, {incident: incident.id}) }}" data-modal>{{ ui.icon('payments') }}{{ 'incident.linked.add_expense'|trans }}</a>
+                        {% if feature_enabled('tyres') %}<a class="btn btn--ghost" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'fit'}, {incident: incident.id}) }}">{{ ui.icon('tire_repair') }}{{ 'incident.linked.add_tyre'|trans }}</a>{% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            {% if linked is empty %}
+                <p class="muted">{{ 'incident.linked.none'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for record in linked %}
+                        <li class="list__item">
+                            <span class="list__body">
+                                <span class="list__title">
+                                    {%- set title = record.titleIsKey ? record.title|trans : record.title -%}
+                                    {%- if can_change(vehicle, record.createdBy) -%}
+                                        <a href="{{ url_for(record.route, record.routeParams) }}" data-modal>{{ title }}</a>
+                                    {%- else -%}{{ title }}{%- endif -%}
+                                </span>
+                                <span class="list__meta">{{ record.date|local_date }}{% if record.vendor %} · {{ record.vendor }}{% endif %}{% if record.followsRecord %} · {{ 'incident.linked.follows'|trans }}{% endif %}</span>
+                            </span>
+                            <span class="list__end">
+                                {% if record.cost and can_see_amount(vehicle, record.createdBy) %}<span class="list__amount tabular">{{ record.cost|money }}</span>{% endif %}
+                                {% if can_change and not record.followsRecord and can_change(vehicle, record.createdBy) and not vehicle.isArchived() %}
+                                    <form method="post" action="{{ url_for('incidents.links', {id: vehicle.id, incident: incident.id}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <button type="submit" class="btn btn--ghost" name="unlink" value="{{ record.key() }}">{{ ui.icon('link') }}{{ 'incident.link.unlink'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if candidates is not empty %}
+                <form class="form" method="post" action="{{ url_for('incidents.links', {id: vehicle.id, incident: incident.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <div class="field">
+                        <label class="field__label" for="f-record">{{ 'incident.link.label'|trans }}</label>
+                        <div class="input-group">
+                            <select class="select" id="f-record" name="record" aria-describedby="f-record-hint">
+                                {% for record in candidates %}
+                                    <option value="{{ record.key() }}">{{ record.date|local_date }} · {{ record.titleIsKey ? record.title|trans : record.title }}{% if record.cost and can_see_amount(vehicle, record.createdBy) %} · {{ record.cost|money }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn">{{ ui.icon('link') }}{{ 'incident.link.submit'|trans }}</button>
+                        </div>
+                        <p class="field__hint" id="f-record-hint">{{ 'incident.link.hint'|trans({days: 180}) }}</p>
+                    </div>
+                </form>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

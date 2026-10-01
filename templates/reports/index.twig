@@ -32,6 +32,7 @@
             <div class="btn-row">
                 {{ ui.print_button() }}
                 <a class="btn" href="{{ url_for('reports.ownership', {}, ownership_query) }}">{{ ui.icon('sell') }}{{ 'ownership.report_title'|trans }}</a>
+                {% if feature_enabled('incidents') %}<a class="btn" href="{{ url_for('incidents.history') }}">{{ ui.icon('car_crash') }}{{ 'incident.history.title'|trans }}</a>{% endif %}
                 <a class="btn" href="{{ url_for('reports.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
             </div>
         </header>

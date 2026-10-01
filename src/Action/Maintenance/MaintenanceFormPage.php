@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Maintenance;
 
+use Logbook\Action\Incident\IncidentPicker;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
@@ -27,6 +28,7 @@ final readonly class MaintenanceFormPage
         private ScheduleService $schedules,
         private OdometerService $odometer,
         private AttachmentUpload $upload,
+        private IncidentPicker $incidents,
     ) {
     }
 
@@ -62,6 +64,7 @@ final readonly class MaintenanceFormPage
             'categories' => MaintenanceCategory::cases(),
             'schedules' => $this->schedules->list($vehicle),
             'latest' => $this->odometer->history($vehicle)->latest(),
-        ] + $this->upload->formContext($vehicle, AttachmentOwner::Maintenance, $entry?->id), $status);
+        ] + $this->upload->formContext($vehicle, AttachmentOwner::Maintenance, $entry?->id)
+            + $this->incidents->context($vehicle), $status);
     }
 }
