@@ -306,6 +306,30 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * The figure economy() shows, as a number in the user's unit, rounded as
+     * shown (null when there is none): for working out a change between two
+     * figures that reads right in that unit (spec.md §7.24, drift).
+     */
+    public function economyValue(
+        int|float|string|null $km,
+        int|float|string|null $volume,
+        bool $electric,
+        int $decimals = 1,
+    ): ?float {
+        $distance = self::toFloat($km);
+        $amount = self::toFloat($volume);
+        if ($distance === null || $amount === null) {
+            return null;
+        }
+        $value = $electric
+            ? ElectricEfficiencyUnit::forDistanceUnit($this->context->preferences()->distanceUnit)
+                ->fromDistanceAndEnergy($distance, $amount)
+            : $this->context->preferences()->consumptionUnit->fromDistanceAndVolume($distance, $amount);
+
+        return $value === null ? null : round($value, $decimals);
+    }
+
+    /**
      * Litres (in the user's volume unit), or kWh for electricity.
      */
     public function quantity(int|float|string|null $value, bool $electric, int $maxDecimals = 2): string

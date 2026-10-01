@@ -7,7 +7,8 @@
 
 {# Where the main action goes: the entry form for overdue work (prefilled),
    the reading's edit form, the fill-ups to check, a new reading, the
-   Mileage tab, a new valuation. #}
+   Mileage tab, a new valuation, the Fuel tab's economy trend, a fill-up's
+   or maintenance record's edit form. #}
 {% macro action_url(item) -%}
     {%- set id = item.vehicle.id -%}
     {%- if item.kind.value == 'overdue' -%}
@@ -31,6 +32,13 @@
         {{ url_for('odometer.index', {id: id}) }}
     {%- elseif item.kind.value == 'valuation_stale' -%}
         {{ url_for('valuations.create', {id: id}) }}
+    {%- elseif item.kind.value in ['drift_liquid', 'drift_electric'] -%}
+        {%- set trend = '#economy-' ~ item.drift.kind.value -%}
+        {{ url_for('fuel.index', {id: id}) }}{{ trend }}
+    {%- elseif item.kind.value == 'fuel_price' -%}
+        {{ url_for('fuel.edit', {id: id, entry: item.subjectId}) }}
+    {%- elseif item.kind.value == 'maintenance_cost' -%}
+        {{ url_for('maintenance.edit', {id: id, entry: item.subjectId}) }}
     {%- endif -%}
 {%- endmacro %}
 
@@ -41,6 +49,8 @@
     {%- elseif item.kind.value == 'economy' -%}{{ 'attention.action.review'|trans }}
     {%- elseif item.kind.value == 'mileage_stale' -%}{{ 'attention.action.add_reading'|trans }}
     {%- elseif item.kind.value == 'trips_exceed' -%}{{ 'attention.action.mileage'|trans }}
+    {%- elseif item.kind.value in ['drift_liquid', 'drift_electric'] -%}{{ 'attention.action.view_economy'|trans }}
+    {%- elseif item.kind.value in ['fuel_price', 'maintenance_cost'] -%}{{ 'attention.action.fix'|trans }}
     {%- else -%}{{ 'attention.action.add_valuation'|trans }}
     {%- endif -%}
 {%- endmacro %}
@@ -53,16 +63,24 @@
     {% set title = wording.title(item) %}
     {% set severity = item.severity().value %}
     {% set manual = item.kind.value == 'overdue' and item.forecast.source.value == 'reminder' %}
-    {% set modal = item.kind.value in ['overdue', 'reading', 'mileage_stale', 'valuation_stale'] %}
+    {% set modal = item.kind.value in ['overdue', 'reading', 'mileage_stale', 'valuation_stale', 'fuel_price', 'maintenance_cost'] %}
+    {% set causes = wording.causes(item) %}
     <li class="attention-item attention-item--{{ severity }}">
         <div class="list__item">
             <span class="list__icon{{ severity == 'now' ? ' list__icon--danger' : ' list__icon--warning' }}">{{ ui.icon(item.icon) }}</span>
             <span class="list__body">
                 <span class="list__title">{{ title }}</span>
                 <span class="list__meta">
-                    {%- if opts.show_vehicle ?? false %}{{ item.vehicle.name() }} · {% endif -%}
-                    {{ wording.detail(item) }}
+                    {%- set detail = wording.detail(item) -%}
+                    {%- if opts.show_vehicle ?? false %}{{ item.vehicle.name() }}{% if detail %} · {% endif %}{% endif -%}
+                    {{ detail }}
                 </span>
+                {% if causes %}
+                    {# Spans: the body is a span, so no list inside it. #}
+                    <span class="attention-item__causes">
+                        {% for cause in causes %}<span class="attention-item__cause">{{ cause }}</span>{% endfor %}
+                    </span>
+                {% endif %}
             </span>
             <span class="list__end"><span class="pill attention-item__label pill--{{ severity == 'now' ? 'overdue' : 'soon' }}">{{ wording.label(item) }}</span></span>
         </div>
@@ -93,7 +111,7 @@
                     <input type="hidden" name="kind" value="{{ item.kind.value }}">
                     <input type="hidden" name="subject" value="{{ item.subjectId }}">
                     <input type="hidden" name="fingerprint" value="{{ item.fingerprint }}">
-                    <button type="submit" class="btn btn--sm btn--ghost">{{ ui.icon('visibility_off') }}{{ 'attention.action.hide'|trans }}<span class="visually-hidden">: {{ title }}</span></button>
+                    <button type="submit" class="btn btn--sm btn--ghost">{{ ui.icon(item.kind.value in ['fuel_price', 'maintenance_cost'] ? 'check_circle' : 'visibility_off') }}{{ (item.kind.value in ['fuel_price', 'maintenance_cost'] ? 'attention.action.looks_right' : 'attention.action.hide')|trans }}<span class="visually-hidden">: {{ title }}</span></button>
                 </form>
             {% endif %}
         </div>

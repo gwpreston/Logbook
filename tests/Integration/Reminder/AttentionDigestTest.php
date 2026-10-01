@@ -7,10 +7,13 @@ namespace Logbook\Tests\Integration\Reminder;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Fuel\Fuel;
+use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\AttentionHiddenRepository;
 use Logbook\Domain\Attention\AttentionKind;
+use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Service\Sharing\SharingService;
@@ -77,6 +80,40 @@ final class AttentionDigestTest extends ReminderTestCase
         $text = (string) $digest->getTextBody();
         self::assertStringStartsWith('Nothing is due in October 2026.', $text);
         self::assertStringContainsString('is lower than the one before', $text);
+    }
+
+    public function testATrendOrCostCheckIsALineToo(): void
+    {
+        $this->start();
+        $golf = $this->vehicle($this->app);
+        $fuel = $this->service($this->app, FuelService::class);
+        $prices = [
+            '2026-09-02' => '1.400',
+            '2026-09-08' => '1.400',
+            '2026-09-12' => '14.000',
+            '2026-09-22' => '1.400',
+            '2026-09-26' => '1.400',
+        ];
+        foreach ($prices as $date => $price) {
+            $km = (string) (10000 + 500 * (int) substr($date, 8));
+            $fuel->create(
+                $golf,
+                new FuelEntryData(new DateTimeImmutable($date . 'T08:00:00Z'), $km, Fuel::Petrol, '30', $price, '0'),
+            );
+        }
+
+        $this->runTasks();
+
+        $text = (string) $this->onlyDigest('October 2026: one thing needs attention')->getTextBody();
+        self::assertStringContainsString(
+            '• Volkswagen Golf: Fill-up on 12 Sept 2026: £14.00/L, about 10× your usual £1.40/L',
+            $text,
+        );
+        $hook = $this->http->to('https://hooks.test');
+        $json = end($hook)['json'] ?? [];
+        self::assertIsArray($json['attention'] ?? null);
+        self::assertIsArray($json['attention'][0] ?? null);
+        self::assertSame('fuel_price', $json['attention'][0]['kind'] ?? null);
     }
 
     public function testNothingDueAndNothingToCheckSendsNothing(): void

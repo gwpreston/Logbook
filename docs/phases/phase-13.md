@@ -261,9 +261,14 @@ v1.5.0.
   will show whether owners' cars swing enough to need it; revisit if winter
   flags are common.
   *Parked 2026-09-30: with maintenance insights in spec §12.*
+  *Scheduled 2026-10-01: built in [Phase 25](phase-25.md), economy drift
+  against the same months a year earlier (spec §7.24 item 7). The
+  single-tank check keeps its baseline.*
 - **Threshold setting.** One *sensitivity* setting (low / normal / high)
   rather than raw ratios, if owners ask.
 - **A sudden, sustained change** (every tank 15% worse since a date) is a
   better signal of a real fault than one odd tank, but needs a different
   test. A later maintenance-insights phase.
   *Parked 2026-09-30: with maintenance insights in spec §12.*
+  *Scheduled 2026-10-01: built in [Phase 25](phase-25.md), economy drift:
+  the last five tanks against the 12-month baseline (spec §7.24 item 7).*

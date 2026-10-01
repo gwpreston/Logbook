@@ -2431,6 +2431,26 @@ a.list__title:hover {
     margin-top: var(--space-2);
 }
 
+/* Phase 25: a drift's likely causes, under its detail line. */
+.attention-item__causes {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.attention-item__cause {
+    display: block;
+    position: relative;
+    padding-left: 1.1rem;
+}
+
+.attention-item__cause::before {
+    content: "•";
+    position: absolute;
+    left: 0.35rem;
+}
+
 .card--attention {
     border-color: var(--amber);
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Attention;
 
+use Logbook\Domain\Fuel\FuelEntry;
+use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Valuation\VehicleValuation;
 
@@ -39,6 +41,30 @@ final class Fingerprint
             $latest->data->valuedOn->format('Y-m-d'),
             $latest->data->amount,
         ]);
+    }
+
+    /**
+     * The recent segments' closing fill-ups: a new tank re-judges.
+     */
+    public static function drift(DriftFinding $finding): string
+    {
+        return self::hash(['drift', $finding->kind->value, $finding->closingIds]);
+    }
+
+    /**
+     * A fill-up's price, volume and total: an edit re-judges.
+     */
+    public static function price(FuelEntry $entry): string
+    {
+        return self::hash(['price', $entry->id, $entry->data->pricePerUnit, $entry->data->volume, $entry->data->totalCost]);
+    }
+
+    /**
+     * A maintenance record's cost and category.
+     */
+    public static function cost(MaintenanceEntry $entry): string
+    {
+        return self::hash(['cost', $entry->id, $entry->data->cost, $entry->data->category->value]);
     }
 
     /**

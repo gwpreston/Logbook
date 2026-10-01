@@ -45,6 +45,11 @@ final class ReminderSettingsForm
             'gotify_token' => $notifications->gotifyToken ?? '',
             'mileage_days' => (string) $attention->mileageDays,
             'valuation_months' => (string) $attention->valuationMonths,
+            'drift_percent' => (string) $attention->driftPercent,
+            'drift_percent_electric' => (string) $attention->driftPercentElectric,
+            'price_percent' => (string) $attention->pricePercent,
+            'cost_multiple' => (string) $attention->costMultiple,
+            'cost_floor' => (string) $attention->costFloor,
         ];
     }
 
@@ -84,6 +89,36 @@ final class ReminderSettingsForm
             AttentionThresholds::MIN_VALUATION_MONTHS,
             AttentionThresholds::MAX_VALUATION_MONTHS,
         );
+        $driftPercent = $validator->integer(
+            'drift_percent',
+            false,
+            AttentionThresholds::MIN_DRIFT_PERCENT,
+            AttentionThresholds::MAX_DRIFT_PERCENT,
+        );
+        $driftPercentElectric = $validator->integer(
+            'drift_percent_electric',
+            false,
+            AttentionThresholds::MIN_DRIFT_PERCENT,
+            AttentionThresholds::MAX_DRIFT_PERCENT,
+        );
+        $pricePercent = $validator->integer(
+            'price_percent',
+            false,
+            AttentionThresholds::MIN_PRICE_PERCENT,
+            AttentionThresholds::MAX_PRICE_PERCENT,
+        );
+        $costMultiple = $validator->integer(
+            'cost_multiple',
+            false,
+            AttentionThresholds::MIN_COST_MULTIPLE,
+            AttentionThresholds::MAX_COST_MULTIPLE,
+        );
+        $costFloor = $validator->integer(
+            'cost_floor',
+            false,
+            AttentionThresholds::MIN_COST_FLOOR,
+            AttentionThresholds::MAX_COST_FLOOR,
+        );
 
         $submitted = $input['channels'] ?? [];
         $channels = is_array($submitted)
@@ -114,6 +149,11 @@ final class ReminderSettingsForm
             new AttentionThresholds(
                 $mileageDays ?? AttentionThresholds::DEFAULT_MILEAGE_DAYS,
                 $valuationMonths ?? AttentionThresholds::DEFAULT_VALUATION_MONTHS,
+                $driftPercent ?? AttentionThresholds::DEFAULT_DRIFT_PERCENT,
+                $driftPercentElectric ?? AttentionThresholds::DEFAULT_DRIFT_PERCENT_ELECTRIC,
+                $pricePercent ?? AttentionThresholds::DEFAULT_PRICE_PERCENT,
+                $costMultiple ?? AttentionThresholds::DEFAULT_COST_MULTIPLE,
+                $costFloor ?? AttentionThresholds::DEFAULT_COST_FLOOR,
             ),
         ];
     }

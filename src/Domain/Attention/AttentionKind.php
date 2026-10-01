@@ -23,6 +23,14 @@ enum AttentionKind: string
     case TripsExceed = 'trips_exceed';
     /** The latest valuation is too old (§7.1). */
     case ValuationStale = 'valuation_stale';
+    /** Liquid fuel economy worse over the recent tanks than the year (Phase 25). */
+    case DriftLiquid = 'drift_liquid';
+    /** The same for electricity: its own kind, so a plug-in hybrid can hide each. */
+    case DriftElectric = 'drift_electric';
+    /** A fill-up's price far from nearby ones of the same grade (Phase 25). */
+    case FuelPrice = 'fuel_price';
+    /** A maintenance record far above its category's usual (Phase 25). */
+    case MaintenanceCost = 'maintenance_cost';
 
     public function severity(): AttentionSeverity
     {
@@ -36,7 +44,15 @@ enum AttentionKind: string
      */
     public function isHideable(): bool
     {
-        return $this === self::Reading || $this === self::MileageStale || $this === self::ValuationStale;
+        return !in_array($this, [self::Overdue, self::Economy, self::TripsExceed], true);
+    }
+
+    /**
+     * The drift kinds, one per series.
+     */
+    public function isDrift(): bool
+    {
+        return $this === self::DriftLiquid || $this === self::DriftElectric;
     }
 
     /**
