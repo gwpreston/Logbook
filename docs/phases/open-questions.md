@@ -30,7 +30,8 @@ starting it) on the same day, before Phase 25 started. Phase 26.1's
 2026-10-01, before Phase 26.1 started, and Phase 26.2's (#70–#73, one of
 them found while starting it) on the same day, before Phase 26.2 started,
 and Phase 26.3's (#74–#78, three of them found while starting it) on the
-same day, before Phase 26.3 started.
+same day, before Phase 26.3 started, and Phase 26.4's (#79–#84, two of
+them found while starting it) on the same day, before Phase 26.4 started.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -112,6 +113,12 @@ same day, before Phase 26.3 started.
 | 76 | [26.3](phase-26.3.md) | The five new input-adapter mappings: API endpoints too? | Decided | Yes. `POST /api/v1` for maintenance, documents, expenses, tread checks and manual reminders, built in this phase (spec §7.20 *More write endpoints*). | 2026-10-01 |
 | 77 | [26.3](phase-26.3.md) | A reminder relative to a document: fixed date, or one that follows it? | Answered | A fixed date. Manual reminders have no source (`reminders.source_id` is empty for manual rows, spec §6 Reminder), and the phase computes the date from the source (spec §7.26). | 2026-10-01 |
 | 78 | [26.3](phase-26.3.md) | Draft tools: module gating and model | Answered | Each tool needs its kind's module (`Feature`, spec §7.10) as well as `ai_actions`. They run on the `ask` task's model, which spec §7.25 already lists for drafting. | 2026-10-01 |
+| 79 | [26.4](phase-26.4.md) | VAT and line items: in the description, or new fields? | Decided | In the description, with labour and parts totals and "VAT £30.75 (20%)"; cost = total; no schema change (spec §7.27). | 2026-10-01 |
+| 80 | [26.4](phase-26.4.md) | Strip EXIF from every photo attachment, or scans only? | Decided | Every JPEG, PNG and WebP upload, vehicle photos included, turned upright and re-encoded without metadata; stored files left alone (spec §7.12). | 2026-10-01 |
+| 81 | [26.4](phase-26.4.md) | Failed MOTs: document without expiry, vehicle note, or nothing? | Decided | An `other` document "MOT failed …" with failures and advisories in notes and the file attached; an `inspection` without expiry would replace the valid MOT (`DocumentState`) (spec §7.27). | 2026-10-01 |
+| 82 | [26.4](phase-26.4.md) | Manual reminders by distance? | Decided | Yes: an optional *Due at* odometer (`reminders.due_km`), whichever comes first; form, API `due_odometer`, the scan's card (spec §7.6, §7.20). | 2026-10-01 |
+| 83 | [26.4](phase-26.4.md) | `gd` and `exif` (found while starting) | Decided | In the Docker image on every architecture and required on bare PHP (`ext-gd`, `ext-exif`) (spec §4, §10). | 2026-10-01 |
+| 84 | [26.4](phase-26.4.md) | PDF text extractor (found while starting) | Decided | `smalot/pdfparser`, pinned, LGPL-3.0, unmodified through Composer (spec §4). | 2026-10-01 |
 
 ## Other loose ends found in the review
 

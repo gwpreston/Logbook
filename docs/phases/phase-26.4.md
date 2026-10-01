@@ -2,7 +2,7 @@
 
 *Photograph the garage invoice; check the form; save.*
 
-Status: 📋 planned · releases **v2.8.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.8.0** · file lives in `docs/phases/`
 
 Typing a service invoice is the most tedious job in Logbook, and it is
 the one most often skipped. This phase reads a photo or PDF of an invoice,
@@ -99,6 +99,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
 >     user chooses to (a warning explains why: the sale pack never offers
 >     it).
 >   - *Other:* title, date, provider, expiry.
+> *(Spec §7.27 as written into `spec.md` on 2026-10-01 supersedes this
+> draft where they differ: the open questions below were decided then.)*
+>
 > - **Mapping to Logbook:**
 >   - **Vehicle:** registration matched exactly (normalised, spaces
 >     removed) against the vehicles the user can log to; else make and
@@ -168,7 +171,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
       sent where, and model suggestions for vision by location.
 
 ### Dependencies
-- [ ] A pure-PHP PDF text extractor (pin it; record it in §4).
+- [ ] `smalot/pdfparser`, pinned (§4, #84).
+- [ ] `ext-gd` and `ext-exif` required; the Docker image builds `gd`
+      (JPEG, PNG, WebP) and `exif` on amd64 and arm64 (#83).
 - [ ] Optional Imagick or Ghostscript for rendering scanned PDFs; the Docker
       image includes Ghostscript; bare PHP degrades as described.
 
@@ -177,6 +182,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
       claimed_by). Reversible; scheduler cleanup; excluded from backups.
 
 ### Code
+- [ ] Every photo upload rotated upright and stripped in the one upload
+      path (§7.12, #80); vehicle photos too.
+- [ ] Manual reminders with a *Due at* odometer: form, status whichever
+      comes first, projection, list, calendar feed, *Coming up*, API
+      `due_odometer` and OpenAPI (§7.6, §7.20, #82).
 - [ ] `Service\Ai\Scan\FilePreparer` (EXIF rotate and strip, downscale,
       PDF text or render).
 - [ ] `Service\Ai\Scan\Extractor` (schemas, one request, JSON validation,
@@ -237,11 +247,36 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.4, §7.5,
 
 - **VAT and line items:** keep them in the description (drafted), or add
   `vat_amount` and line items to maintenance records?
+  **Decided 2026-10-01 (#79):** in the description. Work and parts lines,
+  labour and parts totals and "VAT £30.75 (20%)"; cost = total. No
+  schema change.
 - **EXIF on ordinary attachments:** strip it from every photo attachment
   from now on (drafted for scans; the release note says so), or only from
   scanned ones?
+  **Decided 2026-10-01 (#80):** every JPEG, PNG and WebP upload
+  (attachments, vehicle photos, scans) is turned upright and re-encoded
+  without metadata. Files already stored are left alone (spec §7.12).
 - **Failed MOTs:** record a failed test as a document without expiry, as a
   note on the vehicle, or not at all?
+  **Decided 2026-10-01 (#81):** an `other` document, "MOT failed 12 Mar
+  2026", with failures and advisories in its notes and the certificate
+  attached. An `inspection` document without an expiry counts as running
+  latest (`DocumentState`), so it would replace the valid certificate,
+  silence its reminder and hide *First MOT due*; vehicles have no notes
+  field. The advisories are still offered as reminders.
 - **Manual reminders by distance:** add an odometer limit to manual
   reminders, so "in 5,000 miles" is stored as a distance rather than a
   projected date?
+  **Decided 2026-10-01 (#82):** yes. Manual reminders gain an optional
+  *Due at* odometer (`reminders.due_km`, which already exists, so no
+  migration), judged whichever comes first like a schedule, on the form,
+  the API (`due_odometer`) and the scan's recommendations card (spec
+  §7.6, §7.20).
+- *(Found while starting.)* **`gd` and `exif`.** Rotating, stripping and
+  downscaling photos needs them, and the Docker image installs neither.
+  **Decided 2026-10-01 (#83):** both go into the image on every
+  architecture and are required on bare PHP, as `intl` is (Composer
+  `ext-gd`, `ext-exif`), so every photo can be stripped (spec §4, §10).
+- *(Found while starting.)* **Which PDF text extractor?**
+  **Decided 2026-10-01 (#84):** `smalot/pdfparser`, pinned, LGPL-3.0,
+  used unmodified through Composer (spec §4).
