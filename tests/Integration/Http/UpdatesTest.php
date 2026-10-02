@@ -13,6 +13,7 @@ use Logbook\Repository\JobRunRepository;
 use Logbook\Repository\SettingRepository;
 use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobRunner;
+use Logbook\Service\Jobs\JobSettings;
 use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Service\Updates\UpdateCheckJob;
 use Logbook\Service\Updates\UpdateSettings;
@@ -43,12 +44,15 @@ final class UpdatesTest extends ReminderTestCase
 
     public function testNothingIsEverSentUntilSwitchedOn(): void
     {
-        $app = $this->app();
+        $app = $this->app(env: ['SESSION_SECRET' => 'a-test-session-secret-of-32-chars!']);
         $this->pinClock($app, self::NOW);
         $admin = $this->signedIn($app);
 
-        // A scheduler pass, Run now on the Jobs page, and the command line.
+        // A scheduler pass, the external URL, Run now on the Jobs page, and the command line.
         $this->service($app, ScheduledTasks::class)->run(JobTrigger::Cron);
+        $triggers = $this->service($app, JobSettings::class);
+        $triggers->setTriggers(false, true);
+        self::assertSame(200, $this->get($app, '/cron/' . $triggers->regenerateUrlToken())->getStatusCode());
         self::assertNull($this->runs($app)->latest(UpdateCheckJob::NAME), 'never due while off');
         $jobs = self::body($admin->get('/settings/jobs'));
         self::assertStringContainsString('Update check', $jobs);

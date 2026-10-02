@@ -5115,7 +5115,8 @@ so it is **off until an admin switches it on**.
     is never read.
   - Versions are compared as semantic versions (`v2.12.0` > `2.11.3`). A
     development build (`2.11.0-dev`, any `-suffix`) counts as older than
-    `2.11.0`.
+    `2.11.0`. A build without a release number (`VERSION` missing, shown
+    as `dev`) is never compared and never shows the banner.
   - The result is stored in the global setting `updates.status`: latest
     version, release URL, release name, published at, ETag, last checked
     at, the last error (a code and its values, shown in the reader's
@@ -5343,7 +5344,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   default `300`).
 - Update check (§7.31, Phase 28.2): `UPDATE_CHECK_REPO` (the GitHub
   repository asked for releases; default `gwpreston16/Logbook`; forks set
-  their own; must look like `owner/name`), `UPDATE_CHECK_ALLOWED` (default
+  their own; anything but `owner/name` stops the app at start, naming
+  the variable), `UPDATE_CHECK_ALLOWED` (default
   `true`; `false` removes the option entirely, for installs that must
   never call out).
 - Set by the Docker image: `LOGBOOK_DOCKER=1` (the update banner's upgrade

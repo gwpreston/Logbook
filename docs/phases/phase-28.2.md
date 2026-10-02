@@ -2,7 +2,7 @@
 
 *Know when a new Logbook is out, without anything updating itself.*
 
-Status: 🚧 in progress · releases **v2.11.0** with Phase 28.1 · file lives in
+Status: ✅ complete · releases **v2.11.0** with Phase 28.1 · file lives in
 `docs/phases/`
 
 A daily job asks GitHub for the latest Logbook release and compares it
@@ -122,25 +122,25 @@ draft here is kept as it was planned.
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.31 and §9 in `spec.md`; the Phase 28.2 line in §13.
-- [ ] `docs/deployment.md`: an *Upgrading* anchor (exists; check the link
+- [x] §7.31 and §9 in `spec.md`; the Phase 28.2 line in §13.
+- [x] `docs/deployment.md`: an *Upgrading* anchor (exists; check the link
       target) and a short *Update check* section; `.env.example` and
       `docs/configuration.md` gain the two variables.
-- [ ] Docker image sets `LOGBOOK_DOCKER=1`.
+- [x] Docker image sets `LOGBOOK_DOCKER=1`.
 
 ### Code
-- [ ] `Service\Updates\ReleaseChecker` (request, ETag, rate limits,
+- [x] `Service\Updates\ReleaseChecker` (request, ETag, rate limits,
       validation, semver comparison) as the `update_check` job, which
       names its own due time (`TimedJob`: the install's daily minute and a
       rate limit's wait) and is never `failed` for GitHub's errors (#114).
-- [ ] `Support\Version\SemVer` (parse, compare, pre-release suffix).
-- [ ] Settings → Updates (under *Installation*); the setup checkbox; the
+- [x] `Support\Version\SemVer` (parse, compare, pre-release suffix).
+- [x] Settings → Updates (under *Installation*); the setup checkbox; the
       banner in the admin notice area, with the release's own upgrade
       guide (#116); per-admin dismissal by version, kept for good.
-- [ ] Translations (en, de).
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] **Recorded responses** with Symfony's `MockHttpClient` (CI needs no
+- [x] **Recorded responses** with Symfony's `MockHttpClient` (CI needs no
       network):
       newer, same, older; `304` with ETag; `404`; `403` and `429` with
       `Retry-After` and `X-RateLimit-Reset`; a timeout; an oversized body; a
@@ -149,27 +149,27 @@ draft here is kept as it was planned.
       repository (the "moved" error, #115); *Check now* during a rate
       limit's wait sends nothing (#117); GitHub's errors are `ok` runs
       that never raise a failure alert (#114).
-- [ ] SemVer: `v` prefix, patch and minor ordering, `-dev` older than its
+- [x] SemVer: `v` prefix, patch and minor ordering, `-dev` older than its
       release.
-- [ ] Off by default: no request is ever made until switched on, by a
+- [x] Off by default: no request is ever made until switched on, by a
       pass, *Run now*, `bin/run-job.php` or the URL trigger; with
       `UPDATE_CHECK_ALLOWED=false` the setting is gone and the job isn't
       registered.
-- [ ] Banner: shown only to admins, only when newer, only with the banner
+- [x] Banner: shown only to admins, only when newer, only with the banner
       on; dismissed per version and per admin; back for the next version.
-- [ ] Install type: the Docker line with `LOGBOOK_DOCKER=1`, the bare line
+- [x] Install type: the Docker line with `LOGBOOK_DOCKER=1`, the bare line
       without.
-- [ ] Release name with HTML is escaped.
-- [ ] The random daily minute stays the same across runs for one install.
-- [ ] Integration suite green on every engine.
+- [x] Release name with HTML is escaped.
+- [x] The random daily minute stays the same across runs for one install.
+- [x] Integration suite green on every engine.
 
 ### Release (with Phase 28.1)
-- [ ] `CHANGELOG.md` **2.11.0**: background jobs in Settings (run now,
+- [x] `CHANGELOG.md` **2.11.0**: background jobs in Settings (run now,
       output, health warning, page-visit and URL triggers, scheduled
       backups) and the update check. Upgrade notes: one migration; the
       update check is off until switched on; bare installs without cron can
       now use the page-visit or URL trigger.
-- [ ] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Bump `VERSION`, rebuild assets, update the README status.
 
 ---
 
@@ -220,6 +220,15 @@ Found while starting it:
 - ***Check now* during a rate limit** (#117). *Decided 2026-10-02:* it
   waits like the daily run: no request, and "Rate limited by GitHub until
   {time}" (spec §7.31).
+
+Settled while building (spec §7.31): *Check now* shows only while
+checking is on; a rate limit's wait is kept between a minute and a day;
+`If-None-Match` is sent only while a release is stored; a release name is
+shown in the banner only when it says more than the version; the banner's
+dismissal is its own user setting (`updates.dismissed`), so it never
+expires like the other notices'; `UPDATE_CHECK_REPO` that isn't
+`owner/name` stops the app at start; and a build without a version number
+(`dev`) never shows the banner.
 
 Settled while starting, without changing behaviour: there is no *System*
 section in Settings, so *Updates* sits under *Installation* beside *Jobs*
