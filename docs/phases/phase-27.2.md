@@ -2,7 +2,7 @@
 
 *When the insurer pays out for the car, and the letters in between.*
 
-Status: 🚧 in progress · releases **v2.10.0** (Phases 27.1 and 27.2) · file
+Status: ✅ complete · released as **v2.10.0** (Phases 27.1 and 27.2) · file
 lives in `docs/phases/`
 
 [Phase 27.1](phase-27.1.md) records incidents and claims. Two of its open
@@ -143,13 +143,13 @@ Written into `spec.md` when this phase was decided (2026-10-01):
       incident gets a repair estimate.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.10.0** (Phases 27.1 and 27.2): incidents, damage
+- [x] `CHANGELOG.md` **2.10.0** (Phases 27.1 and 27.2): incidents, damage
       and claims history; total loss; reading claim letters and estimates.
       Upgrade notes: migrations; the `incidents` module is on by default
       and can be switched off; incident photos are kept as uploaded.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and
+- [x] Bump `VERSION`, rebuild assets, update the README status and
       documentation table.
-- [ ] Tag `v2.10.0`.
+- [x] Tag `v2.10.0`.
 
 ---
 

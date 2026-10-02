@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.9.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.10.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -55,7 +55,10 @@ your own server.
 > to check, with the file attached (photos are always stored without their
 > location data); an MCP server, so Claude Desktop or another assistant can
 > use the same tools with its own model, log fill-ups and readings, and leave
-> other entries as drafts for you to add; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
+> other entries as drafts for you to add; incidents, damage and insurance
+> claims, with repairs linked so they count once, a five-year claims history
+> for insurance quotes, insurer letters read into the incident, and a car
+> archived as written off with its settlement as the sale; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
@@ -90,14 +93,14 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
-| [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message |
+| [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message; reading receipts, documents and insurer letters |
 | [docs/sso.md](docs/sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link; header sign-in behind a forward-auth proxy (nginx, Traefik, Caddy, the Authentik outpost) and how to deploy it safely |
 | [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/mcp.md](docs/mcp.md) | The MCP server: Claude Desktop, Claude Code and other assistants, keys and scopes, on your network or behind your reverse proxy, drafts to review |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
 | [docs/trips.md](docs/trips.md) | Trips and mileage claims: logging, saved journeys, the business and private split, mileage rates, the claim report and what the figures mean |
-| [docs/incidents.md](docs/incidents.md) | Incidents, damage and insurance claims: logging, photos kept as taken, linking repairs so costs count once, the claim, the claims history for insurance quotes and what the sale pack shows |
+| [docs/incidents.md](docs/incidents.md) | Incidents, damage and insurance claims: logging, photos kept as taken, linking repairs so costs count once, the claim and repair estimates, reading insurer letters, archiving a car as written off, the claims history for insurance quotes and what the sale pack shows |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in each release, with upgrade notes |
