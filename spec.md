@@ -333,7 +333,8 @@ disagree):
   - **Redaction:** a log processor replaces, before a line is stored or
     printed, the values of every environment variable whose name contains
     `PASSWORD`, `SECRET`, `TOKEN` or `KEY` (values of 4 characters or
-    more), every stored AI connection secret (§7.25), and anything that
+    more, except plain settings words and `logbook`, the shipped compose
+    files' public default database password), every stored AI connection secret (§7.25), and anything that
     looks like a Logbook API key (`lbk_` followed by its characters) with
     `••••`.
 
@@ -916,7 +917,8 @@ MySQL only.
   replaced.
 
 **JobRun** (Phase 28.1, §7.30)
-- id, job (name), trigger (`cron` | `docker` | `page_visit` | `url` |
+- id, job (name), trigger (column `trigger_kind`, as `TRIGGER` is
+  reserved in SQL: `cron` | `docker` | `page_visit` | `url` |
   `manual`), user_id (who pressed *Run now*; `ON DELETE SET NULL`),
   started_at, finished_at (optional), status (`running` | `ok` |
   `partial` | `failed` | `skipped_locked` | `interrupted`), summary (up
@@ -4946,8 +4948,8 @@ able to run without cron.
 - **Run page** (`/settings/jobs/runs/{id}`): job, trigger, who ran it,
   start, finish, duration, status, summary, and the output in a
   monospace block with *Copy* (JS).
-- **Run now** (POST, CSRF): runs the job in the request. The session is
-  saved and closed first, so other pages stay usable;
+- **Run now** (POST, CSRF): runs the job in the request. Sessions are
+  database rows with no lock, so other pages stay usable meanwhile;
   `ignore_user_abort(true)` keeps the job going if the browser goes
   away; and the time limit is `JOB_TIME_LIMIT` (default 300 seconds).
   - Without JS: the POST runs the job and then redirects (303) to its
@@ -4975,6 +4977,10 @@ able to run without cron.
   - `backup`: "Wrote logbook-scheduled-20261002-031500.zip (4.2 MB);
     deleted 1 old backup".
   - A job that throws is `failed`, with the message as its summary.
+  - Summaries are written in the language of whoever ran the job (the
+    admin for *Run now*, the visitor for a page visit, `APP_LOCALE` for
+    cron, Docker and the URL); the output lines are
+    log lines, in English, as in the log file.
 - **Scheduler health:** the page shows the last scheduler pass (the
   newest finished run with any trigger but `manual`) and its trigger.
   When none has finished within **2 × `SCHEDULER_INTERVAL`** (default

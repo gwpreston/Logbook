@@ -23,8 +23,12 @@ final class OutputRedactor
     private const string NAMES = '/PASSWORD|SECRET|TOKEN|KEY/i';
     private const string API_KEY = '/lbk_[A-Za-z0-9_\-]+/';
     private const int SHORTEST = 4;
-    /** Settings words, not secrets: masking them would garble every line. */
-    private const array PLAIN = ['true', 'false', 'none', 'null', 'explicit', 'username', 'identity'];
+    /**
+     * Settings words, not secrets: masking them would garble every line.
+     * `logbook` is the shipped compose files' database password, public
+     * already, and part of every file name the jobs print.
+     */
+    private const array PLAIN = ['true', 'false', 'none', 'null', 'explicit', 'username', 'identity', 'logbook'];
 
     /** @var list<string>|null longest first, gathered on first use */
     private ?array $secrets = null;
