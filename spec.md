@@ -5098,7 +5098,8 @@ so it is **off until an admin switches it on**.
   - `304`: unchanged; `last_checked_at` is updated. `404`: "No releases
     published yet". `403` or `429`: rate limited, and nothing is sent again
     until `Retry-After` (seconds) or `X-RateLimit-Reset` (Unix time) has
-    passed, or for an hour when neither is given. Until then, a daily run
+    passed, or for an hour when neither is given (the wait kept between a
+    minute and a day). Until then, a daily run
     or *Check now* makes no request and records "Rate limited by GitHub
     until {time}" (decided 2026-10-02, #117). Other statuses, timeouts and
     network errors are recorded with their status or reason.
@@ -5135,8 +5136,9 @@ so it is **off until an admin switches it on**.
   the release's own guide, decided 2026-10-02, #116), plus the line for
   this install: Docker (`LOGBOOK_DOCKER=1`, set by the image) gives
   "`docker compose pull && docker compose up -d`"; bare PHP gives "Back up,
-  then follow the upgrade steps". The release name, when it differs from
-  the version, is shown as escaped text. **Dismiss** hides it for that
+  then follow the upgrade steps". The release name, when it says more
+  than the version (not `2.12.0`, `v2.12.0` or `Logbook 2.12.0`), is
+  shown as escaped text. **Dismiss** hides it for that
   version, per admin, for good (`updates.dismissed`, the user setting
   holding the dismissed version); the next newer release shows it again.
   Every release is treated alike: no security marking overrides the

@@ -6,6 +6,7 @@ namespace Logbook\Service\Updates;
 
 use DateTimeImmutable;
 use JsonException;
+use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Version\InstalledVersion;
 use Logbook\Support\Version\SemVer;
 use Psr\Clock\ClockInterface;
@@ -35,7 +36,7 @@ final readonly class ReleaseChecker
 
     public function __construct(
         private HttpClientInterface $http,
-        private UpdateSettings $settings,
+        private AppSettings $app,
         private InstalledVersion $installed,
         private ClockInterface $clock,
         private LoggerInterface $logger,
@@ -53,7 +54,7 @@ final readonly class ReleaseChecker
             return $previous->withError(self::rateLimited($previous->retryAt), null, $previous->retryAt);
         }
 
-        $repo = $this->settings->repository();
+        $repo = $this->app->updateCheckRepo;
         $url = sprintf('%s/repos/%s/releases/latest', self::API, $repo);
         $headers = [
             'Accept' => 'application/vnd.github+json',

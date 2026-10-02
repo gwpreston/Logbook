@@ -189,6 +189,18 @@ These are defaults: once an owner saves **Settings → Modules**, that choice
 wins. A switched-off module disappears from menus, pages (404), the dashboard,
 reports and reminders; its data is kept.
 
+## Update check
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `UPDATE_CHECK_REPO` | `gwpreston16/Logbook` | The GitHub repository asked for its latest release, as `owner/name`. Forks set their own. Anything else stops the app at start. |
+| `UPDATE_CHECK_ALLOWED` | `true` | `false` removes the update check entirely: Settings → Updates, the setup checkbox and the `update_check` job. |
+| `LOGBOOK_DOCKER` | unset (`1` in the image) | Set by the Docker image so the update banner gives the Docker upgrade command. Not for setting by hand. |
+
+The check itself is **off** until an admin switches it on in Settings →
+Updates (or ticks *Tell me when a new version is out* at first-run setup).
+See [Update check](deployment.md#update-check).
+
 ## Docker entrypoint only
 
 | Variable | Default | Meaning |

@@ -132,6 +132,8 @@ final class AccessibilityTest extends AppTestCase
             "/vehicles/$id/archive",
             // Phase 28.1: Settings → Jobs (the dashboard above carries the scheduler notice).
             '/settings/jobs',
+            // Phase 28.2: Settings → Updates.
+            '/settings/updates',
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);
