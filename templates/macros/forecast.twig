@@ -14,6 +14,8 @@
         {{ url_for('tyres.index', {id: item.vehicle.id}) }}
     {%- elseif item.source.value == 'first_inspection' -%}
         {{ url_for('vehicles.show', {id: item.vehicle.id}) }}
+    {%- elseif item.source.value == 'finance' -%}
+        {{ url_for('finance.show', {id: item.vehicle.id, agreement: item.sourceId}) }}
     {%- else -%}
         {{ url_for('reminders.edit', {reminder: item.sourceId}) }}
     {%- endif -%}
@@ -54,7 +56,12 @@
     <li class="list__item forecast-item">
         <span class="list__icon">{{ ui.icon(item.icon) }}</span>
         <span class="list__body">
-            <a class="list__title" href="{{ forecast_ui.url(item) }}">{{ wording.title(item) }}</a>
+            {%- if item.finance and item.finance.plain -%}
+                {# Below Manage: a plain line, no link to the agreement (spec.md §7.32 *Coming up*). #}
+                <span class="list__title">{{ wording.title(item) }}</span>
+            {%- else -%}
+                <a class="list__title" href="{{ forecast_ui.url(item) }}">{{ wording.title(item) }}</a>
+            {%- endif -%}
             <span class="list__meta">
                 {%- if show_vehicle %}{{ item.vehicle.name() }} · {% endif -%}
                 {{ wording.source(item.source) }} · {{ forecast_ui.when(item) }}

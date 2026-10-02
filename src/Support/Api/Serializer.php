@@ -12,6 +12,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Expense\ExpenseEntry;
+use Logbook\Domain\Finance\PaymentEvent;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
@@ -24,6 +25,8 @@ use Logbook\Domain\Tyre\TyreChangeLine;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Finance\AgreementView;
+use Logbook\Service\Finance\ScheduledPayment;
 use Logbook\Service\Forecast\ForecastItem;
 use Logbook\Service\Fuel\EconomySegment;
 use Logbook\Service\Fuel\EconomySummary;
@@ -36,6 +39,7 @@ use Logbook\Service\Trip\ClaimTotals;
 use Logbook\Service\Trip\ValuedTrip;
 use Logbook\Service\Tyre\TyreStanding;
 use Logbook\Service\Tyre\TyreView;
+use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
 
 /**
@@ -448,7 +452,8 @@ final class Serializer
         $out = [
             'vehicle_id' => $item->vehicle->id,
             'source' => $item->source->value,
-            'source_id' => $item->sourceId,
+            // A plain finance line (below Manage, spec.md §7.32 *Coming up*) names no agreement.
+            'source_id' => $item->finance?->plain === true ? null : $item->sourceId,
             'title' => $item->title,
             'category' => $item->category,
             'due_on' => self::date($item->dueOn),
@@ -715,6 +720,105 @@ final class Serializer
             'approved_amount' => self::dec($totals->approvedAmount(), self::QUANTITY_SCALE),
             'employer_amount' => self::dec($totals->employerAmount, self::QUANTITY_SCALE),
             'difference' => self::dec($totals->difference(), self::QUANTITY_SCALE),
+        ];
+    }
+
+    /**
+     * A finance agreement's summary and schedule (spec.md §7.20 *Finance*,
+     * §7.32): the same figures as its page, every estimate marked as one,
+     * never the agreement number. Amounts in the vehicle's currency;
+     * distances in km, with the agreement's own unit for the allowance and
+     * its excess charge.
+     *
+     * @return array<string, mixed>
+     */
+    public static function financeAgreement(AgreementView $view): array
+    {
+        $agreement = $view->agreement;
+        $data = $agreement->data;
+        $figures = $view->figures;
+        $schedule = $figures->schedule;
+        $money = static fn (?Money $amount): ?string => $amount?->toDecimal(self::QUANTITY_SCALE);
+        $settlement = $figures->settlement;
+        $credit = $figures->costOfCredit;
+        $half = $figures->halfPaid;
+        $mileage = $view->mileage;
+
+        return [
+            'id' => $agreement->id,
+            'vehicle_id' => $agreement->vehicleId,
+            'type' => $data->type->value,
+            'lender' => $data->lender,
+            'status' => $agreement->status->value,
+            'started_on' => self::date($data->startedOn),
+            'ends_on' => self::date($figures->endsOn),
+            'ended_on' => self::date($agreement->endedOn),
+            'currency' => $view->currency,
+            'apr' => $data->type->isCredit() ? self::dec($data->apr, 3) : null,
+            'payments_total' => $schedule->numberOfPayments,
+            'payments_made' => $schedule->made(),
+            'payments_remaining' => $schedule->remaining(),
+            'next_payment' => ($next = $schedule->next()) === null ? null : [
+                'due_on' => self::date($next->dueOn),
+                'amount' => self::dec($next->amount, self::QUANTITY_SCALE),
+            ],
+            'remaining_to_pay' => $money($figures->remainingToPay),
+            'optional_final_payment' => $figures->optionalFinal === null ? null : [
+                'due_on' => self::date($figures->optionalFinal->dueOn),
+                'amount' => self::dec($figures->optionalFinal->amount, self::QUANTITY_SCALE),
+            ],
+            'total_amount_payable' => $money($figures->totalAmountPayable),
+            'total_amount_payable_worked_out' => $figures->totalDerived,
+            'amount_of_credit' => $money($figures->amountOfCredit),
+            'settlement' => $settlement === null ? null : [
+                'amount' => $money($settlement->amount),
+                'estimate' => $settlement->isEstimate(),
+                'quoted_on' => self::date($settlement->quote?->quotedOn),
+                'valid_until' => self::date($settlement->quote?->validUntil),
+            ],
+            'cost_of_credit' => $credit === null ? null : [
+                'total' => $money($credit->total),
+                'so_far' => $money($credit->soFar),
+                'so_far_estimate' => $credit->soFar !== null && !$credit->exact,
+            ],
+            'half_paid' => $half === null ? null : [
+                'target' => $money($half->target),
+                'paid_so_far' => $money($half->paidSoFar),
+                'still_needed' => $money($half->stillNeeded),
+                'reached' => $half->reached,
+                'on' => self::date($half->on),
+            ],
+            'equity' => $figures->equity === null ? null : [
+                'amount' => $money($figures->equity->amount),
+                'valuation' => $money($figures->equity->valuation),
+                'valued_on' => self::date($figures->equity->valuedOn),
+                'estimate' => $settlement?->isEstimate() ?? true,
+            ],
+            'mileage' => $mileage === null ? null : [
+                'distance_unit' => self::DISTANCE_UNIT,
+                'agreement_unit' => $mileage->unit->value,
+                'allowance' => self::dec($mileage->allowanceKm, self::QUANTITY_SCALE),
+                'start_odometer' => self::dec($mileage->startKm, self::QUANTITY_SCALE),
+                'distance_so_far' => self::dec($mileage->distanceKm, self::QUANTITY_SCALE),
+                'allowed_to_date' => self::dec($mileage->allowedToDateKm, self::QUANTITY_SCALE),
+                'projected' => self::dec($mileage->projectedKm, self::QUANTITY_SCALE),
+                'projected_excess' => self::dec($mileage->excessKm, self::QUANTITY_SCALE),
+                'excess_charge_per_unit' => self::dec($mileage->chargePerUnit, 4),
+                'projected_excess_charge' => $money($mileage->excessCharge),
+                'projection_estimate' => $mileage->projectedKm !== null && $agreement->status->isActive(),
+            ],
+            'schedule' => array_map(static fn (ScheduledPayment $payment): array => [
+                'number' => $payment->number,
+                'kind' => $payment->kind->value,
+                'due_on' => self::date($payment->dueOn),
+                'amount' => self::dec($payment->amount, self::QUANTITY_SCALE),
+                'status' => $payment->status->value,
+                'paid_on' => self::date($payment->paidOn),
+            ], $schedule->payments),
+            'extra_payments' => array_map(static fn (PaymentEvent $event): array => [
+                'paid_on' => self::date($event->paymentDate()),
+                'amount' => self::dec($event->amount, self::QUANTITY_SCALE),
+            ], $schedule->extras),
         ];
     }
 

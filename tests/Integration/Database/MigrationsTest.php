@@ -106,7 +106,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 29.1 finance tables,
+        // Newest first: the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
         // the Phase 28.1 job runs, the Phase 27.2 disposal, estimate and incident scans,
         // the Phase 27.1 incidents, the Phase 26.5 draft source,
         // the Phase 26.4 pending uploads, the Phase 26.3 drafts,
@@ -123,6 +123,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Rolling the disposal back keeps every vehicle; returned ones become sold.
+        self::assertTrue($this->hasColumn('vehicles', 'disposal'));
+        Migrator::run('rollback');
+        self::assertTrue($this->hasColumn('vehicles', 'disposal'), 'rollback narrows the disposal, never drops it');
+
         $finance = ['finance_agreements', 'finance_payment_events', 'settlement_quotes'];
         self::assertTrue($schema->tablesExist($finance));
         Migrator::run('rollback');

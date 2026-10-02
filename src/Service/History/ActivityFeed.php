@@ -17,6 +17,7 @@ use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Disposal;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ActivityDateRepository;
 use Logbook\Repository\ComplianceDocumentRepository;
@@ -641,8 +642,19 @@ final readonly class ActivityFeed
             $data->purchaseDate === null ? null : [Milestone::Bought, $data->purchaseDate, $data->purchasePrice],
             $data->saleDate === null
                 ? null
-                : [$vehicle->isWrittenOff() ? Milestone::WrittenOff : Milestone::Sold, $data->saleDate, $data->salePrice],
+                : [self::saleMilestone($vehicle), $data->saleDate, $data->salePrice],
         ]));
+    }
+
+    /** *Sold*, named for how the vehicle left: written off or returned. */
+    private static function saleMilestone(Vehicle $vehicle): Milestone
+    {
+        return match ($vehicle->disposal) {
+            Disposal::WrittenOff => Milestone::WrittenOff,
+            Disposal::ReturnedLender => Milestone::ReturnedLender,
+            Disposal::ReturnedLessor => Milestone::ReturnedLessor,
+            default => Milestone::Sold,
+        };
     }
 
     /**

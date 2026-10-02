@@ -8,8 +8,10 @@ use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\User\User;
 use Logbook\Repository\ReminderRepository;
+use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
 
@@ -25,6 +27,8 @@ final readonly class DueCounter
         private FeatureToggles $features,
         private ClockInterface $clock,
         private VehicleAccess $access,
+        private VehicleRepository $vehicles,
+        private FinanceService $finance,
     ) {
     }
 
@@ -35,10 +39,41 @@ final readonly class DueCounter
             return DueCounts::disabled();
         }
 
+        $rows = $this->reminders->listOpenForCounts($this->access->visibleVehicleIds($user, VehicleScope::Active));
+
         return DueCounts::fromRows(
-            $this->reminders->listOpenForCounts($this->access->visibleVehicleIds($user, VehicleScope::Active)),
+            $this->withoutHiddenFinance($user, $rows),
             LocalTime::today($this->clock, $user->preferences->timeZone()),
             $features,
         );
+    }
+
+    /**
+     * Finance reminders count only for those who may see the vehicle's
+     * finance (spec.md §7.32 *Access*).
+     *
+     * @param list<OpenReminderRow> $rows
+     * @return list<OpenReminderRow>
+     */
+    private function withoutHiddenFinance(User $user, array $rows): array
+    {
+        $ids = [];
+        foreach ($rows as $row) {
+            if ($row->source->isFinance()) {
+                $ids[$row->vehicleId] = true;
+            }
+        }
+        if ($ids === []) {
+            return $rows;
+        }
+        $seen = [];
+        foreach ($this->vehicles->listByIds(array_keys($ids)) as $vehicle) {
+            $seen[$vehicle->id] = $this->finance->canSee($user, $vehicle);
+        }
+
+        return array_values(array_filter(
+            $rows,
+            static fn (OpenReminderRow $row): bool => !$row->source->isFinance() || ($seen[$row->vehicleId] ?? false),
+        ));
     }
 }

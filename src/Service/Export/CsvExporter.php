@@ -212,9 +212,11 @@ final readonly class CsvExporter
             $cost->period->from?->format('Y-m-d'),
             $cost->period->to->format('Y-m-d'),
             $this->t('ownership.start.' . $cost->start->value),
-            $cost->vehicle->isWrittenOff()
-                ? $this->t('export.written_off')
-                : $this->yesNo($cost->vehicle->data->saleDate !== null),
+            match (true) {
+                $cost->vehicle->isWrittenOff() => $this->t('export.written_off'),
+                $cost->vehicle->isReturned() => $this->t('export.' . $cost->vehicle->disposal?->value),
+                default => $this->yesNo($cost->vehicle->data->saleDate !== null),
+            },
             $cost->distanceKm === null ? null : CsvNumber::distance($cost->distanceKm, $unit),
             ...array_map(static fn (GroupTotal $g): ?string => $money($g->amount), $cost->groups),
             $money($cost->payouts),

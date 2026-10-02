@@ -13,6 +13,11 @@ enum AttentionKind: string
 {
     /** *Coming up*'s overdue group (§7.18). */
     case Overdue = 'overdue';
+    /**
+     * A finance payment marked missed with no later payment (Phase 29.2): a
+     * *Now* item, so it ranks with overdue work, before every check.
+     */
+    case FinanceMissed = 'finance_missed';
     /** A reading the Mileage tab flags (§7.2). */
     case Reading = 'reading';
     /** The vehicle's unconfirmed economy flags, as one item (§7.3). */
@@ -33,10 +38,12 @@ enum AttentionKind: string
     case MaintenanceCost = 'maintenance_cost';
     /** A claim waiting for news for more than 30 days (Phase 27.1, §7.29). */
     case StalledClaim = 'stalled_claim';
+    /** A PCP or lease heading more than 2% over its mileage allowance (Phase 29.2, item 11). */
+    case FinanceMileage = 'finance_mileage';
 
     public function severity(): AttentionSeverity
     {
-        return $this === self::Overdue ? AttentionSeverity::Now : AttentionSeverity::Check;
+        return $this === self::Overdue || $this === self::FinanceMissed ? AttentionSeverity::Now : AttentionSeverity::Check;
     }
 
     /**
@@ -46,7 +53,7 @@ enum AttentionKind: string
      */
     public function isHideable(): bool
     {
-        return !in_array($this, [self::Overdue, self::Economy, self::TripsExceed], true);
+        return !in_array($this, [self::Overdue, self::Economy, self::TripsExceed, self::FinanceMissed], true);
     }
 
     /**

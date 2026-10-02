@@ -148,8 +148,9 @@ final class AttentionThresholdsTest extends TestCase
     public function testOnlyChecksAboutDataCanBeHiddenAndOverdueWorkIsNow(): void
     {
         self::assertSame(AttentionSeverity::Now, AttentionKind::Overdue->severity());
+        self::assertSame(AttentionSeverity::Now, AttentionKind::FinanceMissed->severity(), 'a missed payment is Now');
         foreach (AttentionKind::cases() as $kind) {
-            if ($kind !== AttentionKind::Overdue) {
+            if ($kind !== AttentionKind::Overdue && $kind !== AttentionKind::FinanceMissed) {
                 self::assertSame(AttentionSeverity::Check, $kind->severity());
             }
         }
@@ -163,6 +164,7 @@ final class AttentionThresholdsTest extends TestCase
                 AttentionKind::FuelPrice,
                 AttentionKind::MaintenanceCost,
                 AttentionKind::StalledClaim,
+                AttentionKind::FinanceMileage,
             ],
             array_values(array_filter(AttentionKind::cases(), static fn (AttentionKind $k): bool => $k->isHideable())),
         );

@@ -26,6 +26,8 @@ enum DashboardWidget: string
     case RecentActivity = 'recent_activity';
     /** This tax year's business mileage and claim (Phase 22). */
     case BusinessMileage = 'business_mileage';
+    /** Active finance agreements (Phase 29.2, spec.md §7.32): shown once a vehicle in view has one. */
+    case Finance = 'finance';
 
     /**
      * The module it shows, hidden with it (spec.md §7.10).
@@ -39,6 +41,7 @@ enum DashboardWidget: string
             self::RecentFuel, self::Efficiency => Feature::Fuel,
             self::Compliance => Feature::Compliance,
             self::BusinessMileage => Feature::Trips,
+            self::Finance => Feature::Finance,
         };
     }
 
@@ -56,6 +59,7 @@ enum DashboardWidget: string
             self::Mileage => 'speed',
             self::BusinessMileage => 'route',
             self::RecentActivity => 'history',
+            self::Finance => 'account_balance',
         };
     }
 

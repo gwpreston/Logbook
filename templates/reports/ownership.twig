@@ -93,7 +93,7 @@
                                 <tr>
                                     <th scope="row">
                                         <a href="{{ url_for('vehicles.show', {id: cost.vehicle.id}) }}">{{ cost.vehicle.name() }}</a>
-                                        {%- if cost.vehicle.isArchived() and cost.vehicle.isWrittenOff() %} <span class="muted">({{ vehicle_ui.written_off(cost.vehicle) }})</span>
+                                        {%- if cost.vehicle.isArchived() and (cost.vehicle.isWrittenOff() or cost.vehicle.isReturned()) %} <span class="muted">({{ vehicle_ui.disposal(cost.vehicle) }})</span>
                                         {%- elseif cost.vehicle.isArchived() %} <span class="muted">({{ 'vehicle.status.archived'|trans }})</span>{% endif -%}
                                     </th>
                                     <td>

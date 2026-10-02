@@ -14,7 +14,8 @@ use Twig\TwigFunction;
  * `finance_menu(vehicle)`: what the vehicle header offers (spec.md §7.32
  * *Module*): `view` (the finance page) once the vehicle has an agreement,
  * `add` (*Add finance*) while it has none and isn't archived, or null for
- * someone who may not see finance.
+ * someone who may not see finance. `finance_archive_offered(vehicle)`:
+ * whether *Archive* opens the confirm page for its agreement (#126).
  */
 final class FinanceTwigExtension extends AbstractExtension
 {
@@ -38,6 +39,12 @@ final class FinanceTwigExtension extends AbstractExtension
                 }
 
                 return $vehicle->isArchived() ? null : 'add';
+            }),
+            // Whether *Archive* opens the confirm page for the vehicle's agreement (#126).
+            new TwigFunction('finance_archive_offered', function (Vehicle $vehicle): bool {
+                $user = $this->context->user();
+
+                return $user !== null && $this->finance->archiveAgreement($user, $vehicle) !== null;
             }),
         ];
     }

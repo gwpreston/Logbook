@@ -170,6 +170,8 @@ final class AccessibilityTest extends AppTestCase
             // Phase 29.1: finance agreements.
             "/vehicles/$id/finance", "/vehicles/$id/finance/$agreement", "/vehicles/$id/finance/$agreement/edit",
             "/vehicles/{$bike->id}/finance/new?type=lease", "/vehicles/{$bike->id}/finance/new?type=hp",
+            // Phase 29.2: ending an agreement (the archive page above has its finance choices too).
+            "/vehicles/$id/finance/$agreement/end",
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);

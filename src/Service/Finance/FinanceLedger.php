@@ -78,9 +78,11 @@ final class FinanceLedger
     }
 
     /**
-     * The months an agreement covers, as first and last calendar dates of
-     * the month: from its first payment (a lease's initial rental) to its
-     * final payment or end.
+     * The months an agreement covers, as first and last calendar dates: from
+     * the first day of its first payment's month (a lease's initial rental)
+     * to the last day of its final payment's month, or for an ended one to
+     * the day before it ended, so the charges logged on handing back never
+     * count as overlapping (#127).
      *
      * @return array{0: DateTimeImmutable, 1: DateTimeImmutable}|null
      */
@@ -90,10 +92,15 @@ final class FinanceLedger
         if ($first === null) {
             return null;
         }
-        $last = $agreement->status->isActive() ? $schedule->endsOn() : self::endDate($agreement, $schedule);
-        $last ??= $first->dueOn;
+        $from = $first->dueOn->modify('first day of this month');
+        if (!$agreement->status->isActive()) {
+            $ended = self::endDate($agreement, $schedule) ?? $first->dueOn;
 
-        return [$first->dueOn->modify('first day of this month'), $last->modify('last day of this month')];
+            return [$from, $ended->modify('-1 day')];
+        }
+        $last = $schedule->endsOn() ?? $first->dueOn;
+
+        return [$from, $last->modify('last day of this month')];
     }
 
     /**

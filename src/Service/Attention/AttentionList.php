@@ -21,6 +21,8 @@ use Logbook\Repository\ReminderRepository;
 use Logbook\Service\Access\EntryAccess;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Finance\FinanceService;
+use Logbook\Service\Finance\MileageAllowance;
 use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\Forecast\ForecastItem;
@@ -80,6 +82,7 @@ final readonly class AttentionList
         private ClockInterface $clock,
         private IncidentRepository $incidents,
         private IncidentAccess $incidentAccess,
+        private FinanceService $finance,
     ) {
     }
 
@@ -135,6 +138,9 @@ final readonly class AttentionList
             }
             if ($canLog) {
                 array_push($items, ...$this->checks($user, $vehicle, $enabled, $today, $overdue[$vehicle->id] ?? [], $book));
+            }
+            if ($enabled[Feature::Finance->value]) {
+                array_push($items, ...$this->financeItems($user, $vehicle));
             }
         }
 
@@ -204,6 +210,8 @@ final readonly class AttentionList
             ForecastSource::Tyres => ReminderSource::Tyre,
             ForecastSource::FirstInspection => ReminderSource::FirstInspection,
             ForecastSource::Reminder => ReminderSource::Manual,
+            // Finance items are never overdue in *Coming up* (missed payments are their own check).
+            ForecastSource::Finance => ReminderSource::Finance,
         };
     }
 
@@ -401,6 +409,49 @@ final readonly class AttentionList
                 days: $days,
                 incident: $this->incidentAccess->view($user, $vehicle, $incident),
                 fingerprint: Fingerprint::claim($incident),
+                canAct: true,
+                canHide: true,
+            );
+        }
+
+        return $items;
+    }
+
+    /**
+     * The active agreement's missed payments (*Now*) and the mileage heading
+     * more than 2% over the allowance (item 11), for those who may see the
+     * vehicle's finance (spec.md §7.32 *Needs attention*).
+     *
+     * @return list<AttentionItem>
+     */
+    private function financeItems(User $user, Vehicle $vehicle): array
+    {
+        $view = $this->finance->activeView($user, $vehicle);
+        if ($view === null) {
+            return [];
+        }
+        $agreement = $view->agreement;
+        $items = [];
+        foreach ($view->figures->schedule->missed() as $payment) {
+            $items[] = new AttentionItem(
+                kind: AttentionKind::FinanceMissed,
+                vehicle: $vehicle,
+                subjectId: $agreement->id,
+                icon: 'account_balance',
+                finance: new FinanceFinding($agreement, $view->currency, dueOn: $payment->dueOn),
+                canAct: true,
+            );
+        }
+        $mileage = $view->mileage;
+        $percent = $mileage?->excessPercent();
+        if ($mileage !== null && $percent !== null && $percent > MileageAllowance::ATTENTION_PERCENT) {
+            $items[] = new AttentionItem(
+                kind: AttentionKind::FinanceMileage,
+                vehicle: $vehicle,
+                subjectId: $agreement->id,
+                icon: 'speed',
+                finance: new FinanceFinding($agreement, $view->currency, mileage: $mileage),
+                fingerprint: Fingerprint::financeMileage($agreement->id, (int) $mileage->excessRounded()),
                 canAct: true,
                 canHide: true,
             );

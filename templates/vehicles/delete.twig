@@ -21,7 +21,7 @@
                     {{ ui.csrf(csrf) }}
                     <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'vehicle.delete_confirm'|trans }}</button>
                 </form>
-                {% if not vehicle.isArchived() and total_loss_offered(vehicle) %}
+                {% if not vehicle.isArchived() and (total_loss_offered(vehicle) or finance_archive_offered(vehicle)) %}
                     <a class="btn" href="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">{{ ui.icon('archive') }}{{ 'vehicle.archive_instead'|trans }}</a>
                 {% elseif not vehicle.isArchived() %}
                     <form method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">

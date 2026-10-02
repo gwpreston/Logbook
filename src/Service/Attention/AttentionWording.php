@@ -65,7 +65,32 @@ final readonly class AttentionWording
                 'insurer' => $item->incident->insurer ?? '',
                 'days' => $item->days ?? 0,
             ]),
+            AttentionKind::FinanceMissed => $this->translator->trans('attention.finance.missed', [
+                'date' => $this->formatter->date($item->finance?->dueOn),
+            ]),
+            AttentionKind::FinanceMileage => $this->mileageTitle($item->finance),
         };
+    }
+
+    /**
+     * "Heading for about 1,200 mi over your allowance: about £108", in the
+     * agreement's unit (spec.md §7.24 item 11).
+     */
+    private function mileageTitle(?FinanceFinding $finding): string
+    {
+        $mileage = $finding?->mileage;
+        if ($mileage === null) {
+            return '';
+        }
+        $excess = $this->formatter->aboutDistance($mileage->excessKm, $mileage->unit);
+        $charge = $mileage->excessCharge;
+
+        return $charge === null
+            ? $this->translator->trans('attention.finance.mileage_no_charge', ['excess' => $excess])
+            : $this->translator->trans('attention.finance.mileage', [
+                'excess' => $excess,
+                'charge' => $this->formatter->money($charge, null, 0),
+            ]);
     }
 
     /**
@@ -101,7 +126,39 @@ final readonly class AttentionWording
                 'type' => $item->incident === null ? '' : $this->translator->trans($item->incident->type->labelKey()),
                 'date' => $this->formatter->date($item->incident?->occurredOn),
             ]),
+            AttentionKind::FinanceMissed => $this->translator->trans('attention.finance.missed_detail', [
+                'agreement' => $this->agreementName($item->finance),
+            ]),
+            AttentionKind::FinanceMileage => $this->mileageDetail($item->finance),
         };
+    }
+
+    /**
+     * "PCP · Toyota Financial Services: on track for 31,200 mi against
+     * 30,000 mi. Projected from your average daily distance."
+     */
+    private function mileageDetail(?FinanceFinding $finding): string
+    {
+        $mileage = $finding?->mileage;
+        if ($mileage === null) {
+            return '';
+        }
+
+        return $this->translator->trans('attention.finance.mileage_detail', [
+            'agreement' => $this->agreementName($finding),
+            'projected' => $this->formatter->aboutDistance($mileage->projectedKm, $mileage->unit),
+            'allowance' => $this->formatter->distance($mileage->allowanceKm, 0, $mileage->unit),
+        ]);
+    }
+
+    /** "PCP · Toyota Financial Services". */
+    private function agreementName(?FinanceFinding $finding): string
+    {
+        if ($finding === null) {
+            return '';
+        }
+
+        return $this->translator->trans($finding->agreement->type()->labelKey()) . ' · ' . $finding->agreement->data->lender;
     }
 
     /**

@@ -4778,3 +4778,27 @@ a.list__title:hover {
 .finance-mark .input {
     width: auto;
 }
+
+/* Ending an agreement (Phase 29.2, spec.md §7.32 *Ending*): every field shows
+   without :has(); with it, only the chosen outcome's fields and hint. */
+.finance-end__hints {
+    margin: 0;
+    padding-left: var(--space-4);
+}
+
+.finance-end:has(input[name="outcome"][value="settled"]:checked) [data-for]:not([data-for~="settled"]),
+.finance-end:has(input[name="outcome"][value="completed"]:checked) [data-for]:not([data-for~="completed"]),
+.finance-end:has(input[name="outcome"][value="handed_back"]:checked) [data-for]:not([data-for~="handed_back"]),
+.finance-end:has(input[name="outcome"][value="ended"]:checked) [data-for]:not([data-for~="ended"]) {
+    display: none;
+}
+
+/* The archive page's choices (Phase 29.2, spec.md §7.32 *Archive page*): every
+   field shows without :has(); with it, only the chosen disposal's. */
+.archive-form:has(input[name="disposal"][value="written_off"]:checked) [data-for]:not([data-for~="written_off"]),
+.archive-form:has(input[name="disposal"][value="sold"]:checked) [data-for]:not([data-for~="sold"]),
+.archive-form:has(input[name="disposal"][value="returned_lender"]:checked) [data-for]:not([data-for~="returned_lender"]),
+.archive-form:has(input[name="disposal"][value="returned_lessor"]:checked) [data-for]:not([data-for~="returned_lessor"]),
+.archive-form:has(input[name="disposal"][value=""]:checked) [data-for]:not([data-for=""]) {
+    display: none;
+}

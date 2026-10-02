@@ -65,7 +65,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [28.1](docs/phases/phase-28.1.md) | Scheduled jobs in Settings | ✅ |
 | [28.2](docs/phases/phase-28.2.md) | Update check and dashboard banner + v2.11 release | ✅ |
 | [29.1](docs/phases/phase-29.1.md) | Finance and lease agreements | ✅ |
-| [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | 📋 |
+| [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | ✅ |
 
 *Update the status column as each phase lands.*
 

@@ -72,7 +72,7 @@ final readonly class DisplayFormatter
      * @param Money|string|null $amount a Money, or a canonical decimal in $currency
      * @param string|null $currency defaults to the user's currency
      */
-    public function money(Money|string|null $amount, ?string $currency = null): string
+    public function money(Money|string|null $amount, ?string $currency = null, ?int $digits = null): string
     {
         if ($amount === null || $amount === '') {
             return '';
@@ -82,7 +82,7 @@ final readonly class DisplayFormatter
             ? $amount
             : Money::of($amount, $currency ?? $this->context->preferences()->currency);
 
-        $digits = Currency::fractionDigits($money->currency);
+        $digits ??= Currency::fractionDigits($money->currency);
 
         return $this->formatMoney($money->toFloat(), $money->currency, $digits, $digits);
     }
@@ -160,14 +160,14 @@ final readonly class DisplayFormatter
     /**
      * A distance stored in km, in the user's distance unit: "12,345 mi".
      */
-    public function distance(int|float|string|null $km, int $decimals = 0): string
+    public function distance(int|float|string|null $km, int $decimals = 0, ?DistanceUnit $unit = null): string
     {
         $value = self::toFloat($km);
         if ($value === null) {
             return '';
         }
 
-        $unit = $this->context->preferences()->distanceUnit;
+        $unit ??= $this->context->preferences()->distanceUnit;
         // A stored decimal converts back exactly to what was typed (3 places)
         // before rounding, so 1,234.5 mi shows as "1,235 mi", not "1,234 mi".
         $converted = is_string($km) ? (float) $unit->fromKmDecimal($km, 3) : $unit->fromKm($value);
@@ -182,13 +182,13 @@ final readonly class DisplayFormatter
      * precise: to the nearest 100 from 1,000 up, else to the nearest 10
      * ("about 6,000 mi left", "about 800 mi").
      */
-    public function aboutDistance(?string $km): string
+    public function aboutDistance(?string $km, ?DistanceUnit $unit = null): string
     {
         if ($km === null || !Decimal::isCanonical($km)) {
             return '';
         }
 
-        $unit = $this->context->preferences()->distanceUnit;
+        $unit ??= $this->context->preferences()->distanceUnit;
         $value = (float) $unit->fromKmDecimal($km, 3);
         $step = $value >= 1000 ? 100 : 10;
 

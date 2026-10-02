@@ -25,6 +25,14 @@ enum ReminderSource: string
      * (Phase 21.2). Its source id is the vehicle's own id, as for tyres.
      */
     case FirstInspection = 'first_inspection';
+    /** A finance agreement's final payment (Phase 29.2); the source id is the agreement. */
+    case Finance = 'finance';
+    /**
+     * *Agreement ends: decide what to do*, for a PCP or lease (Phase 29.2);
+     * its own source because a reminder row is unique per vehicle, source
+     * and source id (#130).
+     */
+    case FinanceEnd = 'finance_end';
     /** Added by hand. */
     case Manual = 'manual';
 
@@ -46,7 +54,17 @@ enum ReminderSource: string
             self::Schedule => Feature::Maintenance,
             self::Compliance, self::FirstInspection => Feature::Compliance,
             self::Tyre => Feature::Tyres,
+            self::Finance, self::FinanceEnd => Feature::Finance,
             self::Manual => null,
         };
+    }
+
+    /**
+     * Finance reminders are seen only by those who may see the vehicle's
+     * finance (`Manage` and `ViewCosts`, spec.md §7.32 *Access*).
+     */
+    public function isFinance(): bool
+    {
+        return $this === self::Finance || $this === self::FinanceEnd;
     }
 }

@@ -7,6 +7,7 @@ namespace Logbook\Service\Dashboard;
 use Logbook\Service\Trip\ClaimReport;
 use Logbook\Service\Attention\AttentionReport;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Finance\AgreementView;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\History\ActivityItem;
 use Logbook\Service\Reminder\ReminderOverview;
@@ -28,6 +29,7 @@ final readonly class Dashboard
      * @param list<VehicleEfficiency> $efficiency
      * @param list<VehicleCompliance> $compliance
      * @param list<ActivityItem> $activity newest first
+     * @param list<AgreementView>|null $finance
      */
     public function __construct(
         public DashboardLayout $layout,
@@ -50,6 +52,8 @@ final readonly class Dashboard
         public ?ClaimReport $businessMileage = null,
         /** Needs attention across the filter (Phase 24); null while the widget is hidden. */
         public ?AttentionReport $attention = null,
+        /** Active agreements in view, for those who may see their finance (Phase 29.2); null when not built. */
+        public ?array $finance = null,
     ) {
     }
 
@@ -64,7 +68,9 @@ final readonly class Dashboard
         return array_values(array_filter(
             $this->available,
             fn (DashboardWidget $w): bool => !$this->layout->isHidden($w)
-                && !($this->selected !== null && $w === DashboardWidget::Fleet),
+                && !($this->selected !== null && $w === DashboardWidget::Fleet)
+                // Nothing about finance shows until a vehicle in view has an agreement (spec.md §7.32 *Module*).
+                && !($w === DashboardWidget::Finance && $this->finance === []),
         ));
     }
 

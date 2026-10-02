@@ -57,6 +57,7 @@ final readonly class Reminder
             ReminderSource::Compliance => ComplianceType::tryFrom($category)?->icon() ?? 'description',
             ReminderSource::Tyre => 'tire_repair',
             ReminderSource::FirstInspection => ComplianceType::Inspection->icon(),
+            ReminderSource::Finance, ReminderSource::FinanceEnd => 'account_balance',
             ReminderSource::Manual => 'notifications',
         };
     }

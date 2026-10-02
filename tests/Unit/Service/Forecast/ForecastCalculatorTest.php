@@ -37,6 +37,10 @@ use Logbook\Service\Forecast\ForecastSource;
 use Logbook\Service\Forecast\FuelRate;
 use Logbook\Service\Forecast\FuelRateStatus;
 use Logbook\Service\Forecast\ScheduleDue;
+use Logbook\Service\Finance\PaymentStatus;
+use Logbook\Service\Finance\Schedule;
+use Logbook\Service\Finance\ScheduledPayment;
+use Logbook\Service\Forecast\FinanceDue;
 use Logbook\Service\Forecast\TyreDue;
 use Logbook\Service\Forecast\VehicleSources;
 use Logbook\Service\Maintenance\DueState;
@@ -48,6 +52,7 @@ use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Tests\Support\MutableClock;
+use Logbook\Tests\Unit\Service\Finance\FinanceFixtures;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -313,6 +318,60 @@ final class ForecastCalculatorTest extends TestCase
         self::assertTrue($forecast->months[3]->items[0]->projected);
         self::assertSame(['Tyres: rear due in about 9,000 mi'], self::titles($forecast->undated));
         self::assertSame(ForecastSource::Reminder, $forecast->months[8]->items[0]->source);
+    }
+
+    // --- Finance (Phase 29.2) ----------------------------------------------
+
+    public function testFinancePaymentsAreOneLineSpreadOverTheirMonths(): void
+    {
+        // The PCP's payments fall on the last day of each month from 31 Jan 2025; its final payment on 31 Jan 2028.
+        $pcp = FinanceFixtures::pcp();
+        $due = array_values(array_filter(
+            Schedule::of($pcp, [], self::date(self::TODAY))->payments,
+            static fn (ScheduledPayment $p): bool => $p->status === PaymentStatus::Due,
+        ));
+        $forecast = self::forecast(new VehicleSources(
+            self::vehicle(1, 'Yaris'),
+            'GBP',
+            finance: new FinanceDue($pcp->id, $due, false),
+        ));
+
+        $items = $forecast->items();
+        self::assertCount(1, $items, 'one line; the final payment is beyond the horizon');
+        $line = $items[0];
+        self::assertSame(ForecastSource::Finance, $line->source);
+        self::assertSame('2026-10-31', $line->dueOn?->format('Y-m-d'), 'on the first payment');
+        self::assertNotNull($line->finance);
+        self::assertSame(12, $line->finance->count);
+        self::assertSame('250.000000', $line->finance->each?->toDecimal(6));
+        self::assertSame('3000.000000', $line->cost?->toDecimal(6));
+        self::assertSame('3000.000000', $forecast->totals[0]->planned()->toDecimal(6), 'counted once');
+        foreach ($forecast->totals[0]->months as $i => $month) {
+            self::assertSame('250.000000', $month->planned->toDecimal(6), 'month ' . $i);
+        }
+    }
+
+    public function testAFinalPaymentInsideTheHorizonIsItsOwnItem(): void
+    {
+        $pcp = FinanceFixtures::pcp();
+        $today = self::date('2027-03-15');
+        $due = array_values(array_filter(
+            Schedule::of($pcp, [], $today)->payments,
+            static fn (ScheduledPayment $p): bool => $p->status === PaymentStatus::Due,
+        ));
+        $forecast = ForecastCalculator::forecast([new VehicleSources(
+            self::vehicle(1, 'Yaris'),
+            'GBP',
+            finance: new FinanceDue($pcp->id, $due, true),
+        )], $today);
+
+        $items = $forecast->items();
+        self::assertCount(2, $items);
+        self::assertSame(10, $items[0]->finance?->count, 'payments 27 to 36');
+        self::assertTrue($items[0]->finance->plain);
+        self::assertTrue($items[1]->finance?->final);
+        self::assertSame('2028-01-31', $items[1]->dueOn?->format('Y-m-d'));
+        self::assertSame('10500.000000', $forecast->totals[0]->planned()->toDecimal(6));
     }
 
     // --- First MOT (Phase 21.2) --------------------------------------------

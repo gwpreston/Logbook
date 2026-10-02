@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Finance;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Finance\AgreementStatus;
@@ -14,16 +15,24 @@ use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Domain\Expense\ExpenseCategory;
+use Logbook\Domain\Expense\ExpenseEntryData;
+use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Repository\ExpenseEntryRepository;
+use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\FinanceAgreementRepository;
 use Logbook\Repository\ValuationRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Forecast\FinanceDue;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Finance agreements (spec.md §7.32): who may see them, their figures as of
@@ -42,6 +51,10 @@ final readonly class FinanceService
         private ExpenseEntryRepository $expenses,
         private VehicleRepository $vehicleRows,
         private VehicleService $vehicles,
+        private OdometerService $odometer,
+        private ExpenseService $expenseEntries,
+        private ReminderRepository $reminders,
+        private TranslatorInterface $translator,
         private UserDirectory $directory,
         private VehicleAccess $access,
         private FeatureToggles $features,
@@ -75,9 +88,17 @@ final readonly class FinanceService
      */
     public function ownerToday(User $viewer, Vehicle $vehicle): DateTimeImmutable
     {
+        return LocalTime::today($this->clock, $this->ownerZone($viewer, $vehicle));
+    }
+
+    /**
+     * The vehicle owner's time zone, which dates readings for the mileage.
+     */
+    public function ownerZone(User $viewer, Vehicle $vehicle): DateTimeZone
+    {
         $owner = $vehicle->userId === $viewer->id ? $viewer : ($this->directory->find($vehicle->userId) ?? $viewer);
 
-        return LocalTime::today($this->clock, $owner->preferences->timeZone());
+        return $owner->preferences->timeZone();
     }
 
     /**
@@ -117,6 +138,8 @@ final readonly class FinanceService
         $schedule = Schedule::of($agreement, $events, $today);
         $valuation = $this->latestValuation($vehicle, $today);
         $figures = AgreementFigures::of($agreement, $schedule, $quotes, $valuation, $today, $currency);
+        $zone = $this->ownerZone($user, $vehicle);
+        $mileage = MileageAllowance::of($agreement, $this->odometer->history($vehicle), $today, $zone, $currency);
 
         return new AgreementView(
             agreement: $agreement,
@@ -126,6 +149,7 @@ final readonly class FinanceService
             checks: FinanceCheck::of($agreement->data),
             overlap: FinanceLedger::overlapping($agreement, $schedule, $this->expenses->listForVehicle($vehicle->id)),
             currency: $currency,
+            mileage: $mileage,
         );
     }
 
@@ -141,6 +165,65 @@ final readonly class FinanceService
         $agreement = $this->agreements->activeFor($vehicle->id);
 
         return $agreement === null ? null : $this->view($user, $vehicle, $agreement);
+    }
+
+    /**
+     * The active agreement's payments still due, for *Coming up* (spec.md
+     * §7.32 *Coming up*): for anyone who may see the vehicle's costs, plain
+     * below `Manage` (#128). Null with the module off, without costs or
+     * without an active agreement.
+     */
+    public function forecastDue(User $user, Vehicle $vehicle): ?FinanceDue
+    {
+        if (!$this->features->isEnabled(Feature::Finance) || !$this->access->can($user, VehicleAbility::ViewCosts, $vehicle)) {
+            return null;
+        }
+        $agreement = $this->agreements->activeFor($vehicle->id);
+        if ($agreement === null) {
+            return null;
+        }
+        $schedule = Schedule::of($agreement, $this->agreements->eventsFor($agreement->id), $this->ownerToday($user, $vehicle));
+        $due = array_values(array_filter(
+            $schedule->payments,
+            static fn (ScheduledPayment $payment): bool => $payment->status === PaymentStatus::Due,
+        ));
+
+        return new FinanceDue($agreement->id, $due, !$this->access->can($user, VehicleAbility::Manage, $vehicle));
+    }
+
+    /**
+     * The agreement the archive page offers choices for (spec.md §7.32
+     * *Archive page*, #126): the active one, else the latest one handed back
+     * or ended (to archive as returned once it has ended). Null without one
+     * or without access.
+     */
+    public function archiveAgreement(User $user, Vehicle $vehicle): ?FinanceAgreement
+    {
+        if ($vehicle->isArchived() || !$this->canSee($user, $vehicle)) {
+            return null;
+        }
+        $agreements = $this->agreements->listForVehicle($vehicle->id);
+        $latest = $agreements[0] ?? null;
+        if ($latest === null) {
+            return null;
+        }
+        $returned = in_array($latest->status, [AgreementStatus::HandedBack, AgreementStatus::Ended], true);
+
+        return $latest->status->isActive() || $returned ? $latest : null;
+    }
+
+    /**
+     * The active agreement's view, else the latest ended one's (the API and
+     * Ask, spec.md §7.20 *Finance*); null without one or without access.
+     */
+    public function latestView(User $user, Vehicle $vehicle): ?AgreementView
+    {
+        if (!$this->canSee($user, $vehicle)) {
+            return null;
+        }
+        $latest = $this->agreements->listForVehicle($vehicle->id)[0] ?? null;
+
+        return $latest === null ? null : $this->view($user, $vehicle, $latest);
     }
 
     /**
@@ -352,6 +435,94 @@ final readonly class FinanceService
         }
 
         return $latest;
+    }
+
+    /**
+     * The ways an agreement of this type can end (spec.md §7.32 *Ending*):
+     * HP, PCP and loans settle early or complete; a PCP can be handed back;
+     * a lease ends.
+     *
+     * @return list<AgreementStatus>
+     */
+    public static function endOutcomes(AgreementType $type): array
+    {
+        return match ($type) {
+            AgreementType::Hp, AgreementType::Loan => [AgreementStatus::Settled, AgreementStatus::Completed],
+            AgreementType::Pcp => [AgreementStatus::Settled, AgreementStatus::Completed, AgreementStatus::HandedBack],
+            AgreementType::Lease => [AgreementStatus::Ended],
+        };
+    }
+
+    /**
+     * What the *End agreement* form starts from: today, the settlement
+     * figure (quote or estimate), the last payment's date for *Completed*,
+     * and the excess mileage charge at the distance so far, when over.
+     *
+     * @return array{ended_on: string, completed_on: ?string, settlement: ?string, excess_charge: ?string}
+     */
+    public function endDefaults(User $user, Vehicle $vehicle, AgreementView $view): array
+    {
+        $today = $this->ownerToday($user, $vehicle);
+        $mileage = $view->mileage;
+        $excess = null;
+        if ($mileage !== null && $mileage->distanceKm !== null && $mileage->chargePerUnit !== null) {
+            $over = (float) $mileage->unit->fromKmDecimal($mileage->distanceKm, 3)
+                - (float) $mileage->unit->fromKmDecimal($mileage->allowanceKm, 3);
+            if ($over > 0) {
+                $excess = FinanceMath::money(FinanceMath::of(sprintf('%.3F', $over))->multipliedBy($mileage->chargePerUnit));
+            }
+        }
+
+        return [
+            'ended_on' => $today->format('Y-m-d'),
+            'completed_on' => $view->figures->endsOn?->format('Y-m-d'),
+            'settlement' => $view->figures->settlement?->amount->toDecimal(2),
+            'excess_charge' => $excess,
+        ];
+    }
+
+    /**
+     * End an active agreement (spec.md §7.32 *Ending*): a settlement payment
+     * for *Settled early*, the status and end date, the charges logged on
+     * handing back as *Finance and lease* expenses on the end date (#127),
+     * and its finance reminders done.
+     */
+    public function end(User $user, Vehicle $vehicle, FinanceAgreement $agreement, EndAgreement $end): void
+    {
+        $this->assertCanSee($user, $vehicle);
+        if (!$agreement->status->isActive() || !in_array($end->outcome, self::endOutcomes($agreement->type()), true)) {
+            throw new FinanceAgreementNotFound();
+        }
+        $now = $this->clock->now();
+        if ($end->outcome === AgreementStatus::Settled && $end->settlement !== null) {
+            $this->agreements->insertEvent(
+                $agreement->id,
+                PaymentEventKind::Settlement,
+                null,
+                $end->settlement,
+                $end->endedOn,
+                null,
+                $now,
+            );
+        }
+        $this->agreements->setStatus($vehicle->id, $agreement->id, $end->outcome, $end->endedOn, $now);
+
+        $charges = ['finance.end.excess_note' => $end->excessCharge, 'finance.end.damage_note' => $end->damageCharge];
+        foreach ($charges as $note => $amount) {
+            if ($amount === null) {
+                continue;
+            }
+            $this->expenseEntries->create($vehicle, new ExpenseEntryData(
+                $end->endedOn,
+                ExpenseCategory::Finance,
+                $amount,
+                $this->translator->trans($note, ['lender' => $agreement->data->lender]),
+            ));
+        }
+
+        foreach ([ReminderSource::Finance, ReminderSource::FinanceEnd] as $source) {
+            $this->reminders->markDone($vehicle->id, $source, $agreement->id, $now);
+        }
     }
 
     /** Whether an agreement may still record payment events (active only). */

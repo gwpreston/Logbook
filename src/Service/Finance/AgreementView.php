@@ -29,6 +29,8 @@ final readonly class AgreementView
         public array $checks,
         public array $overlap,
         public string $currency,
+        /** PCP and leases with an allowance (Phase 29.2). */
+        public ?MileagePosition $mileage = null,
     ) {
     }
 }

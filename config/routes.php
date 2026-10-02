@@ -18,6 +18,7 @@ use Logbook\Action\Settings\Jobs\RunJobAction;
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
+use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
 use Logbook\Action\Api\IncidentHistoryAction as ApiIncidentHistoryAction;
 use Logbook\Action\Api\ListIncidentsAction as ApiIncidentsAction;
 use Logbook\Action\Api\ListJourneysAction as ApiJourneysAction;
@@ -73,6 +74,7 @@ use Logbook\Action\Finance\CreateFinanceAction;
 use Logbook\Action\Finance\DeleteFinanceAction;
 use Logbook\Action\Finance\DeleteFinanceEventAction;
 use Logbook\Action\Finance\EditFinanceAction;
+use Logbook\Action\Finance\EndFinanceAction;
 use Logbook\Action\Finance\FinanceIndexAction;
 use Logbook\Action\Finance\FinancePaymentAction;
 use Logbook\Action\Finance\FinanceScheduleExportAction;
@@ -328,6 +330,10 @@ return static function (App $app): void {
                     ->setName('api.tyres.checks.create')
                     ->setArgument($ability, VehicleAbility::Log->value)
                     ->add($module(Feature::Tyres));
+                // Finance (spec.md §7.20, §7.32): read only; FinanceAction answers 404 without Manage and ViewCosts.
+                $keyed->get('/vehicles/{id:[0-9]+}/finance', ApiFinanceAction::class)->setName('api.finance.show')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Finance));
                 // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.
                 $keyed->group('', function (Group $trips) use ($ability): void {
                     $trips->get('/vehicles/{id:[0-9]+}/trips', ApiTripsAction::class)->setName('api.trips.index')
@@ -588,6 +594,8 @@ return static function (App $app): void {
                     ->setName('finance.quotes.delete')
                     ->setArgument($ability, $view);
                 $finance->get($agreement . '/schedule.csv', FinanceScheduleExportAction::class)->setName('finance.schedule')
+                    ->setArgument($ability, $view);
+                $finance->map(['GET', 'POST'], $agreement . '/end', EndFinanceAction::class)->setName('finance.end')
                     ->setArgument($ability, $view);
             })->add($module(Feature::Finance));
 

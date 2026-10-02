@@ -14,8 +14,8 @@
     <a class="vehicle-card{{ vehicle.isArchived() ? ' vehicle-card--archived' : '' }}" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">
         <div class="vehicle-card__media">
             {{ ui.vehicle_photo(vehicle) }}
-            {% if vehicle.isArchived() and vehicle.isWrittenOff() %}
-                <span class="vehicle-card__badge pill pill--soon">{{ ui.icon('car_crash') }}{{ _self.written_off(vehicle) }}</span>
+            {% if vehicle.isArchived() and (vehicle.isWrittenOff() or vehicle.isReturned()) %}
+                <span class="vehicle-card__badge pill pill--soon">{{ ui.icon(vehicle.isReturned() ? 'key_off' : 'car_crash') }}{{ _self.disposal(vehicle) }}</span>
             {% elseif vehicle.isArchived() %}
                 <span class="vehicle-card__badge pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.status.archived'|trans }}</span>
             {% elseif snapshot.due.total() > 0 or snapshot.attention > 0 %}
@@ -53,13 +53,14 @@
     </a>
 {%- endmacro %}
 
-{# "Written off 14 Mar 2025" (spec.md §7.29 *Total loss*): a written-off
-   vehicle's label where a sold one says "Sold", dated by the settlement. #}
-{% macro written_off(vehicle) -%}
+{# "Written off 14 Mar 2025" (spec.md §7.29 *Total loss*) or "Returned to
+   the lender 31 Mar 2028" (§7.32 *Ending*): a written-off or returned
+   vehicle's label where a sold one says "Sold", dated by the sale date. #}
+{% macro disposal(vehicle) -%}
     {%- if vehicle.data.saleDate -%}
-        {{ 'vehicle.written_off_on'|trans({date: vehicle.data.saleDate|local_date}) }}
+        {{ ('vehicle.disposal_on.' ~ vehicle.disposal.value)|trans({date: vehicle.data.saleDate|local_date}) }}
     {%- else -%}
-        {{ 'vehicle.disposal.written_off'|trans }}
+        {{ vehicle.disposal.labelKey()|trans }}
     {%- endif -%}
 {%- endmacro %}
 

@@ -261,7 +261,7 @@ final readonly class SalePackBuilder
 
     /**
      * Up to DUE_NEXT dated items of the next 12 months, overdue first. Their
-     * costs are there but never shown.
+     * costs are there but never shown. Never finance (spec.md §7.32 *Access*).
      *
      * @return list<ForecastItem>
      */
@@ -272,6 +272,8 @@ final readonly class SalePackBuilder
         foreach ($forecast->months as $month) {
             array_push($items, ...$month->items);
         }
+
+        $items = array_values(array_filter($items, static fn (ForecastItem $item): bool => $item->finance === null));
 
         return array_slice($items, 0, self::DUE_NEXT);
     }

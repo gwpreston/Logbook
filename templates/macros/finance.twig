@@ -32,3 +32,22 @@
 {% macro equity(equity) -%}
     {{ (equity.isPositive() ? 'finance.equity_positive' : 'finance.equity_negative')|trans({amount: equity.magnitude()|money}) }}
 {%- endmacro %}
+
+{# The mileage position in the agreement's unit (spec.md §7.32 *Mileage*):
+   "On track for 31,200 mi against 30,000. About £108 in excess mileage at
+   £0.09 a mile.", "On track to finish 2,400 mi under the allowance.", or
+   the distance so far without a projection. #}
+{% macro mileage(position, currency) -%}
+    {%- set unit = position.unit -%}
+    {%- if position.projectedKm is not null and position.isOver() -%}
+        {%- set sentence = 'finance.mileage.over'|trans({projected: position.projectedKm|about_distance(unit), allowance: position.allowanceKm|distance(0, unit)}) -%}
+        {{ sentence }}
+        {%- if position.excessCharge %} {{ 'finance.mileage.charge'|trans({charge: position.excessCharge|money(null, 0), rate: position.chargePerUnit|mileage_rate(currency), unit: ('finance.mileage.unit.' ~ unit.value)|trans}) }}{% endif -%}
+    {%- elseif position.projectedKm is not null -%}
+        {{ 'finance.mileage.under'|trans({under: position.underKm()|about_distance(unit)}) }}
+    {%- elseif position.distanceKm is not null -%}
+        {{ 'finance.mileage.so_far'|trans({distance: position.distanceKm|distance(0, unit), allowance: position.allowanceKm|distance(0, unit)}) }}
+    {%- else -%}
+        {{ 'finance.mileage.no_readings'|trans({allowance: position.allowanceKm|distance(0, unit)}) }}
+    {%- endif -%}
+{%- endmacro %}

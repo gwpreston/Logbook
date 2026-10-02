@@ -6,6 +6,81 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.12.0] — 2026-10-02
+
+Phases 29.1 and 29.2: **finance and lease agreements**. Type a hire
+purchase, PCP, personal loan or lease agreement from its paperwork, and
+Logbook works out the payment schedule, the payments left, what remains to
+pay, a settlement estimate (or your lender's quote), the cost of credit,
+the half-paid point and your equity. The interest, fees or rentals count
+in your costs once each. For a PCP or lease it tracks your mileage against
+the allowance and the excess charge you are heading for, and ending an
+agreement (settling, completing, handing back, selling with finance owing)
+leaves an exact lifetime cost. Figures, never financial advice. See
+[docs/finance.md](docs/finance.md).
+
+### Added
+- **Finance agreements** (module `finance`, on by default): *Add finance*
+  in the vehicle's header opens a form with the fields of each type, a
+  consistency check that warns when the figures don't add up to the
+  agreement's total, and an offer to set (HP, PCP) or clear (lease) the
+  purchase price. The agreement number is optional and shown as its last
+  4 characters everywhere but the edit form.
+- **The agreement page:** payments remaining, remaining to pay (exact),
+  the next payment, the settlement estimate or a valid lender's quote,
+  the cost of credit (estimated while it runs, exact once ended), the
+  half-paid point, equity against a valuation from the last 12 months,
+  and the schedule with *Mark missed* and *Mark paid late*, extra
+  payments and settlement quotes. Printable; the schedule exports as CSV.
+  The overview gains a *Finance* card.
+- **Costs counted once:** credit charges (never capital) or rentals join
+  the cost ledger as *Finance and lease* lines derived from the
+  agreement, in Reports, the Expenses tab, cost of ownership and cost per
+  distance. Manual finance expenses in the months an agreement covers are
+  flagged as possibly counted twice.
+- **Mileage against the allowance** (PCP and leases): the allowance over
+  the agreement, the distance so far, the allowance used to date, and the
+  projected distance at the end with the excess charge it would bring,
+  on the agreement page and the card.
+- **End agreement:** settled early, completed, handed back (PCP) or lease
+  ended, with the excess mileage and damage charges logged as expenses.
+  While a vehicle has an agreement, *Archive* opens a page with *Sold*
+  (an active HP or PCP warns and offers *Settled from the sale*),
+  *Returned to the lender*, *Returned to the lessor* and *Just archive*.
+  A PCP handed back is a sale at its optional final payment.
+- ***Coming up*** shows the next 12 months' payments as one line per
+  vehicle and a final payment as its own item; **reminders** for the final
+  payment and *Agreement ends: decide what to do* 90 days before a PCP or
+  lease ends; ***Needs attention*** lists a missed payment (*Now*) and a
+  PCP or lease heading more than 2% over its allowance.
+- The **Finance** dashboard widget, `GET /api/v1/vehicles/{id}/finance`
+  (OpenAPI 1.17.0; `/me` lists the module; *Coming up* and reminders carry
+  the new sources) and the Ask and MCP tool `finance(vehicle)`.
+- Agreements join the CSV export (`/vehicles/{id}/export/finance.csv`),
+  backups and `bin/export-user.php`.
+- Sample data: the Kia on a lease, the Corolla on a PCP heading over its
+  mileage, and the written-off Fiesta's HP settled early.
+
+### Changed
+- Only people who manage a vehicle **and** see its costs see its finance.
+  Others who see its costs get the derived lines (and *Coming up* lines)
+  as plain *Finance and lease* entries, so everyone's totals match.
+- An archived vehicle can be *Returned to the lender* or *Returned to the
+  lessor*, labelled as such on its card, overview, ownership report,
+  History and CSV.
+- The demo bike now carries the stale valuation that the Corolla had.
+- New variable: `FEATURES_FINANCE` (see
+  [`docs/configuration.md`](docs/configuration.md)).
+
+### Upgrade notes
+- Two migrations (the finance tables; `vehicles.disposal` widened for the
+  new disposals). Both roll back; rolling the second back turns
+  *Returned to the lender* and *the lessor* into *Sold*, keeping the
+  sale, and removes finance reminders.
+- Existing *Finance and lease* expenses are unchanged. When you add an
+  agreement, the overlap warning lists the ones it may count twice, so
+  you can delete them or keep them and stop counting the agreement.
+
 ## [2.11.0] — 2026-10-02
 
 Phases 28.1 and 28.2: **background jobs you can see, and knowing when a new

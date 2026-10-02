@@ -12,6 +12,7 @@ use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Disposal;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleStatus;
@@ -224,6 +225,24 @@ final readonly class VehicleService
     ): void {
         $now = $this->clock->now();
         $this->vehicles->archiveWrittenOff($vehicle->userId, $vehicle->id, $incidentId, $saleDate, $salePrice, $now);
+        $this->access->forget();
+    }
+
+    /**
+     * Archive as sold, or returned to the lender or lessor (spec.md §7.32
+     * *Archive page*), with the sale date and price.
+     *
+     * @param string|null $salePrice canonical decimal; none for a lease returned
+     */
+    public function archiveAs(
+        User $user,
+        Vehicle $vehicle,
+        Disposal $disposal,
+        DateTimeImmutable $saleDate,
+        ?string $salePrice,
+    ): void {
+        $now = $this->clock->now();
+        $this->vehicles->archiveAs($vehicle->userId, $vehicle->id, $disposal, null, $saleDate, $salePrice, $now);
         $this->access->forget();
     }
 

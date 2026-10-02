@@ -21,6 +21,9 @@
         {% if figures.endsOn %}
             <div><dt>{{ 'finance.row.ends'|trans }}</dt><dd>{{ figures.endsOn|local_date }}</dd></div>
         {% endif %}
+        {% if finance.mileage %}
+            <div><dt>{{ 'finance.row.mileage'|trans }}</dt><dd>{{ fin.mileage(finance.mileage, finance.currency) }}</dd></div>
+        {% endif %}
         {% if figures.equity %}
             <div><dt>{{ 'finance.row.equity'|trans }}</dt><dd>{{ fin.equity(figures.equity) }}</dd></div>
         {% elseif figures.settlement %}

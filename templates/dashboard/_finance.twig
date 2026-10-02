@@ -1,0 +1,31 @@
+{# Finance (spec.md §7.32 *Dashboard widget*): each vehicle in view with an
+   active agreement, "18 payments remaining · £7,850 to pay · ends Mar
+   2028", the mileage line and equity where known. Only agreements the
+   viewer may see (FinanceService::activeView()); follows the vehicle chip. #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/finance.twig' as fin %}
+{% set agreements = dashboard.finance ?? [] %}
+{% if agreements is empty %}
+    <p class="muted">{{ 'dashboard.finance.empty'|trans }}</p>
+{% else %}
+    <ul class="list">
+        {% for finance in agreements %}
+            {% set agreement = finance.agreement %}
+            {% set figures = finance.figures %}
+            <li class="list__item">
+                <span class="list__icon">{{ ui.icon('account_balance') }}</span>
+                <span class="list__body">
+                    <a class="list__title" href="{{ url_for('finance.show', {id: agreement.vehicleId, agreement: agreement.id}) }}">
+                        {%- if not selected %}{% for vehicle in dashboard.vehicles %}{% if vehicle.id == agreement.vehicleId %}{{ vehicle.name() }} · {% endif %}{% endfor %}{% endif -%}
+                        {{ fin.name(agreement) }}
+                    </a>
+                    <span class="list__meta">
+                        {{- 'dashboard.finance.summary'|trans({remaining: figures.schedule.remaining(), amount: figures.remainingToPay|money, ends: figures.endsOn ? figures.endsOn|local_month : ''}) -}}
+                    </span>
+                    {% if finance.mileage %}<span class="list__meta">{{ fin.mileage(finance.mileage, finance.currency) }}</span>{% endif %}
+                    {% if figures.equity %}<span class="list__meta">{{ fin.equity(figures.equity) }}</span>{% endif %}
+                </span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

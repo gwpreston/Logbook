@@ -1,12 +1,16 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {#
- # Archive a vehicle with a settled write-off (spec.md §7.29 *Total loss*):
- # *Written off*, with the incident and the settlement as the sale date and
- # price (prefilled, editable), or *Just archive*. A plain form, and the
- # desktop modal with JS; choosing another incident refills the sale from
- # its settlement (without JS, *Use its settlement* does).
+ # Archive a vehicle with a settled write-off or a finance agreement
+ # (spec.md §7.29 *Total loss*, §7.32 *Archive page*): *Written off*, with
+ # the incident and the settlement as the sale date and price (prefilled,
+ # editable); *Sold*, with *Settled from the sale* for an active HP or PCP;
+ # *Returned to the lender* or *the lessor*; or *Just archive*. A plain
+ # form, and the desktop modal with JS; choosing another incident refills
+ # the sale from its settlement (without JS, *Use its settlement* does).
+ # Every field shows without :has(); with it, only the chosen one's.
  #}
+{% import 'macros/finance.twig' as fin %}
 {% set active_nav = 'garage' %}
 {% set heading = 'vehicle.archive_title'|trans({name: vehicle.name()}) %}
 
@@ -20,7 +24,7 @@
             <div>
                 <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
                 <h1 class="page-header__title">{{ heading }}</h1>
-                <p class="page-header__lead">{{ 'vehicle.archive_lead'|trans }}</p>
+                <p class="page-header__lead">{{ (finance and candidates is empty ? 'vehicle.archive_lead_finance' : 'vehicle.archive_lead')|trans }}</p>
             </div>
         </header>
 
@@ -30,14 +34,17 @@
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
-        <form class="form" method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
+        <form class="form archive-form" method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
             <section class="card">
-                {{ ui.chips('disposal', 'vehicle.archive_as'|trans, values, errors, [
-                    {value: 'written_off', label: 'vehicle.disposal.written_off'|trans, icon: 'car_crash'},
-                    {value: '', label: 'vehicle.archive_just'|trans, icon: 'archive'},
-                ]) }}
-                <div class="archive-written-off">
+                {% set icons = {written_off: 'car_crash', sold: 'sell', returned_lender: 'key_off', returned_lessor: 'key_off', '': 'archive'} %}
+                {% set options = [] %}
+                {% for choice in choices %}
+                    {% set options = options|merge([{value: choice, label: (choice == '' ? 'vehicle.archive_just' : 'vehicle.disposal.' ~ choice)|trans, icon: icons[choice]}]) %}
+                {% endfor %}
+                {{ ui.chips('disposal', 'vehicle.archive_as'|trans, values, errors, options) }}
+                {% if candidates is not empty %}
+                <div class="archive-written-off" data-for="written_off">
                     {% if candidates|length == 1 %}
                         {% set incident = candidates[0] %}
                         <input type="hidden" name="incident_id" value="{{ incident.id }}">
@@ -63,9 +70,38 @@
                             <button type="submit" class="btn btn--sm nojs-only" formmethod="get" formnovalidate>{{ 'vehicle.archive_use_settlement'|trans }}</button>
                         </div>
                     {% endif %}
-                    <div class="form-row">
-                        {{ ui.input('sale_date', 'vehicle.field.sale_date'|trans, values, errors, {type: 'date', hint: 'vehicle.archive_sale_date_hint'|trans}) }}
-                        {{ ui.input('sale_price', 'vehicle.field.sale_price'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'vehicle.archive_sale_price_hint'|trans}) }}
+                </div>
+                {% endif %}
+                {% if finance %}
+                    {% set agreement = finance.agreement %}
+                    {% set active = agreement.status.value == 'active' %}
+                    <p class="field__hint" data-for="sold returned_lender returned_lessor">{{ 'vehicle.archive_agreement'|trans }} <a href="{{ url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) }}">{{ fin.name(agreement) }}</a> · {{ fin.status(agreement) }}</p>
+                    {% if active and agreement.type().hasCashPrice() %}
+                        <div data-for="sold">
+                            <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'finance.sell_owing.warning'|trans }}</span></div>
+                            <label class="checkbox">
+                                <input type="checkbox" name="settle_from_sale" value="1"{% if (values.settle_from_sale ?? '') == '1' %} checked{% endif %}>
+                                <span>{{ 'finance.sell_owing.settle'|trans }}</span>
+                            </label>
+                            {{ ui.input('settlement', 'finance.end.field.settlement'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.sell_owing.settlement_hint'|trans}) }}
+                        </div>
+                    {% endif %}
+                    {% if 'returned_lender' in choices %}
+                        <p class="field__hint" data-for="returned_lender">{{ 'finance.returned.lender'|trans({amount: (agreement.data.finalPayment ?? '0')|money(currency)}) }}{% if active %} {{ 'finance.returned.ends_handed_back'|trans }}{% endif %}</p>
+                    {% endif %}
+                    {% if 'returned_lessor' in choices %}
+                        <p class="field__hint" data-for="returned_lessor">{{ 'finance.returned.lessor'|trans }}{% if active %} {{ 'finance.returned.ends_lease'|trans }}{% endif %}</p>
+                    {% endif %}
+                    {% if active %}
+                        <p class="field__hint" data-for="">{{ 'finance.returned.just_archive'|trans }}</p>
+                    {% endif %}
+                {% endif %}
+                <div class="form-row">
+                    <div data-for="written_off sold returned_lender returned_lessor">
+                        {{ ui.input('sale_date', 'vehicle.field.sale_date'|trans, values, errors, {type: 'date', hint: (candidates is not empty and not finance ? 'vehicle.archive_sale_date_hint' : 'vehicle.archive_date_hint')|trans}) }}
+                    </div>
+                    <div data-for="written_off sold">
+                        {{ ui.input('sale_price', 'vehicle.field.sale_price'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: (candidates is not empty and not finance ? 'vehicle.archive_sale_price_hint' : 'vehicle.archive_price_hint')|trans}) }}
                     </div>
                 </div>
             </section>

@@ -19,6 +19,7 @@ use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Expense\CostLedger;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Finance\FinanceService;
 use Logbook\Service\Maintenance\DueStatus;
 use Logbook\Service\Maintenance\ScheduleCalculator;
 use Logbook\Service\Maintenance\ScheduleService;
@@ -60,6 +61,7 @@ final readonly class ComingUp
         private CostLedger $ledger,
         private ClockInterface $clock,
         private VehicleAccess $access,
+        private FinanceService $finance,
     ) {
     }
 
@@ -163,6 +165,7 @@ final readonly class ComingUp
                 : null,
             costs: $costs,
             firstInspection: $firstInspection,
+            finance: $costs ? $this->finance->forecastDue($user, $vehicle) : null,
         );
     }
 

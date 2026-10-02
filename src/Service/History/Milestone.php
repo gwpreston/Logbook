@@ -20,6 +20,10 @@ enum Milestone: string
     case Sold = 'sold';
     /** *Sold*, for a vehicle written off (spec.md §7.29 *Total loss*): the settlement is the sale. */
     case WrittenOff = 'written_off';
+    /** *Sold*, for a PCP handed back (spec.md §7.32 *Ending*): the final payment is the sale. */
+    case ReturnedLender = 'returned_lender';
+    /** *Sold*, for a lease ended: no sale price. */
+    case ReturnedLessor = 'returned_lessor';
 
     /**
      * Order among the day's lines, newest first: higher comes first; the
@@ -28,7 +32,7 @@ enum Milestone: string
     public function rank(): int
     {
         return match ($this) {
-            self::Sold, self::WrittenOff => 1,
+            self::Sold, self::WrittenOff, self::ReturnedLender, self::ReturnedLessor => 1,
             self::Bought => -1,
             self::FirstRegistered => -2,
         };
@@ -43,7 +47,7 @@ enum Milestone: string
     {
         return match ($this) {
             self::Bought => AttachmentOwner::Purchase,
-            self::Sold, self::WrittenOff => AttachmentOwner::Sale,
+            self::Sold, self::WrittenOff, self::ReturnedLender, self::ReturnedLessor => AttachmentOwner::Sale,
             self::FirstRegistered => null,
         };
     }
@@ -55,6 +59,7 @@ enum Milestone: string
             self::Bought => 'key',
             self::Sold => 'sell',
             self::WrittenOff => 'car_crash',
+            self::ReturnedLender, self::ReturnedLessor => 'key_off',
         };
     }
 }

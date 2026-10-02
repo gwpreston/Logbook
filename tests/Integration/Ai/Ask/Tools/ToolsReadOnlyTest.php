@@ -58,6 +58,7 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             ['needs_attention', []],
             ['incidents', []],
             ['incidents', ['years' => 10, 'claims_only' => true]],
+            ['finance', ['vehicle' => $golf->id]],
             // Phase 26.3: drafts are validated by a write that is rolled back; only ai_drafts keeps the card.
             ['draft_fill_up', ['vehicle' => $golf->id, 'odometer' => '21000', 'volume' => '40', 'total_cost' => '60']],
             ['draft_reading', ['vehicle' => $golf->id, 'odometer' => '21100']],
@@ -82,7 +83,7 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             $drafts,
             'a card for each draft but the tread check (no tyres fitted)',
         );
-        self::assertCount(23, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
+        self::assertCount(24, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
     }
 
     /**

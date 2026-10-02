@@ -28,6 +28,8 @@
 {% macro total_label(cost) -%}
     {%- if cost.isLifetime() and cost.vehicle.isWrittenOff() -%}
         {{ 'ownership.lifetime_written_off'|trans({date: cost.valuedOn()|local_date}) }}
+    {%- elseif cost.isLifetime() and cost.vehicle.isReturned() -%}
+        {{ ('ownership.lifetime_' ~ cost.vehicle.disposal.value)|trans({date: cost.valuedOn()|local_date}) }}
     {%- elseif cost.isLifetime() -%}
         {{ 'ownership.lifetime'|trans({date: cost.valuedOn()|local_date}) }}
     {%- elseif cost.valuedOn() -%}
