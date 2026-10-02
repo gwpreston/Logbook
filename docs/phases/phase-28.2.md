@@ -2,7 +2,7 @@
 
 *Know when a new Logbook is out, without anything updating itself.*
 
-Status: ✅ complete · releases **v2.11.0** with Phase 28.1 · file lives in
+Status: ✅ complete · released as **v2.11.0** with Phase 28.1 · file lives in
 `docs/phases/`
 
 A daily job asks GitHub for the latest Logbook release and compares it
@@ -170,6 +170,7 @@ draft here is kept as it was planned.
       update check is off until switched on; bare installs without cron can
       now use the page-visit or URL trigger.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Tag `v2.11.0` once merged.
 
 ---
 
