@@ -35,9 +35,29 @@
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
+        {% if scan_incidents|default([]) is not empty and (values.scan ?? null) %}
+            {# A repair estimate goes on the latest open incident; another one, or a new one, from here (spec.md §7.29). #}
+            <form class="form form--inline scan-incident" method="get" action="{{ url_for('scan.result', {token: values.scan}) }}">
+                <input type="hidden" name="vehicle" value="{{ vehicle.id }}">
+                {% if values._scan_kind ?? null %}<input type="hidden" name="as" value="{{ values._scan_kind }}">{% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-scan-incident">{{ 'scan.estimate_incident'|trans }}</label>
+                    <select class="select" id="f-scan-incident" name="incident">
+                        {% for option in scan_incidents %}
+                            <option value="{{ option.id }}"{% if editing and option.id == incident.id %} selected{% endif %}>{{ 'incident.name'|trans({type: option.data.type.labelKey()|trans, date: option.data.occurredOn|local_date}) }}{% if option.data.status.value == 'closed' %} ({{ 'incident.status.closed'|trans }}){% endif %}</option>
+                        {% endfor %}
+                        <option value="new"{% if not editing %} selected{% endif %}>{{ 'scan.estimate_new_incident'|trans }}</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">{{ 'scan.estimate_use'|trans }}</button>
+            </form>
+        {% endif %}
+
         <form class="form" id="incident-form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('incidents.edit', {id: vehicle.id, incident: incident.id}) : url_for('incidents.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {% include 'scan/_notice.twig' %}
+            {% include 'scan/_fill_link.twig' with {for: 'incident'} %}
             {{ ui.return_field(return_to) }}
 
             <section class="card" aria-labelledby="incident-what">
@@ -114,6 +134,7 @@
                     {{ ui.input('excess', 'incident.field.excess'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.hint.excess'|trans}) }}
                     {{ ui.input('payout', 'incident.field.payout'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.hint.payout'|trans}) }}
                 </div>
+                {{ ui.input('repair_estimate', 'incident.field.repair_estimate'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.estimate_not_counted'|trans}) }}
                 <div class="form-row">
                     {{ ui.select('ncd_affected', 'incident.field.ncd'|trans, values, errors, ncd_effects|map(n => {value: n.value, label: n.labelKey()|trans})) }}
                     {{ ui.input('claim_updated_on', 'incident.field.claim_updated_on'|trans, values, errors, {type: 'date', optional: true, hint: 'incident.hint.claim_updated_on'|trans}) }}
@@ -127,8 +148,9 @@
                     {{ ui.input('closed_on', 'incident.field.closed_on'|trans, values, errors, {type: 'date', optional: true, hint: 'incident.hint.closed_on'|trans}) }}
                 </div>
                 <div class="field">
-                    <label class="field__label" for="f-notes">{{ 'incident.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
-                    <textarea class="textarea" id="f-notes" name="notes" rows="2" maxlength="2000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    <label class="field__label" for="f-notes">{{ 'incident.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span>{{ ui.from_message('notes', values) }}</label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="2" maxlength="2000"{{ ui.described_by('notes', errors, false, values) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.scan_note('notes', values) }}
                     {{ ui.field_error(errors, 'notes') }}
                 </div>
             </section>

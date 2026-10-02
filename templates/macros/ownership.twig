@@ -26,7 +26,9 @@
 
 {# What the total covers: "Lifetime, sold 12 Mar 2026" or "depreciation to 1 Mar 2026". #}
 {% macro total_label(cost) -%}
-    {%- if cost.isLifetime() -%}
+    {%- if cost.isLifetime() and cost.vehicle.isWrittenOff() -%}
+        {{ 'ownership.lifetime_written_off'|trans({date: cost.valuedOn()|local_date}) }}
+    {%- elseif cost.isLifetime() -%}
         {{ 'ownership.lifetime'|trans({date: cost.valuedOn()|local_date}) }}
     {%- elseif cost.valuedOn() -%}
         {{ 'ownership.depreciation_to'|trans({date: cost.valuedOn()|local_date}) }}

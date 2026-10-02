@@ -102,7 +102,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 27.1 incidents, the Phase 26.5 draft source,
+        // Newest first: the Phase 27.2 disposal, estimate and incident scans,
+        // the Phase 27.1 incidents, the Phase 26.5 draft source,
         // the Phase 26.4 pending uploads, the Phase 26.3 drafts,
         // the Phase 26.2 Ask tables,
         // the Phase 26.1 AI tables, the Phase 24 hidden checks,
@@ -117,6 +118,20 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        $added = [
+            ['vehicles', 'disposal'],
+            ['vehicles', 'disposal_incident_id'],
+            ['incidents', 'repair_estimate'],
+            ['pending_uploads', 'incident_id'],
+        ];
+        foreach ($added as [$table, $column]) {
+            self::assertTrue($this->hasColumn($table, $column), sprintf('%s.%s', $table, $column));
+        }
+        Migrator::run('rollback');
+        foreach ($added as [$table, $column]) {
+            self::assertFalse($this->hasColumn($table, $column), sprintf('rollback must drop %s.%s', $table, $column));
+        }
+
         self::assertTrue($schema->tablesExist(['incidents']));
         self::assertTrue($this->hasColumn('maintenance_entries', 'incident_id'));
         Migrator::run('rollback');

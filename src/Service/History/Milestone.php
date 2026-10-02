@@ -18,6 +18,8 @@ enum Milestone: string
     case FirstRegistered = 'first_registered';
     case Bought = 'bought';
     case Sold = 'sold';
+    /** *Sold*, for a vehicle written off (spec.md §7.29 *Total loss*): the settlement is the sale. */
+    case WrittenOff = 'written_off';
 
     /**
      * Order among the day's lines, newest first: higher comes first; the
@@ -26,7 +28,7 @@ enum Milestone: string
     public function rank(): int
     {
         return match ($this) {
-            self::Sold => 1,
+            self::Sold, self::WrittenOff => 1,
             self::Bought => -1,
             self::FirstRegistered => -2,
         };
@@ -41,7 +43,7 @@ enum Milestone: string
     {
         return match ($this) {
             self::Bought => AttachmentOwner::Purchase,
-            self::Sold => AttachmentOwner::Sale,
+            self::Sold, self::WrittenOff => AttachmentOwner::Sale,
             self::FirstRegistered => null,
         };
     }
@@ -52,6 +54,7 @@ enum Milestone: string
             self::FirstRegistered => 'badge',
             self::Bought => 'key',
             self::Sold => 'sell',
+            self::WrittenOff => 'car_crash',
         };
     }
 }

@@ -42,7 +42,8 @@ final readonly class Incidents implements AskTool
         return new ToolDefinition(
             $this->name(),
             'Incidents and insurance claims on the user\'s vehicles, sold and archived ones included, newest first: '
-            . 'date, vehicle, type, fault, driver, claim status, insurer, claim number, payout and no-claims effect. '
+            . 'date, vehicle, type, fault, driver, claim status, insurer, claim number, payout, repair estimate '
+            . '(what a repair may cost, never counted as spent) and no-claims effect. '
             . 'Defaults to the last 5 years, which is what insurers usually ask about.',
             [
                 'type' => 'object',
@@ -134,6 +135,10 @@ final readonly class Incidents implements AskTool
             'insurer' => $view->insurer,
             'claim_number' => $view->claimNumber,
             'payout' => $view->payout === null ? null : $this->kit->format->money($view->payout, $row->currency),
+            // What a repair may cost: never part of any cost (spec.md §7.29).
+            'repair_estimate' => $view->repairEstimate === null
+                ? null
+                : $this->kit->format->money($view->repairEstimate, $row->currency),
             'no_claims_affected' => $view->ncdAffected?->value,
         ];
     }

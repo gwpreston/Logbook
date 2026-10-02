@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Logbook\Action\Incident;
 
 use Logbook\Action\Ask\DraftPrefill;
+use Logbook\Action\Scan\ScanPrefill;
+use Logbook\Domain\Ai\Scan\ScanTarget;
+use Logbook\Domain\Incident\Incident;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
@@ -31,6 +35,7 @@ final readonly class CreateIncidentAction
         private Redirector $redirect,
         private ClockInterface $clock,
         private DraftPrefill $prefill,
+        private ScanPrefill $scan,
     ) {
     }
 
@@ -57,7 +62,9 @@ final readonly class CreateIncidentAction
             $date = $date !== null && $date <= $today ? $date : $today;
             $values = IncidentForm::defaults($date, $this->incidents->policyOn($vehicle, $date));
             // *Edit* on a draft card (Phase 26.3): the draft's values, marked.
-            $values = IncidentForm::listValues($this->prefill->values($request, DraftKind::Incident, $vehicle->id, $values));
+            $values = $this->prefill->values($request, DraftKind::Incident, $vehicle->id, $values);
+            // A claim letter or estimate with no incident to update (spec.md §7.27): its values, marked.
+            $values = IncidentForm::listValues($this->scan->values($request, ScanTarget::Incident, $vehicle, $values));
 
             return $this->page->render($request, $response, $user, $vehicle, $values);
         }
@@ -69,7 +76,7 @@ final readonly class CreateIncidentAction
             array_keys($this->page->drivers($vehicle)),
             array_map(static fn (ComplianceDocument $policy): int => $policy->id, $this->page->policies($vehicle)),
         );
-        $files = $this->upload->fromRequest($request, owner: AttachmentOwner::Incident);
+        $files = $this->scan->files($request, $this->upload->fromRequest($request, owner: AttachmentOwner::Incident));
         $errors = $this->upload->errors($input, $files);
         if ($errors !== null || $input instanceof ValidationErrors) {
             $values = IncidentRoute::formValues($request);
@@ -77,13 +84,20 @@ final readonly class CreateIncidentAction
             return $this->page->render($request, $response, $user, $vehicle, $values, null, $errors, 422);
         }
 
-        $incident = $this->incidents->create($vehicle, $input->data, $input->odometerKm, $zone, $files);
+        [$incident, $claimed] = $this->scan->save(
+            $request,
+            $files,
+            fn (PendingUploads $files): Incident
+                => $this->incidents->create($vehicle, $input->data, $input->odometerKm, $zone, $files),
+        );
         $this->prefill->saved($request);
         RequestContext::session($request)->flash('success', 'incident.created');
 
-        return $this->redirect->backOr($request, 'incidents.show', [
+        $done = $this->redirect->backOr($request, 'incidents.show', [
             'id' => (string) $vehicle->id,
             'incident' => (string) $incident->id,
         ]);
+
+        return $this->scan->after($request, $claimed, $vehicle, null, $done);
     }
 }

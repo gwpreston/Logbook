@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * The fixture set (spec.md §7.27 *Tests*, tests/Fixtures/scans): each of
- * twenty synthetic documents, uploaded as a user would, read through the
+ * twenty-four synthetic documents, uploaded as a user would, read through the
  * real gateway and adapter with the scripted provider replaying the
  * expected reply, lands on the right form for the right vehicle with the
  * expected values filled in and marked. Text PDFs go as text through
@@ -58,6 +58,7 @@ final class ScanFixturesTest extends ScanTestCase
             'maintenance' => '/vehicles/' . $vehicle->id . '/maintenance/new?',
             'fuel' => '/vehicles/' . $vehicle->id . '/fuel/new?',
             'document' => '/vehicles/' . $vehicle->id . '/documents/new?',
+            'incident' => '/vehicles/' . $vehicle->id . '/incidents/new?',
             'vehicle' => '/scan/' . self::token($path) . '/vehicle?vehicle=' . $vehicle->id,
             default => self::fail('unknown form ' . $form),
         };
@@ -73,7 +74,7 @@ final class ScanFixturesTest extends ScanTestCase
         foreach ($fixture->expectedList('absent') as $field) {
             self::assertSame('', $values[$field] ?? '', $name . ': ' . $field . ' is left empty');
         }
-        $text = $values['description'] ?? $values['notes'] ?? '';
+        $text = ($values['description'] ?? '') . "\n" . ($values['notes'] ?? '');
         foreach ([...$fixture->expectedList('description'), ...$fixture->expectedList('notes')] as $part) {
             self::assertStringContainsString($part, $text, $name);
         }

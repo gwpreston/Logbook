@@ -998,6 +998,31 @@
     });
 
     /*
+     * Archive as *Written off* (spec.md §7.29 *Total loss*): choosing
+     * another incident refills the sale date and price from its
+     * settlement. Without JS, *Use its settlement* reloads the page.
+     * Delegated, so it also covers the form in the modal.
+     */
+    document.addEventListener('change', function (event) {
+        var select = event.target;
+        if (!(select instanceof HTMLSelectElement) || !select.hasAttribute('data-total-loss') || select.form === null) {
+            return;
+        }
+        var option = select.options[select.selectedIndex];
+        if (option === undefined) {
+            return;
+        }
+        var date = select.form.elements.namedItem('sale_date');
+        var price = select.form.elements.namedItem('sale_price');
+        if (date instanceof HTMLInputElement) {
+            date.value = option.getAttribute('data-sale-date') || '';
+        }
+        if (price instanceof HTMLInputElement) {
+            price.value = option.getAttribute('data-sale-price') || '';
+        }
+    });
+
+    /*
      * Sale pack, *Choose files* (spec.md §7.19): without JS the boxes are a
      * form sent back to the page, which then links the ZIP with the choice.
      * With JS the ZIP link follows the boxes as they change.

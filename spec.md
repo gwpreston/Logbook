@@ -4459,8 +4459,14 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   - **Repair estimate → incident** (Phase 27.2): the repair estimate,
     and "Estimate from {repairer}" added to the notes; the incident is
     the one scanned for, else the one whose claim number matches, else
-    the vehicle's most recent open incident (a select to change it), else
-    *Log incident*.
+    the vehicle's most recent open incident (a select to change it, or
+    *A new incident*), else *Log incident*.
+  - On an incident's **edit** form (Phase 27.2), only the fields the file
+    changes are filled and marked, the incident keeps its own date, and
+    the notes line is added to its notes once. Claim numbers are
+    compared in upper case, letters and digits only ("clm-4417" matches
+    "CLM 4417"), and only incidents the user may change are matched.
+    A scan started for an incident keeps that incident's vehicle.
   A kind whose module is off on the vehicle (fuel, maintenance,
   compliance, incidents) opens no form: the page says which module is off and keeps
   the file as a pending upload for 24 hours. The user can change the kind
@@ -4784,7 +4790,8 @@ nothing is counted twice (§6 Incident).
   answer and tool reads.
 - **API** (§7.20): `GET/POST /api/v1/vehicles/{id}/incidents`, `GET
   /api/v1/incidents/history` (the claims history's filters and rows),
-  with the access rules above; a POST's duplicate key is the vehicle,
+  with the access rules above (from Phase 27.2 the claim carries
+  `repair_estimate`, read and written like the payout); a POST's duplicate key is the vehicle,
   date, type and claim number.
 - **Ask Logbook** (§7.26): an `incidents(vehicles?, period?,
   claims_only?)` tool, so "Have I had any claims in the last five years?"
@@ -4810,11 +4817,19 @@ Decided 2026-10-01 (`docs/phases/open-questions.md` #93, #98, #99).
   (chosen) or *Just archive*. *Written off* shows the incident (the latest
   settled one with a category, or a select when there are several), and a
   sale date and sale price prefilled from its closed_on (else
-  claim_updated_on, else today) and payout, both editable. Saving sets
+  claim_updated_on, else today) and payout, both editable and both
+  required, with the vehicle form's rules (the sale is not before the
+  purchase). With several, choosing another incident refills them (with
+  JS; without, *Use its settlement* reloads the page). Saving sets
   disposal `written_off`, disposal_incident_id, the sale date and price,
-  and archives, in one transaction.
-- **Sold:** the vehicle edit form's sale section sets disposal `sold`
-  when a sale date is saved on a vehicle with no disposal. *Restore*
+  and archives, in one statement. *Just archive* archives with no
+  disposal.
+- **Sold:** the vehicle form's sale section (adding or editing) sets
+  disposal `sold` when a sale date is saved on a vehicle with no
+  disposal, and clearing
+  the sale date clears `sold` again (decided 2026-10-02,
+  `docs/phases/open-questions.md` #105); a `written_off` disposal is never
+  changed by the edit form. *Restore*
   clears disposal and disposal_incident_id; the sale date and price stay,
   as now.
 - **Ownership, no double counting:** the disposal incident's payout is
@@ -4823,8 +4838,10 @@ Decided 2026-10-01 (`docs/phases/open-questions.md` #93, #98, #99).
   price" under it. Depreciation ends at the settlement as for any sale.
 - **Labels:** an archived vehicle with disposal `written_off` is labelled
   "Written off 14 Mar 2025" where a sold one says "Sold" (garage cards,
-  overview, ownership report's *sold* column: `written off`). The
-  *Sold* milestone is titled *Written off* with the incident linked.
+  overview, the ownership report beside the name and "Lifetime, written
+  off 14 Mar 2025" for its total; its CSV's *sold* column: `written off`).
+  The *Sold* milestone is titled *Written off* with the incident named
+  ("Total loss: Collision, 14 Mar 2025").
 - **Module off:** archiving is one click again; a vehicle already written
   off keeps its disposal and label.
 

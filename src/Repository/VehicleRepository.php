@@ -10,6 +10,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\Vehicle\Disposal;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -112,16 +113,79 @@ final readonly class VehicleRepository
         );
     }
 
+    /**
+     * Archive or restore. Restoring clears the disposal (spec.md §7.29
+     * *Total loss*); the sale date and price stay.
+     */
     public function setStatus(int $userId, int $id, VehicleStatus $status, DateTimeImmutable $now): void
     {
         $platform = $this->connection->getDatabasePlatform();
         $timestamp = UtcDateTime::toDatabase($now, $platform);
-
-        $this->connection->update(self::TABLE, [
+        $columns = [
             'status' => $status->value,
             'archived_at' => $status === VehicleStatus::Archived ? $timestamp : null,
             'updated_at' => $timestamp,
-        ], ['user_id' => $userId, 'id' => $id], ['user_id' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]);
+        ];
+        if ($status === VehicleStatus::Active) {
+            $columns += ['disposal' => null, 'disposal_incident_id' => null];
+        }
+
+        $this->connection->update(
+            self::TABLE,
+            $columns,
+            ['user_id' => $userId, 'id' => $id],
+            ['user_id' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER],
+        );
+    }
+
+    /**
+     * Archive as a total loss: written off, the incident, the settlement as
+     * the sale, in one statement (spec.md §7.29 *Total loss*).
+     *
+     * @param string $salePrice canonical decimal
+     */
+    public function archiveWrittenOff(
+        int $userId,
+        int $id,
+        ?int $incidentId,
+        DateTimeImmutable $saleDate,
+        string $salePrice,
+        DateTimeImmutable $now,
+    ): void {
+        $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
+
+        $this->connection->update(self::TABLE, [
+            'status' => VehicleStatus::Archived->value,
+            'archived_at' => $timestamp,
+            'disposal' => Disposal::WrittenOff->value,
+            'disposal_incident_id' => $incidentId,
+            'sale_date' => $saleDate->format('Y-m-d'),
+            'sale_price' => $salePrice,
+            'updated_at' => $timestamp,
+        ], ['user_id' => $userId, 'id' => $id], [
+            'user_id' => ParameterType::INTEGER,
+            'id' => ParameterType::INTEGER,
+            'disposal_incident_id' => $incidentId === null ? ParameterType::NULL : ParameterType::INTEGER,
+        ]);
+    }
+
+    /**
+     * Mark the vehicle sold, or clear `sold` (null). A written-off vehicle
+     * is left as it is: only Restore clears that.
+     */
+    public function setSold(int $userId, int $id, bool $sold): void
+    {
+        $query = $this->connection->createQueryBuilder()
+            ->update(self::TABLE)
+            ->where('user_id = :user', 'id = :id')
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('id', $id, ParameterType::INTEGER);
+        if ($sold) {
+            $query->set('disposal', ':sold')->andWhere('disposal IS NULL');
+        } else {
+            $query->set('disposal', 'NULL')->andWhere('disposal = :sold');
+        }
+        $query->setParameter('sold', Disposal::Sold->value)->executeStatement();
     }
 
     /**
@@ -184,6 +248,8 @@ final readonly class VehicleRepository
                 'sale_price',
                 'status',
                 'archived_at',
+                'disposal',
+                'disposal_incident_id',
                 'created_at',
                 'updated_at',
             )
@@ -266,6 +332,8 @@ final readonly class VehicleRepository
             archivedAt: $archivedAt === null ? null : UtcDateTime::fromDatabase($archivedAt, $platform),
             createdAt: UtcDateTime::fromDatabase($row['created_at'], $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'], $platform),
+            disposal: Disposal::tryFrom((string) Row::nullableString($row, 'disposal')),
+            disposalIncidentId: Row::nullableInt($row, 'disposal_incident_id'),
         );
     }
 }

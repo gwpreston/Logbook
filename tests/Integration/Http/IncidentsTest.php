@@ -254,13 +254,78 @@ final class IncidentsTest extends AppTestCase
         self::assertStringNotContainsString('4417', $faulty);
     }
 
+    public function testARepairEstimateShowsOnItsIncidentAndChangesNoCost(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $repair = $this->maintenance($app, $golf, '2026-03-20', 'Rear bumper', '1400.00');
+        $browser->post('/vehicles/' . $golf->id . '/incidents/new', self::form());
+        $incident = $this->only($app, $golf);
+        $this->service($app, IncidentRepository::class)->setLink(LinkKind::Maintenance, $golf->id, $repair->id, $incident->id);
+        $id = $golf->id;
+        $before = [
+            self::body($browser->get('/vehicles/' . $id . '/incidents/' . $incident->id)),
+            self::body($browser->get('/reports?range=all_time')),
+            self::body($browser->get('/reports/ownership')),
+        ];
+
+        $edit = self::form(['repair_estimate' => '1850.5']);
+        $response = $browser->post('/vehicles/' . $id . '/incidents/' . $incident->id . '/edit', $edit);
+        self::assertSame(303, $response->getStatusCode());
+        $saved = $this->only($app, $golf);
+        self::assertSame('1850.500', $saved->data->claim->repairEstimate);
+
+        $page = self::body($browser->get('/vehicles/' . $id . '/incidents/' . $incident->id));
+        self::assertStringContainsString('Repair estimate', $page);
+        self::assertStringContainsString('£1,850.50', $page);
+        self::assertStringContainsString('Estimate, not counted in costs', $page);
+        self::assertSame(
+            self::costsOf($before[0]),
+            self::costsOf($page),
+            'linked costs, payouts and net are unchanged',
+        );
+        self::assertSame(self::amounts($before[1]), self::amounts(self::body($browser->get('/reports?range=all_time'))));
+        self::assertSame(self::amounts($before[2]), self::amounts(self::body($browser->get('/reports/ownership'))));
+
+        $csv = self::body($browser->get('/vehicles/' . $id . '/export/incidents.csv'));
+        self::assertStringContainsString('Repair estimate', $csv);
+        self::assertStringContainsString('1850.50', $csv);
+
+        // A claim status change keeps the estimate (it is rebuilt with the latest update).
+        $browser->post('/vehicles/' . $id . '/incidents/' . $incident->id . '/edit', ['claim_status' => 'open'] + $edit);
+        self::assertSame('1850.500', $this->only($app, $golf)->data->claim->repairEstimate);
+    }
+
+    /**
+     * The incident page's *Costs* card.
+     */
+    private static function costsOf(string $page): string
+    {
+        $start = strpos($page, 'id="incident-costs"');
+        self::assertNotFalse($start);
+
+        return (string) substr($page, $start, (int) strpos($page, '</section>', $start) - $start);
+    }
+
+    /**
+     * @return list<string> every money amount on a page, in order
+     */
+    private static function amounts(string $page): array
+    {
+        preg_match_all('/£[0-9,]+\.[0-9]{2}/u', $page, $matches);
+
+        return $matches[0];
+    }
+
     public function testAViewShareSeesTheSummaryButNotTheClaim(): void
     {
         $app = $this->createApp();
         $this->pinClock($app, self::NOW);
         $browser = $this->signedIn($app);
         $golf = $this->vehicle($app);
-        $browser->post('/vehicles/' . $golf->id . '/incidents/new', self::form());
+        $browser->post('/vehicles/' . $golf->id . '/incidents/new', self::form(['repair_estimate' => '900']));
         $incident = $this->only($app, $golf);
         $viewer = $this->createMember($app, 'viewer');
         $this->service($app, VehicleShareRepository::class)
@@ -273,6 +338,7 @@ final class IncidentsTest extends AppTestCase
         self::assertStringNotContainsString('4417', $page);
         self::assertStringNotContainsString('A. Driver', $page);
         self::assertStringNotContainsString('Tesco', $page, 'the location is a detail');
+        self::assertStringNotContainsString('Repair estimate', $page, 'the estimate is a claim detail');
         self::assertStringContainsString('Not shared with you', self::body($theirs->get('/incidents/history')));
     }
 

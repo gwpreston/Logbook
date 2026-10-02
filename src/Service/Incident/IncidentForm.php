@@ -105,6 +105,7 @@ final class IncidentForm
             'payout' => $claim->payout === null ? '' : Decimal::trim($claim->payout),
             'ncd_affected' => $claim->ncdAffected->value,
             'claim_updated_on' => $claim->updatedOn?->format('Y-m-d') ?? '',
+            'repair_estimate' => $claim->repairEstimate === null ? '' : Decimal::trim($claim->repairEstimate),
         ];
     }
 
@@ -180,6 +181,7 @@ final class IncidentForm
         $claimNumber = $validator->string('claim_number', false, self::NAME_MAX);
         $excess = $validator->decimal('excess', false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
         $payout = $validator->decimal('payout', false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
+        $estimate = $validator->decimal('repair_estimate', false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
         $ncd = $validator->enum('ncd_affected', NcdEffect::class);
         $updatedOn = $validator->date('claim_updated_on');
         $areas = self::areas($input['damage_areas'] ?? []);
@@ -232,6 +234,7 @@ final class IncidentForm
                 payout: $payout,
                 ncdAffected: $ncd ?? NcdEffect::Unknown,
                 updatedOn: $updatedOn,
+                repairEstimate: $estimate,
             ),
         ), $odometer === null ? null : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE));
     }

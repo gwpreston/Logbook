@@ -474,6 +474,20 @@ return [
         'default_grade' => [
             'none' => 'None',
         ],
+        'archive_title' => 'Archive {name}',
+        'archive_lead' => 'This vehicle has a settled write-off. Record it as written off, with the settlement as its sale, or just archive it.',
+        'archive_as' => 'Archive as',
+        'archive_just' => 'Just archive',
+        'archive_incident' => 'The write-off',
+        'archive_use_settlement' => 'Use its settlement',
+        'archive_sale_date_hint' => 'From the settlement: the day the incident was closed, else the latest claim update.',
+        'archive_sale_price_hint' => 'The settlement, counted as the sale price and not as an insurance payout.',
+        'archived_written_off' => '{name} was archived as written off. Its history is kept.',
+        'written_off_on' => 'Written off {date}',
+        'disposal' => [
+            'written_off' => 'Written off',
+            'sold' => 'Sold',
+        ],
     ],
     'history' => [
         'part_of' => 'Part of: {incident}',
@@ -532,7 +546,10 @@ return [
             'bought_for' => 'Bought for {price}',
             'sold' => 'Sold',
             'sold_for' => 'Sold for {price}',
+            'written_off' => 'Written off',
+            'written_off_for' => 'Written off, settled for {price}',
         ],
+        'written_off_by' => 'Total loss: {incident}',
     ],
     'odometer' => [
         'title' => 'Mileage',
@@ -1878,6 +1895,7 @@ return [
             'status' => 'Status',
             'closed_on' => 'Closed on',
             'notes' => 'Notes',
+            'repair_estimate' => 'Repair estimate',
         ],
         'hint' => [
             'location' => 'A street or car park, as you would tell an insurer.',
@@ -2010,6 +2028,7 @@ return [
             'linked_maintenance' => 'Linked service records',
             'linked_expenses' => 'Linked expenses',
             'linked_tyre_changes' => 'Linked tyre changes',
+            'repair_estimate' => 'Repair estimate',
         ],
         'report' => [
             'title' => 'Incidents',
@@ -2043,6 +2062,7 @@ return [
                 'fault' => 'Fault',
             ],
         ],
+        'estimate_not_counted' => 'Estimate, not counted in costs',
     ],
     'ownership' => [
         'title' => 'Cost of ownership',
@@ -2088,6 +2108,8 @@ return [
             'no_distance' => 'Log mileage to see the cost per distance.',
             'archived' => 'Archived vehicles are left out unless ticked; sold vehicles have exact lifetime figures.',
         ],
+        'lifetime_written_off' => 'Lifetime, written off {date}',
+        'settlement_is_sale' => 'Settlement counted as the sale price',
     ],
     'report' => [
         'title' => 'Expenses & reports',
@@ -2422,6 +2444,7 @@ return [
             'rate' => 'Rate',
             'passenger_amount' => 'Passenger amount',
         ],
+        'written_off' => 'written off',
     ],
     'import' => [
         'csv' => 'Import CSV',
@@ -3525,6 +3548,8 @@ return [
             'insurance' => 'Insurance document',
             'registration' => 'Registration document',
             'other' => 'Other document',
+            'claim_letter' => 'Insurance claim letter',
+            'repair_estimate' => 'Repair estimate',
         ],
         'kind_title' => 'Which form?',
         'kind_form' => [
@@ -3575,6 +3600,7 @@ return [
         'notes' => [
             'advisories' => 'Advisories',
             'failures' => 'Failures',
+            'estimate_from' => 'Estimate from {repairer}',
         ],
         'warning' => [
             'failed_test' => 'This test was failed, so it is saved as a note, not as the vehicle’s MOT.',
@@ -3613,6 +3639,10 @@ return [
             'keep_needs_date' => 'To keep the file, switch on Documents (Settings → Modules). Otherwise it is deleted.',
             'submit' => 'Update the vehicle',
         ],
+        'update_from_letter' => 'Update from a letter',
+        'estimate_incident' => 'Which incident is this estimate for?',
+        'estimate_new_incident' => 'A new incident',
+        'estimate_use' => 'Use this incident',
     ],
     'ask' => [
         'title' => 'Ask Logbook',
@@ -3910,7 +3940,7 @@ return [
             'tyres' => 'A vehicle\'s tyres: those fitted (by position) and stored sets, with brand, size, season, distance covered, age, the last tread depth, the estimated distance and date until worn, and whether they are due for replacing.',
             'trips_summary' => 'The user\'s business trips in a period: count, business and private distance, and the mileage claim value at the approved rates. Defaults to the current tax year.',
             'needs_attention' => 'What needs attention now: overdue services, renewals and reminders, and records that look wrong (odd odometer readings, economy drift, unusual prices or costs, stale mileage or valuations).',
-            'incidents' => 'Incidents and insurance claims on the user\'s vehicles, sold and archived ones included: date, vehicle, type, fault, driver, claim status, insurer, claim number, payout and no-claims effect. Defaults to the last 5 years, which is what insurers usually ask about.',
+            'incidents' => 'Incidents and insurance claims on the user\'s vehicles, sold and archived ones included: date, vehicle, type, fault, driver, claim status, insurer, claim number, payout, repair estimate (never counted as spent) and no-claims effect. Defaults to the last 5 years, which is what insurers usually ask about.',
             'log_fill_up' => 'Log a fill-up (or a charge) in Logbook now, as the user described it. Pass on the user\'s own words, numbers and units, and leave out what they did not say: Logbook resolves the vehicle, the date and the amounts, and asks back when unsure. Confirm the details with the user before calling. Retrying the same fill-up never logs it twice.',
             'add_reading' => 'Log an odometer (mileage) reading in Logbook now. For a fill-up, use log_fill_up instead: it records the reading too. Pass on the user\'s own words and numbers; confirm with the user before calling. Retrying the same reading never logs it twice.',
             'draft_service_record' => 'Draft a service record (maintenance or repair work). Nothing is saved yet: the user adds it in Logbook, from the link in the result. Pass on the user\'s own words, numbers and units; leave out what they did not say.',

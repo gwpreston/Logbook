@@ -15,6 +15,10 @@ enum ScanKind: string
     case Insurance = 'insurance';
     case Registration = 'registration';
     case Other = 'other';
+    /** An insurer's or broker's letter or email about a claim (Phase 27.2). */
+    case ClaimLetter = 'claim_letter';
+    /** A repairer's estimate (Phase 27.2): never a cost. */
+    case RepairEstimate = 'repair_estimate';
 
     public function labelKey(): string
     {
@@ -31,6 +35,7 @@ enum ScanKind: string
             self::FuelReceipt => ScanTarget::Fuel,
             self::Inspection, self::Insurance, self::Other => ScanTarget::Document,
             self::Registration => ScanTarget::Vehicle,
+            self::ClaimLetter, self::RepairEstimate => ScanTarget::Incident,
         };
     }
 }

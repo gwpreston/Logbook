@@ -10,6 +10,8 @@ use Logbook\Domain\Ai\Scan\ScanKind;
 use Logbook\Domain\Ai\Scan\ScanTarget;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Fuel\FuelChoice;
+use Logbook\Domain\Incident\ClaimStatus;
+use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Ai\Draft\Resolver;
@@ -35,6 +37,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class Mapper
 {
     private const int TITLE_MAX = 150;
+    /** A claim letter's status words (Phase 27.2), lower case, as whole words. */
+    private const array CLAIM_SETTLED = ['settled', 'settlement', 'paid', 'payment issued', 'payment made', 'payment sent'];
+    private const array CLAIM_DECLINED = ['declined', 'rejected', 'repudiated', 'refused'];
+    /** Words that make the rest unclear: an offer, a payment still to come. */
+    private const array CLAIM_HEDGES = [
+        'not', 'yet', 'offer', 'offered', 'offers', 'proposed', 'pending', 'awaiting',
+        'expected', 'will', 'provisional', 'query', 'queried',
+    ];
     private const int TEXT_MAX = 2000;
 
     public function __construct(
@@ -57,6 +67,7 @@ final readonly class Mapper
             ScanTarget::Fuel => $this->fuel($form, $user, $vehicle, $reading),
             ScanTarget::Document => $this->document($form, $reading),
             ScanTarget::Vehicle => $this->vehicle($form, $reading),
+            ScanTarget::Incident => $this->incident($form, $reading),
         };
         $this->currency($form, $vehicle, $reading);
 
@@ -246,12 +257,99 @@ final readonly class Mapper
         $form->date('first_registered_on', 'first_registration', againstVehicle: false);
     }
 
+    /**
+     * A claim letter: the claim's news. A repair estimate: the estimate and
+     * who gave it (spec.md §7.27 *Mapping*, §7.29). The incident date is
+     * used only on *Log incident* (the edit form keeps its own).
+     */
+    private function incident(ScanFormBuilder $form, Extraction $reading): void
+    {
+        $form->text('claim_number', 'claim_number');
+        if ($reading->kind === ScanKind::RepairEstimate) {
+            $form->amount('repair_estimate', 'total');
+            $repairer = $reading->value('vendor');
+            if ($repairer !== null) {
+                $note = $this->translator->trans('scan.notes.estimate_from', [
+                    'repairer' => mb_substr($repairer, 0, self::TITLE_MAX),
+                ]);
+                $form->set('notes', $note, $reading->evidence('vendor') ?? $repairer);
+            }
+
+            return;
+        }
+
+        $form->text('insurer', 'vendor');
+        $words = $reading->value('claim_status');
+        $status = $words === null ? null : self::claimStatus($words);
+        if ($status !== null) {
+            $form->set('claim_status', $status->value, $reading->evidence('claim_status') ?? $words);
+        }
+        $form->amount('excess', 'excess');
+        $form->amount('payout', 'payout');
+        $words = $reading->value('write_off');
+        $category = $words === null ? null : self::writeOff($words);
+        if ($category !== null) {
+            $form->set('write_off_category', $category->value, $reading->evidence('write_off') ?? $words);
+        }
+        $form->date('claim_updated_on', 'date');
+        $form->date('occurred_on', 'incident_date');
+    }
+
+    /**
+     * Where a claim stands, from the letter's words: "settled", "payment
+     * issued" → settled; "declined", "rejected" → declined. Words that
+     * hedge ("settlement offer", "not yet paid") or say both are unclear,
+     * and unclear is left empty.
+     */
+    public static function claimStatus(string $words): ?ClaimStatus
+    {
+        $text = ' ' . trim(mb_strtolower((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', $words))) . ' ';
+        if (self::says($text, self::CLAIM_HEDGES)) {
+            return null;
+        }
+        $settled = self::says($text, self::CLAIM_SETTLED);
+        $declined = self::says($text, self::CLAIM_DECLINED);
+
+        return match (true) {
+            $settled && !$declined => ClaimStatus::Settled,
+            $declined && !$settled => ClaimStatus::Declined,
+            default => null,
+        };
+    }
+
+    /**
+     * @param string $text lower case words between single spaces, padded with one
+     * @param list<string> $phrases
+     */
+    private static function says(string $text, array $phrases): bool
+    {
+        return preg_match('/ (' . implode('|', $phrases) . ') /u', $text) === 1;
+    }
+
+    /**
+     * The write-off category the words name ("Cat S", "Category N",
+     * "non-structural"), or null.
+     */
+    public static function writeOff(string $words): ?WriteOffCategory
+    {
+        $text = mb_strtolower($words);
+        if (preg_match('/\bcat(?:egory)?\.?\s*([nsba])\b/u', $text, $m) === 1) {
+            return WriteOffCategory::from('cat_' . $m[1]);
+        }
+
+        return match (true) {
+            preg_match('/\bnon[\s-]?structural\b/u', $text) === 1 => WriteOffCategory::CatN,
+            preg_match('/\bstructural\b/u', $text) === 1 => WriteOffCategory::CatS,
+            default => null,
+        };
+    }
+
     private function currency(ScanFormBuilder $form, Vehicle $vehicle, Extraction $reading): void
     {
-        $printed = $reading->value('currency') ?? $reading->value('total');
+        $printed = $reading->value('currency') ?? $reading->value('total') ?? $reading->value('payout');
         $code = $printed === null ? null : self::currencyCode($printed);
         $own = $form->currency();
-        if ($code !== null && $code !== $own && $form->has(['cost', 'total'])) {
+        if ($code !== null && $code !== $own && $form->has(['cost', 'total', 'payout', 'excess', 'repair_estimate'])) {
             $form->warn($this->translator->trans('scan.warning.currency', ['found' => $code, 'vehicle' => $own]));
         }
     }

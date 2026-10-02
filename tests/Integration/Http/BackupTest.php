@@ -9,6 +9,9 @@ use Logbook\Domain\Incident\ClaimStatus;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\IncidentData;
 use Logbook\Domain\Incident\IncidentType;
+use Logbook\Domain\Vehicle\FuelType;
+use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Incident\LinkKind;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Domain\Trip\TripData;
@@ -132,7 +135,17 @@ final class BackupTest extends AppTestCase
             $owners,
         );
         self::assertCount(1, $before['tables']['trips'], 'trips travel too (Phase 22)');
-        self::assertCount(1, $before['tables']['incidents'], 'incidents travel too (Phase 27.1)');
+        self::assertCount(2, $before['tables']['incidents'], 'incidents travel too (Phase 27.1)');
+        $wreck = array_values(array_filter(
+            $before['tables']['vehicles'],
+            static fn (array $v): bool => $v['disposal'] === 'written_off',
+        ));
+        self::assertCount(1, $wreck, 'a written-off car (Phase 27.2)');
+        self::assertNotNull($wreck[0]['disposal_incident_id'], 'with the incident it points at, restored after it');
+        self::assertContains('4300.000', array_map(
+            static fn (mixed $v): ?string => is_string($v) ? Decimal::round($v, 3) : null,
+            array_column($before['tables']['incidents'], 'repair_estimate'),
+        ), 'and the estimate');
         self::assertContains('incident', array_column($before['tables']['odometer_readings'], 'source'));
         $links = array_filter(array_column($before['tables']['maintenance_entries'], 'incident_id'));
         self::assertNotEmpty($links, 'with their links');
@@ -175,7 +188,7 @@ final class BackupTest extends AppTestCase
         /** @var array{format: string, tables: array<string, int>, files: int} $manifest */
         $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
         self::assertSame('logbook-backup', $manifest['format']);
-        self::assertSame(1, $manifest['tables']['vehicles']);
+        self::assertSame(2, $manifest['tables']['vehicles']);
         self::assertSame(11, $manifest['files']);
         self::assertFalse($zip->getFromName('database/sessions.json'), 'sessions are never backed up');
         $zip->close();
@@ -203,7 +216,7 @@ final class BackupTest extends AppTestCase
         $response = $browser->post($confirm, []);
         self::assertSame(422, $response->getStatusCode());
         self::assertStringContainsString('Tick the box', self::body($response));
-        self::assertCount(2, $this->ownedVehicles($app, $owner->id));
+        self::assertCount(3, $this->ownedVehicles($app, $owner->id));
 
         $response = $browser->post($confirm, ['confirm' => '1']);
         self::assertSame(303, $response->getStatusCode(), self::body($response));
@@ -221,7 +234,7 @@ final class BackupTest extends AppTestCase
         // The data from before the restore was kept, just in case.
         $safety = glob($this->backupDir . '/pre-restore-*.zip') ?: [];
         self::assertCount(1, $safety);
-        self::assertSame(2, $this->service($app, BackupService::class)->inspect($safety[0])->rows('vehicles'));
+        self::assertSame(3, $this->service($app, BackupService::class)->inspect($safety[0])->rows('vehicles'));
 
         // New rows get new ids (PostgreSQL's sequences were moved on).
         $browser->post('/login', ['username' => 'owner', 'password' => self::PASSWORD]);
@@ -436,6 +449,22 @@ final class BackupTest extends AppTestCase
             claim: new Claim(ClaimStatus::Settled, 'Aviva', claimNumber: '4417', payout: '100.000'),
         ), '1600.000', $zone, $this->files([[(string) base64_decode(self::PNG), 'scrape.png']]));
         $this->service($app, IncidentService::class)->link($golf, LinkKind::Maintenance, $service->id, $incident);
+        // Phase 27.2: a car written off by its incident (the vehicle points at an incident restored after it).
+        $wreck = $this->service($app, VehicleService::class)->create($owner, new VehicleData(
+            VehicleType::Car,
+            'Ford',
+            'Fiesta',
+            FuelType::Petrol,
+            registration: 'WR14 FNE',
+        ));
+        $loss = $this->service($app, IncidentService::class)->create($wreck, new IncidentData(
+            occurredOn: $day('2026-08-01'),
+            type: IncidentType::Collision,
+            damageAreas: [DamageArea::Front],
+            writeOff: WriteOffCategory::CatS,
+            claim: new Claim(ClaimStatus::Settled, 'Aviva', payout: '2100.000', repairEstimate: '4300.000'),
+        ), null, $zone);
+        $this->service($app, VehicleService::class)->archiveWrittenOff($owner, $wreck, $loss->id, $day('2026-08-20'), '2100.000');
         $due = LocalTime::parseDate('2026-10-01');
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));

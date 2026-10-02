@@ -267,6 +267,7 @@ final readonly class IncidentService
                 payout: $claim->payout,
                 ncdAffected: $claim->ncdAffected,
                 updatedOn: $today,
+                repairEstimate: $claim->repairEstimate,
             );
         }
 

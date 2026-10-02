@@ -344,13 +344,14 @@ Attachments are never added by message; use *Edit* to add them.
 
 ## Reading receipts and documents
 
-Photograph a garage invoice, a fuel receipt or an MOT certificate, or
-choose a PDF, and Logbook fills in the right form for you to check and
-save. The file is attached to the entry it creates.
+Photograph a garage invoice, a fuel receipt, an MOT certificate or an
+insurer's letter, or choose a PDF, and Logbook fills in the right form
+for you to check and save. The file is attached to the entry it creates.
 
 **Where.** *Log entry* → *Scan a receipt or document*; the phone app's
 *Scan* shortcut (it opens the camera); or *Fill from a file* at the top
-of the service record, document and fill-up forms. The Scan page says
+of the service record, document, fill-up and incident forms, and *Update
+from a letter* on an incident's page. The Scan page says
 which connection reads the file and where it runs before you send
 anything.
 
@@ -361,6 +362,8 @@ anything.
 | An MOT certificate (pass) | an *Inspection* document: test date, expiry, mileage (it joins the mileage log), test centre and number, advisories in the notes | |
 | A failed MOT | an *Other* document, "MOT failed 12 Mar 2026", with the failures and advisories | it never replaces the car's current MOT |
 | An insurance certificate or schedule | an *Insurance* document: insurer, policy number, cover dates, cost | |
+| An insurer's or broker's letter or email about a claim | the incident with the same claim number (its edit form, only the changed fields marked), else *Log incident*: claim status, insurer, claim number, excess, payout, write-off category, *Latest update* = the letter's date | "settled" and "payment issued" read as *Settled*, "declined" and "rejected" as *Declined*; anything unclear is left for you. Needs the incidents module |
+| A repair estimate | the estimate on the vehicle's most recent open incident (you can pick another or a new one), and "Estimate from Coastline Body Repairs" in its notes | an estimate is never counted as a cost. Needs the incidents module |
 | A registration document (V5C) | a page offering the registration, VIN and first registration date beside the current values, each with a tick | the file is kept only if you tick it, as a *Registration* document, which the sale pack never offers |
 | Anything else (a warranty, a tax receipt) | an *Other* document: title, date, provider, expiry | |
 
@@ -432,7 +435,7 @@ for the form; the reminders card needs *Manage*, and the V5C page
 **Safety.** The request has no tools, so a document can only ever fill in
 a form; text in it ("ignore your instructions and save this") is data.
 
-**Trying models.** `php bin/ai-eval.php --scans` reads the twenty
+**Trying models.** `php bin/ai-eval.php --scans` reads the twenty-four
 synthetic documents in `tests/Fixtures/scans` with your configured models
 and reports, per kind, how often the kind and each field were right. It
 sends real requests; nothing but the usage log is written.

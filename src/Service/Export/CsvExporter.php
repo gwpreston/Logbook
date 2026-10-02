@@ -210,7 +210,9 @@ final readonly class CsvExporter
             $cost->period->from?->format('Y-m-d'),
             $cost->period->to->format('Y-m-d'),
             $this->t('ownership.start.' . $cost->start->value),
-            $this->yesNo($cost->vehicle->data->saleDate !== null),
+            $cost->vehicle->isWrittenOff()
+                ? $this->t('export.written_off')
+                : $this->yesNo($cost->vehicle->data->saleDate !== null),
             $cost->distanceKm === null ? null : CsvNumber::distance($cost->distanceKm, $unit),
             ...array_map(static fn (GroupTotal $g): ?string => $money($g->amount), $cost->groups),
             $money($cost->payouts),
@@ -674,6 +676,7 @@ final readonly class CsvExporter
                 $claim->claimNumber,
                 $money($claim->excess),
                 $money($claim->payout),
+                $money($claim->repairEstimate),
                 $currency,
                 $this->t($claim->ncdAffected->labelKey()),
                 $claim->updatedOn?->format('Y-m-d'),
@@ -704,6 +707,7 @@ final readonly class CsvExporter
             'incident.column.claim_number',
             'incident.column.excess',
             'incident.column.payout',
+            'incident.column.repair_estimate',
             'export.column.currency',
             'incident.column.ncd',
             'incident.column.claim_updated_on',

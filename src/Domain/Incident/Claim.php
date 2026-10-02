@@ -24,6 +24,8 @@ final readonly class Claim
         public NcdEffect $ncdAffected = NcdEffect::Unknown,
         /** Calendar date of the latest news. */
         public ?DateTimeImmutable $updatedOn = null,
+        /** What a repair may cost (Phase 27.2): information only, never counted. */
+        public ?string $repairEstimate = null,
     ) {
     }
 }

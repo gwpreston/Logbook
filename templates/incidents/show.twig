@@ -32,6 +32,10 @@
             {% if can_change %}
                 <div class="btn-row">
                     <a class="btn" href="{{ url_for('incidents.edit', {id: vehicle.id, incident: incident.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                    {% if scan_available() and not vehicle.isArchived() %}
+                        {# A letter or estimate read straight into this incident (spec.md §7.29). #}
+                        <a class="btn" href="{{ url_for('scan', {}, {vehicle: vehicle.id, for: 'incident', incident: incident.id}) }}">{{ ui.icon('document_scanner') }}{{ 'scan.update_from_letter'|trans }}</a>
+                    {% endif %}
                     {% if can_remind %}
                         <a class="btn btn--ghost" href="{{ url_for('reminders.create', {}, {vehicle: vehicle.id, title: incident.claimNumber ? 'incident.chase_claim_number'|trans({number: incident.claimNumber}) : 'incident.chase_claim'|trans}) }}">{{ ui.icon('notifications') }}{{ 'incident.add_reminder'|trans }}</a>
                     {% endif %}
@@ -66,6 +70,7 @@
                     {% if incident.insurer %}<div><dt>{{ 'incident.field.insurer'|trans }}</dt><dd>{{ incident.insurer }}</dd></div>{% endif %}
                     {% if incident.claimNumber %}<div><dt>{{ 'incident.field.claim_number'|trans }}</dt><dd>{{ incident.claimNumber }}</dd></div>{% endif %}
                     {% if own_amount and incident.excess is not null %}<div><dt>{{ 'incident.field.excess'|trans }}</dt><dd class="tabular">{{ incident.excess|money(currency) }}</dd></div>{% endif %}
+                    {% if own_amount and incident.repairEstimate is not null %}<div><dt>{{ 'incident.field.repair_estimate'|trans }}</dt><dd><span class="tabular">{{ incident.repairEstimate|money(currency) }}</span> <span class="muted">{{ 'incident.estimate_not_counted'|trans }}</span></dd></div>{% endif %}
                     <div><dt>{{ 'incident.field.ncd'|trans }}</dt><dd>{{ incident.ncdAffected.labelKey()|trans }}</dd></div>
                     {% if incident.claimUpdatedOn %}<div><dt>{{ 'incident.field.claim_updated_on'|trans }}</dt><dd>{{ incident.claimUpdatedOn|local_date }}</dd></div>{% endif %}
                 </dl>

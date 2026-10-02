@@ -10,6 +10,7 @@ use Logbook\Domain\Incident\ClaimStatus;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\IncidentData;
 use Logbook\Domain\Incident\IncidentType;
+use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Incident\LinkKind;
 use Logbook\Service\Incident\IncidentService;
 use DateTimeImmutable;
@@ -97,9 +98,17 @@ final class AccessibilityTest extends AppTestCase
             LocalTime::parseDate('2026-09-10') ?? throw new \LogicException('date'),
             IncidentType::ParkedDamage,
             damageAreas: [DamageArea::Rear],
-            claim: new Claim(ClaimStatus::Open, 'Admiral', claimNumber: '4417', payout: '100.000'),
+            claim: new Claim(ClaimStatus::Open, 'Admiral', claimNumber: '4417', payout: '100.000', repairEstimate: '120.000'),
         ), null, new DateTimeZone('Europe/London'));
         $this->service($app, IncidentService::class)->link($golf, LinkKind::Maintenance, $service->id, $incident);
+        // Phase 27.2: a settled Cat S, so *Archive* opens the confirm page.
+        $this->service($app, IncidentService::class)->create($golf, new IncidentData(
+            LocalTime::parseDate('2026-09-12') ?? throw new \LogicException('date'),
+            IncidentType::Collision,
+            damageAreas: [DamageArea::Front],
+            writeOff: WriteOffCategory::CatS,
+            claim: new Claim(ClaimStatus::Settled, 'Admiral', claimNumber: '5521', payout: '9000.000'),
+        ), null, new DateTimeZone('Europe/London'));
 
         $pages = [
             '/', '/?customise=1', '/garage', '/vehicles/new', "/vehicles/$id", "/vehicles/$id/edit", "/vehicles/$id/delete",
@@ -120,6 +129,7 @@ final class AccessibilityTest extends AppTestCase
             "/vehicles/$id/incidents", "/vehicles/$id/incidents/new", "/vehicles/$id/incidents/{$incident->id}",
             "/vehicles/$id/incidents/{$incident->id}/edit", '/incidents/history', "/vehicles/$id/history?kind=incidents",
             "/vehicles/$id/sale-pack?options=1&incidents=1&kinds[]=incident_photos",
+            "/vehicles/$id/archive",
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);

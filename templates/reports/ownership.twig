@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/ownership.twig' as own %}
+{% import 'macros/vehicles.twig' as vehicle_ui %}
 
 {% set active_nav = 'reports' %}
 {% set dash = '—' %}
@@ -92,7 +93,8 @@
                                 <tr>
                                     <th scope="row">
                                         <a href="{{ url_for('vehicles.show', {id: cost.vehicle.id}) }}">{{ cost.vehicle.name() }}</a>
-                                        {%- if cost.vehicle.isArchived() %} <span class="muted">({{ 'vehicle.status.archived'|trans }})</span>{% endif -%}
+                                        {%- if cost.vehicle.isArchived() and cost.vehicle.isWrittenOff() %} <span class="muted">({{ vehicle_ui.written_off(cost.vehicle) }})</span>
+                                        {%- elseif cost.vehicle.isArchived() %} <span class="muted">({{ 'vehicle.status.archived'|trans }})</span>{% endif -%}
                                     </th>
                                     <td>
                                         {{ cost.period.from|local_date }} – {{ cost.period.to|local_date }}
@@ -103,6 +105,7 @@
                                     <td class="table__num tabular">
                                         {{- cost.running|money -}}
                                         {%- if cost.payouts %}<br><span class="muted">{{ 'ownership.row.payouts_short'|trans({amount: cost.payouts|money}) }}</span>{% endif -%}
+                                        {%- if cost.settlementIsSale %}<br><span class="muted">{{ 'ownership.settlement_is_sale'|trans }}</span>{% endif -%}
                                     </td>
                                     <td class="table__num tabular">{{ own.depreciation(cost) }}</td>
                                     <td class="table__num tabular">

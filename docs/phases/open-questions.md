@@ -38,7 +38,8 @@ answered on 2026-10-01, before Phase 26.5 started. Phase 27's
 (#92–#103, eight of them found while starting it) were answered on
 2026-10-01, before Phase 27.1 started; the phase was split into 27.1 and
 27.2, and #98–#101 belong to 27.2. One found while building it (#104)
-was answered the same day.
+was answered the same day. Phase 27.2's question found while starting it
+(#105) was answered on 2026-10-02, before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -146,6 +147,7 @@ was answered the same day.
 | 102 | [27.1](phase-27.1.md) | One phase or two, after #93 and #95? (found while starting) | Decided | Two: 27.1 incidents; 27.2 total loss, reading letters and the v2.10.0 release. | 2026-10-01 |
 | 103 | [27.1](phase-27.1.md) | A tyre change linked to a service record: which carries the incident? (found while starting) | Decided | The change follows its record's incident; an unlinked change is linked on its own; costs read from the ledger (spec §7.29). | 2026-10-01 |
 | 104 | [27.1](phase-27.1.md) | Who gets an incident photo's GPS? (found while building) | Decided | The original only for those who see the incident's details; anyone else gets an upright, stripped copy as it is served (spec §7.12). | 2026-10-01 |
+| 105 | [27.2](phase-27.2.md) | Clearing a sold vehicle's sale date: keep or clear disposal `sold`? (found while starting) | Decided | Clear it; a `written_off` disposal is never changed by the edit form (spec §7.29 *Total loss*). | 2026-10-02 |
 
 ## Other loose ends found in the review
 

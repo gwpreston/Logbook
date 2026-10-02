@@ -159,6 +159,8 @@ final class ScanMappingTest extends ScanTestCase
         self::assertSame(ScanTarget::Document, ScanKind::Insurance->target());
         self::assertSame(ScanTarget::Document, ScanKind::Other->target());
         self::assertSame(ScanTarget::Vehicle, ScanKind::Registration->target());
+        self::assertSame(ScanTarget::Incident, ScanKind::ClaimLetter->target());
+        self::assertSame(ScanTarget::Incident, ScanKind::RepairEstimate->target());
     }
 
     private function map(User $user, Extraction $reading): \Logbook\Service\Ai\Scan\ScanForm

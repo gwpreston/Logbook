@@ -71,11 +71,21 @@ final readonly class ScanPrefill
      * that could not be read keeps the defaults and says why; its file is
      * attached all the same.
      *
+     * Editing (Phase 27.2, a claim letter or estimate on its incident):
+     * $defaults are the entry as saved; only the values the file changes are
+     * filled and marked, the entry's own date is kept, and the notes line
+     * is added to its notes rather than replacing them.
+     *
      * @param array<string, string> $defaults
      * @return array<string, string>
      */
-    public function values(ServerRequestInterface $request, ScanTarget $target, Vehicle $vehicle, array $defaults): array
-    {
+    public function values(
+        ServerRequestInterface $request,
+        ScanTarget $target,
+        Vehicle $vehicle,
+        array $defaults,
+        bool $editing = false,
+    ): array {
         $upload = $this->upload($request, self::string($request->getQueryParams(), self::FIELD));
         if ($upload === null) {
             return $defaults;
@@ -112,15 +122,19 @@ final readonly class ScanPrefill
             }
         }
 
+        $values = $editing ? self::changes($form->values, $defaults) : $form->values;
+        $marked = array_keys(array_filter($values, static fn (string $v): bool => $v !== ''));
         $meta += [
             '_scan_kind' => $form->kind->value,
-            '_from_file' => implode(',', $form->marked()),
+            '_from_file' => implode(',', $marked),
             '_scan_warnings' => implode("\n", $warnings),
         ];
+        // Editing: the words behind a value the file did not change would point at nothing.
+        $only = array_flip($marked);
         $notes = [
-            '_evidence:' => $form->evidence,
+            '_evidence:' => $editing ? array_intersect_key($form->evidence, $only) : $form->evidence,
             '_problem:' => $form->problems,
-            '_check:' => $form->checks,
+            '_check:' => $editing ? array_intersect_key($form->checks, $only) : $form->checks,
             '_hint:' => $form->hints,
         ];
         foreach ($notes as $prefix => $byField) {
@@ -129,7 +143,29 @@ final readonly class ScanPrefill
             }
         }
 
-        return [...$defaults, ...$form->values, ...$meta];
+        return [...$defaults, ...$values, ...$meta];
+    }
+
+    /**
+     * What a reading changes on a saved entry: the values that differ from
+     * it, without its date (an incident's date is when it happened, not
+     * the letter's), the notes line added to its notes once.
+     *
+     * @param array<string, string> $read
+     * @param array<string, string> $saved
+     * @return array<string, string>
+     */
+    private static function changes(array $read, array $saved): array
+    {
+        unset($read['occurred_on']);
+        $notes = $read['notes'] ?? null;
+        $own = trim($saved['notes'] ?? '');
+        if ($notes !== null) {
+            $read['notes'] = str_contains($own, $notes) ? $own : trim($own . "\n" . $notes);
+        }
+
+        return array_filter($read, static fn (string $value, string $field): bool
+            => $value !== '' && $value !== ($saved[$field] ?? ''), ARRAY_FILTER_USE_BOTH);
     }
 
     /**

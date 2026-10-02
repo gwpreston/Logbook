@@ -1,0 +1,56 @@
+{
+    "file": "21-claim-letter.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "claim_letter",
+        "fields": {
+            "date": {
+                "value": "06/10/2026",
+                "evidence": "Date: 06/10/2026"
+            },
+            "vendor": {
+                "value": "Harbourside Insurance plc",
+                "evidence": "Harbourside Insurance plc"
+            },
+            "claim_number": {
+                "value": "HSC-55102",
+                "evidence": "Your claim number: HSC-55102"
+            },
+            "reference": {
+                "value": "HSI-88213-PC",
+                "evidence": "Policy number HSI-88213-PC"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Vehicle: AB12 CDE"
+            },
+            "incident_date": {
+                "value": "02/09/2026",
+                "evidence": "Date of incident: 02/09/2026"
+            },
+            "claim_status": {
+                "value": "under review",
+                "evidence": "Your claim is under review by our engineers."
+            },
+            "excess": {
+                "value": "£250.00",
+                "evidence": "The excess on your policy is £250.00"
+            }
+        }
+    },
+    "expect": {
+        "form": "incident",
+        "vehicle": "Golf",
+        "values": {
+            "occurred_on": "2026-09-02",
+            "insurer": "Harbourside Insurance plc",
+            "claim_number": "HSC-55102",
+            "excess": "250",
+            "claim_updated_on": "2026-10-06",
+            "claim_status": "not_claimed"
+        }
+    }
+}

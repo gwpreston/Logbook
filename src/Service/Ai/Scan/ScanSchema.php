@@ -17,14 +17,14 @@ final class ScanSchema
 {
     /** Fields by kind; a kind reads only its own (Mapper). */
     public const array FIELDS = [
-        'date' => 'The date of the invoice, receipt, test or document, exactly as printed.',
+        'date' => 'The date of the invoice, receipt, test, letter, estimate or document, exactly as printed.',
         'time' => 'Fuel receipts: the time of the sale, as printed.',
         'registration' => 'The vehicle registration (number plate), as printed.',
         'make_model' => 'The vehicle make and model, as printed.',
         'odometer' => 'The odometer reading or mileage, as printed, without the unit.',
         'odometer_unit' => 'The odometer unit as printed: miles, mi, km.',
-        'vendor' => 'Who issued it: the garage, fuel station, insurer or test centre.',
-        'total' => 'The total paid or due, including VAT, as printed.',
+        'vendor' => 'Who issued it: the garage, fuel station, insurer, broker, repairer or test centre.',
+        'total' => 'The total paid or due, including VAT, as printed. Repair estimates: the estimate total.',
         'currency' => 'The currency: a symbol or ISO code as printed (£, €, GBP).',
         'labour_total' => 'Service invoices: the labour total, as printed.',
         'parts_total' => 'Service invoices: the parts total, as printed.',
@@ -36,7 +36,7 @@ final class ScanSchema
         'price_per_unit' => 'Fuel receipts: the price per litre, gallon or kWh, as printed.',
         'expiry' => 'Certificates and insurance: the expiry or cover end date, as printed.',
         'start' => 'Insurance: the cover start date, as printed.',
-        'reference' => 'Insurance: the policy number. MOT certificates: the test number. '
+        'reference' => 'Insurance and claim letters: the policy number. MOT certificates: the test number. '
             . 'Never a registration document\'s reference.',
         'result' => 'MOT or inspection certificates: "pass" or "fail".',
         'make' => 'Registration documents: the make.',
@@ -44,10 +44,17 @@ final class ScanSchema
         'first_registration' => 'Registration documents: the date of first registration, as printed.',
         'vin' => 'Registration documents: the VIN (vehicle identification number).',
         'title' => 'Other documents: a short title for what it is (a warranty, a tax receipt).',
+        'claim_number' => 'Claim letters and repair estimates: the insurance claim number or claim reference, as printed.',
+        'incident_date' => 'Claim letters: the date of the incident, accident or loss, as printed.',
+        'claim_status' => 'Claim letters: the words saying where the claim stands, as printed '
+            . '(settled, payment issued, declined, under review).',
+        'excess' => 'Claim letters: the excess (deductible), as printed.',
+        'payout' => 'Claim letters: the amount paid or to be paid to the policyholder (payout or settlement), as printed.',
+        'write_off' => 'Claim letters: the write-off category words, as printed (Cat N, Cat S, Category B).',
     ];
 
     public const array LINES = [
-        'work' => 'Service invoices: each line of work performed.',
+        'work' => 'Service invoices: each line of work performed. Repair estimates: each line of work quoted.',
         'parts' => 'Service invoices: each part supplied.',
         'advisories' => 'MOT certificates: each advisory item.',
         'failures' => 'MOT certificates: each failure (dangerous or major defect).',
@@ -118,9 +125,12 @@ final class ScanSchema
             You read one vehicle document for Logbook, a vehicle log, and fill in a JSON object.
 
             First decide its kind: service_invoice (a garage's service or repair invoice),
-            fuel_receipt, inspection (an MOT or inspection certificate), insurance (a
-            certificate or schedule), registration (a registration document such as a V5C)
-            or other.
+            fuel_receipt, inspection (an MOT or inspection certificate), insurance (a policy
+            certificate or schedule), registration (a registration document such as a V5C),
+            claim_letter (an insurer's or broker's letter or email about a claim: an
+            acknowledgement, an update, a settlement or a refusal; never a policy schedule
+            or certificate), repair_estimate (a repairer's estimate or quote for work not
+            yet done) or other.
 
             Then fill in the fields that the document shows, for that kind. Rules:
             - Leave a field out, or null, when the document does not show it. Never guess or work a value out.

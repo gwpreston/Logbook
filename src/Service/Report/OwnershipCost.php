@@ -70,6 +70,8 @@ final readonly class OwnershipCost
         private ?DateTimeImmutable $mileageStart,
         /** Insurance payouts in the period, taken off the running costs (spec.md §7.29). */
         public ?Money $payouts = null,
+        /** A total loss's settlement was left out of the payouts: it is the sale price (Phase 27.2). */
+        public bool $settlementIsSale = false,
     ) {
     }
 
@@ -113,7 +115,13 @@ final readonly class OwnershipCost
             $count++;
         }
         $received = $zero;
+        $settlementIsSale = false;
         foreach ($payouts as $payout) {
+            // A total loss's settlement is the sale price, so it counts once (spec.md §7.29 *Total loss*).
+            if ($vehicle->isWrittenOff() && $payout->incidentId === $vehicle->disposalIncidentId) {
+                $settlementIsSale = true;
+                continue;
+            }
             if ($period->contains($payout->date)) {
                 $received = $received->add($payout->amount);
             }
@@ -187,6 +195,7 @@ final readonly class OwnershipCost
             perMonthIsPartial: $perMonth !== null && $depreciationPerMonth === null,
             mileageStart: $readings === [] ? null : LocalTime::dateOf($readings[0]->recordedAt, $zone),
             payouts: $received->isZero() ? null : $received,
+            settlementIsSale: $settlementIsSale,
         );
     }
 

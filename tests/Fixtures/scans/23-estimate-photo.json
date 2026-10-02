@@ -1,0 +1,43 @@
+{
+    "file": "23-estimate-photo.jpg",
+    "type": "photo",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "repair_estimate",
+        "fields": {
+            "date": {
+                "value": "02/10/2026",
+                "evidence": "ESTIMATE 02/10/2026"
+            },
+            "vendor": {
+                "value": "Coastline Body Repairs",
+                "evidence": "COASTLINE BODY REPAIRS"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Reg AB12 CDE"
+            },
+            "total": {
+                "value": "£1,284.00",
+                "evidence": "Estimate total £1,284.00"
+            }
+        },
+        "lines": {
+            "work": [
+                "Rear bumper repair and respray"
+            ]
+        }
+    },
+    "expect": {
+        "form": "incident",
+        "vehicle": "Golf",
+        "values": {
+            "repair_estimate": "1284"
+        },
+        "notes": [
+            "Estimate from Coastline Body Repairs"
+        ]
+    }
+}

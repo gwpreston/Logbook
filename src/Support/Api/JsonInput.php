@@ -114,6 +114,7 @@ final class JsonInput
         'claim_number' => 'claim_number',
         'excess' => 'excess',
         'payout' => 'payout',
+        'repair_estimate' => 'repair_estimate',
         'ncd_affected' => 'ncd_affected',
         'claim_updated_on' => 'claim_updated_on',
     ];
@@ -380,7 +381,8 @@ final class JsonInput
         foreach (self::INCIDENT_FIELDS as $api => $form) {
             $input[$form] = match ($api) {
                 'occurred_on' => self::text($body, $api, $errors, $today->format('Y-m-d')),
-                'odometer', 'excess', 'payout', 'driver_user_id', 'insurance_document_id' => self::decimal($body, $api, $errors),
+                'odometer', 'excess', 'payout', 'repair_estimate', 'driver_user_id', 'insurance_document_id'
+                    => self::decimal($body, $api, $errors),
                 'damage_areas' => self::codes($body, $api, $errors),
                 default => self::text($body, $api, $errors),
             };

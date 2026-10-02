@@ -6,6 +6,86 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.10.0] — 2026-10-02
+
+Phases 27.1 and 27.2: **incidents, damage and insurance claims**. Record
+what happened to a vehicle, what was fixed and what the insurer did. An
+incident **links** the repairs, expenses and tyre changes it caused rather
+than copying their costs, so nothing is counted twice. The **claims
+history** answers the question every insurance quote asks: the last five
+years of incidents, on every vehicle, sold ones included. When the insurer
+settles a **total loss**, *Archive* records the car as written off with
+the settlement as its sale. Insurer **letters** and repair **estimates**
+can be scanned into the incident they're about. See
+[`docs/incidents.md`](docs/incidents.md).
+
+### Added
+- **Incidents** (an *Incidents* tab on each vehicle, and *Log incident* in
+  the *Log entry* chooser): the date and time, place, type, fault, driver,
+  odometer, damaged areas, severity and write-off category, photos, the
+  other party (folded away) and the claim (status, insurer and policy,
+  claim number, excess, payout, no-claims effect, latest update). The
+  insurer is filled in from the policy current on the date.
+- **Photos are kept as taken**, with their date and GPS, for the insurer.
+  Only those who may see an incident's details get the original; anyone
+  else gets a stripped copy, and so does the sale pack's ZIP.
+- **Linked records:** *Add a repair*, *Add an expense* and *Add a tyre
+  change* from the incident page, *Link a record*, and *Part of an
+  incident* on those forms. The incident page adds up *Linked costs*,
+  *Payouts received* and *Net cost to you*, exactly as Reports counts them.
+- **Claims history** (`/incidents/history`): every incident on every
+  vehicle you can see, archived and sold ones included, filtered by years,
+  dates, vehicle, driver, fault or claims only, printable and as CSV. The
+  other party is never included.
+- Incidents in **History** (an *Incidents* chip; linked records say what
+  they were part of), **Reports** (an *Incidents* section; spend is
+  unchanged), **cost of ownership** (net of insurance payouts, with the
+  line), the **sale pack** (*Include incidents*: what was damaged and what
+  fixed it, never the claim; a write-off is never hidden), the overview's
+  write-off badge and **Needs attention** ("Claim 4417 with Aviva: no
+  update for 34 days").
+- **Total loss:** for a vehicle with a settled claim and a write-off
+  category, *Archive* offers **Written off**, with the sale date and price
+  filled in from the settlement. The settlement counts once, as the sale
+  price, and not again as a payout ("Settlement counted as the sale
+  price"). The car is labelled "Written off 14 Mar 2025" on its card, its
+  page, the ownership report and History. *Restore* clears it.
+- **Repair estimates:** a field on the incident, shown as "Estimate, not
+  counted in costs", and never in any cost figure.
+- **Reading claim letters and estimates:** two new scan kinds. A letter
+  with a claim number that matches an incident opens that incident's edit
+  form with only the changed fields marked (status, payout, write-off,
+  latest update), and is attached on save; otherwise *Log incident* opens.
+  *Update from a letter* on the incident page needs no match. An estimate
+  goes on the most recent open incident, which you can change. "Settled"
+  and "payment issued" read as *Settled*, "declined" as *Declined*;
+  anything unclear is left for you.
+- **API:** `GET` and `POST /api/v1/vehicles/{id}/incidents` (a retry never
+  logs twice) and `GET /api/v1/incidents/history` (OpenAPI 1.15.0).
+  **Ask Logbook** answers "Have I had any claims in the last five years?"
+  and drafts incidents; over **MCP** read-and-write keys get the same
+  draft.
+- Incidents in the CSV export, backups and `bin/export-user.php`.
+
+### Changed
+- Saving a sale date on a vehicle marks it *Sold*; clearing the date clears
+  it. A vehicle archived before 2.10.0 has no reason recorded and is shown
+  as before.
+
+### Upgrade notes
+- Two migrations (`incidents` with its links; the vehicle's disposal, the
+  repair estimate and a pending scan's incident). Both roll back; archived
+  vehicles stay archived.
+- The `incidents` module is **on by default**. Switch it off in Settings →
+  Modules or with `FEATURES_INCIDENTS=false`. Its data is kept, and a car
+  already written off keeps its label.
+- Incident photos are kept **as uploaded**, location included, unlike
+  every other photo. They leave Logbook stripped (the sale pack ZIP, and
+  to anyone who may not see the incident's details).
+- **Backups move to a new schema version** (incidents, the disposal and
+  the estimate are included). A 2.10.0 backup restores into 2.10.0.
+  Restore an older backup with its own version, then upgrade.
+
 ## [2.9.0] — 2026-10-01
 
 Phase 26.5: **the MCP server**. Claude Desktop, Claude Code, an IDE agent

@@ -2,7 +2,7 @@
 
 *When the insurer pays out for the car, and the letters in between.*
 
-Status: 📋 planned · releases **v2.10.0** (Phases 27.1 and 27.2) · file
+Status: ✅ complete · released as **v2.10.0** (Phases 27.1 and 27.2) · file
 lives in `docs/phases/`
 
 [Phase 27.1](phase-27.1.md) records incidents and claims. Two of its open
@@ -83,75 +83,127 @@ Written into `spec.md` when this phase was decided (2026-10-01):
 
 ### Spec and docs
 - [x] `spec.md` as above; the Phase 27.2 line in §13.
-- [ ] `docs/incidents.md`: *When the car is written off*; *Reading
+- [x] `docs/incidents.md`: *When the car is written off*; *Reading
       insurer letters*.
-- [ ] `docs/ai.md`: the two scan kinds.
+- [x] `docs/ai.md`: the two scan kinds.
 
 ### Migrations (every engine, each reversible)
-- [ ] `vehicles.disposal`, `vehicles.disposal_incident_id`;
+- [x] `vehicles.disposal`, `vehicles.disposal_incident_id`;
       `incidents.repair_estimate`; `pending_uploads.incident_id` and the
       `incident` target. Rollback drops them (archived vehicles stay
       archived).
 
 ### Code
-- [ ] `Domain\Vehicle\Disposal`; the archive confirm page and action
+- [x] `Domain\Vehicle\Disposal`; the archive confirm page and action
       (plain form, desktop modal), *Written off* offered only for a settled
       incident with a write-off category; *Sold* set from the sale date;
       *Restore* clears the disposal.
-- [ ] `OwnershipCost`: the disposal incident's payout left out of
+- [x] `OwnershipCost`: the disposal incident's payout left out of
       *Insurance payouts*, with the note; the ownership CSV.
-- [ ] Labels: garage cards, overview, ownership report, the *Written off*
+- [x] Labels: garage cards, overview, ownership report, the *Written off*
       milestone in History and the sale pack.
-- [ ] Scanning: `ScanKind::ClaimLetter`, `ScanKind::RepairEstimate`,
+- [x] Scanning: `ScanKind::ClaimLetter`, `ScanKind::RepairEstimate`,
       `ScanTarget::Incident`; schemas, the claim status and write-off
       phrase matching in `Mapper`; the edit form prefilled for a matched
       incident with the scanned marks; the estimate's incident choice;
       *Fill from a file* and *Update from a letter*.
-- [ ] The incident page's *Repair estimate* line; the estimate in the API,
+- [x] The incident page's *Repair estimate* line; the estimate in the API,
       CSV export, backups and the Ask tools (with `ViewCosts` and
       `ViewIncidentDetails`).
-- [ ] Translations (en, de).
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] *Written off* offered only for a settled incident with a category
+- [x] *Written off* offered only for a settled incident with a category
       other than `none`; otherwise *Archive* is one click; prefilled date
       and price, editable; one transaction.
-- [ ] **No double counting:** a £9,000 settlement as the sale price leaves
+- [x] **No double counting:** a £9,000 settlement as the sale price leaves
       *Insurance payouts* at the repair claims' payouts only, and the
       total matches a hand calculation.
-- [ ] Restore clears the disposal; a module switched off keeps a
+- [x] Restore clears the disposal; a module switched off keeps a
       written-off vehicle's label.
-- [ ] A claim letter with a matching claim number opens that incident's
+- [x] A claim letter with a matching claim number opens that incident's
       edit form with changed fields marked, and attaches the letter on
       save; no match opens *Log incident*; *Update from a letter* needs no
       match.
-- [ ] Claim status words: "settled", "payment issued", "declined";
+- [x] Claim status words: "settled", "payment issued", "declined";
       unclear words left empty.
-- [ ] An estimate fills the estimate and the notes line and never moves
+- [x] An estimate fills the estimate and the notes line and never moves
       linked costs, Reports or ownership.
-- [ ] Scan fixtures: a claim letter (text PDF), a settlement letter with a
+- [x] Scan fixtures: a claim letter (text PDF), a settlement letter with a
       Cat S, a phone photo of an estimate; an insurance schedule still read
       as `insurance`.
-- [ ] Module off (`incidents` or `ai_scan`): no *Written off*, no incident
+- [x] Module off (`incidents` or `ai_scan`): no *Written off*, no incident
       kinds.
-- [ ] Integration suite green on every engine; migrations roll back on
+- [x] Integration suite green on every engine; migrations roll back on
       every engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: the archived car's at-fault collision becomes a
+- [x] `DemoDataSeeder`: the archived car's at-fault collision becomes a
       settled Cat S total loss, archived as *Written off*; the Golf's
       incident gets a repair estimate.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.10.0** (Phases 27.1 and 27.2): incidents, damage
+- [x] `CHANGELOG.md` **2.10.0** (Phases 27.1 and 27.2): incidents, damage
       and claims history; total loss; reading claim letters and estimates.
       Upgrade notes: migrations; the `incidents` module is on by default
       and can be switched off; incident photos are kept as uploaded.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and
+- [x] Bump `VERSION`, rebuild assets, update the README status and
       documentation table.
-- [ ] Tag `v2.10.0`.
+- [x] Tag `v2.10.0`.
 
 ---
+
+## What changed while building
+
+- **Sold** is also set when a vehicle is *added* with a sale date, not only
+  edited, and clearing the date clears it (#105). A written-off vehicle is
+  never changed by the edit form; only *Restore* clears it.
+- **The confirm page** is reached by a link only when *Written off* is on
+  offer; otherwise *Archive* stays the one-click POST it was. A `GET` with
+  nothing to offer goes back to the vehicle. Several settled write-offs give
+  a select whose choice refills the sale date and price (with JS), or
+  *Use its settlement* (without). The sale date and price are required for
+  *Written off*, with the vehicle form's rules (not before the purchase).
+  The settlement date is the incident's closed_on, else the latest claim
+  update, else today.
+- **Labels:** the garage card and the vehicle header say "Written off
+  14 Mar 2025" (the sale date) where they said "Archived"; the ownership
+  report shows it beside the name and "Lifetime, written off …" for the
+  total; its CSV's *Sold* column says `written off`. History's milestone is
+  *Written off* (or "Written off, settled for £9,000.00" with costs) with
+  "Total loss: Collision, 14 Mar 2025" as its note. The sale pack already
+  left the sale milestone out and has the write-off line from Phase 27.1,
+  so nothing changed there.
+- **The estimate** is a claim amount: shown, exported and answered only with
+  the claim's details and *Can see costs*. It is on the incident form (the
+  *Insurance* section) and in the API as `claim.repair_estimate` (OpenAPI
+  1.15.0), the incident CSV and the Ask/MCP `incidents` tool's rows.
+- **Matching** compares claim numbers in upper case, letters and digits
+  only. Only incidents the user may change are matched, chosen or scanned
+  for. A scan started for an incident keeps that incident's vehicle even
+  when the letter shows another plate (the plate warning still shows).
+- **Editing from a scan:** only the fields the file changes are filled and
+  marked; the incident's own date is kept; "Estimate from {repairer}" is
+  added to the notes once. An estimate's choice of incident is a plain GET
+  form above the edit form (another incident, or *A new incident*).
+- **Claim status words:** "settled", "settlement", "paid", "payment
+  issued/made/sent" → *Settled*; "declined", "rejected", "repudiated",
+  "refused" → *Declined*; any hedge ("offer", "not", "yet", "pending",
+  "awaiting", "will", …) or both kinds of word leave it empty. Write-off
+  words: "Cat S", "Category N", "cat. b", and "structural" /
+  "non-structural" without a letter.
+- **Demo data:** the Fiesta's at-fault collision moved to 28 Oct 2025 (it
+  was in 2022, but a car written off then could not have been driven until
+  2025): a settled Cat S, settled for its £2,100 sale price; the sale
+  paperwork is its settlement letter. The Golf's 2024 scrape has a £655
+  estimate from the garage that repaired it for £640.
+- **Backups:** a vehicle points at an incident restored after it, so a
+  restore inserts `disposal_incident_id` empty and sets it once the
+  incidents are in (`BackupRepository::LINKS_BACK`); the round-trip test
+  carries a written-off car. Deleting a written-off vehicle (its incidents
+  cascade back onto it) is tested on every engine.
+- **Migration:** `pending_uploads.incident_id` is `ON DELETE CASCADE`, as
+  the spec says (deleting the incident drops a scan waiting for it).
 
 ## Acceptance criteria
 
@@ -165,5 +217,9 @@ Written into `spec.md` when this phase was decided (2026-10-01):
 
 ## Open questions
 
-None yet. The questions this phase answers were found while starting
-Phase 27.1 (#93, #95, #98–#101).
+The questions this phase answers were found while starting Phase 27.1
+(#93, #95, #98–#101). One more was found while starting it:
+
+- **Clearing a sold vehicle's sale date** (#105). *Decided 2026-10-02:*
+  clearing the sale date clears disposal `sold`; a `written_off` disposal
+  is never changed by the edit form (spec §7.29 *Total loss*).
