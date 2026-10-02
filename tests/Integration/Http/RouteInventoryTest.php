@@ -251,6 +251,7 @@ final class RouteInventoryTest extends AppTestCase
             'settings.jobs.run.status' => InstanceAbility::RunJobs,
             'settings.jobs.run_now' => InstanceAbility::RunJobs,
             'settings.jobs.started' => InstanceAbility::RunJobs,
+            'settings.updates' => InstanceAbility::RunJobs,
             'notices.dismiss' => InstanceAbility::RunJobs,
             'settings.users' => InstanceAbility::ManageUsers,
             'settings.users.change' => InstanceAbility::ManageUsers,

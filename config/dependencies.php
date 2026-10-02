@@ -55,6 +55,9 @@ use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobsTwigExtension;
 use Logbook\Service\Jobs\RemindersJob;
 use Logbook\Service\Jobs\RunCapture;
+use Logbook\Kernel;
+use Logbook\Service\Updates\UpdateCheckJob;
+use Logbook\Support\Version\InstalledVersion;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -137,8 +140,16 @@ return [
 
             return $job;
         },
-        [RemindersJob::class, DigestJob::class, CleanupJob::class, BackupJob::class],
+        [
+            RemindersJob::class,
+            DigestJob::class,
+            CleanupJob::class,
+            BackupJob::class,
+            // `UPDATE_CHECK_ALLOWED=false` leaves the job out entirely (spec.md §7.31).
+            ...($settingsOf($c)->updateCheckAllowed ? [UpdateCheckJob::class] : []),
+        ],
     )),
+    InstalledVersion::class => static fn (): InstalledVersion => new InstalledVersion(Kernel::version()),
 
     Connection::class => static fn (ContainerInterface $c): Connection
         => ConnectionFactory::create($settingsOf($c)->database),

@@ -12,13 +12,17 @@ use Logbook\Domain\User\User;
 use Logbook\Repository\JobRunRepository;
 use Logbook\Repository\SettingRepository;
 use Logbook\Service\Access\InstanceAccess;
+use Logbook\Service\Updates\UpdateBanner;
+use Logbook\Service\Updates\UpdateSettings;
+use Logbook\Support\Version\SemVer;
 use Psr\Clock\ClockInterface;
 
 /**
  * The dashboard's admin notice area (spec.md §7.30 *Admin notices*): the
- * scheduler warning and job failure streaks, for admins only. *Dismiss*
- * hides a notice for 24 hours for that admin; it comes back after that
- * while its problem lasts.
+ * update banner (§7.31), the scheduler warning and job failure streaks,
+ * for admins only. *Dismiss* hides a notice for 24 hours for that admin;
+ * it comes back after that while its problem lasts. The update banner's
+ * *Dismiss* is for good, for that version.
  */
 final readonly class AdminNotices
 {
@@ -33,6 +37,8 @@ final readonly class AdminNotices
         private JobFailureAlerts $alerts,
         private SettingRepository $settings,
         private ClockInterface $clock,
+        private UpdateBanner $update,
+        private UpdateSettings $updates,
     ) {
     }
 
@@ -46,6 +52,10 @@ final readonly class AdminNotices
         }
 
         $notices = [];
+        $update = $this->update->for($user);
+        if ($update !== null) {
+            $notices[] = $update;
+        }
         if ($this->health->isStale()) {
             $notices[] = new AdminNotice(
                 key: self::SCHEDULER,
@@ -83,12 +93,20 @@ final readonly class AdminNotices
     }
 
     /**
-     * Hide the notice for 24 hours for this admin. Unknown keys are
-     * ignored.
+     * Hide the notice for 24 hours for this admin, or the update banner
+     * for that version for good. Unknown keys are ignored.
      */
     public function dismiss(User $user, string $key): void
     {
-        if (preg_match('/^(scheduler|job_failed\.[a-z_]+|update\.[0-9A-Za-z.\-]+)$/', $key) !== 1) {
+        if (str_starts_with($key, UpdateBanner::KEY_PREFIX)) {
+            $version = SemVer::parseRelease(substr($key, strlen(UpdateBanner::KEY_PREFIX)));
+            if ($version !== null) {
+                $this->updates->dismiss($user, $version);
+            }
+
+            return;
+        }
+        if (preg_match('/^(scheduler|job_failed\.[a-z_]+)$/D', $key) !== 1) {
             return;
         }
         $stored = [];

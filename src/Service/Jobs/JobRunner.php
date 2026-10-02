@@ -162,6 +162,9 @@ final readonly class JobRunner
             return true;
         }
         $last = $this->runs->latestWorked($job->name());
+        if ($job instanceof TimedJob) {
+            return $job->dueAt($last?->startedAt, $now) <= $now;
+        }
 
         return $last === null
             || $now->getTimestamp() - $last->startedAt->getTimestamp() >= $interval - self::SLACK;
@@ -178,6 +181,9 @@ final readonly class JobRunner
             return null;
         }
         $last = $this->runs->latestWorked($job->name());
+        if ($job instanceof TimedJob) {
+            return $job->dueAt($last?->startedAt, $now);
+        }
 
         return $last?->startedAt->modify(sprintf('+%d seconds', $interval));
     }

@@ -49,6 +49,17 @@
                 </div>
                 {{ ui.timezone_select(values, errors, timezone_options, errors is empty) }}
 
+                {% if updates_allowed() %}
+                    {# The update check (spec.md §7.31): unticked, decided 2026-10-02 (#112). #}
+                    <label class="toggle">
+                        <input type="checkbox" name="update_check" value="1"{% if (values.update_check ?? '') == '1' %} checked{% endif %} aria-describedby="update-check-hint">
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'setup.update_check'|trans }}</span>
+                            <span class="toggle__hint" id="update-check-hint">{{ 'updates.check.hint'|trans({repo: update_repo})|e|replace({'api.github.com': '<code>api.github.com</code>'})|raw }}</span>
+                        </span>
+                    </label>
+                {% endif %}
+
                 <button type="submit" class="btn btn--primary btn--lg btn--block">{{ ui.icon('check_circle') }}{{ 'setup.submit'|trans }}</button>
             </form>
         </section>

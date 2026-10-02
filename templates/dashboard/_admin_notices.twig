@@ -1,20 +1,27 @@
 {#
- # The admin notice area (spec.md §7.30): the scheduler warning and job
- # failure streaks, admins only. Each links to its page and has Dismiss
- # (24 hours, for this admin).
+ # The admin notice area (spec.md §7.30): the update banner (§7.31), the
+ # scheduler warning and job failure streaks, admins only. Each links to
+ # its page (the update banner to GitHub, in a new tab) and has Dismiss
+ # (24 hours for this admin; the update banner for good, for its version).
  #}
 {% import 'macros/ui.twig' as ui %}
 {% if notices is not empty %}
     <section class="admin-notices" aria-label="{{ 'notices.label'|trans }}">
         {% for notice in notices %}
-            <div class="alert alert--{{ notice.level == 'error' ? 'error' : 'warning' }} admin-notice" role="status" data-admin-notice="{{ notice.key }}">
-                {{ ui.icon(notice.level == 'error' ? 'error' : 'warning') }}
+            {% set icon = {error: 'error', info: 'info'}[notice.level] ?? 'warning' %}
+            <div class="alert alert--{{ notice.level in ['error', 'info'] ? notice.level : 'warning' }} admin-notice" role="status" data-admin-notice="{{ notice.key }}">
+                {{ ui.icon(icon) }}
                 <span class="admin-notice__text">
                     {%- set params = notice.params|filter(v => v is not null) -%}
                     {%- if params.time ?? null %}{% set params = params|merge({time: params.time|local_datetime}) %}{% endif -%}
                     {%- if params.job ?? null %}{% set params = params|merge({job: ('jobs.job.' ~ params.job ~ '.title')|trans}) %}{% endif -%}
                     {{ trans(notice.messageKey, params) }}
-                    <a href="{{ url_for(notice.linkRoute, notice.linkData) }}">{{ notice.linkLabelKey|trans }}</a>
+                    {% if notice.linkRoute %}<a href="{{ url_for(notice.linkRoute, notice.linkData) }}">{{ notice.linkLabelKey|trans }}</a>{% endif %}
+                    {% for link in notice.links %}
+                        {%- if not loop.first %} · {% endif -%}
+                        <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.labelKey|trans }}<span class="visually-hidden"> {{ 'notices.new_tab'|trans }}</span></a>
+                    {%- endfor %}
+                    {% if notice.detailKey %}<span class="admin-notice__detail">{{ notice.detailKey|trans }}{% if notice.detailCode %} <code>{{ notice.detailCode }}</code>{% endif %}</span>{% endif %}
                 </span>
                 <form method="post" action="{{ url_for('notices.dismiss', {key: notice.key}) }}" class="admin-notice__dismiss">
                     {{ ui.csrf(csrf) }}
