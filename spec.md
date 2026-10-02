@@ -389,8 +389,10 @@ MySQL only.
   `other`; changing the fuel type clears one that no longer fits), currency override (optional), photo
   (optional: stored path + MIME type), purchase date/price (optional), sale
   date/price (optional), status (`active` | `archived`), archived_at,
-  disposal (optional, Phase 27.2: `sold` | `written_off`; null = archived
-  without a reason, as every vehicle archived before 2.10.0),
+  disposal (optional, Phase 27.2: `sold` | `written_off`, and from Phase
+  29.2 `returned_lender` | `returned_lessor`, the column widened to 16;
+  null = archived without a reason, as every vehicle archived before
+  2.10.0),
   disposal_incident_id (optional, Phase 27.2, `ON DELETE SET NULL`: the
   total-loss incident when `written_off`), created/updated (UTC). Deleting a vehicle deletes its history and photo;
   archiving keeps everything.
@@ -501,7 +503,8 @@ MySQL only.
 
 **Reminder**
 - id, vehicle_id (`ON DELETE CASCADE`), source (`schedule`|`compliance`|
-  `tyre`|`manual`), source_id (the schedule or document; for `tyre` the
+  `tyre`|`manual`, and `finance` from Phase 29.2, §7.32, whose source_id
+  is the agreement), source_id (the schedule or document; for `tyre` the
   **vehicle's own id**, because the source is the vehicle's tyres as a
   whole — one tyre reminder per vehicle, never one per tyre, so do not
   "fix" it into a tyre id; none for manual),
@@ -931,6 +934,46 @@ MySQL only.
   `(job, started_at)`. The `cleanup` job keeps the last 50 runs per job
   and nothing older than 90 days. **Not in backups.** A restore deletes
   every row, as the accounts they name are replaced.
+
+**FinanceAgreement** (Phase 29.1, §7.32)
+- id, vehicle_id (`ON DELETE CASCADE`), type (`hp` | `pcp` | `loan` |
+  `lease`), lender (up to 100), agreement_number (optional, up to 50;
+  shown masked to its last 4 characters except on the edit form, and never
+  in the API, Ask, CSV export or sale pack; it is in backups, decided
+  2026-10-02, `docs/phases/open-questions.md` #120), status (`active` |
+  `settled` | `completed` | `handed_back` | `ended`), started_on (the
+  agreement date), first_payment_on, number_of_payments (regular
+  **monthly** payments, 1–120; monthly only, #118), regular_payment,
+  first_payment (optional, when different: fees are often added to it),
+  final_payment (optional: the PCP optional final payment or GFV, an HP
+  final payment, or a lease's last rental if different), final_payment_on
+  (default one month after the last regular payment), cash_price (HP,
+  PCP), customer_deposit and dealer_contribution (both default 0),
+  initial_rental (lease), amount_of_credit (optional; derived as cash
+  price − deposits when blank; required for a loan), total_amount_payable
+  (optional; derived when blank), apr (`decimal(6,3)`, 0 valid),
+  documentation_fee and option_to_purchase_fee (optional),
+  annual_mileage_allowance, mileage_unit (`mi` | `km`),
+  excess_mileage_charge (per unit, `decimal(10,4)`; PCP and lease),
+  start_odometer (km; default: the reading nearest to started_on),
+  count_in_costs (bool, default true), ended_on, notes, created/updated
+  (UTC). All amounts are `DECIMAL(12,2)` in the vehicle's currency. A
+  vehicle has **at most one `active` agreement** (checked by the service,
+  as a partial unique index isn't portable); ended ones are kept as
+  history.
+
+**FinancePaymentEvent** (Phase 29.1)
+- id, agreement_id (`ON DELETE CASCADE`), due_on (the scheduled date it
+  concerns, or null for an extra payment), kind (`missed` | `paid_late` |
+  `extra` | `settlement`), amount (for `extra` and `settlement`), paid_on
+  (optional), notes, created_at (UTC).
+
+**SettlementQuote** (Phase 29.1)
+- id, agreement_id (`ON DELETE CASCADE`), quoted_on, amount, valid_until,
+  notes, created_at (UTC).
+
+Backups carry all three tables, and `bin/export-user.php` the agreements
+of the user's vehicles. The schema version moves.
 
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
@@ -1584,7 +1627,10 @@ iCal/webcal feed so items appear in the user's calendar.
   expiry date (a replaced one raises nothing, so renewing clears it); one
   **tyre** reminder per vehicle for worn or ageing tyres (Phase 11.2, below);
   plus **manual** reminders (vehicle, title, due date and/or due-at
-  odometer, lead time, notes).
+  odometer, lead time, notes); from Phase 29.2, **finance** reminders for
+  an active agreement's final payment (the document lead time) and, for
+  PCP and leases, *Agreement ends: decide what to do* 90 days before the
+  end (§7.32), done when the agreement ends.
   Archived vehicles raise none, and their manual reminders are neither
   listed nor sent until the vehicle is restored.
 - **Lead times** (per owner, Settings → Reminders): days before a schedule
@@ -1845,7 +1891,13 @@ currency and never converted.
   expense form: "Loan interest, lease or PCP payments. If you entered a
   purchase price, log only the interest and fees, not the payments that pay
   off that price, or it is counted twice." It is an ad-hoc expense like any
-  other (group *other*) and counts in every report as such.
+  other (group *other*) and counts in every report as such. From Phase
+  29.1 a **finance agreement** (§7.32) with `count_in_costs` on adds
+  derived `finance` lines to the cost ledger instead: credit charges for
+  HP, PCP and loans, every rental for a lease, never capital. Manual
+  `finance` expenses in months an agreement covers are flagged as a
+  possible double count; switching `count_in_costs` off leaves the manual
+  lines as the only ones.
 - **Insurance payouts** (Phase 27.1, `incidents` on): running costs are
   net of the payouts of incidents dated in the period, shown as the line
   *Insurance payouts* under the groups; the rates' running parts use the
@@ -2255,7 +2307,8 @@ Disabled modules are removed from nav, routes, and dashboard.
 
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`,
   `tyres` (Phase 11.1), `trips` (Phase 22), `incidents` (Phase 27.1, on by
-  default, decided 2026-10-01, `docs/phases/open-questions.md` #94), and
+  default, decided 2026-10-01, `docs/phases/open-questions.md` #94),
+  `finance` (Phase 29.1, on by default, §7.32), and
   from Phase 26.1 the AI
   modules `ai_ask`, `ai_actions` and `ai_scan` (§7.25: on by default, but
   doing nothing without an assigned task, and listed on Settings → Modules
@@ -2628,6 +2681,11 @@ vehicles; a disabled module cannot be imported).
   - `bin/export-user.php` carries the incidents of the user's vehicles; a
     driver who is another user on this install is kept as their name in
     driver_name.
+- **Finance** (Phase 29.1, §7.32): agreements and their schedules join
+  the CSV export (`/vehicles/{id}/export/finance.csv`, without the
+  agreement number). Backups carry `finance_agreements`,
+  `finance_payment_events` and `settlement_quotes`. The schema version
+  moves.
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
@@ -3159,6 +3217,10 @@ nothing about reminders (§7.6). Derived on every read
   dashboard's vehicle filter, ordered as the card, and the 12-month total;
   *View all* links to `/upcoming` keeping `?vehicle=`.
 - **CSV** `/upcoming.csv` with the page's filter (§7.7 *CSV export*).
+- **Finance** (Phase 29.2, §7.32): each active agreement's payments in
+  the horizon as one line per vehicle ("Finance payments, 12 × £312.40"),
+  plus a final payment inside the horizon as its own item. They count in
+  *planned*.
 - Not in History, print or reports. Nothing is stored, so there is no
   migration and nothing in backups.
 
@@ -3507,6 +3569,11 @@ safe to retry by vehicle, date, type and claim number) and `GET
 /api/v1/incidents/history` (the claims history's filters and rows, never
 the other party). Links to records and attachments are read-only here
 (record ids). With `incidents` off, every incident path answers 404.
+
+**Finance** (Phase 29.2, §7.32): `GET /api/v1/vehicles/{id}/finance`, the
+active agreement's summary and schedule (the latest ended one when none is
+active), with §7.32's access rules and without the agreement number; no
+writes. With `finance` off it answers 404.
 
 **Not in this version:** editing or deleting through the API, writes
 beyond those above (valuations, schedules, tyre fitting and changes, trips'
@@ -3868,8 +3935,17 @@ wrong.
         for 34 days". It links to the incident. The fingerprint is the
         incident's id, claim status and claim_updated_on. Needs
         `ViewIncidentDetails` (§7.29) and `Log`.
-    Items 7–10 are plain arithmetic on the owner's data: no model, no
+    11. **Over the mileage allowance** (Phase 29.2; `finance` on): an
+        active PCP or lease projected to finish more than **2%** over its
+        allowance (§7.32 *Mileage*): "Heading for about 1,200 mi over
+        your allowance: about £108". It links to the agreement. The
+        fingerprint is the agreement's id and the projected excess
+        rounded to 100. Needs §7.32's access.
+    Items 7–11 are plain arithmetic on the owner's data: no model, no
     network, and no figure changes (flagged entries count everywhere).
+    From Phase 29.2 a finance payment marked `missed` with no later
+    `paid_late` is a *Now* item ("Finance payment due 1 Mar marked
+    missed"), linking to the agreement, with the same access.
 - **Thresholds** (Settings → Reminders, a *Needs attention* card shown
   with or without the `reminders` module): *Mileage not updated after*
   (days, 7–365, default 60) and *Valuation is stale after* (months, 1–60,
@@ -4188,6 +4264,7 @@ request to any model service.
   | `trips_summary(period)` | Phase 22 (module on) | business and private distance, claim value |
   | `needs_attention(vehicles?)` | Phase 24 and 25 | current items |
   | `incidents(vehicles?, period?, claims_only?)` | claims history (§7.29, module on) | incidents and claims, archived and sold vehicles included, with the access rules of §7.29 |
+  | `finance(vehicle)` | finance agreements (Phase 29.2, §7.32, module on) | the agreement's figures with their labels, estimates marked as such; never the agreement number |
 
   Every tool returns **both** the raw values (decimal strings, canonical
   units) and **display strings** in the user's units, locale and currency
@@ -5147,6 +5224,193 @@ so it is **off until an admin switches it on**.
 - **Never automatic:** no file is downloaded, and nothing that came from
   GitHub runs or is rendered as HTML.
 
+### 7.32 Finance agreements (Phases 29.1 and 29.2)
+Hire purchase, PCP, personal loans and leases, typed in from the
+paperwork. From an agreement Logbook works out the payment schedule,
+payments left and what remains to pay, an estimated settlement figure (or
+the lender's own quote), the cost of credit and the half-paid point, and
+connects them to the odometer (mileage allowance), valuations (equity) and
+costs (credit charges and rentals counted once). **Figures, never
+financial advice:** every estimate says it is one, and nothing recommends
+settling, handing back, refinancing or terminating. Monthly payments only
+(decided 2026-10-02, `docs/phases/open-questions.md` #118); business
+contract hire with VAT recovery, and refinancing a balloon as its own
+flow, are out of scope (#121; a refinance is entered as a new loan).
+
+- **Module** `finance` (§7.10), on by default. Nothing shows until a
+  vehicle has an agreement: *Add finance* is in the vehicle header's menu,
+  and the overview card appears once one exists. Switching it off hides
+  every page, card, widget, cost line, reminder and attention item; the
+  data is kept.
+- **Form** (page and desktop modal), with fields by type:
+  - *HP and PCP:* lender, agreement number, cash price, customer deposit,
+    dealer contribution, amount of credit, APR, number of payments, first
+    payment date, regular payment, first payment if different, final
+    payment and its date (labelled *Optional final payment (GFV)* for
+    PCP), fees, total amount payable, and (PCP) annual mileage, excess
+    charge and start odometer.
+  - *Loan:* lender, amount of credit (required), APR, number of payments,
+    first payment date, regular payment, fees, total amount payable.
+  - *Lease:* lessor, initial rental, number of monthly rentals after it,
+    first rental date, regular rental, fees, annual mileage, excess
+    charge, start odometer.
+  - Amounts accept 2 decimals, 0 is valid; the APR 3 decimals, 0 valid;
+    the excess charge 4 decimals (in the vehicle's currency per mile or
+    km).
+  - **Consistency check** (a warning, never blocking): when the total
+    amount payable is entered and differs by **more than 1.00** from
+    deposit + first payment + regular payments + final payment + fees
+    (initial rental + rentals + fees for a lease): "These figures add up
+    to £18,412.40, but the agreement says £18,512.40. Check the
+    paperwork." The same check compares cash price − deposits with the
+    amount of credit (HP and PCP).
+  - *Purchase price:* with HP or PCP and no purchase price on the vehicle,
+    the form offers to set it to the cash price. With a lease and a
+    purchase price set, it warns that a leased car has none (§7.7 *Cost of
+    ownership*) and offers to clear it.
+  - A second `active` agreement on one vehicle is refused: "This vehicle
+    already has an active agreement. End it first."
+- **Schedule** (`Service\Finance\Schedule`, derived on every read, never
+  stored): payment 1 on first_payment_on with first_payment (or
+  regular_payment), then the regular payments monthly on the same day
+  with end-of-month clamping (31 Jan → 28/29 Feb → 31 Mar, each from the
+  first date, never from the clamped one), then final_payment on
+  final_payment_on when set. A lease puts the initial rental on
+  started_on. A due date on or before today (the owner's time zone) counts
+  as **paid** unless a `missed` event says otherwise; a later `paid_late`
+  event makes it *paid late*. `extra` and `settlement` events are payments
+  on their own dates. After a `settlement`, later payments leave the
+  schedule.
+- **Figures** (`Service\Finance\AgreementFigures`; decimal arithmetic, no
+  floats for money; the monthly rate is (1 + APR)^(1/12) − 1 to 10
+  decimal places), each labelled:
+  - *Payments made* and *Payments remaining* ("18 of 48 remaining"), the
+    final payment counted separately ("plus the optional final payment of
+    £9,450" for PCP).
+  - *Remaining to pay:* the sum of the scheduled payments still due, plus
+    the final payment (for PCP shown beside rather than inside it). This
+    is **exact** from the agreement.
+  - *Settlement* (not for leases): the latest **lender's quote** while
+    valid ("£7,612.08, quoted 3 Oct, valid until 31 Oct"), else an
+    **estimate**: the present value of the remaining schedule at the
+    monthly rate, at today, less extra payments not already in it.
+    Labelled "Estimated. Your lender's settlement figure will differ; ask
+    them for a quote." No "up to" line for extra early-settlement interest
+    (#119; in §12).
+  - *Cost of credit* (not for leases): for HP and PCP, total amount
+    payable − cash price; for a **loan**, total amount payable − amount of
+    credit (#122). While active, the interest so far is estimated by
+    splitting each payment made into interest and capital at the monthly
+    rate. Once ended it is **exact**: for `settled` or `completed`,
+    everything paid (deposit, payments, extras, settlement, fees) − cash
+    price (− amount of credit for a loan); for `handed_back`, everything
+    paid − (cash price − final payment), the final payment not paid
+    (#123).
+  - *Half-paid point* (HP and PCP): the date the deposit plus payments
+    made reach half the total amount payable, or the amount still needed
+    to reach it. Labelled "Half the total amount payable. Your agreement
+    explains your rights at this point; check with your lender." No
+    recommendation.
+  - *Equity* (HP, PCP, loan): the latest valuation (§7.1) − the
+    settlement figure (quote or estimate): "Positive equity £2,140" or
+    "Negative equity £1,380". It needs a valuation from the last 12
+    months, and says so otherwise ("Add a valuation to see your equity").
+  - *Mileage* (Phase 29.2; PCP and lease with an allowance;
+    `Service\Finance\MileageAllowance`): the allowance over the whole
+    agreement (annual × months ÷ 12), the distance so far (latest reading
+    − start odometer), the allowance used to date pro rata, and the
+    **projected distance at the end** (current reading + average daily
+    distance (§7.4) × days to the end date). Over the allowance, the
+    projected excess and its charge: "On track for 31,200 mi against
+    30,000. About £108 in excess mileage at 9p a mile." Under it: "On
+    track to finish 2,400 mi under the allowance." Without enough readings
+    to project, the distance so far only. Shown in the agreement's
+    mileage unit.
+- **Agreement page** (`/vehicles/{id}/finance/{agreement}`): the figures,
+  then the schedule as a table (date, amount, status: *paid*, *due*,
+  *missed*, *paid late*), each past row with *Mark missed* or *Mark paid
+  late*; *Add extra payment*; *Add settlement quote*; *Edit*; *Delete*;
+  and from Phase 29.2 *End agreement*. Printable (Phase 17.2
+  conventions); the schedule exports as CSV
+  (`/vehicles/{id}/finance/{agreement}/schedule.csv`). Ended agreements
+  are listed under *Earlier agreements*.
+- **Ending** (Phase 29.2, *End agreement*):
+  - *Settled early:* the settlement amount and its date → a `settlement`
+    event, status `settled`, later payments leave the schedule.
+  - *Completed:* all payments made (and, for PCP, the final payment) →
+    status `completed`. The vehicle is the owner's.
+  - *Handed back* (PCP): status `handed_back`. Archiving is offered as
+    *Returned to the lender* (disposal `returned_lender`), with the sale
+    price set to the optional final payment, so the lifetime cost is
+    right: the owner paid the cash price less the final payment they
+    didn't pay. Excess mileage and damage charges are logged as expenses
+    (prefilled, category `finance`).
+  - *Lease ended:* status `ended`; archiving is offered as *Returned to
+    the lessor* (disposal `returned_lessor`) with no sale price.
+  - Ending marks the agreement's `finance` reminders done.
+- **Selling with finance owing** (Phase 29.2): archiving as sold with an
+  `active` HP or PCP agreement warns "This agreement is still active. The
+  lender owns the car until it is settled." It offers *Settled from the
+  sale*, with the settlement amount, which ends the agreement as *Settled
+  early* on the sale date.
+- **Costs** (`Service\Finance\FinanceLedger`, with `count_in_costs` on;
+  this changes Phase 14.2's *Finance and leases* rule, §7.7):
+  - The cost ledger gains **derived lines**, never stored, category
+    `finance`, labelled "From the finance agreement":
+    - HP, PCP and loans: each payment's interest share (estimated while
+      active) and the fees on their due dates (the documentation fee with
+      the first payment, the option-to-purchase fee with the final one).
+      Once the agreement has ended, the lines are adjusted so their total
+      equals the exact cost of credit, the difference falling on the end
+      date.
+    - Leases: the initial rental, every rental and the fees on their
+      dates.
+  - They count in Reports, the Expenses tab's totals, ownership and cost
+    per distance exactly as a logged `finance` expense would. Capital
+    repayments are never costs, because the purchase price already is.
+  - **Overlap warning:** when manual `finance` expenses exist in months an
+    agreement covers (first payment's month to the final or end month),
+    the agreement page and the Expenses tab say "Finance and lease
+    expenses logged in these months may count twice with this agreement",
+    list them, and link to each. Switching `count_in_costs` off keeps the
+    manual lines as the only ones.
+- **Coming up** (Phase 29.2, §7.18): the next 12 months' payments for each
+  active agreement as one line per vehicle ("Finance payments, 12 ×
+  £312.40"), plus a final payment inside the horizon as its own item.
+  They count in the expected total.
+- **Reminders** (Phase 29.2, §7.6), source `finance`, source_id = the
+  agreement id: the final payment, due on its date with the document lead
+  time; for PCP and leases, *Agreement ends: decide what to do*, 90 days
+  before the end date (lead time 0); none for regular payments, which are
+  paid by direct debit. They are done when the agreement ends.
+- **Needs attention** (Phase 29.2, §7.24): item 11 (over the allowance by
+  more than 2%), and a `missed` payment with no later `paid_late` as a
+  *Now* item.
+- **Overview card** (*Finance*, active agreements): type and lender,
+  payments remaining, remaining to pay, the next payment's date and
+  amount, the end date, equity or settlement, and from Phase 29.2 the
+  mileage position. It links to the agreement page.
+- **Dashboard widget** `finance` (Phase 29.2, §7.8): per vehicle with an
+  active agreement, "18 payments remaining · £7,850 to pay · ends Mar
+  2028", the mileage line, and equity where known. It follows the vehicle
+  chip.
+- **Access** (Phase 19): agreements need `Manage` (or `Own`) **and**
+  `ViewCosts` to see or change. Others see nothing about finance: no
+  page, card, widget, API field or Ask answer, and agreement routes
+  answer 404. Someone with `ViewCosts` below `Manage` still has the
+  derived lines in the totals they see, as plain *Finance and lease*
+  lines with no link, lender or agreement detail, like a manual finance
+  expense, so every viewer sees the same totals (decided 2026-10-02,
+  #125).
+  The sale pack, History print view and *Recent activity* never include
+  it.
+- **API** (Phase 29.2, §7.20) and **Ask** (Phase 29.2, §7.26, the
+  `finance(vehicle)` tool) read the same figures with the same access,
+  estimates marked as such, never the agreement number.
+- **Export** (§7.13): agreements and their schedules join the CSV export;
+  backups carry the three tables.
+
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -5436,6 +5700,10 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Updates (Phase 28.2): an *Include pre-releases* option reading the
   releases list instead of `latest` (#111); marking a release as a
   security fix so its banner shows even with the banner off (#113).
+- Finance (Phase 29): weekly and four-weekly payments (#118); an "up
+  to" settlement line with the extra interest some lenders charge on
+  early settlement (#119); business contract hire with VAT on rentals
+  and its recovery (#121).
 - MCP (Phase 26.5): a `bin/mcp-stdio.php` stdio bridge for clients that
   can't send headers (#87; `mcp-remote` is documented meanwhile); OAuth
   for MCP clients; SSE streams and list-changed subscriptions.
@@ -5719,6 +5987,24 @@ task breakdowns live in the per-phase files; this is the map.
   per version; `UPDATE_CHECK_REPO`, `UPDATE_CHECK_ALLOWED` (§5 *Jobs*;
   §6 Setting; §7.31; §9; §10). No migration. Release v2.11.0 (Phases
   28.1 and 28.2).
+- **Phase 29.1 — Finance and lease agreements.** HP, PCP, loan and lease
+  agreements typed from the paperwork, under a `finance` module; a monthly
+  schedule derived from them, payments assumed paid with missed, late,
+  extra and settlement events; exact payments remaining and remaining to
+  pay, a settlement estimate or the lender's quote, cost of credit, the
+  half-paid point and equity; the agreement page (print, CSV), the
+  overview card; derived credit-charge and rental lines in the cost
+  ledger with an overlap warning for manual finance expenses (§6
+  FinanceAgreement, FinancePaymentEvent, SettlementQuote; §7.7, §7.10,
+  §7.13, §7.32). One migration. No release of its own.
+- **Phase 29.2 — Mileage, ending and finance everywhere + v2.12
+  release.** Mileage against the allowance with the projected excess
+  charge; ending an agreement (settled, completed, handed back, lease
+  ended) and selling with finance owing, through archiving; *Coming up*
+  lines, reminders, *Needs attention* items, the dashboard widget, the
+  API and the Ask tool; sample data (§6 Vehicle disposal, Reminder;
+  §7.6, §7.18, §7.20, §7.24, §7.26, §7.32). One migration. Release
+  v2.12.0 (Phases 29.1 and 29.2).
 
 ---
 
