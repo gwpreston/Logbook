@@ -3,7 +3,7 @@
 *Whether you'll go over the miles, what happens at the end, and finance
 wherever the app plans ahead.*
 
-Status: 📋 planned · releases **v2.12.0** (Phases 29.1 and 29.2) · file
+Status: ✅ complete · releases **v2.12.0** (Phases 29.1 and 29.2) · file
 lives in `docs/phases/`
 
 [Phase 29.1](phase-29.1.md) adds finance agreements, their figures and
@@ -72,46 +72,46 @@ item 11 and §7.26.
 
 ### Spec and docs
 - [x] §7.32 and the cross-references (written with Phase 29.1).
-- [ ] `docs/finance.md`: mileage and ending an agreement.
+- [x] `docs/finance.md`: mileage and ending an agreement.
 
 ### Migration
-- [ ] Widen `vehicles.disposal` to 16 for `returned_lender` and
+- [x] Widen `vehicles.disposal` to 16 for `returned_lender` and
       `returned_lessor`. Reversible on every engine (rollback clears the
       new values to `sold`, keeping the sale price).
 
 ### Services
-- [ ] `Service\Finance\MileageAllowance` (pro rata allowance, projection
+- [x] `Service\Finance\MileageAllowance` (pro rata allowance, projection
       through §7.4's average daily distance, excess charge).
-- [ ] Ending flows, including the archive integration (*Returned to the
+- [x] Ending flows, including the archive integration (*Returned to the
       lender*, *Returned to the lessor*) and *Settled from the sale*;
       exact cost lines after a hand back.
-- [ ] *Coming up* lines, `finance` reminders, the *Needs attention* items,
+- [x] *Coming up* lines, `finance` reminders, the *Needs attention* items,
       the API endpoint and the Ask tool.
 
 ### Templates
-- [ ] *End agreement*, the archive dialog changes, the mileage section on
+- [x] *End agreement*, the archive dialog changes, the mileage section on
       the page and card, the `finance` widget.
-- [ ] Translations (en, de).
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] **Mileage:** pro rata allowance; projection over and under; no
+- [x] **Mileage:** pro rata allowance; projection over and under; no
       projection without enough readings; km and miles; the *Needs
       attention* item at more than 2%, hidden by fingerprint.
-- [ ] **Ending:** settled early stops the schedule; completed; handed back
+- [x] **Ending:** settled early stops the schedule; completed; handed back
       archives with the sale price at the final payment, and lifetime cost
       equals cash price − final payment + costs of credit and running;
       lease ended; sold with finance owing warns and settles.
-- [ ] *Coming up* lines and totals; reminders raised and done.
-- [ ] Missed payment as a *Now* item.
-- [ ] Access: no `ViewCosts` or below `Manage` → no finance in the widget,
+- [x] *Coming up* lines and totals; reminders raised and done.
+- [x] Missed payment as a *Now* item.
+- [x] Access: no `ViewCosts` or below `Manage` → no finance in the widget,
       API or Ask.
-- [ ] Module off: widget, reminders, *Coming up* lines and attention items
+- [x] Module off: widget, reminders, *Coming up* lines and attention items
       gone; data kept.
-- [ ] Integration suite green on every engine; migrations roll back on every
+- [x] Integration suite green on every engine; migrations roll back on every
       engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: convert the leased EV's monthly expenses to a lease
+- [x] `DemoDataSeeder`: convert the leased EV's monthly expenses to a lease
       agreement, removing those expenses so nothing counts twice. Put the
       self-charging hybrid on a 48-month PCP with a final payment, 8,000 mi a
       year and 9p excess, heading about 1,200 mi over, with a recent
@@ -119,10 +119,10 @@ item 11 and §7.26.
       early, with a settlement quote.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.12.0**: finance and lease agreements. Upgrade
+- [x] `CHANGELOG.md` **2.12.0**: finance and lease agreements. Upgrade
       notes: migrations; existing *Finance and lease* expenses are unchanged,
       and the overlap warning helps move to an agreement.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and
+- [x] Bump `VERSION`, rebuild assets, update the README status and
       documentation table.
 
 ---
@@ -137,7 +137,65 @@ item 11 and §7.26.
    finance, in HTML, API or Ask.
 4. Definition of done (CLAUDE.md §11) holds.
 
+## What changed while building
+
+- **Two reminder sources** (#130): `finance` for the final payment and
+  `finance_end` for *Agreement ends*, as a reminder row is unique per
+  vehicle, source and source id (spec §6 Reminder).
+- **The end date for mileage** is the final payment's date for PCP and, for
+  a lease, a month after the last rental, when the car goes back (the
+  final payment's default date rule), so #129's 36-month lease comes out
+  at 36 (spec §7.32 *Mileage*). The projection runs from the latest
+  reading's date.
+- **The archive page** (#126) offers *Sold* only for credit agreements (a
+  driver can't sell a leased car); *Returned to the lender* always takes
+  the optional final payment as the sale price (#123 needs that exact
+  figure); *Just archive* leaves the agreement active (spec §7.32 *Archive
+  page*, §7.29).
+- **The *End agreement* form** (#127): *Completed* is not before the last
+  payment; an end date is not after the owner's today nor before the
+  agreement; the fields the chosen outcome doesn't use hide with CSS
+  `:has()`, and all show without it (spec §7.32 *Ending*).
+- ***Coming up*** keeps one line per vehicle but counts each payment in its
+  own month, so the monthly totals stay right; a plain line names no
+  agreement in the API either (`source_id` null, #128).
+- **The dashboard widget** stays off the dashboard until a vehicle in view
+  has an active agreement the viewer may see; customising lists it (spec
+  §7.8, §7.32 *Module*).
+- **Hiding item 11** keys on the agreement and the projected excess rounded
+  to 100 in the agreement's unit.
+- **Reminder titles** are cut to the column's 150 characters for a long
+  lender's name.
+- **Sample data:** the stale valuation the Corolla carried for *Needs
+  attention* (Phase 24) moved to the bike, so the Corolla's recent one
+  gives its PCP's equity; the Corolla's purchase moved to the PCP's start
+  (1 Apr 2024, its cash price).
+- **OpenAPI 1.17.0:** `GET /vehicles/{id}/finance`; *Coming up* items and
+  reminders carry the new sources.
+
 ## Open questions
 
-None open. Phase 29's questions (#118–#125) are in
-[Phase 29.1](phase-29.1.md).
+Phase 29's questions (#118–#125) are in [Phase 29.1](phase-29.1.md).
+Found while starting this phase, all answered before it was built:
+
+- **#126 Where do *Selling with finance owing* and the hand-back choices
+  go?** *Decided 2026-10-02:* the archive page. With an active agreement
+  the viewer may see, *Archive* opens it with *Sold* (with the warning and
+  *Settled from the sale* for HP and PCP), *Returned to the lender*,
+  *Returned to the lessor*, *Written off* when offered, and *Just
+  archive*. The vehicle form is unchanged (spec §7.32 *Archive page*).
+- **#127 Excess mileage and damage charges, and the overlap warning.**
+  *Decided 2026-10-02:* two optional amounts on the *End agreement* form,
+  saved as *Finance and lease* expenses on the end date; an ended
+  agreement's months stop the day before its end date, so they never warn.
+- **#128 *Coming up* for `ViewCosts` below `Manage`.** *Decided
+  2026-10-02:* plain lines with no link or lender, so planned totals match.
+- **#129 The agreement's length for the allowance.** *Decided 2026-10-02:*
+  calendar months from started_on to the end date.
+
+Found while building it:
+
+- **#130 Two finance reminders, one row per vehicle, source and
+  source_id.** *Decided 2026-10-02:* two sources, `finance` for the final
+  payment and `finance_end` for *Agreement ends*, both with the agreement
+  as source_id.
