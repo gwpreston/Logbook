@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Ai\Scan;
 
+use DateTimeImmutable;
 use Logbook\Domain\Ai\Scan\ScanKind;
 use Logbook\Domain\Ai\Scan\ScanTarget;
+use Logbook\Domain\Station\StationData;
 use Logbook\Domain\User\User;
+use Logbook\Repository\StationRepository;
 use Logbook\Service\Ai\Scan\Extraction;
 use Logbook\Service\Ai\Scan\Mapper;
 use Logbook\Service\Ai\Scan\VehicleMatcher;
@@ -149,6 +152,26 @@ final class ScanMappingTest extends ScanTestCase
 
         self::assertSame('12/09/2026', $reading->value('date'), 'case and spacing do not matter');
         self::assertNull($reading->value('total'), 'evidence the document does not contain');
+    }
+
+    public function testAReceiptsStationIsChosenOrNamedAsNew(): void
+    {
+        $this->scanApp();
+        $stations = $this->service($this->app, StationRepository::class);
+        $at = new DateTimeImmutable('2026-09-01T00:00:00Z');
+        $tesco = $stations->insert(new StationData('Tesco Antrim'), $this->owner->id, $at);
+
+        $receipt = static fn (string $vendor): Extraction
+            => self::reading(['vendor' => $vendor, 'total' => '£50.00'], ScanKind::FuelReceipt);
+        $known = $this->map($this->owner, $receipt('TESCO  ANTRIM'));
+        self::assertSame((string) $tesco, $known->values['station_id'] ?? null, 'the station is chosen');
+        self::assertSame('station: Tesco Antrim', $known->hints['station'] ?? null);
+
+        $new = $this->map($this->owner, $receipt('Maxol Ballymena'));
+        self::assertArrayNotHasKey('station_id', $new->values);
+        self::assertSame('Maxol Ballymena', $new->values['station'] ?? null);
+        self::assertSame('New station: Maxol Ballymena', $new->hints['station'] ?? null);
+        self::assertCount(1, $stations->listActive(), 'nothing is created until the fill-up is saved');
     }
 
     public function testEachKindOpensItsForm(): void

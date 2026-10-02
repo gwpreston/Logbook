@@ -45,8 +45,11 @@ most. Each fill-up is linked to its station; the text on it is kept as you
 typed it.
 
 Different spellings are **not** guessed to be the same place: "Tesco
-Antrim" and "Tesco, Antrim Rd" become two stations. Open **Stations →
-Duplicates** afterwards to merge the ones that are the same forecourt.
+Antrim" and "Tesco, Antrim Rd" become two stations. **Stations →
+Duplicates** lists the likely pairs (see [Duplicates and
+merging](#duplicates-and-merging)); for any others, use *Merge* on the
+station's page. Once merged, typing or importing the old spelling again
+links the station you kept.
 
 Home charging is never turned into a station (see [Chargers](#chargers)).
 
@@ -129,7 +132,9 @@ or on OpenStreetMap on a computer. Nothing is loaded until you press it.
 **Merge** keeps one station and folds the other into it. Every fill-up and
 favourite moves to the station you keep. Where both have a detail (a
 postcode, a position), you choose which to keep; the grades sold are
-combined. The merged station's old page and links open the one you kept.
+combined. The merged station's old page and links open the one you kept,
+and its spelling, typed again, links the kept station rather than making a
+new one.
 
 ## Chargers
 

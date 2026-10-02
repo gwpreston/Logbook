@@ -59,8 +59,10 @@ this release asks any outside service. See
   on each fill-up is never changed.
 - **One station per spelling.** Names that differ only in capitals or
   spacing become one station; different spellings ("Tesco Antrim",
-  "Tesco, Antrim Rd") become two. Open **Stations → Duplicates** to merge
-  the ones that are the same place.
+  "Tesco, Antrim Rd") become two. **Stations → Duplicates** lists the
+  likely pairs (names one letter apart, the same brand and name, or within
+  150 m once you add positions), and *Merge* on any station's page joins
+  any two.
 - Home charging (grade *Home*) is left as text.
 - New setting `FEATURES_STATIONS` (default `true`); stations are off
   whenever fuel is.

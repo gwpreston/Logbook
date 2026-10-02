@@ -66,6 +66,10 @@ use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
 use Logbook\Support\Storage\UploadKind;
 use Logbook\Tests\Support\ApiClient;
+use Logbook\Domain\Station\PlaceData;
+use Logbook\Domain\Station\StationData;
+use Logbook\Repository\PlaceRepository;
+use Logbook\Repository\StationRepository;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\TestBrowser;
@@ -143,6 +147,17 @@ final class BackupTest extends AppTestCase
         self::assertCount(1, $before['tables']['finance_agreements'], 'finance agreements too (Phase 29.1)');
         self::assertCount(1, $before['tables']['finance_payment_events']);
         self::assertCount(1, $before['tables']['settlement_quotes']);
+        self::assertCount(2, $before['tables']['stations'], 'stations too (Phase 30.1)');
+        self::assertCount(1, $before['tables']['station_favourites']);
+        self::assertCount(1, $before['tables']['places']);
+        $merged = array_values(array_filter(
+            $before['tables']['stations'],
+            static fn (array $row): bool => $row['merged_into'] !== null,
+        ));
+        self::assertCount(1, $merged);
+        self::assertGreaterThan((int) $merged[0]['id'], (int) $merged[0]['merged_into'], 'merged into a newer station');
+        $links = array_map('strval', array_filter(array_column($before['tables']['fuel_entries'], 'station_id')));
+        self::assertContains((string) $merged[0]['merged_into'], $links);
         self::assertSame(['0'], array_map('strval', array_column($before['tables']['finance_agreements'], 'count_in_costs')));
         $wreck = array_values(array_filter(
             $before['tables']['vehicles'],
@@ -495,6 +510,17 @@ final class BackupTest extends AppTestCase
         $due = LocalTime::parseDate('2026-10-01');
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));
+        // Phase 30.1: a station merged into a newer one (restored after it), a favourite, a place,
+        // and a fill-up linked.
+        $stations = $this->service($app, StationRepository::class);
+        $old = $stations->insert(new StationData('Shell Antrim', latitude: '54.715400', longitude: '-6.216400'), $owner->id, $at);
+        $kept = $stations->insert(new StationData('Shell, Antrim', 'Shell', grades: [FuelGrade::E10_95]), $owner->id, $at);
+        $stations->merge($old, $kept, $at);
+        $stations->setFavourite($owner->id, $kept, true, $at);
+        $this->service($app, PlaceRepository::class)->insert($owner->id, new PlaceData('Home', '54.706400', '-6.216400'), $at);
+        $fuelEntries = $this->service($app, FuelEntryRepository::class);
+        $linked = $fuelEntries->listForVehicle($golf->id)[0];
+        $fuelEntries->update($golf->id, $linked->id, $linked->data->withStation($kept, 'Shell, Antrim'), $at);
         $this->service($app, FeatureToggles::class)->save([Feature::Fuel, Feature::Maintenance, Feature::Reminders]);
         // API keys (Phase 18.2) travel too, as their keyed hashes.
         $this->apiToken = $this->service($app, ApiKeyService::class)->create($owner, 'Home Assistant', ApiScope::Read)->token;

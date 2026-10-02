@@ -24,7 +24,13 @@ use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Kernel;
+use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\Station\PlaceData;
+use Logbook\Domain\Station\StationData;
 use Logbook\Repository\FinanceAgreementRepository;
+use Logbook\Repository\FuelEntryRepository;
+use Logbook\Repository\PlaceRepository;
+use Logbook\Repository\StationRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\ScheduleService;
@@ -114,6 +120,20 @@ final class AccessibilityTest extends AppTestCase
             claim: new Claim(ClaimStatus::Settled, 'Admiral', claimNumber: '5521', payout: '9000.000'),
         ), null, new DateTimeZone('Europe/London'));
 
+        // Stations (Phase 30.1): two spellings of one, the fill-ups linked, a place.
+        $stations = $this->service($app, StationRepository::class);
+        $when = new DateTimeImmutable(self::NOW);
+        $data = new StationData('Tesco Antrim', 'Tesco', latitude: '54.7154', longitude: '-6.2164', grades: [FuelGrade::E10_95]);
+        $tesco = $stations->insert($data, $owner->id, $when);
+        $tescoDot = $stations->insert(new StationData('Tesco Antrim.', postcode: 'BT41 4LD'), $owner->id, $when);
+        $stations->setFavourite($owner->id, $tesco, true, $when);
+        $fuelEntries = $this->service($app, FuelEntryRepository::class);
+        foreach ($fuelEntries->listForVehicle($golf->id) as $entry) {
+            $fuelEntries->update($golf->id, $entry->id, $entry->data->withStation($tesco, 'Tesco Antrim'), $when);
+        }
+        $place = $this->service($app, PlaceRepository::class)
+            ->insert($owner->id, new PlaceData('Home', '54.706400', '-6.216400'), $when);
+
         // Finance (Phase 29.1): a PCP with a missed payment, an extra payment and a quote.
         $finance = $this->service($app, FinanceAgreementRepository::class);
         $agreement = $finance->insert($golf->id, new AgreementData(
@@ -172,6 +192,10 @@ final class AccessibilityTest extends AppTestCase
             "/vehicles/{$bike->id}/finance/new?type=lease", "/vehicles/{$bike->id}/finance/new?type=hp",
             // Phase 29.2: ending an agreement (the archive page above has its finance choices too).
             "/vehicles/$id/finance/$agreement/end",
+            // Phase 30.1: stations, merging, duplicates and places.
+            '/stations', '/stations?q=tesco', "/stations/$tesco", "/stations/$tesco/edit", '/stations/new',
+            "/stations/$tesco/merge", "/stations/$tesco/merge?with=$tescoDot", '/stations/duplicates',
+            '/settings/places', '/settings/places/new', "/settings/places/$place/edit",
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);

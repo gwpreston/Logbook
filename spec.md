@@ -5587,8 +5587,9 @@ request to any outside service.
   - the user's fill-ups there, newest first.
   Only fill-ups on vehicles the user can see count (§7.21), and amounts
   (spend, prices) only where the user may see them (ViewCosts, or their own
-  entry). A fill-up's text is kept as the station's name (renames and
-  merges update it), so every page that shows the text shows the name.
+  entry). A linked fill-up is read with its station's name in place of the
+  text (the upgrade leaves texts as typed), and saves, renames and merges
+  keep the text the name too, so every page and export shows the name.
 - **Positions:** typed as latitude and longitude, or *Use my current
   location* while standing at the station (the browser's geolocation,
   asked only when the button is pressed, with an explanation; sent only to
@@ -5607,7 +5608,8 @@ request to any outside service.
   choose the station to keep. Every fill-up and favourite moves to it, its
   details win where both have a value (with a chance to pick per field),
   grades are combined, and the other station gets `merged_into` so old
-  links still resolve. Merging is one transaction.
+  links still resolve. A merged station's name, typed or imported
+  again, links the station it became. Merging is one transaction.
 - **Duplicates** (`/stations/duplicates`) lists pairs of unmerged stations
   that may be one forecourt: the same brand and normalised name apart from
   the brand, names one edit apart (Levenshtein distance 1 on normalised

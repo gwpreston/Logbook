@@ -101,7 +101,8 @@ final readonly class StationRepository
 
     /**
      * The unmerged station with this normalised name (the oldest, should
-     * there be two), or none.
+     * there be two); else the station a merged one of that name became; or
+     * none.
      */
     public function findByName(string $name): ?Station
     {
@@ -115,8 +116,21 @@ final readonly class StationRepository
                 $found = $station;
             }
         }
+        if ($found !== null) {
+            return $found;
+        }
 
-        return $found;
+        // A spelling merged away still names the station it became, so a
+        // merge holds when that spelling is typed or imported again.
+        $rows = $this->select()->where('merged_into IS NOT NULL')->orderBy('id')->fetchAllAssociative();
+        foreach ($rows as $row) {
+            $merged = $this->hydrate($row);
+            if (StationName::normalise($merged->data->name) === $key) {
+                return $this->resolve($merged->id);
+            }
+        }
+
+        return null;
     }
 
     /**

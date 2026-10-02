@@ -189,6 +189,9 @@ final readonly class FuelEntryRepository
                 'is_missed_previous',
                 'station',
                 'station_id',
+                // The linked station's name, shown in place of the text as typed (spec.md §6
+                // FuelEntry): fill-ups linked by the upgrade keep their original text.
+                '(SELECT s.name FROM stations s WHERE s.id = fuel_entries.station_id) AS station_name',
                 'notes',
                 'economy_confirmed',
                 'created_at',
@@ -248,7 +251,7 @@ final readonly class FuelEntryRepository
                 totalCost: Row::decimal($row, 'total_cost', self::MONEY_SCALE),
                 isPartial: Row::bool($row, 'is_partial'),
                 isMissedPrevious: Row::bool($row, 'is_missed_previous'),
-                station: Row::nullableString($row, 'station'),
+                station: Row::nullableString($row, 'station_name') ?? Row::nullableString($row, 'station'),
                 notes: Row::nullableString($row, 'notes'),
                 grade: $this->grades->read(Row::nullableString($row, 'grade'), $fuel, self::TABLE, $id),
                 stationId: Row::nullableInt($row, 'station_id'),

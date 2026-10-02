@@ -209,6 +209,12 @@ final class StationsTest extends AppTestCase
         self::assertStringContainsString('openstreetmap.org', $page);
         self::assertStringContainsString('data-chart=', $page);
 
+        $fuelTab = self::body($browser->get('/vehicles/' . $golf->id . '/fuel'));
+        self::assertStringContainsString('By station', $fuelTab);
+        self::assertStringContainsString('/stations/' . $tesco->id, $fuelTab);
+        // The Golf alone: (10 × 1.5 + 30 × 1.4) / 40 = 1.425.
+        self::assertStringContainsString('£1.425/L', $fuelTab);
+
         // A member who sees only the Golf, without costs.
         $member = $this->createMember($app, 'partner');
         $this->service($app, VehicleShareRepository::class)
@@ -219,6 +225,8 @@ final class StationsTest extends AppTestCase
         self::assertStringNotContainsString('Polo', $theirs);
         self::assertStringNotContainsString('/stations/' . $tesco->id . '/edit', $theirs, 'only the creator or an admin edits');
         self::assertSame(403, $this->browserFor($app, 'partner')->get('/stations/' . $tesco->id . '/edit')->getStatusCode());
+        $theirTab = self::body($this->browserFor($app, 'partner')->get('/vehicles/' . $golf->id . '/fuel'));
+        self::assertStringNotContainsString('By station', $theirTab, 'the card needs ViewCosts');
     }
 
     public function testMergingMovesFillUpsAndFavouritesAndOldLinksResolve(): void
@@ -260,6 +268,13 @@ final class StationsTest extends AppTestCase
         self::assertSame(303, $old->getStatusCode());
         self::assertStringEndsWith('/stations/' . $a->id, $old->getHeaderLine('Location'));
         self::assertStringNotContainsString('names one letter apart', self::body($browser->get('/stations/duplicates')));
+
+        // The merged spelling, typed again, links the kept station.
+        $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill([
+            'odometer' => '1800', 'filled_at' => '2026-09-20T08:00', 'station_id' => 'other', 'station' => 'tesco antrim.',
+        ]));
+        self::assertSame([$a->id, $a->id, $a->id], $this->links($app, $golf->id));
+        self::assertCount(1, $stations->listActive(), 'no new duplicate');
     }
 
     public function testPlacesGiveDistancesAndArePrivate(): void
@@ -278,6 +293,17 @@ final class StationsTest extends AppTestCase
 
         $bad = $browser->post('/settings/places/new', ['name' => 'Work', 'latitude' => '95', 'longitude' => '']);
         self::assertSame(422, $bad->getStatusCode());
+
+        // Never in print views, the sale pack or the API's vehicle data.
+        $browser->post('/settings/places/new', ['name' => 'Grans Cottage', 'latitude' => '54.8', 'longitude' => '-6.3']);
+        $golf = $this->vehicle($app);
+        $fill = self::fill(['station_id' => (string) $tesco->id]);
+        $browser->post('/vehicles/' . $golf->id . '/fuel/new', $fill);
+        foreach (['/history/print', '/sale-pack', '/sale-pack?options=1', ''] as $suffix) {
+            $page = self::body($browser->get('/vehicles/' . $golf->id . $suffix));
+            self::assertStringNotContainsString('Grans Cottage', $page, $suffix);
+            self::assertStringNotContainsString('54.706400', $page, $suffix);
+        }
 
         $member = $this->createMember($app, 'partner');
         $other = $this->browserFor($app, 'partner');

@@ -113,7 +113,9 @@ final class StationUpgradeTest extends AppTestCase
         foreach ([...$entries->listForVehicle($golf), ...$entries->listForVehicle($kona)] as $entry) {
             $links[$entry->id] = [$entry->data->stationId, $entry->data->station];
         }
-        self::assertSame([$tesco->id, 'tesco antrim '], $links[$a], 'the text itself is unchanged');
+        self::assertSame([$tesco->id, 'Tesco Antrim'], $links[$a], 'shown with the station\'s name');
+        $raw = $this->connection($app)->fetchOne('SELECT station FROM fuel_entries WHERE id = ?', [$a]);
+        self::assertSame('tesco antrim ', $raw, 'the text itself is unchanged');
         self::assertSame($tesco->id, $links[$b][0]);
         self::assertSame($tesco->id, $links[$c][0]);
         self::assertSame($byName['Tesco, Antrim Rd']->id, $links[$d][0]);
