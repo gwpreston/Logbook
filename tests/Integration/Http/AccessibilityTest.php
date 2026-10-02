@@ -130,12 +130,19 @@ final class AccessibilityTest extends AppTestCase
             "/vehicles/$id/incidents/{$incident->id}/edit", '/incidents/history', "/vehicles/$id/history?kind=incidents",
             "/vehicles/$id/sale-pack?options=1&incidents=1&kinds[]=incident_photos",
             "/vehicles/$id/archive",
+            // Phase 28.1: Settings → Jobs (the dashboard above carries the scheduler notice).
+            '/settings/jobs',
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);
             self::assertSame(200, $response->getStatusCode(), $page);
             $this->assertAccessible(self::body($response), $page);
         }
+
+        // Phase 28.1: a job run's page, after Run now.
+        $run = $browser->post('/settings/jobs/cleanup/run')->getHeaderLine('Location');
+        self::assertStringStartsWith('/settings/jobs/runs/', $run);
+        $this->assertAccessible(self::body($browser->get($run)), 'job run');
 
         // The import's mapping and preview pages.
         $path = (string) tempnam(sys_get_temp_dir(), 'logbook-a11y-');
