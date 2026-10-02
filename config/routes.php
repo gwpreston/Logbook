@@ -69,6 +69,15 @@ use Logbook\Action\Expense\DeleteExpenseAction;
 use Logbook\Action\Expense\EditExpenseAction;
 use Logbook\Action\Expense\VehicleExpensesAction;
 use Logbook\Action\Export\ExportModuleAction;
+use Logbook\Action\Finance\CreateFinanceAction;
+use Logbook\Action\Finance\DeleteFinanceAction;
+use Logbook\Action\Finance\DeleteFinanceEventAction;
+use Logbook\Action\Finance\EditFinanceAction;
+use Logbook\Action\Finance\FinanceIndexAction;
+use Logbook\Action\Finance\FinancePaymentAction;
+use Logbook\Action\Finance\FinanceScheduleExportAction;
+use Logbook\Action\Finance\SettlementQuoteAction;
+use Logbook\Action\Finance\ShowFinanceAction;
 use Logbook\Action\Forecast\ComingUpAction;
 use Logbook\Action\Forecast\ComingUpExportAction;
 use Logbook\Action\Fuel\ConfirmEconomyAction;
@@ -555,6 +564,33 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
             })->add($module(Feature::Incidents));
 
+            // Finance agreements (spec.md §7.32): Manage and ViewCosts, checked by the actions so that
+            // anyone else gets 404, not 403 (§7.32 *Access*).
+            $vehicle->group('/finance', function (Group $finance) use ($ability): void {
+                $view = VehicleAbility::View->value;
+                $agreement = '/{agreement:[0-9]+}';
+                $finance->get('', FinanceIndexAction::class)->setName('finance.index')->setArgument($ability, $view);
+                $finance->map(['GET', 'POST'], '/new', CreateFinanceAction::class)->setName('finance.create')
+                    ->setArgument($ability, $view);
+                $finance->get($agreement, ShowFinanceAction::class)->setName('finance.show')->setArgument($ability, $view);
+                $finance->map(['GET', 'POST'], $agreement . '/edit', EditFinanceAction::class)->setName('finance.edit')
+                    ->setArgument($ability, $view);
+                $finance->map(['GET', 'POST'], $agreement . '/delete', DeleteFinanceAction::class)->setName('finance.delete')
+                    ->setArgument($ability, $view);
+                $finance->post($agreement . '/payments', FinancePaymentAction::class)->setName('finance.payments')
+                    ->setArgument($ability, $view);
+                $finance->post($agreement . '/events/{event:[0-9]+}/delete', DeleteFinanceEventAction::class)
+                    ->setName('finance.events.delete')
+                    ->setArgument($ability, $view);
+                $finance->post($agreement . '/quotes', SettlementQuoteAction::class)->setName('finance.quotes')
+                    ->setArgument($ability, $view);
+                $finance->post($agreement . '/quotes/{quote:[0-9]+}/delete', SettlementQuoteAction::class)
+                    ->setName('finance.quotes.delete')
+                    ->setArgument($ability, $view);
+                $finance->get($agreement . '/schedule.csv', FinanceScheduleExportAction::class)->setName('finance.schedule')
+                    ->setArgument($ability, $view);
+            })->add($module(Feature::Finance));
+
             $vehicle->group('', function (Group $documents) use ($ability): void {
                 $documents->get('/documents', ComplianceListAction::class)->setName('compliance.index')
                     ->setArgument($ability, VehicleAbility::View->value);
@@ -594,7 +630,8 @@ return static function (App $app): void {
                 ->setArgument($ability, VehicleAbility::Manage->value);
 
             // Export and import check the module's toggle themselves (one route, several modules).
-            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations|trips|incidents}';
+            $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations|trips|incidents'
+                . '|finance}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module')
                 ->setArgument($ability, VehicleAbility::Manage->value);

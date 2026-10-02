@@ -51,6 +51,10 @@ final readonly class BackupRepository
         'reminders',
         'expense_entries',
         'vehicle_valuations',
+        // Phase 29.1: finance agreements, then their payment events and quotes.
+        'finance_agreements',
+        'finance_payment_events',
+        'settlement_quotes',
         // Phase 19: who shares which vehicle, and who has been sent which
         // reminder status (so a restore sends nothing again).
         'vehicle_shares',

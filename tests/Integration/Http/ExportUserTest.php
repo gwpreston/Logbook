@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use DateTimeImmutable;
+use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Finance\AgreementData;
+use Logbook\Domain\Finance\AgreementType;
+use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Domain\Incident\IncidentData;
 use Logbook\Domain\Incident\IncidentType;
-use Logbook\Repository\IncidentRepository;
 use Logbook\Domain\Trip\SavedJourneyData;
 use Logbook\Domain\Trip\TripData;
+use Logbook\Kernel;
+use Logbook\Repository\FinanceAgreementRepository;
+use Logbook\Repository\FuelEntryRepository;
+use Logbook\Repository\IncidentRepository;
 use Logbook\Repository\MileageRateSetRepository;
 use Logbook\Repository\SavedJourneyRepository;
 use Logbook\Repository\TripRepository;
-use Logbook\Service\Trip\RateProvider;
-use DateTimeImmutable;
-use Logbook\Domain\Access\ShareLevel;
-use Logbook\Kernel;
-use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Backup\BackupService;
+use Logbook\Service\Trip\RateProvider;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use ZipArchive;
@@ -74,6 +78,30 @@ final class ExportUserTest extends AppTestCase
             IncidentType::ParkedDamage,
             driverUserId: $this->owner($app)->id,
         ), $at, $member->id);
+        // Finance (Phase 29.1): their agreement with its event and quote; not the owner's.
+        $finance = $this->service($app, FinanceAgreementRepository::class);
+        $agreement = static fn (): AgreementData => new AgreementData(
+            type: AgreementType::Hp,
+            lender: 'Black Horse',
+            agreementNumber: null,
+            startedOn: new DateTimeImmutable('2026-01-15'),
+            firstPaymentOn: new DateTimeImmutable('2026-02-15'),
+            numberOfPayments: 36,
+            regularPayment: '300',
+            cashPrice: '10000',
+        );
+        $theirs = $finance->insert($mini->id, $agreement(), $at, $member->id);
+        $finance->insertEvent($theirs, PaymentEventKind::Missed, new DateTimeImmutable('2026-03-15'), null, null, null, $at);
+        $finance->insertQuote(
+            $theirs,
+            new DateTimeImmutable('2026-09-01'),
+            '7000',
+            new DateTimeImmutable('2026-09-30'),
+            null,
+            $at,
+        );
+        $owners = $finance->insert($golf->id, $agreement(), $at, $this->owner($app)->id);
+        $finance->insertEvent($owners, PaymentEventKind::Missed, new DateTimeImmutable('2026-03-15'), null, null, null, $at);
 
         $file = tempnam(sys_get_temp_dir(), 'logbook-export-') . '.zip';
         $this->file = $file;
@@ -99,6 +127,9 @@ final class ExportUserTest extends AppTestCase
         self::assertCount(1, $rows('trips'), 'the trips on their vehicle');
         self::assertCount(1, $rows('saved_journeys'), 'their saved journeys');
         self::assertCount(2, $rows('mileage_rate_sets'), 'their rates');
+        self::assertCount(1, $rows('finance_agreements'), 'their agreement only');
+        self::assertCount(1, $rows('finance_payment_events'), 'its event, not the owner’s');
+        self::assertCount(1, $rows('settlement_quotes'));
         $incidents = $rows('incidents');
         self::assertCount(1, $incidents, 'the incidents on their vehicle');
         $columns = json_decode((string) $zip->getFromName('database/incidents.json'), true, flags: JSON_THROW_ON_ERROR);

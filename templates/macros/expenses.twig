@@ -12,13 +12,18 @@
         {{ url_for('maintenance.edit', {id: id, entry: item.sourceId}) }}
     {%- elseif item.source.value == 'compliance' -%}
         {{ url_for('compliance.edit', {id: id, document: item.sourceId}) }}
+    {%- elseif item.source.value == 'finance' -%}
+        {{ url_for('finance.show', {id: id, agreement: item.sourceId}) }}
     {%- else -%}
         {{ url_for('expenses.edit', {id: id, entry: item.sourceId}) }}
     {%- endif -%}
 {%- endmacro %}
 
 {# One ledger line (a Service\Expense\CostItem); `files` is its source's
-   number of attachments (the source kinds are the attachment owner types). #}
+   number of attachments (the source kinds are the attachment owner types).
+   A line derived from a finance agreement (Phase 29.1) links to the
+   agreement only for those who may see finance, and is otherwise a plain
+   Finance and lease line (spec.md §7.32 *Access*, #125). #}
 {% macro cost_row(item, show_vehicle = false, files = 0) -%}
     {% import 'macros/ui.twig' as ui %}
     {% import 'macros/attachments.twig' as paperclip %}
@@ -26,11 +31,13 @@
     {% import 'macros/fuel.twig' as fuel_ui %}
     {% set kind = item.kindKey|trans %}
     {% set title = item.title ?: (item.source.value == 'fuel' ? 'expense.fill_up'|trans : kind) %}
+    {% set derived = item.source.value == 'finance' %}
+    {% set linked = derived ? can_finance(item.vehicle) : can_change(item.vehicle, item.createdBy) %}
     <li class="list__item">
         <span class="list__icon swatch-icon" style="--swatch: var(--{{ item.group().color() }})">{{ ui.icon(item.icon) }}</span>
         <span class="list__body">
             <span class="list__title">
-                {%- if can_change(item.vehicle, item.createdBy) %}<a href="{{ exp.source_url(item) }}" data-modal>{{ title }}</a>{% else %}{{ title }}{% endif -%}
+                {%- if linked %}<a href="{{ exp.source_url(item) }}"{% if not derived %} data-modal{% endif %}>{{ title }}</a>{% else %}{{ title }}{% endif -%}
                 {%- if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif -%}
             </span>
             <span class="list__meta">
@@ -38,8 +45,9 @@
                 {%- if show_vehicle %} · {{ item.vehicle.name() }}{% endif %}
                 {%- if title != kind %} · {{ kind }}{% endif %}
                 {%- if item.quantity %} · {{ item.quantity|quantity(item.electric) }}{% endif -%}
+                {%- if derived and linked %} · {{ 'finance.ledger_line'|trans }}{% endif -%}
             </span>
-            {{ ui.added_by(item.vehicle, item.createdBy) }}
+            {% if not derived %}{{ ui.added_by(item.vehicle, item.createdBy) }}{% endif %}
         </span>
         <span class="list__end">{{ paperclip.count(files) }}{% if can_see_amount(item.vehicle, item.createdBy) %}<span class="list__amount tabular">{{ item.amount|money }}</span>{% endif %}</span>
     </li>

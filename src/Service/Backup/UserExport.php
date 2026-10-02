@@ -31,6 +31,7 @@ final class UserExport
         'vehicle_valuations',
         'trips',
         'incidents',
+        'finance_agreements',
     ];
 
     /** Author columns, set to the exported user. */
@@ -94,6 +95,14 @@ final class UserExport
             'tyre_change_lines',
             static fn (array $row): bool => in_array($row['change_id'], $changes, true),
         );
+        // Phase 29.1: the agreements' payment events and settlement quotes.
+        $agreements = array_column($out['finance_agreements'], 'id');
+        foreach (['finance_payment_events', 'settlement_quotes'] as $table) {
+            $out[$table] = $keep(
+                $table,
+                static fn (array $row): bool => in_array($row['agreement_id'], $agreements, true),
+            );
+        }
         $reminders = array_column($out['reminders'], 'id');
         $out['reminder_deliveries'] = $keep(
             'reminder_deliveries',

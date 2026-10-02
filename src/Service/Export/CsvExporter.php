@@ -66,6 +66,7 @@ final readonly class CsvExporter
         private TripRepository $trips,
         private IncidentRepository $incidents,
         private UserDirectory $directory,
+        private FinanceCsv $finance,
     ) {
     }
 
@@ -82,6 +83,7 @@ final readonly class CsvExporter
             ExportModule::Valuations => $this->valuationsTable($user, $vehicle),
             ExportModule::Trips => $this->tripsTable($user, $vehicle),
             ExportModule::Incidents => $this->incidentsTable($user, $vehicle),
+            ExportModule::Finance => $this->finance->vehicleTable($user, $vehicle),
         };
 
         return new CsvTable(

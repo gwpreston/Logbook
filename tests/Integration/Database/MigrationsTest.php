@@ -64,6 +64,9 @@ final class MigrationsTest extends AppTestCase
         'pending_uploads',
         'incidents',
         'job_runs',
+        'finance_agreements',
+        'finance_payment_events',
+        'settlement_quotes',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -103,7 +106,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 28.1 job runs, the Phase 27.2 disposal, estimate and incident scans,
+        // Newest first: the Phase 29.1 finance tables,
+        // the Phase 28.1 job runs, the Phase 27.2 disposal, estimate and incident scans,
         // the Phase 27.1 incidents, the Phase 26.5 draft source,
         // the Phase 26.4 pending uploads, the Phase 26.3 drafts,
         // the Phase 26.2 Ask tables,
@@ -119,6 +123,13 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        $finance = ['finance_agreements', 'finance_payment_events', 'settlement_quotes'];
+        self::assertTrue($schema->tablesExist($finance));
+        Migrator::run('rollback');
+        foreach ($finance as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+
         self::assertTrue($schema->tablesExist(['job_runs']));
         Migrator::run('rollback');
         self::assertFalse($schema->tablesExist(['job_runs']), 'rollback must drop the job runs');

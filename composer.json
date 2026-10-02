@@ -11,6 +11,7 @@
         "ext-json": "*",
         "ext-pdo": "*",
         "ext-sodium": "*",
+        "brick/math": "^1.0",
         "doctrine/dbal": "^4.5",
         "firebase/php-jwt": "^7.2",
         "monolog/monolog": "^3.12",

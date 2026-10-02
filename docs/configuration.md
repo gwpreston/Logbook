@@ -181,6 +181,7 @@ which configured channels to use in **Settings → Reminders**. See
 | `FEATURES_TYRES` | `true` | Tyres: what is fitted and stored, tyre changes, distance per tyre, tread depth, the wear estimate, Settings → Tyres and tyre reminders. |
 | `FEATURES_TRIPS` | `false` | Trips and mileage claims: the Trips tab, saved journeys, mileage rates, the claim report, the business and private split, the *Business mileage* widget and report section, and the trip API. The one module that is off by default ([trips.md](trips.md)). |
 | `FEATURES_INCIDENTS` | `true` | Incidents, damage and insurance claims: the Incidents tab, *Part of an incident* on repairs, expenses and tyre changes, the claims history, the sale pack's *Include incidents*, the Reports section, ownership net of payouts, the stalled-claim check, and the incident API and tools ([incidents.md](incidents.md)). |
+| `FEATURES_FINANCE` | `true` | Finance and lease agreements: the finance page and agreement pages, the overview card, and credit charges or lease rentals counted in costs ([finance.md](finance.md)). |
 | `FEATURES_AI_ASK` | `true` | Ask Logbook (Phase 26.2). Does nothing, and is not listed on Settings → Modules, until AI is set up ([ai.md](ai.md)). |
 | `FEATURES_AI_ACTIONS` | `true` | Drafting entries from what you say (Phase 26.3). As above. |
 | `FEATURES_AI_SCAN` | `true` | Reading receipts and documents (Phase 26.4). As above. |

@@ -189,6 +189,18 @@ final readonly class VehicleRepository
     }
 
     /**
+     * Set or clear the purchase price alone: the finance form's offer
+     * (spec.md §7.32 *Purchase price*).
+     */
+    public function setPurchasePrice(int $userId, int $id, ?string $price, DateTimeImmutable $now): void
+    {
+        $this->connection->update(self::TABLE, [
+            'purchase_price' => $price,
+            'updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
+        ], ['user_id' => $userId, 'id' => $id], ['user_id' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]);
+    }
+
+    /**
      * Give the vehicle a new owner (spec.md §7.21 *Transfer*).
      */
     public function transfer(int $id, int $fromUserId, int $toUserId, DateTimeImmutable $now): void

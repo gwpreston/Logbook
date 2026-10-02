@@ -1,0 +1,161 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Add or edit a finance agreement (spec.md §7.32 *Form*), as a page and a
+ # desktop modal, with the fields its type's paperwork gives. A new one
+ # picks its type first (links, so no JS is needed); an existing one keeps
+ # its type. The consistency check warns and never blocks.
+ #}
+{% set active_nav = 'garage' %}
+{% set editing = agreement is not null %}
+{% set heading = (editing ? 'finance.edit_title' : 'finance.add_title')|trans %}
+{% set lease = type.value == 'lease' %}
+{% set pcp = type.value == 'pcp' %}
+{% set money = {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency)} %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ editing ? url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) : url_for('finance.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'finance.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'finance.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        {% for check in checks %}
+            <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ ('finance.check.' ~ check.kind)|trans({computed: check.computed|money(currency), stated: check.stated|money(currency)}) }}</span></div>
+        {% endfor %}
+
+        {% if editing %}
+            <p><span class="pill">{{ type.labelKey()|trans }}</span> <span class="field__hint">{{ 'finance.type_fixed'|trans }}</span></p>
+        {% else %}
+            <nav class="chip-row" aria-label="{{ 'finance.field.type'|trans }}">
+                {% for option in types %}
+                    <a class="chip" href="{{ url_for('finance.create', {id: vehicle.id}, {type: option.value}) }}"{% if option == type %} aria-current="true"{% endif %}>{{ option.labelKey()|trans }}</a>
+                {% endfor %}
+            </nav>
+            <p class="field__hint">{{ ('finance.type_hint.' ~ type.value)|trans }}</p>
+        {% endif %}
+
+        <form class="form" id="finance-form" method="post"
+              action="{{ editing ? url_for('finance.edit', {id: vehicle.id, agreement: agreement.id}) : url_for('finance.create', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <input type="hidden" name="type" value="{{ type.value }}">
+
+            <section class="card" aria-labelledby="finance-agreement">
+                <h2 id="finance-agreement" class="card__title">{{ 'finance.section.agreement'|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.input('lender', (lease ? 'finance.field.lessor' : 'finance.field.lender')|trans, values, errors, {required: true, maxlength: 100}) }}
+                    {{ ui.input('agreement_number', 'finance.field.agreement_number'|trans, values, errors, {maxlength: 50, optional: true, hint: 'finance.hint.agreement_number'|trans, autocomplete: 'off'}) }}
+                </div>
+                {{ ui.input('started_on', 'finance.field.started_on'|trans, values, errors, {type: 'date', required: true}) }}
+                {% if fields.cash_price ?? false %}
+                    {{ ui.input('cash_price', 'finance.field.cash_price'|trans, values, errors, money|merge({required: true})) }}
+                    <div class="form-row">
+                        {{ ui.input('customer_deposit', 'finance.field.customer_deposit'|trans, values, errors, money) }}
+                        {{ ui.input('dealer_contribution', 'finance.field.dealer_contribution'|trans, values, errors, money) }}
+                    </div>
+                {% endif %}
+                {% if fields.initial_rental ?? false %}
+                    {{ ui.input('initial_rental', 'finance.field.initial_rental'|trans, values, errors, money|merge({optional: true, hint: 'finance.hint.initial_rental'|trans})) }}
+                {% endif %}
+                {% if fields.amount_of_credit ?? false %}
+                    {{ ui.input('amount_of_credit', 'finance.field.amount_of_credit'|trans, values, errors, money|merge(type.value == 'loan' ? {required: true} : {optional: true, hint: 'finance.hint.amount_of_credit'|trans})) }}
+                {% endif %}
+                {% if fields.apr ?? false %}
+                    {{ ui.input('apr', 'finance.field.apr'|trans, values, errors, {type: 'number', step: '0.001', min: 0, max: 99.999, inputmode: 'decimal', suffix: '%', hint: 'finance.hint.apr'|trans}) }}
+                {% endif %}
+            </section>
+
+            <section class="card" aria-labelledby="finance-payments">
+                <h2 id="finance-payments" class="card__title">{{ (lease ? 'finance.section.rentals' : 'finance.section.payments')|trans }}</h2>
+                <div class="form-row">
+                    {{ ui.input('number_of_payments', (lease ? 'finance.field.number_of_rentals' : 'finance.field.number_of_payments')|trans, values, errors, {type: 'number', step: 1, min: 1, max: 120, inputmode: 'numeric', required: true}) }}
+                    {{ ui.input('first_payment_on', (lease ? 'finance.field.first_rental_on' : 'finance.field.first_payment_on')|trans, values, errors, {type: 'date', required: true}) }}
+                </div>
+                {{ ui.input('regular_payment', (lease ? 'finance.field.regular_rental' : 'finance.field.regular_payment')|trans, values, errors, money|merge({required: true, hint: 'finance.hint.monthly'|trans})) }}
+                {% if fields.first_payment ?? false %}
+                    {{ ui.input('first_payment', 'finance.field.first_payment'|trans, values, errors, money|merge({optional: true, hint: 'finance.hint.first_payment'|trans})) }}
+                {% endif %}
+                {% if fields.final_payment ?? false %}
+                    <div class="form-row">
+                        {{ ui.input('final_payment', (pcp ? 'finance.field.optional_final_payment' : 'finance.field.final_payment')|trans, values, errors, money|merge({optional: not pcp, hint: (pcp ? 'finance.hint.gfv' : 'finance.hint.final_payment')|trans})) }}
+                        {{ ui.input('final_payment_on', 'finance.field.final_payment_on'|trans, values, errors, {type: 'date', optional: true, hint: 'finance.hint.final_payment_on'|trans}) }}
+                    </div>
+                {% endif %}
+                <div class="form-row">
+                    {{ ui.input('documentation_fee', 'finance.field.documentation_fee'|trans, values, errors, money|merge({optional: true})) }}
+                    {% if fields.option_to_purchase_fee ?? false %}
+                        {{ ui.input('option_to_purchase_fee', 'finance.field.option_to_purchase_fee'|trans, values, errors, money|merge({optional: true})) }}
+                    {% endif %}
+                </div>
+                {{ ui.input('total_amount_payable', 'finance.field.total_amount_payable'|trans, values, errors, money|merge({optional: true, hint: 'finance.hint.total_amount_payable'|trans})) }}
+            </section>
+
+            {% if fields.annual_mileage_allowance ?? false %}
+                <section class="card" aria-labelledby="finance-mileage">
+                    <h2 id="finance-mileage" class="card__title">{{ 'finance.section.mileage'|trans }}</h2>
+                    <div class="form-row">
+                        {{ ui.input('annual_mileage_allowance', 'finance.field.annual_mileage_allowance'|trans, values, errors, {type: 'number', step: 1, min: 0, inputmode: 'numeric', optional: true}) }}
+                        {{ ui.select('mileage_unit', 'finance.field.mileage_unit'|trans, values, errors, [
+                            {value: 'mi', label: 'units.name.mi'|trans},
+                            {value: 'km', label: 'units.name.km'|trans},
+                        ]) }}
+                    </div>
+                    <div class="form-row">
+                        {{ ui.input('excess_mileage_charge', 'finance.field.excess_mileage_charge'|trans, values, errors, {type: 'number', step: '0.0001', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'finance.hint.excess_mileage_charge'|trans}) }}
+                        {{ ui.input('start_odometer', 'finance.field.start_odometer'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, optional: true, hint: 'finance.hint.start_odometer'|trans}) }}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="card" aria-labelledby="finance-costs">
+                <h2 id="finance-costs" class="card__title">{{ 'finance.section.costs'|trans }}</h2>
+                <input type="hidden" name="count_in_costs" value="0">
+                <label class="checkbox">
+                    <input type="checkbox" name="count_in_costs" value="1"{% if (values.count_in_costs ?? '') == '1' %} checked{% endif %}>
+                    <span>{{ (lease ? 'finance.field.count_in_costs_lease' : 'finance.field.count_in_costs')|trans }}</span>
+                </label>
+                <p class="field__hint">{{ (lease ? 'finance.hint.count_in_costs_lease' : 'finance.hint.count_in_costs')|trans }}</p>
+                {% if offers.set %}
+                    <label class="checkbox">
+                        <input type="checkbox" name="set_purchase_price" value="1"{% if (values.set_purchase_price ?? '') == '1' %} checked{% endif %}>
+                        <span>{{ 'finance.field.set_purchase_price'|trans }}</span>
+                    </label>
+                    <p class="field__hint">{{ 'finance.hint.set_purchase_price'|trans }}</p>
+                {% endif %}
+                {% if offers.clear %}
+                    <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'finance.lease_purchase_price'|trans({amount: vehicle.data.purchasePrice|money(currency)}) }}</span></div>
+                    <label class="checkbox">
+                        <input type="checkbox" name="clear_purchase_price" value="1"{% if (values.clear_purchase_price ?? '') == '1' %} checked{% endif %}>
+                        <span>{{ 'finance.field.clear_purchase_price'|trans }}</span>
+                    </label>
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'finance.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="2000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </section>
+
+            <p class="field__hint">{{ 'finance.not_advice'|trans }}</p>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ (editing ? 'form.save' : 'finance.add')|trans }}</button>
+                <a class="btn btn--ghost" href="{{ editing ? url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) : url_for('finance.index', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/finance.twig' as fin %}
+
+{#
+ # The finance page (spec.md §7.32 *Finance page*): the active agreement
+ # first, then earlier ones, each linking to its agreement page.
+ #}
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'finance.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <div class="toolbar list-toolbar">
+            <h1 class="section-title">{{ 'finance.title'|trans }}</h1>
+            <div class="btn-row list-toolbar__actions">
+                {% if agreements is not empty %}
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'finance'}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+                {% endif %}
+                {% if can_add %}
+                    <a class="btn btn--primary" href="{{ url_for('finance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'finance.add'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% set active = agreements|filter(v => v.agreement.status.value == 'active') %}
+        {% set earlier = agreements|filter(v => v.agreement.status.value != 'active') %}
+        {% if agreements is empty %}
+            <section class="card">
+                <div class="empty">
+                    {{ ui.icon('account_balance') }}
+                    <p class="empty__title">{{ 'finance.empty_title'|trans }}</p>
+                    <p>{{ 'finance.empty_body'|trans }}</p>
+                </div>
+            </section>
+        {% endif %}
+        {% if active is not empty %}
+            <section class="card" aria-labelledby="finance-active">
+                <h2 id="finance-active" class="card__title">{{ 'finance.active'|trans }}</h2>
+                {{ _self.list(vehicle, active) }}
+            </section>
+        {% endif %}
+        {% if earlier is not empty %}
+            <section class="card" aria-labelledby="finance-earlier">
+                <h2 id="finance-earlier" class="card__title">{{ 'finance.earlier'|trans }}</h2>
+                {{ _self.list(vehicle, earlier) }}
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% macro list(vehicle, views) %}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/finance.twig' as fin %}
+    <ul class="list">
+        {% for view in views %}
+            {% set agreement = view.agreement %}
+            {% set active = agreement.status.value == 'active' %}
+            <li class="list__item">
+                <span class="list__icon">{{ ui.icon('account_balance') }}</span>
+                <span class="list__body">
+                    <span class="list__title"><a href="{{ url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) }}">{{ fin.name(agreement) }}</a></span>
+                    <span class="list__meta">
+                        {{- 'finance.started'|trans({date: agreement.data.startedOn|local_date}) -}}
+                        {%- if agreement.endedOn %} · {{ 'finance.ended_on'|trans({date: agreement.endedOn|local_date}) }}{% elseif view.figures.endsOn %} · {{ 'finance.ends'|trans({date: view.figures.endsOn|local_date}) }}{% endif -%}
+                    </span>
+                    {% if active %}<span class="list__meta">{{ fin.remaining(view.figures) }}</span>{% endif %}
+                </span>
+                <span class="list__end">
+                    {{ fin.status(agreement) }}
+                    {% if active %}<span class="list__amount tabular">{{ view.figures.remainingToPay|money }}</span>{% endif %}
+                </span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}

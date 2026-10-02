@@ -4,21 +4,25 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
-use Logbook\Domain\Incident\IncidentData;
-use Logbook\Domain\Incident\IncidentType;
-use Logbook\Domain\Trip\TripData;
-use Logbook\Repository\TripRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseCategory;
+use Logbook\Domain\Finance\AgreementData;
+use Logbook\Domain\Finance\AgreementType;
+use Logbook\Domain\Finance\PaymentEventKind;
+use Logbook\Domain\Incident\IncidentData;
+use Logbook\Domain\Incident\IncidentType;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ManualReminderData;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\FinanceAgreementRepository;
+use Logbook\Repository\TripRepository;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\ScheduleService;
@@ -61,6 +65,11 @@ final class AccessMatrixTest extends AppTestCase
      * does not even find it (404), and View may not log at all.
      */
     private const string OTHERS_TRIP = 'PPNFNNN';
+    /**
+     * Finance agreements (Phase 29.1, spec.md §7.32 *Access*): Manage with
+     * costs only; everyone else finds nothing (404), not a refusal.
+     */
+    private const string FINANCE = 'PPNNNNN';
 
     /** Every module on, trips included (Phase 22: off by default). */
     private const array TRIPS_ON = ['FEATURES_TRIPS' => 'true'];
@@ -128,6 +137,16 @@ final class AccessMatrixTest extends AppTestCase
         'incidents.edit' => self::MANAGE,
         'incidents.delete' => self::MANAGE,
         'incidents.links' => self::MANAGE,
+        'finance.index' => self::FINANCE,
+        'finance.create' => self::FINANCE,
+        'finance.show' => self::FINANCE,
+        'finance.edit' => self::FINANCE,
+        'finance.delete' => self::FINANCE,
+        'finance.payments' => self::FINANCE,
+        'finance.events.delete' => self::FINANCE,
+        'finance.quotes' => self::FINANCE,
+        'finance.quotes.delete' => self::FINANCE,
+        'finance.schedule' => self::FINANCE,
         'valuations.index' => self::COSTS,
         'valuations.create' => self::MANAGE,
         'valuations.edit' => self::MANAGE,
@@ -258,6 +277,34 @@ final class AccessMatrixTest extends AppTestCase
             null,
             new DateTimeZone('Europe/London'),
         );
+        $agreement = $this->service($app, FinanceAgreementRepository::class)->insert($vehicle->id, new AgreementData(
+            type: AgreementType::Hp,
+            lender: 'Black Horse',
+            agreementNumber: null,
+            startedOn: $day('2026-01-15'),
+            firstPaymentOn: $day('2026-02-15'),
+            numberOfPayments: 36,
+            regularPayment: '300',
+            cashPrice: '10000',
+        ), new DateTimeImmutable('2026-09-01T00:00:00Z'), $owner->id);
+        $finance = $this->service($app, FinanceAgreementRepository::class);
+        $event = $finance->insertEvent(
+            $agreement,
+            PaymentEventKind::Missed,
+            $day('2026-03-15'),
+            null,
+            null,
+            null,
+            new DateTimeImmutable('2026-09-01T00:00:00Z'),
+        );
+        $quote = $finance->insertQuote(
+            $agreement,
+            $day('2026-09-01'),
+            '7000',
+            $day('2026-09-30'),
+            null,
+            new DateTimeImmutable('2026-09-01T00:00:00Z'),
+        );
         $now = '2026-09-01 00:00:00';
         $db->insert('tyre_sets', ['vehicle_id' => $vehicle->id, 'name' => 'Winters', 'created_at' => $now, 'updated_at' => $now]);
         $set = (int) $db->lastInsertId();
@@ -305,6 +352,9 @@ final class AccessMatrixTest extends AppTestCase
             'attachment' => $attachment,
             'reminder' => $reminder->id,
             'incident' => $incident->id,
+            'agreement' => $agreement,
+            'event' => $event,
+            'quote' => $quote,
             'member' => $memberIds['view'] ?? 0,
             // {entry} is a different kind per route: see requestFor().
             'entry' => $fill->id,

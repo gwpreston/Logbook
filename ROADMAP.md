@@ -64,6 +64,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [27.2](docs/phases/phase-27.2.md) | Total loss and reading claim letters + v2.10 release | ✅ |
 | [28.1](docs/phases/phase-28.1.md) | Scheduled jobs in Settings | ✅ |
 | [28.2](docs/phases/phase-28.2.md) | Update check and dashboard banner + v2.11 release | ✅ |
+| [29.1](docs/phases/phase-29.1.md) | Finance and lease agreements | ✅ |
+| [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -610,6 +612,30 @@ answer your next quote will ask for.*
 - Release **v2.11.0** (Phases 28.1 and 28.2).
 
 → [`phase-28.2.md`](docs/phases/phase-28.2.md)
+
+## Phase 29.1 — Finance and lease agreements
+*Payments left, what's still owed, and what the car is worth against what
+you owe.*
+
+- HP, PCP, loan and lease agreements typed from the paperwork, with a
+  derived monthly schedule (payments assumed paid, exceptions recorded).
+- Exact payments remaining and remaining to pay; settlement as the lender's
+  quote or a labelled estimate; cost of credit; the half-paid point;
+  equity from the latest valuation.
+- Credit charges or lease rentals counted in costs automatically, with an
+  overlap warning for manual finance expenses. No release of its own.
+
+→ [`phase-29.1.md`](docs/phases/phase-29.1.md)
+
+## Phase 29.2 — Mileage, ending and finance everywhere + v2.12 release
+*Whether you'll go over the miles, and what happens at the end.*
+
+- Mileage against the allowance with the projected excess charge.
+- Ending, handing back and selling with finance owing, through archiving.
+- *Coming up*, reminders, *Needs attention*, the widget, the API and Ask.
+- Release **v2.12.0** (Phases 29.1 and 29.2).
+
+→ [`phase-29.2.md`](docs/phases/phase-29.2.md)
 
 ---
 

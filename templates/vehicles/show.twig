@@ -229,6 +229,11 @@
                 </dl>
             </section>
 
+            {# Finance (Phase 29.1, spec.md §7.32 *Overview card*): the active agreement, for Manage with costs. #}
+            {% if finance %}
+                {% include 'finance/_card.twig' with {finance: finance} %}
+            {% endif %}
+
             {# Ownership (spec.md §7.1): hidden until there is a purchase, a sale or a valuation,
                and for someone who may not see the vehicle's costs. #}
             {% if costs and (data.purchaseDate or data.purchasePrice is not null or data.saleDate or data.salePrice is not null or has_valuations) %}

@@ -1,0 +1,34 @@
+{#
+ # Finance agreement fragments (spec.md §7.32). Import with:
+ # {% import 'macros/finance.twig' as fin %}
+ #}
+
+{# "PCP · Toyota Financial Services" #}
+{% macro name(agreement) -%}
+    {{ agreement.type().labelKey()|trans }} · {{ agreement.data.lender }}
+{%- endmacro %}
+
+{# The status pill: active, or how it ended. #}
+{% macro status(agreement) -%}
+    <span class="pill{{ agreement.status.value == 'active' ? ' pill--valid' : '' }}">{{ agreement.status.labelKey()|trans }}</span>
+{%- endmacro %}
+
+{# "18 of 48 payments remaining", with the optional final payment beside. #}
+{% macro remaining(figures) -%}
+    {{- 'finance.payments_remaining'|trans({remaining: figures.schedule.remaining(), total: figures.schedule.numberOfPayments}) -}}
+    {%- if figures.optionalFinal %} {{ 'finance.plus_optional_final'|trans({amount: figures.optionalFinal.amount|money(figures.remainingToPay.currency)}) }}{% endif -%}
+{%- endmacro %}
+
+{# The settlement: the lender's quote while valid, else the labelled estimate. #}
+{% macro settlement(settlement) -%}
+    {%- if settlement.quote -%}
+        {{ 'finance.settlement_quoted'|trans({amount: settlement.amount|money, quoted: settlement.quote.quotedOn|local_date, until: settlement.quote.validUntil|local_date}) }}
+    {%- else -%}
+        <span class="tabular">{{ settlement.amount|money }}</span> <span class="pill pill--soon">{{ 'finance.estimate'|trans }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{# "Positive equity £2,140" / "Negative equity £1,380". #}
+{% macro equity(equity) -%}
+    {{ (equity.isPositive() ? 'finance.equity_positive' : 'finance.equity_negative')|trans({amount: equity.magnitude()|money}) }}
+{%- endmacro %}

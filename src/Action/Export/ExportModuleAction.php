@@ -7,6 +7,7 @@ namespace Logbook\Action\Export;
 use Logbook\Service\Export\CsvExporter;
 use Logbook\Service\Export\ExportModule;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Http\CsvResponder;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -23,6 +24,7 @@ final readonly class ExportModuleAction
     public function __construct(
         private CsvExporter $exporter,
         private FeatureToggles $features,
+        private FinanceService $finance,
     ) {
     }
 
@@ -35,6 +37,10 @@ final readonly class ExportModuleAction
         $module = ExportModule::tryFrom($args['module'] ?? '') ?? throw new HttpNotFoundException($request);
         $feature = $module->feature();
         if ($feature !== null && !$this->features->isEnabled($feature)) {
+            throw new HttpNotFoundException($request);
+        }
+        // Finance needs ViewCosts as well as Manage (spec.md §7.32 *Access*).
+        if ($module === ExportModule::Finance && !$this->finance->canSee(RequestContext::requireUser($request), $vehicle)) {
             throw new HttpNotFoundException($request);
         }
 

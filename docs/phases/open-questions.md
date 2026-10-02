@@ -44,7 +44,9 @@ was answered the same day. Phase 27.2's question found while starting it
 2026-10-02, before Phase 28.1 started; one found while building it
 (#110) was answered the same day. Phase 28.2's (#111–#117, four of
 them found while starting it) were answered on 2026-10-02, before it was
-built.
+built. Phase 29's (#118–#125, four of them found while starting it) were
+answered on 2026-10-02, before Phase 29.1 started; the phase was split
+into 29.1 and 29.2.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -165,6 +167,14 @@ built.
 | 115 | [28.2](phase-28.2.md) | A renamed repository's `html_url` fails the link check (found while starting) | Decided | Follow the redirect, then record "moved to {owner/name}; set `UPDATE_CHECK_REPO`", no banner; names compared ignoring case (spec §7.31). | 2026-10-02 |
 | 116 | [28.2](phase-28.2.md) | Where does *How to upgrade* point? (found while starting) | Decided | GitHub's `docs/deployment.md#upgrading` at the release's tag (spec §7.31). | 2026-10-02 |
 | 117 | [28.2](phase-28.2.md) | *Check now* during a rate limit's wait? (found while starting) | Decided | It waits too: no request, "Rate limited by GitHub until {time}" (spec §7.31). | 2026-10-02 |
+| 118 | [29.1](phase-29.1.md) | Payment frequency: monthly only, or weekly and four-weekly too? | Parked | Monthly only; other frequencies in spec §12. | 2026-10-02 |
+| 119 | [29.1](phase-29.1.md) | Settlement: an "up to" line with extra early-settlement interest? | Parked | No: the present value only, labelled as an estimate; the line in spec §12. | 2026-10-02 |
+| 120 | [29.1](phase-29.1.md) | Store the agreement number? | Decided | Yes, optional, masked to its last 4 characters except on the edit form; never in the API, Ask, CSV or sale pack; in backups (spec §6). | 2026-10-02 |
+| 121 | [29.1](phase-29.1.md) | Business leases: VAT on rentals and its recovery? | Parked | Out of scope; rentals entered as paid; spec §12. | 2026-10-02 |
+| 122 | [29.1](phase-29.1.md) | Cost of credit for a loan, which has no cash price (found while starting) | Decided | Total amount payable − amount of credit; none for a lease (spec §7.32). | 2026-10-02 |
+| 123 | [29.1](phase-29.1.md) | Exact cost after a PCP is handed back (found while starting) | Scheduled | Exact: everything paid − (cash price − final payment); built in [Phase 29.2](phase-29.2.md) (spec §7.32). | 2026-10-02 |
+| 124 | [29.1](phase-29.1.md) | Split Phase 29? (found while starting) | Decided | Yes: [29.1](phase-29.1.md) agreements, figures and costs; [29.2](phase-29.2.md) mileage, ending, the rest and v2.12.0. | 2026-10-02 |
+| 125 | [29.1](phase-29.1.md) | Derived finance lines for cost viewers below `Manage` (found while starting) | Decided | They count, as plain *Finance and lease* lines with no agreement detail (spec §7.32 *Access*). | 2026-10-02 |
 
 ## Other loose ends found in the review
 

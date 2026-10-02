@@ -38,6 +38,8 @@ ordinary PHP 8.4 web server. Data stays local.
   default/fallback locale.
 - **Auth:** PHP sessions via PSR-7 session middleware; `password_hash()` with
   `PASSWORD_ARGON2ID`. CSRF via `slim/csrf`.
+- **Finance arithmetic:** `brick/math` (`BigDecimal`) where the scaled-int
+  `Support\Number\Decimal` helper would overflow (Phase 29.1).
 - **Logging:** `monolog/monolog` (PSR-3).
 - **Testing:** PHPUnit 11+. **Lint/static:** PHP_CodeSniffer (PSR-12) +
   PHPStan (max level it can pass).
