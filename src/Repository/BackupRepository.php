@@ -70,6 +70,15 @@ final readonly class BackupRepository
     ];
 
     /**
+     * Columns that point at a table restored after their own (Phase 27.2:
+     * a written-off vehicle's incident, whose vehicle comes first). They
+     * are inserted empty and set once every table is filled.
+     */
+    private const array LINKS_BACK = [
+        'vehicles' => ['disposal_incident_id'],
+    ];
+
+    /**
      * Tables that are deliberately not backed up. Invitation links (Phase
      * 19) are for this install, now, like sessions. AI secrets, the usage
      * log and the per-user request lock (Phase 26.1) are never carried, nor
@@ -194,10 +203,21 @@ final readonly class BackupRepository
             $connection->createQueryBuilder()->delete('sessions')->executeStatement();
             $connection->createQueryBuilder()->delete('pending_uploads')->executeStatement();
 
+            $later = [];
             foreach (self::TABLES as $table) {
                 foreach ($data[$table] ?? [] as $row) {
+                    // A link back to a later table is set once that table is filled.
+                    foreach (self::LINKS_BACK[$table] ?? [] as $column) {
+                        if (($row[$column] ?? null) !== null && isset($row['id'])) {
+                            $later[] = [$table, $column, $row[$column], $row['id']];
+                            $row[$column] = null;
+                        }
+                    }
                     $connection->insert($table, $row);
                 }
+            }
+            foreach ($later as [$table, $column, $value, $id]) {
+                $connection->update($table, [$column => $value], ['id' => $id]);
             }
 
             $this->resetSequences($connection);

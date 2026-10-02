@@ -21,6 +21,7 @@ use Logbook\Domain\Vehicle\Disposal;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleStatus;
+use Logbook\Repository\IncidentRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Incident\IncidentService;
@@ -244,6 +245,30 @@ final class TotalLossTest extends AppTestCase
         $toggles->save(array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== Feature::Incidents)));
         self::assertStringContainsString('Written off 20 Mar 2025', self::body($this->browser->get('/vehicles/' . $id)));
         self::assertStringContainsString('Written off 20 Mar 2025', self::body($this->browser->get('/garage?archived=1')));
+    }
+
+    public function testAWrittenOffVehicleCanBeDeletedAndItsIncidentToo(): void
+    {
+        $incident = $this->settledCatS();
+        $this->vehicles()->archiveWrittenOff($this->owner, $this->golf, $incident->id, self::day('2025-03-20'), '9000.000');
+
+        // The vehicle's incidents cascade, and the incident's SET NULL points back at the vehicle being deleted.
+        $this->vehicles()->delete($this->owner, $this->reload());
+
+        self::assertNull($this->service($this->app, VehicleRepository::class)->findById($this->golf->id));
+        self::assertSame([], $this->service($this->app, IncidentRepository::class)->listForVehicle($this->golf->id));
+    }
+
+    public function testDeletingTheTotalLossIncidentLeavesTheVehicleWrittenOff(): void
+    {
+        $incident = $this->settledCatS();
+        $this->vehicles()->archiveWrittenOff($this->owner, $this->golf, $incident->id, self::day('2025-03-20'), '9000.000');
+
+        $this->service($this->app, IncidentService::class)->delete($this->golf, $incident);
+
+        $vehicle = $this->reload();
+        self::assertSame(Disposal::WrittenOff, $vehicle->disposal);
+        self::assertNull($vehicle->disposalIncidentId);
     }
 
     private static function day(string $date): DateTimeImmutable

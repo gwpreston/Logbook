@@ -197,6 +197,11 @@ Written into `spec.md` when this phase was decided (2026-10-01):
   2025): a settled Cat S, settled for its £2,100 sale price; the sale
   paperwork is its settlement letter. The Golf's 2024 scrape has a £655
   estimate from the garage that repaired it for £640.
+- **Backups:** a vehicle points at an incident restored after it, so a
+  restore inserts `disposal_incident_id` empty and sets it once the
+  incidents are in (`BackupRepository::LINKS_BACK`); the round-trip test
+  carries a written-off car. Deleting a written-off vehicle (its incidents
+  cascade back onto it) is tested on every engine.
 - **Migration:** `pending_uploads.incident_id` is `ON DELETE CASCADE`, as
   the spec says (deleting the incident drops a scan waiting for it).
 
