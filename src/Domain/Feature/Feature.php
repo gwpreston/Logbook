@@ -18,6 +18,7 @@ enum Feature: string
     case Tyres = 'tyres';
     case Trips = 'trips';
     case Incidents = 'incidents';
+    case Finance = 'finance';
     // AI features (Phase 26.1, spec.md §7.25): on by default but inert, and
     // not listed, until a task is assigned.
     case AiAsk = 'ai_ask';
@@ -52,6 +53,7 @@ enum Feature: string
             self::Tyres => 'tire_repair',
             self::Trips => 'route',
             self::Incidents => 'car_crash',
+            self::Finance => 'account_balance',
             self::AiAsk => 'forum',
             self::AiActions => 'smart_toy',
             self::AiScan => 'document_scanner',

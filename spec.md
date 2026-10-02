@@ -5261,7 +5261,8 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     km).
   - **Consistency check** (a warning, never blocking): when the total
     amount payable is entered and differs by **more than 1.00** from
-    deposit + first payment + regular payments + final payment + fees
+    the deposits (the customer's and the dealer's contribution, as UK
+    paperwork counts them) + first payment + regular payments + final payment + fees
     (initial rental + rentals + fees for a lease): "These figures add up
     to £18,412.40, but the agreement says £18,512.40. Check the
     paperwork." The same check compares cash price − deposits with the
@@ -5307,11 +5308,11 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     rate (a balance from the amount of credit, each payment's interest the
   balance × the rate over the months since the previous one, the rest
   capital). Once ended it is **exact**: for `settled` or `completed`,
-    everything paid (deposit, payments, extras, settlement, fees) − cash
+    everything paid (deposits, payments, extras, settlement, fees) − cash
     price (− amount of credit for a loan); for `handed_back`, everything
     paid − (cash price − final payment), the final payment not paid
     (#123).
-  - *Half-paid point* (HP and PCP): the date the deposit plus payments
+  - *Half-paid point* (HP and PCP): the date the deposits plus payments
     made reach half the total amount payable, or the amount still needed
     to reach it. Labelled "Half the total amount payable. Your agreement
     explains your rights at this point; check with your lender." No
@@ -5599,7 +5600,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES`,
-  `FEATURES_INCIDENTS` (Phase 27.1) (default true; see §7.10),
+  `FEATURES_INCIDENTS` (Phase 27.1), `FEATURES_FINANCE` (Phase 29.1)
+  (default true; see §7.10),
   `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,
   `FEATURES_AI_ACTIONS`, `FEATURES_AI_SCAN` (default true; §7.25)
 - AI (§7.25, Phase 26.1): `AI_ENABLED` (default `true`; `false` hides

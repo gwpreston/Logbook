@@ -2754,6 +2754,10 @@ return [
                 'title' => 'Incidents and claims',
                 'hint' => 'Accidents, damage and theft, the repairs they caused, insurance claims and the claims history for insurance quotes.',
             ],
+            'finance' => [
+                'title' => 'Finance and leases',
+                'hint' => 'HP, PCP, loan and lease agreements: payments left, what remains to pay, settlement, equity, and credit charges or rentals counted in costs.',
+            ],
             // AI (spec.md §7.25): listed only while AI is set up.
             'ai_ask' => [
                 'title' => 'Ask Logbook',

@@ -2752,6 +2752,10 @@ return [
                 'title' => 'Schäden und Versicherungsfälle',
                 'hint' => 'Unfälle, Schäden und Diebstahl, die Reparaturen dazu, Schadenmeldungen und die Schadenhistorie für Versicherungsangebote.',
             ],
+            'finance' => [
+                'title' => 'Finanzierung und Leasing',
+                'hint' => 'Finanzierungs-, Kredit- und Leasingverträge: verbleibende Raten, Restbetrag, Ablösung, Eigenkapital und Kreditkosten oder Leasingraten in den Kosten.',
+            ],
             // KI (spec.md §7.25): nur aufgeführt, solange KI eingerichtet ist.
             'ai_ask' => [
                 'title' => 'Logbook fragen',
