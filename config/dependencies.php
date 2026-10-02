@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Logbook\Service\Incident\IncidentTwigExtension;
+use Logbook\Service\Finance\FinanceTwigExtension;
 use Doctrine\DBAL\Connection;
 use Logbook\Service\Ai\Ask\AskTwigExtension;
 use Logbook\Service\Ai\Scan\PdfRenderer;
@@ -236,6 +237,9 @@ return [
         $incidents = $c->get(IncidentTwigExtension::class);
         assert($incidents instanceof IncidentTwigExtension);
         $twig->addExtension($incidents);
+        $finance = $c->get(FinanceTwigExtension::class);
+        assert($finance instanceof FinanceTwigExtension);
+        $twig->addExtension($finance);
 
         return $twig;
     },

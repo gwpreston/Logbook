@@ -60,6 +60,22 @@
             </section>
         </div>
 
+        {% if finance_overlap|default([]) is not empty %}
+            {# Phase 29.1 (spec.md §7.32 *Overlap warning*). #}
+            <section class="alert alert--warning" role="status" aria-labelledby="finance-overlap">
+                {{ ui.icon('warning') }}
+                <div>
+                    <p id="finance-overlap">{{ 'finance.overlap'|trans }}</p>
+                    <ul>
+                        {% for entry in finance_overlap %}
+                            <li><a href="{{ url_for('expenses.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>{{ entry.data.spentOn|local_date }} · {{ entry.data.note ?: ('expense.category.finance'|trans) }}</a> <span class="tabular">{{ entry.data.amount|money(currency) }}</span></li>
+                        {% endfor %}
+                    </ul>
+                    <p class="field__hint">{{ 'finance.overlap_hint'|trans }} <a href="{{ url_for('finance.index', {id: vehicle.id}) }}">{{ 'finance.title'|trans }}</a></p>
+                </div>
+            </section>
+        {% endif %}
+
         <section class="card" aria-labelledby="costs-heading">
             <div class="card__header">
                 <h2 id="costs-heading" class="card__title">{{ 'expense.costs'|trans }}</h2>

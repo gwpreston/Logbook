@@ -4,39 +4,40 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
-use Logbook\Domain\Incident\Claim;
-use Logbook\Domain\Incident\ClaimStatus;
-use Logbook\Domain\Incident\DamageArea;
-use Logbook\Domain\Incident\IncidentData;
-use Logbook\Domain\Incident\IncidentType;
-use Logbook\Domain\Vehicle\FuelType;
-use Logbook\Domain\Vehicle\VehicleType;
-use Logbook\Domain\Incident\WriteOffCategory;
-use Logbook\Domain\Incident\LinkKind;
-use Logbook\Service\Incident\IncidentService;
-use Logbook\Domain\Trip\TripData;
-use Logbook\Service\Trip\RateProvider;
-use Logbook\Service\Trip\TripService;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Api\ApiScope;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Finance\AgreementData;
+use Logbook\Domain\Finance\AgreementType;
+use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Domain\Fuel\FuelGrade;
-use Logbook\Repository\FuelEntryRepository;
+use Logbook\Domain\Incident\Claim;
+use Logbook\Domain\Incident\ClaimStatus;
+use Logbook\Domain\Incident\DamageArea;
+use Logbook\Domain\Incident\IncidentData;
+use Logbook\Domain\Incident\IncidentType;
+use Logbook\Domain\Incident\LinkKind;
+use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ManualReminderData;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\Tyre\TyreChangeData;
 use Logbook\Domain\Tyre\TyreData;
 use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\Tyre\TyreSetData;
-use Logbook\Domain\Valuation\VehicleValuationData;
-use Logbook\Domain\Vehicle\VehicleData;
-use Logbook\Repository\BackupRepository;
-use Logbook\Repository\VehicleRepository;
 use Logbook\Domain\User\UserIdentity;
+use Logbook\Domain\Valuation\VehicleValuationData;
+use Logbook\Domain\Vehicle\FuelType;
+use Logbook\Domain\Vehicle\VehicleData;
+use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Repository\BackupRepository;
+use Logbook\Repository\FinanceAgreementRepository;
+use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\UserIdentityRepository;
+use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Api\ApiKeyService;
 use Logbook\Service\Attachment\PendingUpload;
 use Logbook\Service\Attachment\PendingUploads;
@@ -44,9 +45,12 @@ use Logbook\Service\Backup\BackupService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
+use Logbook\Service\Trip\RateProvider;
+use Logbook\Service\Trip\TripService;
 use Logbook\Service\Tyre\NewTyre;
 use Logbook\Service\Tyre\SetChoice;
 use Logbook\Service\Tyre\TyreChangeService;
@@ -136,6 +140,10 @@ final class BackupTest extends AppTestCase
         );
         self::assertCount(1, $before['tables']['trips'], 'trips travel too (Phase 22)');
         self::assertCount(2, $before['tables']['incidents'], 'incidents travel too (Phase 27.1)');
+        self::assertCount(1, $before['tables']['finance_agreements'], 'finance agreements too (Phase 29.1)');
+        self::assertCount(1, $before['tables']['finance_payment_events']);
+        self::assertCount(1, $before['tables']['settlement_quotes']);
+        self::assertSame(['0'], array_map('strval', array_column($before['tables']['finance_agreements'], 'count_in_costs')));
         $wreck = array_values(array_filter(
             $before['tables']['vehicles'],
             static fn (array $v): bool => $v['disposal'] === 'written_off',
@@ -465,6 +473,25 @@ final class BackupTest extends AppTestCase
             claim: new Claim(ClaimStatus::Settled, 'Aviva', payout: '2100.000', repairEstimate: '4300.000'),
         ), null, $zone);
         $this->service($app, VehicleService::class)->archiveWrittenOff($owner, $wreck, $loss->id, $day('2026-08-20'), '2100.000');
+        // Phase 29.1: a PCP with a missed payment and a settlement quote.
+        $finance = $this->service($app, FinanceAgreementRepository::class);
+        $at = new \DateTimeImmutable(self::NOW);
+        $agreement = $finance->insert($golf->id, new AgreementData(
+            type: AgreementType::Pcp,
+            lender: 'Volkswagen Financial Services',
+            agreementNumber: 'VWFS-1',
+            startedOn: $day('2025-03-01'),
+            firstPaymentOn: $day('2025-04-01'),
+            numberOfPayments: 36,
+            regularPayment: '250.000',
+            finalPayment: '9000.000',
+            cashPrice: '22000.000',
+            customerDeposit: '2000.000',
+            apr: '6.900',
+            countInCosts: false,
+        ), $at, $owner->id);
+        $finance->insertEvent($agreement, PaymentEventKind::Missed, $day('2026-06-01'), null, null, null, $at);
+        $finance->insertQuote($agreement, $day('2026-09-01'), '16000.000', $day('2026-09-30'), null, $at);
         $due = LocalTime::parseDate('2026-10-01');
         assert($due !== null);
         $this->service($app, ReminderService::class)->createManual($owner, new ManualReminderData($golf->id, 'Wash', $due, 7));

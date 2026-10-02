@@ -3,7 +3,7 @@
 *Payments left, what's still owed, and what the car is worth against what
 you owe.*
 
-Status: 🚧 in progress · no release of its own (**v2.12.0** ships with
+Status: ✅ complete · no release of its own (**v2.12.0** ships with
 [Phase 29.2](phase-29.2.md)) · file lives in `docs/phases/`
 
 Since Phase 14.2, finance has been an expense category: the owner logs lease
@@ -104,64 +104,64 @@ The Phase 14.2 *Finance and leases* rule (§7.7), §7.10 (the module) and
 - [x] §6, §7.32, Phase 14.2's *Finance and leases* rule, §7.6, §7.7,
       §7.10, §7.13, §7.18, §7.20, §7.24 and §7.26 in `spec.md`; the
       Phase 29.1 and 29.2 lines in §13; the parked items in §12.
-- [ ] `docs/finance.md`: entering an agreement from the paperwork, what each
+- [x] `docs/finance.md`: entering an agreement from the paperwork, what each
       figure means, estimates against quotes, and moving from manual
       finance expenses.
 
 ### Migration
-- [ ] `finance_agreements`, `finance_payment_events`, `settlement_quotes`.
+- [x] `finance_agreements`, `finance_payment_events`, `settlement_quotes`.
       Reversible on every engine.
 
 ### Domain / Services
-- [ ] `Domain\Finance\*` (agreement, type, status and event-kind enums,
+- [x] `Domain\Finance\*` (agreement, type, status and event-kind enums,
       events, quotes).
-- [ ] Repositories for agreements, events and quotes.
-- [ ] `Service\Finance\Schedule` (dates with end-of-month clamping, amounts,
+- [x] Repositories for agreements, events and quotes.
+- [x] `Service\Finance\Schedule` (dates with end-of-month clamping, amounts,
       paid status from events).
-- [ ] `Service\Finance\AgreementFigures` (remaining, settlement estimate,
+- [x] `Service\Finance\AgreementFigures` (remaining, settlement estimate,
       cost of credit estimate and exact, half-paid point, equity), using
       decimal arithmetic with no floats for money. The monthly rate from
       the APR is computed to 10 decimal places.
-- [ ] `Service\Finance\FinanceLedger`: derived cost lines for the ledger
+- [x] `Service\Finance\FinanceLedger`: derived cost lines for the ledger
       and the overlap check.
-- [ ] The agreement form's parser and consistency checks; the purchase
+- [x] The agreement form's parser and consistency checks; the purchase
       price offers.
-- [ ] Access: `Manage` and `ViewCosts`; the derived lines as plain
+- [x] Access: `Manage` and `ViewCosts`; the derived lines as plain
       *Finance and lease* lines for other cost viewers (#125).
-- [ ] Backups and `bin/export-user.php` carry the three tables; the
+- [x] Backups and `bin/export-user.php` carry the three tables; the
       schema version moves; the CSV export.
 
 ### Templates
-- [ ] Form by type (page and modal), the agreement page (print and CSV),
+- [x] Form by type (page and modal), the agreement page (print and CSV),
       the overview card, the vehicle header's *Add finance*, and the
       Expenses tab overlap notice.
-- [ ] Translations (en, de); German labels for UK-specific terms (PCP and
+- [x] Translations (en, de); German labels for UK-specific terms (PCP and
       GFV explained as *Ballonfinanzierung* and *Schlussrate*).
 
 ### Tests
-- [ ] **Schedule:** 48 payments from 31 Jan clamp to month ends; a different
+- [x] **Schedule:** 48 payments from 31 Jan clamp to month ends; a different
       first payment; a PCP final payment one month after the last; a lease
       initial rental on the start date; missed, late, extra and settlement
       events.
-- [ ] **Figures**, against hand-worked examples kept in the test file: an
+- [x] **Figures**, against hand-worked examples kept in the test file: an
       HP agreement at 9.9% APR; a 0% PCP; a loan; a lease. Remaining to pay
       is exact; the settlement estimate matches the worked PV to the penny;
       the exact cost of credit after settlement; a loan's cost of credit
       against the amount of credit; the half-paid date; equity positive and
       negative; equity hidden without a recent valuation.
-- [ ] **Consistency check:** warns at 1.01 difference, not at 1.00; never
+- [x] **Consistency check:** warns at 1.01 difference, not at 1.00; never
       blocks.
-- [ ] **Costs:** HP and PCP add only credit charges, never capital; a lease
+- [x] **Costs:** HP and PCP add only credit charges, never capital; a lease
       adds every rental; totals after settlement equal the exact cost of
       credit; `count_in_costs` off adds nothing; the overlap warning lists
       manual expenses in covered months only; no double counting in Reports
       and ownership.
-- [ ] Access: no `ViewCosts` or below `Manage` → no finance pages or card;
+- [x] Access: no `ViewCosts` or below `Manage` → no finance pages or card;
       a `ViewCosts` viewer below `Manage` sees the lines as plain finance
       lines; never in the sale pack or print view.
-- [ ] Module off: card, page and lines gone; data kept.
-- [ ] Backup round trip with the three tables.
-- [ ] Integration suite green on every engine; migrations roll back on every
+- [x] Module off: card, page and lines gone; data kept.
+- [x] Backup round trip with the three tables.
+- [x] Integration suite green on every engine; migrations roll back on every
       engine.
 
 ---
@@ -178,6 +178,36 @@ The Phase 14.2 *Finance and leases* rule (§7.7), §7.10 (the module) and
 4. Only people who can see the vehicle's costs and manage it ever see its
    agreement.
 5. Definition of done (CLAUDE.md §11) holds.
+
+## What changed while building
+
+- **Deposits as UK paperwork counts them.** The total amount payable
+  includes the dealer's deposit contribution, so the derived total, the
+  consistency check, everything paid and the half-paid walk count both
+  deposits. Without it, a contribution made the cost of credit negative
+  (spec §7.32).
+- **`brick/math`** for the arithmetic (spec §4, CLAUDE.md §2): present
+  values over 120 months at a 10-place rate overflow the scaled-integer
+  `Decimal` helper. It raises only to whole powers, so the twelfth root
+  of (1 + APR) is found by Newton's method from a float first guess.
+- **Discounting:** each payment by the whole months until it falls due
+  (a payment due tomorrow is a month away); a missed payment is owed now
+  (spec §7.32 *Settlement*).
+- **The owner's today** decides which payments are paid, for every viewer,
+  so #125's "same totals for everyone" holds around midnight (spec §7.32
+  *Schedule*).
+- **A finance page** (`/vehicles/{id}/finance`) lists the agreements,
+  active first; the header shows *Add finance* until one exists, then
+  *Finance* (spec §7.32).
+- **404, not 403:** the finance routes take `View` and the actions check
+  `Manage` and `ViewCosts`, so anyone else finds nothing. The vehicle's
+  finance CSV is an export like the others and answers 403 below
+  `Manage` (a `Manage` share always sees costs).
+- **The start odometer's default** is looked up when the mileage is worked
+  out (Phase 29.2), so a reading added later still counts.
+- **Remaining to pay** is the schedule's; extra payments reduce the
+  settlement estimate, not it.
+- **OpenAPI 1.16.0:** `GET /me`'s modules include `finance`.
 
 ## Open questions
 

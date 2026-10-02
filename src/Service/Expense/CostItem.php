@@ -9,12 +9,15 @@ use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Expense\CostSource;
+use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Expense\ExpenseEntry;
+use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Finance\FinanceLine;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
 
@@ -145,6 +148,24 @@ final readonly class CostItem
             title: $entry->data->note,
             createdBy: $entry->createdBy,
             incidentId: $entry->incidentId,
+        );
+    }
+
+    /**
+     * A line derived from a finance agreement (spec.md §7.32 *Costs*): a
+     * credit charge or a rental, shown and counted as a *Finance and lease*
+     * expense, with no title of its own (#125).
+     */
+    public static function fromFinance(Vehicle $vehicle, FinanceAgreement $agreement, FinanceLine $line, string $currency): self
+    {
+        return new self(
+            vehicle: $vehicle,
+            date: $line->date,
+            source: CostSource::Finance,
+            sourceId: $agreement->id,
+            amount: Money::of($line->amount, $currency),
+            kindKey: 'expense.category.' . ExpenseCategory::Finance->value,
+            icon: ExpenseCategory::Finance->icon(),
         );
     }
 

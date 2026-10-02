@@ -7,8 +7,10 @@ namespace Logbook\Service\Access;
 use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Sharing\AuthorLabels;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -25,6 +27,8 @@ use Twig\TwigFunction;
  * - `added_by(vehicle, entry.createdBy)`: who to name, or null (see AuthorLabels).
  * - `costs_excluded()`: how many of one's active vehicles fleet cost figures
  *   leave out for want of ViewCosts ("Excludes 1 vehicle shared without costs").
+ * - `can_finance(vehicle)`: finance agreements (Phase 29.1, spec.md §7.32
+ *   *Access*): the module on, `Manage` and `ViewCosts`.
  * - `can_instance('backup')`: links to install-wide pages.
  *
  * All are false (added_by null) when nobody is signed in.
@@ -38,6 +42,7 @@ final class AccessTwigExtension extends AbstractExtension
         private readonly EntryAccess $entries,
         private readonly AuthorLabels $authors,
         private readonly VehicleRepository $repository,
+        private readonly FeatureToggles $features,
     ) {
     }
 
@@ -80,6 +85,14 @@ final class AccessTwigExtension extends AbstractExtension
                     $vehicles,
                     fn (Vehicle $vehicle): bool => !$this->vehicles->can($user, VehicleAbility::ViewCosts, $vehicle),
                 ));
+            }),
+            new TwigFunction('can_finance', function (Vehicle $vehicle): bool {
+                $user = $this->context->user();
+
+                return $user !== null
+                    && $this->features->isEnabled(Feature::Finance)
+                    && $this->vehicles->can($user, VehicleAbility::Manage, $vehicle)
+                    && $this->vehicles->can($user, VehicleAbility::ViewCosts, $vehicle);
             }),
             new TwigFunction('can_instance', function (string $ability): bool {
                 $user = $this->context->user();

@@ -37,6 +37,7 @@ use Logbook\Support\View\View;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Logbook\Service\Finance\FinanceService;
 
 /**
  * GET /vehicles/{id} — vehicle overview: current odometer and fuel figures,
@@ -77,6 +78,7 @@ final readonly class ShowVehicleAction
         private AttentionList $attention,
         private AttentionWording $attentionWording,
         private AttentionSettingsStore $attentionSettings,
+        private FinanceService $finance,
     ) {
     }
 
@@ -138,6 +140,8 @@ final readonly class ShowVehicleAction
             'depreciation' => $depreciation,
             'value_chart' => $this->valueChart->build($depreciation, $user->preferences),
             'has_valuations' => $valuations !== [],
+            // Finance (Phase 29.1, spec.md §7.32 *Overview card*): the active agreement, for those who may see it.
+            'finance' => $this->finance->activeView($user, $vehicle),
             // Core, like the Expenses tab: shown whatever modules are on (spec.md §7.1).
             'ownership_cost' => $this->ownership->forVehicle($user, $vehicle, $odometer->readings, $depreciation, $today),
             'coming_up' => $comingUp,

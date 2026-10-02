@@ -956,7 +956,8 @@ MySQL only.
   documentation_fee and option_to_purchase_fee (optional),
   annual_mileage_allowance, mileage_unit (`mi` | `km`),
   excess_mileage_charge (per unit, `decimal(10,4)`; PCP and lease),
-  start_odometer (km; default: the reading nearest to started_on),
+  start_odometer (km; blank = the reading nearest to started_on, looked
+  up when the mileage is worked out, Phase 29.2),
   count_in_costs (bool, default true), ended_on, notes, created/updated
   (UTC). All amounts are `DECIMAL(14,3)` in the vehicle's currency, as
   every other money column. A
@@ -5297,7 +5298,10 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   - *Settlement* (not for leases): the latest **lender's quote** while
     valid ("£7,612.08, quoted 3 Oct, valid until 31 Oct"), else an
     **estimate**: the present value of the remaining schedule at the
-    monthly rate, at today, less extra payments not already in it.
+    monthly rate, at today, less extra payments not already in it. Each
+    payment is discounted by the whole months until it falls due (one due
+    tomorrow, or in exactly a month, is one month away); a missed payment
+    is owed now and not discounted.
     Labelled "Estimated. Your lender's settlement figure will differ; ask
     them for a quote." No "up to" line for extra early-settlement interest
     (#119; in §12).
@@ -5417,7 +5421,9 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   expense, so every viewer sees the same totals (decided 2026-10-02,
   #125).
   The sale pack, History print view and *Recent activity* never include
-  it.
+  it. The vehicle's finance CSV (`/vehicles/{id}/export/finance.csv`) is
+  an export like the others: below `Manage` it answers 403 as every
+  export does (a `Manage` share always sees costs).
 - **API** (Phase 29.2, §7.20) and **Ask** (Phase 29.2, §7.26, the
   `finance(vehicle)` tool) read the same figures with the same access,
   estimates marked as such, never the agreement number.

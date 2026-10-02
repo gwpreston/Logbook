@@ -12,11 +12,13 @@ use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Finance\FinanceService;
 use Logbook\Service\Vehicle\VehicleService;
 
 /**
  * The unified cost ledger (spec.md §7.7): fill-ups, maintenance and documents
- * with a cost, and ad-hoc expenses, read from their own tables on every call.
+ * with a cost, ad-hoc expenses, and from Phase 29.1 the lines derived from
+ * finance agreements (§7.32), read from their own tables on every call.
  * Nothing is copied into expense_entries, so a cost can neither go stale nor
  * be counted twice. Costs of a switched-off module are left out.
  */
@@ -29,6 +31,7 @@ final readonly class CostLedger
         private ExpenseEntryRepository $expenses,
         private VehicleService $vehicles,
         private FeatureToggles $features,
+        private FinanceService $finance,
     ) {
     }
 
@@ -41,6 +44,7 @@ final readonly class CostLedger
         $zone = $user->preferences->timeZone();
         $enabled = $this->features->all();
         $items = [];
+        $finance = $this->finance->costLines($user, $vehicles);
 
         foreach ($vehicles as $vehicle) {
             $currency = $this->vehicles->currencyFor($user, $vehicle);
@@ -62,6 +66,10 @@ final readonly class CostLedger
             }
             foreach ($this->expenses->listForVehicle($vehicle->id) as $entry) {
                 $items[] = CostItem::fromExpense($entry, $vehicle, $currency);
+            }
+            // Phase 29.1: credit charges and rentals derived from finance agreements.
+            foreach ($finance[$vehicle->id] ?? [] as ['agreement' => $agreement, 'line' => $line]) {
+                $items[] = CostItem::fromFinance($vehicle, $agreement, $line, $currency);
             }
         }
 

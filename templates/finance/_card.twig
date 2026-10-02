@@ -1,0 +1,33 @@
+{#
+ # The overview's *Finance* card (spec.md §7.32 *Overview card*): the active
+ # agreement's type and lender, payments remaining, what remains to pay,
+ # the next payment, the end date, and equity or the settlement figure.
+ #
+ # Expects: vehicle, finance (a Service\Finance\AgreementView).
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/finance.twig' as fin %}
+{% set figures = finance.figures %}
+{% set next = figures.schedule.next() %}
+<section class="card" aria-labelledby="finance-card-heading">
+    <h2 id="finance-card-heading" class="card__title">{{ 'finance.card_title'|trans }}</h2>
+    <p><a href="{{ url_for('finance.show', {id: vehicle.id, agreement: finance.agreement.id}) }}">{{ fin.name(finance.agreement) }}</a></p>
+    <dl class="details">
+        <div><dt>{{ 'finance.row.payments'|trans }}</dt><dd>{{ fin.remaining(figures) }}</dd></div>
+        <div><dt>{{ 'finance.row.remaining'|trans }}</dt><dd class="tabular">{{ figures.remainingToPay|money }}</dd></div>
+        {% if next %}
+            <div><dt>{{ 'finance.row.next'|trans }}</dt><dd>{{ next.dueOn|local_date }} · <span class="tabular">{{ next.amount|money(finance.currency) }}</span></dd></div>
+        {% endif %}
+        {% if figures.endsOn %}
+            <div><dt>{{ 'finance.row.ends'|trans }}</dt><dd>{{ figures.endsOn|local_date }}</dd></div>
+        {% endif %}
+        {% if figures.equity %}
+            <div><dt>{{ 'finance.row.equity'|trans }}</dt><dd>{{ fin.equity(figures.equity) }}</dd></div>
+        {% elseif figures.settlement %}
+            <div><dt>{{ 'finance.row.settlement'|trans }}</dt><dd>{{ fin.settlement(figures.settlement) }}</dd></div>
+        {% endif %}
+    </dl>
+    {% if finance.overlap is not empty %}
+        <p class="field__hint">{{ ui.icon('warning') }} {{ 'finance.overlap_short'|trans({count: finance.overlap|length}) }}</p>
+    {% endif %}
+</section>

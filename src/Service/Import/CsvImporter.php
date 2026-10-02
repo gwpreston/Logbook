@@ -326,7 +326,11 @@ final readonly class CsvImporter
                 LocalTime::today($this->clock, $owner->timeZone()),
                 wholeDistance: true,
             ),
-            ExportModule::Tyres, ExportModule::TyreChanges, ExportModule::Valuations, ExportModule::Incidents
+            ExportModule::Tyres,
+            ExportModule::TyreChanges,
+            ExportModule::Valuations,
+            ExportModule::Incidents,
+            ExportModule::Finance
                 => throw new LogicException($module->value . ' are not imported.'),
         };
 
@@ -394,7 +398,11 @@ final readonly class CsvImporter
                 static fn ($t): string => DuplicateKey::of($t->data),
                 $this->tripEntries->listForVehicle($vehicle->id),
             ),
-            ExportModule::Tyres, ExportModule::TyreChanges, ExportModule::Valuations, ExportModule::Incidents
+            ExportModule::Tyres,
+            ExportModule::TyreChanges,
+            ExportModule::Valuations,
+            ExportModule::Incidents,
+            ExportModule::Finance
                 => throw new LogicException($module->value . ' are not imported.'),
         };
     }

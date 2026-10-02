@@ -4,25 +4,29 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use DateTimeImmutable;
 use DateTimeZone;
+use Dom\Element;
+use Dom\HTMLDocument;
+use Dom\Text;
+use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Finance\AgreementData;
+use Logbook\Domain\Finance\AgreementType;
+use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Domain\Incident\Claim;
 use Logbook\Domain\Incident\ClaimStatus;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\IncidentData;
 use Logbook\Domain\Incident\IncidentType;
-use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Incident\LinkKind;
-use Logbook\Service\Incident\IncidentService;
-use DateTimeImmutable;
-use Dom\Element;
-use Dom\HTMLDocument;
-use Dom\Text;
-use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Kernel;
+use Logbook\Repository\FinanceAgreementRepository;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Support\Date\LocalTime;
@@ -76,7 +80,7 @@ final class AccessibilityTest extends AppTestCase
         $this->language = $locale;
         self::assertStringContainsString('>' . $settingsWord . '<', self::body($browser->get('/settings')));
         $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
-        $this->vehicle($app, 'Honda', 'CB500');
+        $bike = $this->vehicle($app, 'Honda', 'CB500');
         $this->fillUp($app, $golf, '2026-08-01T08:00:00Z', '1000', '40', '60');
         $fill = $this->fillUp($app, $golf, '2026-09-01T08:00:00Z', '1600', '38', '57');
         $service = $this->maintenance($app, $golf, '2026-09-14', 'Annual service', '189.5', '1700');
@@ -110,6 +114,35 @@ final class AccessibilityTest extends AppTestCase
             claim: new Claim(ClaimStatus::Settled, 'Admiral', claimNumber: '5521', payout: '9000.000'),
         ), null, new DateTimeZone('Europe/London'));
 
+        // Finance (Phase 29.1): a PCP with a missed payment, an extra payment and a quote.
+        $finance = $this->service($app, FinanceAgreementRepository::class);
+        $agreement = $finance->insert($golf->id, new AgreementData(
+            type: AgreementType::Pcp,
+            lender: 'Volkswagen Financial Services',
+            agreementNumber: 'VWFS-12345678',
+            startedOn: LocalTime::parseDate('2025-03-01') ?? throw new \LogicException('date'),
+            firstPaymentOn: LocalTime::parseDate('2025-04-01') ?? throw new \LogicException('date'),
+            numberOfPayments: 36,
+            regularPayment: '250',
+            finalPayment: '9000',
+            cashPrice: '22000',
+            customerDeposit: '2000',
+            apr: '6.9',
+            annualMileageAllowance: 8000,
+            excessMileageCharge: '0.09',
+        ), new DateTimeImmutable(self::NOW), $owner->id);
+        $at = new DateTimeImmutable(self::NOW);
+        $finance->insertEvent($agreement, PaymentEventKind::Missed, LocalTime::parseDate('2026-06-01'), null, null, null, $at);
+        $finance->insertEvent($agreement, PaymentEventKind::Extra, null, '500', LocalTime::parseDate('2026-05-10'), null, $at);
+        $finance->insertQuote(
+            $agreement,
+            LocalTime::parseDate('2026-09-01') ?? throw new \LogicException('date'),
+            '16000',
+            LocalTime::parseDate('2026-09-30') ?? throw new \LogicException('date'),
+            null,
+            $at,
+        );
+
         $pages = [
             '/', '/?customise=1', '/garage', '/vehicles/new', "/vehicles/$id", "/vehicles/$id/edit", "/vehicles/$id/delete",
             "/vehicles/$id/history", "/vehicles/$id/history?kind=fuel", "/vehicles/$id/history/print", '/history',
@@ -134,6 +167,9 @@ final class AccessibilityTest extends AppTestCase
             '/settings/jobs',
             // Phase 28.2: Settings → Updates.
             '/settings/updates',
+            // Phase 29.1: finance agreements.
+            "/vehicles/$id/finance", "/vehicles/$id/finance/$agreement", "/vehicles/$id/finance/$agreement/edit",
+            "/vehicles/{$bike->id}/finance/new?type=lease", "/vehicles/{$bike->id}/finance/new?type=hp",
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);

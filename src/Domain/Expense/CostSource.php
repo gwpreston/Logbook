@@ -14,6 +14,8 @@ enum CostSource: string
     case Maintenance = 'maintenance';
     case Compliance = 'compliance';
     case Expense = 'expense';
+    /** Derived from a finance agreement (Phase 29.1, spec.md §7.32 *Costs*); counted as a finance expense. */
+    case Finance = 'finance';
 
     public function group(): CostGroup
     {
@@ -21,7 +23,7 @@ enum CostSource: string
             self::Fuel => CostGroup::Fuel,
             self::Maintenance => CostGroup::Maintenance,
             self::Compliance => CostGroup::Compliance,
-            self::Expense => CostGroup::Other,
+            self::Expense, self::Finance => CostGroup::Other,
         };
     }
 }

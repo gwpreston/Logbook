@@ -24,6 +24,7 @@ use Logbook\Support\View\View;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Logbook\Service\Finance\FinanceService;
 
 /**
  * GET /vehicles/{id}/expenses — the expenses tab: the vehicle's spend over a
@@ -44,6 +45,7 @@ final readonly class VehicleExpensesAction
         private ClockInterface $clock,
         private VehicleAccess $access,
         private ExpenseService $expenses,
+        private FinanceService $finance,
     ) {
     }
 
@@ -78,6 +80,8 @@ final readonly class VehicleExpensesAction
             'rows' => $pagination->slice($rows),
             'pagination' => $pagination,
             'attachment_counts' => $this->attachments->counts($vehicle),
+            // Phase 29.1 (spec.md §7.32 *Overlap warning*): manual finance expenses an agreement may count twice.
+            'finance_overlap' => $this->finance->overlapFor($user, $vehicle),
         ]);
     }
 

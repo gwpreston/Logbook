@@ -47,6 +47,12 @@ final class CostVisibilityTemplateTest extends TestCase
         // Pages whose route itself needs ViewCosts (config/routes.php).
         'expenses/index.twig' => 'the Expenses tab with costs: without ViewCosts the Action renders expenses/without_costs.twig',
         'valuations/index.twig' => 'the Valuations page: its route needs ViewCosts',
+        // Finance (Phase 29.1): every finance page answers 404 without Manage and ViewCosts (FinanceRoute).
+        'finance/index.twig' => 'the finance page: FinanceRoute needs Manage and ViewCosts',
+        'finance/show.twig' => 'the agreement page: FinanceRoute needs Manage and ViewCosts',
+        'finance/form.twig' => 'the agreement form: FinanceRoute needs Manage and ViewCosts',
+        'finance/_card.twig' => 'the overview card: FinanceService::activeView() is null without Manage and ViewCosts',
+        'macros/finance.twig' => 'finance wording, called only from the finance pages and card above',
         // Trips (Phase 22): a claim is the viewer's own trips at their own rates, never a vehicle's
         // costs; cost per distance comes from BusinessMileage, which leaves it out without ViewCosts.
         'trips/claim.twig' => 'the claimant’s own claim; cost per distance only with ViewCosts (BusinessMileage)',
