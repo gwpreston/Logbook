@@ -49,7 +49,8 @@ final class OutputCap
         $left = count($lines) - count($head) - count($tail);
         // A single huge line: keep its ends rather than nothing.
         if ($head === [] && $tail === []) {
-            return substr($text, 0, $budget) . sprintf("\n… %d lines left out …\n", 1) . substr($text, -$budget);
+            return mb_strcut($text, 0, $budget, 'UTF-8') . "\n… 1 lines left out …\n"
+                . mb_strcut($text, strlen($text) - $budget, $budget, 'UTF-8');
         }
 
         return implode("\n", [...$head, sprintf('… %d lines left out …', $left), ...$tail]);

@@ -7,6 +7,7 @@ namespace Logbook\Service\Jobs;
 use Closure;
 use DateTimeZone;
 use Psr\Clock\ClockInterface;
+use Throwable;
 
 /**
  * A job run's output (spec.md §7.30): every line the app logs while the
@@ -39,7 +40,8 @@ final class RunLog
             '[%s] %s%s',
             $this->clock->now()->setTimezone(new DateTimeZone('UTC'))->format('H:i:s'),
             in_array($level, ['info', 'notice', 'debug'], true) ? '' : strtoupper($level) . ': ',
-            $this->redactor->redact($message),
+            // Invalid UTF-8 would be refused by PostgreSQL and MySQL.
+            $this->redactor->redact(mb_scrub($message, 'UTF-8')),
         );
         $this->lines[] = $line;
         $this->dirty = true;
@@ -56,9 +58,13 @@ final class RunLog
         if (!$this->dirty) {
             return;
         }
-        ($this->store)($this->output());
         $this->flushedAt = $this->clock->now()->getTimestamp();
         $this->dirty = false;
+        try {
+            ($this->store)($this->output());
+        } catch (Throwable) {
+            // Progress only: the output is stored in full when the run finishes.
+        }
     }
 
     public function output(): string

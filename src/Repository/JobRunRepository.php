@@ -195,15 +195,18 @@ final readonly class JobRunRepository
     }
 
     /**
-     * The job's newest run after $afterId (the run a *Run now* just
-     * started, for the page that waits for it).
+     * The job's newest manual run by this user after $afterId (the run a
+     * *Run now* just started, for the page that waits for it; never a
+     * pass that ran meanwhile).
      */
-    public function newestAfter(string $job, int $afterId): ?JobRun
+    public function newestManualAfter(string $job, int $userId, int $afterId): ?JobRun
     {
         return $this->first($this->select()
-            ->where('r.job = :job', 'r.id > :after')
+            ->where('r.job = :job', 'r.id > :after', 'r.trigger_kind = :manual', 'r.user_id = :user')
             ->setParameter('job', $job)
-            ->setParameter('after', $afterId, ParameterType::INTEGER));
+            ->setParameter('after', $afterId, ParameterType::INTEGER)
+            ->setParameter('manual', JobTrigger::Manual->value)
+            ->setParameter('user', $userId, ParameterType::INTEGER));
     }
 
     /**

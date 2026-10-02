@@ -46,7 +46,8 @@ final readonly class JobFailureAlerts
             return;
         }
         $alerted = $this->alerted();
-        if (isset($alerted[$run->job])) {
+        // A marker whose run is gone (a restore empties job_runs, not settings) is stale.
+        if (isset($alerted[$run->job]) && $this->runs->find($alerted[$run->job]) !== null) {
             return;
         }
         // Recorded first: a channel that hangs or throws never sends it twice.

@@ -9,6 +9,7 @@ use Logbook\Service\Jobs\JobSettings;
 use Logbook\Service\Jobs\SchedulerHealth;
 use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Http\LongRequest;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -35,8 +36,7 @@ final readonly class SchedulerTickAction
             throw new HttpNotFoundException($request);
         }
         if ($this->health->isPassDue()) {
-            ignore_user_abort(true);
-            set_time_limit($this->app->jobTimeLimit);
+            LongRequest::allow($this->app->jobTimeLimit);
             $this->tasks->run(JobTrigger::PageVisit, null, $this->health->isPassDue(...));
         }
 

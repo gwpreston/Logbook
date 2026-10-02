@@ -10,6 +10,7 @@ use Logbook\Service\Jobs\JobRunner;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
+use Logbook\Support\Http\LongRequest;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -40,8 +41,7 @@ final readonly class RunJobAction
         $job = $this->registry->get($args['job'] ?? '') ?? throw new HttpNotFoundException($request);
         $user = RequestContext::requireUser($request);
 
-        ignore_user_abort(true);
-        set_time_limit($this->settings->jobTimeLimit);
+        LongRequest::allow($this->settings->jobTimeLimit);
         $run = $this->runner->run($job, JobTrigger::Manual, $user->id, null, $this->settings->jobTimeLimit);
 
         return $this->redirect->toRoute('settings.jobs.run', ['run' => (string) $run->id]);

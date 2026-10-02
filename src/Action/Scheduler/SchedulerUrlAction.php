@@ -9,6 +9,7 @@ use Logbook\Service\Jobs\JobSettings;
 use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Support\Config\AppSettings;
 use Psr\Clock\ClockInterface;
+use Logbook\Support\Http\LongRequest;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -53,8 +54,7 @@ final readonly class SchedulerUrlAction
         }
         $this->settings->markUrlCall($now);
 
-        ignore_user_abort(true);
-        set_time_limit($this->app->jobTimeLimit);
+        LongRequest::allow($this->app->jobTimeLimit);
         $summary = $this->tasks->run(JobTrigger::Url);
         $response->getBody()->write(($summary->wasLocked
             ? 'Another pass is running; nothing to do.'
