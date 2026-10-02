@@ -48,7 +48,9 @@ built. Phase 29's (#118–#125, four of them found while starting it) were
 answered on 2026-10-02, before Phase 29.1 started; the phase was split
 into 29.1 and 29.2. Phase 29.2's (#126–#129, all found while starting it)
 were answered on 2026-10-02, before it was built; one found while
-building it (#130) was answered the same day.
+building it (#130) was answered the same day. Phase 30.1's (#131–#135,
+three of them found while starting it) were answered on 2026-10-02,
+before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -182,6 +184,11 @@ building it (#130) was answered the same day.
 | 128 | [29.2](phase-29.2.md) | *Coming up* finance lines for `ViewCosts` below `Manage` (found while starting) | Decided | Plain lines with no link or lender, so every viewer's planned total matches (spec §7.18, §7.32 *Coming up*). | 2026-10-02 |
 | 129 | [29.2](phase-29.2.md) | The agreement's length for the mileage allowance (found while starting) | Decided | Calendar months from started_on to the end date (spec §7.32 *Mileage*). | 2026-10-02 |
 | 130 | [29.2](phase-29.2.md) | Two finance reminders for one agreement, but one row per vehicle, source and source_id (found while building) | Decided | Two sources: `finance` (the final payment) and `finance_end` (*Agreement ends*), both with the agreement as source_id (spec §6 Reminder, §7.32 *Reminders*). | 2026-10-02 |
+| 131 | [30.1](phase-30.1.md) | Charging locations as stations? | Decided | Public chargers yes, their charging grades as grades sold; home charging (grade `home`) never linked, skipped by the upgrade and import (spec §6 Station, §7.33). | 2026-10-02 |
+| 132 | [30.1](phase-30.1.md) | Who edits and merges shared stations? | Decided | The creator or an admin; anyone adds and favourites (spec §7.33). | 2026-10-02 |
+| 133 | [30.1](phase-30.1.md) | Upgrade: group station texts per user or install-wide, and the creator (found while starting) | Decided | Install-wide; creator the owner of the vehicle with the earliest fill-up under that name; country from their locale region or none (spec §7.33 *Upgrading*). | 2026-10-02 |
+| 134 | [30.1](phase-30.1.md) | Receipt scans and Ask drafts with a station name (found while starting) | Decided | Link or create by normalised name as the import does, shown in the review step (spec §7.33). | 2026-10-02 |
+| 135 | [30.1](phase-30.1.md) | The API's fill-up `station`: object or text? (found while starting) | Decided | Additive: `station` stays the text, `station_id` added, writes take either (spec §7.20, §7.33). | 2026-10-02 |
 
 ## Other loose ends found in the review
 

@@ -981,6 +981,35 @@ MySQL only.
 Backups carry all three tables, and `bin/export-user.php` the agreements
 of the user's vehicles. The schema version moves.
 
+**Station** (Phase 30.1, §7.33), shared by every user of the install,
+since stations are public places
+- id, name (up to 100, required), brand (optional, up to 50), address
+  (optional, up to 200), postcode (optional, up to 20), country (ISO
+  3166-1 alpha-2, optional: defaults to the region of the creator's locale,
+  none when the locale has no region), latitude and longitude (optional,
+  `decimal(9,6)` each, both or neither), grades (JSON list of grade codes
+  sold, §7.3, charging grades included for a public charger), opening hours
+  (optional free text, up to 200), notes, created_by (user, nullable, `ON
+  DELETE SET NULL`), merged_into (nullable; a merged station points at the
+  one it became), created/updated (UTC). Index `(name)` and `(latitude,
+  longitude)`.
+- **FuelEntry** gains `station_id` (nullable, `ON DELETE SET NULL`). The
+  existing `station` text column is kept: a fill-up shows the station's
+  name when linked, else its text. A fill-up with grade `home` (home
+  charging) is never linked (decided 2026-10-02, #131).
+
+**StationFavourite** (Phase 30.1)
+- user_id, station_id (both `ON DELETE CASCADE`), unique together.
+
+**Place** (Phase 30.1), private to its user
+- id, user_id (`ON DELETE CASCADE`), name (*Home*, *Work*, or the user's
+  own, up to 50), latitude, longitude (`decimal(9,6)`, required),
+  sort_order, created/updated (UTC).
+
+Backups carry all four (stations, favourites, places and the link), and
+`bin/export-user.php` the user's places and favourites with the stations
+their fill-ups use. The schema version moves.
+
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
   User-scoped keys include `reminders` (lead times), `notifications`,
@@ -2320,7 +2349,8 @@ Disabled modules are removed from nav, routes, and dashboard.
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`,
   `tyres` (Phase 11.1), `trips` (Phase 22), `incidents` (Phase 27.1, on by
   default, decided 2026-10-01, `docs/phases/open-questions.md` #94),
-  `finance` (Phase 29.1, on by default, §7.32), and
+  `finance` (Phase 29.1, on by default, §7.32), `stations` (Phase 30.1,
+  on by default, §7.33; off whenever `fuel` is off), and
   from Phase 26.1 the AI
   modules `ai_ask`, `ai_actions` and `ai_scan` (§7.25: on by default, but
   doing nothing without an assigned task, and listed on Settings → Modules
@@ -3488,7 +3518,8 @@ parameter answers 400 (`invalid_parameter`).
   (with `volume_unit`: `l`\|`gal_uk`\|`gal_us`\|`kwh`, default the
   owner's, or `kwh` for electricity; `price_per_unit` is per that unit)
   / `price_per_unit` / `total_cost`, `is_partial`, `is_missed_previous`
-  (booleans), `station`, `notes`. Numbers are decimal strings or JSON
+  (booleans), `station` (a name) or `station_id` (Phase 30.1, §7.33),
+  `notes`. Numbers are decimal strings or JSON
   numbers and are read as decimals, never floats (number tokens are
   turned into strings before the body is decoded), with `.` as the
   decimal point; an exponent or a comma is a `validation.number` error.
@@ -4278,6 +4309,7 @@ request to any model service.
   | `needs_attention(vehicles?)` | Phase 24 and 25 | current items |
   | `incidents(vehicles?, period?, claims_only?)` | claims history (§7.29, module on) | incidents and claims, archived and sold vehicles included, with the access rules of §7.29 |
   | `finance(vehicle)` | finance agreements (Phase 29.2, §7.32, module on) | the agreement's figures with their labels, estimates marked as such; never the agreement number |
+  | `stations(query?, favourites_only?)` | fuel stations (Phase 30.1, §7.33, `stations` on) | stations matching the query, favourites first, each with the user's visits, spend, and average and cheapest price paid per grade over the vehicles they can see; never places |
 
   Every tool returns **both** the raw values (decimal strings, canonical
   units) and **display strings** in the user's units, locale and currency
@@ -5481,6 +5513,126 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   backups carry the three tables.
 
 
+### 7.33 Stations (Phase 30.1)
+
+Where a fill-up was made, as a record rather than free text, and what the
+user paid there. Everything is local: nothing in this section makes a
+request to any outside service.
+
+- **Module** `stations` (§7.10), on by default (`FEATURES_STATIONS`). It is
+  part of the `fuel` module's pages, so with `fuel` off it is off too,
+  whatever its own switch says (Settings → Modules shows it as needing
+  *Fuel*). Off: the stations pages and Settings → Account → *Places*
+  (404), the combo box (the fill-up form's plain *Station* text field
+  returns), the *By station* card, the station API routes and the Ask
+  tool. Links stay in the data; a linked fill-up shows its station's name
+  as text.
+- **Shared and personal.** Stations are shared by every user of the
+  install. Favourites and places belong to one user. Any user may add a
+  station and favourite any station. Only the station's creator or an admin
+  edits and merges it (decided 2026-10-02, #132).
+- **Home charging is never a station** (decided 2026-10-02, #131). Public
+  chargers are stations like any other, their charging grades (`ac`, `dc`,
+  `dc_rapid`, `dc_ultra`) listed under *Grades sold*. A fill-up with grade
+  `home` keeps its station text, is skipped by the upgrade and the import,
+  and the form shows no station picker for it (an existing link is
+  removed when the grade is changed to `home`).
+- **Normalised name:** trimmed, runs of whitespace collapsed to one space,
+  and case-folded (`mb_strtolower`). Normalisation is done in PHP, never in
+  SQL, so every engine and collation groups alike.
+- **Upgrading** (the migration, in batches): the distinct non-empty
+  `station` texts on fill-ups across the **whole install** are normalised,
+  and **one station is created per normalised name** (decided 2026-10-02,
+  #133), named with the most common spelling (ties: the earliest used).
+  Its creator is the owner of the vehicle with the earliest fill-up using
+  that name, and its country the region of that owner's locale, or none.
+  Every fill-up with that name is linked to it. Fill-ups with grade `home`
+  are left alone. Nothing is merged across different spellings; that is
+  the merge tool's job, and the release note says so. Rolling back drops
+  the link and the new tables; the text column was never changed.
+- **Fill-up form:** the *Station* field becomes a combo box. Typing
+  searches stations by name, brand and postcode: favourites first, then
+  stations the user used recently (on vehicles they can see, newest
+  first), then the rest by name. Merged stations are never offered.
+  - *Add "Tesco Antrim"* creates a station from what was typed when the
+    fill-up is saved, unless a station with that normalised name already
+    exists, which is linked instead.
+  - Without JS it is a select of favourites and recent stations plus
+    *Other*, which shows a text field and creates (or links) the station on
+    save. Leaving it empty saves no station.
+  - Under the field: "Last time here: £1.389/L E10 95, 12 Sep", from the
+    user's own latest fill-up there on a vehicle they can see. This is a
+    hint, never prefilled.
+  - The fill-up's `station` text is set to the station's name on save, so
+    exports and anything reading the text still read a name.
+- **Stations page** (`/stations`, in the Fuel section of navigation):
+  - favourites first, then by last visit, then by name, with name, brand,
+    the straight-line distance from each of the user's places, visits, last
+    visit, and the average price paid in the last 12 months for the user's
+    most-used grade there;
+  - search by name, brand or postcode;
+  - *Add station* and *Duplicates*.
+- **Station page** (`/stations/{id}`; a merged station's page redirects to
+  the station it became):
+  - details, *Favourite*, *Edit*, *Merge*, and *Open in maps* (a `geo:`
+    link on phones and an OpenStreetMap link elsewhere, only when it has a
+    position; nothing is loaded until clicked);
+  - per grade, the user's visits, spend, average price paid (weighted by
+    volume) and cheapest price paid, and a **price history** chart of what
+    they paid (Chart.js, with the table as the no-JS fallback);
+  - the user's fill-ups there, newest first.
+  Only fill-ups on vehicles the user can see count (§7.21), and spend only
+  on vehicles whose costs they may see.
+- **Positions:** typed as latitude and longitude, or *Use my current
+  location* while standing at the station (the browser's geolocation,
+  asked only when the button is pressed, with an explanation; sent only to
+  Logbook and stored on the station when saved). Nothing is stored unless
+  the form is saved.
+- **Places** (Settings → Account → *Places*): *Home*, *Work* and any
+  others. Each is set by typing coordinates, copying a station's position,
+  or *Use my current location*. They are shown only to their user and are
+  never in the sale pack, print views, the API, Ask, MCP or other users'
+  pages.
+- **Distances** are great-circle (haversine, mean Earth radius 6371.0088
+  km) distances in the user's distance unit, labelled "in a straight line",
+  because road distance needs a routing service.
+- **Merge** (the creator of the station being merged away, or an admin):
+  choose the station to keep. Every fill-up and favourite moves to it, its
+  details win where both have a value (with a chance to pick per field),
+  grades are combined, and the other station gets `merged_into` so old
+  links still resolve. Merging is one transaction.
+- **Duplicates** (`/stations/duplicates`) lists pairs of unmerged stations
+  that may be one forecourt: the same brand and normalised name apart from
+  the brand, names one edit apart (Levenshtein distance 1 on normalised
+  names), or positions within 150 m of each other. Each pair links to the
+  merge form.
+- **Fuel tab** (§7.3): a *By station* card with the top five stations by
+  spend in the last 12 months on that vehicle, each with visits, spend and
+  the average price paid for the vehicle's main grade, linking to the
+  station page. It needs `ViewCosts`.
+- **CSV import** (§7.13): the station column links to an existing station
+  by normalised name, or creates one (not for `home` charging). The
+  preview says which ("new station: Tesco Antrim").
+- **Reading receipts and drafts** (§7.26, §7.27, decided 2026-10-02, #134):
+  a scanned receipt's station and Ask Logbook's draft fill-up link to an
+  existing station by normalised name or create one on save, as the import
+  does; the review step shows "Tesco Antrim" or "new station: Tesco
+  Antrim".
+- **API** (§7.20, decided 2026-10-02, #135): additive, so no client
+  breaks. Fill-ups keep `station` (the name text) and gain `station_id`
+  (the linked station, or `null`). Fill-up writes take `station_id` (a
+  station that exists and is not merged), or `station` as a name, linked
+  or created as the import does; both together is a validation error.
+  `GET /api/v1/stations` (`q` search, `favourites` flag; favourites first)
+  and `GET /api/v1/stations/{id}` return station details and the key
+  user's price statistics. Places are never in the API.
+- **Ask Logbook** (§7.26): the `stations(query?, favourites_only?)` tool
+  for "Where do I usually fill up?" and "What's the cheapest I've paid at
+  Tesco?".
+- **Backups and export** (§7.13): backups carry stations, favourites and
+  places; a restore of an earlier backup leaves the new tables empty.
+
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -6076,6 +6228,18 @@ task breakdowns live in the per-phase files; this is the map.
   API and the Ask tool; sample data (§6 Vehicle disposal, Reminder;
   §7.6, §7.18, §7.20, §7.24, §7.26, §7.32). One migration. Release
   v2.12.0 (Phases 29.1 and 29.2).
+- **Phase 30.1 — Fuel stations + v2.13 release.** Stations become
+  shared records (name, brand, address, position, grades, hours) linked
+  from fill-ups, the existing station texts turned into stations on
+  upgrade (one per normalised name, home charging left alone); a combo box
+  on the fill-up form with favourites first and "Last time here"; the
+  stations list and station pages with what the user paid per grade over
+  time; favourites, private places and straight-line distances; merging
+  and a duplicates view; the Fuel tab's *By station* card; CSV import,
+  scans, Ask drafts and the API link or create stations; the
+  `stations(query?, favourites_only?)` Ask tool (§6 Station,
+  StationFavourite, Place; §7.3, §7.10, §7.13, §7.20, §7.26, §7.27,
+  §7.33). Two migrations. Release v2.13.0.
 
 ---
 
