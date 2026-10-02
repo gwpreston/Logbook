@@ -93,6 +93,61 @@ and the date of the latest news.
   can hide it.
 - With reminders on, **Add reminder** on the incident page suggests "Chase
   claim 4417".
+- A **repair estimate** has its own field. The incident page shows it as
+  "Estimate, not counted in costs": it's what a repair *may* cost. The
+  invoice, linked as a repair, is what it did cost.
+
+## Reading insurer letters
+
+Claim news arrives by post and email over weeks. With [reading
+files](ai.md#reading-receipts-and-documents) set up, Logbook can read a
+letter or an estimate into the incident it's about:
+
+- **Update from a letter** on the incident page reads a letter or estimate
+  straight into that incident.
+- **Scan a receipt or document** (or *Fill from a file* on *Log incident*)
+  recognises an insurer's or broker's letter. When its claim number
+  matches one of the vehicle's incidents ("CLM 4417" matches "clm-4417"),
+  that incident's edit form opens. Otherwise *Log incident* opens with
+  the letter's details.
+- The letter fills in the claim status, insurer, claim number, excess,
+  payout, write-off category and *Latest update* (the letter's date). Only
+  the fields it changes are marked *From the file, check*. The incident
+  keeps its own date. The status is read from the letter's words:
+  "settled" and "payment issued" mean *Settled*, "declined" and
+  "rejected" mean *Declined*. Anything less clear, such as "settlement
+  offer" or "under review", is left for you.
+- A **repair estimate** fills the estimate and adds "Estimate from
+  Coastline Body Repairs" to the notes. Estimates seldom quote a claim
+  number, so it goes on the vehicle's most recent open incident, with a
+  choice above the form to pick another or start a new one.
+- Saving attaches the letter to the incident. Nothing is saved until you
+  press **Save**.
+
+## When the car is written off
+
+When the insurer settles a claim as a write-off (*Cat N*, *Cat S*, …),
+record the category and *Settled* on the incident. **Archive** then asks
+how the car left:
+
+- **Written off** shows the incident, with the sale date and price filled
+  in from the settlement: the day the incident was closed (else the latest
+  claim update) and the payout. Both can be changed. Saving archives the
+  car with the settlement as its sale.
+- **Just archive** archives it without a reason, as before.
+
+A written-off car is labelled "Written off 14 Mar 2025" where a sold one
+says "Sold": on its garage card and page, in the ownership report and its
+CSV, and in History, where the *Written off* milestone names its incident.
+In **cost of ownership** the settlement counts once, as the sale price.
+It's left out of *Insurance payouts*, and the card says "Settlement counted
+as the sale price". **Restore** brings the car back and clears *Written
+off*. The sale date and price stay.
+
+Without a settled write-off, *Archive* stays one click. Saving a sale date
+on the vehicle's edit form marks it *Sold*, and clearing the date clears
+that. A car archived as written off keeps its label even if the incidents
+module is switched off later.
 
 ## Claims history for insurance quotes
 
@@ -116,7 +171,8 @@ other party is never included in either.
   maintenance), plus an *Incidents* section: how many there were,
   *Incident-related spend* and *Payouts received*.
 - **Cost of ownership** is net of insurance payouts, with an *Insurance
-  payouts* line so the figure is explained.
+  payouts* line so the figure is explained. A total loss's settlement is
+  the sale price instead (see *When the car is written off*).
 
 ## What the sale pack shows
 
@@ -145,11 +201,13 @@ costs*. Logging an incident needs *Log*, and changing someone else's needs
 
 - **API:** `GET` and `POST /api/v1/vehicles/{id}/incidents`, and `GET
   /api/v1/incidents/history`, with the same access rules (see
-  [api.md](api.md)). A `POST` retried with the same date, type and claim
+  [api.md](api.md)). The claim's `repair_estimate` is read and written
+  like its payout. A `POST` retried with the same date, type and claim
   number returns the incident already logged.
 - **Ask Logbook** answers "Have I had any claims in the last five years?"
   from the claims history. It can also draft an incident for you to check
   and add. Over [MCP](mcp.md), read and write keys get the same draft.
 - **Export:** *Export CSV* on the Incidents tab includes every field except
-  the other party. There is no CSV import.
-- **Backups** include incidents, their links, readings and photos.
+  the other party, the repair estimate included. There is no CSV import.
+- **Backups** include incidents, their links, readings and photos, the
+  estimate, and a vehicle's *Written off* or *Sold* with its incident.

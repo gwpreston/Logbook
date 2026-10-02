@@ -17,8 +17,8 @@ use Phinx\Seed\AbstractSeed;
 
 /**
  * Sample data for local development: a demo owner (an admin) and a small
- * garage (the vehicles from the design mock-ups, one of them sold and
- * archived), and a second user the owner shares two vehicles with (Phase
+ * garage (the vehicles from the design mock-ups, one of them written off
+ * and archived), and a second user the owner shares two vehicles with (Phase
  * 19): Log without costs on the self-charging hybrid, whose fill-ups they
  * partly logged, and View on the Golf.
  *
@@ -99,6 +99,8 @@ final class DemoDataSeeder extends AbstractSeed
             'sale_price' => null,
             'status' => 'active',
             'archived_at' => null,
+            'disposal' => null,
+            'disposal_incident_id' => null,
             'created_at' => $now,
             'updated_at' => $now,
         ], $values);
@@ -133,8 +135,9 @@ final class DemoDataSeeder extends AbstractSeed
                 'type' => 'car', 'make' => 'Ford', 'model' => 'Fiesta 1.0 EcoBoost', 'year' => 2014,
                 'registration' => 'WR14 FNE', 'fuel_type' => 'petrol', 'capacity' => '42.000',
                 'purchase_date' => '2016-06-30', 'purchase_price' => '6500.000',
+                // Written off (Phase 27.2): the settlement is the sale; the incident is linked once it exists.
                 'sale_date' => '2025-11-20', 'sale_price' => '2100.000',
-                'status' => 'archived', 'archived_at' => '2025-11-20 12:00:00',
+                'status' => 'archived', 'archived_at' => '2025-11-20 12:00:00', 'disposal' => 'written_off',
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Mitsubishi', 'model' => 'Outlander 2.4 PHEV', 'year' => 2021,
@@ -698,8 +701,8 @@ final class DemoDataSeeder extends AbstractSeed
     }
 
     /**
-     * The sold Fiesta's sale receipt (spec.md §7.12): a one-page PDF written
-     * under UPLOAD_PATH, shown on its *Sold* milestone.
+     * The written-off Fiesta's settlement letter (spec.md §7.12): a one-page
+     * PDF written under UPLOAD_PATH, shown on its *Written off* milestone.
      */
     /**
      * The leased Kia's monthly payments (the `finance` category), from the
@@ -742,7 +745,7 @@ final class DemoDataSeeder extends AbstractSeed
         ];
         $this->table('odometer_readings')->insert([
             $reading('2016-06-30', '38400.000', 'Bought'),
-            $reading('2025-11-20', '131900.000', 'Sold'),
+            $reading('2025-11-20', '131900.000', 'Written off'),
         ])->saveData();
 
         $services = [];
@@ -783,7 +786,7 @@ final class DemoDataSeeder extends AbstractSeed
             'vehicle_id' => $fiesta,
             'owner_type' => 'sale',
             'owner_id' => $fiesta,
-            'filename' => 'Sale receipt WR14 FNE.pdf',
+            'filename' => 'Settlement letter WR14 FNE.pdf',
             'mime' => 'application/pdf',
             'size' => strlen($pdf),
             'stored_path' => $stored,
@@ -1098,8 +1101,11 @@ final class DemoDataSeeder extends AbstractSeed
      * scrape that was not the owner's fault, claimed and settled, with its
      * bumper repair linked, two photos and the other party's insurer; and
      * the pothole behind August's damaged tyre, not claimed, linked to that
-     * tyre change. On the sold Fiesta, an old at-fault collision with a
-     * claim, so the claims history lists a vehicle no longer owned.
+     * tyre change. The scrape's repair estimate is recorded (Phase 27.2),
+     * information only. On the Fiesta, an at-fault collision in October 2025
+     * settled as a Cat S total loss: the car was archived as *Written off*,
+     * the settlement its sale price, so the claims history lists a vehicle
+     * no longer owned and its ownership counts the settlement once.
      */
     private function seedIncidents(string $now, int $userId): void
     {
@@ -1127,6 +1133,8 @@ final class DemoDataSeeder extends AbstractSeed
             'payout' => '640.000',
             'ncd_affected' => 'no',
             'claim_updated_on' => '2024-07-30',
+            'repair_estimate' => '655.000',
+            'notes' => 'Estimate from Smart Repair Belfast',
         ]);
         $this->insertRow('maintenance_entries', [
             'vehicle_id' => $golf,
@@ -1162,25 +1170,27 @@ final class DemoDataSeeder extends AbstractSeed
             }
         }
 
-        $this->incidentRow($fiesta, $now, $userId, [
-            'occurred_on' => '2022-11-03',
+        $totalLoss = $this->incidentRow($fiesta, $now, $userId, [
+            'occurred_on' => '2025-10-28',
             'occurred_at_time' => '08:10',
             'location' => 'Doagh Road roundabout',
             'type' => 'collision',
             'fault' => 'at_fault',
             'description' => 'Ran into the back of a van in slow traffic.',
-            'damage_areas' => '["front"]',
+            'damage_areas' => '["front","underside"]',
             'severity' => 'major',
             'driver_user_id' => $userId,
-            'closed_on' => '2023-01-16',
+            'closed_on' => '2025-11-20',
+            'write_off_category' => 'cat_s',
             'claim_status' => 'settled',
             'insurer' => 'Direct Line',
-            'claim_number' => 'DL-2211-0457',
+            'claim_number' => 'DL-2510-0457',
             'excess' => '250.000',
-            'payout' => '1850.000',
+            'payout' => '2100.000',
             'ncd_affected' => 'yes',
-            'claim_updated_on' => '2023-01-16',
+            'claim_updated_on' => '2025-11-18',
         ]);
+        $this->execute('UPDATE vehicles SET disposal_incident_id = ? WHERE id = ?', [$totalLoss, $fiesta]);
 
         // Two photos of the scrape: kept as taken (spec.md §7.12).
         $png = (string) base64_decode(
@@ -1243,6 +1253,7 @@ final class DemoDataSeeder extends AbstractSeed
             'payout' => null,
             'ncd_affected' => 'unknown',
             'claim_updated_on' => null,
+            'repair_estimate' => null,
             'created_at' => $now,
             'updated_at' => $now,
         ], $values));

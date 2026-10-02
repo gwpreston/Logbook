@@ -192,6 +192,19 @@ final class ClaimScanTest extends ScanTestCase
         self::assertStringNotContainsString('as=repair_estimate', self::body($form));
     }
 
+    public function testWithReadingFilesOffThereIsNoUpdateFromALetter(): void
+    {
+        $incident = $this->log('2026-09-01', new Claim(ClaimStatus::Notified));
+        $golf = $this->garage['Golf'];
+        $toggles = $this->service($this->app, FeatureToggles::class);
+        $toggles->save(array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== Feature::AiScan)));
+
+        $page = self::body($this->browser->get('/vehicles/' . $golf->id . '/incidents/' . $incident->id));
+        self::assertStringNotContainsString('Update from a letter', $page);
+        $form = self::body($this->browser->get('/vehicles/' . $golf->id . '/incidents/new'));
+        self::assertStringNotContainsString('Fill from a file', $form);
+    }
+
     public function testTheIncidentKindsAreOfferedAsReadItAs(): void
     {
         $invoice = ScanFixture::load('02-service-invoice-photo');
