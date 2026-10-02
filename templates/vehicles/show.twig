@@ -318,6 +318,9 @@
                             {% if cost.payouts %}
                                 <br><span class="muted">{{ 'ownership.row.payouts'|trans }} <span class="tabular">−{{ cost.payouts|money }}</span></span>
                             {% endif %}
+                            {% if cost.settlementIsSale %}
+                                <br><span class="muted">{{ 'ownership.settlement_is_sale'|trans }}</span>
+                            {% endif %}
                         </dd>
                     </div>
                     {% if cost.isComplete() %}

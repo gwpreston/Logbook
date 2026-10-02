@@ -9,6 +9,7 @@
  # 'maintenance' | 'tyres' | 'compliance' | 'expenses' | 'incidents').
  #}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/vehicles.twig' as vehicle_ui %}
 {% set data = vehicle.data %}
 {% set tabs = [
     {route: 'vehicles.show', key: 'overview', icon: 'space_dashboard', label: 'vehicle.tab.overview'},
@@ -37,6 +38,9 @@
                 {{ ui.csrf(csrf) }}
                 <button type="submit" class="btn">{{ ui.icon('unarchive') }}{{ 'vehicle.restore'|trans }}</button>
             </form>
+        {% elseif total_loss_offered(vehicle) %}
+            {# A settled write-off: the confirm page offers *Written off* (spec.md §7.29 *Total loss*). #}
+            <a class="btn" href="{{ url_for('vehicles.archive', {id: vehicle.id}) }}" data-modal>{{ ui.icon('archive') }}{{ 'vehicle.archive'|trans }}</a>
         {% else %}
             <form method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
                 {{ ui.csrf(csrf) }}
@@ -55,7 +59,9 @@
         <div class="vehicle-card__tags">
             {% if data.registration %}<span class="plate">{{ data.registration }}</span>{% endif %}
             <span class="pill">{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</span>
-            {% if vehicle.isArchived() %}
+            {% if vehicle.isArchived() and vehicle.isWrittenOff() %}
+                <span class="pill pill--soon">{{ ui.icon('car_crash') }}{{ vehicle_ui.written_off(vehicle) }}</span>
+            {% elseif vehicle.isArchived() %}
                 <span class="pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.archived_on'|trans({date: vehicle.archivedAt|instant_date}) }}</span>
             {% endif %}
             {% set written_off = write_off(vehicle) %}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Vehicle;
 
 use Collator;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
@@ -140,6 +141,7 @@ final readonly class VehicleService
         ): Vehicle {
             $now = $this->clock->now();
             $id = $this->vehicles->insert($user->id, $data, $now);
+            $this->vehicles->setSold($user->id, $id, $data->saleDate !== null);
             $this->access->forget();
             $vehicle = $this->get($user, $id);
             if ($starting !== null) {
@@ -182,6 +184,8 @@ final readonly class VehicleService
 
         $this->attachments->saveWithFiles($files->all(), function (array $stored) use ($vehicle, $data, $files): void {
             $this->vehicles->update($vehicle->userId, $vehicle->id, $data, $this->clock->now());
+            // A sale date makes it sold; clearing it clears `sold` (#105). Written off stays.
+            $this->vehicles->setSold($vehicle->userId, $vehicle->id, $data->saleDate !== null);
             $this->recordPaperwork($vehicle, $files, $stored);
         });
 
@@ -205,6 +209,27 @@ final readonly class VehicleService
         $this->access->forget();
     }
 
+    /**
+     * Archive as a total loss (spec.md §7.29 *Total loss*): written off,
+     * with the incident, and the settlement as the sale date and price.
+     *
+     * @param string $salePrice canonical decimal
+     */
+    public function archiveWrittenOff(
+        User $user,
+        Vehicle $vehicle,
+        int $incidentId,
+        DateTimeImmutable $saleDate,
+        string $salePrice,
+    ): void {
+        $now = $this->clock->now();
+        $this->vehicles->archiveWrittenOff($vehicle->userId, $vehicle->id, $incidentId, $saleDate, $salePrice, $now);
+        $this->access->forget();
+    }
+
+    /**
+     * Back to the garage; the disposal is cleared, the sale kept.
+     */
     public function restore(User $user, Vehicle $vehicle): void
     {
         $this->vehicles->setStatus($vehicle->userId, $vehicle->id, VehicleStatus::Active, $this->clock->now());

@@ -346,6 +346,11 @@ pre {
     border-radius: var(--radius-md);
 }
 
+/* Shown only without JS (a fallback the script does for itself). */
+.js .nojs-only {
+    display: none;
+}
+
 [hidden] {
     display: none !important;
 }

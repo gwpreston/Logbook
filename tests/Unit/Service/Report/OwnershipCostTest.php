@@ -23,6 +23,7 @@ use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Valuation\VehicleValuationData;
+use Logbook\Domain\Vehicle\Disposal;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
@@ -30,6 +31,7 @@ use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Kernel;
 use Logbook\Service\Expense\CostItem;
+use Logbook\Service\Report\InsurancePayout;
 use Logbook\Service\Report\OwnershipCost;
 use Logbook\Service\Report\OwnershipSection;
 use Logbook\Service\Report\OwnershipStart;
@@ -43,6 +45,7 @@ use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\I18n\TranslatorFactory;
+use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\UnitPreset;
 use PHPUnit\Framework\TestCase;
@@ -147,6 +150,41 @@ final class OwnershipCostTest extends TestCase
         self::assertSame('3000.000', $cost->running->toDecimal(3));
         self::assertSame('7400.000', $cost->total?->toDecimal(3), '£3,000 + (£6,500 − £2,100)');
         self::assertSame('0.105714', $cost->perKm, '(£3,000 + £4,400) ÷ 70,000 km');
+    }
+
+    public function testATotalLossSettlementIsTheSalePriceAndCountsOnce(): void
+    {
+        // Bought for £15,000, written off by incident 7 and settled for £9,000 (the
+        // sale), with a £400 payout on an earlier repair claim (incident 5).
+        $golf = self::vehicle(purchased: '2020-01-01', price: '15000.000', sold: '2025-03-14', salePrice: '9000.000');
+        $golf = self::writtenOff($golf, 7);
+        $payouts = [
+            new InsurancePayout(self::date('2023-05-01'), Money::of('400', 'GBP'), 5),
+            new InsurancePayout(self::date('2025-02-20'), Money::of('9000', 'GBP'), 7),
+        ];
+
+        $cost = self::of($golf, [self::expense($golf, '2022-01-01', '3000')], [], [], '2026-09-01', $payouts);
+
+        self::assertNotNull($cost);
+        self::assertSame('400.000', $cost->payouts?->toDecimal(3), 'only the repair claim\'s payout');
+        self::assertTrue($cost->settlementIsSale, '"Settlement counted as the sale price"');
+        self::assertSame('2600.000', $cost->running->toDecimal(3), '£3,000 spent − £400');
+        self::assertSame('6000.000', $cost->depreciationCost?->toDecimal(3), '£15,000 − £9,000');
+        // By hand: £15,000 + £3,000 out, £400 + £9,000 back.
+        self::assertSame('8600.000', $cost->total?->toDecimal(3));
+        self::assertTrue($cost->isLifetime());
+    }
+
+    public function testASoldVehicleStillCountsEveryPayout(): void
+    {
+        $car = self::vehicle(purchased: '2020-01-01', price: '15000.000', sold: '2025-03-14', salePrice: '9000.000');
+        $payouts = [new InsurancePayout(self::date('2025-02-20'), Money::of('500', 'GBP'), 7)];
+
+        $cost = self::of($car, [self::expense($car, '2022-01-01', '3000')], [], [], '2026-09-01', $payouts);
+
+        self::assertNotNull($cost);
+        self::assertSame('500.000', $cost->payouts?->toDecimal(3));
+        self::assertFalse($cost->settlementIsSale);
     }
 
     public function testASaleDateWithoutAPriceEndsThePeriodButIsNotLifetime(): void
@@ -350,13 +388,37 @@ final class OwnershipCostTest extends TestCase
      * @param list<CostItem> $items
      * @param list<OdometerReading> $readings
      * @param list<VehicleValuation> $valuations
+     * @param list<InsurancePayout> $payouts
      */
-    private static function of(Vehicle $vehicle, array $items, array $readings, array $valuations, string $today): ?OwnershipCost
-    {
+    private static function of(
+        Vehicle $vehicle,
+        array $items,
+        array $readings,
+        array $valuations,
+        string $today,
+        array $payouts = [],
+    ): ?OwnershipCost {
         $zone = new DateTimeZone(self::LONDON);
         $depreciation = Depreciation::of($vehicle, $valuations, $readings, self::date($today), $zone, 'GBP');
 
-        return OwnershipCost::of($vehicle, $items, $readings, $depreciation, self::date($today), $zone);
+        return OwnershipCost::of($vehicle, $items, $readings, $depreciation, self::date($today), $zone, $payouts);
+    }
+
+    private static function writtenOff(Vehicle $vehicle, int $incidentId): Vehicle
+    {
+        return new Vehicle(
+            $vehicle->id,
+            $vehicle->userId,
+            $vehicle->data,
+            VehicleStatus::Archived,
+            null,
+            null,
+            $vehicle->createdAt,
+            $vehicle->createdAt,
+            $vehicle->updatedAt,
+            Disposal::WrittenOff,
+            $incidentId,
+        );
     }
 
     private static function group(OwnershipCost $cost, CostGroup $group): string

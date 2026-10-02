@@ -386,7 +386,7 @@ return static function (App $app): void {
             ->setArgument($ability, VehicleAbility::Log->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/delete', DeleteVehicleAction::class)->setName('vehicles.delete')
             ->setArgument($ability, VehicleAbility::Own->value);
-        $group->post('/vehicles/{id:[0-9]+}/archive', ArchiveVehicleAction::class)->setName('vehicles.archive')
+        $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/archive', ArchiveVehicleAction::class)->setName('vehicles.archive')
             ->setArgument($ability, VehicleAbility::Own->value);
         $group->post('/vehicles/{id:[0-9]+}/restore', RestoreVehicleAction::class)->setName('vehicles.restore')
             ->setArgument($ability, VehicleAbility::Own->value);

@@ -19,6 +19,10 @@ final readonly class Vehicle
         public ?DateTimeImmutable $archivedAt,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
+        /** Why it left the garage (Phase 27.2); null = none recorded. */
+        public ?Disposal $disposal = null,
+        /** The total-loss incident when written off. */
+        public ?int $disposalIncidentId = null,
     ) {
     }
 
@@ -50,6 +54,15 @@ final readonly class Vehicle
     public function isArchived(): bool
     {
         return $this->status === VehicleStatus::Archived;
+    }
+
+    /**
+     * Archived as a total loss (spec.md §7.29 *Total loss*): labelled
+     * "Written off" where a sold one says "Sold", whatever modules are on.
+     */
+    public function isWrittenOff(): bool
+    {
+        return $this->disposal === Disposal::WrittenOff;
     }
 
     public function hasPhoto(): bool

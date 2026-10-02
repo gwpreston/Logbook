@@ -296,6 +296,7 @@ final readonly class IncidentRepository
                 'payout',
                 'ncd_affected',
                 'claim_updated_on',
+                'repair_estimate',
                 'created_at',
                 'updated_at',
             )
@@ -339,6 +340,7 @@ final readonly class IncidentRepository
             'payout' => $claim->payout,
             'ncd_affected' => $claim->ncdAffected->value,
             'claim_updated_on' => $claim->updatedOn?->format('Y-m-d'),
+            'repair_estimate' => $claim->repairEstimate,
         ];
     }
 
@@ -407,6 +409,7 @@ final readonly class IncidentRepository
                     payout: Row::nullableDecimal($row, 'payout', self::MONEY_SCALE),
                     ncdAffected: NcdEffect::from(Row::string($row, 'ncd_affected')),
                     updatedOn: Row::nullableDate($row, 'claim_updated_on'),
+                    repairEstimate: Row::nullableDecimal($row, 'repair_estimate', self::MONEY_SCALE),
                 ),
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),

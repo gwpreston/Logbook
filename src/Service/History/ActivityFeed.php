@@ -453,6 +453,7 @@ final readonly class ActivityFeed
         }
         foreach ($milestones as [$vehicle, $milestone, $date, $price]) {
             $owner = $milestone->filesOwner();
+            $totalLoss = $milestone === Milestone::WrittenOff ? $partOf($vehicle->disposalIncidentId) : null;
             $items[] = new ActivityItem(
                 kind: ActivityKind::Milestone,
                 vehicle: $vehicle,
@@ -466,6 +467,9 @@ final readonly class ActivityFeed
                 milestone: $milestone,
                 price: $price,
                 files: $owner === null ? 0 : $counts->of($owner, $vehicle->id),
+                // *Written off* links its incident, as a record names the incident it is part of.
+                partOfKey: $totalLoss?->data->type->labelKey(),
+                partOfDate: $totalLoss?->data->occurredOn,
             );
         }
 
@@ -635,7 +639,9 @@ final readonly class ActivityFeed
         return array_values(array_filter([
             $data->firstRegisteredOn === null ? null : [Milestone::FirstRegistered, $data->firstRegisteredOn, null],
             $data->purchaseDate === null ? null : [Milestone::Bought, $data->purchaseDate, $data->purchasePrice],
-            $data->saleDate === null ? null : [Milestone::Sold, $data->saleDate, $data->salePrice],
+            $data->saleDate === null
+                ? null
+                : [$vehicle->isWrittenOff() ? Milestone::WrittenOff : Milestone::Sold, $data->saleDate, $data->salePrice],
         ]));
     }
 

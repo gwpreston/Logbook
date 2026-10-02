@@ -2,7 +2,7 @@
 
 *When the insurer pays out for the car, and the letters in between.*
 
-Status: 📋 planned · releases **v2.10.0** (Phases 27.1 and 27.2) · file
+Status: 🚧 in progress · releases **v2.10.0** (Phases 27.1 and 27.2) · file
 lives in `docs/phases/`
 
 [Phase 27.1](phase-27.1.md) records incidents and claims. Two of its open
@@ -165,5 +165,9 @@ Written into `spec.md` when this phase was decided (2026-10-01):
 
 ## Open questions
 
-None yet. The questions this phase answers were found while starting
-Phase 27.1 (#93, #95, #98–#101).
+The questions this phase answers were found while starting Phase 27.1
+(#93, #95, #98–#101). One more was found while starting it:
+
+- **Clearing a sold vehicle's sale date** (#105). *Decided 2026-10-02:*
+  clearing the sale date clears disposal `sold`; a `written_off` disposal
+  is never changed by the edit form (spec §7.29 *Total loss*).

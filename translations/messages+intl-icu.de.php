@@ -473,6 +473,20 @@ return [
         'default_grade' => [
             'none' => 'Keine',
         ],
+        'archive_title' => '{name} archivieren',
+        'archive_lead' => 'Für dieses Fahrzeug ist ein Totalschaden abgerechnet. Halte es als Totalschaden fest, mit der Entschädigung als Verkaufspreis, oder archiviere es einfach.',
+        'archive_as' => 'Archivieren als',
+        'archive_just' => 'Nur archivieren',
+        'archive_incident' => 'Der Totalschaden',
+        'archive_use_settlement' => 'Seine Entschädigung übernehmen',
+        'archive_sale_date_hint' => 'Aus der Abrechnung: der Tag, an dem der Vorfall abgeschlossen wurde, sonst die letzte Nachricht zum Schaden.',
+        'archive_sale_price_hint' => 'Die Entschädigung, gezählt als Verkaufspreis und nicht als Versicherungsleistung.',
+        'archived_written_off' => '{name} wurde als Totalschaden archiviert. Der Verlauf bleibt erhalten.',
+        'written_off_on' => 'Totalschaden am {date}',
+        'disposal' => [
+            'written_off' => 'Totalschaden',
+            'sold' => 'Verkauft',
+        ],
     ],
     'history' => [
         'part_of' => 'Gehört zu: {incident}',
@@ -531,7 +545,10 @@ return [
             'bought_for' => 'Gekauft für {price}',
             'sold' => 'Verkauft',
             'sold_for' => 'Verkauft für {price}',
+            'written_off' => 'Totalschaden',
+            'written_off_for' => 'Totalschaden, entschädigt mit {price}',
         ],
+        'written_off_by' => 'Totalschaden: {incident}',
     ],
     'odometer' => [
         'title' => 'Kilometerstand',
@@ -2086,6 +2103,8 @@ return [
             'no_distance' => 'Erfasse Kilometerstände, um die Kosten pro Strecke zu sehen.',
             'archived' => 'Archivierte Fahrzeuge fehlen, außer du setzt das Häkchen; verkaufte Fahrzeuge haben exakte Zahlen für die gesamte Besitzdauer.',
         ],
+        'lifetime_written_off' => 'Gesamte Besitzdauer, Totalschaden am {date}',
+        'settlement_is_sale' => 'Entschädigung als Verkaufspreis gezählt',
     ],
     'report' => [
         'title' => 'Ausgaben & Berichte',
@@ -2420,6 +2439,7 @@ return [
             'rate' => 'Satz',
             'passenger_amount' => 'Mitfahrerbetrag',
         ],
+        'written_off' => 'Totalschaden',
     ],
     'import' => [
         'csv' => 'CSV importieren',

@@ -474,6 +474,20 @@ return [
         'default_grade' => [
             'none' => 'None',
         ],
+        'archive_title' => 'Archive {name}',
+        'archive_lead' => 'This vehicle has a settled write-off. Record it as written off, with the settlement as its sale, or just archive it.',
+        'archive_as' => 'Archive as',
+        'archive_just' => 'Just archive',
+        'archive_incident' => 'The write-off',
+        'archive_use_settlement' => 'Use its settlement',
+        'archive_sale_date_hint' => 'From the settlement: the day the incident was closed, else the latest claim update.',
+        'archive_sale_price_hint' => 'The settlement, counted as the sale price and not as an insurance payout.',
+        'archived_written_off' => '{name} was archived as written off. Its history is kept.',
+        'written_off_on' => 'Written off {date}',
+        'disposal' => [
+            'written_off' => 'Written off',
+            'sold' => 'Sold',
+        ],
     ],
     'history' => [
         'part_of' => 'Part of: {incident}',
@@ -532,7 +546,10 @@ return [
             'bought_for' => 'Bought for {price}',
             'sold' => 'Sold',
             'sold_for' => 'Sold for {price}',
+            'written_off' => 'Written off',
+            'written_off_for' => 'Written off, settled for {price}',
         ],
+        'written_off_by' => 'Total loss: {incident}',
     ],
     'odometer' => [
         'title' => 'Mileage',
@@ -2088,6 +2105,8 @@ return [
             'no_distance' => 'Log mileage to see the cost per distance.',
             'archived' => 'Archived vehicles are left out unless ticked; sold vehicles have exact lifetime figures.',
         ],
+        'lifetime_written_off' => 'Lifetime, written off {date}',
+        'settlement_is_sale' => 'Settlement counted as the sale price',
     ],
     'report' => [
         'title' => 'Expenses & reports',
@@ -2422,6 +2441,7 @@ return [
             'rate' => 'Rate',
             'passenger_amount' => 'Passenger amount',
         ],
+        'written_off' => 'written off',
     ],
     'import' => [
         'csv' => 'Import CSV',

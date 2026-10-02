@@ -4814,7 +4814,10 @@ Decided 2026-10-01 (`docs/phases/open-questions.md` #93, #98, #99).
   disposal `written_off`, disposal_incident_id, the sale date and price,
   and archives, in one transaction.
 - **Sold:** the vehicle edit form's sale section sets disposal `sold`
-  when a sale date is saved on a vehicle with no disposal. *Restore*
+  when a sale date is saved on a vehicle with no disposal, and clearing
+  the sale date clears `sold` again (decided 2026-10-02,
+  `docs/phases/open-questions.md` #105); a `written_off` disposal is never
+  changed by the edit form. *Restore*
   clears disposal and disposal_incident_id; the sale date and price stay,
   as now.
 - **Ownership, no double counting:** the disposal incident's payout is

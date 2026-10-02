@@ -1,0 +1,80 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Archive a vehicle with a settled write-off (spec.md §7.29 *Total loss*):
+ # *Written off*, with the incident and the settlement as the sale date and
+ # price (prefilled, editable), or *Just archive*. A plain form, and the
+ # desktop modal with JS; choosing another incident refills the sale from
+ # its settlement (without JS, *Use its settlement* does).
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'vehicle.archive_title'|trans({name: vehicle.name()}) %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'vehicle.archive_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card">
+                {{ ui.chips('disposal', 'vehicle.archive_as'|trans, values, errors, [
+                    {value: 'written_off', label: 'vehicle.disposal.written_off'|trans, icon: 'car_crash'},
+                    {value: '', label: 'vehicle.archive_just'|trans, icon: 'archive'},
+                ]) }}
+                <div class="archive-written-off">
+                    {% if candidates|length == 1 %}
+                        {% set incident = candidates[0] %}
+                        <input type="hidden" name="incident_id" value="{{ incident.id }}">
+                        <p class="field">
+                            <span class="field__label">{{ 'vehicle.archive_incident'|trans }}</span>
+                            <a href="{{ url_for('incidents.show', {id: vehicle.id, incident: incident.id}) }}">{{ 'incident.name'|trans({type: incident.data.type.labelKey()|trans, date: incident.data.occurredOn|local_date}) }}</a>
+                            · {{ incident.data.writeOff.labelKey()|trans }}
+                        </p>
+                    {% else %}
+                        {% set options = [] %}
+                        {% for incident in candidates %}
+                            {% set options = options|merge([{value: incident.id ~ '', label: 'incident.name'|trans({type: incident.data.type.labelKey()|trans, date: incident.data.occurredOn|local_date}) ~ ' · ' ~ incident.data.writeOff.labelKey()|trans}]) %}
+                        {% endfor %}
+                        <div class="field">
+                            <label class="field__label" for="f-incident_id">{{ 'vehicle.archive_incident'|trans }}</label>
+                            <select class="select" id="f-incident_id" name="incident_id" data-total-loss{{ ui.described_by('incident_id', errors, false) }}>
+                                {% for incident in candidates %}
+                                    {% set prefill = prefills[incident.id] %}
+                                    <option value="{{ incident.id }}" data-sale-date="{{ prefill.sale_date }}" data-sale-price="{{ prefill.sale_price }}"{% if (values.incident_id ?? '') == incident.id ~ '' %} selected{% endif %}>{{ options[loop.index0].label }}</option>
+                                {% endfor %}
+                            </select>
+                            {{ ui.field_error(errors, 'incident_id') }}
+                            <button type="submit" class="btn btn--sm nojs-only" formmethod="get" formnovalidate>{{ 'vehicle.archive_use_settlement'|trans }}</button>
+                        </div>
+                    {% endif %}
+                    <div class="form-row">
+                        {{ ui.input('sale_date', 'vehicle.field.sale_date'|trans, values, errors, {type: 'date', hint: 'vehicle.archive_sale_date_hint'|trans}) }}
+                        {{ ui.input('sale_price', 'vehicle.field.sale_price'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'vehicle.archive_sale_price_hint'|trans}) }}
+                    </div>
+                </div>
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('archive') }}{{ 'vehicle.archive'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}
