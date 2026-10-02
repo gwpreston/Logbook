@@ -504,8 +504,11 @@ MySQL only.
 
 **Reminder**
 - id, vehicle_id (`ON DELETE CASCADE`), source (`schedule`|`compliance`|
-  `tyre`|`manual`, and `finance` from Phase 29.2, §7.32, whose source_id
-  is the agreement), source_id (the schedule or document; for `tyre` the
+  `tyre`|`manual`, and `finance` and `finance_end` from Phase 29.2,
+  §7.32, whose source_id is the agreement: `finance` the final payment,
+  `finance_end` *Agreement ends*, two sources because the row is unique
+  per vehicle, source and source_id, decided 2026-10-02,
+  `docs/phases/open-questions.md` #130), source_id (the schedule or document; for `tyre` the
   **vehicle's own id**, because the source is the vehicle's tyres as a
   whole — one tyre reminder per vehicle, never one per tyre, so do not
   "fix" it into a tyre id; none for manual),
@@ -1977,11 +1980,16 @@ toggles.
   same one the History pages use, with no milestones and no folding. The
   widget's title row links to the fleet history (*View all* →
   `/history`, keeping the dashboard's `?vehicle=`).
-- **Business mileage** (id `business_mileage`, Phase 22, with `trips` on;
-  last in the default order): the signed-in user's own business distance
+- **Business mileage** (id `business_mileage`, Phase 22, with `trips` on):
+  the signed-in user's own business distance
   this tax year, the claim value so far and the distance to the rate
   threshold (§7.22); for the selected vehicle when one is chosen. The title
   row links to the claim report.
+- **Finance** (id `finance`, Phase 29.2, with `finance` on; last in the
+  default order, appended to saved layouts by the rule above): §7.32
+  *Dashboard widget*. It stays off the dashboard until a vehicle in view
+  has an active agreement the viewer may see (customising lists it, with
+  "No active finance agreements on these vehicles").
 - **Vehicle filter:** with two or more active vehicles, a row of chips under
   the greeting — *All vehicles* and one per active vehicle with its type
   icon. Each chip is a link (`/?vehicle={id}`; the current one has
@@ -2006,7 +2014,8 @@ toggles.
   saved layout never breaks. Without a saved layout (and without JS) the
   default order applies: needs attention (Phase 24), upcoming reminders,
   coming up, spend this month, recent fuel, your vehicles, efficiency
-  trend, compliance status, mileage, recent activity, business mileage.
+  trend, compliance status, mileage, recent activity, business mileage,
+  finance.
 - **Coming up** (id `coming_up`, Phase 15; core): the next five items of
   the 12-month forecast (§7.18) across the vehicle filter, overdue first,
   and the 12-month total per currency; *View all* → `/upcoming`, keeping
@@ -3223,7 +3232,8 @@ nothing about reminders (§7.6). Derived on every read
 - **Finance** (Phase 29.2, §7.32): each active agreement's payments in
   the horizon as one line per vehicle ("Finance payments, 12 × £312.40"),
   plus a final payment inside the horizon as its own item. They count in
-  *planned*.
+  *planned*. Below `Manage`, with `ViewCosts`, they are plain lines with
+  no link or lender (#128).
 - Not in History, print or reports. Nothing is stored, so there is no
   migration and nothing in backups.
 
@@ -4966,7 +4976,10 @@ Decided 2026-10-01 (`docs/phases/open-questions.md` #93, #98, #99).
 
 - **Archiving offers *Written off*** when the vehicle has an incident with
   a write-off category other than `none` and claim status `settled`.
-  Otherwise *Archive* stays one click (§7.1). When it is offered,
+  Otherwise *Archive* stays one click (§7.1), unless the vehicle has an
+  active finance agreement (Phase 29.2, §7.32 *Archive page*, which adds
+  *Sold*, *Returned to the lender* and *Returned to the lessor* to the
+  same page). When it is offered,
   *Archive* opens a small confirm page (`/vehicles/{id}/archive`, a plain
   form, works without JS; the desktop modal with JS) with *Written off*
   (chosen) or *Just archive*. *Written off* shows the incident (the latest
@@ -5327,7 +5340,13 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     months, and says so otherwise ("Add a valuation to see your equity").
   - *Mileage* (Phase 29.2; PCP and lease with an allowance;
     `Service\Finance\MileageAllowance`): the allowance over the whole
-    agreement (annual × months ÷ 12), the distance so far (latest reading
+    agreement (annual × months ÷ 12, the months counted from started_on
+    to the end date, so a lease of an initial rental and 35 rentals has
+    36; decided 2026-10-02, `docs/phases/open-questions.md` #129). The
+    **end date** for mileage and the *Agreement ends* reminder is the
+    final payment's date for PCP, and for a lease a month after the last
+    rental, when the car goes back (the final payment's default date
+    rule), the distance so far (latest reading
     − start odometer), the allowance used to date pro rata, and the
     **projected distance at the end** (current reading + average daily
     distance (§7.4) × days to the end date). Over the allowance, the
@@ -5359,15 +5378,41 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     price set to the optional final payment, so the lifetime cost is
     right: the owner paid the cash price less the final payment they
     didn't pay. Excess mileage and damage charges are logged as expenses
-    (prefilled, category `finance`).
+    (category `finance`).
   - *Lease ended:* status `ended`; archiving is offered as *Returned to
     the lessor* (disposal `returned_lessor`) with no sale price.
+  - The *End agreement* form (page and desktop modal) takes the outcome
+    (the ones the type allows: settled early and completed for HP, PCP
+    and loans; handed back for PCP; lease ended for a lease) and its date
+    (default today; *Completed* defaults to the last payment's date and is
+    not before it). *Settled early* takes the settlement amount
+    (prefilled from the quote or estimate). *Handed back* and *Lease
+    ended* take two optional amounts, the **excess mileage charge**
+    (prefilled from the mileage at the end, when over) and **damage
+    charges**, each saved as a *Finance and lease* expense on the end
+    date (decided 2026-10-02, #127). Then, for someone who may archive
+    the vehicle (`Own`), handed back and lease ended lead to the archive
+    page with *Returned to the lender* or *Returned to the lessor*
+    chosen.
   - Ending marks the agreement's `finance` reminders done.
 - **Selling with finance owing** (Phase 29.2): archiving as sold with an
   `active` HP or PCP agreement warns "This agreement is still active. The
   lender owns the car until it is settled." It offers *Settled from the
   sale*, with the settlement amount, which ends the agreement as *Settled
   early* on the sale date.
+- **Archive page** (Phase 29.2, decided 2026-10-02, #126): when the
+  vehicle has an active agreement the viewer may see, *Archive* opens the
+  confirm page (§7.29) rather than archiving in one click. Its choices:
+  *Sold* (not for a lease, which the driver can't sell; sale date and
+  price, required, with the vehicle form's rules;
+  disposal `sold`; for HP or PCP the warning above and *Settled from the
+  sale*, ticked, with the settlement amount prefilled from the quote or
+  estimate), *Returned to the lender* (PCP; sale date the end date, sale
+  price the optional final payment; ends the agreement as handed back),
+  *Returned to the lessor* (lease; no sale price; ends it as lease
+  ended), *Written off* when a settled write-off exists, and *Just
+  archive* (the agreement stays active). The vehicle form's sale section
+  is unchanged.
 - **Costs** (`Service\Finance\FinanceLedger`, with `count_in_costs` on;
   this changes Phase 14.2's *Finance and leases* rule, §7.7):
   - The cost ledger gains **derived lines**, never stored, category
@@ -5389,18 +5434,23 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   - **Overlap warning:** when manual `finance` expenses exist in months an
     agreement covers (first payment's month to the final or end month),
     the agreement page and the Expenses tab say "Finance and lease
-    expenses logged in these months may count twice with this agreement",
+    expenses logged in these months may count twice with this agreement"
+    (an ended agreement's months stop the day before its end date, so the
+    charges logged on handing back never warn, #127),
     list them, and link to each. Switching `count_in_costs` off keeps the
     manual lines as the only ones.
 - **Coming up** (Phase 29.2, §7.18): the next 12 months' payments for each
   active agreement as one line per vehicle ("Finance payments, 12 ×
   £312.40"), plus a final payment inside the horizon as its own item.
-  They count in the expected total.
-- **Reminders** (Phase 29.2, §7.6), source `finance`, source_id = the
-  agreement id: the final payment, due on its date with the document lead
-  time; for PCP and leases, *Agreement ends: decide what to do*, 90 days
-  before the end date (lead time 0); none for regular payments, which are
-  paid by direct debit. They are done when the agreement ends.
+  They count in the expected total. Someone with `ViewCosts` below
+  `Manage` sees them as plain lines, with no link or lender, so every
+  viewer's planned total is the same (decided 2026-10-02, #128).
+- **Reminders** (Phase 29.2, §7.6), source_id = the agreement id: the
+  final payment (source `finance`), due on its date with the document
+  lead time; for PCP and leases, *Agreement ends: decide what to do*
+  (source `finance_end`, #130), 90 days before the end date (lead time
+  0); none for regular payments, which are paid by direct debit. They
+  are done when the agreement ends.
 - **Needs attention** (Phase 29.2, §7.24): item 11 (over the allowance by
   more than 2%), and a `missed` payment with no later `paid_late` as a
   *Now* item.

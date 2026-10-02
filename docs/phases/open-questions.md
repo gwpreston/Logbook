@@ -46,7 +46,9 @@ was answered the same day. Phase 27.2's question found while starting it
 them found while starting it) were answered on 2026-10-02, before it was
 built. Phase 29's (#118–#125, four of them found while starting it) were
 answered on 2026-10-02, before Phase 29.1 started; the phase was split
-into 29.1 and 29.2.
+into 29.1 and 29.2. Phase 29.2's (#126–#129, all found while starting it)
+were answered on 2026-10-02, before it was built; one found while
+building it (#130) was answered the same day.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -172,9 +174,14 @@ into 29.1 and 29.2.
 | 120 | [29.1](phase-29.1.md) | Store the agreement number? | Decided | Yes, optional, masked to its last 4 characters except on the edit form; never in the API, Ask, CSV or sale pack; in backups (spec §6). | 2026-10-02 |
 | 121 | [29.1](phase-29.1.md) | Business leases: VAT on rentals and its recovery? | Parked | Out of scope; rentals entered as paid; spec §12. | 2026-10-02 |
 | 122 | [29.1](phase-29.1.md) | Cost of credit for a loan, which has no cash price (found while starting) | Decided | Total amount payable − amount of credit; none for a lease (spec §7.32). | 2026-10-02 |
-| 123 | [29.1](phase-29.1.md) | Exact cost after a PCP is handed back (found while starting) | Scheduled | Exact: everything paid − (cash price − final payment); built in [Phase 29.2](phase-29.2.md) (spec §7.32). | 2026-10-02 |
+| 123 | [29.1](phase-29.1.md) | Exact cost after a PCP is handed back (found while starting) | Decided | Exact: everything paid − (cash price − final payment); built in [Phase 29.2](phase-29.2.md), a hand back archiving as a sale at the final payment (spec §7.32). | 2026-10-02 |
 | 124 | [29.1](phase-29.1.md) | Split Phase 29? (found while starting) | Decided | Yes: [29.1](phase-29.1.md) agreements, figures and costs; [29.2](phase-29.2.md) mileage, ending, the rest and v2.12.0. | 2026-10-02 |
 | 125 | [29.1](phase-29.1.md) | Derived finance lines for cost viewers below `Manage` (found while starting) | Decided | They count, as plain *Finance and lease* lines with no agreement detail (spec §7.32 *Access*). | 2026-10-02 |
+| 126 | [29.2](phase-29.2.md) | Where do *Selling with finance owing* and the hand-back choices go? (found while starting) | Decided | The archive page: with an active agreement it opens with *Sold*, *Returned to the lender*, *Returned to the lessor*, *Written off* and *Just archive*; the vehicle form is unchanged (spec §7.32 *Archive page*, §7.29). | 2026-10-02 |
+| 127 | [29.2](phase-29.2.md) | Excess mileage and damage charges on handing back, and the overlap warning (found while starting) | Decided | Two optional amounts on the *End agreement* form, saved as *Finance and lease* expenses on the end date; an ended agreement's months stop the day before its end date (spec §7.32 *Ending*, *Overlap warning*). | 2026-10-02 |
+| 128 | [29.2](phase-29.2.md) | *Coming up* finance lines for `ViewCosts` below `Manage` (found while starting) | Decided | Plain lines with no link or lender, so every viewer's planned total matches (spec §7.18, §7.32 *Coming up*). | 2026-10-02 |
+| 129 | [29.2](phase-29.2.md) | The agreement's length for the mileage allowance (found while starting) | Decided | Calendar months from started_on to the end date (spec §7.32 *Mileage*). | 2026-10-02 |
+| 130 | [29.2](phase-29.2.md) | Two finance reminders for one agreement, but one row per vehicle, source and source_id (found while building) | Decided | Two sources: `finance` (the final payment) and `finance_end` (*Agreement ends*), both with the agreement as source_id (spec §6 Reminder, §7.32 *Reminders*). | 2026-10-02 |
 
 ## Other loose ends found in the review
 
