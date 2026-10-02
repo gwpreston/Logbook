@@ -2,7 +2,7 @@
 
 *Where you fill up, what you paid there, and how far it is from home.*
 
-Status: ✅ complete · releases **v2.13.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.13.0** · file lives in `docs/phases/`
 
 A fill-up's station is free text today ("Tesco Antrim", "tesco antrim rd"),
 so Logbook can't say where someone usually fills up, or what they've paid
@@ -220,6 +220,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §6, §7.3,
       one per spelling, so use *Duplicates* to merge.
 - [x] Bump `VERSION`, rebuild assets, update the README status and the
       documentation table.
+- [x] Tag `v2.13.0` once merged.
 
 ---
 
