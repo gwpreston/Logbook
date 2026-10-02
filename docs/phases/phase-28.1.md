@@ -313,6 +313,14 @@ Found while starting it:
   or expired) are deleted 90 days after they closed; open ones never
   (spec §7.30 *Jobs and their summaries*).
 
+Found while building it:
+
+- **Masking the compose files' default database password** (#110). The
+  shipped compose files default `DB_PASSWORD` to `logbook`, so masking it
+  turned every "logbook" in the output into `••••`. *Decided 2026-10-02:*
+  exempt it; the value is public in the repository (spec §5 *Jobs*,
+  *Redaction*).
+
 Settled while starting, without changing behaviour: the locks live in
 the cache directory (`var/` may not be writable in the Docker image),
 the Jobs page sits under Settings → *Installation* (there is no *System*

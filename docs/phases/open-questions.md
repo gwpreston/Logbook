@@ -41,7 +41,8 @@ answered on 2026-10-01, before Phase 26.5 started. Phase 27's
 was answered the same day. Phase 27.2's question found while starting it
 (#105) was answered on 2026-10-02, before it was built. Phase 28.1's
 (#106–#109, two of them found while starting it) were answered on
-2026-10-02, before Phase 28.1 started.
+2026-10-02, before Phase 28.1 started; one found while building it
+(#110) was answered the same day.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -154,6 +155,7 @@ was answered the same day. Phase 27.2's question found while starting it
 | 107 | [28.1](phase-28.1.md) | Tell admins when a job fails twice in a row? | Decided | Yes: a dashboard notice while the streak lasts, and once per streak a `job_failed` notification through each admin's own channels (spec §7.30 *Failure alerts*). | 2026-10-02 |
 | 108 | [28.1](phase-28.1.md) | How often does `cleanup` run? (found while starting) | Decided | Hourly, so the 24-hour promise for unclaimed scans still holds (spec §5 *Jobs*). | 2026-10-02 |
 | 109 | [28.1](phase-28.1.md) | How long are closed invitations kept? (found while starting) | Decided | 90 days after they were used, revoked or expired; open links are never deleted (spec §7.30). | 2026-10-02 |
+| 110 | [28.1](phase-28.1.md) | Mask `logbook`, the compose files' default database password, in job output? (found while building) | Decided | No: it is public in the repository, and masking it garbled every file name (spec §5 *Jobs*, *Redaction*). | 2026-10-02 |
 
 ## Other loose ends found in the review
 
