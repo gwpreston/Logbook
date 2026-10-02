@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * The scan fixture set (spec.md §7.27 *Tests*, Phase 26.4): twenty synthetic
- * documents, every garage, insurer and plate invented. Each has the lines
- * printed on it, how it is stored (a text PDF, a scanned PDF or a phone
+ * The scan fixture set (spec.md §7.27 *Tests*, Phase 26.4; 21–24 Phase
+ * 27.2): twenty-four synthetic documents, every garage, insurer and plate
+ * invented. Each has the lines printed on it, how it is stored (a text PDF, a scanned PDF or a phone
  * photo), the reply a model gives (the scripted provider replays it in CI;
  * bin/ai-eval.php --scans scores real models against it) and what the form
  * should then hold, in the test owner's units (en_GB: miles, litres, £).
@@ -647,6 +647,133 @@ return [
             'vehicle' => 'BMW',
             'values' => ['performed_on' => '2026-09-12', 'odometer' => '98405', 'cost' => '1234.56'],
             'description' => ['MwSt.'],
+        ],
+    ],
+    '21-claim-letter' => [
+        'type' => 'text_pdf',
+        'lines' => [
+            'Harbourside Insurance plc   Claims Department   PO Box 812, Plymouth PL1 9ZZ',
+            'Date: 06/10/2026',
+            'Your claim number: HSC-55102   Policy number HSI-88213-PC',
+            'Vehicle: AB12 CDE   Date of incident: 02/09/2026',
+            'Thank you for reporting your claim. Your claim is under review by our engineers.',
+            'The excess on your policy is £250.00, payable to the repairer.',
+            'Please quote your claim number in all correspondence.',
+        ],
+        'reply' => [
+            'kind' => 'claim_letter',
+            'fields' => [
+                'date' => $field('06/10/2026', 'Date: 06/10/2026'),
+                'vendor' => $field('Harbourside Insurance plc', 'Harbourside Insurance plc'),
+                'claim_number' => $field('HSC-55102', 'Your claim number: HSC-55102'),
+                'reference' => $field('HSI-88213-PC', 'Policy number HSI-88213-PC'),
+                'registration' => $field('AB12 CDE', 'Vehicle: AB12 CDE'),
+                'incident_date' => $field('02/09/2026', 'Date of incident: 02/09/2026'),
+                'claim_status' => $field('under review', 'Your claim is under review by our engineers.'),
+                'excess' => $field('£250.00', 'The excess on your policy is £250.00'),
+            ],
+        ],
+        'expect' => [
+            'form' => 'incident',
+            'vehicle' => 'Golf',
+            'values' => [
+                'occurred_on' => '2026-09-02',
+                'insurer' => 'Harbourside Insurance plc',
+                'claim_number' => 'HSC-55102',
+                'excess' => '250',
+                'claim_updated_on' => '2026-10-06',
+                'claim_status' => 'not_claimed',
+            ],
+        ],
+    ],
+    '22-settlement-cat-s' => [
+        'type' => 'text_pdf',
+        'lines' => [
+            'Harbourside Insurance plc   Claims Department   PO Box 812, Plymouth PL1 9ZZ',
+            'Date: 12/10/2026',
+            'Claim number: HSC-55102   Vehicle: AB12 CDE   Date of incident: 02/09/2026',
+            'Our engineer has assessed your vehicle as a total loss, Category S (structural).',
+            'Your claim has been settled. Settlement amount £9,000.00, less your excess of £250.00.',
+            'Payment issued to your nominated account on 12/10/2026.',
+            'The salvage will be collected by our agents. Please send us the V5C and both keys.',
+        ],
+        'reply' => [
+            'kind' => 'claim_letter',
+            'fields' => [
+                'date' => $field('12/10/2026', 'Date: 12/10/2026'),
+                'vendor' => $field('Harbourside Insurance plc', 'Harbourside Insurance plc'),
+                'claim_number' => $field('HSC-55102', 'Claim number: HSC-55102'),
+                'registration' => $field('AB12 CDE', 'Vehicle: AB12 CDE'),
+                'incident_date' => $field('02/09/2026', 'Date of incident: 02/09/2026'),
+                'claim_status' => $field('settled; payment issued', 'Your claim has been settled.'),
+                'payout' => $field('£9,000.00', 'Settlement amount £9,000.00'),
+                'excess' => $field('£250.00', 'less your excess of £250.00'),
+                'write_off' => $field('Category S (structural)', 'total loss, Category S (structural)'),
+            ],
+        ],
+        'expect' => [
+            'form' => 'incident',
+            'vehicle' => 'Golf',
+            'values' => [
+                'claim_status' => 'settled',
+                'payout' => '9000',
+                'excess' => '250',
+                'write_off_category' => 'cat_s',
+                'claim_updated_on' => '2026-10-12',
+            ],
+        ],
+    ],
+    '23-estimate-photo' => [
+        'type' => 'photo',
+        'lines' => [
+            'COASTLINE BODY REPAIRS',
+            'ESTIMATE  02/10/2026',
+            'Reg AB12 CDE',
+            'Rear bumper repair and respray',
+            'Estimate total £1,284.00',
+        ],
+        'reply' => [
+            'kind' => 'repair_estimate',
+            'fields' => [
+                'date' => $field('02/10/2026', 'ESTIMATE 02/10/2026'),
+                'vendor' => $field('Coastline Body Repairs', 'COASTLINE BODY REPAIRS'),
+                'registration' => $field('AB12 CDE', 'Reg AB12 CDE'),
+                'total' => $field('£1,284.00', 'Estimate total £1,284.00'),
+            ],
+            'lines' => ['work' => ['Rear bumper repair and respray']],
+        ],
+        'expect' => [
+            'form' => 'incident',
+            'vehicle' => 'Golf',
+            'values' => ['repair_estimate' => '1284'],
+            'notes' => ['Estimate from Coastline Body Repairs'],
+        ],
+    ],
+    '24-insurance-schedule' => [
+        'type' => 'text_pdf',
+        'lines' => [
+            'Harbourside Insurance plc   Motor insurance schedule',
+            'Policyholder: A. Owner   Policy number HSI-88213-PC',
+            'Vehicle insured: AB12 CDE   Cover: Comprehensive',
+            'Period of insurance: 01/04/2026 to 31/03/2027',
+            'Excess: compulsory £250.00   Total premium £412.66',
+            'Claims in the last 5 years: none declared. To make a claim call 0800 000 000.',
+        ],
+        'reply' => [
+            'kind' => 'insurance',
+            'fields' => [
+                'vendor' => $field('Harbourside Insurance plc', 'Harbourside Insurance plc'),
+                'reference' => $field('HSI-88213-PC', 'Policy number HSI-88213-PC'),
+                'registration' => $field('AB12 CDE', 'Vehicle insured: AB12 CDE'),
+                'start' => $field('01/04/2026', 'Period of insurance: 01/04/2026'),
+                'expiry' => $field('31/03/2027', 'to 31/03/2027'),
+                'total' => $field('£412.66', 'Total premium £412.66'),
+            ],
+        ],
+        'expect' => [
+            'form' => 'document',
+            'vehicle' => 'Golf',
+            'values' => ['type' => 'insurance', 'reference' => 'HSI-88213-PC', 'start_on' => '2026-04-01', 'cost' => '412.66'],
         ],
     ],
 ];

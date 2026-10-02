@@ -43,6 +43,7 @@ final readonly class ScanReader
         FileUpload $checked,
         ?int $vehicleId,
         ?ScanTarget $target,
+        ?int $incidentId = null,
     ): ScanUpload {
         if (!$checked->isValid() || $checked->mime === null || $checked->extension === null) {
             throw new \InvalidArgumentException('Only a validated file can be kept.');
@@ -59,6 +60,7 @@ final readonly class ScanReader
                 $vehicleId,
                 $target,
                 $this->clock->now(),
+                $incidentId,
             );
         } catch (Throwable $e) {
             $this->files->delete($path);

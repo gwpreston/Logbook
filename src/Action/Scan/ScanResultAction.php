@@ -10,6 +10,7 @@ use Logbook\Domain\Ai\Scan\ScanStatus;
 use Logbook\Domain\Ai\Scan\ScanTarget;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Ai\Scan\IncidentMatcher;
 use Logbook\Service\Ai\Scan\ScanReader;
 use Logbook\Service\Ai\Scan\VehicleMatcher;
 use Logbook\Service\Feature\FeatureToggles;
@@ -23,8 +24,10 @@ use Slim\Exception\HttpNotFoundException;
  * GET /scan/{token} — where a scan goes next (spec.md §7.27): still
  * reading (the page looks again shortly); the vehicle to pick; the kind to
  * pick for a file that could not be read; a module that is off; or the
- * prefilled form, as a redirect to the create form with `?scan=`. `?as=`
- * reads it as another kind, `?vehicle=` picks the vehicle. A saved scan
+ * prefilled form, as a redirect to the create form with `?scan=` (or, for
+ * a claim letter or estimate, the edit form of the incident it updates).
+ * `?as=` reads it as another kind, `?vehicle=` picks the vehicle,
+ * `?incident=` the incident an estimate goes on (`new`: *Log incident*). A saved scan
  * goes to its recommendations card.
  */
 final readonly class ScanResultAction
@@ -32,6 +35,7 @@ final readonly class ScanResultAction
     public function __construct(
         private ScanGuard $guard,
         private VehicleMatcher $matcher,
+        private IncidentMatcher $incidents,
         private VehicleAccess $access,
         private FeatureToggles $features,
         private Redirector $redirect,
@@ -79,6 +83,12 @@ final readonly class ScanResultAction
                 $vehicle = $candidate;
             }
         }
+        if ($vehicle === null && $upload->incidentId !== null) {
+            // Scanned for an incident: its vehicle, whatever plate the letter shows.
+            foreach ($vehicles as $candidate) {
+                $vehicle = $candidate->id === $upload->vehicleId ? $candidate : $vehicle;
+            }
+        }
         if ($vehicle === null && $reading !== null) {
             $vehicle = $this->matcher->match($user, $reading, $upload->vehicleId)->vehicle;
         }
@@ -110,6 +120,21 @@ final readonly class ScanResultAction
                 'feature' => $feature,
                 'vehicle' => $vehicle,
             ]);
+        }
+
+        if ($target === ScanTarget::Incident) {
+            // A letter about a claim updates its incident; an estimate the latest open one (§7.29).
+            $chosen = is_string($query['incident'] ?? null) ? $query['incident'] : null;
+            $incident = $this->incidents->forScan($user, $vehicle, $upload, $reading, $kind, $chosen);
+            if ($incident !== null) {
+                $params = [ScanPrefill::FIELD => $upload->token] + ($as === null ? [] : [ScanPrefill::AS => $as->value]);
+
+                return $this->redirect->to($this->redirect->urlFor(
+                    'incidents.edit',
+                    ['id' => (string) $vehicle->id, 'incident' => (string) $incident->id],
+                    $params,
+                ));
+            }
         }
 
         return $this->redirect->to($this->formUrl($target, $vehicle, $upload->token, $as));

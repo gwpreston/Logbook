@@ -36,6 +36,8 @@ final readonly class ScanUpload
         public ?array $recommendations,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $expiresAt,
+        /** The incident it was scanned for (Phase 27.2: *Update from a letter*). */
+        public ?int $incidentId = null,
     ) {
     }
 

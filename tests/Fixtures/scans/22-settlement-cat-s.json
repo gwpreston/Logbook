@@ -1,0 +1,59 @@
+{
+    "file": "22-settlement-cat-s.pdf",
+    "type": "text_pdf",
+    "locale": "en_GB",
+    "chosen": null,
+    "pick": null,
+    "reply": {
+        "kind": "claim_letter",
+        "fields": {
+            "date": {
+                "value": "12/10/2026",
+                "evidence": "Date: 12/10/2026"
+            },
+            "vendor": {
+                "value": "Harbourside Insurance plc",
+                "evidence": "Harbourside Insurance plc"
+            },
+            "claim_number": {
+                "value": "HSC-55102",
+                "evidence": "Claim number: HSC-55102"
+            },
+            "registration": {
+                "value": "AB12 CDE",
+                "evidence": "Vehicle: AB12 CDE"
+            },
+            "incident_date": {
+                "value": "02/09/2026",
+                "evidence": "Date of incident: 02/09/2026"
+            },
+            "claim_status": {
+                "value": "settled; payment issued",
+                "evidence": "Your claim has been settled."
+            },
+            "payout": {
+                "value": "£9,000.00",
+                "evidence": "Settlement amount £9,000.00"
+            },
+            "excess": {
+                "value": "£250.00",
+                "evidence": "less your excess of £250.00"
+            },
+            "write_off": {
+                "value": "Category S (structural)",
+                "evidence": "total loss, Category S (structural)"
+            }
+        }
+    },
+    "expect": {
+        "form": "incident",
+        "vehicle": "Golf",
+        "values": {
+            "claim_status": "settled",
+            "payout": "9000",
+            "excess": "250",
+            "write_off_category": "cat_s",
+            "claim_updated_on": "2026-10-12"
+        }
+    }
+}

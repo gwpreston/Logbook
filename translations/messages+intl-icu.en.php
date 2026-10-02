@@ -3548,6 +3548,8 @@ return [
             'insurance' => 'Insurance document',
             'registration' => 'Registration document',
             'other' => 'Other document',
+            'claim_letter' => 'Insurance claim letter',
+            'repair_estimate' => 'Repair estimate',
         ],
         'kind_title' => 'Which form?',
         'kind_form' => [
@@ -3598,6 +3600,7 @@ return [
         'notes' => [
             'advisories' => 'Advisories',
             'failures' => 'Failures',
+            'estimate_from' => 'Estimate from {repairer}',
         ],
         'warning' => [
             'failed_test' => 'This test was failed, so it is saved as a note, not as the vehicle’s MOT.',
@@ -3636,6 +3639,10 @@ return [
             'keep_needs_date' => 'To keep the file, switch on Documents (Settings → Modules). Otherwise it is deleted.',
             'submit' => 'Update the vehicle',
         ],
+        'update_from_letter' => 'Update from a letter',
+        'estimate_incident' => 'Which incident is this estimate for?',
+        'estimate_new_incident' => 'A new incident',
+        'estimate_use' => 'Use this incident',
     ],
     'ask' => [
         'title' => 'Ask Logbook',

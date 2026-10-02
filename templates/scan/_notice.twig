@@ -31,7 +31,8 @@
             </p>
             {% if values._scan_kind ?? null %}
                 <p class="scan-notice__kinds">{{ 'scan.notice.other_kind'|trans }}
-                    {% for kind in ['service_invoice', 'fuel_receipt', 'inspection', 'insurance', 'registration', 'other']|filter(k => k != values._scan_kind) %}
+                    {% set kinds = ['service_invoice', 'fuel_receipt', 'inspection', 'insurance', 'registration', 'other']|merge(feature_enabled('incidents') ? ['claim_letter', 'repair_estimate'] : []) %}
+                    {% for kind in kinds|filter(k => k != values._scan_kind) %}
                         <a href="{{ url_for('scan.result', {token: values.scan}, {as: kind, vehicle: vehicle.id}) }}">{{ ('scan.kind.' ~ kind)|trans }}</a>{% if not loop.last %} · {% endif %}
                     {% endfor %}
                 </p>

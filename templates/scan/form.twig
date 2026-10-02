@@ -41,6 +41,7 @@
         <form class="form" method="post" enctype="multipart/form-data" action="{{ url_for('scan') }}" data-scan-form>
             {{ ui.csrf(csrf) }}
             <input type="hidden" name="for" value="{{ values.for ?? '' }}">
+            {% if values.incident ?? '' %}<input type="hidden" name="incident" value="{{ values.incident }}">{% endif %}
             <section class="card">
                 <div class="field">
                     <label class="field__label" for="f-file">{{ 'scan.field.file'|trans }}</label>

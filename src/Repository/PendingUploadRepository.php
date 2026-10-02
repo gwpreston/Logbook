@@ -37,6 +37,7 @@ final readonly class PendingUploadRepository
         ?int $vehicleId,
         ?ScanTarget $target,
         DateTimeImmutable $now,
+        ?int $incidentId = null,
     ): ScanUpload {
         $this->connection->insert(self::TABLE, [
             'user_id' => $userId,
@@ -47,6 +48,7 @@ final readonly class PendingUploadRepository
             'stored_path' => $storedPath,
             'vehicle_id' => $vehicleId,
             'target' => $target?->value,
+            'incident_id' => $incidentId,
             'status' => ScanStatus::Reading->value,
             'created_at' => $this->time($now),
             'expires_at' => $this->time($now->modify('+' . ScanUpload::TTL_SECONDS . ' seconds')),
@@ -54,6 +56,7 @@ final readonly class PendingUploadRepository
             'user_id' => ParameterType::INTEGER,
             'size' => ParameterType::INTEGER,
             'vehicle_id' => ParameterType::INTEGER,
+            'incident_id' => $incidentId === null ? ParameterType::NULL : ParameterType::INTEGER,
         ]);
 
         return $this->find($userId, $token) ?? throw new \LogicException('The pending upload just inserted is missing.');
@@ -182,6 +185,7 @@ final readonly class PendingUploadRepository
             recommendations: self::decode(Row::nullableString($row, 'recommendations')),
             createdAt: UtcDateTime::fromDatabase($row['created_at'], $platform),
             expiresAt: UtcDateTime::fromDatabase($row['expires_at'], $platform),
+            incidentId: Row::nullableInt($row, 'incident_id'),
         );
     }
 

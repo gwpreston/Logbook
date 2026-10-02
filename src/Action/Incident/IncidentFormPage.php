@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Incident;
 
 use Logbook\Action\Attachment\AttachmentUpload;
+use Logbook\Domain\Ai\Scan\ScanKind;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Incident\ClaimStatus;
@@ -18,6 +19,7 @@ use Logbook\Domain\Incident\Severity;
 use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Ai\Scan\IncidentMatcher;
 use Logbook\Service\Incident\IncidentChoices;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Validation\ValidationErrors;
@@ -35,6 +37,7 @@ final readonly class IncidentFormPage
         private AttachmentUpload $upload,
         private IncidentChoices $choices,
         private VehicleService $vehicles,
+        private IncidentMatcher $scanIncidents,
     ) {
     }
 
@@ -83,6 +86,10 @@ final readonly class IncidentFormPage
             'statuses' => IncidentStatus::cases(),
             'claim_statuses' => ClaimStatus::cases(),
             'ncd_effects' => NcdEffect::cases(),
+            // A scanned estimate's choice of incident (spec.md §7.29).
+            'scan_incidents' => ($values['_scan_kind'] ?? '') === ScanKind::RepairEstimate->value
+                ? $this->scanIncidents->changeable($user, $vehicle)
+                : [],
         ] + $this->upload->formContext($vehicle, AttachmentOwner::Incident, $incident?->id), $status);
     }
 }

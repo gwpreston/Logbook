@@ -479,7 +479,7 @@ return [
         'archive_just' => 'Nur archivieren',
         'archive_incident' => 'Der Totalschaden',
         'archive_use_settlement' => 'Seine Entschädigung übernehmen',
-        'archive_sale_date_hint' => 'Aus der Abrechnung: der Tag, an dem der Vorfall abgeschlossen wurde, sonst die letzte Nachricht zum Schaden.',
+        'archive_sale_date_hint' => 'Aus der Abrechnung: der Tag, an dem der Schaden abgeschlossen wurde, sonst die letzte Nachricht zum Schaden.',
         'archive_sale_price_hint' => 'Die Entschädigung, gezählt als Verkaufspreis und nicht als Versicherungsleistung.',
         'archived_written_off' => '{name} wurde als Totalschaden archiviert. Der Verlauf bleibt erhalten.',
         'written_off_on' => 'Totalschaden am {date}',
@@ -3546,6 +3546,8 @@ return [
             'insurance' => 'Versicherungsunterlage',
             'registration' => 'Fahrzeugschein',
             'other' => 'Anderes Dokument',
+            'claim_letter' => 'Schreiben zum Versicherungsfall',
+            'repair_estimate' => 'Kostenvoranschlag',
         ],
         'kind_title' => 'Welches Formular?',
         'kind_form' => [
@@ -3596,6 +3598,7 @@ return [
         'notes' => [
             'advisories' => 'Hinweise',
             'failures' => 'Mängel',
+            'estimate_from' => 'Kostenvoranschlag von {repairer}',
         ],
         'warning' => [
             'failed_test' => 'Diese Prüfung wurde nicht bestanden und wird daher als Notiz gespeichert, nicht als HU des Fahrzeugs.',
@@ -3634,6 +3637,10 @@ return [
             'keep_needs_date' => 'Um die Datei zu behalten, schalte Dokumente ein (Einstellungen → Module). Sonst wird sie gelöscht.',
             'submit' => 'Fahrzeug aktualisieren',
         ],
+        'update_from_letter' => 'Aus einem Schreiben aktualisieren',
+        'estimate_incident' => 'Zu welchem Schaden gehört dieser Kostenvoranschlag?',
+        'estimate_new_incident' => 'Ein neuer Schaden',
+        'estimate_use' => 'Diesen Schaden nehmen',
     ],
     'ask' => [
         'title' => 'Logbook fragen',

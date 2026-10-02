@@ -32,6 +32,10 @@
             {% if can_change %}
                 <div class="btn-row">
                     <a class="btn" href="{{ url_for('incidents.edit', {id: vehicle.id, incident: incident.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                    {% if scan_available() and not vehicle.isArchived() %}
+                        {# A letter or estimate read straight into this incident (spec.md §7.29). #}
+                        <a class="btn" href="{{ url_for('scan', {}, {vehicle: vehicle.id, for: 'incident', incident: incident.id}) }}">{{ ui.icon('document_scanner') }}{{ 'scan.update_from_letter'|trans }}</a>
+                    {% endif %}
                     {% if can_remind %}
                         <a class="btn btn--ghost" href="{{ url_for('reminders.create', {}, {vehicle: vehicle.id, title: incident.claimNumber ? 'incident.chase_claim_number'|trans({number: incident.claimNumber}) : 'incident.chase_claim'|trans}) }}">{{ ui.icon('notifications') }}{{ 'incident.add_reminder'|trans }}</a>
                     {% endif %}

@@ -6,6 +6,10 @@ namespace Logbook\Action\Incident;
 
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\EntryGuard;
+use Logbook\Action\Scan\ScanPrefill;
+use Logbook\Domain\Ai\Scan\ScanTarget;
+use Logbook\Domain\Incident\Incident;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Service\Incident\IncidentForm;
@@ -31,6 +35,7 @@ final readonly class EditIncidentAction
         private Redirector $redirect,
         private EntryGuard $guard,
         private ClockInterface $clock,
+        private ScanPrefill $scan,
     ) {
     }
 
@@ -47,6 +52,10 @@ final readonly class EditIncidentAction
 
         if ($request->getMethod() !== 'POST') {
             $values = IncidentForm::values($incident, $this->incidents->odometerOf($vehicle, $incident), $user->preferences);
+            // A claim letter or estimate about this incident (spec.md §7.29): what it changes, marked.
+            $values = IncidentForm::listValues(
+                $this->scan->values($request, ScanTarget::Incident, $vehicle, IncidentForm::flatValues($values), editing: true),
+            );
 
             return $this->page->render($request, $response, $user, $vehicle, $values, $incident);
         }
@@ -58,7 +67,7 @@ final readonly class EditIncidentAction
             array_keys($this->page->drivers($vehicle)),
             array_map(static fn (ComplianceDocument $policy): int => $policy->id, $this->page->policies($vehicle)),
         );
-        $files = $this->upload->fromRequest($request, owner: AttachmentOwner::Incident);
+        $files = $this->scan->files($request, $this->upload->fromRequest($request, owner: AttachmentOwner::Incident));
         $errors = $this->upload->errors($input, $files);
         if ($errors !== null || $input instanceof ValidationErrors) {
             $values = IncidentRoute::formValues($request);
@@ -66,12 +75,19 @@ final readonly class EditIncidentAction
             return $this->page->render($request, $response, $user, $vehicle, $values, $incident, $errors, 422);
         }
 
-        $this->incidents->update($vehicle, $incident, $input->data, $input->odometerKm, $zone, $files);
+        [, $claimed] = $this->scan->save(
+            $request,
+            $files,
+            fn (PendingUploads $files): Incident
+                => $this->incidents->update($vehicle, $incident, $input->data, $input->odometerKm, $zone, $files),
+        );
         RequestContext::session($request)->flash('success', 'incident.updated');
 
-        return $this->redirect->backOr($request, 'incidents.show', [
+        $done = $this->redirect->backOr($request, 'incidents.show', [
             'id' => (string) $vehicle->id,
             'incident' => (string) $incident->id,
         ]);
+
+        return $this->scan->after($request, $claimed, $vehicle, null, $done);
     }
 }
