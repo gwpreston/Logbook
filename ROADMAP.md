@@ -66,6 +66,10 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [28.2](docs/phases/phase-28.2.md) | Update check and dashboard banner + v2.11 release | ✅ |
 | [29.1](docs/phases/phase-29.1.md) | Finance and lease agreements | ✅ |
 | [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | ✅ |
+| [30.1](docs/phases/phase-30.1.md) | Fuel stations + v2.13 release | ✅ |
+| [30.2](docs/phases/phase-30.2.md) | Live fuel prices and cheapest near me + v2.14 release | 📋 |
+| [31](docs/phases/phase-31.md) | Import from Fuelio and Drivvo + v2.15 release | 📋 |
+| [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -637,6 +641,65 @@ you owe.*
 
 → [`phase-29.2.md`](docs/phases/phase-29.2.md)
 
+## Phase 30.1 — Fuel stations + v2.13 release
+*Where you fill up, what you paid there, and how far it is from home.*
+
+- Stations as shared records (name, brand, address, position, grades,
+  hours) linked from fill-ups; existing station names become stations on
+  upgrade, with a duplicates view and merge.
+- Per-station visits, spend and price history from the user's own
+  fill-ups; favourites; private places (Home, Work) with straight-line
+  distances. Entirely local. Release **v2.13.0**.
+
+→ [`phase-30.1.md`](docs/phases/phase-30.1.md)
+
+## Phase 30.2 — Live fuel prices and cheapest near me + v2.14 release
+*Today's prices near you, ranked by what the trip really saves.*
+
+- A provider interface (bulk or area) starting with UK Fuel Finder, synced
+  as a scheduled job; off until an admin enables it.
+- Logbook stations linked to provider stations; listed prices and history
+  beside what the user paid.
+- *Cheapest near me* ranked by effective cost (usual fill plus the fuel to
+  get there and back), with the sum shown in full: fuel saving, extra
+  distance, fuel for it, actual saving.
+- *Was it worth it?* after a fill-up against the usual station, and a
+  12-month *Shopping around* total; the listed price one tap away on the
+  fill-up form. Release **v2.14.0**.
+
+→ [`phase-30.2.md`](docs/phases/phase-30.2.md)
+
+## Phase 31 — Import from Fuelio + v2.15 release
+*Bring years of fill-ups, services and costs across from Fuelio in one
+go.*
+
+- Fuelio CSV and ZIP exports (one CSV per vehicle), with strict ZIP safety
+  limits; sections read into fill-ups, maintenance records, expenses and
+  stations through the existing row parsers.
+- Built from real anonymised exports as fixtures; a mapping step for
+  vehicles, units (with an economy sanity check), formats, cost categories
+  and fuel types; optional schedules from recurring costs.
+- A preview and one transaction across every vehicle; source ids so a newer
+  export adds only new rows. Built as a general app importer for later
+  readers. Release **v2.15.0**.
+
+→ [`phase-31.md`](docs/phases/phase-31.md)
+
+## Phase 32 — True cost per mile, its breakdown and its trend + v2.16 release
+*One number for what a car costs to run, what it is made of, and why it
+changed.*
+
+- Cost per distance split into fuel, maintenance, insurance, tax and MOT,
+  other and depreciation, since bought or over the last 12 months, with
+  depreciation interpolated between dated values (never extrapolated).
+- A `true_cost` dashboard widget ranking vehicles, and a yearly trend in
+  Reports.
+- *What changed* splits each year's change exactly into its causes: each
+  part, fuel price against economy, and distance driven. Ask Logbook can
+  explain them. Release **v2.16.0**.
+
+→ [`phase-32.md`](docs/phases/phase-32.md)
+
 ---
 
 ## After 1.0
@@ -648,6 +711,11 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
   with the invoices merged in.
 - Personal fuel-tank entity, VIN decode / registration lookup,
   OBD-II / vehicle-API mileage import (through the REST API, Phase 18.2).
+- More imports, as further readers on Phase 31's app importer: Drivvo
+  (CSV exports, whose headers and values are translated into the phone's
+  language), Tesla (charging history and mileage, from the owner's data
+  export or the Tesla API) and ABRP (A Better Routeplanner: driven trips,
+  charging stops and consumption).
 
 Not planned: automatic vehicle valuation from online services (third-party
 lookups and paid APIs, against keeping data local) and generic depreciation

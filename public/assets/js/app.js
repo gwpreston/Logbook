@@ -841,6 +841,9 @@
             if (window.LogbookFirstInspection) {
                 window.LogbookFirstInspection.enhance(body);
             }
+            if (window.LogbookStations) {
+                window.LogbookStations.enhance(body);
+            }
             if (!dialog.open) {
                 dialog.showModal();
             }

@@ -19,6 +19,8 @@ enum Feature: string
     case Trips = 'trips';
     case Incidents = 'incidents';
     case Finance = 'finance';
+    // Phase 30.1: part of the fuel pages, so off whenever fuel is.
+    case Stations = 'stations';
     // AI features (Phase 26.1, spec.md §7.25): on by default but inert, and
     // not listed, until a task is assigned.
     case AiAsk = 'ai_ask';
@@ -54,9 +56,22 @@ enum Feature: string
             self::Trips => 'route',
             self::Incidents => 'car_crash',
             self::Finance => 'account_balance',
+            self::Stations => 'pin_drop',
             self::AiAsk => 'forum',
             self::AiActions => 'smart_toy',
             self::AiScan => 'document_scanner',
+        };
+    }
+
+    /**
+     * The module this one is part of: with that one off, this one is off
+     * too, whatever its own switch says (spec.md §7.10).
+     */
+    public function requires(): ?self
+    {
+        return match ($this) {
+            self::Stations => self::Fuel,
+            default => null,
         };
     }
 

@@ -1,0 +1,54 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/stations.twig' as st %}
+
+{# Merge, step 1 (spec.md §7.33 *Merge*): which station to merge with. #}
+{% set active_nav = 'stations' %}
+
+{% block title %}{{ 'stations.merge.title'|trans }} · {{ station.data.name }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('stations.show', {station: station.id}) }}">{{ ui.icon('chevron_left') }}{{ station.data.name }}</a>
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'stations.merge.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'stations.merge.pick_lead'|trans({name: station.data.name}) }}</p>
+            </div>
+        </header>
+
+        {% if suggested is not empty %}
+            <section class="card" aria-labelledby="merge-suggested">
+                <h2 id="merge-suggested" class="card__title">{{ 'stations.merge.suggested'|trans }}</h2>
+                <ul class="list">
+                    {% for other in suggested %}
+                        <li class="list__item">
+                            <span class="list__body">
+                                <span class="list__title">{{ other.data.name }}</span>
+                                {% set meta = st.meta(other) %}
+                                {% if meta|trim %}<span class="list__meta">{{ meta }}</span>{% endif %}
+                            </span>
+                            <span class="list__end"><a class="btn" href="{{ url_for('stations.merge', {station: station.id}, {with: other.id}) }}">{{ 'stations.merge.choose'|trans }}</a></span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        <form class="form card" method="get" action="{{ url_for('stations.merge', {station: station.id}) }}">
+            <div class="field">
+                <label class="field__label" for="f-with">{{ 'stations.merge.with'|trans }}</label>
+                <select class="select" id="f-with" name="with" required>
+                    <option value="">{{ 'stations.merge.choose_placeholder'|trans }}</option>
+                    {% for row in others %}
+                        <option value="{{ row.station.id }}">{{ row.station.data.name }}{% if row.station.data.postcode %} · {{ row.station.data.postcode }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary">{{ 'stations.merge.next'|trans }}</button>
+                <a class="btn" href="{{ url_for('stations.show', {station: station.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

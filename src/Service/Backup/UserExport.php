@@ -118,6 +118,33 @@ final class UserExport
             static fn (array $row): bool => $row['user_id'] === $user && in_array($row['vehicle_id'], $vehicles, true),
         );
 
+        // Phase 30.1: their places and favourites, and the stations their
+        // fill-ups and favourites use, with the ones those were merged into.
+        $out['places'] = $keep('places', static fn (array $row): bool => $row['user_id'] === $user);
+        $out['station_favourites'] = $keep('station_favourites', static fn (array $row): bool => $row['user_id'] === $user);
+        $stationRows = array_column($tables['stations'] ?? [], null, 'id');
+        $wanted = array_filter([
+            ...array_column($out['fuel_entries'], 'station_id'),
+            ...array_column($out['station_favourites'], 'station_id'),
+        ], is_string(...));
+        $stations = [];
+        while ($wanted !== []) {
+            $id = array_pop($wanted);
+            if (isset($stations[$id]) || !isset($stationRows[$id])) {
+                continue;
+            }
+            $stations[$id] = $stationRows[$id];
+            if (is_string($stationRows[$id]['merged_into'] ?? null)) {
+                $wanted[] = $stationRows[$id]['merged_into'];
+            }
+        }
+        ksort($stations);
+        $out['stations'] = array_values(array_map(
+            // Another user's station is the exported user's in the new install.
+            static fn (array $row): array => ['created_by' => $user] + $row,
+            $stations,
+        ));
+
         // Phase 26.1: AI connections are the install's, not the user's.
         $out['ai_connections'] = [];
         $out['ai_models'] = [];

@@ -1,0 +1,91 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/stations.twig' as st %}
+
+{#
+ # Add or edit a station (spec.md §7.33). Coordinates are typed with a
+ # point, or filled by *Use my current location* while standing there.
+ #}
+{% set active_nav = 'stations' %}
+{% set editing = station is not null %}
+{% set heading = (editing ? 'stations.edit_title' : 'stations.add_title')|trans %}
+{% set chosen = values.grades ?? [] %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ editing ? url_for('stations.show', {station: station.id}) : url_for('stations.index') }}">{{ ui.icon('chevron_left') }}{{ editing ? station.data.name : 'stations.title'|trans }}</a>
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'stations.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        {% if taken %}
+            <div class="alert alert--info" role="status">{{ ui.icon('merge') }}<span>{{ 'stations.taken'|trans({name: taken.data.name}) }} <a href="{{ url_for('stations.merge', {station: station.id}, {with: taken.id}) }}">{{ 'stations.merge.button'|trans }}</a></span></div>
+        {% endif %}
+        <form class="form" method="post" action="{{ editing ? url_for('stations.edit', {station: station.id}) : url_for('stations.create') }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+            <section class="card">
+                {{ ui.input('name', 'stations.field.name'|trans, values, errors, {required: true, maxlength: 100, hint: 'stations.hint.name'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input('brand', 'stations.field.brand'|trans, values, errors, {optional: true, maxlength: 50}) }}
+                    {{ ui.input('postcode', 'stations.field.postcode'|trans, values, errors, {optional: true, maxlength: 20, autocomplete: 'off'}) }}
+                </div>
+                {{ ui.input('address', 'stations.field.address'|trans, values, errors, {optional: true, maxlength: 200}) }}
+                {{ ui.input('country', 'stations.field.country'|trans, values, errors, {optional: true, maxlength: 2, hint: 'stations.hint.country'|trans, autocomplete: 'off'}) }}
+            </section>
+
+            <fieldset class="card fieldset" aria-describedby="f-position-hint">
+                <legend class="card__title fieldset__legend">{{ 'stations.field.position'|trans }}</legend>
+                <p class="field__hint" id="f-position-hint">{{ 'stations.hint.position'|trans }}</p>
+                <div class="form-row">
+                    {{ ui.input('latitude', 'stations.field.latitude'|trans, values, errors, {optional: true, inputmode: 'decimal', placeholder: '54.7154', autocomplete: 'off'}) }}
+                    {{ ui.input('longitude', 'stations.field.longitude'|trans, values, errors, {optional: true, inputmode: 'decimal', placeholder: '-6.2164', autocomplete: 'off'}) }}
+                </div>
+                {{ st.locate_button('f-latitude', 'f-longitude') }}
+            </fieldset>
+
+            <fieldset class="card fieldset"{% if errors.grades ?? null %} aria-describedby="f-grades-error"{% endif %}>
+                <legend class="card__title fieldset__legend">{{ 'stations.field.grades'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></legend>
+                {% for family, grades in grade_groups %}
+                    <div class="field">
+                        <p class="field__label">{{ ('fuel.fuel.' ~ family)|trans }}</p>
+                        <div class="chip-row">
+                            {% for grade in grades %}
+                                <label class="chip">
+                                    <input type="checkbox" name="grades[]" value="{{ grade.value }}"{% if grade.value in chosen %} checked{% endif %}>
+                                    <span>{{ grade.shortLabelKey()|trans }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+                {{ ui.field_error(errors, 'grades') }}
+            </fieldset>
+
+            <details class="card disclosure"{% if (values.opening_hours ?? '') != '' or (values.notes ?? '') != '' %} open{% endif %}>
+                <summary class="disclosure__summary">{{ 'stations.section.more'|trans }}</summary>
+                {{ ui.input('opening_hours', 'stations.field.opening_hours'|trans, values, errors, {optional: true, maxlength: 200, placeholder: 'stations.hint.opening_hours'|trans}) }}
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'stations.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </details>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'stations.add_submit')|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (editing ? url_for('stations.show', {station: station.id}) : url_for('stations.index')) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

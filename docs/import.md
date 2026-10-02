@@ -84,6 +84,14 @@ same category, amount and note.
 Not imported: attachments, links between maintenance and schedules, and
 archived vehicles (restore the vehicle first).
 
+### Stations
+
+A fill-up's *Station* (Phase 30.1, [stations.md](stations.md)) links the
+station with that name, ignoring capitals and spacing, or creates one when
+there is none. The preview says which on each row ("station: Tesco Antrim",
+"new station: Maxol Ballymena"). Home charging keeps its text and is never
+a station. With the stations module off, the text is imported as it is.
+
 ### Trips
 
 Trips (Phase 22, [trips.md](trips.md)) import the columns their export

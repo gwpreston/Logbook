@@ -33,6 +33,8 @@ final readonly class BackupRepository
         // where it is the same (the restore page says so).
         'api_keys',
         'vehicles',
+        // Phase 30.1: stations before the fill-ups that link them.
+        'stations',
         'fuel_entries',
         'maintenance_schedules',
         // Before the readings: a document's odometer reading refers to it.
@@ -65,6 +67,9 @@ final readonly class BackupRepository
         'mileage_rate_sets',
         // Phase 24: the data checks each user has hidden (Needs attention).
         'attention_hidden',
+        // Phase 30.1: each user's favourite stations and saved places.
+        'station_favourites',
+        'places',
         // Phase 26.1: AI connections, their models and the task routing.
         // Never their secrets (`ai_secrets`): a restored connection asks
         // for its key again.
@@ -80,6 +85,8 @@ final readonly class BackupRepository
      */
     private const array LINKS_BACK = [
         'vehicles' => ['disposal_incident_id'],
+        // Phase 30.1: a merged station may point at a newer one.
+        'stations' => ['merged_into'],
     ];
 
     /**

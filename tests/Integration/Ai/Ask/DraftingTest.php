@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Ai\Ask;
 
+use Logbook\Repository\StationRepository;
+use Logbook\Domain\Station\StationData;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
@@ -139,6 +141,19 @@ final class DraftingTest extends AskTestCase
             static fn (ToolDefinition $d): string => $d->name,
             $this->service($this->app, ToolRegistry::class)->definitions($user),
         );
+    }
+
+    public function testADraftFillUpSaysWhenItWouldAddAStation(): void
+    {
+        $stations = $this->service($this->app, StationRepository::class);
+        $stations->insert(new StationData('Tesco Antrim'), $this->bmw->userId, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+        $base = ['vehicle' => $this->bmw->id, 'volume' => '40', 'total_cost' => '60', 'odometer' => '72,341'];
+
+        $known = $this->draft('draft_fill_up', $base + ['station' => 'tesco antrim'], 'Filled up at Tesco Antrim');
+        self::assertSame('Tesco Antrim', self::fields($known)['Station']);
+        $new = $this->draft('draft_fill_up', $base + ['station' => 'Maxol Ballymena'], 'Filled up at Maxol Ballymena');
+        self::assertSame('New station: Maxol Ballymena', self::fields($new)['Station']);
+        self::assertCount(1, $stations->listActive(), 'drafting writes nothing');
     }
 
     public function testTheOwnersExampleGivesACardWithLogbooksTotalAndAddSavesExactlyThat(): void

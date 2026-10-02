@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Api;
 
+use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\Station\Station;
+use Logbook\Service\Station\GradeStats;
+use Logbook\Service\Station\StationSummary;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Service\Incident\ClaimsRow;
 use Logbook\Service\Incident\IncidentView;
@@ -150,6 +154,7 @@ final class Serializer
             'is_partial' => $data->isPartial,
             'is_missed_previous' => $data->isMissedPrevious,
             'station' => $data->station,
+            'station_id' => $data->stationId,
             'notes' => $data->notes,
             'economy' => $fill === null ? null : self::economy($fill, $electric, $costs),
             'economy_check' => $check === null ? null : [
@@ -653,6 +658,50 @@ final class Serializer
             'is_return' => $data->isReturnDefault,
             'is_business' => $data->isBusinessDefault,
             'purpose' => $data->purposeDefault,
+        ];
+    }
+
+    /**
+     * A station and what the key's user paid there (spec.md §7.33 *API*):
+     * from the fill-ups on the vehicles they can see, amounts only where
+     * they may see them. Never their places.
+     *
+     * @return array<string, mixed>
+     */
+    public static function station(Station $station, ?StationSummary $summary, bool $favourite): array
+    {
+        $data = $station->data;
+
+        return [
+            'id' => $station->id,
+            'name' => $data->name,
+            'brand' => $data->brand,
+            'address' => $data->address,
+            'postcode' => $data->postcode,
+            'country' => $data->country,
+            'latitude' => $data->latitude,
+            'longitude' => $data->longitude,
+            'grades' => array_map(static fn (FuelGrade $grade): string => $grade->value, $data->grades),
+            'opening_hours' => $data->openingHours,
+            'notes' => $data->notes,
+            'favourite' => $favourite,
+            'visits' => $summary->visits ?? 0,
+            'last_visit' => self::instant($summary?->lastVisit),
+            'paid' => $summary === null ? [] : array_map(static fn (GradeStats $stats): array => [
+                'fuel' => $stats->fuel->value,
+                'grade' => $stats->grade?->value,
+                'currency' => $stats->currency,
+                'visits' => $stats->visits,
+                'volume' => self::dec($stats->volume, self::QUANTITY_SCALE),
+                'spend' => self::dec($stats->spend, self::QUANTITY_SCALE),
+                'average_price' => self::dec($stats->averagePrice, self::PRICE_SCALE),
+                'cheapest_price' => self::dec($stats->cheapestPrice, self::PRICE_SCALE),
+                'cheapest_at' => self::instant($stats->cheapestOn),
+                'last_price' => self::dec($stats->lastPrice, self::PRICE_SCALE),
+                'last_at' => self::instant($stats->lastOn),
+            ], $summary->grades),
+            'created_at' => self::instant($station->createdAt),
+            'updated_at' => self::instant($station->updatedAt),
         ];
     }
 

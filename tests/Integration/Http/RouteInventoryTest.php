@@ -111,6 +111,11 @@ final class RouteInventoryTest extends AppTestCase
         'scan.file',
         'scan.reminders',
         'scan.vehicle',
+        // Phase 30.1: the user's own places (private to them).
+        'settings.places',
+        'settings.places.create',
+        'settings.places.edit',
+        'settings.places.delete',
     ];
 
     /** Signed in; every vehicle they show comes from the policy's visible ids (VehicleService::listFleet / listWith). */
@@ -138,6 +143,19 @@ final class RouteInventoryTest extends AppTestCase
         'incidents.history',
         'incidents.history.export',
         'api.incidents.history',
+        // Phase 30.1: stations are shared records; what was paid at them comes from the
+        // fill-ups on the vehicles the user can see (StationService::visits), amounts only
+        // where they may see them; editing and merging check the creator or an admin.
+        'stations.index',
+        'stations.search',
+        'stations.duplicates',
+        'stations.create',
+        'stations.show',
+        'stations.edit',
+        'stations.favourite',
+        'stations.merge',
+        'api.stations.index',
+        'api.stations.show',
     ];
 
     public function testEveryRouteIsClassified(): void
@@ -214,7 +232,7 @@ final class RouteInventoryTest extends AppTestCase
         self::assertNotEmpty($apiRoutes);
 
         foreach ($apiRoutes as $route) {
-            $path = (string) preg_replace('/\{id:[^}]+\}/', '1', $route->getPattern());
+            $path = (string) preg_replace('/\{[a-z]+:\[0-9\]\+\}/', '1', $route->getPattern());
             foreach ($route->getMethods() as $method) {
                 // Signed in, but no key: a session never opens the API.
                 $response = $method === 'GET' ? $browser->get($path) : $browser->post($path, [], [], false);

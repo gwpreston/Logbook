@@ -37,6 +37,26 @@ final readonly class FeatureToggles
      */
     public function all(): array
     {
+        $states = $this->own();
+        foreach (Feature::cases() as $feature) {
+            $parent = $feature->requires();
+            if ($parent !== null && !$states[$parent->value]) {
+                $states[$feature->value] = false;
+            }
+        }
+
+        return $states;
+    }
+
+    /**
+     * Every module's own switch, before a module it is part of switches it
+     * off (Feature::requires()): what Settings → Modules shows and saves, so
+     * switching fuel off and on again keeps the stations switch as it was.
+     *
+     * @return array<string, bool> keyed by Feature value
+     */
+    public function own(): array
+    {
         $stored = $this->settings->find(self::SETTING)?->value;
         $states = [];
         foreach (Feature::cases() as $feature) {

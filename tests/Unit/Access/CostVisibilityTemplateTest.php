@@ -59,6 +59,12 @@ final class CostVisibilityTemplateTest extends TestCase
         'trips/claim.twig' => 'the claimant’s own claim; cost per distance only with ViewCosts (BusinessMileage)',
         'macros/trips.twig' => 'the viewer’s own claim; cost per distance only with ViewCosts (BusinessMileage)',
         'dashboard/_business_mileage.twig' => 'the viewer’s own claim for this tax year',
+        // Stations (Phase 30.1): StationStats counts only the amounts the viewer may see
+        // (StationVisit::amountVisible, i.e. EntryAccess::canSeeAmount), and the Fuel tab's card
+        // is built only with ViewCosts (FuelLogAction::byStation).
+        'stations/index.twig' => 'the stations list: averages from StationStats, visible amounts only',
+        'stations/show.twig' => 'the station page: StationStats and each fill-up’s amountVisible',
+        'fuel/_by_station.twig' => 'the By station card: built only with ViewCosts',
     ];
 
     /**

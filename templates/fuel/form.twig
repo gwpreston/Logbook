@@ -124,10 +124,10 @@
                 </label>
             </section>
 
-            {% set has_details = (values.station ?? '') != '' or (values.notes ?? '') != '' or errors.station is defined or errors.notes is defined %}
+            {% set has_details = (values.station ?? '') != '' or (values.station_id ?? '') != '' or (values.notes ?? '') != '' or errors.station is defined or errors.notes is defined %}
             <details class="card disclosure"{% if has_details %} open{% endif %}>
                 <summary class="disclosure__summary">{{ 'fuel.section.details'|trans }}</summary>
-                {{ ui.input('station', 'fuel.field.station'|trans, values, errors, {optional: true, maxlength: 100}) }}
+                {% include 'fuel/_station_field.twig' %}
                 <div class="field">
                     <label class="field__label" for="f-notes">{{ 'fuel.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span>{{ ui.from_message('notes', values) }}</label>
                     <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000"{{ ui.described_by('notes', errors, false, values) }}>{{ values.notes ?? '' }}</textarea>

@@ -24,6 +24,13 @@ final readonly class ImportRow
         public array $values,
         public array $errors = [],
         public ?object $data = null,
+        /**
+         * What saving it will also do, for the preview (Phase 30.1: "new
+         * station: Tesco Antrim"): a translation key and its parameters.
+         *
+         * @var array{key: string, params: array<string, string>}|null
+         */
+        public ?array $note = null,
     ) {
     }
 

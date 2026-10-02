@@ -1,0 +1,82 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/stations.twig' as st %}
+
+{#
+ # The stations list (spec.md §7.33 *Stations page*): favourites first,
+ # then by last visit; distances from the user's own places only.
+ #}
+{% set active_nav = 'stations' %}
+
+{% block title %}{{ 'stations.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <div class="toolbar list-toolbar">
+            <h1 class="section-title">{{ 'stations.title'|trans }}</h1>
+            <div class="btn-row list-toolbar__actions">
+                <a class="btn btn--ghost" href="{{ url_for('stations.duplicates') }}">{{ ui.icon('merge') }}{{ 'stations.duplicates.link'|trans }}</a>
+                <a class="btn btn--primary" href="{{ url_for('stations.create') }}">{{ ui.icon('add') }}{{ 'stations.add'|trans }}</a>
+            </div>
+        </div>
+        <p class="muted">{{ 'stations.lead'|trans }}</p>
+
+        <form class="form search-form" method="get" action="{{ url_for('stations.index') }}" role="search">
+            <div class="field">
+                <label class="field__label" for="f-q">{{ 'stations.search'|trans }}</label>
+                <div class="btn-row">
+                    <input class="input" id="f-q" name="q" type="search" value="{{ query }}" maxlength="100" placeholder="{{ 'stations.search_placeholder'|trans }}">
+                    <button type="submit" class="btn">{{ ui.icon('search') }}{{ 'stations.search_submit'|trans }}</button>
+                </div>
+            </div>
+        </form>
+
+        {% if places is empty %}
+            <p class="field__hint">{{ 'stations.no_places'|trans }} <a href="{{ url_for('settings.places') }}">{{ 'stations.no_places_link'|trans }}</a></p>
+        {% endif %}
+
+        <section class="card" aria-labelledby="stations-list">
+            <h2 id="stations-list" class="visually-hidden">{{ 'stations.title'|trans }}</h2>
+            {% if rows is empty %}
+                <div class="empty">
+                    {{ ui.icon('local_gas_station') }}
+                    <p class="empty__title">{{ (query ? 'stations.none_found' : 'stations.empty_title')|trans }}</p>
+                    {% if not query %}<p>{{ 'stations.empty_body'|trans }}</p>{% endif %}
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for row in rows %}
+                        {% set listing = row.listing %}
+                        {% set station = listing.station %}
+                        {% set main = listing.lastYear ? listing.lastYear.mainGrade() : null %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon(listing.favourite ? 'star' : 'local_gas_station') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">
+                                    <a href="{{ url_for('stations.show', {station: station.id}) }}">{{ station.data.name }}</a>
+                                    {% if listing.favourite %}<span class="visually-hidden"> · {{ 'stations.favourite'|trans }}</span>{% endif %}
+                                </span>
+                                {% set meta = st.meta(station) %}
+                                {% if meta|trim %}<span class="list__meta">{{ meta }}</span>{% endif %}
+                                {% if row.distances is not empty %}<span class="list__meta">{{ st.distances(row.distances) }}</span>{% endif %}
+                                <span class="list__meta">
+                                    {%- if listing.summary -%}
+                                        {{ 'stations.visits'|trans({count: listing.summary.visits}) }} · {{ 'stations.last_visit'|trans({date: listing.summary.lastVisit|instant_date}) }}
+                                    {%- else -%}
+                                        {{ 'stations.never_visited'|trans }}
+                                    {%- endif -%}
+                                </span>
+                            </span>
+                            {% if main and main.averagePrice %}
+                                <span class="list__end">
+                                    <span class="list__amount tabular">{{ main.averagePrice|unit_price(main.currency, main.fuel.isElectric()) }}</span>
+                                    <span class="list__meta">{{ 'stations.average_12m'|trans({grade: st.grade_label(main)}) }}</span>
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

@@ -35,12 +35,12 @@ final readonly class ModuleSettingsAction
         if ($request->getMethod() !== 'POST') {
             return $this->view->render($request, $response, 'settings/modules.twig', [
                 'modules' => $shown,
-                'enabled' => $this->features->all(),
+                'enabled' => $this->features->own(),
             ]);
         }
 
         $input = RequestContext::form($request);
-        $current = $this->features->all();
+        $current = $this->features->own();
         $enabled = array_values(array_filter(
             Feature::cases(),
             static fn (Feature $feature): bool => in_array($feature, $shown, true)

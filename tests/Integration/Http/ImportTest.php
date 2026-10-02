@@ -12,7 +12,9 @@ use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Repository\ComplianceDocumentRepository;
 use Logbook\Repository\ExpenseEntryRepository;
+use Logbook\Domain\Station\StationData;
 use Logbook\Repository\FuelEntryRepository;
+use Logbook\Repository\StationRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Fuel\FuelService;
@@ -165,6 +167,37 @@ final class ImportTest extends AppTestCase
         $imported = $this->service($app, FuelEntryRepository::class)->listForVehicle($polo->id);
         self::assertCount(1, $imported);
         self::assertNull($imported[0]->data->grade);
+    }
+
+    public function testTheStationColumnLinksOrCreatesStationsAndThePreviewSaysWhich(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $stations = $this->service($app, StationRepository::class);
+        $at = new DateTimeImmutable('2026-06-01T00:00:00Z');
+        $tesco = $stations->insert(new StationData('Tesco Antrim'), $this->owner($app)->id, $at);
+        $csv = implode("\n", [
+            'Date,Odometer,Litres,Price,Station',
+            '2026-06-01 09:00,1000,40,1.60,tesco  ANTRIM',
+            '2026-06-08 09:00,1300,30,1.45,Maxol Ballymena',
+            '2026-06-15 09:00,1600,30,1.45,',
+        ]) . "\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $preview = $this->preview($browser, $map);
+        self::assertStringContainsString('station: Tesco Antrim', $preview);
+        self::assertStringContainsString('new station: Maxol Ballymena', $preview);
+
+        $this->commit($browser, $map, $preview);
+        $links = array_map(
+            static fn ($e): ?int => $e->data->stationId,
+            $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id),
+        );
+        $maxol = $stations->findByName('maxol ballymena');
+        self::assertNotNull($maxol);
+        self::assertSame([$tesco, $maxol->id, null], $links);
     }
 
     public function testImportedFillUpsThatLookUnusualAreCounted(): void

@@ -47,6 +47,7 @@ final class JsonInput
         'is_partial' => 'partial',
         'is_missed_previous' => 'missed_previous',
         'station' => 'station',
+        'station_id' => 'station_id',
         'notes' => 'notes',
     ];
     private const array FUEL_EXTRA = ['distance_unit', 'volume_unit'];
@@ -219,6 +220,7 @@ final class JsonInput
             'partial' => self::flag($body, 'is_partial', $errors),
             'missed_previous' => self::flag($body, 'is_missed_previous', $errors),
             'station' => self::text($body, 'station', $errors),
+            'station_id' => self::stationId($body, $errors),
             'notes' => self::text($body, 'notes', $errors),
         ];
 
@@ -641,6 +643,33 @@ final class JsonInput
         }
 
         return $value ? '1' : '';
+    }
+
+    /**
+     * A fill-up's `station_id` (Phase 30.1): a positive whole number, never
+     * with `station` as well (spec.md §7.33 *API*).
+     *
+     * @param array<string, mixed> $body
+     */
+    private static function stationId(array $body, ValidationErrors $errors): string
+    {
+        $value = $body['station_id'] ?? null;
+        if ($value === null) {
+            return '';
+        }
+        // Number tokens arrive as strings (decode()).
+        if (!is_string($value) || preg_match('/^[1-9][0-9]{0,9}$/', $value) !== 1) {
+            $errors->add('station_id', 'validation.integer');
+
+            return '';
+        }
+        if (($body['station'] ?? null) !== null) {
+            $errors->add('station_id', 'api.validation.station_or_id');
+
+            return '';
+        }
+
+        return $value;
     }
 
     /**

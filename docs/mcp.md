@@ -29,7 +29,7 @@ key's user sees. `spec.md` §7.28 has the rules.
 **Tools.** Every key gets the read tools: `find_vehicles`, `costs`,
 `cost_per_distance`, `maintenance`, `vehicle_summary`, `fuel_stats`,
 `last_done`, `mileage`, `ownership`, `coming_up`, `documents`, `tyres`,
-`trips_summary`, `incidents`, `finance` and `needs_attention`. Each
+`trips_summary`, `incidents`, `finance`, `stations` and `needs_attention`. Each
 returns raw values beside display strings in your units, language and
 currency, and a link to the page in Logbook that shows the same.
 

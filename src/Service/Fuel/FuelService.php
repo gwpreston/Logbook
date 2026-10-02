@@ -20,6 +20,7 @@ use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
+use Logbook\Service\Station\StationLinker;
 use Logbook\Support\Database\Transaction;
 use Psr\Clock\ClockInterface;
 
@@ -40,6 +41,7 @@ final readonly class FuelService
         private Transaction $transaction,
         private ClockInterface $clock,
         private AccessContext $author,
+        private StationLinker $stations,
     ) {
     }
 
@@ -156,6 +158,7 @@ final readonly class FuelService
     {
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data): int {
             $by = $this->author->authorId() ?? $vehicle->userId;
+            $data = $this->stations->link($data, null, $vehicle->userId);
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $id, $data->odometerKm, $data->filledAt);
             $this->attachments->record($vehicle, AttachmentOwner::Fuel, $id, $stored);
@@ -173,6 +176,7 @@ final readonly class FuelService
         PendingUploads $files = new PendingUploads(),
     ): FuelEntry {
         $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $entry, $data): void {
+            $data = $this->stations->link($data, $entry, $vehicle->userId);
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $entry->id, $data->odometerKm, $data->filledAt);
             $this->attachments->record($vehicle, AttachmentOwner::Fuel, $entry->id, $stored);

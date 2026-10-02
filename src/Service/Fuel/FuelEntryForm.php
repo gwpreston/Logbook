@@ -62,6 +62,7 @@ final class FuelEntryForm
             'partial' => $data->isPartial ? '1' : '',
             'missed_previous' => $data->isMissedPrevious ? '1' : '',
             'station' => $data->station ?? '',
+            'station_id' => $data->stationId === null ? '' : (string) $data->stationId,
             'notes' => $data->notes ?? '',
         ];
     }
@@ -109,6 +110,7 @@ final class FuelEntryForm
         $price = $validator->decimal('price', false, FuelAmounts::PRICE_SCALE, '0', null, self::PRICE_WHOLE_DIGITS);
         $total = $validator->decimal('total', false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
         $station = $validator->string('station', false, 100);
+        $stationId = self::stationId($validator);
         $notes = $validator->string('notes', false, 1000);
 
         if ($volume !== null && Decimal::compare($volume, '0') <= 0) {
@@ -151,7 +153,28 @@ final class FuelEntryForm
             station: $station,
             notes: $notes,
             grade: $grade,
+            stationId: $stationId,
         );
+    }
+
+    /**
+     * The chosen station (Phase 30.1, spec.md §7.33): an id from the combo
+     * box or the select; empty or *Other* means the typed name (if any).
+     * The station is checked and resolved when the fill-up is saved.
+     */
+    private static function stationId(Validator $validator): ?int
+    {
+        $raw = trim($validator->raw('station_id'));
+        if ($raw === '' || $raw === 'other') {
+            return null;
+        }
+        if (preg_match('/^[1-9][0-9]{0,9}$/', $raw) !== 1) {
+            $validator->addError('station', 'validation.choice');
+
+            return null;
+        }
+
+        return (int) $raw;
     }
 
     /**

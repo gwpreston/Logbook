@@ -11,6 +11,9 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Fuel\FuelPicker;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Station\StationHint;
+use Logbook\Service\Station\StationListing;
+use Logbook\Service\Station\StationService;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\View\View;
@@ -29,6 +32,8 @@ final readonly class FuelFormPage
         private FuelService $fuel,
         private AttachmentUpload $upload,
         private ClockInterface $clock,
+        private StationService $stations,
+        private StationHint $hints,
     ) {
     }
 
@@ -56,7 +61,7 @@ final readonly class FuelFormPage
         // The economy check of the segment this fill-up closes, shown above the form.
         $check = $entry === null ? null : $this->fuel->checks($this->fuel->history($vehicle))->for($entry->id);
 
-        return $this->view->render($request, $response, 'fuel/form.twig', [
+        return $this->view->render($request, $response, 'fuel/form.twig', $this->stationContext($request, $values) + [
             'vehicle' => $vehicle,
             'entry' => $entry,
             'check' => $check !== null && ($check->isFlagged() || $check->isConfirmedFlag()) ? $check : null,
@@ -66,5 +71,37 @@ final readonly class FuelFormPage
             'fuel_groups' => $picker,
             'latest' => $this->odometer->history($vehicle)->latest(),
         ] + $this->upload->formContext($vehicle, AttachmentOwner::Fuel, $entry?->id), $status);
+    }
+
+    /**
+     * The station field (spec.md §7.33 *Fill-up form*): with the module on,
+     * the favourites and recent stations for the select (plus the chosen
+     * one), and the "Last time here" hint of the chosen one.
+     *
+     * @param array<string, string> $values
+     * @return array<string, mixed>
+     */
+    private function stationContext(ServerRequestInterface $request, array $values): array
+    {
+        if (!$this->stations->enabled()) {
+            return ['stations_on' => false];
+        }
+        $user = RequestContext::requireUser($request);
+        $choices = $this->stations->choices($user, '', 50);
+        $chosenId = ctype_digit($values['station_id'] ?? '') ? (int) $values['station_id'] : null;
+        $chosen = $chosenId === null ? null : $this->stations->resolve($chosenId);
+        $listed = array_map(static fn (StationListing $row): int => $row->station->id, $choices);
+
+        return [
+            'stations_on' => true,
+            'station_favourites' => array_values(array_filter(
+                $choices,
+                static fn (StationListing $row): bool => $row->favourite,
+            )),
+            'station_recent' => array_values(array_filter($choices, static fn (StationListing $row): bool => !$row->favourite)),
+            'station_chosen' => $chosen,
+            'station_chosen_listed' => $chosen !== null && in_array($chosen->id, $listed, true),
+            'station_hint' => $chosen === null ? null : $this->hints->forStation($user, $chosen->id),
+        ];
     }
 }

@@ -6,10 +6,15 @@ namespace Logbook\Action\Fuel;
 
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
+use Logbook\Domain\Access\VehicleAbility;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\Station\StationService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Units\ConsumptionUnit;
 use Logbook\Support\View\Pagination;
@@ -34,6 +39,8 @@ final readonly class FuelLogAction
         private FuelCharts $charts,
         private AttachmentService $attachments,
         private View $view,
+        private StationService $stations,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -97,6 +104,30 @@ final readonly class FuelLogAction
             'pagination' => $pagination,
             'consumption_units' => ConsumptionUnit::cases(),
             'attachment_counts' => $this->attachments->counts($vehicle),
-        ]);
+        ] + $this->byStation($user, $vehicle));
+    }
+
+    /**
+     * The *By station* card (spec.md §7.33): the top five stations by spend
+     * in the last 12 months, with the average paid for the vehicle's main
+     * grade there (the grade it bought most of across them). Needs ViewCosts.
+     *
+     * @return array<string, mixed>
+     */
+    private function byStation(User $user, Vehicle $vehicle): array
+    {
+        if (!$this->stations->enabled() || !$this->access->can($user, VehicleAbility::ViewCosts, $vehicle)) {
+            return ['by_station' => []];
+        }
+        $top = $this->stations->topForVehicle($user, $vehicle);
+        $volumes = [];
+        foreach ($top as $row) {
+            foreach ($row['summary']->grades as $stats) {
+                $volumes[$stats->key()] = ($volumes[$stats->key()] ?? 0.0) + (float) $stats->volume;
+            }
+        }
+        arsort($volumes);
+
+        return ['by_station' => $top, 'by_station_grade' => array_key_first($volumes)];
     }
 }
