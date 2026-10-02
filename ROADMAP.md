@@ -62,7 +62,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [26.5](docs/phases/phase-26.5.md) | MCP server + v2.9 release | ✅ |
 | [27.1](docs/phases/phase-27.1.md) | Incidents, damage and insurance claims | ✅ |
 | [27.2](docs/phases/phase-27.2.md) | Total loss and reading claim letters + v2.10 release | ✅ |
-| [28.1](docs/phases/phase-28.1.md) | Scheduled jobs in Settings | 📋 |
+| [28.1](docs/phases/phase-28.1.md) | Scheduled jobs in Settings | 🚧 |
 | [28.2](docs/phases/phase-28.2.md) | Update check and dashboard banner + v2.11 release | 📋 |
 
 *Update the status column as each phase lands.*

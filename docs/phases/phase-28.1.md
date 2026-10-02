@@ -3,7 +3,7 @@
 *See that the background jobs ran, run one now, and keep reminders going
 even without cron.*
 
-Status: 📋 planned · ships with Phase 28.2 as **v2.11.0** · file lives in
+Status: 🚧 in progress · ships with Phase 28.2 as **v2.11.0** · file lives in
 `docs/phases/`
 
 Logbook's background work runs from `bin/run-scheduled-tasks.php`. In
@@ -34,7 +34,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
    run the same code.
 2. **Job runs** recorded with trigger, times, status, a summary and the
    output (secrets redacted).
-3. **Settings → System → Jobs** (admins): each job's last run, next
+3. **Settings → Jobs** (admins): each job's last run, next
    expected run, *Run now*, and the run history with full output.
 4. **Scheduler health:** a warning on the page and in an admin notice area
    when nothing has run for too long.
@@ -99,7 +99,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 
 ### §7.30 Jobs and the scheduler (new)
 
-> - **Settings → System → Jobs** (`/settings/jobs`, `InstanceAbility::RunJobs`,
+> - **Settings → Jobs** (`/settings/jobs`, `InstanceAbility::RunJobs`,
 >   admins). A table of jobs: name and description, schedule ("Every 15
 >   minutes", "Daily", "Off"), last run (time, trigger, status badge as text,
 >   summary), the next run expected, and **Run now**. Under it, **Recent
@@ -130,7 +130,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 >   (Phase 28.2). Each notice has a link to its settings page and *Dismiss*
 >   for 24 hours, per admin. The scheduler warning comes back while the
 >   problem lasts.
-> - **Triggers** (Settings → System → Jobs → *How jobs run*):
+> - **Triggers** (Settings → Jobs → *How jobs run*):
 >   - **Cron** and **Docker** as today. The entrypoint sets
 >     `LOGBOOK_SCHEDULER_TRIGGER=docker` so its runs are labelled.
 >   - **On page visits** (off by default): every signed-in page load sends a
@@ -209,8 +209,10 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 - [ ] Split `run-scheduled-tasks.php`'s work into the `reminders`, `digest`
       and `cleanup` jobs with no change in behaviour; add the `backup` job.
 - [ ] `bin/run-job.php`; the entrypoint's trigger label.
-- [ ] Settings → System → Jobs, run page with polling, *How jobs run*,
-      scheduled backups; the admin notice area and the scheduler warning.
+- [ ] Settings → Jobs, run page with polling, *How jobs run*,
+      scheduled backups; the admin notice area, the scheduler warning
+      and failure alerts (notice and notification, #107).
+- [ ] `cleanup` deletes closed invitations after 90 days (#109).
 - [ ] `POST /_scheduler/tick` and its footer beacon; `/cron/{token}`.
 - [ ] `/health` field.
 - [ ] Translations (en, de).
@@ -236,6 +238,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 - [ ] Scheduled backups: daily and weekly timing; retention deletes only
       `logbook-scheduled-` files.
 - [ ] Access: members get 404 for every jobs route.
+- [ ] Failure alerts: two failures in a row → notice and one
+      notification per admin; a third failure sends nothing more; an
+      `ok` run ends the streak.
+- [ ] Cleanup: invitations closed over 90 days ago are deleted, open
+      and recent ones kept; it runs hourly.
 - [ ] `/health` keeps its status code when the scheduler is stale.
 - [ ] Integration suite green on every engine.
 
@@ -243,7 +250,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 
 ## Acceptance criteria
 
-1. On a bare install without cron, Settings → System → Jobs says reminders
+1. On a bare install without cron, Settings → Jobs says reminders
    aren't being sent and offers three fixes. Turning on *On page visits*
    makes the warning go once a pass has run.
 2. *Run now* on `reminders` shows its output ("Synced 14 reminders; sent 2
@@ -254,7 +261,27 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 
 ## Open questions
 
-- **Run now for members:** admin only (drafted), or let each user run
-  `reminders` for their own vehicles?
-- **Failure notifications:** send the admin a notification when a job fails
-  twice in a row, through the configured channels?
+All decided on 2026-10-02, before the phase started:
+
+- **Run now for members** (#106). *Decided 2026-10-02:* admins only, as
+  drafted; members get 404 on every jobs route (spec §7.30 *Access*).
+- **Failure notifications** (#107). *Decided 2026-10-02:* yes. When a
+  job's last two finished runs failed, admins get a dashboard notice for
+  as long as the streak lasts, and once per streak a `job_failed`
+  notification through their own channels (spec §7.30 *Failure alerts*).
+
+Found while starting it:
+
+- **How often `cleanup` runs** (#108). The drafted "daily" would have
+  slowed clean-ups that ran every pass (unclaimed scans are promised gone
+  after 24 hours). *Decided 2026-10-02:* hourly (spec §5 *Jobs*).
+- **Invitation retention** (#109). Nothing deleted invitations, and no
+  retention was set. *Decided 2026-10-02:* closed links (used, revoked
+  or expired) are deleted 90 days after they closed; open ones never
+  (spec §7.30 *Jobs and their summaries*).
+
+Settled while starting, without changing behaviour: the locks live in
+the cache directory (`var/` may not be writable in the Docker image),
+the Jobs page sits under Settings → *Installation* (there is no *System*
+section), and `bin/run-scheduled-tasks.php` stays quiet unless given
+`-v` with its exit codes unchanged, because cron mails any output.
