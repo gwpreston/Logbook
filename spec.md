@@ -66,6 +66,7 @@ each vehicle costs.*
 | AI providers (Phase 26.1) | No SDK: `symfony/http-client` with per-request options, libsodium `secretbox` for stored keys, an in-house JSON Schema subset check | Four small adapters cover every runtime and provider; nothing new to install (§5 *AI adapters*) |
 | Reading files (Phase 26.4) | `smalot/pdfparser` (PDF text layer, LGPL-3.0, used unmodified through Composer); PHP's `gd` (JPEG, PNG, WebP) and `exif` for rotating, stripping and downscaling photos (**required**); Ghostscript or Imagick, optional, for rendering scanned PDFs | Pure PHP for text PDFs; every photo upload is re-encoded without its metadata, so `gd` and `exif` are required like `intl` (decided 2026-10-01, `docs/phases/open-questions.md` #83, #84) |
 | MCP server (Phase 26.5) | No SDK: Logbook's own Streamable HTTP endpoint (JSON-RPC over POST, JSON responses), protocol versions `2026-07-28` and the legacy `2025-11-25` / `2025-06-18`; conformance tested against the specification's JSON schemas with `justinrainbow/json-schema` (dev only) | The official `mcp/sdk` is experimental before 1.0, adds five dependencies and registers tools by attribute, while Logbook's tool list varies by key and language (decided 2026-10-01, `docs/phases/open-questions.md` #90; §7.28) |
+| Finance arithmetic (Phase 29.1) | `brick/math` (`BigDecimal`, pure PHP; uses `gmp` or `bcmath` when present) | Present values over up to 120 months at a 10-place monthly rate overflow the scaled-integer `Decimal` helper; the phase file allows it (§7.32) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -957,7 +958,8 @@ MySQL only.
   excess_mileage_charge (per unit, `decimal(10,4)`; PCP and lease),
   start_odometer (km; default: the reading nearest to started_on),
   count_in_costs (bool, default true), ended_on, notes, created/updated
-  (UTC). All amounts are `DECIMAL(12,2)` in the vehicle's currency. A
+  (UTC). All amounts are `DECIMAL(14,3)` in the vehicle's currency, as
+  every other money column. A
   vehicle has **at most one `active` agreement** (checked by the service,
   as a partial unique index isn't portable); ended ones are kept as
   history.
@@ -5276,7 +5278,8 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   with end-of-month clamping (31 Jan → 28/29 Feb → 31 Mar, each from the
   first date, never from the clamped one), then final_payment on
   final_payment_on when set. A lease puts the initial rental on
-  started_on. A due date on or before today (the owner's time zone) counts
+  started_on. A due date on or before today (the **vehicle owner's** time
+  zone, so every viewer sees the same schedule and totals) counts
   as **paid** unless a `missed` event says otherwise; a later `paid_late`
   event makes it *paid late*. `extra` and `settlement` events are payments
   on their own dates. After a `settlement`, later payments leave the
@@ -5301,7 +5304,9 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     payable − cash price; for a **loan**, total amount payable − amount of
     credit (#122). While active, the interest so far is estimated by
     splitting each payment made into interest and capital at the monthly
-    rate. Once ended it is **exact**: for `settled` or `completed`,
+    rate (a balance from the amount of credit, each payment's interest the
+  balance × the rate over the months since the previous one, the rest
+  capital). Once ended it is **exact**: for `settled` or `completed`,
     everything paid (deposit, payments, extras, settlement, fees) − cash
     price (− amount of credit for a loan); for `handed_back`, everything
     paid − (cash price − final payment), the final payment not paid
@@ -5326,6 +5331,11 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     track to finish 2,400 mi under the allowance." Without enough readings
     to project, the distance so far only. Shown in the agreement's
     mileage unit.
+- **Finance page** (`/vehicles/{id}/finance`, from the vehicle header's
+  menu once an agreement exists): the active agreement first, then ended
+  ones under *Earlier agreements*, each with its type, lender, dates and
+  status, linking to its agreement page; *Add finance* while none is
+  active.
 - **Agreement page** (`/vehicles/{id}/finance/{agreement}`): the figures,
   then the schedule as a table (date, amount, status: *paid*, *due*,
   *missed*, *paid late*), each past row with *Mark missed* or *Mark paid
@@ -5333,7 +5343,7 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   and from Phase 29.2 *End agreement*. Printable (Phase 17.2
   conventions); the schedule exports as CSV
   (`/vehicles/{id}/finance/{agreement}/schedule.csv`). Ended agreements
-  are listed under *Earlier agreements*.
+  are listed on the finance page.
 - **Ending** (Phase 29.2, *End agreement*):
   - *Settled early:* the settlement amount and its date → a `settlement`
     event, status `settled`, later payments leave the schedule.
@@ -5357,6 +5367,9 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   this changes Phase 14.2's *Finance and leases* rule, §7.7):
   - The cost ledger gains **derived lines**, never stored, category
     `finance`, labelled "From the finance agreement":
+    - Only payments already counted as paid (due on or before the owner's
+      today and not missed; a paid-late one on its due date): never a
+      future payment.
     - HP, PCP and loans: each payment's interest share (estimated while
       active) and the fees on their due dates (the documentation fee with
       the first payment, the option-to-purchase fee with the final one).
