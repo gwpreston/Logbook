@@ -18,7 +18,7 @@ fi
 export PHP_OPCACHE_VALIDATE
 
 DATA_DIR="${DATA_DIR:-/data}"
-mkdir -p "$DATA_DIR" "${UPLOAD_PATH:-$DATA_DIR/uploads}" "${BACKUP_PATH:-$DATA_DIR/backups}" var/cache var/log
+mkdir -p "$DATA_DIR" "${UPLOAD_PATH:-$DATA_DIR/uploads}" "${BACKUP_PATH:-$DATA_DIR/backups}" var/cache var/cache/locks var/log
 
 # Dev image with a fresh (empty) vendor volume: install dependencies once.
 if [ ! -f vendor/autoload.php ] && [ "${APP_ENV:-production}" = "development" ] && command -v composer >/dev/null 2>&1; then

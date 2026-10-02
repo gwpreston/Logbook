@@ -76,7 +76,7 @@ final readonly class CleanupJob implements Job
                 ]);
             }
         }
-        $context->logger->info(
+        $context->logger->debug(
             'Deleted {usage} AI usage row(s), {drafts} draft(s), {scans} unclaimed scan(s), {threads} Ask thread(s), '
                 . '{invitations} invitation(s), {runs} job run(s).',
             $counts,

@@ -95,8 +95,9 @@ final readonly class JobRunner
                     $result = JobResult::failed($this->redactor->redact($e->getMessage()));
                 }
                 $summary = $this->redactor->redact($result->summary);
+                // Debug when ok: the run keeps the line, and the app log stays one summary per pass.
                 $this->logger->log(
-                    $result->status === JobStatus::Ok ? 'info' : ($result->status === JobStatus::Partial ? 'warning' : 'error'),
+                    $result->status === JobStatus::Ok ? 'debug' : ($result->status === JobStatus::Partial ? 'warning' : 'error'),
                     'Finished {job}: {status}. {summary}',
                     ['job' => $job->name(), 'status' => $result->status->value, 'summary' => $summary],
                 );

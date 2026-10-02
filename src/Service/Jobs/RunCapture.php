@@ -39,6 +39,14 @@ final class RunCapture extends AbstractProcessingHandler
         return $this->current !== null;
     }
 
+    /**
+     * Nothing outside a run, so debug records cost nothing app-wide.
+     */
+    public function isHandling(LogRecord $record): bool
+    {
+        return $this->current !== null && parent::isHandling($record);
+    }
+
     protected function write(LogRecord $record): void
     {
         $this->current?->add(strtolower($record->level->getName()), $record->message);

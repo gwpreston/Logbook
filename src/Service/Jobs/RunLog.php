@@ -37,7 +37,7 @@ final class RunLog
     public function add(string $level, string $message): void
     {
         $line = sprintf(
-            '[%s] %s%s',
+            '[%s UTC] %s%s',
             $this->clock->now()->setTimezone(new DateTimeZone('UTC'))->format('H:i:s'),
             in_array($level, ['info', 'notice', 'debug'], true) ? '' : strtoupper($level) . ': ',
             // Invalid UTF-8 would be refused by PostgreSQL and MySQL.

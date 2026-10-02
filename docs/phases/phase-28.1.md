@@ -269,7 +269,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 - **Output** is every line the app logs while the job runs (a Monolog
   handler copies them into the run), so it shows each notification sent
   and each failure, not only the job's own lines. Lines are scrubbed to
-  valid UTF-8 and redacted; times are UTC, as in the log file. Summaries
+  valid UTF-8 and redacted; times are marked UTC, as in the log file.
+  A job's "Finished … ok" line is debug, so the app log keeps one summary
+  line per pass, as before. Summaries
   are in the language of whoever ran the job.
 - **Run now with JS** posts in the background and polls for *this admin's*
   new manual run, so a cron pass meanwhile is never mistaken for it.
@@ -285,6 +287,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
   *System* section); members see neither the link nor any notice.
 - **`bin/run-job.php`** exits 0 on ok or partial, 1 on failed, 2 when the
   job is already running and 3 on a usage error.
+- **The Docker entrypoint** creates `var/cache/locks` before handing it
+  to `www-data`, so a first run as root never leaves it root-owned.
 - **The dashboard's Twig helpers** don't build the job registry, so
   rendering a page never builds every job.
 
