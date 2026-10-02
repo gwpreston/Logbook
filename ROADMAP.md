@@ -66,6 +66,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [28.2](docs/phases/phase-28.2.md) | Update check and dashboard banner + v2.11 release | ✅ |
 | [29.1](docs/phases/phase-29.1.md) | Finance and lease agreements | ✅ |
 | [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | ✅ |
+| [30](docs/phases/phase-30.md) | Import from Fuelio and Drivvo + v2.13 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -637,9 +638,24 @@ you owe.*
 
 → [`phase-29.2.md`](docs/phases/phase-29.2.md)
 
+## Phase 30 — Import from Fuelio and Drivvo + v2.13 release
+*Bring years of fill-ups, services and costs across from another app in
+one go.*
+
+- Fuelio and Drivvo exports recognised in any supported language, their
+  sections read into fill-ups, maintenance records and expenses through the
+  existing row parsers.
+- A mapping step for vehicles (existing or new), units (with an economy
+  sanity check), number and date formats, cost categories and fuel types;
+  optional schedules from recurring costs and trips from Drivvo routes.
+- A preview and a single-transaction import; source ids so a newer export
+  adds only new rows; coordinates never stored. Release **v2.13.0**.
+
+→ [`phase-30.md`](docs/phases/phase-30.md)
+
 ---
 
-## After 1.0
+## After 2.0
 
 Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 §12):
@@ -648,6 +664,9 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
   with the invoices merged in.
 - Personal fuel-tank entity, VIN decode / registration lookup,
   OBD-II / vehicle-API mileage import (through the REST API, Phase 18.2).
+- More imports: Tesla (charging history and mileage, from the owner's data
+  export or the Tesla API) and ABRP (A Better Routeplanner: driven trips,
+  charging stops and consumption), through Phase 30's app importer.
 
 Not planned: automatic vehicle valuation from online services (third-party
 lookups and paid APIs, against keeping data local) and generic depreciation
