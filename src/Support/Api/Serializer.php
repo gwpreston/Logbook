@@ -575,6 +575,7 @@ final class Serializer
                 'claim_number' => $view->claimNumber,
                 'excess' => self::dec($view->excess, self::QUANTITY_SCALE),
                 'payout' => self::dec($view->payout, self::QUANTITY_SCALE),
+                'repair_estimate' => self::dec($view->repairEstimate, self::QUANTITY_SCALE),
                 'ncd_affected' => $view->ncdAffected?->value,
                 'updated_on' => $view->claimUpdatedOn === null ? null : self::date($view->claimUpdatedOn),
             ] : null,

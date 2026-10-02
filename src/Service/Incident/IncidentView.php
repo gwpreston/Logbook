@@ -62,6 +62,8 @@ final readonly class IncidentView
         public ?DateTimeImmutable $claimUpdatedOn = null,
         public ?string $excess = null,
         public ?string $payout = null,
+        /** What a repair may cost (Phase 27.2): information, never in the costs. */
+        public ?string $repairEstimate = null,
         /** Linked costs (with `amounts`); payouts and net only with `details` too. */
         public ?IncidentCosts $costs = null,
     ) {
@@ -110,6 +112,7 @@ final readonly class IncidentView
             'claimUpdatedOn' => $claim->updatedOn,
             'excess' => $amounts ? $claim->excess : null,
             'payout' => $amounts ? $claim->payout : null,
+            'repairEstimate' => $amounts ? $claim->repairEstimate : null,
         ]);
     }
 

@@ -38,7 +38,7 @@ final class IncidentsToolTest extends ToolsBTestCase
         $incidents->create($fiesta, new IncidentData(
             $day('2023-05-02'),
             IncidentType::Collision,
-            claim: new Claim(ClaimStatus::Settled, 'Aviva', claimNumber: 'AB-77', payout: '900.000'),
+            claim: new Claim(ClaimStatus::Settled, 'Aviva', claimNumber: 'AB-77', payout: '900.000', repairEstimate: '1100.000'),
         ), null, $zone);
         $this->service($app, VehicleService::class)->archive($owner, $fiesta);
         $this->assertSchemaAccepts($app, $owner, 'incidents', ['years' => 5, 'claims_only' => true]);
@@ -49,6 +49,8 @@ final class IncidentsToolTest extends ToolsBTestCase
         self::assertSame(1, $data->int('claims'));
         self::assertSame('AB-77', $data->get('rows', 1, 'claim_number'));
         self::assertTrue($data->get('rows', 1, 'sold_or_archived'));
+        self::assertSame('£1,100.00', $data->get('rows', 1, 'repair_estimate'));
+        self::assertNull($data->get('rows', 0, 'repair_estimate'));
         self::assertStringNotContainsString('A. Driver', json_encode($all->data, JSON_THROW_ON_ERROR));
         self::assertSame('/incidents/history?years=5', $all->link);
 

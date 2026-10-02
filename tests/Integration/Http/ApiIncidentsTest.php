@@ -75,6 +75,7 @@ final class ApiIncidentsTest extends AppTestCase
             'claim_number' => '4417',
             'excess' => '0',
             'payout' => '1000',
+            'repair_estimate' => '1250.5',
         ];
     }
 
@@ -88,6 +89,7 @@ final class ApiIncidentsTest extends AppTestCase
         self::assertSame('42000.000', $entry->get('odometer'));
         self::assertSame('4417', $entry->get('claim', 'claim_number'));
         self::assertSame('0.000', $entry->get('claim', 'excess'), '0 is valid');
+        self::assertSame('1250.500', $entry->get('claim', 'repair_estimate'));
         self::assertSame('A. Driver', $entry->get('other_party', 'name'));
 
         $retry = $this->api->post($this->path, self::incident());

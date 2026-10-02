@@ -66,6 +66,7 @@
                     {% if incident.insurer %}<div><dt>{{ 'incident.field.insurer'|trans }}</dt><dd>{{ incident.insurer }}</dd></div>{% endif %}
                     {% if incident.claimNumber %}<div><dt>{{ 'incident.field.claim_number'|trans }}</dt><dd>{{ incident.claimNumber }}</dd></div>{% endif %}
                     {% if own_amount and incident.excess is not null %}<div><dt>{{ 'incident.field.excess'|trans }}</dt><dd class="tabular">{{ incident.excess|money(currency) }}</dd></div>{% endif %}
+                    {% if own_amount and incident.repairEstimate is not null %}<div><dt>{{ 'incident.field.repair_estimate'|trans }}</dt><dd><span class="tabular">{{ incident.repairEstimate|money(currency) }}</span> <span class="muted">{{ 'incident.estimate_not_counted'|trans }}</span></dd></div>{% endif %}
                     <div><dt>{{ 'incident.field.ncd'|trans }}</dt><dd>{{ incident.ncdAffected.labelKey()|trans }}</dd></div>
                     {% if incident.claimUpdatedOn %}<div><dt>{{ 'incident.field.claim_updated_on'|trans }}</dt><dd>{{ incident.claimUpdatedOn|local_date }}</dd></div>{% endif %}
                 </dl>

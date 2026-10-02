@@ -114,6 +114,7 @@
                     {{ ui.input('excess', 'incident.field.excess'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.hint.excess'|trans}) }}
                     {{ ui.input('payout', 'incident.field.payout'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.hint.payout'|trans}) }}
                 </div>
+                {{ ui.input('repair_estimate', 'incident.field.repair_estimate'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), optional: true, hint: 'incident.estimate_not_counted'|trans}) }}
                 <div class="form-row">
                     {{ ui.select('ncd_affected', 'incident.field.ncd'|trans, values, errors, ncd_effects|map(n => {value: n.value, label: n.labelKey()|trans})) }}
                     {{ ui.input('claim_updated_on', 'incident.field.claim_updated_on'|trans, values, errors, {type: 'date', optional: true, hint: 'incident.hint.claim_updated_on'|trans}) }}
