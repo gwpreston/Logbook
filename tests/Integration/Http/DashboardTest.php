@@ -96,7 +96,7 @@ final class DashboardTest extends AppTestCase
         self::assertSame([
             'order' => [
                 'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel',
-                'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage',
+                'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance',
             ],
             'hidden' => ['efficiency'],
         ], $stored->value);
@@ -182,7 +182,8 @@ final class DashboardTest extends AppTestCase
         );
         $html = self::body($browser->get('/?customise=1'));
         self::assertSame(
-            ['needs_attention', 'reminders', 'coming_up', 'fleet', 'compliance', 'mileage', 'recent_activity'],
+            // Customising lists the finance widget, which the dashboard leaves out until there is an agreement.
+            ['needs_attention', 'reminders', 'coming_up', 'fleet', 'compliance', 'mileage', 'recent_activity', 'finance'],
             self::widgetOrder($html),
             'the stored setting wins',
         );

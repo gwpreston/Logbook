@@ -38,6 +38,8 @@ final readonly class VehicleSources
         public bool $costs = true,
         /** The *First MOT due* date while it counts (FirstInspection::pending()); null with `compliance` off. */
         public ?DateTimeImmutable $firstInspection = null,
+        /** The active agreement's payments due; null without one, with `finance` off or without costs. */
+        public ?FinanceDue $finance = null,
     ) {
     }
 }

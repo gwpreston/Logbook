@@ -115,7 +115,8 @@ final class DemoDataSeeder extends AbstractSeed
             $vehicle([
                 'type' => 'car', 'make' => 'Toyota', 'model' => 'Corolla 1.8 Hybrid', 'year' => 2022,
                 'registration' => 'LK22 VXN', 'fuel_type' => 'hybrid', 'capacity' => '43.000',
-                'purchase_date' => '2022-09-01', 'purchase_price' => '24995.000',
+                // Bought nearly new on a 48-month PCP (Phase 29.2): the purchase price is its cash price.
+                'purchase_date' => '2024-04-01', 'purchase_price' => '22995.000',
             ]),
             $vehicle([
                 'type' => 'bike', 'nickname' => 'Street Triple', 'make' => 'Triumph', 'model' => 'Street Triple R',
@@ -126,7 +127,8 @@ final class DemoDataSeeder extends AbstractSeed
                 'type' => 'car', 'make' => 'Kia', 'model' => 'EV6 GT-Line', 'year' => 2023,
                 'registration' => 'EV23 KIA', 'fuel_type' => 'ev', 'default_grade' => 'home',
                 'capacity' => '77.400', 'currency' => 'EUR',
-                // Leased: no purchase price, so its cost of ownership is its running costs, lease included.
+                // Leased (a lease agreement, Phase 29.2): no purchase price, so its cost of ownership is its
+                // running costs, the rentals included.
                 'purchase_date' => '2024-02-10', 'purchase_price' => null,
                 // Leased new, so no MOT certificate yet: its first MOT is 3 years on (spec.md §7.1, Phase 21.2).
                 'first_registered_on' => '2024-02-09', 'first_inspection_due_on' => '2027-02-09',
@@ -159,6 +161,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedIncidents($now, $userId);
         $this->seedTrips($now, $userId);
         $this->seedPartner($now, $userId);
+        $this->seedFinance($now, $userId);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" (or "%s") with password "%s".</info>',
@@ -696,7 +699,7 @@ final class DemoDataSeeder extends AbstractSeed
             $expense('LB19 KTR', '2026-09-06', 'parking', '0.000', 'Free after 6pm'),
             $expense('MT20 BKE', '2026-05-11', 'accessories', '64.990', 'Tank bag'),
             $expense('EV23 KIA', '2026-06-18', 'tolls', '9.800', 'Péage A26'),
-            ...$this->leasePayments($expense),
+            // The Kia's rentals come from its lease agreement (seedFinance), never as expenses too.
         ])->saveData();
     }
 
@@ -704,27 +707,6 @@ final class DemoDataSeeder extends AbstractSeed
      * The written-off Fiesta's settlement letter (spec.md §7.12): a one-page
      * PDF written under UPLOAD_PATH, shown on its *Written off* milestone.
      */
-    /**
-     * The leased Kia's monthly payments (the `finance` category), from the
-     * month after the lease started to this month (spec.md §7.7 *Cost of
-     * ownership*).
-     *
-     * @param callable(string, string, string, string, ?string): array<string, mixed> $expense
-     * @return list<array<string, mixed>>
-     */
-    private function leasePayments(callable $expense): array
-    {
-        $rows = [];
-        $month = new DateTimeImmutable('2024-03-10');
-        $last = new DateTimeImmutable('2026-09-10');
-        while ($month <= $last) {
-            $rows[] = $expense('EV23 KIA', $month->format('Y-m-d'), 'finance', '449.000', 'Lease payment');
-            $month = $month->modify('+1 month');
-        }
-
-        return $rows;
-    }
-
     /**
      * The sold Fiesta's years with its owner, so its cost of ownership is an
      * exact lifetime figure (spec.md §7.7): the mileage at purchase and at
@@ -799,8 +781,9 @@ final class DemoDataSeeder extends AbstractSeed
      * online valuation a year apart (the latest with a screenshot), so its
      * *Ownership* card shows depreciation and a value chart; the sold Fiesta
      * has one valuation before its sale, which its sale price overrides.
-     * The Corolla's only valuation is 18 months old: a stale value, on its
-     * Ownership card and in *Needs attention* (Phase 24).
+     * The bike's only valuation is 18 months old: a stale value, on its
+     * Ownership card and in *Needs attention* (Phase 24). The Corolla's is
+     * recent, for its PCP's equity (Phase 29.2).
      */
     private function seedValuations(string $now): void
     {
@@ -808,6 +791,7 @@ final class DemoDataSeeder extends AbstractSeed
         $golf = $ids['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
         $fiesta = $ids['WR14 FNE'] ?? throw new RuntimeException('The demo Fiesta is missing.');
         $corolla = $ids['LK22 VXN'] ?? throw new RuntimeException('The demo Corolla is missing.');
+        $bike = $ids['MT20 BKE'] ?? throw new RuntimeException('The demo bike is missing.');
         $valuation = static fn (int $vehicle, string $on, string $amount, string $source, ?string $notes = null): array => [
             'vehicle_id' => $vehicle,
             'valued_on' => $on,
@@ -822,7 +806,8 @@ final class DemoDataSeeder extends AbstractSeed
             $valuation($golf, '2025-03-08', '11200.000', 'Part-exchange offer, Arnold Clark'),
             $valuation($golf, '2026-03-14', '9800.000', 'Auto Trader valuation', 'Online, private sale, good condition'),
             $valuation($fiesta, '2025-10-02', '2300.000', 'We Buy Any Car online valuation'),
-            $valuation($corolla, '2025-03-28', '19500.000', 'Part-exchange offer, Toyota dealer'),
+            $valuation($bike, '2025-03-28', '6400.000', 'Part-exchange offer, Triumph dealer'),
+            $valuation($corolla, '2026-08-20', '17800.000', 'Part-exchange offer, Toyota dealer'),
         ])->saveData();
 
         $latest = null;
@@ -862,6 +847,133 @@ final class DemoDataSeeder extends AbstractSeed
             'stored_path' => $stored,
             'uploaded_at' => $now,
         ])->saveData();
+    }
+
+    /**
+     * Finance agreements (Phase 29.2, spec.md §7.32):
+     *
+     * - the leased Kia: an initial rental of six months, then 35 rentals,
+     *   in euros, its rentals counted from the agreement (no expenses too);
+     * - the Corolla: a 48-month PCP at 6.9% with an optional final payment,
+     *   8,000 mi a year at 9p, heading about 1,200 mi over (its odometer at
+     *   the start is set from its readings so the projection lands there,
+     *   whatever the random mileage), with a recent valuation for equity;
+     * - the written-off Fiesta: an HP settled early in 2018 with the
+     *   lender's settlement quote.
+     */
+    private function seedFinance(string $now, int $userId): void
+    {
+        $ids = $this->vehicleIds();
+        $agreement = static fn (array $values): array => array_merge([
+            'vehicle_id' => 0,
+            'created_by' => $userId,
+            'type' => 'hp',
+            'lender' => '',
+            'agreement_number' => null,
+            'status' => 'active',
+            'started_on' => '',
+            'first_payment_on' => '',
+            'number_of_payments' => 0,
+            'regular_payment' => '0',
+            'first_payment' => null,
+            'final_payment' => null,
+            'final_payment_on' => null,
+            'cash_price' => null,
+            'customer_deposit' => '0',
+            'dealer_contribution' => '0',
+            'initial_rental' => null,
+            'amount_of_credit' => null,
+            'total_amount_payable' => null,
+            'apr' => '0',
+            'documentation_fee' => null,
+            'option_to_purchase_fee' => null,
+            'annual_mileage_allowance' => null,
+            'mileage_unit' => 'mi',
+            'excess_mileage_charge' => null,
+            'start_odometer_km' => null,
+            'count_in_costs' => true,
+            'ended_on' => null,
+            'notes' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $values);
+
+        $this->table('finance_agreements')->insert([
+            $agreement([
+                'vehicle_id' => $ids['EV23 KIA'], 'type' => 'lease', 'lender' => 'Kia Lease (Ayvens)',
+                'agreement_number' => 'KL-2024-118734',
+                'started_on' => '2024-02-10', 'first_payment_on' => '2024-03-10',
+                'number_of_payments' => 35, 'regular_payment' => '449.000', 'initial_rental' => '2694.000',
+                'documentation_fee' => '250.000',
+                'annual_mileage_allowance' => 16000, 'mileage_unit' => 'km', 'excess_mileage_charge' => '0.0800',
+                // Leased new: the odometer started at nothing.
+                'start_odometer_km' => '0.000',
+            ]),
+            $agreement([
+                'vehicle_id' => $ids['LK22 VXN'], 'type' => 'pcp', 'lender' => 'Toyota Financial Services',
+                'agreement_number' => 'TFS-0045519203',
+                'started_on' => '2024-04-01', 'first_payment_on' => '2024-05-01',
+                'number_of_payments' => 47, 'regular_payment' => '284.710',
+                'final_payment' => '10450.000',
+                'cash_price' => '22995.000', 'customer_deposit' => '2500.000', 'dealer_contribution' => '750.000',
+                'apr' => '6.900', 'option_to_purchase_fee' => '10.000',
+                'annual_mileage_allowance' => 8000, 'mileage_unit' => 'mi', 'excess_mileage_charge' => '0.0900',
+                'start_odometer_km' => $this->pcpStartOdometer($ids['LK22 VXN'], '2028-04-01', 8000 * 4 + 1200),
+            ]),
+            $agreement([
+                'vehicle_id' => $ids['WR14 FNE'], 'type' => 'hp', 'lender' => 'Ford Credit',
+                'status' => 'settled', 'ended_on' => '2018-11-15',
+                'started_on' => '2016-06-30', 'first_payment_on' => '2016-07-30',
+                'number_of_payments' => 48, 'regular_payment' => '133.310',
+                'cash_price' => '6500.000', 'customer_deposit' => '1000.000', 'apr' => '7.900',
+                'notes' => 'Settled early with a bonus from work.',
+            ]),
+        ])->saveData();
+
+        $fiesta = null;
+        foreach ($this->fetchAll(sprintf('SELECT id FROM finance_agreements WHERE vehicle_id = %d', $ids['WR14 FNE'])) as $row) {
+            $fiesta = is_array($row) ? self::intValue($row['id'] ?? null) : null;
+        }
+        if ($fiesta === null) {
+            throw new RuntimeException('The demo Fiesta agreement was not created.');
+        }
+        $this->table('settlement_quotes')->insert([
+            'agreement_id' => $fiesta, 'quoted_on' => '2018-11-01', 'amount' => '2541.370', 'valid_until' => '2018-11-29',
+            'notes' => 'Phoned Ford Credit', 'created_at' => $now,
+        ])->saveData();
+        $this->table('finance_payment_events')->insert([
+            'agreement_id' => $fiesta, 'due_on' => null, 'kind' => 'settlement', 'amount' => '2541.370',
+            'paid_on' => '2018-11-15', 'notes' => null, 'created_at' => $now,
+        ])->saveData();
+    }
+
+    /**
+     * The odometer at a PCP's start (km) that puts its projected distance at
+     * the end on $miles, by §7.4's projection from the vehicle's readings:
+     * the latest reading plus the average daily distance (first to latest)
+     * times the days left (spec.md §7.32 *Mileage*).
+     */
+    private function pcpStartOdometer(int $vehicle, string $endsOn, int $miles): string
+    {
+        $readings = [];
+        $rows = $this->fetchAll(sprintf('SELECT reading_km, recorded_at FROM odometer_readings WHERE vehicle_id = %d', $vehicle));
+        foreach ($rows as $row) {
+            if (is_array($row) && is_numeric($row['reading_km'] ?? null) && is_string($row['recorded_at'] ?? null)) {
+                $readings[] = [(int) strtotime(substr($row['recorded_at'], 0, 19) . ' UTC'), (float) $row['reading_km']];
+            }
+        }
+        usort($readings, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
+        if (count($readings) < 2) {
+            throw new RuntimeException('The demo PCP needs the vehicle\'s readings first.');
+        }
+        [$firstAt, $firstKm] = $readings[0];
+        [$latestAt, $latestKm] = $readings[count($readings) - 1];
+        $perDay = ($latestKm - $firstKm) / max(1, ($latestAt - $firstAt) / 86400);
+        $latestDay = (int) strtotime(gmdate('Y-m-d', $latestAt) . ' UTC');
+        $days = max(0, intdiv((int) strtotime($endsOn . ' UTC') - $latestDay, 86400));
+        $start = $latestKm + $perDay * $days - $miles * 1.609344;
+
+        return number_format(round(max(0.0, $start)), 3, '.', '');
     }
 
     /**

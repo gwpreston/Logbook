@@ -17,6 +17,8 @@ use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Finance\AgreementView;
+use Logbook\Service\Finance\FinanceService;
 use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelHistory;
@@ -67,6 +69,7 @@ final readonly class DashboardService
         private VehicleAccess $access,
         private ClaimReportService $claims,
         private AttentionList $attention,
+        private FinanceService $financeService,
     ) {
     }
 
@@ -147,7 +150,23 @@ final readonly class DashboardService
                 ? $this->claims->thisYear($user, $today, $selected !== null ? [$selected->id] : [])
                 : null,
             attention: $show(DashboardWidget::NeedsAttention) ? $attention : null,
+            finance: $show(DashboardWidget::Finance) ? $this->finance($user, $scope) : null,
         );
+    }
+
+    /**
+     * The active agreement of each vehicle in view the user may see the
+     * finance of (spec.md §7.32 *Dashboard widget*), in the fleet's order.
+     *
+     * @param list<Vehicle> $scope
+     * @return list<AgreementView>
+     */
+    private function finance(User $user, array $scope): array
+    {
+        return array_values(array_filter(array_map(
+            fn (Vehicle $vehicle): ?AgreementView => $this->financeService->activeView($user, $vehicle),
+            $scope,
+        )));
     }
 
     /**

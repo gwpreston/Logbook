@@ -145,6 +145,22 @@ final class FinanceLedgerTest extends TestCase
         self::assertSame([], FinanceLedger::overlapping($off, $schedule, $expenses));
     }
 
+    public function testAnEndedAgreementsMonthsStopTheDayBeforeItEnded(): void
+    {
+        // A lease ended on 15 Jan 2027: the charges logged that day never overlap (#127).
+        $ended = FinanceFixtures::agreement($this->leaseData(), AgreementStatus::Ended, '2027-01-15');
+        $schedule = Schedule::of($ended, [], FinanceFixtures::date('2027-02-01'));
+        $expenses = [
+            $this->expense(1, '2027-01-10', ExpenseCategory::Finance),
+            $this->expense(2, '2027-01-14', ExpenseCategory::Finance),
+            $this->expense(3, '2027-01-15', ExpenseCategory::Finance),
+            $this->expense(4, '2027-01-20', ExpenseCategory::Finance),
+        ];
+
+        $overlap = FinanceLedger::overlapping($ended, $schedule, $expenses);
+        self::assertSame([1, 2], array_map(static fn (ExpenseEntry $e): int => $e->id, $overlap));
+    }
+
     /**
      * @param list<PaymentEvent> $events
      * @return list<FinanceLine>

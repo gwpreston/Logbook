@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Forecast;
 
+use Logbook\Support\Display\DisplayFormatter;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -13,8 +14,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class ForecastWording
 {
-    public function __construct(private TranslatorInterface $translator)
-    {
+    public function __construct(
+        private TranslatorInterface $translator,
+        private DisplayFormatter $formatter,
+    ) {
     }
 
     public function title(ForecastItem $item): string
@@ -27,6 +30,22 @@ final readonly class ForecastWording
 
         if ($item->source === ForecastSource::FirstInspection) {
             return $this->translator->trans('compliance.first_inspection.title');
+        }
+
+        $finance = $item->finance;
+        if ($finance !== null) {
+            if ($finance->final) {
+                return $this->translator->trans('coming_up.finance.final');
+            }
+
+            if ($finance->each === null) {
+                return $this->translator->trans('coming_up.finance.payments_varied', ['count' => $finance->count]);
+            }
+
+            return $this->translator->trans('coming_up.finance.payments', [
+                'count' => $finance->count,
+                'each' => $this->formatter->money($finance->each),
+            ]);
         }
 
         return $item->title !== null && $item->title !== ''

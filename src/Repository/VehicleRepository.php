@@ -152,12 +152,31 @@ final readonly class VehicleRepository
         string $salePrice,
         DateTimeImmutable $now,
     ): void {
+        $this->archiveAs($userId, $id, Disposal::WrittenOff, $incidentId, $saleDate, $salePrice, $now);
+    }
+
+    /**
+     * Archive with a disposal and the sale, in one statement: written off
+     * (with its incident), sold, or returned to the lender or lessor
+     * (spec.md §7.29 *Total loss*, §7.32 *Archive page*).
+     *
+     * @param string|null $salePrice canonical decimal; none for a lease returned
+     */
+    public function archiveAs(
+        int $userId,
+        int $id,
+        Disposal $disposal,
+        ?int $incidentId,
+        DateTimeImmutable $saleDate,
+        ?string $salePrice,
+        DateTimeImmutable $now,
+    ): void {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
 
         $this->connection->update(self::TABLE, [
             'status' => VehicleStatus::Archived->value,
             'archived_at' => $timestamp,
-            'disposal' => Disposal::WrittenOff->value,
+            'disposal' => $disposal->value,
             'disposal_incident_id' => $incidentId,
             'sale_date' => $saleDate->format('Y-m-d'),
             'sale_price' => $salePrice,

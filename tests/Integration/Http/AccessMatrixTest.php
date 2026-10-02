@@ -147,6 +147,7 @@ final class AccessMatrixTest extends AppTestCase
         'finance.quotes' => self::FINANCE,
         'finance.quotes.delete' => self::FINANCE,
         'finance.schedule' => self::FINANCE,
+        'finance.end' => self::FINANCE,
         'valuations.index' => self::COSTS,
         'valuations.create' => self::MANAGE,
         'valuations.edit' => self::MANAGE,

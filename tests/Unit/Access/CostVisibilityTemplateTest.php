@@ -53,6 +53,7 @@ final class CostVisibilityTemplateTest extends TestCase
         'finance/form.twig' => 'the agreement form: FinanceRoute needs Manage and ViewCosts',
         'finance/_card.twig' => 'the overview card: FinanceService::activeView() is null without Manage and ViewCosts',
         'macros/finance.twig' => 'finance wording, called only from the finance pages and card above',
+        'dashboard/_finance.twig' => 'the finance widget: FinanceService::activeView() is null without Manage and ViewCosts',
         // Trips (Phase 22): a claim is the viewer's own trips at their own rates, never a vehicle's
         // costs; cost per distance comes from BusinessMileage, which leaves it out without ViewCosts.
         'trips/claim.twig' => 'the claimant’s own claim; cost per distance only with ViewCosts (BusinessMileage)',
@@ -68,6 +69,10 @@ final class CostVisibilityTemplateTest extends TestCase
     private const array EXPRESSION_EXCEPTIONS = [
         'macros/expenses.twig' => [
             'total.amount|money' => 'breakdown(): a report section, from ReportService (vehicles without ViewCosts dropped)',
+        ],
+        'vehicles/archive.twig' => [
+            "(agreement.data.finalPayment ?? '0')|money(currency)" => 'the agreement block: ArchiveVehicleAction passes '
+                . 'finance only from FinanceService::archiveAgreement(), null without Manage and ViewCosts',
         ],
     ];
 

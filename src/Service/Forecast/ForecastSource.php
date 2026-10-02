@@ -15,4 +15,6 @@ enum ForecastSource: string
     /** A vehicle's *First MOT due* date before its first certificate (Phase 21.2). */
     case FirstInspection = 'first_inspection';
     case Reminder = 'reminder';
+    /** An active finance agreement's payments, or its final payment (Phase 29.2). */
+    case Finance = 'finance';
 }

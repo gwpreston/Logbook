@@ -40,6 +40,9 @@
                 {% if not vehicle.isArchived() %}
                     <a class="btn" href="{{ url_for('finance.edit', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
                 {% endif %}
+                {% if open %}
+                    <a class="btn" href="{{ url_for('finance.end', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('stop_circle') }}{{ 'finance.end.title'|trans }}</a>
+                {% endif %}
                 <a class="btn btn--danger" href="{{ url_for('finance.delete', {id: vehicle.id, agreement: agreement.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
             </div>
         </header>
@@ -81,6 +84,21 @@
                 {% endif %}
                 {% if figures.endsOn %}
                     <div><dt>{{ 'finance.row.ends'|trans }}</dt><dd>{{ figures.endsOn|local_date }}{% if agreement.endedOn %} <span class="muted">· {{ 'finance.ended_on'|trans({date: agreement.endedOn|local_date}) }}</span>{% endif %}</dd></div>
+                {% endif %}
+                {% if finance.mileage %}
+                    {% set mileage = finance.mileage %}
+                    <div>
+                        <dt>{{ 'finance.row.mileage'|trans }}</dt>
+                        <dd>
+                            {{ fin.mileage(mileage, currency) }}
+                            {% if mileage.distanceKm is not null and agreement.status.value == 'active' %}
+                                <br><span class="muted">{{ 'finance.mileage.detail'|trans({distance: mileage.distanceKm|distance(0, mileage.unit), allowed: mileage.allowedToDateKm|distance(0, mileage.unit)}) }}</span>
+                            {% endif %}
+                            {% if mileage.projectedKm is not null and agreement.status.value == 'active' %}
+                                <br><span class="pill pill--soon">{{ 'finance.estimate'|trans }}</span> <span class="muted">{{ 'finance.mileage.hint'|trans }}</span>
+                            {% endif %}
+                        </dd>
+                    </div>
                 {% endif %}
                 {% if figures.settlement %}
                     <div>

@@ -10,6 +10,7 @@ use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Maintenance\DonePoint;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Service\Finance\PaymentKind;
 use Logbook\Service\Reminder\ReminderRules;
 use Logbook\Service\Maintenance\DueState;
 use Logbook\Service\Maintenance\DueStatus;
@@ -61,6 +62,9 @@ final class ForecastCalculator
             }
             if ($vehicle->fuel !== null) {
                 $fuel[] = self::fuel($vehicle, $vehicle->fuel, $horizon);
+            }
+            if ($vehicle->finance !== null) {
+                array_push($items, ...self::finance($vehicle, $vehicle->finance, $horizon));
             }
         }
         $items = array_values(array_filter(
@@ -384,6 +388,14 @@ final class ForecastCalculator
     {
         $currencies = array_values(array_unique(array_map(static fn (VehicleSources $s): string => $s->currency, $sources)));
         $totals = [];
+        // A finance payments line counts in each month its payments fall in, not only its own.
+        $spread = [];
+        $dated = array_merge(...array_map(static fn (ForecastMonth $m): array => $m->items, $months));
+        foreach ([...$overdue, ...$dated] as $item) {
+            foreach ($item->finance->months ?? [] as $i => $money) {
+                $spread[$item->currency][$i] = ($spread[$item->currency][$i] ?? Money::zero($item->currency))->add($money);
+            }
+        }
         foreach ($currencies as $currency) {
             $estimates = array_values(array_filter($fuel, static fn (FuelEstimate $e): bool => $e->currency === $currency));
             $ready = array_values(array_filter($estimates, static fn (FuelEstimate $e): bool => $e->isReady()));
@@ -395,9 +407,12 @@ final class ForecastCalculator
                     static fn (ForecastItem $item): bool => $item->currency === $currency,
                 ));
                 $anyItem = $anyItem || $items !== [];
-                $planned = Money::zero($currency);
+                $planned = $spread[$currency][$i] ?? Money::zero($currency);
                 $unknown = 0;
                 foreach ($items as $item) {
+                    if (($item->finance->months ?? []) !== []) {
+                        continue;
+                    }
                     if ($item->cost === null) {
                         $unknown++;
                     } else {
@@ -417,6 +432,74 @@ final class ForecastCalculator
         }
 
         return $totals;
+    }
+
+    /**
+     * An active agreement's payments in the horizon as one line on the
+     * first one's date, its amount spread over the months they fall in,
+     * and a final payment inside the horizon as its own item (spec.md §7.32
+     * *Coming up*). Missed payments are owed now and on the agreement page,
+     * not here.
+     *
+     * @return list<ForecastItem>
+     */
+    private static function finance(VehicleSources $vehicle, FinanceDue $due, ForecastHorizon $horizon): array
+    {
+        $currency = $vehicle->currency;
+        $regular = [];
+        $final = null;
+        foreach ($due->due as $payment) {
+            if ($payment->dueOn <= $horizon->today || $payment->dueOn > $horizon->end) {
+                continue;
+            }
+            if ($payment->kind === PaymentKind::Final) {
+                $final = $payment;
+            } else {
+                $regular[] = $payment;
+            }
+        }
+
+        $item = static fn (DateTimeImmutable $on, Money $cost, FinanceForecast $finance): ForecastItem => new ForecastItem(
+            vehicle: $vehicle->vehicle,
+            source: ForecastSource::Finance,
+            sourceId: $due->agreementId,
+            title: null,
+            category: $finance->final ? 'final' : 'payments',
+            icon: 'account_balance',
+            dueOn: $on,
+            dueKm: null,
+            projected: false,
+            overdue: false,
+            cost: $cost->isZero() ? null : $cost,
+            currency: $currency,
+            finance: $finance,
+        );
+
+        $items = [];
+        if ($regular !== []) {
+            $total = Money::zero($currency);
+            $months = [];
+            $amounts = [];
+            foreach ($regular as $payment) {
+                $money = Money::of($payment->amount, $currency);
+                $total = $total->add($money);
+                $i = $horizon->monthIndex($payment->dueOn) ?? 0;
+                $months[$i] = ($months[$i] ?? Money::zero($currency))->add($money);
+                $amounts[$payment->amount] = $money;
+            }
+            $each = count($amounts) === 1 ? array_values($amounts)[0] : null;
+            $items[] = $item(
+                $regular[0]->dueOn,
+                $total,
+                new FinanceForecast($due->agreementId, false, count($regular), $each, $months, $due->plain),
+            );
+        }
+        if ($final !== null) {
+            $money = Money::of($final->amount, $currency);
+            $items[] = $item($final->dueOn, $money, new FinanceForecast($due->agreementId, true, 1, $money, [], $due->plain));
+        }
+
+        return $items;
     }
 
     private static function positive(string $amount, string $currency): ?Money

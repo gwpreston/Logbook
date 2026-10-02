@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Finance\AgreementStatus;
 use Logbook\Domain\Maintenance\DonePoint;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceSchedule;
@@ -21,6 +22,7 @@ use Logbook\Service\Maintenance\ScheduleState;
 use Logbook\Service\Reminder\ReminderGenerator;
 use Logbook\Service\Reminder\ReminderPreferences;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Tests\Unit\Service\Finance\FinanceFixtures;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -163,6 +165,43 @@ final class ReminderGeneratorTest extends TestCase
             $now,
             $now,
         );
+    }
+
+    public function testAPcpRemindsOfItsFinalPaymentAndOfDecidingBeforeItEnds(): void
+    {
+        $reminders = ReminderGenerator::fromFinance(
+            1,
+            FinanceFixtures::pcp(),
+            self::date('2027-10-01'),
+            'Final payment',
+            'Agreement ends',
+            new ReminderPreferences(documentDays: 30),
+        );
+
+        self::assertCount(2, $reminders);
+        [$final, $end] = $reminders;
+        self::assertSame(ReminderSource::Finance, $final->source);
+        self::assertSame('2028-01-31', $final->dueOn?->format('Y-m-d'));
+        self::assertSame(30, $final->leadTimeDays, 'the document lead time');
+        self::assertSame(ReminderSource::FinanceEnd, $end->source);
+        self::assertSame('2027-11-02', $end->dueOn?->format('Y-m-d'), '90 days before the end');
+        self::assertSame(0, $end->leadTimeDays);
+        self::assertSame(ReminderStatus::Upcoming, $end->status);
+        self::assertSame($final->sourceId, $end->sourceId, 'both name the agreement');
+    }
+
+    public function testALeaseEndsAMonthAfterItsLastRentalAndHpWithoutAFinalPaymentRaisesNothing(): void
+    {
+        $today = self::date('2026-01-01');
+        $preferences = new ReminderPreferences();
+        $lease = ReminderGenerator::fromFinance(1, FinanceFixtures::lease(), $today, 'f', 'e', $preferences);
+        self::assertCount(1, $lease);
+        // 23 rentals from 10 Apr 2025: the last on 10 Feb 2027, the car back on 10 Mar 2027.
+        self::assertSame('2026-12-10', $lease[0]->dueOn?->format('Y-m-d'));
+
+        self::assertSame([], ReminderGenerator::fromFinance(1, FinanceFixtures::hp(), $today, 'f', 'e', $preferences));
+        $ended = FinanceFixtures::pcp(AgreementStatus::HandedBack, '2028-01-31');
+        self::assertSame([], ReminderGenerator::fromFinance(1, $ended, $today, 'f', 'e', $preferences));
     }
 
     private static function date(string $value): DateTimeImmutable

@@ -13,6 +13,8 @@
         {{ url_for('tyres.index', {id: reminder.vehicleId}) }}
     {%- elseif reminder.source.value == 'first_inspection' -%}
         {{ url_for('vehicles.show', {id: reminder.vehicleId}) }}
+    {%- elseif reminder.source.value == 'finance' or reminder.source.value == 'finance_end' -%}
+        {{ url_for('finance.show', {id: reminder.vehicleId, agreement: reminder.sourceId}) }}
     {%- else -%}
         {{ url_for('reminders.edit', {reminder: reminder.id}) }}
     {%- endif -%}

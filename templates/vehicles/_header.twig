@@ -45,8 +45,8 @@
                 {{ ui.csrf(csrf) }}
                 <button type="submit" class="btn">{{ ui.icon('unarchive') }}{{ 'vehicle.restore'|trans }}</button>
             </form>
-        {% elseif total_loss_offered(vehicle) %}
-            {# A settled write-off: the confirm page offers *Written off* (spec.md §7.29 *Total loss*). #}
+        {% elseif total_loss_offered(vehicle) or finance_archive_offered(vehicle) %}
+            {# A settled write-off or a finance agreement: the confirm page (spec.md §7.29 *Total loss*, §7.32 *Archive page*). #}
             <a class="btn" href="{{ url_for('vehicles.archive', {id: vehicle.id}) }}" data-modal>{{ ui.icon('archive') }}{{ 'vehicle.archive'|trans }}</a>
         {% else %}
             <form method="post" action="{{ url_for('vehicles.archive', {id: vehicle.id}) }}">
@@ -66,8 +66,8 @@
         <div class="vehicle-card__tags">
             {% if data.registration %}<span class="plate">{{ data.registration }}</span>{% endif %}
             <span class="pill">{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</span>
-            {% if vehicle.isArchived() and vehicle.isWrittenOff() %}
-                <span class="pill pill--soon">{{ ui.icon('car_crash') }}{{ vehicle_ui.written_off(vehicle) }}</span>
+            {% if vehicle.isArchived() and (vehicle.isWrittenOff() or vehicle.isReturned()) %}
+                <span class="pill pill--soon">{{ ui.icon(vehicle.isReturned() ? 'key_off' : 'car_crash') }}{{ vehicle_ui.disposal(vehicle) }}</span>
             {% elseif vehicle.isArchived() %}
                 <span class="pill pill--soon">{{ ui.icon('inventory_2') }}{{ 'vehicle.archived_on'|trans({date: vehicle.archivedAt|instant_date}) }}</span>
             {% endif %}

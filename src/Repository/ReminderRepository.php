@@ -280,6 +280,31 @@ final readonly class ReminderRepository
         ], ['id' => $id], ['id' => ParameterType::INTEGER]);
     }
 
+    /**
+     * Mark a source's open reminder done (spec.md §7.32: ending an agreement
+     * marks its finance reminders done). Closed ones stay as they are.
+     */
+    public function markDone(int $vehicleId, ReminderSource $source, int $sourceId, DateTimeImmutable $now): void
+    {
+        $this->connection->createQueryBuilder()
+            ->update(self::TABLE)
+            ->set('status', ':done')
+            ->set('closed_at', ':now')
+            ->set('updated_at', ':now')
+            ->where('vehicle_id = :vehicle', 'source = :source', 'source_id = :source_id', 'status IN (:open)')
+            ->setParameter('done', ReminderStatus::Done->value)
+            ->setParameter('now', $this->timestamp($now))
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->setParameter('source', $source->value)
+            ->setParameter('source_id', $sourceId, ParameterType::INTEGER)
+            ->setParameter(
+                'open',
+                [ReminderStatus::Upcoming->value, ReminderStatus::Due->value, ReminderStatus::Overdue->value],
+                ArrayParameterType::STRING,
+            )
+            ->executeStatement();
+    }
+
     public function delete(int $id): void
     {
         $this->connection->delete(self::TABLE, ['id' => $id], ['id' => ParameterType::INTEGER]);

@@ -47,6 +47,15 @@ final class Fingerprint
     /**
      * A waiting claim's status and latest update: news, or a new status, re-judges.
      */
+    /**
+     * The agreement and the projected excess rounded to 100 (spec.md §7.24
+     * item 11): hidden until the projection moves by about 100 or more.
+     */
+    public static function financeMileage(int $agreementId, int $excessRounded): string
+    {
+        return self::hash(['finance_mileage', $agreementId, $excessRounded]);
+    }
+
     public static function claim(Incident $incident): string
     {
         return self::hash([

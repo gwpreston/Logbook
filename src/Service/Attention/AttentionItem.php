@@ -51,6 +51,8 @@ final readonly class AttentionItem
         public ?CostFinding $cost = null,
         /** The incident whose claim is waiting (StalledClaim), seen with its details. */
         public ?IncidentView $incident = null,
+        /** The agreement and its missed payment or mileage (FinanceMissed, FinanceMileage). */
+        public ?FinanceFinding $finance = null,
         /** The vehicle's currency, for the amounts in a price or cost title. */
         public ?string $currency = null,
         /** What was judged (hideable kinds). */

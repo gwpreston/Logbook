@@ -9,7 +9,9 @@ Logbook works out:
 - what settling now would roughly cost, or your lender's own quote;
 - what the credit costs you;
 - for hire purchase and PCP, when you reach half the total amount payable;
-- your equity: what the car is worth against what you owe.
+- your equity: what the car is worth against what you owe;
+- for PCP and leases, where your mileage stands against the allowance, and
+  the excess charge it is heading for.
 
 The interest, fees or rentals then count in your costs automatically, once
 each.
@@ -22,22 +24,24 @@ is one. Your agreement and your lender have the final word.
 - [The schedule: payments assumed paid](#the-schedule-payments-assumed-paid)
 - [What each figure means](#what-each-figure-means)
 - [Estimates and your lender's quote](#estimates-and-your-lenders-quote)
+- [Mileage against the allowance](#mileage-against-the-allowance)
+- [Ending an agreement](#ending-an-agreement)
+- [Selling or archiving with finance](#selling-or-archiving-with-finance)
+- [Coming up, reminders and Needs attention](#coming-up-reminders-and-needs-attention)
 - [Costs: counted once](#costs-counted-once)
 - [Moving from manual finance expenses](#moving-from-manual-finance-expenses)
 - [Who can see it](#who-can-see-it)
+- [The dashboard, the API and Ask](#the-dashboard-the-api-and-ask)
 - [Export and backups](#export-and-backups)
-
-Mileage allowances, ending an agreement (settling, handing back, selling
-with finance owing) and finance in *Coming up*, reminders and *Needs
-attention* are coming in Phase 29.2.
 
 ## Switching it on or off
 
 Finance is **on by default**. Nothing shows until a vehicle has an
 agreement. An admin can switch it off in **Settings → Modules** (or with
 `FEATURES_FINANCE=false`, see [configuration.md](configuration.md)). That
-hides every finance page, the overview card and the cost lines, and keeps
-every agreement.
+hides every finance page, the overview card, the dashboard widget, the
+cost lines, the *Coming up* lines, the reminders and the *Needs
+attention* items, and keeps every agreement.
 
 ## Entering an agreement from the paperwork
 
@@ -135,6 +139,91 @@ interest for settling early. When you get a quote, enter it under
 it is valid it **replaces the estimate** everywhere ("£7,612.08, quoted
 3 Oct, valid until 31 Oct"). Once it expires, the estimate comes back.
 
+## Mileage against the allowance
+
+Your lender knows your allowance; only Logbook knows your odometer and how
+far you usually drive. For a PCP or lease with an annual mileage
+allowance, the agreement page and the overview card show:
+
+- **the allowance over the whole agreement:** the annual allowance × the
+  agreement's months ÷ 12, counting from the agreement date to the end
+  date (a lease of an initial rental and 35 rentals runs 36 months: the
+  car goes back a month after the last rental);
+- **the distance so far:** your latest reading less the odometer at the
+  start (as you entered it, else the reading nearest the agreement date),
+  and how much of the allowance you would have used by now at an even
+  pace;
+- **where you are heading:** your latest reading plus your average daily
+  distance (from the mileage log, as for maintenance) for the days left.
+  Over the allowance: "On track for 31,200 mi against 30,000. About £108
+  in excess mileage at £0.09 a mile." Under it: "On track to finish 2,400
+  mi under the allowance."
+
+The projection needs a week of readings; until then you see the distance
+so far only. Distances are in the agreement's own unit (miles or km),
+whatever your display unit. The projection is an estimate, and says so.
+
+## Ending an agreement
+
+**End agreement** on the agreement page asks how it ended and when:
+
+| Outcome | For | What happens |
+|---|---|---|
+| **Settled early** | HP, PCP, loans | Enter what you paid (prefilled from your lender's quote, or the estimate). Later payments leave the schedule. |
+| **Completed** | HP, PCP, loans | Every payment was made (for PCP, the optional final payment too); the date is on or after the last payment. The vehicle is yours. |
+| **Handed back** | PCP | You returned the car instead of paying the optional final payment. |
+| **Lease ended** | Leases | The car went back to the lessor. |
+
+Handing back and ending a lease take two optional amounts, the **excess
+mileage charge** (prefilled from your mileage when you are over) and
+**damage charges**. Each is logged as a *Finance and lease* expense on the
+end date. Then, if you own the vehicle, Logbook takes you to **Archive**
+with *Returned to the lender* or *Returned to the lessor* chosen.
+
+Once ended, the agreement's costs are **exact**: everything you paid less
+the cash price (less the amount of credit for a loan). A PCP handed back
+is treated as **sold at its optional final payment**: you paid the cash
+price less the final payment you didn't pay, so lifetime cost of ownership
+comes out right without a special case. Ending marks the agreement's
+reminders done.
+
+## Selling or archiving with finance
+
+While a vehicle has an agreement, **Archive** opens a short page instead
+of archiving in one click:
+
+- **Sold**, with the sale date and price. With an active hire purchase or
+  PCP it warns: "This agreement is still active. The lender owns the car
+  until it is settled." **Settled from the sale** (ticked) takes the
+  settlement amount and ends the agreement as settled early on the sale
+  date.
+- **Returned to the lender** (PCP): the sale price is the optional final
+  payment, and an active agreement ends as handed back on that date.
+- **Returned to the lessor** (lease): no sale price; an active lease ends
+  on that date.
+- **Written off**, when the vehicle has a settled write-off (see
+  [incidents.md](incidents.md)).
+- **Just archive**, which leaves the agreement as it is.
+
+*Restore* clears the disposal, as for any archived vehicle; the agreement
+stays ended.
+
+## Coming up, reminders and Needs attention
+
+- ***Coming up*** shows the next 12 months' payments of each active
+  agreement as one line per vehicle ("Finance payments, 12 × £312.40"),
+  plus a final payment inside the 12 months as its own item. They count in
+  the expected total, each payment in its own month.
+- **Reminders:** the final payment, due on its date with your document
+  lead time, and for PCP and leases *Agreement ends: decide what to do*,
+  90 days before the end. None for regular payments, which go by direct
+  debit. Ending the agreement marks them done.
+- ***Needs attention*** lists a payment marked missed (and not paid late)
+  as a *Now* item, and a PCP or lease heading more than 2% over its
+  allowance as a check: "Heading for about 1,200 mi over your allowance:
+  about £108". *Hide* keeps it hidden until the projection moves by about
+  100.
+
 ## Costs: counted once
 
 With **Count the credit charges in my costs** (for a lease, **Count the
@@ -187,8 +276,25 @@ agreement's lines in their totals, so everyone sees the same figures. To
 them each line is a plain *Finance and lease* line, with no link, lender
 or agreement details.
 
+Their *Coming up* lines are plain too: the same payments, with no link
+or lender, so everyone's planned total matches. They get no finance
+reminders, *Needs attention* items, widget, API data or Ask answers.
+
 Finance is never in the sale pack, the printed History or *Recent
 activity*.
+
+## The dashboard, the API and Ask
+
+- The **Finance** dashboard widget lists each vehicle in view with an
+  active agreement: "18 payments remaining · £7,850 to pay · ends Mar
+  2028", its mileage line and its equity. It appears once a vehicle has an
+  agreement, and follows the vehicle chip.
+- **`GET /api/v1/vehicles/{id}/finance`** returns the active agreement's
+  figures and schedule (else the latest ended one's), every estimate
+  marked as such and never the agreement number. See [api.md](api.md).
+- **Ask** (and MCP clients) can read the same figures with the
+  `finance(vehicle)` tool, and never recommend settling, handing back or
+  refinancing.
 
 ## Export and backups
 

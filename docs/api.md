@@ -119,6 +119,7 @@ user prefers, so automations can compare and chart them:
 | `POST /vehicles/{id}/expenses` | add an expense (read and write key; cost access not needed) |
 | `GET /vehicles/{id}/tyres` | tyres: fitted, stored, retired, with tread and what is due |
 | `POST /vehicles/{id}/tyres/checks` | record a tread check (read and write key) |
+| `GET /vehicles/{id}/finance` | the active finance agreement's figures and schedule, else the latest ended one's; estimates marked as such, never the agreement number (Manage and cost access, else `404`; finance module) |
 | `POST /vehicles/{id}/reminders` | add a manual reminder (read and write key; Manage) |
 | `GET /upcoming` | *Coming up* over the next 12 months (`?vehicle=`) |
 | `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`) |

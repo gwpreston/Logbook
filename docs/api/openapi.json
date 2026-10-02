@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.16.0",
+    "version": "1.17.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -753,6 +753,42 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TyreList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance": {
+      "get": {
+        "operationId": "showFinance",
+        "summary": "Finance agreement: summary and schedule",
+        "description": "The active agreement, else the latest ended one, with the figures its page shows; estimates are marked as such. Needs Manage and the vehicle's costs: anyone else gets 404, as with the module off.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceResponse"
                 }
               }
             }
@@ -2868,11 +2904,16 @@
               "document",
               "tyres",
               "first_inspection",
-              "reminder"
+              "reminder",
+              "finance"
             ]
           },
           "source_id": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null for a finance line shown without the agreement (below Manage)."
           },
           "title": {
             "type": [
@@ -2951,7 +2992,9 @@
               "compliance",
               "tyre",
               "first_inspection",
-              "manual"
+              "manual",
+              "finance",
+              "finance_end"
             ]
           },
           "title": {
@@ -5519,6 +5562,419 @@
             "items": {
               "$ref": "#/components/schemas/ClaimsRow"
             }
+          }
+        }
+      },
+      "FinanceAgreement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "type",
+          "lender",
+          "status",
+          "started_on",
+          "ends_on",
+          "ended_on",
+          "currency",
+          "apr",
+          "payments_total",
+          "payments_made",
+          "payments_remaining",
+          "next_payment",
+          "remaining_to_pay",
+          "optional_final_payment",
+          "total_amount_payable",
+          "total_amount_payable_worked_out",
+          "amount_of_credit",
+          "settlement",
+          "cost_of_credit",
+          "half_paid",
+          "equity",
+          "mileage",
+          "schedule",
+          "extra_payments"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "hp",
+              "pcp",
+              "loan",
+              "lease"
+            ]
+          },
+          "lender": {
+            "type": "string",
+            "description": "The lender, or the lessor for a lease. The agreement number is never included."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "settled",
+              "completed",
+              "handed_back",
+              "ended"
+            ]
+          },
+          "started_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "ends_on": {
+            "$ref": "#/components/schemas/NullableDate",
+            "description": "The last scheduled payment's date."
+          },
+          "ended_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217; every amount in this object is in it."
+          },
+          "apr": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Percent; null for a lease."
+          },
+          "payments_total": {
+            "type": "integer",
+            "description": "Regular monthly payments (rentals after the initial one, for a lease)."
+          },
+          "payments_made": {
+            "type": "integer"
+          },
+          "payments_remaining": {
+            "type": "integer"
+          },
+          "next_payment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "due_on",
+              "amount"
+            ],
+            "properties": {
+              "due_on": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Decimal"
+              }
+            }
+          },
+          "remaining_to_pay": {
+            "$ref": "#/components/schemas/Decimal",
+            "description": "Exact, from the agreement: the scheduled payments still due, a PCP's optional final payment left out."
+          },
+          "optional_final_payment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "due_on",
+              "amount"
+            ],
+            "properties": {
+              "due_on": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Decimal"
+              }
+            },
+            "description": "A PCP's optional final payment (GFV) while still due."
+          },
+          "total_amount_payable": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "total_amount_payable_worked_out": {
+            "type": "boolean",
+            "description": "True when worked out from the figures rather than entered."
+          },
+          "amount_of_credit": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "settlement": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "amount",
+              "estimate",
+              "quoted_on",
+              "valid_until"
+            ],
+            "properties": {
+              "amount": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "estimate": {
+                "type": "boolean",
+                "description": "True for Logbook's estimate; the lender's figure will differ. False for the lender's quote while valid."
+              },
+              "quoted_on": {
+                "$ref": "#/components/schemas/NullableDate"
+              },
+              "valid_until": {
+                "$ref": "#/components/schemas/NullableDate"
+              }
+            },
+            "description": "Credit agreements while active."
+          },
+          "cost_of_credit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "total",
+              "so_far",
+              "so_far_estimate"
+            ],
+            "properties": {
+              "total": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "so_far": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "so_far_estimate": {
+                "type": "boolean",
+                "description": "True while active (interest split from the payments made); false once ended, when it is exact."
+              }
+            },
+            "description": "Not for a lease."
+          },
+          "half_paid": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "target",
+              "paid_so_far",
+              "still_needed",
+              "reached",
+              "on"
+            ],
+            "properties": {
+              "target": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "paid_so_far": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "still_needed": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "reached": {
+                "type": "boolean"
+              },
+              "on": {
+                "$ref": "#/components/schemas/NullableDate"
+              }
+            },
+            "description": "HP and PCP."
+          },
+          "equity": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "amount",
+              "valuation",
+              "valued_on",
+              "estimate"
+            ],
+            "properties": {
+              "amount": {
+                "$ref": "#/components/schemas/Decimal",
+                "description": "Latest valuation less the settlement figure; negative for negative equity."
+              },
+              "valuation": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "valued_on": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "estimate": {
+                "type": "boolean",
+                "description": "True when the settlement figure is Logbook's estimate."
+              }
+            },
+            "description": "With a valuation from the last 12 months, while active."
+          },
+          "mileage": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "distance_unit",
+              "agreement_unit",
+              "allowance",
+              "start_odometer",
+              "distance_so_far",
+              "allowed_to_date",
+              "projected",
+              "projected_excess",
+              "excess_charge_per_unit",
+              "projected_excess_charge",
+              "projection_estimate"
+            ],
+            "properties": {
+              "distance_unit": {
+                "type": "string",
+                "const": "km",
+                "description": "Every distance in this object is in kilometres."
+              },
+              "agreement_unit": {
+                "type": "string",
+                "enum": [
+                  "mi",
+                  "km"
+                ],
+                "description": "The unit the allowance and the excess charge are written in."
+              },
+              "allowance": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "start_odometer": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "distance_so_far": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "allowed_to_date": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "projected": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "The distance at the end; null without enough readings to project."
+              },
+              "projected_excess": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "Projected less the allowance: negative when under."
+              },
+              "excess_charge_per_unit": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "Per agreement_unit."
+              },
+              "projected_excess_charge": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "projection_estimate": {
+                "type": "boolean"
+              }
+            },
+            "description": "PCP and leases with an allowance."
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "number",
+                "kind",
+                "due_on",
+                "amount",
+                "status",
+                "paid_on"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "description": "0 for a lease's initial rental, then 1…, the final payment last."
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "initial_rental",
+                    "regular",
+                    "final"
+                  ]
+                },
+                "due_on": {
+                  "$ref": "#/components/schemas/Date"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "paid",
+                    "due",
+                    "missed",
+                    "paid_late"
+                  ]
+                },
+                "paid_on": {
+                  "$ref": "#/components/schemas/NullableDate"
+                }
+              }
+            }
+          },
+          "extra_payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "paid_on",
+                "amount"
+              ],
+              "properties": {
+                "paid_on": {
+                  "$ref": "#/components/schemas/NullableDate"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "FinanceResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "agreement"
+        ],
+        "properties": {
+          "agreement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FinanceAgreement"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The active agreement, else the latest ended one; null when the vehicle has none."
           }
         }
       }

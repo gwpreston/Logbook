@@ -18,7 +18,7 @@ final readonly class ForecastItem
     public function __construct(
         public Vehicle $vehicle,
         public ForecastSource $source,
-        /** The schedule, document or reminder id; the vehicle's id for tyres. */
+        /** The schedule, document, reminder or agreement id; the vehicle's id for tyres. */
         public int $sourceId,
         /** The source's own title; null for an untitled document (named by its type). */
         public ?string $title,
@@ -37,6 +37,8 @@ final readonly class ForecastItem
         public string $currency,
         /** 1 for the next occurrence, 2 for the one after it, … */
         public int $occurrence = 1,
+        /** A finance item's payments (Phase 29.2). */
+        public ?FinanceForecast $finance = null,
     ) {
     }
 

@@ -7,10 +7,13 @@ namespace Logbook\Service\Reminder;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\FinanceAgreementRepository;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
@@ -23,6 +26,8 @@ use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Tyre\TyreReminderTitle;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\User\UserDirectory;
+use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\UserDisplayScope;
 use Psr\Clock\ClockInterface;
@@ -53,6 +58,9 @@ final readonly class ReminderSync
         private UserDirectory $directory,
         private UserDisplayScope $scope,
         private TranslatorInterface $translator,
+        private FinanceAgreementRepository $agreements,
+        private VehicleService $vehicleService,
+        private DisplayFormatter $formatter,
     ) {
     }
 
@@ -72,6 +80,7 @@ final readonly class ReminderSync
         $withSchedules = $enabled[Feature::Maintenance->value];
         $withDocuments = $enabled[Feature::Compliance->value];
         $withTyres = $enabled[Feature::Tyres->value];
+        $withFinance = $enabled[Feature::Finance->value];
         foreach ($existing as $key => $reminder) {
             $feature = $reminder->source->feature();
             if ($feature !== null && !$enabled[$feature->value]) {
@@ -130,6 +139,24 @@ final readonly class ReminderSync
                 }
             }
 
+            if ($withFinance) {
+                foreach ($this->agreements->listForVehicle($vehicle->id) as $agreement) {
+                    if (!$agreement->status->isActive()) {
+                        $this->closeFinance($existing, $vehicle->id, $agreement->id);
+                        continue;
+                    }
+                    [$finalTitle, $endTitle] = $this->financeTitles($owner, $vehicle, $agreement);
+                    $wanted = [...$wanted, ...ReminderGenerator::fromFinance(
+                        $vehicle->id,
+                        $agreement,
+                        $today,
+                        $finalTitle,
+                        $endTitle,
+                        $preferences,
+                    )];
+                }
+            }
+
             foreach ($wanted as $generated) {
                 $stored = $existing[$generated->key()] ?? null;
                 unset($existing[$generated->key()]);
@@ -185,6 +212,51 @@ final readonly class ReminderSync
         if ($stored->status !== ReminderStatus::Done) {
             $this->reminders->setStatus($stored->id, ReminderStatus::Done, $this->clock->now());
         }
+    }
+
+    /**
+     * An ended agreement's finance reminders are done and kept, not deleted
+     * as orphans (spec.md §7.32 *Reminders*). Ending marks them done
+     * straight away; this keeps one closed if the sync saw it first.
+     *
+     * @param array<string, Reminder> $existing taken out of, so they are not deleted
+     */
+    private function closeFinance(array &$existing, int $vehicleId, int $agreementId): void
+    {
+        foreach ([ReminderSource::Finance, ReminderSource::FinanceEnd] as $source) {
+            $key = GeneratedReminder::keyOf($vehicleId, $source, $agreementId);
+            $stored = $existing[$key] ?? null;
+            if ($stored === null) {
+                continue;
+            }
+            unset($existing[$key]);
+            if (!$stored->status->isClosed()) {
+                $this->reminders->setStatus($stored->id, ReminderStatus::Done, $this->clock->now());
+            }
+        }
+    }
+
+    /**
+     * "Final payment of £9,450 (Toyota Financial Services)" and "Agreement
+     * ends: decide what to do (…)", in the owner's language and currency
+     * whoever asks.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function financeTitles(User $owner, Vehicle $vehicle, FinanceAgreement $agreement): array
+    {
+        $currency = $this->vehicleService->currencyFor($owner, $vehicle);
+
+        return $this->scope->run($owner, function () use ($agreement, $currency): array {
+            $data = $agreement->data;
+            $amount = $data->finalPayment === null ? '' : $this->formatter->money($data->finalPayment, $currency);
+
+            $final = $this->translator->trans('finance.reminder.final', ['amount' => $amount, 'lender' => $data->lender]);
+            $ends = $this->translator->trans('finance.reminder.ends', ['lender' => $data->lender]);
+
+            // A long lender's name must still fit the title column.
+            return [mb_substr($final, 0, 150), mb_substr($ends, 0, 150)];
+        });
     }
 
     /**

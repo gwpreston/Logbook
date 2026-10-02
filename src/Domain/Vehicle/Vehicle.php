@@ -65,6 +65,16 @@ final readonly class Vehicle
         return $this->disposal === Disposal::WrittenOff;
     }
 
+    /**
+     * Handed back at the end of a PCP or lease (spec.md §7.32 *Ending*):
+     * labelled "Returned to the lender" or "Returned to the lessor" where a
+     * sold one says "Sold".
+     */
+    public function isReturned(): bool
+    {
+        return $this->disposal?->isReturned() ?? false;
+    }
+
     public function hasPhoto(): bool
     {
         return $this->photoPath !== null;

@@ -12,6 +12,7 @@ use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Finance\PaymentEvent;
 use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Units\DistanceUnit;
 
 /**
  * Agreements and events for the finance tests, with the paperwork figures
@@ -45,6 +46,8 @@ final class FinanceFixtures
      *     optionToPurchaseFee?: string,
      *     annualMileageAllowance?: int,
      *     excessMileageCharge?: string,
+     *     mileageUnit?: DistanceUnit,
+     *     startOdometerKm?: string,
      *     countInCosts?: bool,
      * } $data
      */
@@ -80,7 +83,9 @@ final class FinanceFixtures
                 documentationFee: $data['documentationFee'] ?? null,
                 optionToPurchaseFee: $data['optionToPurchaseFee'] ?? null,
                 annualMileageAllowance: $data['annualMileageAllowance'] ?? null,
+                mileageUnit: $data['mileageUnit'] ?? DistanceUnit::Mile,
                 excessMileageCharge: $data['excessMileageCharge'] ?? null,
+                startOdometerKm: $data['startOdometerKm'] ?? null,
                 countInCosts: $data['countInCosts'] ?? true,
             ),
             status: $status,

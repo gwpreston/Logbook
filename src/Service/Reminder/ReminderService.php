@@ -16,6 +16,7 @@ use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Finance\FinanceService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Date\LocalTime;
@@ -42,6 +43,7 @@ final readonly class ReminderService
         private OdometerService $odometer,
         private ReminderSettingsStore $settings,
         private UserDirectory $directory,
+        private FinanceService $finance,
     ) {
     }
 
@@ -84,6 +86,9 @@ final readonly class ReminderService
             if ($vehicle === null || ($feature !== null && !$enabled[$feature->value])) {
                 continue;
             }
+            if ($reminder->source->isFinance() && !$this->finance->canSee($user, $vehicle)) {
+                continue;
+            }
             $entry = new ReminderEntry($reminder, $vehicle);
             if ($reminder->status->isOpen()) {
                 $open[] = $entry;
@@ -108,6 +113,12 @@ final readonly class ReminderService
         $visible = $this->access->visibleVehicleIds($user, VehicleScope::All);
         if ($reminder === null || !in_array($reminder->vehicleId, $visible, true)) {
             throw new ReminderNotFound(sprintf('Reminder %d not found.', $id));
+        }
+        if ($reminder->source->isFinance()) {
+            $vehicle = $this->vehicles->findById($reminder->vehicleId);
+            if ($vehicle === null || !$this->finance->canSee($user, $vehicle)) {
+                throw new ReminderNotFound(sprintf('Reminder %d not found.', $id));
+            }
         }
 
         return $reminder;

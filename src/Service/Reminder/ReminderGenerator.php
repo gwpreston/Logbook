@@ -6,8 +6,11 @@ namespace Logbook\Service\Reminder;
 
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Finance\MileageAllowance;
+use Logbook\Service\Finance\Schedule;
 use Logbook\Service\Maintenance\ScheduleState;
 use Logbook\Service\Tyre\TyreVerdict;
 
@@ -18,6 +21,9 @@ use Logbook\Service\Tyre\TyreVerdict;
  */
 final class ReminderGenerator
 {
+    /** *Agreement ends: decide what to do* falls due this many days before the end. */
+    public const int FINANCE_END_DAYS = 90;
+
     /**
      * One reminder per schedule whose next-due point can be judged. Its due
      * date is the sooner of the date limit and the projected distance limit;
@@ -140,6 +146,66 @@ final class ReminderGenerator
      * @param DateTimeImmutable $today the owner's calendar date
      * @param string $title already in the owner's language
      */
+    /**
+     * An active agreement's reminders (spec.md §7.32 *Reminders*): its final
+     * payment on its date with the document lead time (source `finance`),
+     * and for a PCP or lease *Agreement ends: decide what to do* 90 days
+     * before the end date, lead time 0 (source `finance_end`, #130). None for
+     * regular payments, which go by direct debit. Each occurrence is its
+     * date, so editing the agreement's dates opens it again.
+     *
+     * @param string $finalTitle already in the owner's language
+     * @param string $endTitle already in the owner's language
+     * @return list<GeneratedReminder>
+     */
+    public static function fromFinance(
+        int $vehicleId,
+        FinanceAgreement $agreement,
+        DateTimeImmutable $today,
+        string $finalTitle,
+        string $endTitle,
+        ReminderPreferences $preferences,
+    ): array {
+        if (!$agreement->status->isActive()) {
+            return [];
+        }
+        $data = $agreement->data;
+        $reminders = [];
+        if ($data->finalPayment !== null) {
+            $dueOn = Schedule::finalPaymentOn($agreement);
+            $reminders[] = new GeneratedReminder(
+                vehicleId: $vehicleId,
+                source: ReminderSource::Finance,
+                sourceId: $agreement->id,
+                occurrence: $dueOn->format('Y-m-d'),
+                category: null,
+                title: $finalTitle,
+                dueOn: $dueOn,
+                dueKm: null,
+                leadTimeDays: $preferences->documentDays,
+                status: ReminderRules::statusForDate($dueOn, $today, $preferences->documentDays),
+            );
+        }
+        if ($data->type->hasMileage()) {
+            $endsOn = MileageAllowance::endsOn($agreement);
+            $dueOn = $endsOn->modify(sprintf('-%d days', self::FINANCE_END_DAYS));
+            $reminders[] = new GeneratedReminder(
+                vehicleId: $vehicleId,
+                source: ReminderSource::FinanceEnd,
+                sourceId: $agreement->id,
+                occurrence: $endsOn->format('Y-m-d'),
+                category: null,
+                title: $endTitle,
+                dueOn: $dueOn,
+                dueKm: null,
+                leadTimeDays: 0,
+                status: ReminderRules::statusForDate($dueOn, $today, 0),
+            );
+        }
+
+        return $reminders;
+    }
+
     public static function fromFirstInspection(
         int $vehicleId,
         DateTimeImmutable $dueOn,

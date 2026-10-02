@@ -87,7 +87,10 @@ final class ApiAccessTest extends AppTestCase
         foreach ($this->apiVehicleRoutes($app) as $route) {
             $needs = VehicleAbility::from($route->getArgument(VehicleAccessMiddleware::ABILITY) ?? '');
             $status = $this->callRoute($api, $route, $golf)->getStatusCode();
-            if ($needs === VehicleAbility::View) {
+            if ($route->getName() === 'api.finance.show') {
+                // Finance needs Manage and ViewCosts and answers 404 to anyone else (spec.md §7.32 *Access*).
+                self::assertSame(404, $status, $route->getPattern());
+            } elseif ($needs === VehicleAbility::View) {
                 self::assertSame(200, $status, $route->getPattern());
             } else {
                 self::assertSame(403, $status, $route->getPattern() . ' needs ' . $needs->value);
