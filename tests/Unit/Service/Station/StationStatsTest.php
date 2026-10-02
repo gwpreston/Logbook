@@ -86,7 +86,8 @@ final class StationStatsTest extends TestCase
         $grades = $summaries[1]->grades;
         self::assertCount(4, $grades);
         // Most volume first.
-        self::assertSame(['petrol:e10_95', 'petrol:e10_95', 'petrol:e5_97', 'petrol'], array_map(static fn (GradeStats $g): string => $g->key(), $grades));
+        $keys = array_map(static fn (GradeStats $g): string => $g->key(), $grades);
+        self::assertSame(['petrol:e10_95', 'petrol:e10_95', 'petrol:e5_97', 'petrol'], $keys);
         self::assertSame(['EUR', 'GBP'], [$grades[0]->currency, $grades[1]->currency]);
         self::assertSame('1.400000', $summaries[1]->grade('petrol:e10_95', 'GBP')?->averagePrice);
         self::assertSame('1.700000', $summaries[1]->grade('petrol:e5_97')?->averagePrice);

@@ -8,9 +8,11 @@ use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Expense\ExpenseEntryData;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Maintenance\MaintenanceEntryData;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Station\StationName;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -31,6 +33,7 @@ use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Station\StationService;
 use Logbook\Service\Trip\TripForm;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -78,6 +81,7 @@ final readonly class CsvImporter
         private ClockInterface $clock,
         private Transaction $transaction,
         private TranslatorInterface $translator,
+        private StationService $stations,
     ) {
     }
 
@@ -132,10 +136,33 @@ final readonly class CsvImporter
                 continue;
             }
             $seen[$key] = true;
-            $rows[] = new ImportRow($row['line'], ImportRowStatus::Import, $values, [], $result);
+            $rows[] = new ImportRow($row['line'], ImportRowStatus::Import, $values, [], $result, $this->stationNote($result));
         }
 
         return new ImportPreview($rows);
+    }
+
+    /**
+     * Which station an importable fill-up will be linked to (spec.md §7.33
+     * *CSV import*): an existing one by name, or a new one. None for home
+     * charging, a row without a station, or with the module off.
+     *
+     * @return array{key: string, params: array<string, string>}|null
+     */
+    private function stationNote(object $data): ?array
+    {
+        if (!$data instanceof FuelEntryData || $data->station === null || !$this->stations->enabled()) {
+            return null;
+        }
+        $name = StationName::tidy($data->station);
+        if ($name === '' || $data->grade === FuelGrade::Home) {
+            return null;
+        }
+        $existing = $this->stations->existing($name);
+
+        return $existing === null
+            ? ['key' => 'stations.import.new', 'params' => ['name' => $name]]
+            : ['key' => 'stations.import.links', 'params' => ['name' => $existing->data->name]];
     }
 
     /**

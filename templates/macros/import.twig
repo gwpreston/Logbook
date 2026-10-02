@@ -48,6 +48,8 @@
                                 </ul>
                             {% elseif row.status.value != 'import' %}
                                 {{ ('import.reason.' ~ row.status.value)|trans }}
+                            {% elseif row.note %}
+                                <span class="muted">{{ trans(row.note.key, row.note.params) }}</span>
                             {% endif %}
                         </td>
                     </tr>

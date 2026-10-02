@@ -3815,6 +3815,7 @@ return [
             'incidents' => 'Claims history',
             'needs_attention' => 'Needs attention',
             'finance' => 'Finance',
+            'stations' => 'Stations',
             'draft' => 'Draft',
         ],
         // Words the tools' results and sources use.
@@ -4011,6 +4012,7 @@ return [
             'needs_attention' => 'What needs attention now: overdue services, renewals and reminders, and records that look wrong (odd odometer readings, economy drift, unusual prices or costs, stale mileage or valuations).',
             'incidents' => 'Incidents and insurance claims on the user\'s vehicles, sold and archived ones included: date, vehicle, type, fault, driver, claim status, insurer, claim number, payout, repair estimate (never counted as spent) and no-claims effect. Defaults to the last 5 years, which is what insurers usually ask about.',
             'finance' => 'A vehicle\'s finance or lease agreement (hire purchase, PCP, personal loan or lease): payments remaining, what remains to pay (exact), the next payment, the end date, the settlement figure (the lender\'s quote, or an estimate), cost of credit, the half-paid point, equity, and the mileage against the allowance with any projected excess charge. Figures, never advice: say which are estimates.',
+            'stations' => 'Fuel stations and chargers the user has used, most visited first: visits, last visit, and per grade the spend and the average (weighted by volume), cheapest and last price paid there, from their own fill-ups. Search by name, brand or postcode, or ask for favourites only. Use it for \'where do I usually fill up?\' and \'what is the cheapest I have paid at Tesco?\'.',
             'log_fill_up' => 'Log a fill-up (or a charge) in Logbook now, as the user described it. Pass on the user\'s own words, numbers and units, and leave out what they did not say: Logbook resolves the vehicle, the date and the amounts, and asks back when unsure. Confirm the details with the user before calling. Retrying the same fill-up never logs it twice.',
             'add_reading' => 'Log an odometer (mileage) reading in Logbook now. For a fill-up, use log_fill_up instead: it records the reading too. Pass on the user\'s own words and numbers; confirm with the user before calling. Retrying the same reading never logs it twice.',
             'draft_service_record' => 'Draft a service record (maintenance or repair work). Nothing is saved yet: the user adds it in Logbook, from the link in the result. Pass on the user\'s own words, numbers and units; leave out what they did not say.',
@@ -4696,6 +4698,17 @@ return [
             'details_hint' => 'Where both stations have a detail, choose which to keep. The grades sold are combined.',
             'warning' => 'Every fill-up and favourite at {away} moves to {keep}. Old links to {away} open {keep}.',
             'submit' => 'Merge stations',
+        ],
+        'by_station' => [
+            'title' => 'By station',
+            'all' => 'All stations',
+            'caption' => 'Spend by station, last 12 months',
+            'station' => 'Station',
+            'hint' => 'The last 12 months, most spent first.',
+        ],
+        'import' => [
+            'new' => 'new station: {name}',
+            'links' => 'station: {name}',
         ],
         'combo' => [
             'none' => 'No station',

@@ -196,6 +196,10 @@
             </section>
         {% endfor %}
 
+        {% if by_station is not empty %}
+            {% include 'fuel/_by_station.twig' %}
+        {% endif %}
+
         <section class="card" aria-labelledby="fills-heading">
             <div class="card__header">
                 <h2 id="fills-heading" class="card__title">{{ (to_check ? 'fuel.check.to_check_title' : 'fuel.fills')|trans }}</h2>

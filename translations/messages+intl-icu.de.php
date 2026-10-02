@@ -3813,6 +3813,7 @@ return [
             'incidents' => 'Schadenhistorie',
             'finance' => 'Finanzierung',
             'needs_attention' => 'Braucht Aufmerksamkeit',
+            'stations' => 'Tankstellen',
             'draft' => 'Entwurf',
         ],
         // Einträge entwerfen (Phase 26.3, spec.md §7.26).
@@ -4009,6 +4010,7 @@ return [
             'needs_attention' => 'Was jetzt Aufmerksamkeit braucht: überfällige Wartung, Dokumente und Erinnerungen und Einträge, die falsch aussehen (seltsame Kilometerstände, Verbrauchsabweichung, ungewöhnliche Preise oder Kosten, veraltete Kilometerstände oder Werte).',
             'incidents' => 'Schäden und Versicherungsfälle an den Fahrzeugen des Nutzers, auch verkaufte und archivierte: Datum, Fahrzeug, Art, Schuld, Fahrer, Stand, Versicherer, Schadennummer, Zahlung, Kostenvoranschlag (nie als Ausgabe gezählt) und Auswirkung auf den Schadenfreiheitsrabatt. Standardmäßig die letzten 5 Jahre, nach denen Versicherer meist fragen.',
             'finance' => 'Der Finanzierungs- oder Leasingvertrag eines Fahrzeugs (Ratenkauf, PCP, Privatkredit oder Leasing): offene Raten, Restbetrag (exakt), nächste Rate, Enddatum, Ablösebetrag (Angebot des Kreditgebers oder Schätzung), Kreditkosten, Halbzeit der Zahlungen, Eigenkapital und die Kilometer gegenüber dem Kontingent mit möglichen Mehrkilometerkosten. Zahlen, nie Beratung: sag, welche geschätzt sind.',
+            'stations' => 'Tankstellen und Ladepunkte, die der Nutzer genutzt hat, die meistbesuchten zuerst: Besuche, letzter Besuch und je Sorte die Ausgaben sowie der durchschnittliche (nach Menge gewichtete), günstigste und letzte dort bezahlte Preis, aus den eigenen Tankvorgängen. Suche nach Name, Marke oder Postleitzahl, oder nur Favoriten. Für \'Wo tanke ich meistens?\' und \'Was war der günstigste Preis bei Aral?\'.',
             'log_fill_up' => 'Trägt einen Tankvorgang (oder eine Ladung) jetzt in Logbook ein, wie der Nutzer ihn beschrieben hat. Gib die Worte, Zahlen und Einheiten des Nutzers weiter und lass weg, was er nicht gesagt hat: Logbook ermittelt Fahrzeug, Datum und Beträge und fragt nach, wenn es unsicher ist. Bestätige die Angaben vor dem Aufruf mit dem Nutzer. Ein erneuter Aufruf mit demselben Tankvorgang trägt ihn nie doppelt ein.',
             'add_reading' => 'Trägt jetzt einen Kilometerstand in Logbook ein. Für einen Tankvorgang nimm log_fill_up: Es speichert den Stand mit. Gib die Worte und Zahlen des Nutzers weiter; bestätige vor dem Aufruf mit dem Nutzer. Ein erneuter Aufruf mit demselben Stand trägt ihn nie doppelt ein.',
             'draft_service_record' => 'Entwirft einen Wartungseintrag (Wartung oder Reparatur). Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis. Gib die Worte, Zahlen und Einheiten des Nutzers weiter; lass weg, was er nicht gesagt hat.',
@@ -4694,6 +4696,17 @@ return [
             'details_hint' => 'Wo beide Tankstellen eine Angabe haben, wähle, welche bleibt. Die angebotenen Sorten werden zusammengelegt.',
             'warning' => 'Alle Tankvorgänge und Favoriten bei {away} gehen auf {keep} über. Alte Links zu {away} öffnen {keep}.',
             'submit' => 'Tankstellen zusammenführen',
+        ],
+        'by_station' => [
+            'title' => 'Nach Tankstelle',
+            'all' => 'Alle Tankstellen',
+            'caption' => 'Ausgaben nach Tankstelle, letzte 12 Monate',
+            'station' => 'Tankstelle',
+            'hint' => 'Die letzten 12 Monate, die höchsten Ausgaben zuerst.',
+        ],
+        'import' => [
+            'new' => 'neue Tankstelle: {name}',
+            'links' => 'Tankstelle: {name}',
         ],
         'combo' => [
             'none' => 'Keine Tankstelle',

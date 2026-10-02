@@ -31,6 +31,11 @@ use Phinx\Seed\AbstractSeed;
  */
 final class DemoDataSeeder extends AbstractSeed
 {
+    /** Where the generated fill-ups were bought (Phase 30.1), in turn. */
+    private const array STATION_ROTA = [
+        'Tesco Extra', 'Shell', 'Maxol Antrim', 'Tesco Extra.', 'Applegreen M2', 'Shell', 'Texaco Larne',
+    ];
+
     public const string USERNAME = 'demo';
     public const string PASSWORD = 'logbook-demo';
     public const string PARTNER = 'partner';
@@ -162,6 +167,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedTrips($now, $userId);
         $this->seedPartner($now, $userId);
         $this->seedFinance($now, $userId);
+        $this->seedStations($now, $userId);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" (or "%s") with password "%s".</info>',
@@ -846,6 +852,71 @@ final class DemoDataSeeder extends AbstractSeed
             'size' => strlen($png),
             'stored_path' => $stored,
             'uploaded_at' => $now,
+        ])->saveData();
+    }
+
+    /**
+     * Stations (Phase 30.1, spec.md §7.33): one per station text on the
+     * fill-ups, as the upgrade makes them (home charging never one), with
+     * brands, grades and positions on most; "Tesco Extra" and "Tesco Extra."
+     * are one forecourt typed two ways, ready to merge from Duplicates.
+     * Shell and Tesco Extra are the owner's favourites; Home and Work their
+     * places.
+     */
+    private function seedStations(string $now, int $userId): void
+    {
+        $details = [
+            'Tesco Extra' => ['Tesco', 'BT41 4LD', '54.718000', '-6.219000', ['e10_95', 'e5_97', 'b7']],
+            'Tesco Extra.' => ['Tesco', null, '54.718300', '-6.219400', ['e10_95', 'b7']],
+            'Shell' => ['Shell', 'BT41 1AA', '54.705000', '-6.240000', ['e10_95', 'e5_99', 'b7', 'b7_premium']],
+            'Maxol Antrim' => ['Maxol', 'BT41 2BB', '54.712000', '-6.201000', ['e10_95', 'e5_97', 'b7']],
+            'Applegreen M2' => ['Applegreen', null, '54.680000', '-6.150000', ['e10_95', 'b7', 'dc_rapid']],
+            'Texaco Larne' => ['Texaco', 'BT40 1CC', null, null, ['e10_95', 'b7']],
+            'Ionity' => ['Ionity', null, '54.660000', '-6.220000', ['dc_rapid', 'dc_ultra']],
+            'Hotel car park' => [null, null, null, null, ['ac']],
+        ];
+        $texts = $this->fetchAll(
+            "SELECT DISTINCT station FROM fuel_entries WHERE station IS NOT NULL AND (grade IS NULL OR grade <> 'home')",
+        );
+        foreach ($texts as $row) {
+            $text = is_array($row) && is_string($row['station'] ?? null) ? $row['station'] : '';
+            if ($text === '') {
+                continue;
+            }
+            [$brand, $postcode, $lat, $lon, $grades] = $details[$text] ?? [null, null, null, null, []];
+            $this->table('stations')->insert([
+                'name' => $text,
+                'brand' => $brand,
+                'postcode' => $postcode,
+                'country' => 'GB',
+                'latitude' => $lat,
+                'longitude' => $lon,
+                'grades' => $grades === [] ? null : json_encode($grades, JSON_THROW_ON_ERROR),
+                'created_by' => $userId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->saveData();
+            $found = $this->query('SELECT id FROM stations WHERE name = ?', [$text]);
+            $station = $found instanceof PDOStatement ? $found->fetch(PDO::FETCH_ASSOC) : false;
+            $id = is_array($station) ? self::intValue($station['id'] ?? 0) : 0;
+            $this->execute(
+                "UPDATE fuel_entries SET station_id = ? WHERE station = ? AND (grade IS NULL OR grade <> 'home')",
+                [$id, $text],
+            );
+            if (in_array($text, ['Shell', 'Tesco Extra'], true)) {
+                $this->table('station_favourites')->insert([
+                    'user_id' => $userId,
+                    'station_id' => $id,
+                    'created_at' => $now,
+                ])->saveData();
+            }
+        }
+
+        $this->table('places')->insert([
+            ['user_id' => $userId, 'name' => 'Home', 'latitude' => '54.716000', 'longitude' => '-6.208000', 'sort_order' => 0,
+                'created_at' => $now, 'updated_at' => $now],
+            ['user_id' => $userId, 'name' => 'Work', 'latitude' => '54.597000', 'longitude' => '-5.930000', 'sort_order' => 1,
+                'created_at' => $now, 'updated_at' => $now],
         ])->saveData();
     }
 
@@ -1760,7 +1831,8 @@ final class DemoDataSeeder extends AbstractSeed
                 'home' => 'Home',
                 'dc_rapid' => 'Ionity',
                 'ac' => 'Hotel car park',
-                default => $fuel === 'ev' ? 'Home' : ($i % 3 === 0 ? 'Tesco Extra' : 'Shell'),
+                // Phase 30.1: a handful of forecourts, one of them typed two ways (ready to merge).
+                default => $fuel === 'ev' ? 'Home' : self::STATION_ROTA[$i % count(self::STATION_ROTA)],
             };
             $rows[] = [
                 'vehicle_id' => $vehicleId,

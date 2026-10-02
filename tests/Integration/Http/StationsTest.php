@@ -16,6 +16,7 @@ use Logbook\Repository\PlaceRepository;
 use Logbook\Repository\StationRepository;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use Psr\Container\ContainerInterface;
@@ -88,7 +89,8 @@ final class StationsTest extends AppTestCase
         self::assertStringContainsString('data-station-field', $form, 'the combo box hook');
         self::assertStringContainsString('value="other"', $form);
 
-        $response = $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill(['station_id' => 'other', 'station' => '  Tesco   Antrim ']));
+        $new = '/vehicles/' . $golf->id . '/fuel/new';
+        $response = $browser->post($new, self::fill(['station_id' => 'other', 'station' => '  Tesco   Antrim ']));
         self::assertSame(303, $response->getStatusCode(), self::body($response));
         $stations = $this->service($app, StationRepository::class)->listActive();
         self::assertCount(1, $stations);
@@ -120,12 +122,14 @@ final class StationsTest extends AppTestCase
         $old = $this->station($app, 'Shell Larne (old)');
         $this->service($app, StationRepository::class)->merge($old->id, $shell->id, new DateTimeImmutable(self::NOW));
 
-        $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill(['station_id' => (string) $old->id, 'station' => 'ignored']));
+        $new = '/vehicles/' . $golf->id . '/fuel/new';
+        $browser->post($new, self::fill(['station_id' => (string) $old->id, 'station' => 'ignored']));
         self::assertSame([$shell->id], $this->links($app, $golf->id), 'a merged id resolves to the station it became');
         $entry = $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id)[0];
         self::assertSame('Shell Larne', $entry->data->station);
 
-        $browser->post('/vehicles/' . $golf->id . '/fuel/' . $entry->id . '/edit', self::fill(['station_id' => '', 'station' => '']));
+        $edit = '/vehicles/' . $golf->id . '/fuel/' . $entry->id . '/edit';
+        $browser->post($edit, self::fill(['station_id' => '', 'station' => '']));
         self::assertSame([null], $this->links($app, $golf->id), 'no station');
         $bad = $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill(['station_id' => 'x1']));
         self::assertSame(422, $bad->getStatusCode(), 'a station id that is not a number');
@@ -167,21 +171,18 @@ final class StationsTest extends AppTestCase
         $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill(['station_id' => (string) $tesco->id]));
         $browser->post('/stations/' . $maxol->id . '/favourite', ['favourite' => '1']);
 
-        $answer = json_decode(self::body($browser->get('/stations/search?q=antrim')), true);
-        self::assertIsArray($answer);
-        self::assertSame(['Maxol Antrim', 'Tesco Antrim', 'Applegreen Antrim'], array_column($answer['results'], 'name'));
-        self::assertTrue($answer['results'][0]['favourite']);
-        self::assertTrue($answer['results'][1]['recent']);
-        self::assertSame('Last time here: £1.389/L E10 95, 19 Sept 2026', $answer['results'][1]['hint']);
-        self::assertNull($answer['exact'], 'no station is called "antrim": Add is offered');
+        $answer = ApiClient::json($browser->get('/stations/search?q=antrim'));
+        self::assertSame(['Maxol Antrim', 'Tesco Antrim', 'Applegreen Antrim'], $answer->column('name', 'results'));
+        self::assertTrue($answer->get('results', 0, 'favourite'));
+        self::assertTrue($answer->get('results', 1, 'recent'));
+        self::assertSame('Last time here: £1.389/L E10 95, 19 Sept 2026', $answer->string('results', 1, 'hint'));
+        self::assertNull($answer->get('exact'), 'no station is called "antrim": Add is offered');
 
-        $exact = json_decode(self::body($browser->get('/stations/search?q=' . rawurlencode(' applegreen  ANTRIM'))), true);
-        self::assertIsArray($exact);
-        self::assertSame($apple->id, $exact['exact']);
+        $exact = ApiClient::json($browser->get('/stations/search?q=' . rawurlencode(' applegreen  ANTRIM')));
+        self::assertSame($apple->id, $exact->int('exact'));
 
-        $empty = json_decode(self::body($browser->get('/stations/search')), true);
-        self::assertIsArray($empty);
-        self::assertSame(['Maxol Antrim', 'Tesco Antrim'], array_column($empty['results'], 'name'), 'favourites and recent only');
+        $empty = ApiClient::json($browser->get('/stations/search'));
+        self::assertSame(['Maxol Antrim', 'Tesco Antrim'], $empty->column('name', 'results'), 'favourites and recent only');
     }
 
     public function testTheStationPageCountsOnlyWhatTheUserCanSee(): void
@@ -192,11 +193,13 @@ final class StationsTest extends AppTestCase
         $golf = $this->vehicle($app);
         $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
         $tesco = $this->station($app, 'Tesco Antrim', null, '54.715400', '-6.216400');
-        $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill(['station_id' => (string) $tesco->id, 'volume' => '10', 'price' => '1.5']));
+        $at = (string) $tesco->id;
+        $golfFuel = '/vehicles/' . $golf->id . '/fuel/new';
+        $browser->post($golfFuel, self::fill(['station_id' => $at, 'volume' => '10', 'price' => '1.5']));
         $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill([
-            'station_id' => (string) $tesco->id, 'odometer' => '1400', 'filled_at' => '2026-09-19T18:00', 'volume' => '30', 'price' => '1.4',
+            'station_id' => $at, 'odometer' => '1400', 'filled_at' => '2026-09-19T18:00', 'volume' => '30', 'price' => '1.4',
         ]));
-        $browser->post('/vehicles/' . $polo->id . '/fuel/new', self::fill(['station_id' => (string) $tesco->id, 'price' => '1.2']));
+        $browser->post('/vehicles/' . $polo->id . '/fuel/new', self::fill(['station_id' => $at, 'price' => '1.2']));
 
         $page = self::body($browser->get('/stations/' . $tesco->id));
         self::assertStringContainsString('3 visits', $page);
@@ -318,7 +321,8 @@ final class StationsTest extends AppTestCase
         foreach ([Feature::Stations, Feature::Fuel] as $off) {
             $features->save(array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== $off)));
             self::assertFalse($features->isEnabled(Feature::Stations), $off->value . ' off');
-            foreach (['/stations', '/stations/' . $tesco->id, '/stations/search?q=t', '/stations/duplicates', '/settings/places'] as $path) {
+            $paths = ['/stations', '/stations/' . $tesco->id, '/stations/search?q=t', '/stations/duplicates', '/settings/places'];
+            foreach ($paths as $path) {
                 self::assertSame(404, $browser->get($path)->getStatusCode(), $path . ' with ' . $off->value . ' off');
             }
             self::assertStringNotContainsString('href="/stations"', self::body($browser->get('/')), 'not in the navigation');
@@ -328,7 +332,8 @@ final class StationsTest extends AppTestCase
         $form = self::body($browser->get('/vehicles/' . $golf->id . '/fuel/new'));
         self::assertStringNotContainsString('name="station_id"', $form, 'the plain text field');
         $entry = $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id)[0];
-        $browser->post('/vehicles/' . $golf->id . '/fuel/' . $entry->id . '/edit', self::fill(['station' => 'Tesco Antrim', 'notes' => 'edited']));
+        $edit = '/vehicles/' . $golf->id . '/fuel/' . $entry->id . '/edit';
+        $browser->post($edit, self::fill(['station' => 'Tesco Antrim', 'notes' => 'edited']));
         self::assertSame([$tesco->id], $this->links($app, $golf->id), 'the link is kept while the text is unchanged');
         $browser->post('/vehicles/' . $golf->id . '/fuel/new', self::fill(['odometer' => '1500', 'station' => 'Elsewhere']));
         self::assertCount(1, $this->service($app, StationRepository::class)->listActive(), 'nothing created while off');

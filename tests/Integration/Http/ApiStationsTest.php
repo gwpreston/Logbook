@@ -80,7 +80,9 @@ final class ApiStationsTest extends AppTestCase
         $id = $entry->int('entry', 'station_id');
         self::assertSame('Tesco antrim', $entry->string('entry', 'station'));
 
-        $second = $this->api->post($fuel, self::fill(['station_id' => $id, 'odometer' => '1500', 'filled_at' => '2026-09-30T07:00:00Z']));
+        $second = $this->api->post($fuel, self::fill([
+            'station_id' => $id, 'odometer' => '1500', 'filled_at' => '2026-09-30T07:00:00Z',
+        ]));
         self::assertSame(201, $second->getStatusCode(), (string) $second->getBody());
         self::assertSame($id, ApiClient::json($second)->int('entry', 'station_id'));
 
@@ -102,7 +104,8 @@ final class ApiStationsTest extends AppTestCase
     {
         $stations = $this->service($this->app, StationRepository::class);
         $now = new DateTimeImmutable('2026-09-30T12:00:00Z');
-        $tesco = $stations->insert(new StationData('Tesco Antrim', 'Tesco', latitude: '54.715400', longitude: '-6.216400'), $this->owner->id, $now);
+        $data = new StationData('Tesco Antrim', 'Tesco', latitude: '54.715400', longitude: '-6.216400');
+        $tesco = $stations->insert($data, $this->owner->id, $now);
         $maxol = $stations->insert(new StationData('Maxol Antrim'), $this->owner->id, $now);
         $stations->setFavourite($this->owner->id, $maxol, true, $now);
         $this->service($this->app, PlaceRepository::class)->insert($this->owner->id, new PlaceData('Home', '54.7', '-6.2'), $now);
@@ -112,7 +115,8 @@ final class ApiStationsTest extends AppTestCase
         self::assertSame(['Maxol Antrim', 'Tesco Antrim'], $list->column('name', 'items'), 'favourites first');
         self::assertSame(1, $list->int('items', 1, 'visits'));
         self::assertSame('1.389000', $list->string('items', 1, 'paid', 0, 'average_price'));
-        self::assertSame(['Maxol Antrim'], ApiClient::json($this->api->get('/stations?favourites=true'))->column('name', 'items'));
+        $favourites = ApiClient::json($this->api->get('/stations?favourites=true'));
+        self::assertSame(['Maxol Antrim'], $favourites->column('name', 'items'));
         self::assertSame(['Tesco Antrim'], ApiClient::json($this->api->get('/stations?q=tesco'))->column('name', 'items'));
 
         $show = $this->api->get('/stations/' . $tesco);
@@ -135,6 +139,7 @@ final class ApiStationsTest extends AppTestCase
         self::assertSame(201, $created->getStatusCode());
         self::assertNull(ApiClient::json($created)->get('entry', 'station_id'), 'nothing is created while off');
         self::assertSame([], $this->service($this->app, StationRepository::class)->listActive());
-        self::assertSame('Tesco Antrim', $this->service($this->app, FuelEntryRepository::class)->listForVehicle($this->golf->id)[0]->data->station);
+        $entries = $this->service($this->app, FuelEntryRepository::class)->listForVehicle($this->golf->id);
+        self::assertSame('Tesco Antrim', $entries[0]->data->station);
     }
 }

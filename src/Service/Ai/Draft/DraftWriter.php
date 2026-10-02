@@ -28,6 +28,7 @@ use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Reminder\ManualReminderForm;
 use Logbook\Service\Reminder\ReminderEntry;
+use Logbook\Service\Station\StationService;
 use Logbook\Service\Tyre\TyreChangeForm;
 use Logbook\Service\Vehicle\VehicleNotFound;
 use Logbook\Service\Vehicle\VehicleService;
@@ -59,6 +60,7 @@ final readonly class DraftWriter
         private DisplayFormatter $format,
         private TranslatorInterface $translator,
         private ApiIncidents $incidents,
+        private StationService $stations,
     ) {
     }
 
@@ -122,6 +124,10 @@ final readonly class DraftWriter
      */
     private function fuel(User $user, Vehicle $vehicle, array $input): DraftWritten
     {
+        // Phase 30.1 (spec.md §7.33, #134): whether the named station is new,
+        // asked before the write creates it, so the card can say so.
+        $named = is_string($input['station'] ?? null) ? $input['station'] : '';
+        $newStation = $named !== '' && $this->stations->enabled() && $this->stations->existing($named) === null;
         $result = $this->writer->logFuel($user, $vehicle, $input);
         $entry = $result['entry'];
         $data = $entry->data;
@@ -156,7 +162,9 @@ final readonly class DraftWriter
             $fields[] = self::field('missed_previous', $this->t('ask.draft.yes'));
         }
         if ($data->station !== null) {
-            $fields[] = self::field('station', $data->station);
+            $fields[] = self::field('station', $newStation && $data->stationId !== null
+                ? $this->t('stations.combo.new', ['name' => $data->station])
+                : $data->station);
         }
 
         return $this->written(

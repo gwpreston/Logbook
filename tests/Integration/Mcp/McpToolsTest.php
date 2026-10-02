@@ -38,7 +38,7 @@ final class McpToolsTest extends AppTestCase
 
     private const array READ_TOOLS = [
         'find_vehicles', 'costs', 'cost_per_distance', 'maintenance', 'vehicle_summary', 'fuel_stats', 'last_done',
-        'mileage', 'ownership', 'coming_up', 'documents', 'tyres', 'incidents', 'needs_attention',
+        'mileage', 'ownership', 'coming_up', 'documents', 'tyres', 'incidents', 'needs_attention', 'finance', 'stations',
     ];
     private const array WRITE_TOOLS = [
         'log_fill_up', 'add_reading', 'draft_service_record', 'draft_document', 'draft_expense', 'draft_tyre_check',
@@ -180,6 +180,7 @@ final class McpToolsTest extends AppTestCase
         $names = McpClient::result((new McpClient($noFuel, $this->apiKey($noFuel, $owner)))
             ->modern('tools/list'))->column('name', 'tools');
         self::assertNotContains('fuel_stats', $names);
+        self::assertNotContains('stations', $names, 'stations are part of fuel');
         self::assertNotContains('log_fill_up', $names);
         self::assertContains('add_reading', $names);
     }

@@ -12,11 +12,13 @@ use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Fuel\FuelChoice;
 use Logbook\Domain\Incident\ClaimStatus;
 use Logbook\Domain\Incident\WriteOffCategory;
+use Logbook\Domain\Station\StationName;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Ai\Draft\Resolver;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerReadingForm;
+use Logbook\Service\Station\StationService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DistanceUnit;
@@ -52,6 +54,7 @@ final readonly class Mapper
         private ScheduleService $schedules,
         private TranslatorInterface $translator,
         private ClockInterface $clock,
+        private StationService $stations,
     ) {
     }
 
@@ -184,6 +187,27 @@ final readonly class Mapper
         }
         $form->amount('total', 'total');
         $form->text('station', 'vendor');
+        $this->station($form, $reading);
+    }
+
+    /**
+     * The receipt's station (spec.md §7.33, #134): one with that name is
+     * chosen, else the name is kept for a new station; the form says which.
+     */
+    private function station(ScanFormBuilder $form, Extraction $reading): void
+    {
+        $name = StationName::tidy(mb_substr($reading->value('vendor') ?? '', 0, 150));
+        if ($name === '' || !$this->stations->enabled()) {
+            return;
+        }
+        $existing = $this->stations->existing($name);
+        if ($existing === null) {
+            $form->hint('station', $this->translator->trans('stations.combo.new', ['name' => $name]));
+
+            return;
+        }
+        $form->set('station_id', (string) $existing->id, null);
+        $form->hint('station', $this->translator->trans('stations.import.links', ['name' => $existing->data->name]));
     }
 
     private function document(ScanFormBuilder $form, Extraction $reading): void

@@ -282,6 +282,7 @@ return [
         get(Tool\TripsSummary::class),
         get(Tool\Incidents::class),
         get(Tool\Finance::class),
+        get(Tool\Stations::class),
         get(Tool\NeedsAttention::class),
         // Drafting entries (Phase 26.3): validated cards for the user's Add, never a write.
         get(Tool\Draft\DraftFillUp::class),
