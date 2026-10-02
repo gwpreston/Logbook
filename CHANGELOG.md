@@ -6,6 +6,74 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.11.0] — 2026-10-02
+
+Phases 28.1 and 28.2: **background jobs you can see, and knowing when a new
+version is out**. Reminders, the monthly digest, cleanup and backups are
+now named jobs on **Settings → Jobs**, with when each last ran, its output
+and *Run now*. Admins are warned on the dashboard when nothing has run for
+too long, and hosts without cron can run jobs on page visits or from a
+URL. An optional **update check** tells admins when a new Logbook is out;
+it is off until switched on and never installs anything. See
+[Background jobs](docs/deployment.md#background-jobs) and
+[Update check](docs/deployment.md#update-check).
+
+### Added
+- **Settings → Jobs** (admins): each job (*Reminders*, *Monthly digest*,
+  *Cleanup*, *Backup* and *Update check*) with its schedule, its last run
+  (when, what started it, how it went, a one-line summary) and when it
+  runs next, and **Run now**. Under it, the recent runs. A run's page
+  shows its full output, with passwords, keys and tokens masked as
+  `••••`, and updates while the run goes on. A job never runs twice at
+  once; a run that finds its job busy says which run holds it.
+- **Scheduler health:** when nothing has run for twice
+  `SCHEDULER_INTERVAL` (30 minutes by default), Settings → Jobs and a
+  notice on the dashboard say so, with the exact cron line for this
+  install and the other ways to fix it. `/health` reports the last pass
+  (`"scheduler": {"last_pass": …, "stale": …}`) without changing its
+  status code.
+- **Failure alerts:** when a job fails twice in a row, admins see a notice
+  on the dashboard until it works again, and are sent a `job_failed`
+  notification once, through their own channels.
+- **Without cron:** *On page visits* runs due jobs in the background while
+  someone uses Logbook, and *External URL* runs them when a service such
+  as cron-job.org or Uptime Kuma calls a secret URL. Both are off by
+  default.
+- **Scheduled backups:** *Off*, *Daily* or *Weekly* on the *Backup* job,
+  keeping the last 7 (1–60). They are written to `BACKUP_PATH` and listed
+  on the Backup page with *Download*; your own backups are never deleted.
+- `php bin/run-job.php <job>` runs one job and prints its output;
+  `php bin/run-job.php --list` lists them.
+- **The update check** (Settings → Updates, admins): once a day, at a
+  minute chosen for your install, Logbook asks `api.github.com` for the
+  latest stable release of `UPDATE_CHECK_REPO`. Nothing about your data
+  is sent. When a newer version is out, admins see a banner on the
+  dashboard with the release notes, that version's upgrade steps and the
+  command for Docker (or "Back up, then follow the upgrade steps" on bare
+  PHP). *Dismiss* hides it for that version; the next release brings it
+  back. *Check now* checks at once. Errors and rate limits show on the
+  page, never as a banner or a failure alert. First-run setup offers
+  *Tell me when a new version is out*, unticked.
+- New variables: `JOB_TIME_LIMIT`, `UPDATE_CHECK_REPO` and
+  `UPDATE_CHECK_ALLOWED` (see [`docs/configuration.md`](docs/configuration.md)).
+  The Docker image sets `LOGBOOK_DOCKER=1`.
+
+### Changed
+- Cleanup now runs **hourly** and also deletes invitation links closed
+  (used, revoked or expired) over 90 days ago, and job runs past 90 days
+  or each job's last 50.
+- `bin/run-scheduled-tasks.php` is now a scheduler pass over the jobs. It
+  stays quiet unless given `-v` and keeps its exit codes, so existing cron
+  lines need no change.
+
+### Upgrade notes
+- One migration (`job_runs`). It rolls back.
+- The **update check is off** until an admin switches it on in Settings →
+  Updates. `UPDATE_CHECK_ALLOWED=false` removes it entirely, for installs
+  that must never call out.
+- Bare installs without cron can now use the *On page visits* or
+  *External URL* trigger on Settings → Jobs instead.
+
 ## [2.10.0] — 2026-10-02
 
 Phases 27.1 and 27.2: **incidents, damage and insurance claims**. Record
@@ -1706,7 +1774,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.10.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.11.0...HEAD
+[2.11.0]: https://github.com/gwpreston16/Logbook/compare/v2.10.0...v2.11.0
 [2.10.0]: https://github.com/gwpreston16/Logbook/compare/v2.9.0...v2.10.0
 [2.9.0]: https://github.com/gwpreston16/Logbook/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/gwpreston16/Logbook/compare/v2.7.0...v2.8.0

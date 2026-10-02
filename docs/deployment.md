@@ -390,6 +390,7 @@ Logbook's background work is a set of **jobs**, run in **passes**:
 | Monthly digest | every pass | each person's monthly summary, on their first pass of a month |
 | Cleanup | hourly | the AI usage log, old drafts and scans, Ask threads, invitation links closed over 90 days ago, old job runs |
 | Backup | off, daily or weekly | a backup into `BACKUP_PATH` (see [Scheduled backups](#scheduled-backups)) |
+| Update check | daily, once switched on | asks GitHub for the latest release (see [Update check](#update-check)) |
 
 **Settings → Jobs** (admins) shows when each job last ran and how, when it
 runs next, the recent runs, and **Run now** for each. A run's page has its
@@ -524,6 +525,30 @@ restore replaces it with your real one). Classic dumps (`pg_dump`, `mysqldump`) 
 `UPLOAD_PATH` also remain a perfectly good backup.
 
 ---
+
+## Update check
+
+Logbook can tell admins when a new version is out. It is **off** until an
+admin switches it on in **Settings → Updates** (or ticks *Tell me when a new
+version is out* at first-run setup), because it is the one request Logbook
+makes to a third party without being set up to:
+
+- Once a day, at a minute chosen at random for your install, the
+  `update_check` job asks `api.github.com` for the latest release of
+  `UPDATE_CHECK_REPO` (default `gwpreston16/Logbook`). Nothing about your
+  data is sent; GitHub sees your server's address and the app's version.
+  Only stable releases count.
+- When a newer version is out, admins see a banner on the dashboard with
+  the release notes, this section's steps for that version, and the
+  command for Docker or the reminder to back up first on bare PHP.
+  *Dismiss* hides it for that version; the next release shows it again.
+  *Show update banner* off keeps the result on Settings → Updates only.
+- *Check now* on that page runs the check at once. If GitHub rate-limits
+  the check, nothing is sent again until the limit is over.
+- Nothing is ever downloaded or installed: upgrading stays the steps below.
+
+`UPDATE_CHECK_ALLOWED=false` removes the option entirely, for installs that
+must never call out. A fork sets `UPDATE_CHECK_REPO` to its own repository.
 
 ## Upgrading
 

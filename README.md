@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.10.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.11.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -58,7 +58,10 @@ your own server.
 > other entries as drafts for you to add; incidents, damage and insurance
 > claims, with repairs linked so they count once, a five-year claims history
 > for insurance quotes, insurer letters read into the incident, and a car
-> archived as written off with its settlement as the sale; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
+> archived as written off with its settlement as the sale; background jobs
+> you can see and run from Settings, with a warning when they stop and ways
+> to run them without cron, and scheduled backups; an optional check for new
+> versions (off until you switch it on); in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
@@ -90,7 +93,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 
 | Guide | For |
 |---|---|
-| [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, backups, upgrading |
+| [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, background jobs, backups, the update check, upgrading |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
 | [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message; reading receipts, documents and insurer letters |

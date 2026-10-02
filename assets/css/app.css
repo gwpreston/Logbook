@@ -4760,3 +4760,9 @@ a.list__title:hover {
     white-space: pre-wrap;
     word-break: break-word;
 }
+
+/* The update banner's upgrade line (Phase 28.2, spec.md §7.31). */
+.admin-notice__detail {
+    display: block;
+    margin-top: var(--space-1);
+}

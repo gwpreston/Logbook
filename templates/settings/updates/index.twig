@@ -1,0 +1,85 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Settings → Updates (spec.md §7.31; admins only): Check for updates (off
+ # by default) and the banner, the installed version and the last result.
+ # Check now is the Jobs page's Run now for update_check: assets/js/jobs.js
+ # posts it in the background and opens the run; without JS the form posts
+ # and redirects there.
+ #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'updates.title'|trans }} · {{ parent() }}{% endblock %}
+{% block head %}<script defer src="{{ asset('js/jobs.js') }}"></script>{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'updates.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'updates.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <section class="card" aria-labelledby="result-heading" data-update-result>
+            <h2 id="result-heading" class="card__title">{{ ui.icon('sync') }}{{ 'updates.result.heading'|trans }}</h2>
+            <dl class="details">
+                <div><dt>{{ 'updates.result.installed'|trans }}</dt><dd data-installed-version>{{ installed }}</dd></div>
+                {% if status.latest %}
+                    <div><dt>{{ 'updates.result.latest'|trans }}</dt><dd data-latest-version>{{ status.latest }}</dd></div>
+                    {% if status.releaseName %}<div><dt>{{ 'updates.result.name'|trans }}</dt><dd data-release-name>{{ status.releaseName }}</dd></div>{% endif %}
+                    {% if status.publishedAt %}<div><dt>{{ 'updates.result.published'|trans }}</dt><dd>{{ status.publishedAt|local_datetime }}</dd></div>{% endif %}
+                    {% if status.releaseUrl %}<div><dt>{{ 'updates.result.release'|trans }}</dt><dd><a href="{{ status.releaseUrl }}" target="_blank" rel="noopener noreferrer">{{ 'notices.update.release_notes'|trans }}<span class="visually-hidden"> {{ 'notices.new_tab'|trans }}</span></a></dd></div>{% endif %}
+                {% endif %}
+                <div><dt>{{ 'updates.result.checked'|trans }}</dt><dd>{{ status.checkedAt ? status.checkedAt|local_datetime : 'updates.result.never'|trans }}</dd></div>
+                {% if checking %}
+                    <div><dt>{{ 'updates.result.next'|trans }}</dt><dd>{{ next ? next|local_datetime : 'jobs.list.next_pass'|trans }}</dd></div>
+                {% endif %}
+            </dl>
+            {% if error %}
+                <div class="alert alert--warning" role="status" data-update-error>{{ ui.icon('warning') }}<span>{{ error }}</span></div>
+            {% elseif result %}
+                <p data-update-summary>{{ result }}</p>
+            {% endif %}
+            {% if last_run %}
+                <p class="muted"><a href="{{ url_for('settings.jobs.run', {run: last_run.id}) }}">{{ 'updates.result.last_run'|trans }}</a></p>
+            {% endif %}
+            {% if checking %}
+                <form method="post" action="{{ url_for('settings.jobs.run_now', {job: 'update_check'}) }}"
+                      data-run-now data-started-url="{{ url_for('settings.jobs.started', {job: 'update_check'}) }}" data-after="{{ newest_id }}"
+                      data-text-running="{{ 'jobs.run_now.running'|trans }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn">{{ ui.icon('sync') }}<span data-run-label>{{ 'updates.check_now'|trans }}</span></button>
+                </form>
+            {% endif %}
+        </section>
+
+        <form class="form" method="post" action="{{ url_for('settings.updates') }}">
+            {{ ui.csrf(csrf) }}
+            <fieldset class="card fieldset">
+                <legend class="card__title fieldset__legend">{{ 'updates.legend'|trans }}</legend>
+                <label class="toggle">
+                    <input type="checkbox" name="check" value="1"{% if checking %} checked{% endif %} aria-describedby="check-hint">
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'updates.check.label'|trans }}</span>
+                        <span class="toggle__hint" id="check-hint">{{ 'updates.check.hint'|trans({repo: repo})|e|replace({'api.github.com': '<code>api.github.com</code>'})|raw }}</span>
+                    </span>
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" name="banner" value="1"{% if banner %} checked{% endif %} aria-describedby="banner-hint">
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'updates.banner.label'|trans }}</span>
+                        <span class="toggle__hint" id="banner-hint">{{ 'updates.banner.hint'|trans }}</span>
+                    </span>
+                </label>
+                <p class="field__hint">{{ 'updates.never_automatic'|trans }}</p>
+            </fieldset>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'updates.save'|trans }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

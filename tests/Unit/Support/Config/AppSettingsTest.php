@@ -102,4 +102,30 @@ final class AppSettingsTest extends TestCase
 
         AppSettings::fromEnv(new Env(['API_CORS_ORIGINS' => 'https://ha.example/lovelace']), '/app');
     }
+
+    public function testTheUpdateCheckIsAllowedForTheUpstreamRepositoryByDefault(): void
+    {
+        $settings = AppSettings::fromEnv(new Env([]), '/app');
+
+        self::assertSame('gwpreston16/Logbook', $settings->updateCheckRepo);
+        self::assertTrue($settings->updateCheckAllowed);
+        self::assertFalse($settings->docker);
+
+        $fork = AppSettings::fromEnv(new Env([
+            'UPDATE_CHECK_REPO' => 'someone/logbook-fork',
+            'UPDATE_CHECK_ALLOWED' => 'false',
+            'LOGBOOK_DOCKER' => '1',
+        ]), '/app');
+        self::assertSame('someone/logbook-fork', $fork->updateCheckRepo);
+        self::assertFalse($fork->updateCheckAllowed);
+        self::assertTrue($fork->docker);
+    }
+
+    public function testAnUpdateRepositoryThatIsNotOwnerSlashNameIsRefused(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('UPDATE_CHECK_REPO');
+
+        AppSettings::fromEnv(new Env(['UPDATE_CHECK_REPO' => 'https://github.com/gwpreston16/Logbook']), '/app');
+    }
 }

@@ -42,7 +42,9 @@ was answered the same day. Phase 27.2's question found while starting it
 (#105) was answered on 2026-10-02, before it was built. Phase 28.1's
 (#106–#109, two of them found while starting it) were answered on
 2026-10-02, before Phase 28.1 started; one found while building it
-(#110) was answered the same day.
+(#110) was answered the same day. Phase 28.2's (#111–#117, four of
+them found while starting it) were answered on 2026-10-02, before it was
+built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -156,6 +158,13 @@ was answered the same day. Phase 27.2's question found while starting it
 | 108 | [28.1](phase-28.1.md) | How often does `cleanup` run? (found while starting) | Decided | Hourly, so the 24-hour promise for unclaimed scans still holds (spec §5 *Jobs*). | 2026-10-02 |
 | 109 | [28.1](phase-28.1.md) | How long are closed invitations kept? (found while starting) | Decided | 90 days after they were used, revoked or expired; open links are never deleted (spec §7.30). | 2026-10-02 |
 | 110 | [28.1](phase-28.1.md) | Mask `logbook`, the compose files' default database password, in job output? (found while building) | Decided | No: it is public in the repository, and masking it garbled every file name (spec §5 *Jobs*, *Redaction*). | 2026-10-02 |
+| 111 | [28.2](phase-28.2.md) | Pre-releases: an *Include pre-releases* option? | Parked | No: stable releases only (`releases/latest`); the option in spec §12. | 2026-10-02 |
+| 112 | [28.2](phase-28.2.md) | The setup checkbox: ticked or unticked? | Decided | Unticked (spec §7.31). | 2026-10-02 |
+| 113 | [28.2](phase-28.2.md) | Mark security releases and show their banner even when it is off? | Parked | No: every release alike, the banner setting always applies; marking in spec §12. | 2026-10-02 |
+| 114 | [28.2](phase-28.2.md) | Failure alerts for a failed update check? (found while starting) | Decided | No: GitHub's errors are an `ok` run with the error as its summary; only an error in Logbook itself fails the run (spec §7.31). | 2026-10-02 |
+| 115 | [28.2](phase-28.2.md) | A renamed repository's `html_url` fails the link check (found while starting) | Decided | Follow the redirect, then record "moved to {owner/name}; set `UPDATE_CHECK_REPO`", no banner; names compared ignoring case (spec §7.31). | 2026-10-02 |
+| 116 | [28.2](phase-28.2.md) | Where does *How to upgrade* point? (found while starting) | Decided | GitHub's `docs/deployment.md#upgrading` at the release's tag (spec §7.31). | 2026-10-02 |
+| 117 | [28.2](phase-28.2.md) | *Check now* during a rate limit's wait? (found while starting) | Decided | It waits too: no request, "Rate limited by GitHub until {time}" (spec §7.31). | 2026-10-02 |
 
 ## Other loose ends found in the review
 

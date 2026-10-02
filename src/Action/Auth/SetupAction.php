@@ -7,6 +7,7 @@ namespace Logbook\Action\Auth;
 use Logbook\Service\Auth\AuthService;
 use Logbook\Service\Auth\SetupAlreadyCompleted;
 use Logbook\Service\Auth\SetupForm;
+use Logbook\Service\Updates\UpdateSettings;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -30,6 +31,7 @@ final readonly class SetupAction
         private Redirector $redirect,
         private AvailableLocales $locales,
         private AppSettings $settings,
+        private UpdateSettings $updates,
     ) {
     }
 
@@ -61,6 +63,11 @@ final readonly class SetupAction
             return $this->redirect->toRoute('login');
         }
 
+        // *Tell me when a new version is out* (spec.md §7.31), unticked by default.
+        if ($this->updates->allowed() && ($input['update_check'] ?? '') === '1') {
+            $this->updates->save(true, true);
+        }
+
         $session = RequestContext::session($request);
         $session->signIn($user->id);
         $session->flash('success', 'setup.done', ['name' => $user->displayName]);
@@ -87,6 +94,7 @@ final readonly class SetupAction
             'timezone_options' => FormOptions::timezones(),
             'currency_options' => FormOptions::currencies($locale),
             'unit_presets' => UnitPreset::cases(),
+            'update_repo' => $this->updates->repository(),
         ], $status);
     }
 }

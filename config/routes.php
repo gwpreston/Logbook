@@ -6,6 +6,7 @@ use Logbook\Action\Backup\DownloadScheduledBackupAction;
 use Logbook\Action\Notice\DismissNoticeAction;
 use Logbook\Action\Scheduler\SchedulerTickAction;
 use Logbook\Action\Scheduler\SchedulerUrlAction;
+use Logbook\Action\Settings\Updates\UpdatesAction;
 use Logbook\Action\Settings\Jobs\JobBackupScheduleAction;
 use Logbook\Action\Settings\Jobs\JobRunAction;
 use Logbook\Action\Settings\Jobs\JobRunStatusAction;
@@ -704,7 +705,10 @@ return static function (App $app): void {
             $jobs->get('/{job:[a-z_]+}/started', JobStartedAction::class)->setName('settings.jobs.started')
                 ->setArgument($instance, $run);
         });
-        // The dashboard's admin notices (spec.md §7.30): Dismiss, for 24 hours.
+        // Settings → Updates (spec.md §7.31): admins only; 404 with UPDATE_CHECK_ALLOWED=false.
+        $group->map(['GET', 'POST'], '/settings/updates', UpdatesAction::class)->setName('settings.updates')
+            ->setArgument($instance, InstanceAbility::RunJobs->value);
+        // The dashboard's admin notices (spec.md §7.30): Dismiss, for 24 hours (the update banner for good).
         $group->post('/notices/{key:[0-9A-Za-z_.\\-]+}/dismiss', DismissNoticeAction::class)->setName('notices.dismiss')
             ->setArgument($instance, InstanceAbility::RunJobs->value);
         // *On page visits* (spec.md §7.30): any signed-in page's beacon; 404 while off.

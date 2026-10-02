@@ -16,6 +16,8 @@ use Psr\Log\LogLevel;
  */
 final readonly class AppSettings
 {
+    public const string UPDATE_CHECK_REPO = 'gwpreston16/Logbook';
+
     public function __construct(
         public string $rootDir,
         public AppEnvironment $environment,
@@ -61,6 +63,12 @@ final readonly class AppSettings
         public int $schedulerInterval = 900,
         /** Seconds a *Run now* may take (Phase 28.1). */
         public int $jobTimeLimit = 300,
+        /** The GitHub repository asked for releases (`owner/name`; Phase 28.2, §7.31). */
+        public string $updateCheckRepo = self::UPDATE_CHECK_REPO,
+        /** `UPDATE_CHECK_ALLOWED`: false removes the update check entirely. */
+        public bool $updateCheckAllowed = true,
+        /** `LOGBOOK_DOCKER=1`, set by the Docker image: the update banner's upgrade line. */
+        public bool $docker = false,
     ) {
     }
 
@@ -108,6 +116,9 @@ final readonly class AppSettings
             mcpEnabled: $env->bool('MCP_ENABLED', true),
             schedulerInterval: max(60, $env->int('SCHEDULER_INTERVAL', 900)),
             jobTimeLimit: max(30, $env->int('JOB_TIME_LIMIT', 300)),
+            updateCheckRepo: self::repository($env->string('UPDATE_CHECK_REPO', self::UPDATE_CHECK_REPO)),
+            updateCheckAllowed: $env->bool('UPDATE_CHECK_ALLOWED', true),
+            docker: $env->bool('LOGBOOK_DOCKER', false),
         );
     }
 
@@ -122,6 +133,19 @@ final readonly class AppSettings
     public function isProduction(): bool
     {
         return $this->environment === AppEnvironment::Production;
+    }
+
+    private static function repository(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('#^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$#D', $value) !== 1) {
+            throw new InvalidArgumentException(sprintf(
+                'UPDATE_CHECK_REPO "%s" must be a GitHub repository as owner/name.',
+                $value,
+            ));
+        }
+
+        return $value;
     }
 
     /**

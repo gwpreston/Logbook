@@ -319,9 +319,13 @@ disagree):
     | `digest` | every pass (it sends only on a user's first pass of a month) | the monthly digest; it syncs the user's reminders first, as before |
     | `cleanup` | hourly (decided 2026-10-02, #108) | retention: AI usage log, AI locks and progress, expired drafts, unclaimed scans, Ask threads, closed invitations, job runs |
     | `backup` | per *Scheduled backups* (off by default) | a backup into `BACKUP_PATH` |
+    | `update_check` | daily at the install's own minute, while *Check for updates* is on (Phase 28.2, §7.31) | asks GitHub for the latest release; registered only while `UPDATE_CHECK_ALLOWED` is on |
 
     A job is due when its interval is `0`, or when its last finished run
     (any status but `skipped_locked`) started at least its interval ago.
+    A job can instead name the time it is next due (`TimedJob::dueAt`,
+    Phase 28.2): `update_check` uses it for its daily minute and a rate
+    limit's wait.
   - **Locks:** one `flock` file per job, `{cache dir}/locks/job-<name>.lock`
     (the cache directory, because `var/` itself may not be writable, as
     for the old task lock), and the old task's `{cache dir}/scheduled-tasks.lock`
@@ -938,14 +942,18 @@ MySQL only.
   Phase 26.1, `ai.use` (bool, §7.25) and, from Phase 26.2,
   `ai.ask_retention_days` (1, 7, 30 or 90; default 30, §7.26) and, from
   Phase 28.1, `notices.dismissed` (notice key → UTC time it was
-  dismissed, §7.30). The global `ai.this_host` (a list of
+  dismissed, §7.30) and, from Phase 28.2, `updates.dismissed` (the
+  update banner's dismissed version, §7.31). The global `ai.this_host` (a list of
   addresses, §7.25) is set on Settings → AI. From Phase 28.1 the global
   `jobs.triggers` (`{"page_visit": false, "url": false}`),
   `jobs.url_token` (the HMAC of the URL token, or none),
   `jobs.url_last_call` (UTC), `jobs.backup` (`{"schedule": "off" |
   "daily" | "weekly", "keep": 7}`) and `jobs.failure_alerts` (job →
   the id of the failed run whose streak was alerted) hold the
-  scheduler's settings (§7.30). Like every setting they travel in a
+  scheduler's settings (§7.30). From Phase 28.2 the global
+  `updates.check` (bool, default false), `updates.banner` (bool, default
+  true), `updates.minute` (0–1439, chosen once) and `updates.status` (the
+  last check's result, §7.31) hold the update check's. Like every setting they travel in a
   backup; the URL token, like API keys, works only where
   `SESSION_SECRET` is the same.
 
@@ -5046,6 +5054,99 @@ able to run without cron.
   false}` for monitoring. It never changes the status code, so Docker's
   health check is unaffected.
 
+### 7.31 Updates (Phase 28.2)
+
+Knowing when a new Logbook is out, without anything updating itself. It is
+the first request Logbook makes to a third party without being set up to,
+so it is **off until an admin switches it on**.
+
+- **Settings → Updates** (`/settings/updates`, under Settings →
+  *Installation* beside *Jobs*; admins only, `InstanceAbility::RunJobs`,
+  404 for anyone else):
+  - *Check for updates*: **off by default**, with the explanation "Once a
+    day, Logbook asks api.github.com for the latest release of {repo}.
+    Nothing about your data is sent; GitHub sees your server's address and
+    the app's version."
+  - *Show update banner*: on by default. With it off, the result still
+    shows on this page.
+  - The installed version (from `VERSION`) and the result: latest version,
+    release name, published date, release link, last checked, or the last
+    error. *Check now* (shown only while checking is on) runs the job
+    through §7.30's *Run now* and opens its run page.
+  - With `UPDATE_CHECK_ALLOWED=false` the page, the setup checkbox and the
+    job are gone (404), whatever was stored.
+  - First-run setup offers *Tell me when a new version is out* as an
+    **unticked** checkbox (decided 2026-10-02, #112).
+- **The job** `update_check` (registered only while
+  `UPDATE_CHECK_ALLOWED` is on): daily, at a minute of the day (UTC)
+  chosen at random once per install (`updates.minute`), so installs don't
+  all call at once. It is due at that minute each day, once the day's
+  run hasn't happened; switched on after the minute has passed, it runs
+  with the next pass. With *Check for updates* off it is listed as "Off",
+  and a *Run now* from the Jobs page or `bin/run-job.php` records "Checking
+  for updates is off" **without any request**. It only ever reads; there
+  is no other path to GitHub.
+  - `GET https://api.github.com/repos/{UPDATE_CHECK_REPO}/releases/latest`
+    with `Accept: application/vnd.github+json`,
+    `X-GitHub-Api-Version: 2022-11-28`, `User-Agent: Logbook/{version}
+    (+https://github.com/{repo})`, and `If-None-Match` with the last ETag
+    (sent only while a latest version is stored).
+  - A timeout of 10 seconds (connection and whole request) and a response
+    cap of 1 MB, checked while reading. Redirects are followed by hand only
+    to `https://api.github.com/` (a renamed repository), at most two;
+    any other target is an error.
+  - `304`: unchanged; `last_checked_at` is updated. `404`: "No releases
+    published yet". `403` or `429`: rate limited, and nothing is sent again
+    until `Retry-After` (seconds) or `X-RateLimit-Reset` (Unix time) has
+    passed, or for an hour when neither is given (the wait kept between a
+    minute and a day). Until then, a daily run
+    or *Check now* makes no request and records "Rate limited by GitHub
+    until {time}" (decided 2026-10-02, #117). Other statuses, timeouts and
+    network errors are recorded with their status or reason.
+  - From the response only `tag_name`, `html_url`, `published_at` and
+    `name` are read. `tag_name` must match `^v?\d+\.\d+\.\d+$`; `html_url`
+    must start with `https://github.com/{repo}/releases/`, the owner and
+    name compared ignoring case. An `html_url` for another repository
+    records "The repository has moved to {owner/name}; set
+    `UPDATE_CHECK_REPO`" (decided 2026-10-02, #115); anything else invalid
+    is recorded as an error. `releases/latest` already leaves out drafts and
+    **pre-releases**, and Logbook follows stable releases only (decided
+    2026-10-02, #111; a pre-release channel is in §12). The release body
+    is never read.
+  - Versions are compared as semantic versions (`v2.12.0` > `2.11.3`). A
+    development build (`2.11.0-dev`, any `-suffix`) counts as older than
+    `2.11.0`. A build without a release number (`VERSION` missing, shown
+    as `dev`) is never compared and never shows the banner.
+  - The result is stored in the global setting `updates.status`: latest
+    version, release URL, release name, published at, ETag, last checked
+    at, the last error (a code and its values, shown in the reader's
+    language) and the rate-limit wait. A successful check clears the error;
+    an error keeps the last good result but shows no banner.
+  - **Never a failed run** (decided 2026-10-02, #114): a check that can't
+    reach GitHub, is refused or gets an answer it rejects is an `ok` run
+    with the error as its summary, so §7.30's failure alerts never fire
+    for it. Only an error in Logbook itself fails the run.
+  - The job's summary: "2.12.0 available (installed 2.11.0)", "Up to date
+    (2.11.0)", "Newer than the latest release (2.12.0-dev)", or the error.
+- **Banner** (§7.30's admin notice area, dashboard, admins only), when
+  checking is on, the banner is on, the last check succeeded and the latest
+  is newer than installed: "Logbook {latest} is available (you have
+  {installed})." with *Release notes* (the `html_url`, a new tab) and
+  *How to upgrade*
+  (`https://github.com/{repo}/blob/v{latest}/docs/deployment.md#upgrading`,
+  the release's own guide, decided 2026-10-02, #116), plus the line for
+  this install: Docker (`LOGBOOK_DOCKER=1`, set by the image) gives
+  "`docker compose pull && docker compose up -d`"; bare PHP gives "Back up,
+  then follow the upgrade steps". The release name, when it says more
+  than the version (not `2.12.0`, `v2.12.0` or `Logbook 2.12.0`), is
+  shown as escaped text. **Dismiss** hides it for that
+  version, per admin, for good (`updates.dismissed`, the user setting
+  holding the dismissed version); the next newer release shows it again.
+  Every release is treated alike: no security marking overrides the
+  banner setting (decided 2026-10-02, #113; in §12).
+- **Never automatic:** no file is downloaded, and nothing that came from
+  GitHub runs or is rendered as HTML.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -5241,6 +5342,14 @@ Real environment variables override `.env`; an empty value counts as unset.
   the expected cron frequency for the health warning and the page-visit
   trigger's spacing. `JOB_TIME_LIMIT` (seconds a *Run now* may take;
   default `300`).
+- Update check (§7.31, Phase 28.2): `UPDATE_CHECK_REPO` (the GitHub
+  repository asked for releases; default `gwpreston16/Logbook`; forks set
+  their own; anything but `owner/name` stops the app at start, naming
+  the variable), `UPDATE_CHECK_ALLOWED` (default
+  `true`; `false` removes the option entirely, for installs that must
+  never call out).
+- Set by the Docker image: `LOGBOOK_DOCKER=1` (the update banner's upgrade
+  line, §7.31). Not for setting by hand.
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
   `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
   task inside the container; default `true`)
@@ -5264,6 +5373,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   (`BACKUP_PATH`); the image includes PHP's `zip` extension for them.
   From Phase 26.4 it also includes `gd` (JPEG, PNG, WebP) and `exif` on
   every architecture, and Ghostscript for reading scanned PDFs (§7.27).
+  The image sets `LOGBOOK_DOCKER=1` (Phase 28.2), so the update banner
+  gives the Docker upgrade line (§7.31).
 - **Bare PHP 8.4:** needs the `intl`, `sodium`, `gd` (JPEG, PNG, WebP)
   and `exif` extensions (`gd` and `exif` from Phase 26.4; Composer refuses
   to install without them); Ghostscript or Imagick is optional
@@ -5322,6 +5433,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Settings by chat (Phase 26.3, #75): changing lead times, units or
   modules from *Ask* ("set my MOT reminder to two weeks"). Settings stay
   forms only until then.
+- Updates (Phase 28.2): an *Include pre-releases* option reading the
+  releases list instead of `latest` (#111); marking a release as a
+  security fix so its banner shows even with the banner off (#113).
 - MCP (Phase 26.5): a `bin/mcp-stdio.php` stdio bridge for clients that
   can't send headers (#87; `mcp-remote` is documented meanwhile); OAuth
   for MCP clients; SSE streams and list-changed subscriptions.
@@ -5597,6 +5711,14 @@ task breakdowns live in the per-phase files; this is the map.
   backups with retention; `bin/run-job.php`; `/health` reports the last
   pass (§5 *Jobs*; §6 JobRun; §7.30; §9). One migration. No release of
   its own (v2.11.0 ships with Phase 28.2).
+- **Phase 28.2 — Update check and dashboard banner.** An `update_check`
+  job, off until an admin switches it on, asks GitHub once a day for the
+  latest stable release; Settings → Updates shows the result and *Check
+  now*; admins get a dashboard banner for a newer version, with the
+  release notes and the upgrade step for Docker or bare PHP, dismissed
+  per version; `UPDATE_CHECK_REPO`, `UPDATE_CHECK_ALLOWED` (§5 *Jobs*;
+  §6 Setting; §7.31; §9; §10). No migration. Release v2.11.0 (Phases
+  28.1 and 28.2).
 
 ---
 
