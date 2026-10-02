@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.12.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.13.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -66,7 +66,11 @@ your own server.
 > to pay, a settlement estimate or the lender's quote, the cost of credit
 > counted once in your costs, equity, mileage against the allowance with the
 > excess charge it is heading for, and ending one by settling, handing back
-> or selling with finance owing (figures, never advice); in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
+> or selling with finance owing (figures, never advice); fuel stations as
+> records, with what you paid at each per grade over time, favourites first
+> when you log a fill-up and what you paid there last time, straight-line
+> distances from your own private places, and duplicates to merge, all
+> without asking any outside service; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
@@ -109,6 +113,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
 | [docs/trips.md](docs/trips.md) | Trips and mileage claims: logging, saved journeys, the business and private split, mileage rates, the claim report and what the figures mean |
 | [docs/finance.md](docs/finance.md) | Finance and lease agreements: entering one from the paperwork, the schedule, what each figure means, estimates and your lender's quote, mileage against the allowance, ending an agreement and selling with finance owing, costs counted once, who can see it |
+| [docs/stations.md](docs/stations.md) | Fuel stations: your station names as stations, choosing one on a fill-up with what you paid last time, what you paid at each, favourites, your private places and straight-line distances, merging duplicates, chargers, who sees and changes what |
 | [docs/incidents.md](docs/incidents.md) | Incidents, damage and insurance claims: logging, photos kept as taken, linking repairs so costs count once, the claim and repair estimates, reading insurer letters, archiving a car as written off, the claims history for insurance quotes and what the sale pack shows |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |

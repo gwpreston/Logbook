@@ -5522,7 +5522,7 @@ request to any outside service.
 - **Module** `stations` (§7.10), on by default (`FEATURES_STATIONS`). It is
   part of the `fuel` module's pages, so with `fuel` off it is off too,
   whatever its own switch says (Settings → Modules shows it as needing
-  *Fuel*). Off: the stations pages and Settings → Account → *Places*
+  *Fuel*). Off: the stations pages and Settings → *Places*
   (404), the combo box (the fill-up form's plain *Station* text field
   returns), the *By station* card, the station API routes and the Ask
   tool. Links stay in the data; a linked fill-up shows its station's name
@@ -5565,7 +5565,11 @@ request to any outside service.
     hint, never prefilled.
   - The fill-up's `station` text is set to the station's name on save, so
     exports and anything reading the text still read a name.
-- **Stations page** (`/stations`, in the Fuel section of navigation):
+  - The search behind the combo box is `GET /stations/search?q=` (JSON,
+    signed in): the choices with their hints, and whether the typed name
+    is a station already.
+- **Stations page** (`/stations`, *Stations* in the navigation after
+  Reports, and *All stations* on the Fuel tab's card):
   - favourites first, then by last visit, then by name, with name, brand,
     the straight-line distance from each of the user's places, visits, last
     visit, and the average price paid in the last 12 months for the user's
@@ -5581,14 +5585,16 @@ request to any outside service.
     volume) and cheapest price paid, and a **price history** chart of what
     they paid (Chart.js, with the table as the no-JS fallback);
   - the user's fill-ups there, newest first.
-  Only fill-ups on vehicles the user can see count (§7.21), and spend only
-  on vehicles whose costs they may see.
+  Only fill-ups on vehicles the user can see count (§7.21), and amounts
+  (spend, prices) only where the user may see them (ViewCosts, or their own
+  entry). A fill-up's text is kept as the station's name (renames and
+  merges update it), so every page that shows the text shows the name.
 - **Positions:** typed as latitude and longitude, or *Use my current
   location* while standing at the station (the browser's geolocation,
   asked only when the button is pressed, with an explanation; sent only to
   Logbook and stored on the station when saved). Nothing is stored unless
   the form is saved.
-- **Places** (Settings → Account → *Places*): *Home*, *Work* and any
+- **Places** (Settings → *Places*, `/settings/places`): *Home*, *Work* and any
   others. Each is set by typing coordinates, copying a station's position,
   or *Use my current location*. They are shown only to their user and are
   never in the sale pack, print views, the API, Ask, MCP or other users'
@@ -5596,7 +5602,8 @@ request to any outside service.
 - **Distances** are great-circle (haversine, mean Earth radius 6371.0088
   km) distances in the user's distance unit, labelled "in a straight line",
   because road distance needs a routing service.
-- **Merge** (the creator of the station being merged away, or an admin):
+- **Merge** (`/stations/{id}/merge`; the creator of both stations, or an
+  admin, since both change):
   choose the station to keep. Every fill-up and favourite moves to it, its
   details win where both have a value (with a chance to pick per field),
   grades are combined, and the other station gets `merged_into` so old
@@ -5811,7 +5818,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES`,
-  `FEATURES_INCIDENTS` (Phase 27.1), `FEATURES_FINANCE` (Phase 29.1)
+  `FEATURES_INCIDENTS` (Phase 27.1), `FEATURES_FINANCE` (Phase 29.1),
+  `FEATURES_STATIONS` (Phase 30.1; off whenever fuel is)
   (default true; see §7.10),
   `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,
   `FEATURES_AI_ACTIONS`, `FEATURES_AI_SCAN` (default true; §7.25)

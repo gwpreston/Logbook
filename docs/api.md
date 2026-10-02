@@ -127,6 +127,8 @@ user prefers, so automations can compare and chart them:
 | `POST /vehicles/{id}/trips` | log a trip, or one from a saved journey (read and write key; trips module) |
 | `GET /trips/claim` | your mileage claim's figures for a tax year or date range (trips module) |
 | `GET /journeys` | your saved journeys, in your order (trips module) |
+| `GET /stations` | stations, your favourites first, then by your last visit, each with what you paid there per grade (`?q=` name, brand or postcode; `?favourites=true`; stations module) |
+| `GET /stations/{station}` | one station and what you paid there; a merged station's id answers with the station it became (stations module) |
 | `GET /openapi.json` | the OpenAPI description (no key) |
 
 A vehicle id the key's user cannot see answers `404`, like one that does
@@ -165,7 +167,9 @@ intervals, reminders and the economy check.
 | `volume`, `price_per_unit`, `total_cost` | **any two**; the third is worked out as the form does. `price_per_unit` is per `volume_unit`. |
 | `volume_unit` | `l`, `gal_uk`, `gal_us`; `kwh` for electricity; default the owner's |
 | `is_partial`, `is_missed_previous` | `true` / `false` |
-| `station`, `notes` | text |
+| `station` | a station's name: linked to the station with that name (ignoring case and spacing), or a new one. Not with `station_id`. |
+| `station_id` | a station from `GET /stations`. Not with `station`. Ignored for home charging, which is never a station. |
+| `notes` | text |
 
 `POST /vehicles/{id}/odometer`: `recorded_at` (default now), `odometer`
 (required), `distance_unit`, `note`.

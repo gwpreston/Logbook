@@ -6,6 +6,67 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.13.0] — 2026-10-02
+
+Phase 30.1: **fuel stations**. A fill-up's station is now a record, linked
+from every fill-up, so Logbook can show where you usually fill up, what
+you paid at each station per grade over time, and how far each one is
+from your own places. All of it comes from your own fill-ups: nothing in
+this release asks any outside service. See
+[docs/stations.md](docs/stations.md).
+
+### Added
+- **Stations** (module `stations`, on by default, part of fuel): name,
+  brand, address, postcode, country, position, grades sold (charging
+  types for a public charger), opening hours and notes. Shared by
+  everyone on the install; anyone adds and favourites them, the creator or
+  an admin edits and merges them.
+- **The fill-up form's station** is a search box: favourites first, then
+  recent stations, then the rest, with *Add "…"* for a new one and "Last
+  time here: £1.389/L E10 95, 12 Sep" under it (a hint, never a prefill).
+  Without JavaScript, a list of favourites and recent stations plus
+  *Other…*. Home charging is never a station.
+- **Stations** in the menu: favourites first, then by last visit, with
+  distances from your places, visits, and the average paid in the last 12
+  months. **A station's page**: details, *Favourite*, *Open in maps*, what
+  you paid per grade (visits, spend, the average weighted by volume, the
+  cheapest) with a price chart, and your fill-ups there.
+- **Settings → Places**: *Home*, *Work* and others, typed, copied from a
+  station or from *Use my current location*. Straight-line distances, so
+  labelled. Places are private: never in the API, Ask, MCP, print views,
+  the sale pack or anyone else's pages.
+- **Duplicates and merging**: pairs with the same brand and name, names
+  one letter apart, or positions within 150 m; merging moves every
+  fill-up and favourite and keeps old links working.
+- **The Fuel tab's *By station* card**: a vehicle's top five stations by
+  spend over the last 12 months.
+- **CSV import** links or creates stations, and the preview says which;
+  **receipt scans** choose the station or name a new one; **Ask drafts**
+  mark a new station on the card.
+- **API** (OpenAPI 1.18.0): fill-ups gain `station_id` beside `station`;
+  writes take either; `GET /stations` and `GET /stations/{station}` give
+  stations with what the key's user paid there. Nothing existing changed.
+- **Ask Logbook and MCP**: `stations(query?, favourites_only?)` for "Where
+  do I usually fill up?" and "What's the cheapest I've paid at Tesco?".
+- **Sample data**: eight stations (two spellings of one, ready to merge),
+  two favourites, Home and Work.
+- English and German.
+
+### Upgrade notes
+- Two migrations: the station, favourite and place tables with
+  `fuel_entries.station_id`, then a data migration that turns the station
+  names on your fill-ups into stations. Both roll back; the station text
+  on each fill-up is never changed.
+- **One station per spelling.** Names that differ only in capitals or
+  spacing become one station; different spellings ("Tesco Antrim",
+  "Tesco, Antrim Rd") become two. Open **Stations → Duplicates** to merge
+  the ones that are the same place.
+- Home charging (grade *Home*) is left as text.
+- New setting `FEATURES_STATIONS` (default `true`); stations are off
+  whenever fuel is.
+- The schema version moves: restore an older backup with its own version,
+  then upgrade.
+
 ## [2.12.0] — 2026-10-02
 
 Phases 29.1 and 29.2: **finance and lease agreements**. Type a hire
@@ -1849,7 +1910,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.12.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.13.0...HEAD
+[2.13.0]: https://github.com/gwpreston16/Logbook/compare/v2.12.0...v2.13.0
 [2.12.0]: https://github.com/gwpreston16/Logbook/compare/v2.11.0...v2.12.0
 [2.11.0]: https://github.com/gwpreston16/Logbook/compare/v2.10.0...v2.11.0
 [2.10.0]: https://github.com/gwpreston16/Logbook/compare/v2.9.0...v2.10.0

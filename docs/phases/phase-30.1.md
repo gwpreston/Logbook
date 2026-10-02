@@ -2,7 +2,7 @@
 
 *Where you fill up, what you paid there, and how far it is from home.*
 
-Status: 🚧 in progress · releases **v2.13.0** · file lives in `docs/phases/`
+Status: ✅ complete · releases **v2.13.0** · file lives in `docs/phases/`
 
 A fill-up's station is free text today ("Tesco Antrim", "tesco antrim rd"),
 so Logbook can't say where someone usually fills up, or what they've paid
@@ -166,59 +166,59 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §6, §7.3,
 ## Tasks
 
 ### Spec and docs
-- [ ] §6 and §7.33 in `spec.md`; the fill-up form, import and API changes;
+- [x] §6 and §7.33 in `spec.md`; the fill-up form, import and API changes;
       the Phase 30.1 line in §13.
-- [ ] `docs/stations.md`: stations, merging, places and distances, privacy.
+- [x] `docs/stations.md`: stations, merging, places and distances, privacy.
 
 ### Migrations (every engine, each reversible)
-- [ ] `stations`, `station_favourites`, `places`; `fuel_entries.station_id`.
-- [ ] Data migration: create and link stations from the station texts, in
+- [x] `stations`, `station_favourites`, `places`; `fuel_entries.station_id`.
+- [x] Data migration: create and link stations from the station texts, in
       batches. Rollback unlinks and drops the new tables; the text column
       was never changed.
 
 ### Code
-- [ ] `Domain\Station\*`, `Repository\StationRepository` (search,
+- [x] `Domain\Station\*`, `Repository\StationRepository` (search,
       normalised-name lookup, nearby by bounding box then haversine).
-- [ ] `Service\Station\StationStats` (visits, spend, average and cheapest
+- [x] `Service\Station\StationStats` (visits, spend, average and cheapest
       by grade, history) over the user's visible fill-ups.
-- [ ] `Service\Station\Merge` and `Duplicates` (similar names, edit
+- [x] `Service\Station\Merge` and `Duplicates` (similar names, edit
       distance 1, within 150 m).
-- [ ] `Support\Geo\Haversine`; places service.
-- [ ] The combo box (progressive enhancement), stations pages, places
+- [x] `Support\Geo\Haversine`; places service.
+- [x] The combo box (progressive enhancement), stations pages, places
       settings, the Fuel tab card, and the fill-up form hint.
-- [ ] Import, API and Ask tool changes.
-- [ ] Translations (en, de).
+- [x] Import, API and Ask tool changes.
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] Upgrade: distinct texts become stations by normalised name; the
+- [x] Upgrade: distinct texts become stations by normalised name; the
       most common spelling wins; every fill-up linked; empty texts left
       alone; rollback restores the previous state.
-- [ ] Fill-up form: search order (favourites, recent, rest); create from
+- [x] Fill-up form: search order (favourites, recent, rest); create from
       typed text; the no-JS *Other* path; the "last time here" hint.
-- [ ] Stats: averages weighted by volume; cheapest; only visible vehicles'
+- [x] Stats: averages weighted by volume; cheapest; only visible vehicles'
       fill-ups; per grade.
-- [ ] Merge: fill-ups and favourites move; field choice; `merged_into`
+- [x] Merge: fill-ups and favourites move; field choice; `merged_into`
       resolves; duplicates view finds the three kinds.
-- [ ] Haversine: known distances (London to Edinburgh, two points 1 km
+- [x] Haversine: known distances (London to Edinburgh, two points 1 km
       apart) in km and miles.
-- [ ] Places: private to their user in pages, API, print, sale pack and
+- [x] Places: private to their user in pages, API, print, sale pack and
       other users' views.
-- [ ] Geolocation: optional; nothing stored unless saved on a station or
+- [x] Geolocation: optional; nothing stored unless saved on a station or
       place.
-- [ ] Import links or creates stations, shown in the preview.
-- [ ] Module and `fuel` off: everything gone, data kept.
-- [ ] Integration suite green on every engine.
+- [x] Import links or creates stations, shown in the preview.
+- [x] Module and `fuel` off: everything gone, data kept.
+- [x] Integration suite green on every engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: about eight stations across the demo fill-ups (two
+- [x] `DemoDataSeeder`: about eight stations across the demo fill-ups (two
       spellings of one, ready to merge), two favourites, Home and Work
       places, and positions on most stations.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.13.0**: fuel stations, places and distances.
+- [x] `CHANGELOG.md` **2.13.0**: fuel stations, places and distances.
       Upgrade notes: migrations; existing station names become stations,
       one per spelling, so use *Duplicates* to merge.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and the
+- [x] Bump `VERSION`, rebuild assets, update the README status and the
       documentation table.
 
 ---
