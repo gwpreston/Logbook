@@ -12,4 +12,6 @@ enum NotificationKind: string
     case Digest = 'digest';
     /** Sent from Settings to check the channels work. */
     case Test = 'test';
+    /** A background job failed twice in a row (admins, Phase 28.1). */
+    case JobFailed = 'job_failed';
 }

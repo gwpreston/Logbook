@@ -47,6 +47,14 @@ use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Processor\PsrLogMessageProcessor;
 use Psr\Clock\ClockInterface;
+use Logbook\Service\Jobs\BackupJob;
+use Logbook\Service\Jobs\CleanupJob;
+use Logbook\Service\Jobs\DigestJob;
+use Logbook\Service\Jobs\Job;
+use Logbook\Service\Jobs\JobRegistry;
+use Logbook\Service\Jobs\JobsTwigExtension;
+use Logbook\Service\Jobs\RemindersJob;
+use Logbook\Service\Jobs\RunCapture;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -114,8 +122,23 @@ return [
         $formatter->includeStacktraces($config->debug);
         $handler->setFormatter($formatter);
 
-        return new Logger('logbook', [$handler], [new PsrLogMessageProcessor()], new DateTimeZone('UTC'));
+        // A job run's output takes a copy of every line logged while it runs (Phase 28.1).
+        $capture = $c->get(RunCapture::class);
+        assert($capture instanceof RunCapture);
+
+        return new Logger('logbook', [$handler, $capture], [new PsrLogMessageProcessor()], new DateTimeZone('UTC'));
     },
+
+    // Background jobs, in the order a scheduler pass runs them (spec.md §5 *Jobs*).
+    JobRegistry::class => static fn (ContainerInterface $c): JobRegistry => new JobRegistry(array_map(
+        static function (string $class) use ($c): Job {
+            $job = $c->get($class);
+            assert($job instanceof Job);
+
+            return $job;
+        },
+        [RemindersJob::class, DigestJob::class, CleanupJob::class, BackupJob::class],
+    )),
 
     Connection::class => static fn (ContainerInterface $c): Connection
         => ConnectionFactory::create($settingsOf($c)->database),
@@ -190,6 +213,9 @@ return [
         $access = $c->get(AccessTwigExtension::class);
         assert($access instanceof AccessTwigExtension);
         $twig->addExtension($access);
+        $jobs = $c->get(JobsTwigExtension::class);
+        assert($jobs instanceof JobsTwigExtension);
+        $twig->addExtension($jobs);
         $ask = $c->get(AskTwigExtension::class);
         assert($ask instanceof AskTwigExtension);
         $twig->addExtension($ask);

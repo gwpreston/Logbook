@@ -31,6 +31,31 @@
             <p class="field__hint">{{ 'backup.download_hint'|trans }}</p>
         </section>
 
+        <section class="card" aria-labelledby="scheduled-heading" id="scheduled-backups">
+            <h2 id="scheduled-heading" class="card__title">{{ 'backup.scheduled.heading'|trans }}</h2>
+            {% if scheduled is empty %}
+                <p class="muted">{{ 'backup.scheduled.none'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for file in scheduled %}
+                        <li>
+                            <a class="list__item" href="{{ url_for('backup.file', {name: file.name}) }}" download>
+                                <span class="list__icon">{{ ui.icon('backup') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ file.created_at|local_datetime }}</span>
+                                    <span class="list__meta">{{ file.name }} · {{ file.size|file_size }}</span>
+                                </span>
+                                {{ ui.icon('download', 'list__trail') }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if can_instance('run_jobs') %}
+                <p class="field__hint"><a href="{{ url_for('settings.jobs') }}#job-backup">{{ 'backup.scheduled.settings_link'|trans }}</a></p>
+            {% endif %}
+        </section>
+
         {% if can_instance('restore') %}
         <section class="card" aria-labelledby="restore-heading">
             <h2 id="restore-heading" class="card__title">{{ 'backup.restore_heading'|trans }}</h2>

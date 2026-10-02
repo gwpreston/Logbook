@@ -25,7 +25,8 @@ use Psr\Log\LoggerInterface;
  * sync the reminders they can see, send what has newly become due or
  * overdue on the vehicles they receive reminders for (their own, and those
  * shared with *Send me its reminders*), and the monthly digest when it is
- * time. Each run is the user's alone, in their language, units and time
+ * time. The `reminders` and `digest` jobs call one each (Phase
+ * 28.1). Each run is the user's alone, in their language, units and time
  * zone, through the channels that reach them.
  *
  * Idempotent: each reminder is claimed for this user and its current
@@ -52,10 +53,16 @@ final readonly class ReminderNotifier
     ) {
     }
 
-    public function run(User $user): NotifierReport
+    /**
+     * The `reminders` job's work for one user (spec.md §7.30): sync, then
+     * send what has newly become due or overdue.
+     *
+     * @return int how many reminders were delivered
+     */
+    public function reminders(User $user): int
     {
         if (!$user->isActive()) {
-            return new NotifierReport(0, false);
+            return 0;
         }
         $this->sync->sync($user);
 
@@ -64,15 +71,37 @@ final readonly class ReminderNotifier
         if ($this->channels->active($preferences, $recipient) === []) {
             // Nothing can reach them. Leave everything unclaimed, so it is
             // sent once a channel is set up (if it is still due then).
-            return new NotifierReport(0, false);
+            return 0;
         }
 
-        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        return $this->sendDue($user, $recipient, $preferences, LocalTime::today($this->clock, $user->preferences->timeZone()));
+    }
 
-        return new NotifierReport(
-            $this->sendDue($user, $recipient, $preferences, $today),
-            $this->sendDigest($user, $recipient, $preferences, $today),
-        );
+    /**
+     * The `digest` job's work for one user: the monthly digest, when it is
+     * time. It syncs the user's reminders first, as the combined task did,
+     * unless this month's digest is already done (or switched off).
+     *
+     * @return bool whether a digest was delivered
+     */
+    public function digest(User $user): bool
+    {
+        if (!$user->isActive()) {
+            return false;
+        }
+        $preferences = $this->settings->notificationPreferences($user->id);
+        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        if (!$preferences->digest || $this->settings->digestMonth($user->id) === $today->format('Y-m')) {
+            return false;
+        }
+        $this->sync->sync($user);
+
+        $recipient = Recipient::of($user, $preferences);
+        if ($this->channels->active($preferences, $recipient) === []) {
+            return false;
+        }
+
+        return $this->sendDigest($user, $recipient, $preferences, $today);
     }
 
     /**

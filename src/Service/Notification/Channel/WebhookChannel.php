@@ -16,7 +16,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * A generic webhook (WEBHOOK_URL) receiving the notification as JSON, for
  * Home Assistant, n8n, Node-RED, a chat bridge…:
  *
- *   {"event": "reminders"|"digest"|"test", "title": …, "message": …,
+ *   {"event": "reminders"|"digest"|"test"|"job_failed", "title": …, "message": …,
  *    "url": …, "urgent": bool, "items": [{"reminder_id", "title",
  *    "detail", "status", "due_on"}], "attention": [{"vehicle_id",
  *    "vehicle", "kind", "title"}] (the digest's checks, Phase 24; else

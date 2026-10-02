@@ -297,6 +297,46 @@ disagree):
     monthly cap, takes the user's lock, calls the adapter, logs the
     usage, and maps every failure to an `AiFailure` with a code and a
     safe message (§7.25 *Errors*).
+- **Jobs** (Phase 28.1, §7.30). Background work is a set of named jobs,
+  run the same way by every trigger (cron, the Docker loop, a page
+  visit, a URL, a button):
+  - `Service\Jobs\Job`: `name()`, `interval()` (seconds; `0` for every
+    scheduler pass, `null` for manual only), `run(JobContext): JobResult`.
+    `JobContext` holds a PSR-3 logger that collects the run's lines and a
+    cancellation check; `JobResult` holds a status (`ok` | `partial` |
+    `failed`), a one-line summary and counts.
+  - `Service\Jobs\JobRegistry` lists the jobs, in the order a pass runs
+    them. `Service\Jobs\JobRunner` runs one job: takes its lock, writes a
+    `job_runs` row, runs it, stores the output, releases the lock.
+    `JobRunner::pass(trigger)` runs every job that is due, under the
+    pass lock. `Service\Scheduler\ScheduledTasks` stays as the entry
+    point that runs a pass.
+  - **Jobs**, in pass order:
+
+    | Job | Interval | Does |
+    |---|---|---|
+    | `reminders` | every pass | syncs each user's reminders and sends what became due (§7.6, §7.11) |
+    | `digest` | every pass (it sends only on a user's first pass of a month) | the monthly digest; it syncs the user's reminders first, as before |
+    | `cleanup` | hourly (decided 2026-10-02, #108) | retention: AI usage log, AI locks and progress, expired drafts, unclaimed scans, Ask threads, closed invitations, job runs |
+    | `backup` | per *Scheduled backups* (off by default) | a backup into `BACKUP_PATH` |
+
+    A job is due when its interval is `0`, or when its last finished run
+    (any status but `skipped_locked`) started at least its interval ago.
+  - **Locks:** one `flock` file per job, `{cache dir}/locks/job-<name>.lock`
+    (the cache directory, because `var/` itself may not be writable, as
+    for the old task lock), and the old task's `{cache dir}/scheduled-tasks.lock`
+    for a scheduler pass, so a pass of an older release, mid-upgrade,
+    never overlaps one of this. A run that finds its job locked is
+    recorded as `skipped_locked`, naming the `running` row holding it. A
+    `running` row older than an hour whose lock is free is marked
+    `interrupted` before the next run of that job.
+  - **Redaction:** a log processor replaces, before a line is stored or
+    printed, the values of every environment variable whose name contains
+    `PASSWORD`, `SECRET`, `TOKEN` or `KEY` (values of 4 characters or
+    more, except plain settings words and `logbook`, the shipped compose
+    files' public default database password, decided 2026-10-02, #110), every stored AI connection secret (§7.25), and anything that
+    looks like a Logbook API key (`lbk_` followed by its characters) with
+    `••••`.
 
 ---
 
@@ -876,6 +916,18 @@ MySQL only.
   deletes every row and file, as the accounts they belonged to are
   replaced.
 
+**JobRun** (Phase 28.1, §7.30)
+- id, job (name), trigger (column `trigger_kind`, as `TRIGGER` is
+  reserved in SQL: `cron` | `docker` | `page_visit` | `url` |
+  `manual`), user_id (who pressed *Run now*; `ON DELETE SET NULL`),
+  started_at, finished_at (optional), status (`running` | `ok` |
+  `partial` | `failed` | `skipped_locked` | `interrupted`), summary (up
+  to 255), output (text, at most 64 KB: longer output keeps the first
+  and last 32 KB with "… N lines left out …" between), all UTC. Index
+  `(job, started_at)`. The `cleanup` job keeps the last 50 runs per job
+  and nothing older than 90 days. **Not in backups.** A restore deletes
+  every row, as the accounts they name are replaced.
+
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
   User-scoped keys include `reminders` (lead times), `notifications`,
@@ -884,8 +936,18 @@ MySQL only.
   and from Phase 25 `drift_percent`, `drift_percent_electric`,
   `price_percent`, `cost_multiple` and `cost_floor`, §7.24) and, from
   Phase 26.1, `ai.use` (bool, §7.25) and, from Phase 26.2,
-  `ai.ask_retention_days` (1, 7, 30 or 90; default 30, §7.26). The global `ai.this_host` (a list of
-  addresses, §7.25) is set on Settings → AI.
+  `ai.ask_retention_days` (1, 7, 30 or 90; default 30, §7.26) and, from
+  Phase 28.1, `notices.dismissed` (notice key → UTC time it was
+  dismissed, §7.30). The global `ai.this_host` (a list of
+  addresses, §7.25) is set on Settings → AI. From Phase 28.1 the global
+  `jobs.triggers` (`{"page_visit": false, "url": false}`),
+  `jobs.url_token` (the HMAC of the URL token, or none),
+  `jobs.url_last_call` (UTC), `jobs.backup` (`{"schedule": "off" |
+  "daily" | "weekly", "keep": 7}`) and `jobs.failure_alerts` (job →
+  the id of the failed run whose streak was alerted) hold the
+  scheduler's settings (§7.30). Like every setting they travel in a
+  backup; the URL token, like API keys, works only where
+  `SESSION_SECRET` is the same.
 
 ---
 
@@ -2496,7 +2558,12 @@ vehicles; a disabled module cannot be imported).
   onto any supported engine: SQLite → PostgreSQL works) and `uploads/…`
   (every file under `UPLOAD_PATH`: photos and attachments). Sessions and
   invitation links are not included (Phase 19: a link is for this install,
-  now).
+  now), nor are job runs (Phase 28.1).
+- **Scheduled backups** (Phase 28.1, §7.30) are the same archive, written
+  to `BACKUP_PATH` by the `backup` job as `logbook-scheduled-…zip`. The
+  Backup page lists them, newest first, with size and *Download*
+  (`/settings/backup/files/{name}`, `Backup`; only a name of that form is
+  served).
 - **Restore** (upload a backup, then confirm on a second page that shows
   what the archive contains and requires ticking "replace all data") is
   destructive and so: the archive is fully validated first (format, same
@@ -4863,6 +4930,122 @@ incident. They need `ai_scan` and `incidents` on.
   entry* → *Scan* it opens the most recent open incident of the vehicle
   with a select to change it, or *Log incident* when there is none).
 
+### 7.30 Jobs and the scheduler (Phase 28.1)
+
+The background work of §5 *Jobs*, made visible, runnable by hand, and
+able to run without cron.
+
+- **Access** (decided 2026-10-02, #106): admins only, through
+  `InstanceAbility::RunJobs`. Like Settings → AI, every jobs route
+  answers 404 to anyone else, and the notices below are admins' only.
+- **Jobs page** (`/settings/jobs`, under Settings → *Installation*
+  beside *Health*): a table of jobs with name and description, schedule
+  ("Every pass (15 minutes)", "Hourly", "Daily", "Weekly", "Off"), last
+  run (time, trigger, status as text, summary), the next run expected
+  ("With the next pass", a time, or "Off"), and **Run now**. Under it,
+  **Recent runs** across all jobs, newest first (the last 25), each
+  opening its run page.
+- **Run page** (`/settings/jobs/runs/{id}`): job, trigger, who ran it,
+  start, finish, duration, status, summary, and the output in a
+  monospace block with *Copy* (JS).
+- **Run now** (POST, CSRF): runs the job in the request. Sessions are
+  database rows with no lock, so other pages stay usable meanwhile;
+  `ignore_user_abort(true)` keeps the job going if the browser goes
+  away; and the time limit is `JOB_TIME_LIMIT` (default 300 seconds).
+  - Without JS: the POST runs the job and then redirects (303) to its
+    run page.
+  - With JS: the button shows *Running…*, the POST is sent in the
+    background, and the page opens the new run's page as soon as its
+    row exists. The run page's output updates every 2 seconds (the
+    runner writes output to the row as it goes, at most once a second)
+    until the run finishes.
+  - If a reverse proxy times the request out first, the job still
+    finishes and its run page shows the result.
+  - A locked job records a `skipped_locked` run, whose page says
+    "Already running (started 14:02 by cron)" with a link to that run.
+- **Jobs and their summaries:**
+  - `reminders`: "Checked 3 accounts; sent 2 reminders" (with "; 1
+    account failed", which makes the run `partial`). With the reminders
+    module off: "The reminders module is off; nothing to send."
+  - `digest`: "Checked 3 accounts; sent 1 digest". It runs after
+    `reminders` in a pass and syncs each user's reminders itself, so it
+    sends exactly what the combined task sent before.
+  - `cleanup`: "Deleted 12 old AI usage rows, 1 unclaimed scan, 2
+    invitations, 40 job runs" (only what was deleted). Closed
+    invitations (used, revoked or expired) are deleted **90 days** after
+    they closed (decided 2026-10-02, #109); open ones are never touched.
+  - `backup`: "Wrote logbook-scheduled-20261002-031500.zip (4.2 MB);
+    deleted 1 old backup".
+  - A job that throws is `failed`, with the message as its summary.
+  - Summaries are written in the language of whoever ran the job (the
+    admin for *Run now*, the visitor for a page visit, `APP_LOCALE` for
+    cron, Docker and the URL); the output lines are
+    log lines, in English, as in the log file.
+- **Scheduler health:** the page shows the last scheduler pass (the
+  newest finished run with any trigger but `manual`) and its trigger.
+  When none has finished within **2 × `SCHEDULER_INTERVAL`** (default
+  30 minutes), it shows "Reminders aren't being sent automatically: the
+  scheduler last ran {time}." (or "…has never run."), with the three
+  ways to fix it: cron (the exact line for this install's path and
+  interval), *On page visits*, or *External URL*.
+- **Admin notices:** a notice area at the top of the dashboard, admins
+  only. This phase adds the scheduler warning and the job-failure notice
+  below (Phase 28.2 adds the update banner). Each has a link to its
+  page and *Dismiss* (POST, CSRF), which hides that notice for 24 hours
+  for that admin (`notices.dismissed`). A notice comes back after that
+  while its problem lasts.
+- **Failure alerts** (decided 2026-10-02, #107): when a job's last two
+  finished runs (leaving out `skipped_locked`) are both `failed`, admins
+  see "The {job} job failed twice in a row" as an admin notice, linking
+  to the latest run, for as long as the streak lasts. Once per streak,
+  each admin is also sent a notification (kind `job_failed`) through
+  their own notification channels (§7.11), in their language and time
+  zone, with the summary and a link to the run. An `ok` or `partial`
+  run ends the streak; an admin with no channel set up only sees the
+  notice. A failing `reminders` job may of course be unable to send it.
+- **How jobs run** (on the Jobs page; any number on together, the locks
+  keep runs from overlapping and each job's interval decides whether a
+  pass runs it):
+  - **Cron** and **Docker** as before. The entrypoint sets
+    `LOGBOOK_SCHEDULER_TRIGGER=docker` so its runs are labelled.
+  - **On page visits** (off by default): every signed-in page carries
+    the scheduler's state; when the last pass is older than
+    `SCHEDULER_INTERVAL`, the page sends a beacon
+    (`navigator.sendBeacon` to `POST /_scheduler/tick`, with the CSRF
+    token). The server re-checks under the pass lock and, if due, runs a
+    pass in that beacon request (`204` either way). The visitor never
+    waits for it. Off, it answers 404. It needs someone to visit, and
+    the page says so: "Jobs run when anyone uses Logbook. Reminders may
+    be late on quiet days."
+  - **External URL** (off by default): `GET|POST
+    {APP_URL}{APP_BASE_PATH}/cron/{token}` runs a pass (only due jobs;
+    never a chosen job). It answers `200` with a plain-text summary, or
+    `429` (with `Retry-After`) within 60 seconds of the last accepted
+    call. A wrong token, or the trigger off, is `404`. The token (32
+    random bytes, as hex) is shown once, stored as an HMAC-SHA256 keyed
+    with `SESSION_SECRET` (as calendar tokens are), and can be
+    regenerated, which invalidates the old one. The route sits outside
+    the session and CSRF groups. The page suggests services that call a
+    URL on a schedule (cron-job.org, Uptime Kuma, a router's scheduler).
+- **Scheduled backups** (on the `backup` job's row): *Off* (default),
+  *Daily* or *Weekly*, and *Keep the last N* (default 7, 1–60). Files
+  are written to `BACKUP_PATH` as `logbook-scheduled-YYYYMMDD-HHMMSS.zip`
+  (UTC). Retention deletes only files with that prefix, oldest first,
+  never the owner's own or pre-restore backups. *Run now* works whatever
+  the schedule and writes the same kind of file. The Backup page (§7.13)
+  lists the scheduled files, newest first, with size and *Download*.
+- **CLI** (unchanged entry points): `php bin/run-scheduled-tasks.php`
+  runs a pass (trigger `cron`, or `docker` from the entrypoint). It
+  stays quiet unless given `-v`, because cron mails any output, and
+  keeps its exit codes: 0 ok, 1 a job `failed` or `partial`, 2 the pass
+  lock is held. New: `php bin/run-job.php <job>` (trigger `manual`, no
+  user) prints the run's lines as they come and exits 1 on `failed`, 2
+  on `skipped_locked`; `php bin/run-job.php --list` lists the jobs. The
+  printed lines are the stored ones, redacted.
+- **`/health`** gains `"scheduler": {"last_pass": "…" | null, "stale":
+  false}` for monitoring. It never changes the status code, so Docker's
+  health check is unaffected.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -5053,10 +5236,14 @@ Real environment variables override `.env`; an empty value counts as unset.
   looked up on `PATH`; `off` turns Ghostscript off). Imagick is used when
   the extension is loaded and Ghostscript is not found. With neither, a
   scanned PDF asks for a photo instead.
+- Scheduler (§7.30, Phase 28.1): `SCHEDULER_INTERVAL` (seconds between
+  passes; default `900`): the Docker loop's spacing, and on every install
+  the expected cron frequency for the health warning and the page-visit
+  trigger's spacing. `JOB_TIME_LIMIT` (seconds a *Run now* may take;
+  default `300`).
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
   `DB_WAIT_TIMEOUT` (default `60`), `SCHEDULER_ENABLED` (run the scheduled
-  task inside the container; default `true`), `SCHEDULER_INTERVAL` (seconds
-  between runs; default `900`)
+  task inside the container; default `true`)
 - Test suite only: `TEST_DB_*` (same shape as `DB_*`; default SQLite
   `var/testing.sqlite`). PHPUnit never reads `DB_*`.
 
@@ -5084,9 +5271,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   migrate, cron entry for the reminder/notification task
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
   overlapping), and Nginx/Apache
-  vhost + reverse-proxy examples.
-- **Health check:** `/health` endpoint (app + DB connectivity, and the app
-  version) for monitoring.
+  vhost + reverse-proxy examples. From Phase 28.1 a host without cron can
+  use the *On page visits* or *External URL* trigger instead (§7.30).
+- **Health check:** `/health` endpoint (app + DB connectivity, the app
+  version and, from Phase 28.1, the scheduler's last pass) for monitoring.
 
 ---
 
@@ -5400,6 +5588,15 @@ task breakdowns live in the per-phase files; this is the map.
   number) and repair estimates (a new estimate field, never counted)
   (§6 Vehicle disposal, Incident, PendingUpload; §7.1, §7.7, §7.27,
   §7.29). One migration. Release v2.10.0.
+- **Phase 28.1 — Scheduled jobs in Settings.** Background work becomes
+  named jobs (`reminders`, `digest`, `cleanup`, `backup`) with a runner,
+  per-job locks, recorded runs and redacted output; Settings → Jobs for
+  admins with *Run now* and each run's output; a scheduler health
+  warning and failure alerts as dashboard notices (and notifications);
+  page-visit and external-URL triggers for hosts without cron; scheduled
+  backups with retention; `bin/run-job.php`; `/health` reports the last
+  pass (§5 *Jobs*; §6 JobRun; §7.30; §9). One migration. No release of
+  its own (v2.11.0 ships with Phase 28.2).
 
 ---
 

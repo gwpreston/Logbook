@@ -39,7 +39,10 @@ answered on 2026-10-01, before Phase 26.5 started. Phase 27's
 2026-10-01, before Phase 27.1 started; the phase was split into 27.1 and
 27.2, and #98–#101 belong to 27.2. One found while building it (#104)
 was answered the same day. Phase 27.2's question found while starting it
-(#105) was answered on 2026-10-02, before it was built.
+(#105) was answered on 2026-10-02, before it was built. Phase 28.1's
+(#106–#109, two of them found while starting it) were answered on
+2026-10-02, before Phase 28.1 started; one found while building it
+(#110) was answered the same day.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -148,6 +151,11 @@ was answered the same day. Phase 27.2's question found while starting it
 | 103 | [27.1](phase-27.1.md) | A tyre change linked to a service record: which carries the incident? (found while starting) | Decided | The change follows its record's incident; an unlinked change is linked on its own; costs read from the ledger (spec §7.29). | 2026-10-01 |
 | 104 | [27.1](phase-27.1.md) | Who gets an incident photo's GPS? (found while building) | Decided | The original only for those who see the incident's details; anyone else gets an upright, stripped copy as it is served (spec §7.12). | 2026-10-01 |
 | 105 | [27.2](phase-27.2.md) | Clearing a sold vehicle's sale date: keep or clear disposal `sold`? (found while starting) | Decided | Clear it; a `written_off` disposal is never changed by the edit form (spec §7.29 *Total loss*). | 2026-10-02 |
+| 106 | [28.1](phase-28.1.md) | Run now for members? | Decided | No: admins only (`RunJobs`); members get 404 on every jobs route (spec §7.30 *Access*). | 2026-10-02 |
+| 107 | [28.1](phase-28.1.md) | Tell admins when a job fails twice in a row? | Decided | Yes: a dashboard notice while the streak lasts, and once per streak a `job_failed` notification through each admin's own channels (spec §7.30 *Failure alerts*). | 2026-10-02 |
+| 108 | [28.1](phase-28.1.md) | How often does `cleanup` run? (found while starting) | Decided | Hourly, so the 24-hour promise for unclaimed scans still holds (spec §5 *Jobs*). | 2026-10-02 |
+| 109 | [28.1](phase-28.1.md) | How long are closed invitations kept? (found while starting) | Decided | 90 days after they were used, revoked or expired; open links are never deleted (spec §7.30). | 2026-10-02 |
+| 110 | [28.1](phase-28.1.md) | Mask `logbook`, the compose files' default database password, in job output? (found while building) | Decided | No: it is public in the repository, and masking it garbled every file name (spec §5 *Jobs*, *Redaction*). | 2026-10-02 |
 
 ## Other loose ends found in the review
 

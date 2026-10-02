@@ -3,23 +3,30 @@
 declare(strict_types=1);
 
 /*
- * Scheduled-task runner: syncs every owner's reminders, sends the ones that
- * have become due or overdue through their notification channels, and the
- * monthly digest (spec.md §7.6, §7.11).
+ * A scheduler pass (spec.md §5 *Jobs*, §7.30): every job that is due —
+ * reminders and the monthly digest every pass, cleanup hourly, backups as
+ * scheduled — each recorded on Settings → Jobs.
  *
- * Bare-PHP install: run it every 15 minutes from cron, as the web server user:
+ * Bare-PHP install: run it every 15 minutes (SCHEDULER_INTERVAL) from cron,
+ * as the web server user:
  *
  *   *\/15 * * * *  www-data  cd /var/www/logbook && php bin/run-scheduled-tasks.php
  *
- * Docker: the entrypoint runs it every SCHEDULER_INTERVAL seconds; no host
+ * No cron? Settings → Jobs → *How jobs run* has two fallbacks: on page
+ * visits, and a secret URL an external service calls.
+ *
+ * Docker: the entrypoint runs it every SCHEDULER_INTERVAL seconds (with
+ * LOGBOOK_SCHEDULER_TRIGGER=docker, so its runs are labelled); no host
  * cron needed.
  *
- * Safe to run as often as you like: a lock file stops runs overlapping, and
- * each reminder is sent only once per status. Prints nothing unless given -v
- * (the summary always goes to the log). Exit code: 0 ok, 1 an owner's run
- * failed (see the log), 2 another run holds the lock.
+ * Safe to run as often as you like: locks stop passes and jobs
+ * overlapping, and each reminder is sent only once per status. Prints
+ * nothing unless given -v (cron mails any output; the runs keep it).
+ * Exit code: 0 ok, 1 a job failed or partly failed (see Settings → Jobs),
+ * 2 another pass holds the lock.
  */
 
+use Logbook\Domain\Job\JobTrigger;
 use Logbook\Kernel;
 use Logbook\Service\Scheduler\ScheduledTasks;
 
@@ -30,36 +37,24 @@ $settings = Kernel::settings();
 // The app (not just the container): notifications link to routes.
 $container = Kernel::createApp($settings)->getContainer();
 
-// var/cache: writable by the web server user on every install (var/ itself
-// may not be, e.g. in the Docker image).
-$lockDir = $settings->cacheDir;
-if (!is_dir($lockDir)) {
-    mkdir($lockDir, 0775, true);
-}
-// flock() needs no write access, so a lock file left by a run as another
-// user (say, root via `docker exec`) is still usable.
-$lockFile = $lockDir . '/scheduled-tasks.lock';
-$lock = fopen($lockFile, is_file($lockFile) ? 'r' : 'c');
-if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
+// The command line, as strings (the $argv global is not guaranteed to be set).
+$args = array_values(array_filter((array) ($_SERVER['argv'] ?? []), 'is_string'));
+$verbose = in_array('-v', $args, true) || in_array('--verbose', $args, true);
+
+$trigger = getenv('LOGBOOK_SCHEDULER_TRIGGER') === 'docker' ? JobTrigger::Docker : JobTrigger::Cron;
+
+$tasks = $container->get(ScheduledTasks::class);
+assert($tasks instanceof ScheduledTasks);
+$summary = $tasks->run($trigger, $verbose ? static function (string $line): void {
+    fwrite(STDOUT, $line . "\n");
+} : null);
+
+if ($summary->wasLocked) {
     fwrite(STDERR, "Another scheduled-task run is in progress; skipping.\n");
     exit(2);
 }
-
-try {
-    $tasks = $container->get(ScheduledTasks::class);
-    assert($tasks instanceof ScheduledTasks);
-    $summary = $tasks->run();
-} finally {
-    flock($lock, LOCK_UN);
-    fclose($lock);
-}
-
-// The command line, as strings (the $argv global is not guaranteed to be set).
-$args = array_values(array_filter((array) ($_SERVER['argv'] ?? []), 'is_string'));
-
-// Quiet by default (cron mails any output); the summary is always logged.
-if (in_array('-v', $args, true) || in_array('--verbose', $args, true)) {
+if ($verbose) {
     fwrite(STDOUT, ucfirst($summary->describe()) . ".\n");
 }
 
-exit($summary->failures === 0 ? 0 : 1);
+exit($summary->failed() ? 1 : 0);

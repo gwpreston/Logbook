@@ -3,8 +3,8 @@
 *See that the background jobs ran, run one now, and keep reminders going
 even without cron.*
 
-Status: 📋 planned · ships with Phase 28.2 as **v2.11.0** · file lives in
-`docs/phases/`
+Status: ✅ complete · no release of its own (**v2.11.0** ships with
+[Phase 28.2](phase-28.2.md)) · file lives in `docs/phases/`
 
 Logbook's background work runs from `bin/run-scheduled-tasks.php`. In
 Docker the entrypoint runs it every `SCHEDULER_INTERVAL` seconds; on a bare
@@ -34,7 +34,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
    run the same code.
 2. **Job runs** recorded with trigger, times, status, a summary and the
    output (secrets redacted).
-3. **Settings → System → Jobs** (admins): each job's last run, next
+3. **Settings → Jobs** (admins): each job's last run, next
    expected run, *Run now*, and the run history with full output.
 4. **Scheduler health:** a warning on the page and in an admin notice area
    when nothing has run for too long.
@@ -99,7 +99,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 
 ### §7.30 Jobs and the scheduler (new)
 
-> - **Settings → System → Jobs** (`/settings/jobs`, `InstanceAbility::RunJobs`,
+> - **Settings → Jobs** (`/settings/jobs`, `InstanceAbility::RunJobs`,
 >   admins). A table of jobs: name and description, schedule ("Every 15
 >   minutes", "Daily", "Off"), last run (time, trigger, status badge as text,
 >   summary), the next run expected, and **Run now**. Under it, **Recent
@@ -130,7 +130,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 >   (Phase 28.2). Each notice has a link to its settings page and *Dismiss*
 >   for 24 hours, per admin. The scheduler warning comes back while the
 >   problem lasts.
-> - **Triggers** (Settings → System → Jobs → *How jobs run*):
+> - **Triggers** (Settings → Jobs → *How jobs run*):
 >   - **Cron** and **Docker** as today. The entrypoint sets
 >     `LOGBOOK_SCHEDULER_TRIGGER=docker` so its runs are labelled.
 >   - **On page visits** (off by default): every signed-in page load sends a
@@ -195,55 +195,64 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 ## Tasks
 
 ### Spec and docs
-- [ ] §5, §6, §7.30, §9 and §10 in `spec.md`; the Phase 28.1 line in §13.
-- [ ] `docs/deployment.md`: *Background jobs*: cron, Docker, page visits,
+- [x] §5, §6, §7.30, §9 and §10 in `spec.md`; the Phase 28.1 line in §13.
+- [x] `docs/deployment.md`: *Background jobs*: cron, Docker, page visits,
       external URL, how to check they run, scheduled backups.
 
 ### Migration
-- [ ] `job_runs`; instance settings for the triggers, URL token hash and
+- [x] `job_runs`; instance settings for the triggers, URL token hash and
       backup schedule. Reversible on every engine.
 
 ### Code
-- [ ] `Service\Jobs\*` (interface, registry, runner, context, result, locks,
+- [x] `Service\Jobs\*` (interface, registry, runner, context, result, locks,
       redaction processor).
-- [ ] Split `run-scheduled-tasks.php`'s work into the `reminders`, `digest`
+- [x] Split `run-scheduled-tasks.php`'s work into the `reminders`, `digest`
       and `cleanup` jobs with no change in behaviour; add the `backup` job.
-- [ ] `bin/run-job.php`; the entrypoint's trigger label.
-- [ ] Settings → System → Jobs, run page with polling, *How jobs run*,
-      scheduled backups; the admin notice area and the scheduler warning.
-- [ ] `POST /_scheduler/tick` and its footer beacon; `/cron/{token}`.
-- [ ] `/health` field.
-- [ ] Translations (en, de).
+- [x] `bin/run-job.php`; the entrypoint's trigger label.
+- [x] Settings → Jobs, run page with polling, *How jobs run*,
+      scheduled backups; the admin notice area, the scheduler warning
+      and failure alerts (notice and notification, #107).
+- [x] `cleanup` deletes closed invitations after 90 days (#109).
+- [x] `POST /_scheduler/tick` and its footer beacon; `/cron/{token}`.
+- [x] `/health` field.
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] **Same behaviour:** the existing reminder, notification and digest
+- [x] **Same behaviour:** the existing reminder, notification and digest
       tests pass through the new jobs unchanged.
-- [ ] Runs recorded for each trigger, with the right labels and user.
-- [ ] Locks: a manual run during a cron pass → `skipped_locked` naming the
+- [x] Runs recorded for each trigger, with the right labels and user.
+- [x] Locks: a manual run during a cron pass → `skipped_locked` naming the
       other run; no double notification; an interrupted run marked after an
       hour.
-- [ ] Redaction: an SMTP password, an AI key and an `lbk_` key in a log line
+- [x] Redaction: an SMTP password, an AI key and an `lbk_` key in a log line
       are stored and printed as `••••`.
-- [ ] Output cap: 64 KB with the gap note.
-- [ ] *Run now* without JS redirects to the run page; with JS the run page
-      polls; a disconnect mid-run still finishes the run.
-- [ ] Health warning at 2 × interval; never-run wording; the cron line uses
+- [x] Output cap: 64 KB with the gap note.
+- [x] *Run now* without JS redirects to the run page; with JS the run page
+      polls; a disconnect mid-run still finishes the run (not automated:
+      PHPUnit cannot drop a connection mid-request; `ignore_user_abort`
+      is set, and the polling page finds the run either way).
+- [x] Health warning at 2 × interval; never-run wording; the cron line uses
       this install's path; the notice dismisses for 24 hours and returns.
-- [ ] Page visits: a beacon runs a due pass once under concurrency (two
+- [x] Page visits: a beacon runs a due pass once under concurrency (two
       beacons, one pass) and does nothing when not due or when off.
-- [ ] URL: a valid token runs a pass; a bad token → 404; 429 within 60
+- [x] URL: a valid token runs a pass; a bad token → 404; 429 within 60
       seconds; regenerating invalidates the old token; runs only due jobs.
-- [ ] Scheduled backups: daily and weekly timing; retention deletes only
+- [x] Scheduled backups: daily and weekly timing; retention deletes only
       `logbook-scheduled-` files.
-- [ ] Access: members get 404 for every jobs route.
-- [ ] `/health` keeps its status code when the scheduler is stale.
-- [ ] Integration suite green on every engine.
+- [x] Access: members get 404 for every jobs route.
+- [x] Failure alerts: two failures in a row → notice and one
+      notification per admin; a third failure sends nothing more; an
+      `ok` run ends the streak.
+- [x] Cleanup: invitations closed over 90 days ago are deleted, open
+      and recent ones kept; it runs hourly.
+- [x] `/health` keeps its status code when the scheduler is stale.
+- [x] Integration suite green on every engine.
 
 ---
 
 ## Acceptance criteria
 
-1. On a bare install without cron, Settings → System → Jobs says reminders
+1. On a bare install without cron, Settings → Jobs says reminders
    aren't being sent and offers three fixes. Turning on *On page visits*
    makes the warning go once a pass has run.
 2. *Run now* on `reminders` shows its output ("Synced 14 reminders; sent 2
@@ -252,9 +261,68 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5, §7.6,
 4. No secret appears in any stored or printed output.
 5. Definition of done (CLAUDE.md §11) holds.
 
+## What changed while building
+
+- **Locks:** each job's lock is `var/cache/locks/job-<name>.lock`; a pass
+  keeps the old `var/cache/scheduled-tasks.lock`, so a pass of an older
+  release mid-upgrade never overlaps one of this.
+- **Output** is every line the app logs while the job runs (a Monolog
+  handler copies them into the run), so it shows each notification sent
+  and each failure, not only the job's own lines. Lines are scrubbed to
+  valid UTF-8 and redacted; times are marked UTC, as in the log file.
+  A job's "Finished … ok" line is debug, so the app log keeps one summary
+  line per pass, as before. Summaries
+  are in the language of whoever ran the job.
+- **Run now with JS** posts in the background and polls for *this admin's*
+  new manual run, so a cron pass meanwhile is never mistaken for it.
+- **Sessions** are database rows with no lock, so nothing needs closing
+  before a long *Run now*; `ignore_user_abort` and `set_time_limit` are
+  used only where the host allows them.
+- **The page-visit beacon** re-checks that a pass is due once it holds the
+  pass lock, so two beacons make one pass.
+- **`job_runs.trigger_kind`**: `TRIGGER` is reserved in SQL.
+- **A restore** empties `job_runs`; a failure-alert marker left in settings
+  whose run is gone is ignored.
+- **The Jobs page** is under Settings → *Installation* (there is no
+  *System* section); members see neither the link nor any notice.
+- **`bin/run-job.php`** exits 0 on ok or partial, 1 on failed, 2 when the
+  job is already running and 3 on a usage error.
+- **The Docker entrypoint** creates `var/cache/locks` before handing it
+  to `www-data`, so a first run as root never leaves it root-owned.
+- **The dashboard's Twig helpers** don't build the job registry, so
+  rendering a page never builds every job.
+
 ## Open questions
 
-- **Run now for members:** admin only (drafted), or let each user run
-  `reminders` for their own vehicles?
-- **Failure notifications:** send the admin a notification when a job fails
-  twice in a row, through the configured channels?
+All decided on 2026-10-02, before the phase started:
+
+- **Run now for members** (#106). *Decided 2026-10-02:* admins only, as
+  drafted; members get 404 on every jobs route (spec §7.30 *Access*).
+- **Failure notifications** (#107). *Decided 2026-10-02:* yes. When a
+  job's last two finished runs failed, admins get a dashboard notice for
+  as long as the streak lasts, and once per streak a `job_failed`
+  notification through their own channels (spec §7.30 *Failure alerts*).
+
+Found while starting it:
+
+- **How often `cleanup` runs** (#108). The drafted "daily" would have
+  slowed clean-ups that ran every pass (unclaimed scans are promised gone
+  after 24 hours). *Decided 2026-10-02:* hourly (spec §5 *Jobs*).
+- **Invitation retention** (#109). Nothing deleted invitations, and no
+  retention was set. *Decided 2026-10-02:* closed links (used, revoked
+  or expired) are deleted 90 days after they closed; open ones never
+  (spec §7.30 *Jobs and their summaries*).
+
+Found while building it:
+
+- **Masking the compose files' default database password** (#110). The
+  shipped compose files default `DB_PASSWORD` to `logbook`, so masking it
+  turned every "logbook" in the output into `••••`. *Decided 2026-10-02:*
+  exempt it; the value is public in the repository (spec §5 *Jobs*,
+  *Redaction*).
+
+Settled while starting, without changing behaviour: the locks live in
+the cache directory (`var/` may not be writable in the Docker image),
+the Jobs page sits under Settings → *Installation* (there is no *System*
+section), and `bin/run-scheduled-tasks.php` stays quiet unless given
+`-v` with its exit codes unchanged, because cron mails any output.

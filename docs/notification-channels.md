@@ -145,3 +145,7 @@ the shipped channels are exercised with recorded transports in
 - From 2.5.0 those checks include economy drift (`drift_liquid`,
   `drift_electric`), fuel price outliers (`fuel_price`) and maintenance
   cost outliers (`maintenance_cost`), each as one line with its title.
+- From 2.11.0 admins are also told when a background job fails twice in a
+  row (Settings → Jobs), once until it works again, through their own
+  channels. The webhook's `event` is `job_failed`, with empty `items` and
+  `attention`.

@@ -99,6 +99,8 @@ final readonly class BackupRepository
         'ai_feedback',
         'ai_drafts',
         'pending_uploads',
+        // Phase 28.1: job runs are this install's history, and name its accounts.
+        'job_runs',
     ];
 
     public function __construct(private Connection $connection)
@@ -202,6 +204,8 @@ final readonly class BackupRepository
             // Every session, and every scan waiting for an entry, belonged to the replaced accounts.
             $connection->createQueryBuilder()->delete('sessions')->executeStatement();
             $connection->createQueryBuilder()->delete('pending_uploads')->executeStatement();
+            // Job runs name the replaced accounts (spec.md §6 JobRun).
+            $connection->createQueryBuilder()->delete('job_runs')->executeStatement();
 
             $later = [];
             foreach (self::TABLES as $table) {

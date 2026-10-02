@@ -76,14 +76,15 @@ proxy, make sure the web server logs/sees the real client address (Apache
 |---|---|---|
 | `MIGRATE_ON_START` | `true` | Apply pending migrations at start-up |
 | `DB_WAIT_TIMEOUT` | `60` | Seconds to wait for the database before failing |
-| `SCHEDULER_ENABLED` | `true` | Run the reminder/notification task inside the container |
-| `SCHEDULER_INTERVAL` | `900` | Seconds between scheduled-task runs |
+| `SCHEDULER_ENABLED` | `true` | Run scheduler passes inside the container |
+| `SCHEDULER_INTERVAL` | `900` | Seconds between passes (also read by the app on every install) |
 
-The container runs the scheduled task itself (as `www-data`, every
+The container runs the scheduler itself (as `www-data`, every
 `SCHEDULER_INTERVAL` seconds), so reminders go out without a host cron job.
-Each run logs a line such as `Scheduled tasks: 1 account(s) checked, 2
-reminder(s) sent, …`. To run it by hand:
+Each pass is recorded on **Settings → Jobs**, labelled *Docker*. To run one
+by hand:
 `docker compose exec app setpriv --reuid=www-data --regid=www-data --init-groups php bin/run-scheduled-tasks.php -v`.
+See [Background jobs](#background-jobs).
 
 ### Notifications
 
@@ -254,6 +255,9 @@ line to `LOG_PATH` on every run; add `-v` to print it. A lock file
 (`var/cache/scheduled-tasks.lock`) stops runs overlapping, and each reminder is sent
 only once per status, so running it more often is harmless.
 
+No cron on your host? See [Background jobs](#background-jobs): Logbook can
+run its jobs on page visits, or when an external service calls a secret URL.
+
 ### Trying it locally without a web server
 
 ```bash
@@ -376,16 +380,82 @@ offline. Other pages show an "offline" notice until the connection is back.
 
 ---
 
+## Background jobs
+
+Logbook's background work is a set of **jobs**, run in **passes**:
+
+| Job | Runs | Does |
+|---|---|---|
+| Reminders | every pass | brings reminders up to date and sends those that became due |
+| Monthly digest | every pass | each person's monthly summary, on their first pass of a month |
+| Cleanup | hourly | the AI usage log, old drafts and scans, Ask threads, invitation links closed over 90 days ago, old job runs |
+| Backup | off, daily or weekly | a backup into `BACKUP_PATH` (see [Scheduled backups](#scheduled-backups)) |
+
+**Settings → Jobs** (admins) shows when each job last ran and how, when it
+runs next, the recent runs, and **Run now** for each. A run's page has its
+full output (secrets are masked as `••••`). Locks keep a job from ever
+running twice at once, whatever starts it; a run that finds its job busy is
+recorded as *Skipped: already running*, with a link to the run holding it.
+
+From the command line, as the web server user:
+
+```bash
+php bin/run-job.php --list        # the jobs and their schedules
+php bin/run-job.php reminders     # run one now; prints its output
+```
+
+### How passes start
+
+Use any one of these, or several; they never overlap.
+
+- **Docker:** the container runs a pass every `SCHEDULER_INTERVAL` seconds.
+- **Cron** (bare PHP): see [Scheduled tasks (cron)](#scheduled-tasks-cron).
+  Settings → Jobs shows the exact line for your install.
+- **On page visits** (Settings → Jobs → *How jobs run*, off by default):
+  when a pass is due, the next signed-in page quietly asks the server to run
+  one. Nobody waits for it, but nothing runs while nobody uses Logbook, so
+  reminders may be late on quiet days.
+- **External URL** (off by default): Logbook gives you a secret address,
+  `https://your-logbook/cron/<token>`, shown once. Have a service that calls
+  a URL on a schedule (cron-job.org, Uptime Kuma, a router's scheduler) call
+  it every 15 minutes. It runs only the jobs that are due, answers `200`
+  with a one-line summary, `429` if called again within a minute, and `404`
+  for a wrong token. *Make a new URL* replaces the token at once. The URL
+  works only where `SESSION_SECRET` is unchanged.
+
+### Checking that jobs run
+
+If no pass has finished for twice `SCHEDULER_INTERVAL` (30 minutes by
+default), Settings → Jobs and the dashboard tell admins that reminders aren't
+being sent automatically, with the three ways to fix it. The dashboard notice
+can be dismissed for 24 hours. `/health` also reports the last pass (see
+[Health check](#health-check)).
+
+When a job fails twice in a row, admins see a notice on the dashboard and are
+sent one notification through their own channels (Settings → Reminders →
+Notifications) until the job works again.
+
+### Scheduled backups
+
+On the *Backup* job's row in Settings → Jobs: **Off** (the default),
+**Daily** or **Weekly**, and how many to keep (7 by default, 1–60). Files are
+written to `BACKUP_PATH` as `logbook-scheduled-YYYYMMDD-HHMMSS.zip` (UTC), and
+only files with that name are ever deleted: your own backups and pre-restore
+backups are left alone. Settings → Backup lists them to download. They are on
+the same server as the data, so still copy them somewhere else.
+
 ## Health check
 
 `GET /health` (under the base path) returns JSON and never exposes details:
 
 ```json
-{"status":"ok","checks":{"app":"ok","database":"ok"}}
+{"status":"ok","checks":{"app":"ok","database":"ok"},"scheduler":{"last_pass":"2026-10-02T09:15:00Z","stale":false}}
 ```
 
 Status **200** when everything is reachable, **503** otherwise; the cause is
 written to the log. The Docker image uses it as its `HEALTHCHECK`.
+`scheduler` gives the last scheduler pass (UTC) and whether it is overdue
+(`stale`), for monitoring; it never changes the status code.
 
 ---
 
@@ -433,6 +503,8 @@ backup from the host's cron:
 
 Old files in `BACKUP_PATH` are not deleted automatically; prune them from the
 same cron job, e.g. `find /var/www/logbook/var/backups -name '*.zip' -mtime +30 -delete`.
+Or let Logbook do both: [Scheduled backups](#scheduled-backups) keep only the
+newest few of their own files.
 
 ### What else to keep
 

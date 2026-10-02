@@ -1083,8 +1083,26 @@
         });
     }
 
+    // *On page visits* (spec.md §7.30): the page says a scheduler pass is
+    // due; one beacon asks the server to run it. The visitor never waits.
+    function sendSchedulerBeacon() {
+        var beacon = document.querySelector('[data-scheduler-beacon]');
+        if (!beacon || !navigator.sendBeacon || typeof FormData === 'undefined') {
+            return;
+        }
+        var data = new FormData();
+        data.append(beacon.getAttribute('data-csrf-name-key'), beacon.getAttribute('data-csrf-name'));
+        data.append(beacon.getAttribute('data-csrf-value-key'), beacon.getAttribute('data-csrf-value'));
+        try {
+            navigator.sendBeacon(beacon.getAttribute('data-scheduler-beacon'), data);
+        } catch (e) {
+            // Best effort: the next page tries again.
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('button[data-copy]').forEach(enhanceCopy);
+        sendSchedulerBeacon();
         registerServiceWorker();
         modal.init();
         outboxBox = document.querySelector('[data-offline-outbox]');

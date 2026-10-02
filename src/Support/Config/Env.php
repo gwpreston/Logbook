@@ -62,6 +62,16 @@ final readonly class Env
         return new self(array_merge($this->vars, $overrides));
     }
 
+    /**
+     * Every variable, by name (the job output redactor reads their values).
+     *
+     * @return array<string, string>
+     */
+    public function all(): array
+    {
+        return $this->vars;
+    }
+
     public function has(string $name): bool
     {
         return isset($this->vars[$name]) && $this->vars[$name] !== '';

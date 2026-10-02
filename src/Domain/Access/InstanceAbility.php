@@ -18,13 +18,16 @@ enum InstanceAbility: string
     case ManageUsers = 'manage_users';
     /** Settings → AI: connections, models and tasks (Phase 26.1). */
     case ManageAi = 'manage_ai';
+    /** Settings → Jobs: runs, *Run now*, triggers and scheduled backups (Phase 28.1). */
+    case RunJobs = 'run_jobs';
 
     /**
      * Whether a user without the ability gets 404 rather than 403, so the
-     * page's existence is not revealed (Settings → AI, spec.md §7.25).
+     * page's existence is not revealed (Settings → AI, spec.md §7.25, and
+     * Settings → Jobs, §7.30).
      */
     public function isHidden(): bool
     {
-        return $this === self::ManageAi;
+        return $this === self::ManageAi || $this === self::RunJobs;
     }
 }

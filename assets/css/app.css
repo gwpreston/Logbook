@@ -4693,3 +4693,70 @@ a.list__title:hover {
 .scan-offer form {
     margin: 0;
 }
+
+/* Settings → Jobs and the dashboard's admin notices (Phase 28.1, spec.md §7.30). */
+.admin-notices {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.admin-notice {
+    flex-wrap: wrap;
+}
+
+.admin-notice__text {
+    flex: 1 1 16rem;
+}
+
+.admin-notice__text a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.admin-notice__dismiss {
+    margin-left: auto;
+}
+
+.job-list__item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2) var(--space-3);
+    align-items: start;
+    padding: var(--space-3) var(--space-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.job-list__item:last-child {
+    border-bottom: 0;
+}
+
+.job-list__item .list__body {
+    display: grid;
+    gap: var(--space-1);
+}
+
+.job-list__backup {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 30rem) {
+    .job-list__item {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.job-status {
+    font-weight: 600;
+}
+
+.job-status--failed,
+.job-status--interrupted {
+    color: var(--red);
+}
+
+.job-output {
+    max-height: 32rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

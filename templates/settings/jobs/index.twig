@@ -1,0 +1,204 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Settings → Jobs (spec.md §7.30; admins only): the background jobs with
+ # Run now, the recent runs, the scheduler's health, how jobs run and
+ # scheduled backups. assets/js/jobs.js posts Run now in the background
+ # and opens the run's page; without JS the form posts and redirects there.
+ #}
+{% set active_nav = 'settings' %}
+{% set backup_errors = backup_errors ?? {} %}
+{% set backup_values = backup_values ?? {schedule: backup.schedule.value, keep: backup.keep} %}
+{% set new_token = new_token ?? null %}
+
+{% block title %}{{ 'jobs.title'|trans }} · {{ parent() }}{% endblock %}
+{% block head %}<script defer src="{{ asset('js/jobs.js') }}"></script>{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'jobs.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'jobs.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if saved ?? null %}
+            <div class="alert alert--success" role="status">{{ ui.icon('check_circle') }}<span>{{ saved|trans }}</span></div>
+        {% endif %}
+
+        {% if new_token %}
+            <section class="card" aria-labelledby="token-heading" data-new-token>
+                <h2 id="token-heading" class="card__title">{{ ui.icon('key') }}{{ 'jobs.url.new_heading'|trans }}</h2>
+                <div class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'jobs.url.shown_once'|trans }}</span></div>
+                <pre class="code-block"><code data-copy-source>{{ token_url }}</code></pre>
+            </section>
+        {% endif %}
+
+        {# Scheduler health (spec.md §7.30). #}
+        <section class="card" aria-labelledby="health-heading" data-scheduler-health>
+            <h2 id="health-heading" class="card__title">{{ ui.icon('event_repeat') }}{{ 'jobs.health.heading'|trans }}</h2>
+            {% if health.stale %}
+                <div class="alert alert--warning" role="alert" data-scheduler-stale>
+                    {{ ui.icon('warning') }}
+                    <span>
+                        {%- if health.last_pass -%}
+                            {{ 'jobs.health.stale'|trans({time: health.last_pass.startedAt|local_datetime}) }}
+                        {%- else -%}
+                            {{ 'jobs.health.never'|trans }}
+                        {%- endif -%}
+                    </span>
+                </div>
+                <p>{{ 'jobs.health.fix_intro'|trans }}</p>
+                <ol class="steps">
+                    <li>
+                        {{ 'jobs.health.fix_cron'|trans }}
+                        <pre class="code-block"><code data-cron-line>{{ health.cron_line }}</code></pre>
+                    </li>
+                    <li>{{ 'jobs.health.fix_page_visits'|trans }}</li>
+                    <li>{{ 'jobs.health.fix_url'|trans }}</li>
+                </ol>
+            {% else %}
+                <p>{{ 'jobs.health.ok'|trans({time: health.last_pass.startedAt|local_datetime, trigger: health.last_pass.trigger.labelKey()|trans}) }}</p>
+            {% endif %}
+            <p class="field__hint">{{ 'jobs.health.interval'|trans({minutes: health.minutes}) }}</p>
+        </section>
+
+        {# The jobs. #}
+        <section class="card" aria-labelledby="jobs-heading">
+            <h2 id="jobs-heading" class="card__title">{{ ui.icon('build') }}{{ 'jobs.list.heading'|trans }}</h2>
+            <ul class="list job-list">
+                {% for row in jobs %}
+                    {% set last = row.last %}
+                    <li class="job-list__item" id="job-{{ row.name }}">
+                        <div class="list__body">
+                            <span class="list__title">{{ ('jobs.job.' ~ row.name ~ '.title')|trans }}</span>
+                            <span class="list__meta">{{ ('jobs.job.' ~ row.name ~ '.description')|trans }}</span>
+                            <span class="list__meta">{{ 'jobs.list.schedule'|trans }}: {{ trans(row.schedule.key, row.schedule.params) }}</span>
+                            <span class="list__meta">
+                                {{- 'jobs.list.last'|trans }}:
+                                {% if last -%}
+                                    <a href="{{ url_for('settings.jobs.run', {run: last.id}) }}">{{ last.startedAt|local_datetime }}</a>
+                                    · {{ last.trigger.labelKey()|trans }} · {% include 'settings/jobs/_status.twig' with {run: last} only %}
+                                    {%- if last.summary %} · {{ last.summary }}{% endif %}
+                                {%- else -%}
+                                    {{ 'jobs.list.never'|trans }}
+                                {%- endif -%}
+                            </span>
+                            <span class="list__meta">
+                                {{- 'jobs.list.next'|trans }}:
+                                {% if row.off %}{{ 'jobs.list.next_off'|trans }}{% elseif row.next %}{{ row.next|local_datetime }}{% else %}{{ 'jobs.list.next_pass'|trans }}{% endif -%}
+                            </span>
+                        </div>
+                        <form method="post" action="{{ url_for('settings.jobs.run_now', {job: row.name}) }}" class="job-list__run"
+                              data-run-now data-started-url="{{ url_for('settings.jobs.started', {job: row.name}) }}" data-after="{{ newest_id }}"
+                              data-text-running="{{ 'jobs.run_now.running'|trans }}">
+                            {{ ui.csrf(csrf) }}
+                            <button type="submit" class="btn">{{ ui.icon('replay') }}<span data-run-label>{{ 'jobs.run_now.button'|trans }}</span><span class="visually-hidden"> {{ ('jobs.job.' ~ row.name ~ '.title')|trans }}</span></button>
+                        </form>
+
+                        {% if row.name == 'backup' %}
+                            {# Scheduled backups (spec.md §7.30). #}
+                            <form class="form job-list__backup" method="post" action="{{ url_for('settings.jobs.backup') }}">
+                                {{ ui.csrf(csrf) }}
+                                <fieldset class="fieldset">
+                                    <legend class="fieldset__legend">{{ 'jobs.backup.legend'|trans }}</legend>
+                                    {% if backup_errors is not empty %}
+                                        <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                                    {% endif %}
+                                    {% set options = [] %}
+                                    {% for schedule in backup.schedules %}
+                                        {% set options = options|merge([{value: schedule.value, label: schedule.labelKey()|trans}]) %}
+                                    {% endfor %}
+                                    {{ ui.select('schedule', 'jobs.backup.schedule_label'|trans, backup_values, backup_errors, options) }}
+                                    {{ ui.input('keep', 'jobs.backup.keep'|trans, backup_values, backup_errors, {type: 'number', min: backup.keep_min, max: backup.keep_max, hint: 'jobs.backup.keep_hint'|trans({min: backup.keep_min, max: backup.keep_max})}) }}
+                                    <p class="field__hint">{{ 'jobs.backup.where'|trans }}</p>
+                                    <div class="btn-row">
+                                        <button type="submit" class="btn">{{ ui.icon('save') }}{{ 'jobs.backup.save'|trans }}</button>
+                                    </div>
+                                </fieldset>
+                            </form>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        {# How jobs run (spec.md §7.30 *Triggers*). #}
+        <form class="form" method="post" action="{{ url_for('settings.jobs.triggers') }}" id="how-jobs-run">
+            {{ ui.csrf(csrf) }}
+            <fieldset class="card fieldset">
+                <legend class="card__title fieldset__legend">{{ 'jobs.triggers.legend'|trans }}</legend>
+                <p>{{ 'jobs.triggers.intro'|trans }}</p>
+                <p class="field__hint">{{ 'jobs.triggers.cron'|trans }}</p>
+                <label class="toggle">
+                    <input type="checkbox" name="page_visit" value="1"{% if triggers.page_visit %} checked{% endif %} aria-describedby="t-page-visit-hint">
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ ui.icon('public') }} {{ 'jobs.triggers.page_visit'|trans }}</span>
+                        <span class="toggle__hint" id="t-page-visit-hint">{{ 'jobs.triggers.page_visit_hint'|trans }}</span>
+                    </span>
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" name="url" value="1"{% if triggers.url %} checked{% endif %} aria-describedby="t-url-hint">
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ ui.icon('link') }} {{ 'jobs.triggers.url'|trans }}</span>
+                        <span class="toggle__hint" id="t-url-hint">{{ 'jobs.triggers.url_hint'|trans }}</span>
+                    </span>
+                </label>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'jobs.triggers.save'|trans }}</button>
+                </div>
+            </fieldset>
+        </form>
+
+        {% if triggers.url %}
+            <section class="card" aria-labelledby="url-heading">
+                <h2 id="url-heading" class="card__title">{{ ui.icon('link') }}{{ 'jobs.url.heading'|trans }}</h2>
+                <p>{{ 'jobs.url.shape'|trans }}</p>
+                <pre class="code-block"><code>{{ triggers.url_shape }}</code></pre>
+                <p class="field__hint">{{ 'jobs.url.services'|trans }}</p>
+                <p class="field__hint">{{ 'jobs.url.answers'|trans }}</p>
+                <form method="post" action="{{ url_for('settings.jobs.url_token') }}">
+                    {{ ui.csrf(csrf) }}
+                    <div class="btn-row">
+                        <button type="submit" class="btn">{{ ui.icon('sync') }}{{ (triggers.has_token ? 'jobs.url.regenerate' : 'jobs.url.create')|trans }}</button>
+                    </div>
+                    {% if triggers.has_token %}<p class="field__hint">{{ 'jobs.url.regenerate_hint'|trans }}</p>{% endif %}
+                </form>
+            </section>
+        {% endif %}
+
+        {# Recent runs, across all jobs. #}
+        <section class="card" aria-labelledby="runs-heading">
+            <h2 id="runs-heading" class="card__title">{{ ui.icon('history') }}{{ 'jobs.recent.heading'|trans }}</h2>
+            {% if recent is empty %}
+                <p class="muted">{{ 'jobs.recent.none'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for run in recent %}
+                        <li>
+                            <a class="list__item" href="{{ url_for('settings.jobs.run', {run: run.id}) }}">
+                                <span class="list__body">
+                                    <span class="list__title">{{ ('jobs.job.' ~ run.job ~ '.title')|trans }} · {% include 'settings/jobs/_status.twig' with {run: run} only %}</span>
+                                    <span class="list__meta">{{ run.startedAt|local_datetime }} · {{ run.trigger.labelKey()|trans }}{% if run.userName %} · {{ run.userName }}{% endif %}</span>
+                                    {% if run.summary %}<span class="list__meta">{{ run.summary }}</span>{% endif %}
+                                </span>
+                                {{ ui.icon('arrow_forward', 'list__trail') }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+
+        <section class="card card--quiet" aria-labelledby="jobs-cli-heading">
+            <h2 id="jobs-cli-heading" class="card__title">{{ 'jobs.cli.heading'|trans }}</h2>
+            <pre class="code-block"><code>php bin/run-job.php --list
+php bin/run-job.php reminders</code></pre>
+            <p class="field__hint">{{ 'jobs.cli.hint'|trans }}</p>
+        </section>
+    </div>
+{% endblock %}

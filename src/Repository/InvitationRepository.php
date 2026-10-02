@@ -122,6 +122,24 @@ final readonly class InvitationRepository
             ->executeStatement() === 1;
     }
 
+    /**
+     * Retention (the `cleanup` job, spec.md §7.30, #109): links that closed
+     * (used, revoked or expired) before $cutoff. Open links are never
+     * deleted.
+     *
+     * @return int links deleted
+     */
+    public function deleteClosedBefore(DateTimeImmutable $cutoff): int
+    {
+        return (int) $this->connection->createQueryBuilder()
+            ->delete(self::TABLE)
+            ->where('(used_at IS NOT NULL AND used_at < :cutoff)'
+                . ' OR (used_at IS NULL AND revoked_at IS NOT NULL AND revoked_at < :cutoff)'
+                . ' OR (used_at IS NULL AND revoked_at IS NULL AND expires_at < :cutoff)')
+            ->setParameter('cutoff', UtcDateTime::toDatabase($cutoff, $this->connection->getDatabasePlatform()))
+            ->executeStatement();
+    }
+
     public function revoke(int $id, DateTimeImmutable $now): void
     {
         $this->connection->createQueryBuilder()

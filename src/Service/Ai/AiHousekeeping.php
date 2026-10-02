@@ -45,21 +45,39 @@ final readonly class AiHousekeeping
      */
     public function run(): int
     {
+        return $this->sweep()['usage'];
+    }
+
+    /**
+     * Everything, with what went (the `cleanup` job's summary, Phase 28.1).
+     *
+     * @return array{usage: int, drafts: int, scans: int, threads: int}
+     */
+    public function sweep(): array
+    {
         $now = $this->clock->now();
         $this->busy->deleteExpired($now);
         $this->progress->deleteBefore($now->modify(sprintf('-%d minutes', self::PROGRESS_MINUTES)));
         // Drafts (Phase 26.3): unapplied ones once expired, applied ones a day after Add.
-        $this->drafts->deleteExpired($now);
+        $drafts = $this->drafts->deleteExpired($now);
         // Scanned files no entry claimed (Phase 26.4): 24 hours, then they and their files go.
+        $scans = 0;
         foreach ($this->pendingUploads->expired($now) as $upload) {
             $this->files->delete($upload->storedPath);
             $this->pendingUploads->delete($upload->id);
+            $scans++;
         }
+        $threads = 0;
         foreach ($this->threads->userIds() as $userId) {
             $days = $this->preferences->retentionDays($userId);
-            $this->threads->deleteBefore($userId, $now->modify(sprintf('-%d days', $days)));
+            $threads += $this->threads->deleteBefore($userId, $now->modify(sprintf('-%d days', $days)));
         }
 
-        return $this->requests->deleteBefore($now->modify(sprintf('-%d days', self::RETENTION_DAYS)));
+        return [
+            'usage' => $this->requests->deleteBefore($now->modify(sprintf('-%d days', self::RETENTION_DAYS))),
+            'drafts' => $drafts,
+            'scans' => $scans,
+            'threads' => $threads,
+        ];
     }
 }
