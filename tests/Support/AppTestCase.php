@@ -128,6 +128,7 @@ abstract class AppTestCase extends TestCase
         $connection = $this->connection($app);
         $tables = [
             'sessions',
+            'job_runs',
             'invitations',
             'pending_uploads',
             'ai_busy',

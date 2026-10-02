@@ -4,94 +4,69 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Scheduler;
 
-use Logbook\Domain\Feature\Feature;
-use Logbook\Repository\UserRepository;
-use Logbook\Service\Ai\AiHousekeeping;
-use Logbook\Service\Access\VehicleAccess;
-use Logbook\Service\Feature\FeatureToggles;
-use Logbook\Service\Notification\ReminderNotifier;
+use Closure;
+use Logbook\Domain\Job\JobStatus;
+use Logbook\Domain\Job\JobTrigger;
+use Logbook\Service\Jobs\CleanupJob;
+use Logbook\Service\Jobs\DigestJob;
+use Logbook\Service\Jobs\JobRunner;
+use Logbook\Service\Jobs\RemindersJob;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
- * Everything bin/run-scheduled-tasks.php does on each run (cron every 15
- * minutes, or the Docker entrypoint's loop; spec.md §10). One owner's
- * failure is logged and never stops the others. With the reminders module
- * switched off nothing is sent (spec.md §7.10). The AI usage log's
- * retention runs either way (spec.md §7.25).
+ * A scheduler pass (spec.md §5 *Jobs*, §7.30): what
+ * bin/run-scheduled-tasks.php runs (cron every 15 minutes, or the Docker
+ * entrypoint's loop; spec.md §10), and the page-visit and URL triggers.
+ * Every due job runs through JobRunner; the summary adds up their counts.
  */
 final readonly class ScheduledTasks
 {
     public function __construct(
-        private UserRepository $users,
-        private ReminderNotifier $notifier,
-        private FeatureToggles $features,
+        private JobRunner $runner,
         private LoggerInterface $logger,
-        private VehicleAccess $access,
-        private AiHousekeeping $ai,
     ) {
     }
 
-    public function run(): TaskSummary
+    /**
+     * @param (Closure(string): void)|null $sink each output line, as it comes
+     * @param (Closure(): bool)|null $stillDue checked under the pass lock
+     */
+    public function run(JobTrigger $trigger = JobTrigger::Cron, ?Closure $sink = null, ?Closure $stillDue = null): TaskSummary
     {
-        $summary = $this->reminders()->withAiRowsDeleted($this->aiHousekeeping());
+        $runs = $this->runner->pass($trigger, $sink, $stillDue);
+        if ($runs === null) {
+            return TaskSummary::locked();
+        }
+
+        $counts = ['users' => 0, 'reminders' => 0, 'digests' => 0, 'failures' => 0, 'ai' => 0, 'failed_jobs' => 0];
+        foreach ($runs as $run) {
+            $counts['failed_jobs'] += in_array($run->status, [JobStatus::Failed, JobStatus::Partial], true) ? 1 : 0;
+            $result = $run->counts;
+            match ($run->job) {
+                RemindersJob::NAME => $counts = [
+                    'users' => $result['users'] ?? 0,
+                    'reminders' => $result['sent'] ?? 0,
+                    'failures' => $counts['failures'] + ($result['failures'] ?? 0),
+                ] + $counts,
+                DigestJob::NAME => $counts = [
+                    'digests' => $result['sent'] ?? 0,
+                    'failures' => $counts['failures'] + ($result['failures'] ?? 0),
+                ] + $counts,
+                CleanupJob::NAME => $counts = ['ai' => $result['usage'] ?? 0] + $counts,
+                default => null,
+            };
+        }
+
+        $summary = new TaskSummary(
+            $counts['users'],
+            $counts['reminders'],
+            $counts['digests'],
+            $counts['failures'],
+            $counts['ai'],
+            jobsFailed: $counts['failed_jobs'],
+        );
         $this->logger->info('Scheduled tasks: {summary}', ['summary' => $summary->describe()]);
 
         return $summary;
-    }
-
-    private function reminders(): TaskSummary
-    {
-        if (!$this->features->isEnabled(Feature::Reminders)) {
-            $this->logger->info('Scheduled tasks: the reminders module is switched off; nothing to send.');
-
-            return new TaskSummary(0, 0, 0, 0);
-        }
-
-        // Each run sees the vehicles as they are now, even in a long-lived process.
-        $this->access->forget();
-        $users = 0;
-        $reminders = 0;
-        $digests = 0;
-        $failures = 0;
-
-        foreach ($this->users->listAll() as $user) {
-            if (!$user->isActive()) {
-                continue;
-            }
-            $users++;
-            try {
-                $report = $this->notifier->run($user);
-                $reminders += $report->remindersSent;
-                $digests += $report->digestSent ? 1 : 0;
-            } catch (Throwable $e) {
-                $failures++;
-                $this->logger->error('Scheduled reminders failed for user {user}: {message}', [
-                    'user' => $user->id,
-                    'message' => $e->getMessage(),
-                    'exception' => $e,
-                ]);
-            }
-        }
-
-        return new TaskSummary($users, $reminders, $digests, $failures);
-    }
-
-    /**
-     * AI usage-log retention, whatever the modules (spec.md §7.25); a
-     * failure is logged and never stops the reminders.
-     */
-    private function aiHousekeeping(): int
-    {
-        try {
-            return $this->ai->run();
-        } catch (Throwable $e) {
-            $this->logger->error('Scheduled AI housekeeping failed: {message}', [
-                'message' => $e->getMessage(),
-                'exception' => $e,
-            ]);
-
-            return 0;
-        }
     }
 }

@@ -43,6 +43,8 @@ final class RouteInventoryTest extends AppTestCase
         'login.link',
         'oidc.start',
         'oidc.callback',
+        // Phase 28.1: the scheduler's secret URL (the token is the key; 404 while off).
+        'scheduler.url',
     ];
 
     /**
@@ -51,6 +53,8 @@ final class RouteInventoryTest extends AppTestCase
      */
     private const array PERSONAL = [
         'logout',
+        // Phase 28.1: any signed-in page's scheduler beacon (404 while off).
+        'scheduler.tick',
         'api.me',
         'api.trips.claim',
         'settings.api_keys',
@@ -236,6 +240,18 @@ final class RouteInventoryTest extends AppTestCase
             'backup.download' => InstanceAbility::Backup,
             'backup.restore' => InstanceAbility::Restore,
             'backup.restore.confirm' => InstanceAbility::Restore,
+            // Phase 28.1: a scheduled backup file.
+            'backup.file' => InstanceAbility::Backup,
+            // Phase 28.1: Settings → Jobs and the dashboard's admin notices, 404 to non-admins.
+            'settings.jobs' => InstanceAbility::RunJobs,
+            'settings.jobs.triggers' => InstanceAbility::RunJobs,
+            'settings.jobs.url_token' => InstanceAbility::RunJobs,
+            'settings.jobs.backup' => InstanceAbility::RunJobs,
+            'settings.jobs.run' => InstanceAbility::RunJobs,
+            'settings.jobs.run.status' => InstanceAbility::RunJobs,
+            'settings.jobs.run_now' => InstanceAbility::RunJobs,
+            'settings.jobs.started' => InstanceAbility::RunJobs,
+            'notices.dismiss' => InstanceAbility::RunJobs,
             'settings.users' => InstanceAbility::ManageUsers,
             'settings.users.change' => InstanceAbility::ManageUsers,
             'settings.users.delete' => InstanceAbility::ManageUsers,

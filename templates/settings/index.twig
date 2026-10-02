@@ -332,6 +332,18 @@
                         {{ ui.icon('arrow_forward', 'list__trail') }}
                     </a>
                 </li>
+                {% if can_instance('run_jobs') %}
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.jobs') }}">
+                        <span class="list__icon">{{ ui.icon('event_repeat') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'jobs.title'|trans }}</span>
+                            <span class="list__meta">{{ 'jobs.settings_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                {% endif %}
                 <li>
                     <a class="list__item" href="{{ url_for('diagnostics.deep-link') }}">
                         <span class="list__icon">{{ ui.icon('speed') }}</span>

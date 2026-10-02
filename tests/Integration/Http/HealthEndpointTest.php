@@ -17,7 +17,13 @@ final class HealthEndpointTest extends AppTestCase
         self::assertSame('application/json', $response->getHeaderLine('Content-Type'));
         self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
         self::assertSame(
-            ['status' => 'ok', 'version' => Kernel::version(), 'checks' => ['app' => 'ok', 'database' => 'ok']],
+            [
+                'status' => 'ok',
+                'version' => Kernel::version(),
+                'checks' => ['app' => 'ok', 'database' => 'ok'],
+                // Phase 28.1: never run yet, so stale, and still 200.
+                'scheduler' => ['last_pass' => null, 'stale' => true],
+            ],
             json_decode(self::body($response), true, 512, JSON_THROW_ON_ERROR),
         );
     }

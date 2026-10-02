@@ -6,6 +6,7 @@ namespace Logbook\Service\Notification;
 
 use DateTimeImmutable;
 use IntlDateFormatter;
+use Logbook\Domain\Job\JobRun;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Service\Attention\AttentionItem;
@@ -125,6 +126,26 @@ final readonly class NotificationComposer
             title: $this->translator->trans('notifications.test.title'),
             message: $this->translator->trans('notifications.test.message', ['name' => $user->displayName]),
             url: $this->urls->route('reminders.index'),
+        ));
+    }
+
+    /**
+     * A job failed twice in a row (spec.md §7.30 *Failure alerts*), to an
+     * admin, with the run's summary and a link to it.
+     */
+    public function jobFailed(User $user, JobRun $run): Notification
+    {
+        return $this->scope->run($user, fn (): Notification => new Notification(
+            kind: NotificationKind::JobFailed,
+            title: $this->translator->trans('notifications.job_failed.title', [
+                'job' => $this->translator->trans('jobs.job.' . $run->job . '.title'),
+            ]),
+            message: $this->translator->trans('notifications.job_failed.message', [
+                'job' => $this->translator->trans('jobs.job.' . $run->job . '.title'),
+                'summary' => $run->summary ?? '',
+            ]),
+            url: $this->urls->route('settings.jobs.run', ['run' => (string) $run->id]),
+            urgent: true,
         ));
     }
 

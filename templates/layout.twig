@@ -188,6 +188,12 @@
             <footer class="app-footer">
                 <p>{{ 'footer.self_hosted'|trans }}</p>
             </footer>
+            {% if scheduler_beacon() and csrf %}
+                {# *On page visits* (spec.md §7.30): js/app.js sends one beacon; the visitor never waits. #}
+                <div hidden data-scheduler-beacon="{{ url_for('scheduler.tick') }}"
+                     data-csrf-name-key="{{ csrf.name_key }}" data-csrf-name="{{ csrf.name }}"
+                     data-csrf-value-key="{{ csrf.value_key }}" data-csrf-value="{{ csrf.value }}"></div>
+            {% endif %}
         </div>
     </div>
 

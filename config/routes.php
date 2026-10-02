@@ -2,6 +2,18 @@
 
 declare(strict_types=1);
 
+use Logbook\Action\Backup\DownloadScheduledBackupAction;
+use Logbook\Action\Notice\DismissNoticeAction;
+use Logbook\Action\Scheduler\SchedulerTickAction;
+use Logbook\Action\Scheduler\SchedulerUrlAction;
+use Logbook\Action\Settings\Jobs\JobBackupScheduleAction;
+use Logbook\Action\Settings\Jobs\JobRunAction;
+use Logbook\Action\Settings\Jobs\JobRunStatusAction;
+use Logbook\Action\Settings\Jobs\JobsAction;
+use Logbook\Action\Settings\Jobs\JobStartedAction;
+use Logbook\Action\Settings\Jobs\JobTriggersAction;
+use Logbook\Action\Settings\Jobs\JobUrlTokenAction;
+use Logbook\Action\Settings\Jobs\RunJobAction;
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
@@ -243,6 +255,10 @@ return static function (App $app): void {
     $app->get('/calendar/{token:[0-9]+-[a-f0-9]{64}}.ics', CalendarFeedAction::class)
         ->setName('calendar.feed')
         ->add($module(Feature::Reminders));
+
+    // *External URL* (spec.md §7.30): the token is the authentication; no
+    // session. 404 while the trigger is off or for a wrong token.
+    $app->map(['GET', 'POST'], '/cron/{token:[a-f0-9]{64}}', SchedulerUrlAction::class)->setName('scheduler.url');
 
     // REST API (spec.md §7.20): outside the session and CSRF groups; the
     // key is the only way in, and a session user is never used. Problem
@@ -664,6 +680,35 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/backup/restore/{token:[a-f0-9]{32}}', ConfirmRestoreAction::class)
             ->setName('backup.restore.confirm')
             ->setArgument($instance, InstanceAbility::Restore->value);
+        // A scheduled backup from BACKUP_PATH (spec.md §7.13, §7.30).
+        $scheduled = '{name:logbook-scheduled-[0-9]{8}-[0-9]{6}\\.zip}';
+        $group->get('/settings/backup/files/' . $scheduled, DownloadScheduledBackupAction::class)
+            ->setName('backup.file')
+            ->setArgument($instance, InstanceAbility::Backup->value);
+        // Settings → Jobs (spec.md §7.30): admins only, and 404 (not 403) to anyone else.
+        $group->group('/settings/jobs', function (Group $jobs) use ($instance): void {
+            $run = InstanceAbility::RunJobs->value;
+            $jobs->get('', JobsAction::class)->setName('settings.jobs')->setArgument($instance, $run);
+            $jobs->post('/triggers', JobTriggersAction::class)->setName('settings.jobs.triggers')
+                ->setArgument($instance, $run);
+            $jobs->post('/url-token', JobUrlTokenAction::class)->setName('settings.jobs.url_token')
+                ->setArgument($instance, $run);
+            $jobs->post('/backup', JobBackupScheduleAction::class)->setName('settings.jobs.backup')
+                ->setArgument($instance, $run);
+            $jobs->get('/runs/{run:[0-9]+}', JobRunAction::class)->setName('settings.jobs.run')
+                ->setArgument($instance, $run);
+            $jobs->get('/runs/{run:[0-9]+}/status', JobRunStatusAction::class)->setName('settings.jobs.run.status')
+                ->setArgument($instance, $run);
+            $jobs->post('/{job:[a-z_]+}/run', RunJobAction::class)->setName('settings.jobs.run_now')
+                ->setArgument($instance, $run);
+            $jobs->get('/{job:[a-z_]+}/started', JobStartedAction::class)->setName('settings.jobs.started')
+                ->setArgument($instance, $run);
+        });
+        // The dashboard's admin notices (spec.md §7.30): Dismiss, for 24 hours.
+        $group->post('/notices/{key:[0-9A-Za-z_.\\-]+}/dismiss', DismissNoticeAction::class)->setName('notices.dismiss')
+            ->setArgument($instance, InstanceAbility::RunJobs->value);
+        // *On page visits* (spec.md §7.30): any signed-in page's beacon; 404 while off.
+        $group->post('/_scheduler/tick', SchedulerTickAction::class)->setName('scheduler.tick');
         // Users and their one-time links (spec.md §7.9): admins only.
         $group->map(['GET', 'POST'], '/settings/users', UsersAction::class)->setName('settings.users')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);

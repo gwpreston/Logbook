@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Backup;
 
 use Logbook\Service\Backup\BackupService;
+use Logbook\Service\Jobs\ScheduledBackups;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
@@ -21,6 +22,7 @@ final readonly class BackupPage
     public function __construct(
         private View $view,
         private AppSettings $settings,
+        private ScheduledBackups $scheduled,
     ) {
     }
 
@@ -38,6 +40,7 @@ final readonly class BackupPage
             'error' => $error,
             'max_restore_mb' => $this->settings->maxRestoreMb,
             'backup_path' => $this->settings->backupPath,
+            'scheduled' => $this->scheduled->list(),
         ], $status);
     }
 }

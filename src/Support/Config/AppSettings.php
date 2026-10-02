@@ -57,6 +57,10 @@ final readonly class AppSettings
         public AiConfig $ai = new AiConfig(),
         /** The MCP server (spec.md §7.28, Phase 26.5); routed only while the API is on too. */
         public bool $mcpEnabled = true,
+        /** Seconds between scheduler passes (Phase 28.1, §7.30). */
+        public int $schedulerInterval = 900,
+        /** Seconds a *Run now* may take (Phase 28.1). */
+        public int $jobTimeLimit = 300,
     ) {
     }
 
@@ -102,6 +106,8 @@ final readonly class AppSettings
             proxy: ProxyAuthConfig::fromEnv($env),
             ai: AiConfig::fromEnv($env),
             mcpEnabled: $env->bool('MCP_ENABLED', true),
+            schedulerInterval: max(60, $env->int('SCHEDULER_INTERVAL', 900)),
+            jobTimeLimit: max(30, $env->int('JOB_TIME_LIMIT', 300)),
         );
     }
 

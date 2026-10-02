@@ -324,8 +324,9 @@ disagree):
     (any status but `skipped_locked`) started at least its interval ago.
   - **Locks:** one `flock` file per job, `{cache dir}/locks/job-<name>.lock`
     (the cache directory, because `var/` itself may not be writable, as
-    for the old task lock), and `pass.lock` for a scheduler pass, which
-    replaces `scheduled-tasks.lock`. A run that finds its job locked is
+    for the old task lock), and the old task's `{cache dir}/scheduled-tasks.lock`
+    for a scheduler pass, so a pass of an older release, mid-upgrade,
+    never overlaps one of this. A run that finds its job locked is
     recorded as `skipped_locked`, naming the `running` row holding it. A
     `running` row older than an hour whose lock is free is marked
     `interrupted` before the next run of that job.
