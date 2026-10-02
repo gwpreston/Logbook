@@ -1,0 +1,69 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Merge, step 2 (spec.md §7.33 *Merge*): which station to keep and, where
+ # both have a detail, whose to keep. Every fill-up and favourite moves to
+ # the kept station; the other points at it.
+ #}
+{% set active_nav = 'stations' %}
+
+{% block title %}{{ 'stations.merge.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('stations.merge', {station: station.id}) }}">{{ ui.icon('chevron_left') }}{{ 'stations.merge.title'|trans }}</a>
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'stations.merge.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'stations.merge.lead'|trans({keep: keep.data.name, away: away.data.name}) }}</p>
+            </div>
+        </header>
+
+        <form class="form" method="get" action="{{ url_for('stations.merge', {station: station.id}) }}">
+            <input type="hidden" name="with" value="{{ other.id }}">
+            <fieldset class="card fieldset">
+                <legend class="card__title fieldset__legend">{{ 'stations.merge.keep'|trans }}</legend>
+                <div class="chip-row">
+                    <label class="chip"><input type="radio" name="keep" value="this"{% if not keep_other %} checked{% endif %}><span>{{ station.data.name }}</span></label>
+                    <label class="chip"><input type="radio" name="keep" value="other"{% if keep_other %} checked{% endif %}><span>{{ other.data.name }}</span></label>
+                </div>
+                <div class="btn-row"><button type="submit" class="btn">{{ 'stations.merge.switch'|trans }}</button></div>
+            </fieldset>
+        </form>
+
+        <form class="form" method="post" action="{{ url_for('stations.merge', {station: station.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <input type="hidden" name="with" value="{{ other.id }}">
+            <input type="hidden" name="keep" value="{{ keep_other ? 'other' : 'this' }}">
+            <input type="hidden" name="confirm" value="1">
+            <section class="card" aria-labelledby="merge-details">
+                <h2 id="merge-details" class="card__title">{{ 'stations.merge.details'|trans }}</h2>
+                <p class="field__hint">{{ 'stations.merge.details_hint'|trans }}</p>
+                {% for field in fields %}
+                    {% set a = keep_values[field] %}
+                    {% set b = away_values[field] %}
+                    {% if differs[field] %}
+                        <fieldset class="field fieldset">
+                            <legend class="field__label">{{ ('stations.field.' ~ field)|trans }}</legend>
+                            <div class="chip-row">
+                                <label class="chip"><input type="radio" name="field_{{ field }}" value="keep"{% if choices[field] == 'keep' %} checked{% endif %}><span>{{ a }}</span></label>
+                                <label class="chip"><input type="radio" name="field_{{ field }}" value="away"{% if choices[field] == 'away' %} checked{% endif %}><span>{{ b }}</span></label>
+                            </div>
+                        </fieldset>
+                    {% elseif a is not null or b is not null %}
+                        <div class="field">
+                            <p class="field__label">{{ ('stations.field.' ~ field)|trans }}</p>
+                            <p>{{ a ?? b }}</p>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </section>
+            <p class="muted">{{ 'stations.merge.warning'|trans({away: away.data.name, keep: keep.data.name}) }}</p>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('merge') }}{{ 'stations.merge.submit'|trans }}</button>
+                <a class="btn btn--lg" href="{{ url_for('stations.show', {station: station.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

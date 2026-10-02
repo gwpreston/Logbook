@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.17.0",
+    "version": "1.18.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -1501,6 +1501,97 @@
           }
         }
       }
+    },
+    "/stations": {
+      "get": {
+        "operationId": "listStations",
+        "summary": "Stations, favourites first",
+        "description": "Every station (shared by the install), favourites first, then by the key user's last visit, with what they paid at each. Needs the stations module (and fuel).",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Search by name, brand or postcode."
+          },
+          {
+            "name": "favourites",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Only the key user's favourites."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/stations/{station}": {
+      "get": {
+        "operationId": "showStation",
+        "summary": "One station",
+        "description": "A station and what the key user paid there. A merged station's id answers with the station it became.",
+        "parameters": [
+          {
+            "name": "station",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Station"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2113,6 +2204,7 @@
           "is_partial",
           "is_missed_previous",
           "station",
+          "station_id",
           "notes",
           "economy",
           "economy_check",
@@ -2208,6 +2300,13 @@
               "string",
               "null"
             ]
+          },
+          "station_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The linked station (GET /stations/{id}); null when none. station holds its name."
           },
           "notes": {
             "type": [
@@ -3482,7 +3581,8 @@
               "tyres",
               "trips",
               "incidents",
-              "finance"
+              "finance",
+              "stations"
             ],
             "properties": {
               "fuel": {
@@ -3510,6 +3610,9 @@
                 "type": "boolean"
               },
               "finance": {
+                "type": "boolean"
+              },
+              "stations": {
                 "type": "boolean"
               }
             }
@@ -3631,7 +3734,13 @@
           },
           "station": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "A station name: linked to the station with that name (ignoring case and spacing), or a new station. Not with station_id."
+          },
+          "station_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "A station from GET /stations. Not with station. Ignored for home charging."
           },
           "notes": {
             "type": "string",
@@ -5975,6 +6084,191 @@
               }
             ],
             "description": "The active agreement, else the latest ended one; null when the vehicle has none."
+          }
+        }
+      },
+      "StationPaid": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fuel",
+          "grade",
+          "currency",
+          "visits",
+          "volume",
+          "spend",
+          "average_price",
+          "cheapest_price",
+          "cheapest_at",
+          "last_price",
+          "last_at"
+        ],
+        "properties": {
+          "fuel": {
+            "type": "string",
+            "enum": [
+              "petrol",
+              "diesel",
+              "lpg",
+              "ev",
+              "other"
+            ]
+          },
+          "grade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A grade code (as on fill-ups), or null when not recorded."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "visits": {
+            "type": "integer"
+          },
+          "volume": {
+            "$ref": "#/components/schemas/Decimal",
+            "description": "Litres or kWh, over the fill-ups whose amounts the key user may see."
+          },
+          "spend": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "average_price": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Per litre (kWh), weighted by volume."
+          },
+          "cheapest_price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "cheapest_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "last_price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "last_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          }
+        }
+      },
+      "Station": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A station, shared by everyone on the install, with what the key user paid there over the vehicles they can see. Never their places.",
+        "required": [
+          "id",
+          "name",
+          "brand",
+          "address",
+          "postcode",
+          "country",
+          "latitude",
+          "longitude",
+          "grades",
+          "opening_hours",
+          "notes",
+          "favourite",
+          "visits",
+          "last_visit",
+          "paid",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 3166-1 alpha-2."
+          },
+          "latitude": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "longitude": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "grades": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Grade codes sold."
+          },
+          "opening_hours": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "favourite": {
+            "type": "boolean"
+          },
+          "visits": {
+            "type": "integer"
+          },
+          "last_visit": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "paid": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationPaid"
+            },
+            "description": "Per fuel, grade and currency, most volume first."
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "StationList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Station"
+            }
           }
         }
       }

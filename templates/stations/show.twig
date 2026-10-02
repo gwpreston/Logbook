@@ -1,0 +1,129 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/stations.twig' as st %}
+
+{#
+ # One station (spec.md §7.33 *Station page*): details, what the user paid
+ # there per grade and over time (the chart, with the table beside it), and
+ # their fill-ups there, newest first. Only the vehicles they can see count,
+ # and amounts only where they may see them.
+ #}
+{% set active_nav = 'stations' %}
+{% set data = station.data %}
+
+{% block title %}{{ data.name }} · {{ 'stations.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('stations.index') }}">{{ ui.icon('chevron_left') }}{{ 'stations.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                {% set meta = st.meta(station) %}
+                {% if meta|trim %}<p class="page-header__eyebrow">{{ meta }}</p>{% endif %}
+                <h1 class="page-header__title">{{ data.name }}</h1>
+                {% if distances is not empty %}<p class="page-header__lead">{{ st.distances(distances) }}</p>{% endif %}
+            </div>
+            <div class="btn-row">
+                <form method="post" action="{{ url_for('stations.favourite', {station: station.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <input type="hidden" name="favourite" value="{{ favourite ? '0' : '1' }}">
+                    <button type="submit" class="btn" aria-pressed="{{ favourite ? 'true' : 'false' }}">{{ ui.icon(favourite ? 'star' : 'star_outline') }}{{ (favourite ? 'stations.unfavourite' : 'stations.make_favourite')|trans }}</button>
+                </form>
+                {{ st.maps_link(station) }}
+                {% if can_edit %}
+                    <a class="btn" href="{{ url_for('stations.edit', {station: station.id}) }}">{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                    <a class="btn" href="{{ url_for('stations.merge', {station: station.id}) }}">{{ ui.icon('merge') }}{{ 'stations.merge.button'|trans }}</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <section class="card" aria-labelledby="station-details">
+            <h2 id="station-details" class="card__title">{{ 'stations.details'|trans }}</h2>
+            <dl class="details">
+                {% if data.address %}<div><dt>{{ 'stations.field.address'|trans }}</dt><dd>{{ data.address }}</dd></div>{% endif %}
+                {% if data.postcode %}<div><dt>{{ 'stations.field.postcode'|trans }}</dt><dd>{{ data.postcode }}</dd></div>{% endif %}
+                {% if data.country %}<div><dt>{{ 'stations.field.country'|trans }}</dt><dd>{{ data.country }}</dd></div>{% endif %}
+                {% if data.hasPosition() %}<div><dt>{{ 'stations.field.position'|trans }}</dt><dd class="tabular">{{ data.latitude }}, {{ data.longitude }}</dd></div>{% endif %}
+                {% if data.grades is not empty %}<div><dt>{{ 'stations.field.grades'|trans }}</dt><dd>{{ data.grades|map(g => g.shortLabelKey()|trans)|join(', ') }}</dd></div>{% endif %}
+                {% if data.openingHours %}<div><dt>{{ 'stations.field.opening_hours'|trans }}</dt><dd>{{ data.openingHours }}</dd></div>{% endif %}
+                {% if data.notes %}<div><dt>{{ 'stations.field.notes'|trans }}</dt><dd>{{ data.notes|nl2br }}</dd></div>{% endif %}
+            </dl>
+            {% if not data.address and not data.postcode and not data.hasPosition() and data.grades is empty %}
+                <p class="muted">{{ 'stations.no_details'|trans }}</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="station-paid">
+            <h2 id="station-paid" class="card__title">{{ 'stations.paid.title'|trans }}</h2>
+            {% if summary is null %}
+                <p class="muted">{{ 'stations.paid.none'|trans }}</p>
+            {% else %}
+                <p class="muted">{{ 'stations.visits'|trans({count: summary.visits}) }} · {{ 'stations.last_visit'|trans({date: summary.lastVisit|instant_date}) }}</p>
+                {% set priced = summary.grades|filter(g => g.averagePrice is not null) %}
+                {% if priced is not empty %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <caption class="visually-hidden">{{ 'stations.paid.caption'|trans }}</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ 'stations.paid.grade'|trans }}</th>
+                                    <th scope="col" class="table__num">{{ 'stations.paid.visits'|trans }}</th>
+                                    <th scope="col" class="table__num">{{ 'stations.paid.spend'|trans }}</th>
+                                    <th scope="col" class="table__num">{{ 'stations.paid.average'|trans }}</th>
+                                    <th scope="col" class="table__num">{{ 'stations.paid.cheapest'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stats in priced %}
+                                    {% set electric = stats.fuel.isElectric() %}
+                                    <tr>
+                                        <th scope="row">{{ st.grade_label(stats) }}</th>
+                                        <td class="table__num tabular">{{ stats.visits }}</td>
+                                        <td class="table__num tabular">{{ stats.spend|money(stats.currency) }}</td>
+                                        <td class="table__num tabular">{{ stats.averagePrice|unit_price(stats.currency, electric, true) }}</td>
+                                        <td class="table__num tabular">{{ stats.cheapestPrice|unit_price(stats.currency, electric, true) }}<span class="muted"> · {{ stats.cheapestOn|instant_date }}</span></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="field__hint">{{ 'stations.paid.hint'|trans }}</p>
+                {% endif %}
+                {% for kind, chart in charts %}
+                    {% if chart.pointCount() > 1 %}
+                        {{ ui.chart(chart, ('stations.chart.' ~ kind)|trans) }}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="station-fills">
+            <h2 id="station-fills" class="card__title">{{ 'stations.fills.title'|trans }}</h2>
+            {% if fills is empty %}
+                <p class="muted">{{ 'stations.fills.none'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for visit in fills %}
+                        {% set entry = visit.entry %}
+                        {% set vehicle = vehicles[entry.vehicleId] %}
+                        {% set electric = entry.data.fuel.isElectric() %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
+                            <span class="list__body">
+                                <span class="list__title"><a href="{{ url_for('fuel.index', {id: vehicle.id}) }}">{{ entry.data.filledAt|instant_date }}</a></span>
+                                <span class="list__meta">
+                                    {{- vehicle.name() }} · {{ (entry.data.grade ? entry.data.grade.shortLabelKey() : 'fuel.fuel.' ~ entry.data.fuel.value)|trans -}}
+                                    {%- if visit.amountVisible %} · {{ entry.data.pricePerUnit|unit_price(visit.currency, electric) }}{% endif -%}
+                                </span>
+                            </span>
+                            {% if visit.amountVisible %}
+                                <span class="list__end"><span class="list__amount tabular">{{ entry.data.totalCost|money(visit.currency) }}</span></span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{#
+ # Stations (spec.md §7.33): shared bits of the stations pages.
+ #}
+
+{# "2.4 mi from Home · 8.1 mi from Work, in a straight line". #}
+{% macro distances(distances) -%}
+    {%- if distances is not empty -%}
+        {%- for row in distances -%}
+            {{ 'stations.distance_from'|trans({distance: row.km|distance(1), place: row.place.data.name}) }}{% if not loop.last %} · {% endif %}
+        {%- endfor %} <span class="muted">{{ 'stations.straight_line'|trans }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{# Name, then brand and postcode. #}
+{% macro meta(station) -%}
+    {%- set parts = [station.data.brand, station.data.postcode]|filter(p => p) -%}
+    {{- parts|join(' · ') -}}
+{%- endmacro %}
+
+{# *Open in maps*: a geo: link on phones, OpenStreetMap elsewhere (js/app.js
+   swaps the href on touch devices); nothing is loaded until clicked. #}
+{% macro maps_link(station) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {%- if station.data.hasPosition() -%}
+        {%- set lat = station.data.latitude -%}
+        {%- set lon = station.data.longitude -%}
+        <a class="btn btn--ghost" href="https://www.openstreetmap.org/?mlat={{ lat }}&amp;mlon={{ lon }}#map=17/{{ lat }}/{{ lon }}"
+           data-geo-href="geo:{{ lat }},{{ lon }}?q={{ lat }},{{ lon }}({{ station.data.name|url_encode }})"
+           rel="noopener noreferrer" target="_blank">{{ ui.icon('map') }}{{ 'stations.open_in_maps'|trans }}</a>
+    {%- endif -%}
+{%- endmacro %}
+
+{# One grade's figures as a table row. #}
+{% macro grade_label(stats) -%}
+    {{- (stats.grade ? stats.grade.shortLabelKey() : 'fuel.fuel.' ~ stats.fuel.value)|trans -}}
+{%- endmacro %}
+
+{# *Use my current location* for a pair of coordinate fields (js/app.js;
+   hidden without JS or geolocation). The browser asks first; nothing is
+   stored unless the form is saved. #}
+{% macro locate_button(lat_id, lon_id) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <div class="field locate" data-locate data-lat="{{ lat_id }}" data-lon="{{ lon_id }}" hidden
+         data-finding="{{ 'stations.locate_finding'|trans }}" data-found="{{ 'stations.locate_found'|trans }}" data-failed="{{ 'stations.locate_failed'|trans }}">
+        <button type="button" class="btn" data-locate-button>{{ ui.icon('my_location') }}{{ 'stations.locate'|trans }}</button>
+        <p class="field__hint">{{ 'stations.locate_hint'|trans }}</p>
+        <p class="field__hint" data-locate-status aria-live="polite"></p>
+    </div>
+{%- endmacro %}

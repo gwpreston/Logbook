@@ -45,6 +45,7 @@ use Logbook\Service\Import\DuplicateKey;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
+use Logbook\Service\Station\StationService;
 use Logbook\Service\Trip\SavedJourneyService;
 use Logbook\Service\Trip\TripForm;
 use Logbook\Service\Trip\TripService;
@@ -87,6 +88,7 @@ final readonly class ApiWriter
         private SavedJourneyService $journeys,
         private ValidationProblem $validation,
         private ClockInterface $clock,
+        private StationService $stations,
     ) {
     }
 
@@ -107,6 +109,11 @@ final readonly class ApiWriter
         $data = FuelEntryForm::parse($mapped['input'], $mapped['preferences'], $this->vehicles->currencyFor($user, $vehicle));
         if ($data instanceof ValidationErrors) {
             throw $this->validation->of(JsonInput::renamed($data, JsonInput::FUEL_FIELDS));
+        }
+        if ($data->stationId !== null && $this->stations->enabled() && $this->stations->resolve($data->stationId) === null) {
+            $errors = new ValidationErrors();
+            $errors->add('station_id', 'api.validation.station_unknown');
+            throw $this->validation->of($errors);
         }
 
         $existing = $this->existingFill($vehicle, $data);

@@ -1,0 +1,56 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/stations.twig' as st %}
+
+{#
+ # Stations that may be one forecourt (spec.md §7.33 *Duplicates*): the same
+ # brand and name apart from it, names one edit apart, or within 150 m.
+ #}
+{% set active_nav = 'stations' %}
+
+{% block title %}{{ 'stations.duplicates.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('stations.index') }}">{{ ui.icon('chevron_left') }}{{ 'stations.title'|trans }}</a>
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'stations.duplicates.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'stations.duplicates.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <section class="card">
+            {% if pairs is empty %}
+                <div class="empty">
+                    {{ ui.icon('check_circle') }}
+                    <p class="empty__title">{{ 'stations.duplicates.none'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for row in pairs %}
+                        {% set pair = row.pair %}
+                        <li class="list__item">
+                            <span class="list__icon">{{ ui.icon('merge') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">
+                                    <a href="{{ url_for('stations.show', {station: pair.first.id}) }}">{{ pair.first.data.name }}</a>
+                                    · <a href="{{ url_for('stations.show', {station: pair.second.id}) }}">{{ pair.second.data.name }}</a>
+                                </span>
+                                <span class="list__meta">
+                                    {{- pair.reasons|map(r => ('stations.duplicates.reason.' ~ r.value)|trans)|join(' · ') -}}
+                                    {%- if pair.km is not null %} · {{ 'stations.duplicates.apart'|trans({distance: (pair.km * 1000)|round|number}) }}{% endif -%}
+                                </span>
+                            </span>
+                            {% if row.merge_first and row.merge_second %}
+                                <span class="list__end">
+                                    <a class="btn" href="{{ url_for('stations.merge', {station: pair.first.id}, {with: pair.second.id}) }}">{{ 'stations.merge.button'|trans }}</a>
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

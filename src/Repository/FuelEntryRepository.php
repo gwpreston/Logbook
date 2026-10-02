@@ -76,6 +76,30 @@ final readonly class FuelEntryRepository
         return array_values(array_map($this->hydrate(...), $rows));
     }
 
+    /**
+     * The fill-ups of several vehicles linked to a station (Phase 30.1,
+     * spec.md §7.33): to any station, or to the given ones.
+     *
+     * @param list<int> $vehicleIds
+     * @param list<int>|null $stationIds null = any station
+     * @return list<FuelEntry> in the order they happened
+     */
+    public function listLinked(array $vehicleIds, ?array $stationIds = null): array
+    {
+        if ($vehicleIds === [] || $stationIds === []) {
+            return [];
+        }
+        $query = $this->select()
+            ->where('vehicle_id IN (:vehicles)', 'station_id IS NOT NULL')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER);
+        if ($stationIds !== null) {
+            $query->andWhere('station_id IN (:stations)')->setParameter('stations', $stationIds, ArrayParameterType::INTEGER);
+        }
+        $rows = $query->orderBy('filled_at')->addOrderBy('odometer_km')->addOrderBy('id')->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
     public function find(int $vehicleId, int $id): ?FuelEntry
     {
         $row = $this->select()
@@ -108,6 +132,20 @@ final readonly class FuelEntryRepository
             ['updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform())] + $this->dataColumns($data),
             ['vehicle_id' => $vehicleId, 'id' => $id],
             ['vehicle_id' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER] + self::types(),
+        );
+    }
+
+    /**
+     * Keep the station text of linked fill-ups the station's name (Phase
+     * 30.1): after a rename or a merge. Leaves updated_at alone.
+     */
+    public function renameStation(int $stationId, string $name): void
+    {
+        $this->connection->update(
+            self::TABLE,
+            ['station' => $name],
+            ['station_id' => $stationId],
+            ['station_id' => ParameterType::INTEGER],
         );
     }
 
@@ -150,6 +188,7 @@ final readonly class FuelEntryRepository
                 'is_partial',
                 'is_missed_previous',
                 'station',
+                'station_id',
                 'notes',
                 'economy_confirmed',
                 'created_at',
@@ -160,7 +199,7 @@ final readonly class FuelEntryRepository
     }
 
     /**
-     * @return array<string, bool|string|null>
+     * @return array<string, bool|int|string|null>
      */
     private function dataColumns(FuelEntryData $data): array
     {
@@ -175,6 +214,7 @@ final readonly class FuelEntryRepository
             'is_partial' => $data->isPartial,
             'is_missed_previous' => $data->isMissedPrevious,
             'station' => $data->station,
+            'station_id' => $data->stationId,
             'notes' => $data->notes,
         ];
     }
@@ -211,6 +251,7 @@ final readonly class FuelEntryRepository
                 station: Row::nullableString($row, 'station'),
                 notes: Row::nullableString($row, 'notes'),
                 grade: $this->grades->read(Row::nullableString($row, 'grade'), $fuel, self::TABLE, $id),
+                stationId: Row::nullableInt($row, 'station_id'),
             ),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),

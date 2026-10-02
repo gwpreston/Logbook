@@ -5630,7 +5630,10 @@ request to any outside service.
   for "Where do I usually fill up?" and "What's the cheapest I've paid at
   Tesco?".
 - **Backups and export** (§7.13): backups carry stations, favourites and
-  places; a restore of an earlier backup leaves the new tables empty.
+  places, so the schema version moves and an earlier backup is restored
+  with its own version, then upgraded, as always. `bin/export-user.php`
+  carries the user's places and favourites and the stations their
+  vehicles' fill-ups use (merged ones too, so the links resolve).
 
 
 ---

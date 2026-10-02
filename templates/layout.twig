@@ -6,7 +6,7 @@
  #
  # Primary navigation entries: route name, translation key, icon, and the
  # `active_nav` value that marks it current. Reminders and Reports are left
- # out when their module is switched off (spec.md §7.10). The bottom bar
+ # (and Stations) out when their module is switched off (spec.md §7.10). The bottom bar
  # shows the first four entries with the "+" (the Log entry chooser) in the
  # middle, as in the design; Settings is then reached from the top bar.
  #
@@ -31,6 +31,9 @@
 {% endif %}
 {% if signed_in and feature_enabled('reports') %}
     {% set nav_items = nav_items|merge([{route: 'reports.index', label: 'nav.reports', icon: 'bar_chart', key: 'reports'}]) %}
+{% endif %}
+{% if signed_in and feature_enabled('stations') %}
+    {% set nav_items = nav_items|merge([{route: 'stations.index', label: 'nav.stations', icon: 'local_gas_station', key: 'stations'}]) %}
 {% endif %}
 {% set nav_items = nav_items|merge([{route: 'settings', label: 'nav.settings', icon: 'settings', key: 'settings'}]) %}
 {% set bottom_items = nav_items|slice(0, 4) %}
@@ -62,6 +65,7 @@
     <script defer src="{{ asset('js/file-drop.js') }}"></script>
     <script defer src="{{ asset('js/first-inspection.js') }}"></script>
     <script defer src="{{ asset('js/trip-form.js') }}"></script>
+    <script defer src="{{ asset('js/stations.js') }}"></script>
     <script defer src="{{ asset('js/app.js') }}"></script>
     <script defer src="{{ asset('vendor/alpine.min.js') }}"></script>
     {% block head %}{% endblock %}

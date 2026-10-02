@@ -7,6 +7,17 @@ use Logbook\Action\Notice\DismissNoticeAction;
 use Logbook\Action\Scheduler\SchedulerTickAction;
 use Logbook\Action\Scheduler\SchedulerUrlAction;
 use Logbook\Action\Settings\Updates\UpdatesAction;
+use Logbook\Action\Station\CreateStationAction;
+use Logbook\Action\Station\DuplicatesAction as StationDuplicatesAction;
+use Logbook\Action\Station\EditStationAction;
+use Logbook\Action\Station\FavouriteStationAction;
+use Logbook\Action\Station\MergeStationAction;
+use Logbook\Action\Station\SearchStationsAction;
+use Logbook\Action\Station\ShowStationAction;
+use Logbook\Action\Station\StationsIndexAction;
+use Logbook\Action\Settings\Places\PlaceDeleteAction;
+use Logbook\Action\Settings\Places\PlaceFormAction;
+use Logbook\Action\Settings\Places\PlacesAction;
 use Logbook\Action\Settings\Jobs\JobBackupScheduleAction;
 use Logbook\Action\Settings\Jobs\JobRunAction;
 use Logbook\Action\Settings\Jobs\JobRunStatusAction;
@@ -18,6 +29,8 @@ use Logbook\Action\Settings\Jobs\RunJobAction;
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
+use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
+use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
 use Logbook\Action\Api\IncidentHistoryAction as ApiIncidentHistoryAction;
 use Logbook\Action\Api\ListIncidentsAction as ApiIncidentsAction;
@@ -310,6 +323,11 @@ return static function (App $app): void {
                     $fuel->post('/vehicles/{id:[0-9]+}/fuel', ApiLogFuelAction::class)->setName('api.fuel.create')
                         ->setArgument($ability, VehicleAbility::Log->value);
                 })->add($module(Feature::Fuel));
+                // Stations (spec.md §7.33): read only; fill-ups link them.
+                $keyed->group('', function (Group $stations): void {
+                    $stations->get('/stations', ApiStationsAction::class)->setName('api.stations.index');
+                    $stations->get('/stations/{station:[0-9]+}', ApiStationAction::class)->setName('api.stations.show');
+                })->add($module(Feature::Stations));
                 $keyed->get('/vehicles/{id:[0-9]+}/maintenance', ApiMaintenanceAction::class)->setName('api.maintenance.index')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Maintenance));
@@ -690,6 +708,26 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/tyres', TyreSettingsAction::class)
             ->setName('settings.tyres')
             ->add($module(Feature::Tyres));
+
+        // Fuel stations (spec.md §7.33): shared by the install; favourites and
+        // places are the signed-in user's own. Off with `stations` or `fuel`.
+        $group->group('', function (Group $stations): void {
+            $station = '/stations/{station:[0-9]+}';
+            $stations->get('/stations', StationsIndexAction::class)->setName('stations.index');
+            $stations->get('/stations/search', SearchStationsAction::class)->setName('stations.search');
+            $stations->get('/stations/duplicates', StationDuplicatesAction::class)->setName('stations.duplicates');
+            $stations->map(['GET', 'POST'], '/stations/new', CreateStationAction::class)->setName('stations.create');
+            $stations->get($station, ShowStationAction::class)->setName('stations.show');
+            $stations->map(['GET', 'POST'], $station . '/edit', EditStationAction::class)->setName('stations.edit');
+            $stations->post($station . '/favourite', FavouriteStationAction::class)->setName('stations.favourite');
+            $stations->map(['GET', 'POST'], $station . '/merge', MergeStationAction::class)->setName('stations.merge');
+            $stations->get('/settings/places', PlacesAction::class)->setName('settings.places');
+            $stations->map(['GET', 'POST'], '/settings/places/new', PlaceFormAction::class)->setName('settings.places.create');
+            $stations->map(['GET', 'POST'], '/settings/places/{place:[0-9]+}/edit', PlaceFormAction::class)
+                ->setName('settings.places.edit');
+            $stations->post('/settings/places/{place:[0-9]+}/delete', PlaceDeleteAction::class)
+                ->setName('settings.places.delete');
+        })->add($module(Feature::Stations));
 
         // The claims history, every vehicle the user can see (spec.md §7.29).
         $group->group('', function (Group $incidents): void {

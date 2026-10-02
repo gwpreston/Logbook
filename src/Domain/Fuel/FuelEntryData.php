@@ -34,9 +34,36 @@ final readonly class FuelEntryData
         public ?string $notes = null,
         /** Which grade of $fuel went in; null = not recorded (always valid). */
         public ?FuelGrade $grade = null,
+        /**
+         * The linked station (Phase 30.1, spec.md §7.33); null = none. When
+         * set, $station holds its name as of the last save.
+         */
+        public ?int $stationId = null,
     ) {
         if ($grade !== null && $grade->family() !== $fuel) {
             throw new InvalidArgumentException(sprintf('Grade %s is not a %s grade.', $grade->value, $fuel->value));
         }
+    }
+
+    /**
+     * The same fill-up linked to another station (or none), with the
+     * station's name as its text.
+     */
+    public function withStation(?int $stationId, ?string $name): self
+    {
+        return new self(
+            filledAt: $this->filledAt,
+            odometerKm: $this->odometerKm,
+            fuel: $this->fuel,
+            volume: $this->volume,
+            pricePerUnit: $this->pricePerUnit,
+            totalCost: $this->totalCost,
+            isPartial: $this->isPartial,
+            isMissedPrevious: $this->isMissedPrevious,
+            station: $name,
+            notes: $this->notes,
+            grade: $this->grade,
+            stationId: $stationId,
+        );
     }
 }

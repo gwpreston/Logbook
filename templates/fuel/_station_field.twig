@@ -1,0 +1,56 @@
+{#
+ # The fill-up form's station (spec.md §7.33 *Fill-up form*). Without JS: a
+ # select of favourites and recent stations plus *Other*, whose name field
+ # creates (or links) the station on save. js/stations.js turns the name
+ # field into a combo box. Home charging has no picker: its text is kept as
+ # typed, never a station (#131). With the module off, the plain text field.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% if not stations_on %}
+    {{ ui.input('station', 'fuel.field.station'|trans, values, errors, {optional: true, maxlength: 100}) }}
+{% else %}
+    {% set chosen_id = station_chosen ? station_chosen.id : null %}
+    {% set other_selected = chosen_id is null and (values.station ?? '') != '' %}
+    <div class="station-field" data-station-field data-search-url="{{ url_for('stations.search') }}"
+         data-label="{{ 'fuel.field.station'|trans }}" data-add-label="{{ 'stations.combo.add'|trans({name: '{name}'}) }}" data-new-label="{{ 'stations.combo.new'|trans({name: '{name}'}) }}"
+         x-show="choice !== 'ev:home'">
+        <div class="field" data-station-choose>
+            <label class="field__label" for="f-station_id">{{ 'fuel.field.station'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+            <select class="select" id="f-station_id" name="station_id" data-station-select{% if station_hint %} aria-describedby="f-station-last"{% endif %}>
+                <option value="">{{ 'stations.combo.none'|trans }}</option>
+                {% if station_chosen and not station_chosen_listed %}
+                    <option value="{{ station_chosen.id }}" data-name="{{ station_chosen.data.name }}" selected>{{ station_chosen.data.name }}</option>
+                {% endif %}
+                {% if station_favourites is not empty %}
+                    <optgroup label="{{ 'stations.combo.favourites'|trans }}">
+                        {% for row in station_favourites %}
+                            <option value="{{ row.station.id }}" data-name="{{ row.station.data.name }}"{% if row.station.id == chosen_id %} selected{% endif %}>{{ row.station.data.name }}{% if row.station.data.postcode %} · {{ row.station.data.postcode }}{% endif %}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+                {% if station_recent is not empty %}
+                    <optgroup label="{{ 'stations.combo.recent'|trans }}">
+                        {% for row in station_recent %}
+                            <option value="{{ row.station.id }}" data-name="{{ row.station.data.name }}"{% if row.station.id == chosen_id %} selected{% endif %}>{{ row.station.data.name }}{% if row.station.data.postcode %} · {{ row.station.data.postcode }}{% endif %}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+                <option value="other"{% if other_selected %} selected{% endif %}>{{ 'stations.combo.other'|trans }}</option>
+            </select>
+        </div>
+        <div class="field combo" data-station-other>
+            <label class="field__label" for="f-station">{{ 'stations.combo.other_name'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span>{{ ui.from_message('station', values) }}</label>
+            <input class="input" id="f-station" name="station" type="text" maxlength="100" value="{{ chosen_id is null ? (values.station ?? '') : '' }}"
+                   :disabled="choice === 'ev:home'"{{ ui.described_by('station', errors, false, values) }}>
+            <p class="field__hint" data-station-other-hint>{{ 'stations.combo.other_hint'|trans }}</p>
+            {{ ui.scan_note('station', values) }}
+            {{ ui.field_error(errors, 'station') }}
+        </div>
+        <p class="field__hint" id="f-station-last" data-station-hint aria-live="polite"{% if not station_hint %} hidden{% endif %}>{{ station_hint }}</p>
+    </div>
+    <div class="field" x-show="choice === 'ev:home'" style="display: none">
+        <label class="field__label" for="f-station-home">{{ 'stations.combo.home_label'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+        <input class="input" id="f-station-home" name="station" type="text" maxlength="100" value="{{ values.station ?? '' }}" disabled :disabled="choice !== 'ev:home'">
+        <p class="field__hint">{{ 'stations.combo.home_hint'|trans }}</p>
+    </div>
+{% endif %}
