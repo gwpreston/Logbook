@@ -320,7 +320,12 @@ final class UpdatesTest extends ReminderTestCase
     {
         $this->queue = [];
         $this->requested = [];
-        $app = $this->createRecordingApp($env + self::CHANNELS);
+        // Pinned, so a real LOGBOOK_DOCKER=1 (the dev image sets it) never changes the bare-PHP line.
+        $app = $this->createRecordingApp($env + [
+            'LOGBOOK_DOCKER' => '0',
+            'UPDATE_CHECK_ALLOWED' => 'true',
+            'UPDATE_CHECK_REPO' => 'gwpreston16/Logbook',
+        ] + self::CHANNELS);
         $container = $app->getContainer();
         self::assertInstanceOf(Container::class, $container);
         $container->set(InstalledVersion::class, new InstalledVersion($installed));
