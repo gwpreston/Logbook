@@ -3,7 +3,7 @@
 *Whether you'll go over the miles, what happens at the end, and finance
 wherever the app plans ahead.*
 
-Status: ✅ complete · releases **v2.12.0** (Phases 29.1 and 29.2) · file
+Status: ✅ complete · released as **v2.12.0** (Phases 29.1 and 29.2) · file
 lives in `docs/phases/`
 
 [Phase 29.1](phase-29.1.md) adds finance agreements, their figures and
@@ -124,6 +124,7 @@ item 11 and §7.26.
       and the overlap warning helps move to an agreement.
 - [x] Bump `VERSION`, rebuild assets, update the README status and
       documentation table.
+- [x] Tag `v2.12.0` once merged.
 
 ---
 
