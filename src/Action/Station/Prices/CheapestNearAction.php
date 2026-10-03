@@ -23,7 +23,7 @@ use Slim\Exception\HttpNotFoundException;
  * GET /stations/near — *Cheapest near me* (spec.md §7.34), a GET form that
  * works without JS. From the browser's current position (`from=here` with
  * `lat`/`lng`, filled by js/stations.js; used for this search only and
- * never stored or logged), a place (`from=place:{id}`) or a station
+ * rounded to about 100 m, never saved by Logbook), a place (`from=place:{id}`) or a station
  * (`from=station:{id}`); for a vehicle and grade, within a radius in the
  * user's distance unit; ranked by effective cost.
  */

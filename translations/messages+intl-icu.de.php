@@ -4921,7 +4921,7 @@ return [
             'no_vehicles' => 'Füge ein Benzin- oder Dieselfahrzeug hinzu, um Preise zu vergleichen.',
             'from' => 'Von',
             'here' => 'Mein aktueller Standort',
-            'here_hint' => 'Dein Standort wird nur für diese Suche verwendet und nie gespeichert.',
+            'here_hint' => 'Dein Standort, auf etwa 100 m gerundet, wird nur für diese Suche verwendet: Logbook speichert ihn nicht, er steht aber in der Adresse der Seite.',
             'places' => 'Deine Orte',
             'stations' => 'Tankstellen',
             'locate_failed' => 'Dein Standort konnte nicht ermittelt werden. Wähle einen Ort oder eine Tankstelle.',

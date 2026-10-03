@@ -140,6 +140,11 @@ final readonly class ProviderStationRepository
                 $counts['unknown']++;
                 continue;
             }
+            // A time ahead of the sync (a clock or zone slip at the provider) is
+            // taken as the sync's own, so the price is never out of reach.
+            if ($price->reportedAt > $now) {
+                $price = new FeedPrice($price->ref, $price->grade, $price->price, $now);
+            }
             $reported = UtcDateTime::toDatabase($price->reportedAt, $platform);
             $before = $current[$id][$price->grade->value] ?? null;
             if ($before === null) {

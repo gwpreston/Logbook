@@ -18,7 +18,8 @@
  * - Phase 30.2 (spec.md §7.34): at a linked station the hint shows the
  *   listed price for the chosen grade, and *Use listed price* puts it in the
  *   price field (never on its own); `[data-near-form]`'s *My current
- *   location* asks the browser when the form is sent, for that search only.
+ *   location* asks the browser when the form is sent, rounded to about
+ *   100 m, for that search only.
  *
  * The pure helpers at the top have no DOM and are unit tested with
  * `composer test:js` (node --test, tests/js/stations.test.js).
@@ -384,8 +385,9 @@
                 if (!found) {
                     return;
                 }
-                lat.value = found.latitude;
-                lng.value = found.longitude;
+                // About 100 m is enough to rank stations; it goes in the page's address.
+                lat.value = Number(found.latitude).toFixed(3);
+                lng.value = Number(found.longitude).toFixed(3);
                 located = true;
                 form.submit();
             }, function () {

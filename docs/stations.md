@@ -391,7 +391,9 @@ It is a plain form and works without JavaScript.
 - **From:** *My current location*, one of your places, or a favourite or
   recent station with a position. *My current location* needs JavaScript:
   your browser asks for permission, and the position is used for that
-  search only. It is never stored, logged or sent anywhere.
+  search only. It is rounded to about 100 m, never saved by Logbook
+  and never sent to the provider; as with any search, it is in the page's
+  address, so in your browser's history and your own web server's log.
 - **Vehicle:** your petrol and diesel vehicles (electric ones are left
   out); the one filled most recently first.
 - **Grade:** the grades the feed lists for the vehicle's fuel; by default
@@ -522,7 +524,8 @@ cheapest fuel near it".
   your first place.
 
 Both only while a provider is enabled. A position sent to either is used
-for that answer only, never stored or logged.
+for that answer only and never saved by Logbook (it is in the request's
+address, like any query, so in the web server's own access log).
 
 ### Sample prices for the demo
 

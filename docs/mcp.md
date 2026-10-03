@@ -48,7 +48,7 @@ or `log_fill_up`) and while you can add that kind of entry to some vehicle.
 station, or `near: "here"` with the `lat` and `lng` your client sends,
 ranked by effective cost; [stations.md](stations.md#cheapest-near-me))
 shows only while an admin has enabled a fuel price provider. A position
-sent to it is used for that answer only, never stored or logged.
+sent to it is used for that answer only and never saved.
 The AI modules and your *Use AI features* setting don't apply: no Logbook
 model is involved.
 

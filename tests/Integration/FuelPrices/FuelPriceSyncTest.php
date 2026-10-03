@@ -132,6 +132,24 @@ final class FuelPriceSyncTest extends FuelPricesTestCase
         self::assertSame(3, $repository->count(FuelFinderProvider::CODE));
     }
 
+    public function testAReportTimeAheadOfTheSyncIsTakenAsTheSyncsOwn(): void
+    {
+        [$app] = $this->pricesApp();
+        // An hour ahead: what UK local time read as UTC would look like in summer.
+        $this->prices = [[
+            'node_id' => self::ref('antrim-tesco'),
+            'fuel_prices' => [['price' => '0135.9000', 'fuel_type' => 'E10', 'price_last_updated' => '2026-10-03T07:55:00']],
+        ]];
+        $this->sync($app);
+
+        $repository = $this->service($app, ProviderStationRepository::class);
+        $tesco = $repository->findByRef(FuelFinderProvider::CODE, self::ref('antrim-tesco'));
+        self::assertNotNull($tesco);
+        $listed = $repository->prices([$tesco->id])[$tesco->id]['e10_95'];
+        self::assertEquals(new DateTimeImmutable(self::NOW), $listed->reportedAt);
+        self::assertTrue($listed->isFresh(new DateTimeImmutable(self::NOW)));
+    }
+
     public function testAFailedSyncKeepsTheCurrentPricesAndTriesAgainFromTheSamePoint(): void
     {
         [$app] = $this->pricesApp();

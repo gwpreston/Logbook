@@ -2,7 +2,7 @@
 
 *Today's prices near you, ranked by what the trip really saves.*
 
-Status: 🚧 in progress · releases **v2.14.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.14.0** · file lives in `docs/phases/`
 
 Phase 30.1 made stations records. This phase brings in **listed prices**
 from official open-data feeds, starting with the UK's **Fuel Finder**
@@ -295,7 +295,7 @@ in what it sends and how it is disclosed.
 - [x] Off by default: no request is made, and no page shows prices, until a
       provider is enabled.
 - [x] Access: settings admin only; results use only the user's vehicles.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine.
 
 ### Sample data
 - [x] `DemoDataSeeder`: a small synthetic provider dataset near the demo

@@ -4923,7 +4923,7 @@ return [
             'no_vehicles' => 'Add a petrol or diesel vehicle to compare prices.',
             'from' => 'From',
             'here' => 'My current location',
-            'here_hint' => 'Your location is used for this search only and never stored.',
+            'here_hint' => 'Your location, rounded to about 100 m, is used for this search only: Logbook doesn\'t save it, though it is part of the page\'s address.',
             'places' => 'Your places',
             'stations' => 'Stations',
             'locate_failed' => 'Your location could not be found. Choose a place or a station.',

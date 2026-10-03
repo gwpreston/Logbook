@@ -25,7 +25,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * `place=<name>` or `station=<id>`, exactly one origin) — *Cheapest near me*
  * for the key user (spec.md §7.20, §7.34): the rows ranked by effective
  * cost, with each one's sum against the nearest. A position in the request
- * is used for this answer only, never stored or logged. 404 while no
+ * is used for this answer only and never saved (it is in the request's URL). 404 while no
  * provider is enabled.
  */
 final readonly class FuelPricesNearAction

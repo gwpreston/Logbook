@@ -5744,7 +5744,9 @@ third party.
     outside 50–500p after that is dropped and counted ("3 implausible
     prices skipped"). A grade with no price or no time is skipped. They
     are stored as pounds per litre, `decimal(8,3)` (decided 2026-10-03,
-    #141). Times have no zone and are read as UTC.
+    #141). Times have no zone and are read as UTC (from the community
+    specification; to be confirmed against a recorded download); a time
+    after the sync is stored as the sync's own.
   - **Grade map:** E10 → `e10_95`; E5 → `e5_97` (UK super unleaded),
     which an admin can change to `e5_98` or `e5_99` for their area (one
     install-wide mapping, decided 2026-10-03, #136); B7_STANDARD (and the
@@ -5840,9 +5842,12 @@ third party.
 - **Cheapest near me** (`/stations/near`, a GET form that works without
   JS; *Cheapest near me* on the stations page and the Fuel tab):
   - **From:** *My current location* (shown with JS: the browser's
-    geolocation fills hidden `lat`/`lng`, asked only when chosen; the
-    position is used for this search and never stored or logged), one of
-    the user's places, or a station with a position.
+    geolocation fills hidden `lat`/`lng`, rounded to 3 decimals, about
+    100 m, asked only when chosen; the position is used for this search and
+    never saved by Logbook, though as a GET form it is in the page's
+    address, so in the browser's history and the web server's own access
+    log; it is never sent to a provider), one of the user's places, or a
+    station with a position.
   - **Vehicle:** the user's active vehicles they can see that burn a
     liquid fuel (electric ones are left out: no feed lists charging
     prices), default the one with the most recent fill-up. **Grade:**
@@ -5947,8 +5952,8 @@ third party.
   the key user's distance unit, above 0 and up to 50, default 5; `sort` as
   the page's; `include_older=true` for prices over 48 hours), the rows of
   *Cheapest near me* with the raw and display figures, the sync time and
-  the attribution. A position in the request is used and never stored
-  or logged; a place is the key user's, by name. 404 problem details while
+  the attribution. A position in the request is used and never saved
+  (it is in the request's URL); a place is the key user's, by name. 404 problem details while
   no provider is enabled. Station responses gain `listed` (per grade:
   price, reported_at, fresh) for a linked station.
 - **Ask Logbook** (§7.26) and MCP (§7.28): `cheapest_fuel(vehicle?,
@@ -5956,8 +5961,7 @@ third party.
   work?"). `near` is a place name, a station (name or id), or `here`,
   which needs `lat` and `lng` from the client (an MCP client may send
   them; Ask's page sends none, so the answer asks for a place). Omitted,
-  it is the user's first place. Positions are used and never stored or
-  logged. Only while a provider is enabled.
+  it is the user's first place. Positions are used and never saved. Only while a provider is enabled.
 - **Sample data:** outside production a *Sample prices (demo)* provider is
   also offered: eleven made-up stations near the demo places, with prices
   that move a little each hour, fetched from nowhere. `DemoDataSeeder`
