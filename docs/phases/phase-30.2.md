@@ -307,6 +307,7 @@ in what it sends and how it is disclosed.
       cheapest near me. Upgrade notes: migrations; off until an admin
       enables a provider.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Tag `v2.14.0` once merged.
 
 ---
 
