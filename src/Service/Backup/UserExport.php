@@ -156,7 +156,12 @@ final class UserExport
         }
         $out['listed_price_changes'] = $keep(
             'listed_price_changes',
-            static fn (array $row): bool => isset($links[($row['provider'] ?? '') . "\n" . ($row['provider_ref'] ?? '')]),
+            static function (array $row) use ($links): bool {
+                $provider = $row['provider'] ?? null;
+                $ref = $row['provider_ref'] ?? null;
+
+                return is_string($provider) && is_string($ref) && isset($links[$provider . "\n" . $ref]);
+            },
         );
 
         // Phase 26.1: AI connections are the install's, not the user's.
