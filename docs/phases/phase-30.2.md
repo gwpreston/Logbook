@@ -2,7 +2,7 @@
 
 *Today's prices near you, ranked by what the trip really saves.*
 
-Status: 📋 planned · releases **v2.14.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.14.0** · file lives in `docs/phases/`
 
 Phase 30.1 made stations records. This phase brings in **listed prices**
 from official open-data feeds, starting with the UK's **Fuel Finder**
@@ -73,6 +73,9 @@ location classes), and Phase 30.1 first.
 ---
 
 ## Spec additions
+
+> Superseded by `spec.md` §6 and §7.34 as decided on 2026-10-03 (#136–#144);
+> the draft below is kept for the record.
 
 ### §6 Data model
 
@@ -245,8 +248,9 @@ in what it sends and how it is disclosed.
       and adding a provider adapter.
 
 ### Migrations (every engine, each reversible)
-- [ ] `provider_stations`, `provider_prices`, `listed_price_history`;
-      `stations.provider_station_id`, `stations.keep_my_details`.
+- [ ] `provider_stations`, `provider_prices`, `listed_price_changes`,
+      `price_alerts`, `fuel_price_secrets`; `stations.provider`,
+      `stations.provider_ref`, `stations.keep_my_details` (#143, #144).
 
 ### Code
 - [ ] `Service\FuelPrices\PriceProvider` interface (kind, grade map,
@@ -258,17 +262,23 @@ in what it sends and how it is disclosed.
       postcode similarity).
 - [ ] `Service\FuelPrices\CheapestNear` (bounding box then haversine,
       freshness, usual fill, consumption, effective cost, saving).
+- [ ] Price alerts (#138): `price_alerts`, the station page form, the
+      check after each sync, notification kind `price_alert`.
+- [ ] `bin/record-fuel-finder.php` (#139): record and trim a real
+      download into the test fixture.
 - [ ] Settings page, station page additions, the results page with
       geolocation, the fill-up form hint, the widget, the API endpoint, the
       Ask tool, attribution.
 - [ ] Translations (en, de).
 
 ### Tests
-- [ ] **Recorded feed fixture** (a trimmed real Fuel Finder download): sync
+- [ ] **Feed fixture** (synthetic, to the published schema, #139): sync
       creates stations and prices, maps every grade, marks removed
       stations, and keeps current prices on a failed sync.
-- [ ] History: daily low, high and close only for linked stations that are
-      used or favourited; retention.
+- [ ] History: price changes only for linked stations that are used or
+      favourited; daily low, high and close derived; retention.
+- [ ] Price alerts: sent once below the threshold, re-armed above it,
+      never twice for one drop, not for stale prices or closed stations.
 - [ ] Linking: candidates within 150 m ordered by name similarity; postcode
       fallback; *Keep my details* respected; merge keeps the link.
 - [ ] Effective cost: worked examples in the test file (a cheaper, farther
@@ -276,8 +286,8 @@ in what it sends and how it is disclosed.
       plug-in hybrids using the liquid series.
 - [ ] **Was it worth it?**: the worked example (7 mi, 4p, 50 L, 48 mpg) gives the
       stated breakdown; after-fill-up comparison with and without a Home
-      place; no comparison at the usual station or without a fresh listed
-      price within 2 hours; the *Shopping around* total and its minimum of
+      place; no comparison at the usual station or without a listed price
+      in effect at the fill-up's time (#144); the *Shopping around* total and its minimum of
       3 fill-ups.
 - [ ] Freshness: older than 48 hours excluded unless asked; labels.
 - [ ] Location: a current-location search stores nothing; places are used
@@ -318,10 +328,40 @@ in what it sends and how it is disclosed.
 
 ## Open questions
 
-- **E5 mapping:** the feed has one E5 price, while Logbook separates E5 97,
-  98 and 99+. Is one admin-chosen mapping enough (drafted), or should each
-  linked station say which it sells?
-- **Road factor:** 1.3 as a constant (drafted), or a user setting for rural
-  or urban driving?
-- **Price alerts:** notify when a favourite station drops below a chosen
-  price, through the existing channels?
+Answered on 2026-10-03, before the phase was built (the full text is in
+`spec.md` §6 and §7.34):
+
+- **#136 E5 mapping.** *Decided 2026-10-03:* as drafted, one install-wide
+  mapping an admin chooses (E5 97 by default, or E5 98 or E5 99+).
+- **#137 Road factor.** *Decided 2026-10-03:* as drafted, a constant 1.3,
+  labelled wherever it is used.
+- **#138 Price alerts.** *Decided 2026-10-03:* built in this phase. A
+  price per grade on a favourite linked station; after each sync, one
+  notification through the user's channels when its fresh listed price
+  drops below it, re-armed when it goes back up.
+
+Found while starting this phase:
+
+- **#139 The recorded feed fixture.** *Decided 2026-10-03:* the feed
+  needs GOV.UK One Login credentials, so the fixture is synthetic,
+  following the published schema exactly, and `bin/record-fuel-finder.php`
+  records and trims a real download to replace it.
+- **#140 Closures.** *Decided 2026-10-03:* a permanently closed station
+  is treated as removed; a temporarily closed one stays, labelled, and is
+  left out of rankings, the widget and alerts.
+- **#141 Implausible prices.** *Decided 2026-10-03:* a value under 2.0 is
+  pounds and multiplied by 100; one outside 50–500p is dropped and
+  counted. Stored as pounds per litre.
+- **#142 Sync cadence.** *Decided 2026-10-03:* incremental each run
+  (changes since the last good sync, less a margin), with a full sync on
+  the first run, when no stations are stored, after a provider change,
+  and daily. Only a full sync marks stations removed.
+- **#143 The link key.** *Decided 2026-10-03:* a station points at its
+  provider station by `provider` and `provider_ref` (the feed's id), not
+  a row id, so links survive re-syncs and restores (provider tables are
+  not backed up). History and alerts are keyed so too.
+- **#144 Listed price history.** *Decided 2026-10-03:* each listed price
+  change of a tracked station is kept (not a daily summary); the chart's
+  daily low, high and close are derived. A past fill-up is compared with
+  the price in effect at its time, reported within 48 hours before it,
+  replacing "within 2 hours".

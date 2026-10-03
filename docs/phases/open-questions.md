@@ -50,7 +50,8 @@ into 29.1 and 29.2. Phase 29.2's (#126–#129, all found while starting it)
 were answered on 2026-10-02, before it was built; one found while
 building it (#130) was answered the same day. Phase 30.1's (#131–#135,
 three of them found while starting it) were answered on 2026-10-02,
-before it was built.
+before it was built. Phase 30.2's (#136–#144, six of them found while
+starting it) were answered on 2026-10-03, before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -189,6 +190,15 @@ before it was built.
 | 133 | [30.1](phase-30.1.md) | Upgrade: group station texts per user or install-wide, and the creator (found while starting) | Decided | Install-wide; creator the owner of the vehicle with the earliest fill-up under that name; country from their locale region or none (spec §7.33 *Upgrading*). | 2026-10-02 |
 | 134 | [30.1](phase-30.1.md) | Receipt scans and Ask drafts with a station name (found while starting) | Decided | Link or create by normalised name as the import does, shown in the review step (spec §7.33). | 2026-10-02 |
 | 135 | [30.1](phase-30.1.md) | The API's fill-up `station`: object or text? (found while starting) | Decided | Additive: `station` stays the text, `station_id` added, writes take either (spec §7.20, §7.33). | 2026-10-02 |
+| 136 | [30.2](phase-30.2.md) | E5 mapping: one admin-chosen mapping, or per station? | Decided | One install-wide mapping an admin chooses: E5 97 by default, or E5 98 or E5 99+ (spec §7.34 *Grade map*). | 2026-10-03 |
+| 137 | [30.2](phase-30.2.md) | Road factor: constant 1.3 or a user setting? | Decided | A constant 1.3, labelled wherever it is used (spec §7.34 *Effective cost*). | 2026-10-03 |
+| 138 | [30.2](phase-30.2.md) | Price alerts on favourite stations? | Decided | Built in this phase: a price per grade on a favourite linked station, one notification per drop below it, re-armed above it (spec §6 PriceAlert, §7.11, §7.34). | 2026-10-03 |
+| 139 | [30.2](phase-30.2.md) | The recorded feed fixture needs One Login credentials (found while starting) | Decided | A synthetic fixture to the published schema, plus `bin/record-fuel-finder.php` to record and trim a real download (spec §4). | 2026-10-03 |
+| 140 | [30.2](phase-30.2.md) | Temporary and permanent closures in the feed (found while starting) | Decided | Permanent: treated as removed. Temporary: kept, labelled, left out of rankings, the widget and alerts (spec §7.34 *Closures*). | 2026-10-03 |
+| 141 | [30.2](phase-30.2.md) | Prices in pounds instead of pence, and outliers (found while starting) | Decided | Under 2.0 is pounds (× 100); outside 50–500p dropped and counted; stored as pounds per litre (spec §7.34 *Prices*). | 2026-10-03 |
+| 142 | [30.2](phase-30.2.md) | Sync cadence when *Sync now* runs in the request (found while starting) | Decided | Incremental each run, full on the first run, with no stations, after a provider change and daily; only a full sync removes (spec §7.34 *Sync job*). | 2026-10-03 |
+| 143 | [30.2](phase-30.2.md) | Links by row id would dangle after a restore (found while starting) | Decided | Stations link by `provider` and `provider_ref`, the feed's own id, with no foreign key (spec §6 Station, §7.34 *Linking stations*). | 2026-10-03 |
+| 144 | [30.2](phase-30.2.md) | Comparing past fill-ups needs the price at a moment (found while starting) | Decided | Each listed price change of tracked stations is kept; the price in effect at the fill-up's time, reported within 48 hours before it (spec §6 ListedPriceChange, §7.34). | 2026-10-03 |
 
 ## Other loose ends found in the review
 
