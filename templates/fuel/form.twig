@@ -32,6 +32,9 @@
         {% if errors is not empty %}
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
+        {% if comparison ?? null %}
+            <div class="alert alert--info" role="status" data-fill-comparison>{{ ui.icon('savings') }}<span>{{ comparison }}</span></div>
+        {% endif %}
         {% if check %}
             <section class="economy-check__panel{{ check.isFlagged() ? ' economy-check__panel--flag' : '' }}" aria-label="{{ 'fuel.check.title'|trans }}">
                 {{ fuel_ui.check_flag(check, vehicle, {csrf: csrf, return_to: return_to, on_edit: true}) }}

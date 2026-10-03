@@ -37,6 +37,7 @@
                 meta: [station.brand, station.postcode].filter(Boolean).join(' · '),
                 favourite: !!station.favourite,
                 hint: station.hint || '',
+                listed: (station.listed && typeof station.listed === 'object') ? station.listed : {},
             });
         });
         var name = tidy(typed);
@@ -68,7 +69,21 @@
         return {latitude: lat.toFixed(6), longitude: lon.toFixed(6)};
     }
 
-    var core = {comboOptions: comboOptions, tidy: tidy, coordinates: coordinates};
+    /*
+     * The listed price for the fuel picker's choice ("petrol:e10_95"), from
+     * a station's listed prices by grade (spec.md §7.34), or null.
+     */
+    function listedFor(listed, choice) {
+        var grade = String(choice || '').split(':').pop();
+        var entry = listed && grade ? listed[grade] : null;
+        if (!entry || typeof entry.text !== 'string' || !/^[0-9]+(\.[0-9]+)?$/.test(String(entry.price))) {
+            return null;
+        }
+
+        return {text: entry.text, price: String(entry.price)};
+    }
+
+    var core = {comboOptions: comboOptions, tidy: tidy, coordinates: coordinates, listedFor: listedFor};
 
     if (typeof module === 'object' && module.exports) {
         module.exports = core;
@@ -134,14 +149,55 @@
         var active = -1;
         var pending = null;
         var timer = null;
-
-        function setHint(text) {
-            if (!hint) {
-                return;
-            }
-            hint.textContent = text;
-            hint.hidden = text === '';
+        // Phase 30.2: the chosen station's listed prices and *Use listed price*.
+        var form = field.closest('form');
+        var fuel = form ? form.querySelector('#f-fuel') : null;
+        var price = form ? form.querySelector('#f-price') : null;
+        var useListed = field.querySelector('[data-use-listed]');
+        var plainHint = hint ? (hint.dataset.plain !== undefined ? hint.dataset.plain : hint.textContent) : '';
+        var listed = {};
+        try {
+            listed = hint && hint.dataset.listed ? JSON.parse(hint.dataset.listed) : {};
+        } catch (error) {
+            listed = {};
         }
+        if (Array.isArray(listed)) {
+            listed = {};
+        }
+
+        function showListed() {
+            var found = listedFor(listed, fuel ? fuel.value : '');
+            if (hint) {
+                var text = found ? found.text : plainHint;
+                hint.textContent = text;
+                hint.hidden = text === '';
+            }
+            if (useListed) {
+                useListed.hidden = !found || !price;
+                useListed.dataset.price = found ? found.price : '';
+            }
+        }
+
+        function setHint(text, prices) {
+            plainHint = text;
+            listed = prices || {};
+            showListed();
+        }
+
+        if (fuel) {
+            fuel.addEventListener('change', showListed);
+        }
+        if (useListed && price) {
+            useListed.addEventListener('click', function () {
+                if (!useListed.dataset.price) {
+                    return;
+                }
+                price.value = useListed.dataset.price;
+                price.dispatchEvent(new Event('input', {bubbles: true}));
+                price.focus();
+            });
+        }
+        showListed();
 
         function close() {
             list.hidden = true;
@@ -194,7 +250,7 @@
             hidden.value = option.id;
             setHint(option.kind === 'add'
                 ? (field.dataset.newLabel || '').replace('{name}', option.name)
-                : option.hint);
+                : option.hint, option.kind === 'add' ? {} : option.listed);
             close();
         }
 
@@ -291,6 +347,51 @@
         });
     }
 
+    /*
+     * *Cheapest near me* (spec.md §7.34): *My current location* is offered
+     * only where the browser can tell, and asked for when the form is sent;
+     * the position goes with this search only and is never stored.
+     */
+    function enhanceNearForm(form) {
+        if (form.dataset.enhanced === '1') {
+            return;
+        }
+        form.dataset.enhanced = '1';
+        var from = form.querySelector('select[name="from"]');
+        var here = form.querySelector('option[data-here]');
+        var lat = form.querySelector('[data-near-lat]');
+        var lng = form.querySelector('[data-near-lng]');
+        var status = form.querySelector('[data-near-status]');
+        if (!from || !here || !lat || !lng || !navigator.geolocation) {
+            return;
+        }
+        here.hidden = false;
+        var located = false;
+        form.addEventListener('submit', function (event) {
+            if (from.value !== 'here' || located) {
+                return;
+            }
+            event.preventDefault();
+            if (status) {
+                status.textContent = form.dataset.finding || '';
+            }
+            navigator.geolocation.getCurrentPosition(function (position) {
+                var found = coordinates(position);
+                if (!found) {
+                    return;
+                }
+                lat.value = found.latitude;
+                lng.value = found.longitude;
+                located = true;
+                form.submit();
+            }, function () {
+                if (status) {
+                    status.textContent = form.dataset.failed || '';
+                }
+            }, {enableHighAccuracy: false, timeout: 15000, maximumAge: 120000});
+        });
+    }
+
     function enhanceGeoLinks(scope) {
         var touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         if (!touch) {
@@ -306,6 +407,7 @@
         var within = scope || document;
         within.querySelectorAll('[data-station-field]').forEach(enhanceField);
         within.querySelectorAll('[data-locate]').forEach(enhanceLocate);
+        within.querySelectorAll('[data-near-form]').forEach(enhanceNearForm);
         enhanceGeoLinks(within);
     }
 

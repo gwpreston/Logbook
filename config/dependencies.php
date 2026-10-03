@@ -53,6 +53,7 @@ use Logbook\Service\Jobs\CleanupJob;
 use Logbook\Service\Jobs\DigestJob;
 use Logbook\Service\Jobs\Job;
 use Logbook\Service\FuelPrices\FuelPricesJob;
+use Logbook\Service\FuelPrices\FuelPricesTwigExtension;
 use Logbook\Service\FuelPrices\Pause;
 use Logbook\Service\FuelPrices\ProviderRegistry;
 use Logbook\Service\FuelPrices\SystemPause;
@@ -158,9 +159,12 @@ return [
         ],
     )),
     // Live fuel price providers (Phase 30.2, spec.md §7.34); one adapter per country.
-    ProviderRegistry::class => static fn (ContainerInterface $c): ProviderRegistry => new ProviderRegistry([
-        $c->get(FuelFinderProvider::class),
-    ]),
+    ProviderRegistry::class => static function (ContainerInterface $c): ProviderRegistry {
+        $ukFuelFinder = $c->get(FuelFinderProvider::class);
+        assert($ukFuelFinder instanceof FuelFinderProvider);
+
+        return new ProviderRegistry([$ukFuelFinder]);
+    },
     Pause::class => autowire(SystemPause::class),
     InstalledVersion::class => static fn (): InstalledVersion => new InstalledVersion(Kernel::version()),
 
@@ -252,6 +256,9 @@ return [
         $finance = $c->get(FinanceTwigExtension::class);
         assert($finance instanceof FinanceTwigExtension);
         $twig->addExtension($finance);
+        $fuelPrices = $c->get(FuelPricesTwigExtension::class);
+        assert($fuelPrices instanceof FuelPricesTwigExtension);
+        $twig->addExtension($fuelPrices);
 
         return $twig;
     },

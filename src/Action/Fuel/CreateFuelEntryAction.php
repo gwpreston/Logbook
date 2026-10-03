@@ -73,7 +73,7 @@ final readonly class CreateFuelEntryAction
             fn (PendingUploads $files): FuelEntry => $this->fuel->create($vehicle, $data, $files),
         );
         $this->prefill->saved($request);
-        $this->flash->queue(RequestContext::session($request), $vehicle, $entry, 'fuel.created');
+        $this->flash->queue(RequestContext::session($request), $vehicle, $entry, 'fuel.created', RequestContext::requireUser($request));
 
         $done = $this->redirect->backOr($request, 'fuel.index', ['id' => (string) $vehicle->id]);
 

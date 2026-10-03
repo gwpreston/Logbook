@@ -1,0 +1,20 @@
+{#
+ # Fuel prices (spec.md §7.34): shared bits of the price pages.
+ #}
+
+{# The provider licence's attribution, wherever its data appears. #}
+{% macro attribution(provider) -%}
+    {%- if provider -%}
+        {%- set licence = provider.licence() -%}
+        <p class="field__hint fuel-attribution" data-attribution>
+            {{- licence.attributionKey|trans -}}
+            {{ ' ' }}<a href="{{ licence.url }}" rel="noopener noreferrer license" target="_blank">{{ licence.name }}<span class="visually-hidden"> {{ 'notices.new_tab'|trans }}</span></a>
+        </p>
+    {%- endif -%}
+{%- endmacro %}
+
+{# "Listed £1.379/L at 14:20", "may be out of date" past 48 hours. #}
+{% macro listed(listed, currency) -%}
+    {{- listed|listed_price(currency) -}}
+    {%- if not listed_fresh(listed) %} <span class="pill pill--soon" data-stale>{{ 'fuel_prices.may_be_out_of_date'|trans }}</span>{% endif -%}
+{%- endmacro %}

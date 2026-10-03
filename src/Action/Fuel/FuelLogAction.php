@@ -11,6 +11,8 @@ use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\FuelPrices\ComparisonWording;
+use Logbook\Service\FuelPrices\FillUpComparisons;
 use Logbook\Service\Station\StationService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Domain\User\User;
@@ -41,6 +43,8 @@ final readonly class FuelLogAction
         private View $view,
         private StationService $stations,
         private VehicleAccess $access,
+        private FillUpComparisons $comparisons,
+        private ComparisonWording $wording,
     ) {
     }
 
@@ -128,6 +132,13 @@ final readonly class FuelLogAction
         }
         arsort($volumes);
 
-        return ['by_station' => $top, 'by_station_grade' => array_key_first($volumes)];
+        // Phase 30.2: *Shopping around* (spec.md §7.34), from three compared fill-ups.
+        $shopping = $this->comparisons->shoppingAround($user, $vehicle);
+
+        return [
+            'by_station' => $top,
+            'by_station_grade' => array_key_first($volumes),
+            'shopping_around' => $shopping === null ? null : $this->wording->shoppingAround($shopping),
+        ];
     }
 }

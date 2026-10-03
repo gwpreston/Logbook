@@ -7,11 +7,16 @@ use Logbook\Action\Notice\DismissNoticeAction;
 use Logbook\Action\Scheduler\SchedulerTickAction;
 use Logbook\Action\Scheduler\SchedulerUrlAction;
 use Logbook\Action\Settings\Updates\UpdatesAction;
+use Logbook\Action\Settings\FuelPrices\FuelPricesAction;
 use Logbook\Action\Station\CreateStationAction;
 use Logbook\Action\Station\DuplicatesAction as StationDuplicatesAction;
 use Logbook\Action\Station\EditStationAction;
 use Logbook\Action\Station\FavouriteStationAction;
 use Logbook\Action\Station\MergeStationAction;
+use Logbook\Action\Station\Prices\AddProviderStationAction;
+use Logbook\Action\Station\Prices\CheapestNearAction;
+use Logbook\Action\Station\Prices\LinkStationAction;
+use Logbook\Action\Station\Prices\PriceAlertAction;
 use Logbook\Action\Station\SearchStationsAction;
 use Logbook\Action\Station\ShowStationAction;
 use Logbook\Action\Station\StationsIndexAction;
@@ -711,16 +716,24 @@ return static function (App $app): void {
 
         // Fuel stations (spec.md §7.33): shared by the install; favourites and
         // places are the signed-in user's own. Off with `stations` or `fuel`.
-        $group->group('', function (Group $stations): void {
+        $group->group('', function (Group $stations) use ($instance): void {
             $station = '/stations/{station:[0-9]+}';
             $stations->get('/stations', StationsIndexAction::class)->setName('stations.index');
             $stations->get('/stations/search', SearchStationsAction::class)->setName('stations.search');
             $stations->get('/stations/duplicates', StationDuplicatesAction::class)->setName('stations.duplicates');
+            // Live fuel prices (spec.md §7.34): 404 until a provider is enabled.
+            $stations->get('/stations/near', CheapestNearAction::class)->setName('stations.near');
+            $stations->post('/stations/near/add', AddProviderStationAction::class)->setName('stations.near.add');
             $stations->map(['GET', 'POST'], '/stations/new', CreateStationAction::class)->setName('stations.create');
             $stations->get($station, ShowStationAction::class)->setName('stations.show');
             $stations->map(['GET', 'POST'], $station . '/edit', EditStationAction::class)->setName('stations.edit');
             $stations->post($station . '/favourite', FavouriteStationAction::class)->setName('stations.favourite');
             $stations->map(['GET', 'POST'], $station . '/merge', MergeStationAction::class)->setName('stations.merge');
+            $stations->post($station . '/link', LinkStationAction::class)->setName('stations.link');
+            $stations->post($station . '/alerts', PriceAlertAction::class)->setName('stations.alerts');
+            // Settings → Fuel prices (spec.md §7.34): admins only, 404 to others.
+            $stations->map(['GET', 'POST'], '/settings/fuel-prices', FuelPricesAction::class)->setName('settings.fuel_prices')
+                ->setArgument($instance, InstanceAbility::ManageFuelPrices->value);
             $stations->get('/settings/places', PlacesAction::class)->setName('settings.places');
             $stations->map(['GET', 'POST'], '/settings/places/new', PlaceFormAction::class)->setName('settings.places.create');
             $stations->map(['GET', 'POST'], '/settings/places/{place:[0-9]+}/edit', PlaceFormAction::class)
