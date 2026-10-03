@@ -4769,8 +4769,14 @@ return [
         'same' => 'same cost',
         'attribution' => [
             'ogl' => 'Contains public sector information licensed under the',
+            'demo' => 'Sample prices for the demo: these stations and prices are made up.',
         ],
         'provider' => [
+            'demo' => [
+                'name' => 'Sample prices (demo)',
+                'description' => 'Made-up stations and prices near the demo places, so Cheapest near me can be tried. Only outside production.',
+                'sends' => 'Nothing is sent anywhere.',
+            ],
             'bulk_sends' => 'Logbook downloads the national price list from {host}. Your location is never sent.',
             'uk_fuel_finder' => [
                 'name' => 'UK Fuel Finder',
@@ -4854,7 +4860,7 @@ return [
             'cancelled' => 'The sync was stopped.',
         ],
         'hint' => [
-            'listed' => '{listed} {grade}',
+            'listed' => 'Listed {price} {grade} at {when}',
             'last_paid' => 'Last time you paid {price}',
             'use_listed' => 'Use listed price',
         ],
@@ -4968,6 +4974,7 @@ return [
         ],
         'worth' => [
             'fuel_saving' => 'Fuel saving {amount} ({volume} at {difference} less)',
+            'fuel_saving_more' => 'Fuel saving {amount} ({volume} at {difference} more)',
             'extra_distance' => 'Extra distance {straight} there and back, about {road} by road',
             'fuel_for_that' => 'Fuel for that {amount} at your usual {economy}',
             'no_economy' => 'the drive is not counted without an economy',

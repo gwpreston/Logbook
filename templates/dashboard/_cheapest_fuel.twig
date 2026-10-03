@@ -4,6 +4,7 @@
  # vehicle, with the latest sync and the attribution. The place is chosen
  # here (a plain form; it saves at once with JS's change-submit).
  #}
+{% import 'macros/ui.twig' as ui %}
 {% import 'macros/fuel_prices.twig' as fp %}
 {% set cheapest = dashboard.cheapestFuel %}
 {% if cheapest is null or cheapest.place is null %}

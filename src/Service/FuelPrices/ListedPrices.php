@@ -71,11 +71,29 @@ final readonly class ListedPrices
         foreach ($linked as $station) {
             $source = $sources[$station->link->ref ?? ''] ?? null;
             if ($source !== null) {
-                $found[$station->id] = new StationPrices($provider, $source, $prices[$source->id] ?? [], $now);
+                $found[$station->id] = new StationPrices($provider, $source, self::inOrder($prices[$source->id] ?? []), $now);
             }
         }
 
         return $found;
+    }
+
+    /**
+     * Prices in the pickers' grade order (E10 before E5, petrol before diesel).
+     *
+     * @param array<string, ListedPrice> $prices
+     * @return array<string, ListedPrice>
+     */
+    private static function inOrder(array $prices): array
+    {
+        $ordered = [];
+        foreach (FuelGrade::cases() as $grade) {
+            if (isset($prices[$grade->value])) {
+                $ordered[$grade->value] = $prices[$grade->value];
+            }
+        }
+
+        return $ordered;
     }
 
     /**

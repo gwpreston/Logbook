@@ -24,7 +24,6 @@ final readonly class ListedHint
         private StationService $stations,
         private DisplayFormatter $formatter,
         private TranslatorInterface $translator,
-        private FuelPricesTwigExtension $wording,
     ) {
     }
 
@@ -46,8 +45,9 @@ final readonly class ListedHint
                     continue;
                 }
                 $text = $this->translator->trans('fuel_prices.hint.listed', [
-                    'listed' => $this->wording->listed($listed, $currency),
+                    'price' => $this->formatter->unitPrice($listed->price, $currency, false, true),
                     'grade' => $this->translator->trans($listed->grade->shortLabelKey()),
+                    'when' => $this->formatter->instantWhen($listed->reportedAt, $prices->now),
                 ]);
                 if ($paid !== null) {
                     $text .= ' · ' . $this->translator->trans('fuel_prices.hint.last_paid', ['price' => $paid]);

@@ -114,7 +114,8 @@ final readonly class FuelPriceSync
             $cancelled,
         );
 
-        if ($full) {
+        // A full list that came back empty is a feed fault, not every station closing.
+        if ($full && $outcome->seen !== []) {
             $outcome->removed += $this->providerStations->markMissingRemoved($code, $outcome->seen, $startedAt);
             $this->providerStations->dropPricesNotSyncedSince($code, $startedAt);
         }

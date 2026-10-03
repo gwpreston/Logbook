@@ -9,6 +9,7 @@ use Logbook\Domain\Tyre\TyreChangeLine;
 use Logbook\Domain\Tyre\TyreLineAction;
 use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Kernel;
+use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
 use Logbook\Service\Tyre\TyreReplay;
 use Logbook\Service\Tyre\TyreReplayResult;
 use Logbook\Support\Date\LocalTime;
@@ -168,6 +169,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedPartner($now, $userId);
         $this->seedFinance($now, $userId);
         $this->seedStations($now, $userId);
+        $this->seedFuelPrices($now, $userId);
 
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" (or "%s") with password "%s".</info>',
@@ -917,6 +919,121 @@ final class DemoDataSeeder extends AbstractSeed
                 'created_at' => $now, 'updated_at' => $now],
             ['user_id' => $userId, 'name' => 'Work', 'latitude' => '54.597000', 'longitude' => '-5.930000', 'sort_order' => 1,
                 'created_at' => $now, 'updated_at' => $now],
+        ])->saveData();
+    }
+
+    /**
+     * Live fuel prices (Phase 30.2, spec.md §7.34): the sample provider
+     * enabled, its made-up stations and prices near Home and Work (nothing
+     * is fetched from anywhere), three of the demo's stations linked to it
+     * with a daily listed price for the last 13 months (so the station
+     * charts show both series and the Fuel tab can add up *Shopping
+     * around*), and a price alert on the favourite Shell.
+     */
+    private function seedFuelPrices(string $now, int $userId): void
+    {
+        $at = new DateTimeImmutable($now, new DateTimeZone('UTC'));
+        $refs = [];
+        foreach (DemoPriceProvider::stations() as $station) {
+            $this->table('provider_stations')->insert([
+                'provider' => DemoPriceProvider::CODE,
+                'provider_ref' => $station->ref,
+                'name' => $station->name,
+                'brand' => $station->brand,
+                'address' => $station->address,
+                'postcode' => $station->postcode,
+                'latitude' => $station->latitude,
+                'longitude' => $station->longitude,
+                'opening_hours' => json_encode($station->openingHours, JSON_THROW_ON_ERROR),
+                'amenities' => json_encode($station->amenities, JSON_THROW_ON_ERROR),
+                'grades' => json_encode(array_map(static fn ($g): string => $g->value, $station->grades), JSON_THROW_ON_ERROR),
+                'temporarily_closed' => $station->temporarilyClosed,
+                'updated_at' => $now,
+            ])->saveData();
+            $found = $this->query(
+                'SELECT id FROM provider_stations WHERE provider = ? AND provider_ref = ?',
+                [DemoPriceProvider::CODE, $station->ref],
+            );
+            $row = $found instanceof PDOStatement ? $found->fetch(PDO::FETCH_ASSOC) : false;
+            $refs[$station->ref] = is_array($row) ? self::intValue($row['id'] ?? 0) : 0;
+        }
+        $prices = [];
+        foreach (DemoPriceProvider::prices($at) as $price) {
+            $prices[] = [
+                'provider_station_id' => $refs[$price->ref],
+                'grade' => $price->grade->value,
+                'price' => $price->price,
+                'reported_at' => $price->reportedAt->format('Y-m-d H:i:s'),
+                'synced_at' => $now,
+            ];
+        }
+        $this->table('provider_prices')->insert($prices)->saveData();
+
+        // Three of the demo's own stations are in the feed: Tesco Extra, the
+        // favourite Shell and Maxol Antrim.
+        $links = ['Tesco Extra' => 'demo-3', 'Shell' => 'demo-4', 'Maxol Antrim' => 'demo-2'];
+        foreach ($links as $name => $ref) {
+            $this->execute('UPDATE stations SET provider = ?, provider_ref = ? WHERE name = ?', [DemoPriceProvider::CODE, $ref, $name]);
+            [, , , , , $grades, $offset] = DemoPriceProvider::STATIONS[$ref];
+            $changes = [];
+            for ($day = 400; $day >= 0; $day--) {
+                $when = $at->modify(sprintf('-%d days', $day))->setTime(7, 0);
+                if ($when > $at) {
+                    continue;
+                }
+                // A gentle wander over the year, a few pence either way.
+                $drift = (int) round(40 * sin($day / 45) + 10 * sin($day / 7));
+                foreach ($grades as $code) {
+                    $pence = (int) round((float) DemoPriceProvider::BASE[$code] * 1000) + $offset * 10 + $drift;
+                    $changes[] = [
+                        'provider' => DemoPriceProvider::CODE,
+                        'provider_ref' => $ref,
+                        'grade' => $code,
+                        'price' => number_format($pence / 1000, 3, '.', ''),
+                        'reported_at' => $when->format('Y-m-d H:i:s'),
+                    ];
+                }
+            }
+            foreach (array_chunk($changes, 200) as $chunk) {
+                $this->table('listed_price_changes')->insert($chunk)->saveData();
+            }
+        }
+
+        $shell = $this->fetchRow("SELECT id FROM stations WHERE name = 'Shell'");
+        $shellId = is_array($shell) ? self::intValue($shell['id'] ?? 0) : 0;
+        if ($shellId > 0) {
+            $this->table('price_alerts')->insert([
+                'user_id' => $userId,
+                'station_id' => $shellId,
+                'grade' => 'e10_95',
+                'below' => '1.349',
+                'triggered_at' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->saveData();
+        }
+
+        $this->table('settings')->insert([
+            [
+                'scope' => 'global',
+                'owner_id' => 0,
+                'name' => 'fuel_prices',
+                'value' => json_encode(['provider' => DemoPriceProvider::CODE, 'refresh' => 60, 'e5' => 'e5_97'], JSON_THROW_ON_ERROR),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'scope' => 'global',
+                'owner_id' => 0,
+                'name' => 'fuel_prices.sync',
+                'value' => json_encode([
+                    'provider' => DemoPriceProvider::CODE,
+                    'last_good' => $at->format(DATE_ATOM),
+                    'last_full' => $at->format(DATE_ATOM),
+                ], JSON_THROW_ON_ERROR),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ])->saveData();
     }
 
