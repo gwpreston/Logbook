@@ -51,7 +51,8 @@ jobs:
           - { php: "8.4", db: pgsql,   driver: pgsql,  image: "postgres:17",  port: 5432, health: "pg_isready -U logbook -d logbook_test" }
           - { php: "8.4", db: mysql,   driver: mysql,  image: "mysql:8.4",    port: 3306, health: "mysqladmin ping -h 127.0.0.1 -ulogbook -plogbook" }
           - { php: "8.4", db: mariadb, driver: mysql,  image: "mariadb:11.4", port: 3306, health: "healthcheck.sh --connect --innodb_initialized" }
-          - { php: "8.4", db: sqlite,  driver: sqlite, image: "",             port: 0,    health: "" }
+          # The sqlite row also measures coverage (pcov) and runs the coverage gates.
+          - { php: "8.4", db: sqlite,  driver: sqlite, image: "",             port: 0,    health: "", coverage: true }
           - { php: "8.5", db: pgsql,   driver: pgsql,  image: "postgres:17",  port: 5432, health: "pg_isready -U logbook -d logbook_test" }
           - { php: "8.5", db: mysql,   driver: mysql,  image: "mysql:8.4",    port: 3306, health: "mysqladmin ping -h 127.0.0.1 -ulogbook -plogbook" }
     services:
@@ -87,11 +88,14 @@ jobs:
       TEST_DB_PASSWORD: logbook
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history on the coverage row, so diff-cover can diff against the base branch.
+          fetch-depth: ${{ matrix.coverage && '0' || '1' }}
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
-          coverage: none
+          coverage: ${{ matrix.coverage && 'pcov' || 'none' }}
           tools: composer:v2
       - uses: actions/cache@v4
         with:
@@ -106,6 +110,23 @@ jobs:
           vendor/bin/phinx rollback -e testing -t 0
           vendor/bin/phinx migrate  -e testing
       - run: composer test
+        if: ${{ !matrix.coverage }}
+      - name: Tests with line coverage
+        if: ${{ matrix.coverage }}
+        run: composer test:coverage
+      - name: Overall coverage is not below the floor (tests/coverage-floor.txt)
+        if: ${{ matrix.coverage }}
+        run: composer coverage:check
+      - name: At least 80% of the lines this pull request changes in src/ are covered
+        if: ${{ matrix.coverage && github.event_name == 'pull_request' }}
+        run: |
+          status=0
+          pipx run diff-cover==10.6.0 var/coverage/cobertura.xml \
+            --compare-branch="origin/${{ github.base_ref }}" \
+            --fail-under=80 \
+            --markdown-report diff-cover.md || status=$?
+          cat diff-cover.md >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$status"
 
   docker:
     name: Docker image (smoke test + multi-arch build)

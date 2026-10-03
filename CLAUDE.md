@@ -84,6 +84,8 @@ assets. Nothing else should be web-reachable.
 composer install                 # deps
 composer start                   # local dev server (php -S) on :8090
 composer test                    # PHPUnit
+composer test:coverage           # PHPUnit with line coverage (pcov or Xdebug) -> var/coverage/
+composer coverage:check          # fail if overall coverage is below tests/coverage-floor.txt
 composer lint                    # phpcs (PSR-12)
 composer analyse                 # phpstan
 composer cs-fix                  # phpcbf
@@ -194,6 +196,11 @@ Sensible defaults so `docker compose up` works with zero edits.
 
 1. Runs on PHP 8.4, passes `lint` and `analyse`.
 2. Has tests; suite passes against **both** MySQL and Postgres.
+   **Coverage:** at least **80%** of the `src/` lines a change adds or
+   modifies are covered, and overall `src/` line coverage stays at or above
+   the floor in `tests/coverage-floor.txt` (never below 80; raise it when
+   `composer coverage:check` says so). CI enforces both on the SQLite row.
+   Templates, JS and migrations aren't measured, so test them as before.
 3. Migrations apply and roll back on both engines.
 4. New user-facing strings are translatable (no hard-coded English in templates).
 5. New config is in `.env.example` and documented.
