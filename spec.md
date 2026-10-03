@@ -341,7 +341,7 @@ disagree):
     printed, the values of every environment variable whose name contains
     `PASSWORD`, `SECRET`, `TOKEN` or `KEY` (values of 4 characters or
     more, except plain settings words and `logbook`, the shipped compose
-    files' public default database password, decided 2026-10-02, #110), every stored AI connection secret (§7.25), and anything that
+    files' public default database password, decided 2026-10-02, #110), every stored AI connection secret (§7.25) and price provider credential (§7.34), and anything that
     looks like a Logbook API key (`lbk_` followed by its characters) with
     `••••`.
 

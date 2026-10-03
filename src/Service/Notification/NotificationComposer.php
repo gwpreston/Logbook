@@ -6,13 +6,17 @@ namespace Logbook\Service\Notification;
 
 use DateTimeImmutable;
 use IntlDateFormatter;
+use Logbook\Domain\FuelPrices\ListedPrice;
+use Logbook\Domain\FuelPrices\PriceAlert;
 use Logbook\Domain\Job\JobRun;
+use Logbook\Domain\Station\Station;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Service\Attention\AttentionItem;
 use Logbook\Service\Attention\AttentionWording;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderWording;
+use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Display\UserDisplayScope;
 use Logbook\Support\Http\AbsoluteUrl;
 use Symfony\Component\Translation\Translator;
@@ -30,6 +34,7 @@ final readonly class NotificationComposer
         private ReminderWording $wording,
         private AbsoluteUrl $urls,
         private AttentionWording $attention,
+        private DisplayFormatter $formatter,
     ) {
     }
 
@@ -146,6 +151,30 @@ final readonly class NotificationComposer
             ]),
             url: $this->urls->route('settings.jobs.run', ['run' => (string) $run->id]),
             urgent: true,
+        ));
+    }
+
+    /**
+     * "E10 95 at Tesco Antrim is £1.359/L" (spec.md §7.34 *Price alerts*),
+     * in the user's language and units.
+     */
+    public function priceAlert(User $user, Station $station, PriceAlert $alert, ListedPrice $listed, string $currency): Notification
+    {
+        return $this->scope->run($user, fn (): Notification => new Notification(
+            kind: NotificationKind::PriceAlert,
+            title: $this->translator->trans('notifications.price_alert.title', [
+                'grade' => $this->translator->trans($alert->grade->shortLabelKey()),
+                'station' => $station->data->name,
+                'price' => $this->formatter->unitPrice($listed->price, $currency, false),
+            ]),
+            message: $this->translator->trans('notifications.price_alert.message', [
+                'grade' => $this->translator->trans($alert->grade->shortLabelKey()),
+                'station' => $station->data->name,
+                'price' => $this->formatter->unitPrice($listed->price, $currency, false),
+                'below' => $this->formatter->unitPrice($alert->below, $currency, false),
+                'listed' => $this->formatter->dateTime($listed->reportedAt, IntlDateFormatter::SHORT),
+            ]),
+            url: $this->urls->route('stations.show', ['station' => (string) $station->id]),
         ));
     }
 

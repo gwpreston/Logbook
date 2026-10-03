@@ -69,6 +69,8 @@ final readonly class AppSettings
         public bool $updateCheckAllowed = true,
         /** `LOGBOOK_DOCKER=1`, set by the Docker image: the update banner's upgrade line. */
         public bool $docker = false,
+        /** Days of tracked stations' listed price changes kept (Phase 30.2, §7.34; at least 30). */
+        public int $priceHistoryDays = 1095,
     ) {
     }
 
@@ -119,6 +121,7 @@ final readonly class AppSettings
             updateCheckRepo: self::repository($env->string('UPDATE_CHECK_REPO', self::UPDATE_CHECK_REPO)),
             updateCheckAllowed: $env->bool('UPDATE_CHECK_ALLOWED', true),
             docker: $env->bool('LOGBOOK_DOCKER', false),
+            priceHistoryDays: max(30, $env->int('PRICE_HISTORY_DAYS', 1095)),
         );
     }
 

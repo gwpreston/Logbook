@@ -14,4 +14,6 @@ enum NotificationKind: string
     case Test = 'test';
     /** A background job failed twice in a row (admins, Phase 28.1). */
     case JobFailed = 'job_failed';
+    /** A favourite station's listed price dropped below the user's alert (Phase 30.2). */
+    case PriceAlert = 'price_alert';
 }

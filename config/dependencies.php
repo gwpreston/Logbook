@@ -52,6 +52,11 @@ use Logbook\Service\Jobs\BackupJob;
 use Logbook\Service\Jobs\CleanupJob;
 use Logbook\Service\Jobs\DigestJob;
 use Logbook\Service\Jobs\Job;
+use Logbook\Service\FuelPrices\FuelPricesJob;
+use Logbook\Service\FuelPrices\Pause;
+use Logbook\Service\FuelPrices\ProviderRegistry;
+use Logbook\Service\FuelPrices\SystemPause;
+use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
 use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobsTwigExtension;
 use Logbook\Service\Jobs\RemindersJob;
@@ -148,8 +153,15 @@ return [
             BackupJob::class,
             // `UPDATE_CHECK_ALLOWED=false` leaves the job out entirely (spec.md §7.31).
             ...($settingsOf($c)->updateCheckAllowed ? [UpdateCheckJob::class] : []),
+            // Never due while no price provider is enabled (spec.md §7.34).
+            FuelPricesJob::class,
         ],
     )),
+    // Live fuel price providers (Phase 30.2, spec.md §7.34); one adapter per country.
+    ProviderRegistry::class => static fn (ContainerInterface $c): ProviderRegistry => new ProviderRegistry([
+        $c->get(FuelFinderProvider::class),
+    ]),
+    Pause::class => autowire(SystemPause::class),
     InstalledVersion::class => static fn (): InstalledVersion => new InstalledVersion(Kernel::version()),
 
     Connection::class => static fn (ContainerInterface $c): Connection
