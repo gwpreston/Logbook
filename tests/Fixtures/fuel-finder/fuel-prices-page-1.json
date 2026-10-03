@@ -1,0 +1,100 @@
+[
+  {
+    "node_id": "6d180f370a1b202b079fde16172e373e2643f072af449e34b7efed999232e230",
+    "public_phone_number": null,
+    "trading_name": "TESCO ANTRIM EXTRA",
+    "fuel_prices": [
+      {
+        "price": "0135.9000",
+        "fuel_type": "E10",
+        "price_last_updated": "2026-10-03T06:15:00"
+      },
+      {
+        "price": "0149.9000",
+        "fuel_type": "E5",
+        "price_last_updated": "2026-10-03T06:15:00"
+      },
+      {
+        "price": "0142.9000",
+        "fuel_type": "B7_STANDARD",
+        "price_last_updated": "2026-10-02T18:40:12"
+      }
+    ]
+  },
+  {
+    "node_id": "dad21c06807b3b2e1c491703919e196a7ee15bd71c26c73acc2a749a08414463",
+    "public_phone_number": null,
+    "trading_name": "Shell Junction One",
+    "fuel_prices": [
+      {
+        "price": "1.379",
+        "fuel_type": "E10",
+        "price_last_updated": "2026-10-03T05:00:00"
+      },
+      {
+        "price": "0012.0000",
+        "fuel_type": "E5",
+        "price_last_updated": "2026-10-03T05:00:00"
+      },
+      {
+        "price": "0145.9000",
+        "fuel_type": "B7_STANDARD",
+        "price_last_updated": "2026-10-03T05:00:00"
+      },
+      {
+        "price": "0159.9000",
+        "fuel_type": "B7_PREMIUM",
+        "price_last_updated": "2026-10-03T05:00:00"
+      }
+    ]
+  },
+  {
+    "node_id": "f29806f4786efa80a08d00ea6a352031b355296939c96daa71109868a2ce0b19",
+    "public_phone_number": null,
+    "trading_name": "MAXOL ANTRIM",
+    "fuel_prices": [
+      {
+        "price": "0133.9000",
+        "fuel_type": "E10",
+        "price_last_updated": "2026-09-29T08:00:00"
+      },
+      {
+        "price": "0141.9000",
+        "fuel_type": "B7_STANDARD",
+        "price_last_updated": "2026-10-03T04:00:00"
+      },
+      {
+        "price": "0139.9000",
+        "fuel_type": "B10",
+        "price_last_updated": "2026-10-03T04:00:00"
+      },
+      {
+        "price": "0169.9000",
+        "fuel_type": "HVO",
+        "price_last_updated": "2026-10-03T04:00:00"
+      }
+    ]
+  },
+  {
+    "node_id": "429e574eb2038e1a32e27f068af27191c4bf86bc631e835bf74365bb40d18120",
+    "public_phone_number": null,
+    "trading_name": "MOTORWAY SERVICES M2",
+    "fuel_prices": [
+      {
+        "price": null,
+        "fuel_type": "E10",
+        "price_last_updated": null
+      },
+      {
+        "price": "0999.9000",
+        "fuel_type": "B7_STANDARD",
+        "price_last_updated": "2026-10-03T03:00:00"
+      },
+      {
+        "price": "0189.9000",
+        "fuel_type": "SOMETHING_NEW",
+        "price_last_updated": "2026-10-03T03:00:00"
+      }
+    ]
+  }
+]

@@ -8,6 +8,7 @@ use Logbook\Service\Trip\ClaimReport;
 use Logbook\Service\Attention\AttentionReport;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Finance\AgreementView;
+use Logbook\Service\FuelPrices\CheapestFuelWidget;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\History\ActivityItem;
 use Logbook\Service\Reminder\ReminderOverview;
@@ -54,6 +55,8 @@ final readonly class Dashboard
         public ?AttentionReport $attention = null,
         /** Active agreements in view, for those who may see their finance (Phase 29.2); null when not built. */
         public ?array $finance = null,
+        /** The cheapest fuel near a place (Phase 30.2); null while hidden or prices are off. */
+        public ?CheapestFuelWidget $cheapestFuel = null,
     ) {
     }
 

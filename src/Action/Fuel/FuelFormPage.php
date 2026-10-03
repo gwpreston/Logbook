@@ -8,9 +8,13 @@ use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Access\EntryAccess;
 use Logbook\Service\Fuel\FuelPicker;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\FuelPrices\ComparisonWording;
+use Logbook\Service\FuelPrices\FillUpComparisons;
+use Logbook\Service\FuelPrices\ListedHint;
 use Logbook\Service\Station\StationHint;
 use Logbook\Service\Station\StationListing;
 use Logbook\Service\Station\StationService;
@@ -34,6 +38,10 @@ final readonly class FuelFormPage
         private ClockInterface $clock,
         private StationService $stations,
         private StationHint $hints,
+        private ListedHint $listed,
+        private FillUpComparisons $comparisons,
+        private ComparisonWording $wording,
+        private EntryAccess $access,
     ) {
     }
 
@@ -70,7 +78,20 @@ final readonly class FuelFormPage
             'errors' => $errors?->all() ?? [],
             'fuel_groups' => $picker,
             'latest' => $this->odometer->history($vehicle)->latest(),
+            // Phase 30.2: how this fill-up compared with the usual station (spec.md §7.34).
+            'comparison' => $this->comparison($request, $vehicle, $entry),
         ] + $this->upload->formContext($vehicle, AttachmentOwner::Fuel, $entry?->id), $status);
+    }
+
+    private function comparison(ServerRequestInterface $request, Vehicle $vehicle, ?FuelEntry $entry): ?string
+    {
+        $user = RequestContext::requireUser($request);
+        if ($entry === null || !$this->access->canSeeAmount($user, $vehicle, $entry->createdBy)) {
+            return null;
+        }
+        $comparison = $this->comparisons->forEntry($user, $vehicle, $entry);
+
+        return $comparison === null ? null : $this->wording->sentence($comparison);
     }
 
     /**
@@ -102,6 +123,8 @@ final readonly class FuelFormPage
             'station_chosen' => $chosen,
             'station_chosen_listed' => $chosen !== null && in_array($chosen->id, $listed, true),
             'station_hint' => $chosen === null ? null : $this->hints->forStation($user, $chosen->id),
+            // Phase 30.2: the listed price per grade at a linked station (spec.md §7.34).
+            'station_listed' => $chosen === null ? [] : ($this->listed->forStations($user, [$chosen])[$chosen->id] ?? []),
         ];
     }
 }

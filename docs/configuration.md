@@ -182,7 +182,7 @@ which configured channels to use in **Settings → Reminders**. See
 | `FEATURES_TRIPS` | `false` | Trips and mileage claims: the Trips tab, saved journeys, mileage rates, the claim report, the business and private split, the *Business mileage* widget and report section, and the trip API. The one module that is off by default ([trips.md](trips.md)). |
 | `FEATURES_INCIDENTS` | `true` | Incidents, damage and insurance claims: the Incidents tab, *Part of an incident* on repairs, expenses and tyre changes, the claims history, the sale pack's *Include incidents*, the Reports section, ownership net of payouts, the stalled-claim check, and the incident API and tools ([incidents.md](incidents.md)). |
 | `FEATURES_FINANCE` | `true` | Finance and lease agreements: the finance page and agreement pages, the overview card, the dashboard widget, credit charges or lease rentals counted in costs, *Coming up* lines, finance reminders and *Needs attention* items, the API endpoint and the Ask tool ([finance.md](finance.md)). |
-| `FEATURES_STATIONS` | `true` | Fuel stations: stations as records linked from fill-ups, the stations list and pages with what you paid, favourites, Settings → Places and straight-line distances, merging and duplicates, the Fuel tab's *By station* card, the station API endpoints and the Ask tool ([stations.md](stations.md)). Part of fuel: off whenever `FEATURES_FUEL` is. Nothing is fetched from outside. |
+| `FEATURES_STATIONS` | `true` | Fuel stations: stations as records linked from fill-ups, the stations list and pages with what you paid, favourites, Settings → Places and straight-line distances, merging and duplicates, the Fuel tab's *By station* card, the station API endpoints and the Ask tool ([stations.md](stations.md)). Part of fuel: off whenever `FEATURES_FUEL` is. Nothing is fetched from outside, unless an admin enables a fuel price provider (see [Fuel prices](#fuel-prices)). |
 | `FEATURES_AI_ASK` | `true` | Ask Logbook (Phase 26.2). Does nothing, and is not listed on Settings → Modules, until AI is set up ([ai.md](ai.md)). |
 | `FEATURES_AI_ACTIONS` | `true` | Drafting entries from what you say (Phase 26.3). As above. |
 | `FEATURES_AI_SCAN` | `true` | Reading receipts and documents (Phase 26.4). As above. |
@@ -202,6 +202,19 @@ reports and reminders; its data is kept.
 The check itself is **off** until an admin switches it on in Settings →
 Updates (or ticks *Tell me when a new version is out* at first-run setup).
 See [Update check](deployment.md#update-check).
+
+## Fuel prices
+
+Listed fuel prices (Phase 30.2, [stations.md](stations.md#fuel-prices)) are
+**off** until an admin chooses a provider on Settings → Fuel prices. The
+provider, its credentials and the refresh are set there, not here. A
+credential can be typed as `env:NAME` to read it from any variable you
+choose; one typed in full is encrypted with a key derived from
+`SESSION_SECRET`, as AI keys are.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PRICE_HISTORY_DAYS` | `1095` | Days of listed price history kept for stations someone has used or favourited (three years). At least `30`: a smaller value is treated as 30. The hourly `cleanup` job deletes older entries. |
 
 ## Docker entrypoint only
 

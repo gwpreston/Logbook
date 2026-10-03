@@ -109,7 +109,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 30.1 station links and tables, the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
+        // Newest first: the Phase 30.2 fuel price tables, the Phase 30.1 station links and tables,
+        // the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
         // the Phase 28.1 job runs, the Phase 27.2 disposal, estimate and incident scans,
         // the Phase 27.1 incidents, the Phase 26.5 draft source,
         // the Phase 26.4 pending uploads, the Phase 26.3 drafts,
@@ -126,6 +127,18 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 30.2: the fuel price tables and the station link columns.
+        $prices = ['provider_stations', 'provider_prices', 'listed_price_changes', 'price_alerts', 'fuel_price_secrets'];
+        self::assertTrue($schema->tablesExist($prices));
+        self::assertTrue($this->hasColumn('stations', 'provider_ref'));
+        Migrator::run('rollback');
+        foreach ($prices as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+        self::assertFalse($this->hasColumn('stations', 'provider_ref'));
+        self::assertFalse($this->hasColumn('stations', 'keep_my_details'));
+        self::assertTrue($this->hasColumn('stations', 'merged_into'), 'the Phase 30.1 columns stay');
+
         // The data migration unlinks; the next drops the column and tables.
         $stations = ['stations', 'station_favourites', 'places'];
         self::assertTrue($schema->tablesExist($stations));

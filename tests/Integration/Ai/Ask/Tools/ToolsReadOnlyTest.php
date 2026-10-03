@@ -7,9 +7,14 @@ namespace Logbook\Tests\Integration\Ai\Ask\Tools;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Station\PlaceData;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Repository\BackupRepository;
 use Logbook\Service\Ai\Ask\ToolRegistry;
+use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
+use Logbook\Service\FuelPrices\FuelPriceConfig;
+use Logbook\Service\FuelPrices\FuelPriceSettings;
+use Logbook\Service\Station\PlaceService;
 use Logbook\Service\Trip\TripService;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -35,6 +40,8 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
         ));
         $this->maintenance($app, $golf, '2026-07-01', 'Oil and filter', '120.00', '19500');
         $this->reading($app, $golf, '20500', '2026-09-20T09:00:00Z');
+        $this->service($app, FuelPriceConfig::class)->save(new FuelPriceSettings(DemoPriceProvider::CODE));
+        $this->service($app, PlaceService::class)->create($owner, new PlaceData('Home', '54.716000', '-6.208000'));
         $before = $this->counts($app);
 
         $calls = [
@@ -61,6 +68,9 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             ['finance', ['vehicle' => $golf->id]],
             ['stations', []],
             ['stations', ['query' => 'Tesco', 'favourites_only' => true]],
+            // Phase 30.2: with the sample provider on and a place to search near.
+            ['cheapest_fuel', []],
+            ['cheapest_fuel', ['near' => 'here', 'lat' => 54.7, 'lng' => -6.2, 'radius' => 10]],
             // Phase 26.3: drafts are validated by a write that is rolled back; only ai_drafts keeps the card.
             ['draft_fill_up', ['vehicle' => $golf->id, 'odometer' => '21000', 'volume' => '40', 'total_cost' => '60']],
             ['draft_reading', ['vehicle' => $golf->id, 'odometer' => '21100']],
@@ -85,7 +95,7 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             $drafts,
             'a card for each draft but the tread check (no tyres fitted)',
         );
-        self::assertCount(25, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
+        self::assertCount(26, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
     }
 
     /**

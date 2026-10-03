@@ -447,6 +447,26 @@ final readonly class DisplayFormatter
         return $this->formatDate($local, $style, IntlDateFormatter::NONE, $preferences->timezone);
     }
 
+    /**
+     * When an instant was, in the user's time zone: the time alone when it
+     * fell today there ("14:20"), else the date and time ("2 Oct 2026,
+     * 14:20") (spec.md §7.34 *Freshness*).
+     */
+    public function instantWhen(?DateTimeInterface $instant, DateTimeInterface $now): string
+    {
+        if ($instant === null) {
+            return '';
+        }
+        $preferences = $this->context->preferences();
+        $local = LocalTime::fromUtc($instant, $preferences->timeZone());
+        $today = LocalTime::fromUtc($now, $preferences->timeZone());
+        if ($local->format('Y-m-d') === $today->format('Y-m-d')) {
+            return $this->formatDate($local, IntlDateFormatter::NONE, IntlDateFormatter::SHORT, $preferences->timezone);
+        }
+
+        return $this->formatDate($local, IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT, $preferences->timezone);
+    }
+
     private function formatDate(DateTimeInterface $value, int $dateStyle, int $timeStyle, string $zone): string
     {
         $formatter = new IntlDateFormatter($this->locale(), $dateStyle, $timeStyle, $zone);

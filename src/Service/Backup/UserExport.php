@@ -145,6 +145,25 @@ final class UserExport
             $stations,
         ));
 
+        // Phase 30.2: their price alerts (on their favourites, carried above),
+        // and the listed price changes of the exported stations' links.
+        $out['price_alerts'] = $keep('price_alerts', static fn (array $row): bool => $row['user_id'] === $user);
+        $links = [];
+        foreach ($out['stations'] as $row) {
+            if (is_string($row['provider'] ?? null) && is_string($row['provider_ref'] ?? null)) {
+                $links[$row['provider'] . "\n" . $row['provider_ref']] = true;
+            }
+        }
+        $out['listed_price_changes'] = $keep(
+            'listed_price_changes',
+            static function (array $row) use ($links): bool {
+                $provider = $row['provider'] ?? null;
+                $ref = $row['provider_ref'] ?? null;
+
+                return is_string($provider) && is_string($ref) && isset($links[$provider . "\n" . $ref]);
+            },
+        );
+
         // Phase 26.1: AI connections are the install's, not the user's.
         $out['ai_connections'] = [];
         $out['ai_models'] = [];

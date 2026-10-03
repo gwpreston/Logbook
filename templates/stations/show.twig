@@ -1,6 +1,7 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/stations.twig' as st %}
+{% import 'macros/fuel_prices.twig' as fp %}
 
 {#
  # One station (spec.md §7.33 *Station page*): details, what the user paid
@@ -54,6 +55,130 @@
             {% endif %}
         </section>
 
+        {% if prices %}
+            {% set currency = prices.provider.currency() %}
+            {% set unit = user.preferences.volumeUnit %}
+            <section class="card" aria-labelledby="station-listed" data-listed-prices>
+                <h2 id="station-listed" class="card__title">{{ ui.icon('price_check') }}{{ 'fuel_prices.station.listed_title'|trans }}</h2>
+                {% if prices.providerStation.data.temporarilyClosed %}
+                    <div class="alert alert--warning" role="status" data-temporarily-closed>{{ ui.icon('warning') }}<span>{{ 'fuel_prices.station.temporarily_closed'|trans }}</span></div>
+                {% endif %}
+                {% if prices.prices is empty %}
+                    <p class="muted">{{ 'fuel_prices.station.no_prices'|trans }}</p>
+                {% else %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <caption class="visually-hidden">{{ 'fuel_prices.station.listed_caption'|trans }}</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ 'stations.paid.grade'|trans }}</th>
+                                    <th scope="col">{{ 'fuel_prices.station.listed_now'|trans }}</th>
+                                    <th scope="col" class="table__num">{{ 'fuel_prices.station.you_paid'|trans }}</th>
+                                    {% if can_alert %}<th scope="col">{{ 'fuel_prices.alert.title'|trans }}</th>{% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for code, listed in prices.prices %}
+                                    {% set paid = (paid_last_year.grades ?? [])|filter(g => g.grade and g.grade.value == code and g.currency == currency and g.averagePrice is not null)|first %}
+                                    {% set alert = alerts[code] ?? null %}
+                                    <tr data-listed-grade="{{ code }}">
+                                        <th scope="row">{{ listed.grade.shortLabelKey()|trans }}</th>
+                                        <td>{{ fp.listed(listed, currency) }}</td>
+                                        <td class="table__num tabular">{{ paid ? paid.averagePrice|unit_price(currency, false, true) : '—' }}</td>
+                                        {% if can_alert %}
+                                            <td>
+                                                <form method="post" action="{{ url_for('stations.alerts', {station: station.id}) }}" class="alert-form">
+                                                    {{ ui.csrf(csrf) }}
+                                                    <input type="hidden" name="grade" value="{{ code }}">
+                                                    <label class="visually-hidden" for="f-alert-{{ code }}">{{ 'fuel_prices.alert.label'|trans({grade: listed.grade.shortLabelKey()|trans}) }}</label>
+                                                    <input class="input input--short" id="f-alert-{{ code }}" name="below" type="number" step="any" min="0" inputmode="decimal"
+                                                           value="{{ alert ? unit.pricePerUnit(alert.below, 3) : '' }}" placeholder="{{ unit.pricePerUnit(listed.price, 3) }}">
+                                                    <button type="submit" class="btn btn--soft">{{ (alert ? 'fuel_prices.alert.update' : 'fuel_prices.alert.set')|trans }}</button>
+                                                    {% if alert %}
+                                                        <button type="submit" class="btn btn--ghost" name="remove" value="1">{{ 'fuel_prices.alert.remove'|trans }}</button>
+                                                        <span class="muted" data-alert-state="{{ alert.isArmed() ? 'armed' : 'triggered' }}">{{ (alert.isArmed() ? 'fuel_prices.alert.armed' : 'fuel_prices.alert.triggered')|trans }}</span>
+                                                    {% endif %}
+                                                </form>
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if can_alert %}
+                        <p class="field__hint">{{ 'fuel_prices.alert.hint'|trans({unit: ('units.symbol.' ~ unit.value)|trans}) }}</p>
+                    {% elseif not favourite %}
+                        <p class="field__hint">{{ 'fuel_prices.alert.favourite_first'|trans }}</p>
+                    {% endif %}
+                {% endif %}
+                {{ fp.attribution(prices.provider) }}
+            </section>
+        {% endif %}
+
+        {% if provider and (station.link or can_edit) %}
+            <section class="card" aria-labelledby="station-link" data-station-link>
+                <h2 id="station-link" class="card__title">{{ ui.icon('link') }}{{ 'fuel_prices.link.title'|trans({provider: provider.nameKey()|trans}) }}</h2>
+                {% if station.link %}
+                    {% if prices %}
+                        {% set ps = prices.providerStation.data %}
+                        <p>{{ 'fuel_prices.link.linked_to'|trans({name: ps.name}) }}{% if ps.address %} <span class="muted">· {{ ps.address }}</span>{% endif %}</p>
+                    {% else %}
+                        <p class="muted">{{ 'fuel_prices.link.pending'|trans }}</p>
+                    {% endif %}
+                    {% if can_edit %}
+                        <form method="post" action="{{ url_for('stations.link', {station: station.id}) }}" class="form">
+                            {{ ui.csrf(csrf) }}
+                            <input type="hidden" name="keep" value="0">
+                            <label class="toggle">
+                                <input type="checkbox" name="keep" value="1"{% if station.link.keepMyDetails %} checked{% endif %}>
+                                <span class="toggle__text">
+                                    <span class="toggle__title">{{ 'fuel_prices.link.keep'|trans }}</span>
+                                    <span class="toggle__hint">{{ 'fuel_prices.link.keep_hint'|trans }}</span>
+                                </span>
+                            </label>
+                            <div class="btn-row">
+                                <button type="submit" class="btn">{{ 'fuel_prices.link.keep_save'|trans }}</button>
+                            </div>
+                        </form>
+                        <form method="post" action="{{ url_for('stations.link', {station: station.id}) }}">
+                            {{ ui.csrf(csrf) }}
+                            <input type="hidden" name="unlink" value="1">
+                            <button type="submit" class="btn btn--ghost">{{ ui.icon('link_off') }}{{ 'fuel_prices.link.unlink'|trans }}</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <p>{{ 'fuel_prices.link.question'|trans }}</p>
+                    {% if candidates is empty %}
+                        <p class="muted" data-no-candidates>{{ (data.hasPosition() ? 'fuel_prices.link.none_near' : 'fuel_prices.link.none_match')|trans }}</p>
+                    {% else %}
+                        <ul class="list" data-candidates>
+                            {% for candidate in candidates %}
+                                {% set ps = candidate.station.data %}
+                                <li class="list__item">
+                                    <span class="list__icon">{{ ui.icon('local_gas_station') }}</span>
+                                    <span class="list__body">
+                                        <span class="list__title">{{ ps.name }}{% if ps.brand and ps.brand != ps.name %} · {{ ps.brand }}{% endif %}</span>
+                                        <span class="list__meta">
+                                            {{- [ps.address, ps.postcode]|filter(p => p)|join(' · ') -}}
+                                            {%- if candidate.km is not null %} · {{ 'fuel_prices.link.away'|trans({distance: candidate.km|distance(2)}) }}{% endif -%}
+                                        </span>
+                                    </span>
+                                    <span class="list__end">
+                                        <form method="post" action="{{ url_for('stations.link', {station: station.id}) }}">
+                                            {{ ui.csrf(csrf) }}
+                                            <input type="hidden" name="ref" value="{{ candidate.station.ref() }}">
+                                            <button type="submit" class="btn">{{ 'fuel_prices.link.link'|trans }}<span class="visually-hidden"> {{ ps.name }}</span></button>
+                                        </form>
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endif %}
+            </section>
+        {% endif %}
+
         <section class="card" aria-labelledby="station-paid">
             <h2 id="station-paid" class="card__title">{{ 'stations.paid.title'|trans }}</h2>
             {% if summary is null %}
@@ -90,12 +215,12 @@
                     </div>
                     <p class="field__hint">{{ 'stations.paid.hint'|trans }}</p>
                 {% endif %}
-                {% for kind, chart in charts %}
-                    {% if chart.pointCount() > 1 %}
-                        {{ ui.chart(chart, ('stations.chart.' ~ kind)|trans) }}
-                    {% endif %}
-                {% endfor %}
             {% endif %}
+            {% for kind, chart in charts %}
+                {% if chart.pointCount() > 1 %}
+                    {{ ui.chart(chart, ('stations.chart.' ~ kind)|trans) }}
+                {% endif %}
+            {% endfor %}
         </section>
 
         <section class="card" aria-labelledby="station-fills">

@@ -138,6 +138,21 @@ const icons = [
   'visibility',
   'visibility_off',
   'warning',
+  // Phase 30.1 and 30.2 (stations, fuel prices).
+  'home_pin',
+  'link_off',
+  'location_on',
+  'map',
+  'merge',
+  'my_location',
+  'near_me',
+  'notifications_active',
+  'savings',
+  'search',
+  'shield',
+  // A filled star for a favourite, the outline for not (Material Symbols has one name, two fills).
+  { name: 'star', file: 'star-fill' },
+  { name: 'star_outline', file: 'star' },
 ];
 
 mkdirSync(join(outDir, 'fonts'), { recursive: true });
@@ -159,8 +174,9 @@ for (const { pkg, files } of fonts) {
   console.log(`vendored ${pkg}@${m.version} -> assets/vendor/fonts/ (${files.length} files)`);
 }
 
-const symbols = icons.map((name) => {
-  const svg = readFileSync(join(root, 'node_modules', iconPkg, 'rounded', `${name}.svg`), 'utf8');
+const symbols = icons.map((icon) => {
+  const { name, file } = typeof icon === 'string' ? { name: icon, file: icon } : icon;
+  const svg = readFileSync(join(root, 'node_modules', iconPkg, 'rounded', `${file}.svg`), 'utf8');
   const viewBox = /viewBox="([^"]+)"/.exec(svg)?.[1];
   const body = /<svg[^>]*>([\s\S]*)<\/svg>/.exec(svg)?.[1];
   if (!viewBox || !body) {

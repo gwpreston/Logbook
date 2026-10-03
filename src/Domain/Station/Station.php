@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Domain\Station;
 
 use DateTimeImmutable;
+use Logbook\Domain\FuelPrices\StationLink;
 
 /**
  * A fuel station or public charger (spec.md §6 Station, §7.33), shared by
@@ -21,6 +22,8 @@ final readonly class Station
         /** Who added it; null = a former user, or nobody (an admin edits it). */
         public ?int $createdBy = null,
         public ?int $mergedInto = null,
+        /** Its provider station (Phase 30.2, spec.md §7.34 *Linking stations*). */
+        public ?StationLink $link = null,
     ) {
     }
 

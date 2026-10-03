@@ -15,6 +15,9 @@
         <div class="toolbar list-toolbar">
             <h1 class="section-title">{{ 'stations.title'|trans }}</h1>
             <div class="btn-row list-toolbar__actions">
+                {% if fuel_prices_enabled() %}
+                    <a class="btn" href="{{ url_for('stations.near') }}" data-cheapest-near>{{ ui.icon('near_me') }}{{ 'fuel_prices.near.title'|trans }}</a>
+                {% endif %}
                 <a class="btn btn--ghost" href="{{ url_for('stations.duplicates') }}">{{ ui.icon('merge') }}{{ 'stations.duplicates.link'|trans }}</a>
                 <a class="btn btn--primary" href="{{ url_for('stations.create') }}">{{ ui.icon('add') }}{{ 'stations.add'|trans }}</a>
             </div>

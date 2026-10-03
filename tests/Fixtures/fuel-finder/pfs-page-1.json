@@ -1,0 +1,381 @@
+[
+  {
+    "node_id": "6d180f370a1b202b079fde16172e373e2643f072af449e34b7efed999232e230",
+    "public_phone_number": null,
+    "trading_name": "TESCO ANTRIM EXTRA",
+    "is_same_trading_and_brand_name": false,
+    "brand_name": "TESCO",
+    "temporary_closure": false,
+    "permanent_closure": false,
+    "permanent_closure_date": null,
+    "is_motorway_service_station": false,
+    "is_supermarket_service_station": true,
+    "location": {
+      "address_line_1": "4 RATHENRAW INDUSTRIAL ESTATE, ANTRIM, BT41 4LD",
+      "address_line_2": null,
+      "city": "ANTRIM",
+      "country": "Northern Ireland",
+      "county": "County Antrim",
+      "postcode": "BT41 4LD",
+      "latitude": "54.7180120",
+      "longitude": "-6.2190340"
+    },
+    "amenities": [
+      "customer_toilets",
+      "car_wash",
+      "adblue_pumps"
+    ],
+    "opening_times": {
+      "usual_days": {
+        "monday": {
+          "open": "06:00:00",
+          "close": "23:00:00",
+          "is_24_hours": false
+        },
+        "tuesday": {
+          "open": "06:00:00",
+          "close": "23:00:00",
+          "is_24_hours": false
+        },
+        "wednesday": {
+          "open": "06:00:00",
+          "close": "23:00:00",
+          "is_24_hours": false
+        },
+        "thursday": {
+          "open": "06:00:00",
+          "close": "23:00:00",
+          "is_24_hours": false
+        },
+        "friday": {
+          "open": "06:00:00",
+          "close": "23:00:00",
+          "is_24_hours": false
+        },
+        "saturday": {
+          "open": "06:00:00",
+          "close": "23:00:00",
+          "is_24_hours": false
+        },
+        "sunday": {
+          "open": "06:00:00",
+          "close": "23:00:00",
+          "is_24_hours": false
+        }
+      },
+      "bank_holiday": {
+        "type": "bank holiday",
+        "open_time": "06:00:00",
+        "close_time": "23:00:00",
+        "is_24_hours": false
+      }
+    },
+    "fuel_types": [
+      "E10",
+      "E5",
+      "B7_STANDARD"
+    ]
+  },
+  {
+    "node_id": "dad21c06807b3b2e1c491703919e196a7ee15bd71c26c73acc2a749a08414463",
+    "public_phone_number": "02894400000",
+    "trading_name": "Shell Junction One",
+    "is_same_trading_and_brand_name": false,
+    "brand_name": "Shell",
+    "temporary_closure": false,
+    "permanent_closure": null,
+    "permanent_closure_date": null,
+    "is_motorway_service_station": false,
+    "is_supermarket_service_station": false,
+    "location": {
+      "address_line_1": "Junction One Retail Park",
+      "address_line_2": "Ballymena Road",
+      "city": "Antrim",
+      "country": "Northern Ireland",
+      "county": null,
+      "postcode": "BT41 1AA",
+      "latitude": "54.7050000",
+      "longitude": "-6.2400000"
+    },
+    "amenities": [
+      "water_filling"
+    ],
+    "opening_times": {
+      "usual_days": {
+        "monday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "tuesday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "wednesday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "thursday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "friday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "saturday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "sunday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        }
+      },
+      "bank_holiday": {
+        "type": "bank holiday",
+        "open_time": "00:00:00",
+        "close_time": "00:00:00",
+        "is_24_hours": true
+      }
+    },
+    "fuel_types": [
+      "E10",
+      "E5",
+      "B7_STANDARD",
+      "B7_PREMIUM"
+    ]
+  },
+  {
+    "node_id": "f29806f4786efa80a08d00ea6a352031b355296939c96daa71109868a2ce0b19",
+    "public_phone_number": null,
+    "trading_name": "MAXOL ANTRIM",
+    "is_same_trading_and_brand_name": true,
+    "brand_name": "MAXOL",
+    "temporary_closure": true,
+    "permanent_closure": false,
+    "permanent_closure_date": null,
+    "is_motorway_service_station": false,
+    "is_supermarket_service_station": false,
+    "location": {
+      "address_line_1": "12 MAIN STREET",
+      "address_line_2": null,
+      "city": "ANTRIM",
+      "country": "Northern Ireland",
+      "county": null,
+      "postcode": "BT41 2BB",
+      "latitude": "54.7120000",
+      "longitude": "-6.2010000"
+    },
+    "amenities": [],
+    "opening_times": {
+      "usual_days": {
+        "monday": {
+          "open": "07:00:00",
+          "close": "22:00:00",
+          "is_24_hours": false
+        },
+        "tuesday": {
+          "open": "07:00:00",
+          "close": "22:00:00",
+          "is_24_hours": false
+        },
+        "wednesday": {
+          "open": "07:00:00",
+          "close": "22:00:00",
+          "is_24_hours": false
+        },
+        "thursday": {
+          "open": "07:00:00",
+          "close": "22:00:00",
+          "is_24_hours": false
+        },
+        "friday": {
+          "open": "07:00:00",
+          "close": "22:00:00",
+          "is_24_hours": false
+        },
+        "saturday": {
+          "open": "07:00:00",
+          "close": "22:00:00",
+          "is_24_hours": false
+        },
+        "sunday": {
+          "open": "07:00:00",
+          "close": "22:00:00",
+          "is_24_hours": false
+        }
+      },
+      "bank_holiday": {
+        "type": "bank holiday",
+        "open_time": "07:00:00",
+        "close_time": "22:00:00",
+        "is_24_hours": false
+      }
+    },
+    "fuel_types": [
+      "E10",
+      "B7_STANDARD",
+      "B10",
+      "HVO"
+    ]
+  },
+  {
+    "node_id": "a23d61fb665fab66fbfa7368abcc9df337e001bccde5a0f49805bacc5dfd0889",
+    "public_phone_number": null,
+    "trading_name": "LARNE ROAD SERVICE STATION",
+    "is_same_trading_and_brand_name": true,
+    "brand_name": "LARNE ROAD SERVICE STATION",
+    "temporary_closure": false,
+    "permanent_closure": true,
+    "permanent_closure_date": "2026-03-01",
+    "is_motorway_service_station": false,
+    "is_supermarket_service_station": false,
+    "location": {
+      "address_line_1": "LARNE ROAD",
+      "address_line_2": null,
+      "city": "BALLYCLARE",
+      "country": "Northern Ireland",
+      "county": null,
+      "postcode": "BT39 9AA",
+      "latitude": "54.7500000",
+      "longitude": "-6.0000000"
+    },
+    "amenities": [],
+    "opening_times": {
+      "usual_days": {
+        "monday": {
+          "open": "07:00:00",
+          "close": "21:00:00",
+          "is_24_hours": false
+        },
+        "tuesday": {
+          "open": "07:00:00",
+          "close": "21:00:00",
+          "is_24_hours": false
+        },
+        "wednesday": {
+          "open": "07:00:00",
+          "close": "21:00:00",
+          "is_24_hours": false
+        },
+        "thursday": {
+          "open": "07:00:00",
+          "close": "21:00:00",
+          "is_24_hours": false
+        },
+        "friday": {
+          "open": "07:00:00",
+          "close": "21:00:00",
+          "is_24_hours": false
+        },
+        "saturday": {
+          "open": "07:00:00",
+          "close": "21:00:00",
+          "is_24_hours": false
+        },
+        "sunday": {
+          "open": "07:00:00",
+          "close": "21:00:00",
+          "is_24_hours": false
+        }
+      },
+      "bank_holiday": {
+        "type": "bank holiday",
+        "open_time": "07:00:00",
+        "close_time": "21:00:00",
+        "is_24_hours": false
+      }
+    },
+    "fuel_types": [
+      "E10",
+      "B7_STANDARD"
+    ]
+  },
+  {
+    "node_id": "429e574eb2038e1a32e27f068af27191c4bf86bc631e835bf74365bb40d18120",
+    "public_phone_number": null,
+    "trading_name": "MOTORWAY SERVICES M2",
+    "is_same_trading_and_brand_name": false,
+    "brand_name": "APPLEGREEN",
+    "temporary_closure": false,
+    "permanent_closure": false,
+    "permanent_closure_date": null,
+    "is_motorway_service_station": true,
+    "is_supermarket_service_station": false,
+    "location": {
+      "address_line_1": "M2 NORTHBOUND",
+      "address_line_2": null,
+      "city": "TEMPLEPATRICK",
+      "country": "Northern Ireland",
+      "county": null,
+      "postcode": "BT39 0AA",
+      "latitude": "0",
+      "longitude": "0"
+    },
+    "amenities": [
+      "customer_toilets"
+    ],
+    "opening_times": {
+      "usual_days": {
+        "monday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "tuesday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "wednesday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "thursday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "friday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "saturday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        },
+        "sunday": {
+          "open": "00:00:00",
+          "close": "00:00:00",
+          "is_24_hours": true
+        }
+      },
+      "bank_holiday": {
+        "type": "bank holiday",
+        "open_time": "00:00:00",
+        "close_time": "00:00:00",
+        "is_24_hours": true
+      }
+    },
+    "fuel_types": [
+      "E10",
+      "B7_STANDARD",
+      "SOMETHING_NEW"
+    ]
+  },
+  {
+    "node_id": "not a valid id!",
+    "trading_name": "BROKEN RECORD",
+    "location": {}
+  }
+]

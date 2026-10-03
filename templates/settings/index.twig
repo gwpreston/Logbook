@@ -312,6 +312,18 @@
                     </a>
                 </li>
                 {% endif %}
+                {% if fuel_prices_available() and can_instance('manage_fuel_prices') %}
+                <li>
+                    <a class="list__item" href="{{ url_for('settings.fuel_prices') }}">
+                        <span class="list__icon">{{ ui.icon('price_check') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'fuel_prices.settings.title'|trans }}</span>
+                            <span class="list__meta">{{ (fuel_prices_enabled() ? 'fuel_prices.settings.link_hint_on' : 'fuel_prices.settings.link_hint_off')|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                {% endif %}
                 {% if can_instance('backup') %}
                 <li>
                     <a class="list__item" href="{{ url_for('backup.index') }}">

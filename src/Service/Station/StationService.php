@@ -15,6 +15,7 @@ use Logbook\Domain\Station\StationName;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\FuelEntryRepository;
+use Logbook\Repository\PriceAlertRepository;
 use Logbook\Repository\StationRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\EntryAccess;
@@ -47,6 +48,7 @@ final readonly class StationService
         private FeatureToggles $features,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private PriceAlertRepository $alerts,
     ) {
     }
 
@@ -239,7 +241,13 @@ final readonly class StationService
 
     public function setFavourite(User $user, Station $station, bool $favourite): void
     {
-        $this->stations->setFavourite($user->id, $station->id, $favourite, $this->clock->now());
+        $this->transaction->run(function () use ($user, $station, $favourite): void {
+            $this->stations->setFavourite($user->id, $station->id, $favourite, $this->clock->now());
+            if (!$favourite) {
+                // Price alerts are for favourites only (spec.md §7.34).
+                $this->alerts->delete($user->id, $station->id);
+            }
+        });
     }
 
     /**

@@ -6,6 +6,7 @@ namespace Logbook\Service\Jobs;
 
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiSecretRepository;
+use Logbook\Repository\FuelPriceSecretRepository;
 use Logbook\Service\Ai\SecretBox;
 use Logbook\Support\Config\AppSettings;
 use Throwable;
@@ -38,6 +39,7 @@ final class OutputRedactor
         private readonly AiConnectionRepository $connections,
         private readonly AiSecretRepository $aiSecrets,
         private readonly SecretBox $box,
+        private readonly FuelPriceSecretRepository $fuelPriceSecrets,
     ) {
     }
 
@@ -78,6 +80,18 @@ final class OutputRedactor
             }
         } catch (Throwable) {
             // No database yet: the environment's secrets are still covered.
+        }
+        try {
+            // Phase 30.2: a price provider's credentials (spec.md §7.34).
+            foreach ($this->fuelPriceSecrets->all() as $stored) {
+                try {
+                    $values[] = $this->box->open('fuel_prices', $stored);
+                } catch (Throwable) {
+                    // Unreadable here, so it cannot be printed either.
+                }
+            }
+        } catch (Throwable) {
+            // No table yet (mid-upgrade).
         }
 
         $values = array_values(array_unique(array_filter(

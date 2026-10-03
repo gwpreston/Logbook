@@ -4857,3 +4857,37 @@ a.list__title:hover {
 .locate .field__hint {
     margin: 0;
 }
+
+/* Cheapest near me (Phase 30.2, spec.md §7.34). */
+.near-table__add {
+    display: inline;
+    margin-left: var(--space-1);
+}
+
+.near-sum summary {
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.near-sum p {
+    margin: var(--space-2) 0 0;
+    max-width: 32rem;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.fuel-attribution a {
+    color: inherit;
+}
+
+/* *Alert me below* on a station's listed prices (Phase 30.2). */
+.alert-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.input--short {
+    width: 7rem;
+}

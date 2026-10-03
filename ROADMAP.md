@@ -67,7 +67,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [29.1](docs/phases/phase-29.1.md) | Finance and lease agreements | ✅ |
 | [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | ✅ |
 | [30.1](docs/phases/phase-30.1.md) | Fuel stations + v2.13 release | ✅ |
-| [30.2](docs/phases/phase-30.2.md) | Live fuel prices and cheapest near me + v2.14 release | 📋 |
+| [30.2](docs/phases/phase-30.2.md) | Live fuel prices and cheapest near me + v2.14 release | ✅ |
 | [31](docs/phases/phase-31.md) | Import from Fuelio and Drivvo + v2.15 release | 📋 |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 📋 |
 
@@ -665,7 +665,8 @@ you owe.*
   distance, fuel for it, actual saving.
 - *Was it worth it?* after a fill-up against the usual station, and a
   12-month *Shopping around* total; the listed price one tap away on the
-  fill-up form. Release **v2.14.0**.
+  fill-up form; price alerts on favourite stations, a dashboard widget, an
+  API endpoint and an Ask tool. Release **v2.14.0**.
 
 → [`phase-30.2.md`](docs/phases/phase-30.2.md)
 

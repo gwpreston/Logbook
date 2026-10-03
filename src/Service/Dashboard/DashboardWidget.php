@@ -28,6 +28,8 @@ enum DashboardWidget: string
     case BusinessMileage = 'business_mileage';
     /** Active finance agreements (Phase 29.2, spec.md §7.32): shown once a vehicle in view has one. */
     case Finance = 'finance';
+    /** The cheapest listed fuel near a place (Phase 30.2, spec.md §7.34): only while a price provider is enabled. */
+    case CheapestFuel = 'cheapest_fuel';
 
     /**
      * The module it shows, hidden with it (spec.md §7.10).
@@ -42,6 +44,7 @@ enum DashboardWidget: string
             self::Compliance => Feature::Compliance,
             self::BusinessMileage => Feature::Trips,
             self::Finance => Feature::Finance,
+            self::CheapestFuel => Feature::Stations,
         };
     }
 
@@ -60,6 +63,7 @@ enum DashboardWidget: string
             self::BusinessMileage => 'route',
             self::RecentActivity => 'history',
             self::Finance => 'account_balance',
+            self::CheapestFuel => 'price_check',
         };
     }
 

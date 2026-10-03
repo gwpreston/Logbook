@@ -67,6 +67,7 @@ each vehicle costs.*
 | Reading files (Phase 26.4) | `smalot/pdfparser` (PDF text layer, LGPL-3.0, used unmodified through Composer); PHP's `gd` (JPEG, PNG, WebP) and `exif` for rotating, stripping and downscaling photos (**required**); Ghostscript or Imagick, optional, for rendering scanned PDFs | Pure PHP for text PDFs; every photo upload is re-encoded without its metadata, so `gd` and `exif` are required like `intl` (decided 2026-10-01, `docs/phases/open-questions.md` #83, #84) |
 | MCP server (Phase 26.5) | No SDK: Logbook's own Streamable HTTP endpoint (JSON-RPC over POST, JSON responses), protocol versions `2026-07-28` and the legacy `2025-11-25` / `2025-06-18`; conformance tested against the specification's JSON schemas with `justinrainbow/json-schema` (dev only) | The official `mcp/sdk` is experimental before 1.0, adds five dependencies and registers tools by attribute, while Logbook's tool list varies by key and language (decided 2026-10-01, `docs/phases/open-questions.md` #90; §7.28) |
 | Finance arithmetic (Phase 29.1) | `brick/math` (`BigDecimal`, pure PHP; uses `gmp` or `bcmath` when present) | Present values over up to 120 months at a 10-place monthly rate overflow the scaled-integer `Decimal` helper; the phase file allows it (§7.32) |
+| Fuel prices (Phase 30.2) | UK Fuel Finder's Information Recipient API over `symfony/http-client`: `https://www.fuel-finder.service.gov.uk`, `POST /api/v1/oauth/generate_access_token` (JSON `client_id`, `client_secret`; a bearer token for an hour), `GET /api/v1/pfs` (stations) and `GET /api/v1/pfs/fuel-prices` (prices), paged by `batch-number` (500 a page) with `effective-start-timestamp` (`YYYY-MM-DD HH:MM:SS`, UTC) for changes only; 30 requests a minute, one at a time. Open Government Licence v3.0. | The UK's statutory open price feed (Motor Fuel Price (Open Data) Regulations 2025). Endpoints and fields follow the developer portal and the community specification v1.3 (16 Mar 2026), checked against a recorded download with real credentials (`bin/record-fuel-finder.php`) (§7.34) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -318,9 +319,10 @@ disagree):
     |---|---|---|
     | `reminders` | every pass | syncs each user's reminders and sends what became due (§7.6, §7.11) |
     | `digest` | every pass (it sends only on a user's first pass of a month) | the monthly digest; it syncs the user's reminders first, as before |
-    | `cleanup` | hourly (decided 2026-10-02, #108) | retention: AI usage log, AI locks and progress, expired drafts, unclaimed scans, Ask threads, closed invitations, job runs |
+    | `cleanup` | hourly (decided 2026-10-02, #108) | retention: AI usage log, AI locks and progress, expired drafts, unclaimed scans, Ask threads, closed invitations, job runs, and (Phase 30.2) listed price changes older than `PRICE_HISTORY_DAYS` |
     | `backup` | per *Scheduled backups* (off by default) | a backup into `BACKUP_PATH` |
     | `update_check` | daily at the install's own minute, while *Check for updates* is on (Phase 28.2, §7.31) | asks GitHub for the latest release; registered only while `UPDATE_CHECK_ALLOWED` is on |
+    | `fuel_prices` | every 30, 60 or 120 minutes while a price provider is enabled; never otherwise (Phase 30.2, §7.34) | syncs provider stations and listed prices, records tracked stations' price changes, refreshes linked stations and checks price alerts |
 
     A job is due when its interval is `0`, or when its last finished run
     (any status but `skipped_locked`) started at least its interval ago.
@@ -339,7 +341,7 @@ disagree):
     printed, the values of every environment variable whose name contains
     `PASSWORD`, `SECRET`, `TOKEN` or `KEY` (values of 4 characters or
     more, except plain settings words and `logbook`, the shipped compose
-    files' public default database password, decided 2026-10-02, #110), every stored AI connection secret (§7.25), and anything that
+    files' public default database password, decided 2026-10-02, #110), every stored AI connection secret (§7.25) and price provider credential (§7.34), and anything that
     looks like a Logbook API key (`lbk_` followed by its characters) with
     `••••`.
 
@@ -1010,6 +1012,50 @@ Backups carry all four (stations, favourites, places and the link), and
 `bin/export-user.php` the user's places and favourites with the stations
 their fill-ups use. The schema version moves.
 
+**ProviderStation** (Phase 30.2, §7.34), the feed's copy, re-synced
+- id, provider (code, up to 32), provider_ref (the feed's id, up to 100),
+  name (up to 150), brand (up to 100), address (up to 300), postcode (up
+  to 20), latitude, longitude (`decimal(9,6)`, nullable), opening hours
+  (JSON as the provider gives it, shown as text), amenities (JSON list),
+  grades (JSON list of Logbook codes), temporarily_closed (bool),
+  updated_at, removed_at (UTC, nullable: no longer in the feed, or closed
+  for good). Unique `(provider, provider_ref)`; index `(latitude,
+  longitude)`.
+
+**ProviderPrice** (Phase 30.2), current listed prices
+- provider_station_id (`ON DELETE CASCADE`), grade (Logbook code), price
+  per litre (`decimal(8,3)`, in the provider's currency), reported_at
+  (UTC, as the provider gives it), synced_at (UTC). Unique
+  `(provider_station_id, grade)`.
+
+**ListedPriceChange** (Phase 30.2), `listed_price_changes`
+- id, provider, provider_ref, grade, price (`decimal(8,3)`), reported_at
+  (UTC). Unique `(provider, provider_ref, grade, reported_at)`. Kept only
+  for tracked provider stations (linked to a Logbook station someone has
+  used or favourited) and for `PRICE_HISTORY_DAYS` (decided 2026-10-03,
+  #144: each change rather than a daily summary, so a past fill-up can be
+  compared with the price in effect at its time).
+
+**PriceAlert** (Phase 30.2, decided 2026-10-03, #138)
+- id, user_id, station_id (both `ON DELETE CASCADE`), grade, below
+  (`decimal(8,3)`), triggered_at (UTC, nullable: set while the price is
+  below and the alert was sent), created/updated (UTC). Unique `(user_id,
+  station_id, grade)`.
+
+**FuelPriceSecret** (Phase 30.2), `fuel_price_secrets`
+- provider, slot (`client_id`, `client_secret`), value (sealed or
+  `env:NAME`, §7.25), updated_at. Unique `(provider, slot)`.
+
+- **Station** (Phase 30.1) gains `provider` and `provider_ref` (both
+  nullable, together; unique together: one Logbook station per provider
+  station) and `keep_my_details` (bool, default false). No foreign key:
+  the link is the feed's own id, so it survives re-syncs and restores
+  (decided 2026-10-03, #143).
+
+Provider stations, provider prices and fuel price secrets are **not in
+backups**; they are re-synced. Station links, price changes and alerts
+are. The schema version moves.
+
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
   User-scoped keys include `reminders` (lead times), `notifications`,
@@ -1031,7 +1077,11 @@ their fill-ups use. The schema version moves.
   scheduler's settings (§7.30). From Phase 28.2 the global
   `updates.check` (bool, default false), `updates.banner` (bool, default
   true), `updates.minute` (0–1439, chosen once) and `updates.status` (the
-  last check's result, §7.31) hold the update check's. Like every setting they travel in a
+  last check's result, §7.31) hold the update check's. From Phase 30.2
+  the global `fuel_prices` (provider, refresh, E5 mapping) and
+  `fuel_prices.sync` (the last good and last full sync times) hold the
+  price feed's, and the user-scoped `dashboard.cheapest_fuel`
+  (`{"place": id}`) the widget's place (§7.34). Like every setting they travel in a
   backup; the URL token, like API keys, works only where
   `SESSION_SECRET` is the same.
 
@@ -2044,7 +2094,10 @@ toggles.
   default order applies: needs attention (Phase 24), upcoming reminders,
   coming up, spend this month, recent fuel, your vehicles, efficiency
   trend, compliance status, mileage, recent activity, business mileage,
-  finance.
+  finance, cheapest fuel.
+- **Cheapest fuel** (id `cheapest_fuel`, Phase 30.2, listed only while a
+  price provider is enabled; appended to saved layouts by the rule above):
+  §7.34 *Dashboard widget*.
 - **Coming up** (id `coming_up`, Phase 15; core): the next five items of
   the 12-month forecast (§7.18) across the vehicle filter, overdue first,
   and the 12-month total per currency; *View all* → `/upcoming`, keeping
@@ -2463,6 +2516,9 @@ Extensible channel interface so more can be added.
   fails, that recipient's claims are deleted so the next run retries; a
   partial failure is logged and not retried (the channels that succeeded
   must not repeat). One recipient failing never affects another.
+- **Price alerts** (Phase 30.2, §7.34): kind `price_alert`, sent by the
+  `fuel_prices` job to the alert's user through their enabled channels,
+  once per drop below their price (the alert is claimed before sending).
 - **Digest** (optional, per user; on by default from 2.1.0 for new users:
   setup and accepting an invitation store `digest: true` with the new
   account. The stored default for a missing row stays "off", so users from
@@ -3599,6 +3655,9 @@ needs `Log` and a `read_write` key) and `GET /api/v1/trips/claim` (the
 claim report's figures for the key's user). A POST goes through the form's
 parser, takes `journey_id` for a saved journey, and is safe to retry by
 the import's duplicate key. With `trips` off, every trip path answers 404.
+`GET /api/v1/fuel-prices/near` (Phase 30.2, §7.34, while a price
+provider is enabled) returns *Cheapest near me* for the key user.
+
 `GET /api/v1/journeys` (Phase 23.1, decided 2026-10-01, #48) lists the key
 user's saved journeys in their Settings → Trips order (`id`, `from_place`,
 `to_place`, `distance_km` one way, `distance_unit`, `is_return`,
@@ -4310,6 +4369,7 @@ request to any model service.
   | `incidents(vehicles?, period?, claims_only?)` | claims history (§7.29, module on) | incidents and claims, archived and sold vehicles included, with the access rules of §7.29 |
   | `finance(vehicle)` | finance agreements (Phase 29.2, §7.32, module on) | the agreement's figures with their labels, estimates marked as such; never the agreement number |
   | `stations(query?, favourites_only?)` | fuel stations (Phase 30.1, §7.33, `stations` on) | stations matching the query, favourites first, each with the user's visits, spend, and average and cheapest price paid per grade over the vehicles they can see; never places |
+  | `cheapest_fuel(vehicle?, grade?, near, radius?, lat?, lng?)` | *Cheapest near me* (Phase 30.2, §7.34, a price provider enabled) | the cheapest stations by effective cost with each row's sum and the attribution; a position is used and never stored |
 
   Every tool returns **both** the raw values (decimal strings, canonical
   units) and **display strings** in the user's units, locale and currency
@@ -5645,6 +5705,281 @@ request to any outside service.
   vehicles' fill-ups use (merged ones too, so the links resolve).
 
 
+### 7.34 Fuel prices (Phase 30.2)
+
+Listed prices from official open-data feeds, starting with the UK's
+**Fuel Finder** scheme, and *Cheapest near me* ranked by what the trip
+really costs. Off until an admin enables a provider, because it calls a
+third party.
+
+- **Where it lives.** Part of the `stations` module (§7.33): with
+  `stations` (or `fuel`) off, nothing in this section appears or runs.
+  With it on, Settings → *Fuel prices* is there for admins, and **every
+  other price feature is hidden, and nothing is fetched, until a provider
+  is enabled** there.
+- **Providers.** `Service\FuelPrices\PriceProvider` has two kinds:
+  - *bulk*: Logbook downloads the whole country's stations and prices on
+    a schedule and answers every search on its own server (the user's
+    position never leaves it);
+  - *area*: asked per search with a position and radius (none ships yet;
+    the interface is there for later adapters).
+
+  Each adapter has a code, a name, a description, its licence and
+  attribution, the credentials it needs, its minimum refresh interval
+  and its grade map to Logbook's codes (§7.3). `ProviderRegistry` lists
+  them. One provider is enabled at a time.
+- **UK Fuel Finder** (`uk_fuel_finder`, bulk; endpoints in §4):
+  - **Credentials:** a *client ID* and *client secret* from an
+    *Information Recipient* application on the Fuel Finder developer
+    portal (GOV.UK One Login). Each is stored sealed or as `env:NAME`, as
+    an AI connection's secret (§7.25), in `fuel_price_secrets`. A fresh
+    access token is fetched at the start of each run and never stored.
+  - **Requests:** one at a time (the feed allows 30 a minute and answers
+    429 to a request sent before the last one finished), about 2.5 s
+    apart, backing off on 429. Pages are `batch-number` 1, 2, …: a page
+    of fewer than 500 records is the last. Each response is limited to
+    16 MiB and 30 s; the whole run to the job's time limit.
+  - **Prices** arrive in pence per litre as strings (`"0135.9000"`). A
+    value under 2.0 was entered in pounds and is multiplied by 100; one
+    outside 50–500p after that is dropped and counted ("3 implausible
+    prices skipped"). A grade with no price or no time is skipped. They
+    are stored as pounds per litre, `decimal(8,3)` (decided 2026-10-03,
+    #141). Times have no zone and are read as UTC (from the community
+    specification; to be confirmed against a recorded download); a time
+    after the sync is stored as the sync's own.
+  - **Grade map:** E10 → `e10_95`; E5 → `e5_97` (UK super unleaded),
+    which an admin can change to `e5_98` or `e5_99` for their area (one
+    install-wide mapping, decided 2026-10-03, #136); B7_STANDARD (and the
+    older `B7`) → `b7`; B7_PREMIUM (and `SDV`) → `b7_premium`; B10 → `b10`;
+    HVO → `xtl`. An unknown code
+    is skipped and counted.
+  - **Closures** (decided 2026-10-03, #140): a station marked
+    `permanent_closure` is treated as removed. One marked
+    `temporary_closure` stays, shows *Temporarily closed*, and is left out
+    of rankings, the widget and alerts.
+  - **Licence:** Open Government Licence v3.0. Wherever its data is shown:
+    "Contains public sector information licensed under the Open Government
+    Licence v3.0." with a link to the licence.
+- **Settings → Fuel prices** (`/settings/fuel-prices`, admins,
+  `ManageFuelPrices`):
+  - **Provider:** *Off* (default) or *UK Fuel Finder*, with its
+    description, what it sends ("Logbook downloads the national price
+    list. Your location is never sent."), and its licence and
+    attribution. Area providers (later) also need an *Internet*
+    acknowledgement naming what is sent ("Your search position and radius
+    are sent to {host}"), cleared when the host changes, as §7.25's.
+  - **Credentials** the provider needs: *Saved* / *Not set*, replaced by
+    typing a new value or `env:NAME`; never shown back. A provider
+    cannot be enabled without them.
+  - **Refresh:** every 30, 60 (default) or 120 minutes, never below the
+    provider's minimum.
+  - **E5 is sold as:** E5 97 (default), E5 98 or E5 99+ (UK Fuel Finder).
+  - *Sync now* (the job's *Run now*, §7.30), and the last sync: when,
+    its status, counts (stations, prices, removed, skipped) and any
+    error.
+  - Settings are the global setting `fuel_prices` (`{"provider":
+    "uk_fuel_finder" | null, "refresh": 60, "e5": "e5_97"}`); the sync
+    state (the last good sync time, the last full sync time) is
+    `fuel_prices.sync`. Switching the provider off keeps its data; a
+    different provider starts a full sync.
+- **Sync job** `fuel_prices` (§7.30), registered always and due every
+  *refresh* minutes while a provider is enabled (never otherwise):
+  - **Incremental** each run (decided 2026-10-03, #142): stations and
+    prices changed since the last good sync, less 10 minutes
+    (`effective-start-timestamp`). An incremental answer may carry only
+    the changed grades, so a grade missing from it is kept.
+  - **Full** on the first run, when the provider has no stations stored,
+    after the provider changes, and once a day (the first run 24 hours
+    after the last full one): every station and price. Only a full sync
+    marks stations missing from the feed as removed (`removed_at`;
+    one that reappears is restored) and drops a station's grades it no
+    longer lists.
+  - Upserts run in batches of 500 inside one transaction per page, so a
+    failure part-way keeps everything already saved and **never deletes
+    current prices**. A run that fails (credentials, network, a bad
+    answer) is `failed` with the reason, and the next run retries from
+    the same point; one that skipped bad records is `ok` with the counts.
+  - **History:** each sync records the prices a *tracked* station lists,
+    once per reported time, in `listed_price_changes` (§6), so every change
+    still listed at a sync is kept (one made and replaced between two syncs
+    is never seen). A provider station is tracked while it is
+    linked to a Logbook station that someone has used (any fill-up) or
+    favourited (decided 2026-10-03, #144). The cleanup job (§7.30) drops
+    changes older than `PRICE_HISTORY_DAYS` (default 1,095).
+  - **Linked stations** are refreshed from their provider station (below).
+  - **Price alerts** are checked after the prices are saved (below).
+- **Linking stations** (decided 2026-10-03, #143): a Logbook station
+  points at a provider station by `provider` and `provider_ref` (the
+  feed's own id), not by a row id, so links survive re-syncs and restores
+  of backups (which never carry provider data).
+  - On the station page (creator or admin, §7.33), *Is this the same
+    station?* offers unlinked provider stations within **150 m** of the
+    station's position, best name match first (similarity of normalised
+    names, the brand counted as part of the name), each with name, brand,
+    address and distance. Without a position, matches by postcode, then by
+    name. *Link* saves it; *Unlink* removes it.
+  - Once linked, its address, postcode, position, opening hours and
+    grades sold are kept up to date from the feed (on linking and after
+    each sync), unless *Keep my details* is ticked. Its name and brand are
+    never changed.
+  - A provider station can be linked to one Logbook station only.
+    Merging (§7.33) keeps the kept station's link, or takes the other's
+    when the kept one has none.
+  - A provider station without a Logbook station can be added as one in
+    one tap from the results (*Add station*: name, brand, address,
+    postcode, position and grades copied, linked; any user may, as
+    §7.33's *Add station*).
+- **Freshness:** a listed price always shows when it was reported ("Listed
+  £1.379 at 14:20", the date too when not today). One reported more than
+  **48 hours** ago is shown as *may be out of date* and left out of
+  rankings, the widget and alerts unless *Include older prices* is ticked.
+- **Station page** (§7.33), for a linked station: *Listed now* per grade
+  (price, time, freshness) beside *You paid on average* (12 months, per
+  `ViewCosts`), *Temporarily closed* when so, the attribution, and the
+  price history chart per grade gains *Listed* as a second series beside
+  what the user paid (the daily low, high and close of the changes, the
+  close drawn; the table lists them).
+- **Cheapest near me** (`/stations/near`, a GET form that works without
+  JS; *Cheapest near me* on the stations page and the Fuel tab):
+  - **From:** *My current location* (shown with JS: the browser's
+    geolocation fills hidden `lat`/`lng`, rounded to 3 decimals, about
+    100 m, asked only when chosen; the position is used for this search and
+    never saved by Logbook, though as a GET form it is in the page's
+    address, so in the browser's history and the web server's own access
+    log; it is never sent to a provider), one of the user's places, or a
+    station with a position.
+  - **Vehicle:** the user's active vehicles they can see that burn a
+    liquid fuel (electric ones are left out: no feed lists charging
+    prices), default the one with the most recent fill-up. **Grade:**
+    default the vehicle's reference grade (Phase 16, §7.3: its most used
+    over 12 months), else the vehicle's own default grade, else E10 95 /
+    B7 by fuel type. **Radius:** 2, 5 (default), 10 or 20 in the user's distance unit.
+  - Searched as a bounding box in SQL, then haversine (§7.33) in PHP;
+    temporarily closed and removed stations, and prices older than 48
+    hours (unless asked), are left out.
+  - **Effective cost** for each station with a price for the grade:
+    - *usual fill* = the median volume of the vehicle's last 10 full
+      fills of a liquid fuel (§7.3), else **40 L**, labelled "assumed";
+    - *detour* = 2 × the straight-line distance × **1.3** (a road factor,
+      a constant, labelled, decided 2026-10-03, #137);
+    - *detour fuel* = detour × the vehicle's consumption over the full
+      fills of the last 12 months (all time when there are none; a
+      plug-in hybrid uses its liquid series); with no economy at all
+      the detour is not counted and the row says so;
+    - *effective cost* = price × usual fill + detour fuel × price.
+
+    Ordered by effective cost (*Sort by price* orders by the listed
+    price instead; *Sort by distance* too).
+  - **Columns:** station and brand (linking to the Logbook station when
+    there is one, else *Add station*), distance (straight line), listed
+    price and time, *Effective* ("£61.98 for your usual 45 L"), and *Saves*
+    against the nearest station selling the grade ("saves £0.42", "costs
+    £0.31 more", "nearest" on that one).
+  - **Hint:** "Effective cost counts the fuel to get there and back, at
+    your usual economy. Distances are straight-line × 1.3."
+  - Results are capped at 50. With none: "No listed prices for E10 95
+    within 5 mi." The attribution and the latest sync time sit below.
+- **Was it worth it?** (all derived, never stored, and labelled as an
+  estimate wherever distance or economy is assumed):
+  - **Before going:** each result row opens (a `<details>`) the sum
+    against the nearest station selling the grade: fuel saving =
+    (nearest's price − this price) × usual fill; extra distance = 2 ×
+    (this distance − nearest's distance), "about N by road" × 1.3; fuel for
+    that = this detour fuel × this price − the nearest's detour fuel × its
+    price; **actual saving** = the nearest's effective cost − this
+    effective cost, "worth the trip" when above zero, "not worth the trip"
+    otherwise. For a station 7 mi further away, 4p cheaper, a 50 L usual
+    fill at 48 mpg (UK): "Fuel saving £2.00 (50 L at 4p less) · Extra
+    distance 14 mi there and back, about 18 mi by road · Fuel for that
+    £2.34 at your usual 48 mpg · **Actual saving −£0.34: not worth the
+    trip**".
+  - **After a fill-up:** a fill-up (liquid fuel, with a volume and
+    price) at a linked station is compared with the user's **usual
+    station** for that vehicle: the most visited in the 12 months before
+    the fill-up (ties: the latest visit), linked, and not the fill-up's
+    own station. The usual station's listed price for the fill-up's grade
+    is the one **in effect at the fill-up's time** in its price changes,
+    reported no more than 48 hours before it (decided 2026-10-03, #144);
+    the fill-up's station must have one too. Then:
+    - fuel saving = (usual listed price − price paid) × volume;
+    - extra distance = (this station's distance from the user's *Home*
+      place − the usual station's) × 2 × 1.3, costed at the price paid
+      and the vehicle's 12-month consumption (negative when this one is
+      nearer home);
+    - the fill-up page (after saving, and its view) shows "Compared with
+      your usual Tesco Antrim (£1.400): saved £2.00 on fuel, about £0.50
+      for the extra 4 mi, **£1.50 better off**" ("worse off" below zero).
+      Without a *Home* place (a place named Home, case-folded) or a
+      position on either station, only the fuel saving, "before the extra
+      driving". At the usual station, or without both listed prices,
+      nothing.
+  - **Fuel tab** (§7.3, `ViewCosts`): *Shopping around*, the sum of those
+    after-fill-up results over the vehicle's last 12 months: "About £18.40
+    better off from 23 fill-ups away from your usual station". Shown only
+    when at least 3 fill-ups were compared.
+- **Fill-up form** (§7.33's hint): at a linked station with a fresh price
+  for the chosen grade, the hint becomes "Listed £1.379/L E10 95 at 14:20
+  · Last time you paid £1.389", and a *Use listed price* button fills the
+  price per unit (and the total, if the volume is typed) with one tap. It
+  is never filled on its own. The search JSON (§7.33) carries `listed`
+  per grade for the button.
+- **Dashboard widget** `cheapest_fuel` (after *finance* in the default
+  order; listed only while a provider is enabled): the three cheapest by
+  effective cost near the user's first place (by its order; normally
+  *Home*), or a place chosen in the widget (a select saved as the user
+  setting `dashboard.cheapest_fuel` `{"place": id}`), for the dashboard's
+  selected vehicle, else the most recently filled one, at the default
+  radius and grade, with the latest sync time and the attribution. Without
+  a place: "Add a place to see the cheapest fuel near it" linking to
+  Settings → Places.
+- **Price alerts** (decided 2026-10-03, #138): on a **favourite** linked
+  station's page, *Alert me below* per grade it lists: a price per unit of
+  the user's volume unit (stored per litre), in the provider's currency. After each sync, an alert whose station's
+  fresh listed price is below its threshold sends one notification
+  through the user's channels (§7.11, kind `price_alert`: "E10 95 at Tesco
+  Antrim is £1.359, below your £1.369"), naming the station, grade, price
+  and the time it was listed, linking to the station. It is then
+  *triggered* and sends nothing more until the price goes back to or
+  above the threshold, which re-arms it. Claiming an alert (armed →
+  triggered) happens before sending, so two runs never both send it; a
+  delivery that fails on every channel re-arms it. A user with no channel
+  set up has it marked triggered all the same (the station page shows it
+  as sent), so it is not tried at every sync. Up to 20 alerts per
+  user. Removing the favourite, the link, or the user removes the
+  alerts. Alerts are in backups.
+- **API** (§7.20): `GET /api/v1/fuel-prices/near?vehicle=&grade=&lat=&lng=&radius=`
+  or `&place=<name>` or `&station=<id>` (exactly one origin; `radius` in
+  the key user's distance unit, above 0 and up to 50, default 5; `sort` as
+  the page's; `include_older=true` for prices over 48 hours), the rows of
+  *Cheapest near me* with the raw and display figures, the sync time and
+  the attribution. A position in the request is used and never saved
+  (it is in the request's URL); a place is the key user's, by name. 404 problem details while
+  no provider is enabled. Station responses gain `listed` (per grade:
+  price, reported_at, fresh) for a linked station.
+- **Ask Logbook** (§7.26) and MCP (§7.28): `cheapest_fuel(vehicle?,
+  grade?, near, radius?, lat?, lng?)` ("Where's the cheapest E10 near
+  work?"). `near` is a place name, a station (name or id), or `here`,
+  which needs `lat` and `lng` from the client (an MCP client may send
+  them; Ask's page sends none, so the answer asks for a place). Omitted,
+  it is the user's first place. Positions are used and never saved. Only while a provider is enabled.
+- **Sample data:** outside production a *Sample prices (demo)* provider is
+  also offered: eleven made-up stations near the demo places, with prices
+  that move a little each hour, fetched from nowhere. `DemoDataSeeder`
+  enables it and links three of the demo's stations, with a year of listed
+  prices and an alert, so every price feature can be tried offline.
+- **Attribution** from the provider's licence is shown wherever its data
+  appears: the station page, the results, the widget, the API and the
+  tool's results.
+- **Backups and export:** provider stations and prices are never backed up
+  (`provider_stations`, `provider_prices`, `fuel_price_secrets`); they are
+  re-synced (the next run after a restore is a full sync, since the
+  provider has no stations). Station links, *Keep my details*, the price
+  changes and alerts are. `bin/export-user.php` carries the user's
+  alerts.
+- **Off by default:** with no provider enabled, the job is never due, no
+  request is made, and no listed price, link offer, *Cheapest near me*,
+  widget, alert, API route or Ask tool appears (the API route answers 404).
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -5848,6 +6183,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   the variable), `UPDATE_CHECK_ALLOWED` (default
   `true`; `false` removes the option entirely, for installs that must
   never call out).
+- Fuel prices (§7.34, Phase 30.2): `PRICE_HISTORY_DAYS` (default `1095`,
+  three years; how long tracked stations' listed price changes are kept;
+  at least 30). The provider, its credentials (sealed, or `env:NAME`
+  naming any variable) and the refresh are set on Settings → Fuel prices.
 - Set by the Docker image: `LOGBOOK_DOCKER=1` (the update banner's upgrade
   line, §7.31). Not for setting by hand.
 - Docker entrypoint only: `MIGRATE_ON_START` (default `true`),
@@ -6253,6 +6592,22 @@ task breakdowns live in the per-phase files; this is the map.
   `stations(query?, favourites_only?)` Ask tool (§6 Station,
   StationFavourite, Place; §7.3, §7.10, §7.13, §7.20, §7.26, §7.27,
   §7.33). Two migrations. Release v2.13.0.
+- **Phase 30.2 — Live fuel prices and cheapest near me + v2.14 release.**
+  A price provider interface (bulk and area) and the UK Fuel Finder
+  adapter, synced by the `fuel_prices` job (incremental, with a daily
+  full sync) once an admin enables it on Settings → Fuel prices; Logbook
+  stations linked to provider stations by the feed's id, their details
+  kept up to date; each listed price change of tracked stations kept for
+  `PRICE_HISTORY_DAYS`; *Cheapest near me* ranked by effective cost (the
+  usual fill and the fuel to get there and back, straight-line × 1.3),
+  with *Was it worth it?* before going and after a fill-up, and the Fuel
+  tab's *Shopping around*; the listed price on the fill-up form (*Use
+  listed price*), the station page's listed series, price alerts on
+  favourite stations, the `cheapest_fuel` widget, API endpoint and Ask
+  tool; the licence's attribution wherever the data appears (§4, §6
+  ProviderStation, ProviderPrice, ListedPriceChange, PriceAlert,
+  FuelPriceSecret, Station; §7.11, §7.20, §7.26, §7.30, §7.34, §9).
+  Release v2.14.0.
 
 ---
 

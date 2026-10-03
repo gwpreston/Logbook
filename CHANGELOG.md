@@ -6,6 +6,77 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.14.0] — 2026-10-03
+
+Phase 30.2: **live fuel prices and cheapest near me**. Once an admin
+switches it on, Logbook downloads the UK's official Fuel Finder price list
+to your own server and answers "where's the cheapest fuel near me?" there,
+so your location is never sent anywhere. Results are ranked by what the
+trip really costs: your usual fill plus the fuel to drive there and back.
+See [docs/stations.md](docs/stations.md#fuel-prices).
+
+### Added
+- **Settings → Fuel prices** (admins): choose a provider (*Off* by
+  default), enter its credentials (stored encrypted, or `env:NAME`; never
+  shown again), the refresh (every 30, 60 or 120 minutes) and which E5
+  grade the feed's E5 is, with the last sync and *Sync now*.
+- **UK Fuel Finder**, the statutory open price feed (Open Government
+  Licence v3.0): every UK station's listed prices for E10, E5, diesel,
+  premium diesel, B10 and HVO. It needs a free client ID and secret from
+  the Fuel Finder developer portal. The `fuel_prices` job fetches only what
+  changed each run, with a full download once a day. Prices typed in
+  pounds are corrected, implausible ones are skipped, and closed stations
+  are left out.
+- **Linking stations**: a station's page offers the feed's stations within
+  150 m (*Is this the same station?*). Once linked, its address, position,
+  hours and grades follow the feed unless *Keep my details* is ticked.
+- **Listed prices** on a linked station's page beside what you paid, and
+  as a dashed series on its price chart, from a history of each listed
+  price kept for `PRICE_HISTORY_DAYS`.
+- **Cheapest near me** (Stations, and the Fuel tab's *By station* card):
+  from your current location (used for that search only), one of your
+  places or a station; for a vehicle and grade; within 2 to 20 miles or
+  km. Ranked by effective cost, each row opens the sum against the
+  nearest: fuel saving, extra distance (straight line × 1.3), the fuel
+  for it, and the actual saving.
+- **Was it worth it?** after a fill-up at a linked station, compared with
+  your usual station at the prices listed then, and the Fuel tab's
+  *Shopping around* total for the last 12 months.
+- **The fill-up form**: at a linked station, "Listed £1.379/L E10 95 at
+  14:20 · Last time you paid £1.389" and *Use listed price* (never filled
+  on its own).
+- **Price alerts** on favourite stations: one notification through your
+  channels when the listed price drops below yours, again after it goes
+  back up.
+- **Dashboard widget** *Cheapest fuel* near a place you choose.
+- **API** (OpenAPI 1.19.0): `GET /api/v1/fuel-prices/near`, and `listed`
+  on station responses. **Ask Logbook and MCP**: `cheapest_fuel` ("Where's
+  the cheapest E10 near work?").
+- **Sample data**: a made-up price provider (outside production only),
+  eleven stations near the demo places, three of the demo's stations
+  linked with a year of listed prices, and an alert.
+- `bin/record-fuel-finder.php` records a trimmed real download for the
+  tests. English and German.
+
+### Fixed
+- The station pages' star, map, merge, location, places and search icons
+  were missing from the icon sprite and showed blank.
+
+### Upgrade notes
+- One migration: the provider tables, listed price history, price alerts
+  and provider credentials, and `provider`, `provider_ref` and
+  `keep_my_details` on stations. It rolls back.
+- **Nothing changes until an admin enables a provider** on Settings →
+  Fuel prices: no request is made and no listed price appears before
+  then.
+- The provider's copy of stations and prices and its credentials are
+  never in backups; after a restore the next sync downloads everything
+  again, and the credentials are entered again. Links, the price history
+  and alerts are backed up.
+- New setting `PRICE_HISTORY_DAYS` (default `1095`, at least 30).
+- The schema version moves: restore an older backup with its own version,
+  then upgrade.
+
 ## [2.13.0] — 2026-10-02
 
 Phase 30.1: **fuel stations**. A fill-up's station is now a record, linked

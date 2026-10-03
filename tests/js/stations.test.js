@@ -43,3 +43,20 @@ test('a position is kept to six places, and nonsense is refused', () => {
     assert.equal(stations.coordinates({coords: {latitude: 95, longitude: 0}}), null);
     assert.equal(stations.coordinates(null), null);
 });
+
+test('options carry the listed prices of a linked station (Phase 30.2)', () => {
+    const options = stations.comboOptions({
+        exact: null,
+        results: [{id: 4, name: 'Tesco', listed: {e10_95: {text: 'Listed £1.379/L E10 95 at 14:20', price: '1.379'}}}],
+    }, '');
+    assert.equal(options[0].listed.e10_95.price, '1.379');
+});
+
+test('the listed price follows the chosen grade, and odd answers are ignored', () => {
+    const listed = {e10_95: {text: 'Listed £1.379/L E10 95 at 14:20', price: '1.379'}, b7: {text: 'x', price: '1,5'}};
+    assert.deepEqual(stations.listedFor(listed, 'petrol:e10_95'), {text: 'Listed £1.379/L E10 95 at 14:20', price: '1.379'});
+    assert.equal(stations.listedFor(listed, 'petrol:e5_97'), null);
+    assert.equal(stations.listedFor(listed, 'diesel:b7'), null, 'not a canonical price');
+    assert.equal(stations.listedFor({}, 'petrol:e10_95'), null);
+    assert.equal(stations.listedFor(null, ''), null);
+});

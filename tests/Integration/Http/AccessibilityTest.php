@@ -25,13 +25,19 @@ use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Kernel;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\FuelPrices\StationLink;
 use Logbook\Domain\Station\PlaceData;
 use Logbook\Domain\Station\StationData;
 use Logbook\Repository\FinanceAgreementRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\PlaceRepository;
+use Logbook\Repository\PriceAlertRepository;
+use Logbook\Repository\ProviderStationRepository;
 use Logbook\Repository\StationRepository;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
+use Logbook\Service\FuelPrices\FuelPriceConfig;
+use Logbook\Service\FuelPrices\FuelPriceSettings;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Reminder\ReminderService;
@@ -134,6 +140,14 @@ final class AccessibilityTest extends AppTestCase
         $place = $this->service($app, PlaceRepository::class)
             ->insert($owner->id, new PlaceData('Home', '54.706400', '-6.216400'), $when);
 
+        // Fuel prices (Phase 30.2): the sample provider on, Tesco linked, a favourite's alert.
+        $this->service($app, FuelPriceConfig::class)->save(new FuelPriceSettings(DemoPriceProvider::CODE));
+        $providerStations = $this->service($app, ProviderStationRepository::class);
+        $providerStations->upsertStations(DemoPriceProvider::CODE, DemoPriceProvider::stations(), $when);
+        $providerStations->upsertPrices(DemoPriceProvider::CODE, DemoPriceProvider::prices($when), $when);
+        $stations->setLink($tesco, new StationLink(DemoPriceProvider::CODE, 'demo-3'), $when);
+        $this->service($app, PriceAlertRepository::class)->save($owner->id, $tesco, FuelGrade::E10_95, '1.349', $when);
+
         // Finance (Phase 29.1): a PCP with a missed payment, an extra payment and a quote.
         $finance = $this->service($app, FinanceAgreementRepository::class);
         $agreement = $finance->insert($golf->id, new AgreementData(
@@ -196,6 +210,9 @@ final class AccessibilityTest extends AppTestCase
             '/stations', '/stations?q=tesco', "/stations/$tesco", "/stations/$tesco/edit", '/stations/new',
             "/stations/$tesco/merge", "/stations/$tesco/merge?with=$tescoDot", '/stations/duplicates',
             '/settings/places', '/settings/places/new', "/settings/places/$place/edit",
+            // Phase 30.2: fuel prices, cheapest near me (with results), the widget on the dashboard.
+            '/settings/fuel-prices', '/stations/near', "/stations/near?from=place:$place&vehicle=$id&older=1", '/',
+            "/vehicles/$id/fuel",
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);

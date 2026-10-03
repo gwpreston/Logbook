@@ -6,7 +6,9 @@ namespace Logbook\Service\Jobs;
 
 use Logbook\Repository\InvitationRepository;
 use Logbook\Repository\JobRunRepository;
+use Logbook\Repository\ListedPriceRepository;
 use Logbook\Service\Ai\AiHousekeeping;
+use Logbook\Support\Config\AppSettings;
 use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Throwable;
@@ -30,6 +32,8 @@ final readonly class CleanupJob implements Job
         private AiHousekeeping $ai,
         private InvitationRepository $invitations,
         private JobRunRepository $runs,
+        private ListedPriceRepository $listedPrices,
+        private AppSettings $app,
         private ClockInterface $clock,
         private TranslatorInterface $translator,
     ) {
@@ -48,7 +52,7 @@ final readonly class CleanupJob implements Job
     public function run(JobContext $context): JobResult
     {
         $now = $this->clock->now();
-        $counts = ['usage' => 0, 'drafts' => 0, 'scans' => 0, 'threads' => 0, 'invitations' => 0, 'runs' => 0];
+        $counts = ['usage' => 0, 'drafts' => 0, 'scans' => 0, 'threads' => 0, 'invitations' => 0, 'runs' => 0, 'prices' => 0];
         $failures = 0;
 
         $parts = [
@@ -62,6 +66,12 @@ final readonly class CleanupJob implements Job
             },
             'job runs' => function () use (&$counts, $now): void {
                 $counts['runs'] = $this->runs->prune(self::RUNS_KEPT, $now->modify(sprintf('-%d days', self::RUN_DAYS)));
+            },
+            // Phase 30.2: listed price changes past PRICE_HISTORY_DAYS (spec.md §7.34).
+            'listed prices' => function () use (&$counts, $now): void {
+                $counts['prices'] = $this->listedPrices->purge(
+                    $now->modify(sprintf('-%d days', $this->app->priceHistoryDays)),
+                );
             },
         ];
         foreach ($parts as $part => $work) {
@@ -78,7 +88,7 @@ final readonly class CleanupJob implements Job
         }
         $context->logger->debug(
             'Deleted {usage} AI usage row(s), {drafts} draft(s), {scans} unclaimed scan(s), {threads} Ask thread(s), '
-                . '{invitations} invitation(s), {runs} job run(s).',
+                . '{invitations} invitation(s), {runs} job run(s), {prices} listed price change(s).',
             $counts,
         );
 

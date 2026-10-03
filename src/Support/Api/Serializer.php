@@ -666,9 +666,10 @@ final class Serializer
      * from the fill-ups on the vehicles they can see, amounts only where
      * they may see them. Never their places.
      *
+     * @param list<array<string, mixed>>|null $listed its listed prices (Phase 30.2), or null
      * @return array<string, mixed>
      */
-    public static function station(Station $station, ?StationSummary $summary, bool $favourite): array
+    public static function station(Station $station, ?StationSummary $summary, bool $favourite, ?array $listed = null): array
     {
         $data = $station->data;
 
@@ -700,6 +701,8 @@ final class Serializer
                 'last_price' => self::dec($stats->lastPrice, self::PRICE_SCALE),
                 'last_at' => self::instant($stats->lastOn),
             ], $summary->grades),
+            // Phase 30.2: a linked station's listed prices while a provider is enabled (spec.md §7.34).
+            'listed' => $listed,
             'created_at' => self::instant($station->createdAt),
             'updated_at' => self::instant($station->updatedAt),
         ];

@@ -1,0 +1,130 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/fuel_prices.twig' as fp %}
+
+{#
+ # Settings → Fuel prices (spec.md §7.34; admins only): the provider (off by
+ # default), what it sends and its licence, its credentials (never shown
+ # back), the refresh and the E5 mapping, and the last sync. Sync now is the
+ # Jobs page's Run now for fuel_prices (assets/js/jobs.js posts it in the
+ # background; without JS the form posts and redirects to the run).
+ #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'fuel_prices.settings.title'|trans }} · {{ parent() }}{% endblock %}
+{% block head %}<script defer src="{{ asset('js/jobs.js') }}"></script>{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'fuel_prices.settings.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'fuel_prices.settings.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if enabled %}
+            <section class="card" aria-labelledby="sync-heading" data-fuel-price-sync>
+                <h2 id="sync-heading" class="card__title">{{ ui.icon('sync') }}{{ 'fuel_prices.settings.sync.heading'|trans }}</h2>
+                <dl class="details">
+                    <div><dt>{{ 'fuel_prices.settings.sync.provider'|trans }}</dt><dd>{{ enabled.nameKey()|trans }}</dd></div>
+                    <div><dt>{{ 'fuel_prices.settings.sync.last'|trans }}</dt><dd data-last-synced>{{ last_synced ? last_synced|local_datetime : 'fuel_prices.settings.sync.never'|trans }}</dd></div>
+                    <div><dt>{{ 'fuel_prices.settings.sync.counts'|trans }}</dt><dd data-sync-counts>{{ 'fuel_prices.settings.sync.counts_value'|trans({stations: stations, prices: prices}) }}</dd></div>
+                    <div><dt>{{ 'fuel_prices.settings.sync.next'|trans }}</dt><dd>{{ next ? next|local_datetime : 'jobs.list.next_pass'|trans }}</dd></div>
+                </dl>
+                {% if last_run %}
+                    {% if last_run.status.value == 'failed' %}
+                        <div class="alert alert--warning" role="status" data-sync-error>{{ ui.icon('warning') }}<span>{{ last_run.summary }}</span></div>
+                    {% elseif last_run.summary %}
+                        <p data-sync-summary>{{ last_run.summary }}</p>
+                    {% endif %}
+                    <p class="muted"><a href="{{ url_for('settings.jobs.run', {run: last_run.id}) }}">{{ 'fuel_prices.settings.sync.last_run'|trans }}</a></p>
+                {% endif %}
+                {% if can_instance('run_jobs') %}
+                    <form method="post" action="{{ url_for('settings.jobs.run_now', {job: 'fuel_prices'}) }}"
+                          data-run-now data-started-url="{{ url_for('settings.jobs.started', {job: 'fuel_prices'}) }}" data-after="{{ newest_id }}"
+                          data-text-running="{{ 'jobs.run_now.running'|trans }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn">{{ ui.icon('sync') }}<span data-run-label>{{ 'fuel_prices.settings.sync.now'|trans }}</span></button>
+                    </form>
+                {% endif %}
+                {{ fp.attribution(enabled) }}
+            </section>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ url_for('settings.fuel_prices') }}">
+            {{ ui.csrf(csrf) }}
+            <fieldset class="card fieldset">
+                <legend class="card__title fieldset__legend">{{ 'fuel_prices.settings.provider.legend'|trans }}</legend>
+                <div class="stack" role="radiogroup" aria-describedby="provider-hint{% if errors.provider ?? null %} f-provider-error{% endif %}">
+                    <label class="toggle">
+                        <input type="radio" name="provider" value=""{% if values.provider == '' %} checked{% endif %}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'fuel_prices.settings.provider.off'|trans }}</span>
+                            <span class="toggle__hint">{{ 'fuel_prices.settings.provider.off_hint'|trans }}</span>
+                        </span>
+                    </label>
+                    {% for row in providers %}
+                        {% set provider = row.provider %}
+                        <label class="toggle">
+                            <input type="radio" name="provider" value="{{ provider.code() }}"{% if values.provider == provider.code() %} checked{% endif %}>
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ provider.nameKey()|trans }}</span>
+                                <span class="toggle__hint">{{ provider.descriptionKey()|trans }}</span>
+                                <span class="toggle__hint">{{ ui.icon('shield') }} {{ provider.sendsKey()|trans({host: provider.host()}) }}</span>
+                                <span class="toggle__hint">{{ 'fuel_prices.settings.provider.licence'|trans({licence: provider.licence().name}) }}</span>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+                <p class="field__hint" id="provider-hint">{{ 'fuel_prices.settings.provider.hint'|trans }}</p>
+                {{ ui.field_error(errors, 'provider') }}
+            </fieldset>
+
+            {% for row in providers %}
+                {% set provider = row.provider %}
+                {% if provider.credentials() is not empty %}
+                    <fieldset class="card fieldset" data-provider-credentials="{{ provider.code() }}">
+                        <legend class="card__title fieldset__legend">{{ 'fuel_prices.settings.credentials.legend'|trans({provider: provider.nameKey()|trans}) }}</legend>
+                        <p class="field__hint">{{ 'fuel_prices.settings.credentials.hint'|trans }}</p>
+                        {% for slot, label in provider.credentials() %}
+                            {% set name = 'secret[' ~ slot ~ ']' %}
+                            {% set key = 'secret.' ~ slot %}
+                            <div class="field">
+                                <label class="field__label" for="f-secret-{{ slot }}">{{ label|trans }}</label>
+                                <input class="input" id="f-secret-{{ slot }}" name="{{ name }}" type="password" autocomplete="off" spellcheck="false" maxlength="1000"
+                                       aria-describedby="f-secret-{{ slot }}-hint{% if errors[key] ?? null %} f-{{ key }}-error{% endif %}"{% if errors[key] ?? null %} aria-invalid="true"{% endif %}>
+                                <p class="field__hint" id="f-secret-{{ slot }}-hint" data-secret-state="{{ row.credentials[slot] ? 'saved' : 'unset' }}">
+                                    {%- if row.variables[slot] -%}
+                                        {{ 'fuel_prices.settings.credentials.from_env'|trans({name: row.variables[slot]}) }}
+                                    {%- elseif row.credentials[slot] -%}
+                                        {{ 'fuel_prices.settings.credentials.saved'|trans }}
+                                    {%- else -%}
+                                        {{ 'fuel_prices.settings.credentials.unset'|trans }}
+                                    {%- endif -%}
+                                </p>
+                                {{ ui.field_error(errors, key) }}
+                            </div>
+                        {% endfor %}
+                    </fieldset>
+                {% endif %}
+            {% endfor %}
+
+            <fieldset class="card fieldset">
+                <legend class="card__title fieldset__legend">{{ 'fuel_prices.settings.options.legend'|trans }}</legend>
+                {{ ui.select('refresh', 'fuel_prices.settings.refresh.label'|trans, values, errors,
+                    refresh_choices|map(m => {value: m, label: 'fuel_prices.settings.refresh.every'|trans({minutes: m})}),
+                    {hint: 'fuel_prices.settings.refresh.hint'|trans}) }}
+                {{ ui.select('e5', 'fuel_prices.settings.e5.label'|trans, values, errors,
+                    e5_choices|map(g => {value: g.value, label: g.labelKey()|trans}),
+                    {hint: 'fuel_prices.settings.e5.hint'|trans}) }}
+            </fieldset>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'fuel_prices.settings.save'|trans }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

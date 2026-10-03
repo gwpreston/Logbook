@@ -70,6 +70,10 @@ final readonly class BackupRepository
         // Phase 30.1: each user's favourite stations and saved places.
         'station_favourites',
         'places',
+        // Phase 30.2: listed price changes of tracked stations (keyed by the feed's id, so
+        // they need no provider rows) and each user's price alerts.
+        'listed_price_changes',
+        'price_alerts',
         // Phase 26.1: AI connections, their models and the task routing.
         // Never their secrets (`ai_secrets`): a restored connection asks
         // for its key again.
@@ -95,7 +99,8 @@ final readonly class BackupRepository
      * log and the per-user request lock (Phase 26.1) are never carried, nor
      * Ask Logbook's threads, progress lines and feedback counts (Phase 26.2),
      * nor its drafted entries (Phase 26.3), nor scanned files waiting for
-     * their entry (Phase 26.4; their files are left out by FileStorage::all()).
+     * their entry (Phase 26.4; their files are left out by FileStorage::all()),
+     * nor fuel price providers' data and credentials (Phase 30.2).
      */
     public const array EXCLUDED = [
         'sessions',
@@ -112,6 +117,11 @@ final readonly class BackupRepository
         'pending_uploads',
         // Phase 28.1: job runs are this install's history, and name its accounts.
         'job_runs',
+        // Phase 30.2: the provider's copy of stations and prices is re-synced (the next run
+        // after a restore is a full sync), and its credentials, like AI secrets, are never carried.
+        'provider_stations',
+        'provider_prices',
+        'fuel_price_secrets',
     ];
 
     public function __construct(private Connection $connection)

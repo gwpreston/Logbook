@@ -29,7 +29,8 @@ key's user sees. `spec.md` §7.28 has the rules.
 **Tools.** Every key gets the read tools: `find_vehicles`, `costs`,
 `cost_per_distance`, `maintenance`, `vehicle_summary`, `fuel_stats`,
 `last_done`, `mileage`, `ownership`, `coming_up`, `documents`, `tyres`,
-`trips_summary`, `incidents`, `finance`, `stations` and `needs_attention`. Each
+`trips_summary`, `incidents`, `finance`, `stations`, `cheapest_fuel` and
+`needs_attention`. Each
 returns raw values beside display strings in your units, language and
 currency, and a link to the page in Logbook that shows the same.
 
@@ -43,6 +44,11 @@ A **read and write** key also gets:
 
 A tool shows only while its module is on (no fuel module, no `fuel_stats`
 or `log_fill_up`) and while you can add that kind of entry to some vehicle.
+`cheapest_fuel` (the cheapest listed fuel near one of your places, a
+station, or `near: "here"` with the `lat` and `lng` your client sends,
+ranked by effective cost; [stations.md](stations.md#cheapest-near-me))
+shows only while an admin has enabled a fuel price provider. A position
+sent to it is used for that answer only and never saved.
 The AI modules and your *Use AI features* setting don't apply: no Logbook
 model is involved.
 

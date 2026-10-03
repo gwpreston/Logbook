@@ -8,7 +8,10 @@
 <section class="card" aria-labelledby="by-station-heading">
     <div class="card__header">
         <h2 id="by-station-heading" class="card__title">{{ 'stations.by_station.title'|trans }}</h2>
-        <a class="btn btn--ghost" href="{{ url_for('stations.index') }}">{{ 'stations.by_station.all'|trans }}</a>
+        <div class="btn-row">
+            {% if fuel_prices_enabled() %}<a class="btn btn--ghost" href="{{ url_for('stations.near', {}, {vehicle: vehicle.id}) }}">{{ ui.icon('near_me') }}{{ 'fuel_prices.near.title'|trans }}</a>{% endif %}
+            <a class="btn btn--ghost" href="{{ url_for('stations.index') }}">{{ 'stations.by_station.all'|trans }}</a>
+        </div>
     </div>
     <div class="table-wrap">
         <table class="table">
@@ -41,4 +44,7 @@
         </table>
     </div>
     <p class="field__hint">{{ 'stations.by_station.hint'|trans }}</p>
+    {% if shopping_around ?? null %}
+        <p data-shopping-around>{{ ui.icon('savings') }} <strong>{{ 'fuel_prices.shopping.title'|trans }}</strong> {{ shopping_around }} <span class="muted">{{ 'fuel_prices.shopping.estimate'|trans }}</span></p>
+    {% endif %}
 </section>

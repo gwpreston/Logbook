@@ -10,6 +10,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\FuelPrices\StationLink;
 use Logbook\Domain\Station\Station;
 use Logbook\Domain\Station\StationData;
 use Logbook\Domain\Station\StationName;
@@ -263,6 +264,37 @@ final readonly class StationRepository
             ['station_id' => ParameterType::INTEGER],
         );
 
+        // Phase 30.2: price alerts move as favourites do (one per user and
+        // grade), and the kept station takes the other's provider link when
+        // it has none (spec.md §7.34 *Linking stations*).
+        $keptAlerts = $this->connection->createQueryBuilder()
+            ->select('user_id', 'grade')
+            ->from('price_alerts')
+            ->where('station_id = :into')
+            ->setParameter('into', $into, ParameterType::INTEGER)
+            ->fetchAllAssociative();
+        foreach ($keptAlerts as $alert) {
+            $this->connection->delete('price_alerts', [
+                'station_id' => $from,
+                'user_id' => Row::int($alert, 'user_id'),
+                'grade' => Row::string($alert, 'grade'),
+            ], ['station_id' => ParameterType::INTEGER, 'user_id' => ParameterType::INTEGER]);
+        }
+        $this->connection->update(
+            'price_alerts',
+            ['station_id' => $into],
+            ['station_id' => $from],
+            ['station_id' => ParameterType::INTEGER],
+        );
+        $kept = $this->find($into);
+        $other = $this->find($from);
+        if ($kept !== null && $other?->link !== null) {
+            $this->setLink($from, null, $now);
+            if ($kept->link === null) {
+                $this->setLink($into, $other->link, $now);
+            }
+        }
+
         $this->connection->update(
             self::TABLE,
             ['merged_into' => $into, 'updated_at' => $timestamp],
@@ -275,6 +307,82 @@ final readonly class StationRepository
             ['id' => $from],
             ['merged_into' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER],
         );
+    }
+
+    /**
+     * Link a station to a provider station, or unlink it (spec.md §7.34
+     * *Linking stations*). Unlinking clears *Keep my details* too.
+     */
+    public function setLink(int $id, ?StationLink $link, DateTimeImmutable $now): void
+    {
+        $this->connection->update(self::TABLE, [
+            'provider' => $link?->provider,
+            'provider_ref' => $link?->ref,
+            'keep_my_details' => $link !== null && $link->keepMyDetails,
+            'updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
+        ], ['id' => $id], [
+            'keep_my_details' => ParameterType::BOOLEAN,
+            'id' => ParameterType::INTEGER,
+        ]);
+    }
+
+    /**
+     * The station linked to a provider station (merged ones never are).
+     */
+    public function findByLink(string $provider, string $ref): ?Station
+    {
+        $row = $this->select()
+            ->where('provider = :provider', 'provider_ref = :ref')
+            ->setParameter('provider', $provider)
+            ->setParameter('ref', $ref)
+            ->fetchAssociative();
+
+        return $row === false ? null : $this->hydrate($row);
+    }
+
+    /**
+     * Unmerged stations linked to a provider's stations.
+     *
+     * @return list<Station>
+     */
+    public function linked(string $provider): array
+    {
+        $rows = $this->select()
+            ->where('merged_into IS NULL', 'provider = :provider', 'provider_ref IS NOT NULL')
+            ->setParameter('provider', $provider)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
+     * The feed ids of linked stations someone has used (any fill-up) or
+     * favourited: the stations whose listed price changes are kept
+     * (spec.md §7.34 *History*).
+     *
+     * @return list<string>
+     */
+    public function trackedRefs(string $provider): array
+    {
+        $used = $this->connection->createQueryBuilder()
+            ->select('1')
+            ->from('fuel_entries', 'f')
+            ->where('f.station_id = s.id');
+        $favoured = $this->connection->createQueryBuilder()
+            ->select('1')
+            ->from(self::FAVOURITES, 'fav')
+            ->where('fav.station_id = s.id');
+        $refs = $this->connection->createQueryBuilder()
+            ->select('s.provider_ref')
+            ->from(self::TABLE, 's')
+            ->where('s.provider = :provider', 's.provider_ref IS NOT NULL', 's.merged_into IS NULL')
+            ->andWhere(sprintf('(EXISTS (%s) OR EXISTS (%s))', $used->getSQL(), $favoured->getSQL()))
+            ->setParameter('provider', $provider)
+            ->orderBy('s.provider_ref')
+            ->fetchFirstColumn();
+
+        return array_values(array_filter($refs, 'is_string'));
     }
 
     /**
@@ -326,6 +434,9 @@ final readonly class StationRepository
                 'notes',
                 'created_by',
                 'merged_into',
+                'provider',
+                'provider_ref',
+                'keep_my_details',
                 'created_at',
                 'updated_at',
             )
@@ -390,6 +501,8 @@ final readonly class StationRepository
         if ($latitude === null || $longitude === null) {
             $latitude = $longitude = null;
         }
+        $provider = Row::nullableString($row, 'provider');
+        $ref = Row::nullableString($row, 'provider_ref');
 
         return new Station(
             id: Row::int($row, 'id'),
@@ -409,6 +522,9 @@ final readonly class StationRepository
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
             createdBy: Row::nullableInt($row, 'created_by'),
             mergedInto: Row::nullableInt($row, 'merged_into'),
+            link: $provider !== null && $ref !== null
+                ? new StationLink($provider, $ref, Row::bool($row, 'keep_my_details'))
+                : null,
         );
     }
 }

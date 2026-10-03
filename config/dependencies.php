@@ -52,6 +52,13 @@ use Logbook\Service\Jobs\BackupJob;
 use Logbook\Service\Jobs\CleanupJob;
 use Logbook\Service\Jobs\DigestJob;
 use Logbook\Service\Jobs\Job;
+use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
+use Logbook\Service\FuelPrices\FuelPricesJob;
+use Logbook\Service\FuelPrices\FuelPricesTwigExtension;
+use Logbook\Service\FuelPrices\Pause;
+use Logbook\Service\FuelPrices\ProviderRegistry;
+use Logbook\Service\FuelPrices\SystemPause;
+use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
 use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobsTwigExtension;
 use Logbook\Service\Jobs\RemindersJob;
@@ -148,8 +155,25 @@ return [
             BackupJob::class,
             // `UPDATE_CHECK_ALLOWED=false` leaves the job out entirely (spec.md §7.31).
             ...($settingsOf($c)->updateCheckAllowed ? [UpdateCheckJob::class] : []),
+            // Never due while no price provider is enabled (spec.md §7.34).
+            FuelPricesJob::class,
         ],
     )),
+    // Live fuel price providers (Phase 30.2, spec.md §7.34); one adapter per country.
+    ProviderRegistry::class => static function (ContainerInterface $c) use ($settingsOf): ProviderRegistry {
+        $ukFuelFinder = $c->get(FuelFinderProvider::class);
+        assert($ukFuelFinder instanceof FuelFinderProvider);
+        $providers = [$ukFuelFinder];
+        // Sample prices for the demo data, never in production (spec.md §7.34 *Sample data*).
+        if (!$settingsOf($c)->isProduction()) {
+            $demo = $c->get(DemoPriceProvider::class);
+            assert($demo instanceof DemoPriceProvider);
+            $providers[] = $demo;
+        }
+
+        return new ProviderRegistry($providers);
+    },
+    Pause::class => autowire(SystemPause::class),
     InstalledVersion::class => static fn (): InstalledVersion => new InstalledVersion(Kernel::version()),
 
     Connection::class => static fn (ContainerInterface $c): Connection
@@ -240,6 +264,9 @@ return [
         $finance = $c->get(FinanceTwigExtension::class);
         assert($finance instanceof FinanceTwigExtension);
         $twig->addExtension($finance);
+        $fuelPrices = $c->get(FuelPricesTwigExtension::class);
+        assert($fuelPrices instanceof FuelPricesTwigExtension);
+        $twig->addExtension($fuelPrices);
 
         return $twig;
     },
@@ -283,6 +310,7 @@ return [
         get(Tool\Incidents::class),
         get(Tool\Finance::class),
         get(Tool\Stations::class),
+        get(Tool\CheapestFuel::class),
         get(Tool\NeedsAttention::class),
         // Drafting entries (Phase 26.3): validated cards for the user's Add, never a write.
         get(Tool\Draft\DraftFillUp::class),

@@ -157,6 +157,12 @@ abstract class AppTestCase extends TestCase
             'maintenance_entries',
             'maintenance_schedules',
             'fuel_entries',
+            // Phase 30.2: price alerts and listed prices, and the provider's copy.
+            'price_alerts',
+            'listed_price_changes',
+            'provider_prices',
+            'provider_stations',
+            'fuel_price_secrets',
             'station_favourites',
             'places',
             'stations',

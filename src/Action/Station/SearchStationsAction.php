@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Station;
 
 use Logbook\Domain\Station\StationName;
+use Logbook\Service\FuelPrices\ListedHint;
 use Logbook\Service\Station\StationHint;
 use Logbook\Service\Station\StationListing;
 use Logbook\Service\Station\StationService;
@@ -20,8 +21,11 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final readonly class SearchStationsAction
 {
-    public function __construct(private StationService $stations, private StationHint $hint)
-    {
+    public function __construct(
+        private StationService $stations,
+        private StationHint $hint,
+        private ListedHint $listed,
+    ) {
     }
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -32,6 +36,8 @@ final readonly class SearchStationsAction
 
         $choices = $this->stations->choices($user, $query);
         $hints = $this->hint->forStations($user, array_map(static fn (StationListing $row): int => $row->station->id, $choices));
+        // Phase 30.2: per grade, the listed price for *Use listed price* (spec.md §7.34).
+        $listed = $this->listed->forStations($user, array_map(static fn (StationListing $row) => $row->station, $choices));
         $results = array_map(
             static fn (StationListing $row): array => [
                 'id' => $row->station->id,
@@ -41,6 +47,7 @@ final readonly class SearchStationsAction
                 'favourite' => $row->favourite,
                 'recent' => $row->summary !== null,
                 'hint' => $hints[$row->station->id] ?? null,
+                'listed' => (object) ($listed[$row->station->id] ?? []),
             ],
             $choices,
         );

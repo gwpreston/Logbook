@@ -46,7 +46,13 @@
             {{ ui.scan_note('station', values) }}
             {{ ui.field_error(errors, 'station') }}
         </div>
-        <p class="field__hint" id="f-station-last" data-station-hint aria-live="polite"{% if not station_hint %} hidden{% endif %}>{{ station_hint }}</p>
+        {# Phase 30.2 (spec.md §7.34): at a linked station, the listed price for the chosen grade replaces
+           the hint, and *Use listed price* (js/stations.js) puts it in the price field. Never filled on its own. #}
+        {% set chosen_grade = (values.fuel ?? '')|split(':')|last %}
+        {% set listed_now = station_listed[chosen_grade] ?? null %}
+        <p class="field__hint" id="f-station-last" data-station-hint aria-live="polite"
+           data-listed="{{ (station_listed ?? {})|json_encode }}" data-plain="{{ station_hint }}"{% if not (listed_now or station_hint) %} hidden{% endif %}>{{ listed_now ? listed_now.text : station_hint }}</p>
+        <button type="button" class="btn btn--soft" data-use-listed hidden>{{ ui.icon('price_check') }}{{ 'fuel_prices.hint.use_listed'|trans }}</button>
     </div>
     <div class="field" x-show="choice === 'ev:home'" style="display: none">
         <label class="field__label" for="f-station-home">{{ 'stations.combo.home_label'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
