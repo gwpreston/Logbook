@@ -8,7 +8,7 @@
         {%- set licence = provider.licence() -%}
         <p class="field__hint fuel-attribution" data-attribution>
             {{- licence.attributionKey|trans -}}
-            {{ ' ' }}<a href="{{ licence.url }}" rel="noopener noreferrer license" target="_blank">{{ licence.name }}<span class="visually-hidden"> {{ 'notices.new_tab'|trans }}</span></a>
+            {{ ' ' }}<a href="{{ licence.url }}" rel="noopener noreferrer license" target="_blank">{{ licence.name }}<span class="visually-hidden"> {{ 'notices.new_tab'|trans }}</span></a>.
         </p>
     {%- endif -%}
 {%- endmacro %}

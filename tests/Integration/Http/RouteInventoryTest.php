@@ -60,6 +60,8 @@ final class RouteInventoryTest extends AppTestCase
         'settings.api_keys',
         'settings.api_keys.revoke',
         'dashboard.layout',
+        // Phase 30.2: the Cheapest fuel widget's place, one of the user's own.
+        'dashboard.cheapest_fuel',
         'log.chooser',
         'vehicles.create',
         'settings',
@@ -156,6 +158,14 @@ final class RouteInventoryTest extends AppTestCase
         'stations.merge',
         'api.stations.index',
         'api.stations.show',
+        // Phase 30.2: Cheapest near me searches the shared provider list for one of the user's
+        // fleet vehicles (NearForm::vehicles); linking checks the creator or an admin; alerts
+        // are the user's own, on their favourites. All 404 until a provider is enabled.
+        'stations.near',
+        'stations.near.add',
+        'api.fuel_prices.near',
+        'stations.link',
+        'stations.alerts',
     ];
 
     public function testEveryRouteIsClassified(): void
@@ -254,6 +264,7 @@ final class RouteInventoryTest extends AppTestCase
 
         self::assertSame([
             'settings.modules' => InstanceAbility::ManageModules,
+            'settings.fuel_prices' => InstanceAbility::ManageFuelPrices,
             'backup.index' => InstanceAbility::Backup,
             'backup.download' => InstanceAbility::Backup,
             'backup.restore' => InstanceAbility::Restore,

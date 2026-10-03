@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Api;
 
+use Logbook\Service\FuelPrices\ListedPrices;
 use Logbook\Service\Station\StationListing;
 use Logbook\Service\Station\StationService;
 use Logbook\Support\Api\ApiResponder;
+use Logbook\Support\Api\FuelPriceSerializer;
 use Logbook\Support\Api\Serializer;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -21,6 +23,8 @@ final readonly class ListStationsAction
 {
     public function __construct(
         private StationService $stations,
+        private ListedPrices $listed,
+        private FuelPriceSerializer $prices,
         private ApiResponder $responder,
     ) {
     }
@@ -37,9 +41,16 @@ final readonly class ListStationsAction
             $rows = array_values(array_filter($rows, static fn (StationListing $row): bool => $row->favourite));
         }
 
+        $listed = $this->listed->forStations(array_map(static fn (StationListing $row) => $row->station, $rows));
+
         return $this->responder->json([
             'items' => array_map(
-                static fn (StationListing $row): array => Serializer::station($row->station, $row->summary, $row->favourite),
+                fn (StationListing $row): array => Serializer::station(
+                    $row->station,
+                    $row->summary,
+                    $row->favourite,
+                    $this->prices->listed($listed[$row->station->id] ?? null),
+                ),
                 $rows,
             ),
         ]);

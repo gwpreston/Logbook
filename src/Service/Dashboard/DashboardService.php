@@ -19,6 +19,8 @@ use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Finance\AgreementView;
 use Logbook\Service\Finance\FinanceService;
+use Logbook\Service\FuelPrices\CheapestFuelWidgets;
+use Logbook\Service\FuelPrices\FuelPriceConfig;
 use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelHistory;
@@ -70,6 +72,8 @@ final readonly class DashboardService
         private ClaimReportService $claims,
         private AttentionList $attention,
         private FinanceService $financeService,
+        private FuelPriceConfig $fuelPrices,
+        private CheapestFuelWidgets $cheapestFuel,
     ) {
     }
 
@@ -84,7 +88,9 @@ final readonly class DashboardService
         $enabled = $this->features->all();
         $available = array_values(array_filter(
             $layout->order,
-            static fn (DashboardWidget $w): bool => $w->feature() === null || $enabled[$w->feature()->value],
+            fn (DashboardWidget $w): bool => ($w->feature() === null || $enabled[$w->feature()->value])
+                // Listed only while a price provider is enabled (spec.md §7.34).
+                && ($w !== DashboardWidget::CheapestFuel || $this->fuelPrices->enabled()),
         ));
 
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
@@ -151,6 +157,7 @@ final readonly class DashboardService
                 : null,
             attention: $show(DashboardWidget::NeedsAttention) ? $attention : null,
             finance: $show(DashboardWidget::Finance) ? $this->finance($user, $scope) : null,
+            cheapestFuel: $show(DashboardWidget::CheapestFuel) ? $this->cheapestFuel->build($user, $selected) : null,
         );
     }
 

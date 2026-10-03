@@ -7,6 +7,8 @@ use Logbook\Action\Notice\DismissNoticeAction;
 use Logbook\Action\Scheduler\SchedulerTickAction;
 use Logbook\Action\Scheduler\SchedulerUrlAction;
 use Logbook\Action\Settings\Updates\UpdatesAction;
+use Logbook\Action\Api\FuelPricesNearAction;
+use Logbook\Action\Dashboard\CheapestFuelPlaceAction;
 use Logbook\Action\Settings\FuelPrices\FuelPricesAction;
 use Logbook\Action\Station\CreateStationAction;
 use Logbook\Action\Station\DuplicatesAction as StationDuplicatesAction;
@@ -332,6 +334,8 @@ return static function (App $app): void {
                 $keyed->group('', function (Group $stations): void {
                     $stations->get('/stations', ApiStationsAction::class)->setName('api.stations.index');
                     $stations->get('/stations/{station:[0-9]+}', ApiStationAction::class)->setName('api.stations.show');
+                    // Live fuel prices (spec.md §7.34): 404 until a provider is enabled.
+                    $stations->get('/fuel-prices/near', FuelPricesNearAction::class)->setName('api.fuel_prices.near');
                 })->add($module(Feature::Stations));
                 $keyed->get('/vehicles/{id:[0-9]+}/maintenance', ApiMaintenanceAction::class)->setName('api.maintenance.index')
                     ->setArgument($ability, VehicleAbility::View->value)
@@ -419,6 +423,8 @@ return static function (App $app): void {
         // *Link your proxy account* (spec.md §7.9 header sign-in): reads the header again.
         $group->post('/auth/proxy/link', ProxyLinkAction::class)->setName('proxy.link');
         $group->post('/dashboard/layout', SaveDashboardLayoutAction::class)->setName('dashboard.layout');
+        // The *Cheapest fuel* widget's place (spec.md §7.34); 404 while prices are off.
+        $group->post('/dashboard/cheapest-fuel', CheapestFuelPlaceAction::class)->setName('dashboard.cheapest_fuel');
 
         // "+ Log entry" (spec.md §7.3). The picker checks the kind's module itself.
         $group->get('/log/new', LogEntryAction::class)->setName('log.chooser');

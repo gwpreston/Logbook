@@ -1,0 +1,57 @@
+{#
+ # *Cheapest fuel* (spec.md §7.34 *Dashboard widget*): the three cheapest by
+ # effective cost near a place, for the selected (or most recently filled)
+ # vehicle, with the latest sync and the attribution. The place is chosen
+ # here (a plain form; it saves at once with JS's change-submit).
+ #}
+{% import 'macros/fuel_prices.twig' as fp %}
+{% set cheapest = dashboard.cheapestFuel %}
+{% if cheapest is null or cheapest.place is null %}
+    <p class="muted">{{ 'fuel_prices.widget.no_place'|trans }} <a href="{{ url_for('settings.places') }}">{{ 'fuel_prices.widget.add_place'|trans }}</a></p>
+{% elseif cheapest.vehicle is null %}
+    <p class="muted">{{ 'fuel_prices.near.no_vehicles'|trans }}</p>
+{% else %}
+    {% set result = cheapest.result %}
+    {% set currency = result ? result.provider.currency() : null %}
+    {% if cheapest.places|length > 1 %}
+        <form method="post" action="{{ url_for('dashboard.cheapest_fuel') }}" class="alert-form">
+            {{ ui.csrf(csrf) }}
+            <label class="visually-hidden" for="f-cheapest-place">{{ 'fuel_prices.widget.near'|trans }}</label>
+            <select class="select" id="f-cheapest-place" name="place">
+                {% for place in cheapest.places %}
+                    <option value="{{ place.id }}"{% if place.id == cheapest.place.id %} selected{% endif %}>{{ place.data.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn--ghost">{{ 'fuel_prices.widget.show'|trans }}</button>
+        </form>
+    {% endif %}
+    {% if result is null or result.rows is empty %}
+        <p class="muted">{{ 'fuel_prices.widget.none'|trans({place: cheapest.place.data.name}) }}</p>
+    {% else %}
+        <p class="muted">{{ 'fuel_prices.widget.lead'|trans({grade: result.grade.shortLabelKey()|trans, place: cheapest.place.data.name, vehicle: cheapest.vehicle.name()}) }}</p>
+        <ul class="list">
+            {% for row in result.rows %}
+                {% set ps = row.providerStation %}
+                <li class="list__item">
+                    <span class="list__icon">{{ ui.icon('local_gas_station') }}</span>
+                    <span class="list__body">
+                        {% if row.station %}
+                            <a class="list__title" href="{{ url_for('stations.show', {station: row.station.id}) }}">{{ row.station.data.name }}</a>
+                        {% else %}
+                            <span class="list__title">{{ ps.data.name }}</span>
+                        {% endif %}
+                        <span class="list__meta">{{ row.cost.km|distance(1) }} · {{ fp.listed(row.listed, currency) }}</span>
+                    </span>
+                    <span class="list__end">
+                        <span class="list__amount tabular">{{ row.cost.total|money(currency) }}</span>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <p class="field__hint">
+        {{- result and result.lastSync ? 'fuel_prices.near.synced'|trans({when: result.lastSync|local_datetime}) : 'fuel_prices.settings.sync.never'|trans -}}
+        {{ ' ' }}<a href="{{ url_for('stations.near', {}, {from: 'place:' ~ cheapest.place.id, vehicle: cheapest.vehicle.id}) }}">{{ 'fuel_prices.widget.all'|trans }}</a>
+    </p>
+    {{ fp.attribution(result ? result.provider : fuel_price_provider()) }}
+{% endif %}
