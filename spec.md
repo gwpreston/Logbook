@@ -71,7 +71,7 @@ each vehicle costs.*
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
-| Tests | PHPUnit + PHPStan + phpcs | Quality gates against both DBs |
+| Tests | PHPUnit + PHPStan + phpcs; pcov + diff-cover for coverage | Quality gates against both DBs; line coverage of `src/` gated in CI: 80% of a pull request's changed lines, and overall never below `tests/coverage-floor.txt` |
 | Web server (Docker) | Apache 2.4 + mod_php (`php:8.4-apache`) | Multi-arch incl. ARM; one process; doubles as the Apache reference config |
 
 PHP namespace: `Logbook\` (PSR-4, `src/`); tests `Logbook\Tests\`.

@@ -70,6 +70,11 @@
         "test:unit": "phpunit --testsuite unit",
         "test:integration": "phpunit --testsuite integration",
         "test:js": "node --test tests/js/*.test.js",
+        "test:coverage": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php -d pcov.enabled=1 vendor/bin/phpunit --coverage-clover var/coverage/clover.xml --coverage-cobertura var/coverage/cobertura.xml --coverage-text --only-summary-for-coverage-text"
+        ],
+        "coverage:check": "@php bin/coverage-check.php",
         "lint": "phpcs",
         "cs-fix": "phpcbf",
         "analyse": "phpstan analyse --memory-limit=1G --no-progress",
@@ -87,6 +92,8 @@
         "start": "Run the PHP built-in dev server on http://localhost:8090",
         "test": "Run the PHPUnit suite (TEST_DB_* selects the database; default SQLite)",
         "test:js": "Run the JavaScript unit tests with Node (maintainers and CI only; not needed to run Logbook)",
+        "test:coverage": "Run PHPUnit with line coverage (needs pcov or Xdebug); reports in var/coverage/",
+        "coverage:check": "Fail if overall line coverage is below tests/coverage-floor.txt",
         "lint": "Check coding style (PSR-12)",
         "cs-fix": "Fix coding style automatically",
         "analyse": "Run PHPStan static analysis",
