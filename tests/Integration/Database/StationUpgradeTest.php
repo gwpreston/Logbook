@@ -128,7 +128,7 @@ final class StationUpgradeTest extends AppTestCase
         self::assertSame($byName['Ionity Antrim']->id, $links[$h][0], 'a public charger is');
 
         Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
-        self::assertSame(0, (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM stations'));
+        self::assertEquals(0, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM stations'));
         foreach ($this->service($app, FuelEntryRepository::class)->listForVehicle($golf) as $entry) {
             self::assertNull($entry->data->stationId);
         }

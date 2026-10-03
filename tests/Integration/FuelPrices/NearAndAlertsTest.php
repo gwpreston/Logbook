@@ -177,11 +177,17 @@ final class NearAndAlertsTest extends FuelPricesTestCase
 
         // Back up to 1.379: re-armed; down to 1.349: sent again.
         $this->clock->set(new DateTimeImmutable('2026-10-03T09:00:00Z'));
-        $this->prices = [['node_id' => self::ref('antrim-tesco'), 'fuel_prices' => [['price' => '0137.9000', 'fuel_type' => 'E10', 'price_last_updated' => '2026-10-03T08:30:00']]]];
+        $this->prices = [[
+            'node_id' => self::ref('antrim-tesco'),
+            'fuel_prices' => [['price' => '0137.9000', 'fuel_type' => 'E10', 'price_last_updated' => '2026-10-03T08:30:00']],
+        ]];
         $this->sync($app);
         self::assertNull($this->service($app, PriceAlertRepository::class)->forUser($owner->id)[0]->triggeredAt);
         $this->clock->set(new DateTimeImmutable('2026-10-03T10:00:00Z'));
-        $this->prices = [['node_id' => self::ref('antrim-tesco'), 'fuel_prices' => [['price' => '0134.9000', 'fuel_type' => 'E10', 'price_last_updated' => '2026-10-03T09:30:00']]]];
+        $this->prices = [[
+            'node_id' => self::ref('antrim-tesco'),
+            'fuel_prices' => [['price' => '0134.9000', 'fuel_type' => 'E10', 'price_last_updated' => '2026-10-03T09:30:00']],
+        ]];
         $this->sync($app);
         self::assertCount(2, $channel->sent);
 

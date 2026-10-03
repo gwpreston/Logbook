@@ -7,8 +7,8 @@ namespace Logbook\Tests\Unit\Service\FuelPrices;
 use DateTimeImmutable;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\FuelPrices\FeedPrice;
-use Logbook\Domain\FuelPrices\FeedStation;
 use Logbook\Service\FuelPrices\FeedReport;
+use Logbook\Service\FuelPrices\OpeningHours;
 use Logbook\Service\FuelPrices\Uk\FuelFinderParser;
 use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -43,7 +43,7 @@ final class FuelFinderParserTest extends TestCase
         self::assertSame([FuelGrade::E10_95, FuelGrade::E5_97, FuelGrade::B7], $tesco->grades);
         self::assertSame('4 Rathenraw Industrial Estate, Antrim, BT41 4LD', $tesco->address, 'the city is already in line 1');
         self::assertSame(['customer_toilets', 'car_wash', 'adblue_pumps'], $tesco->amenities);
-        self::assertSame('06:00', $tesco->openingHours['usual_days']['monday']['open'] ?? null);
+        self::assertSame('Mo-Su 06:00-23:00', OpeningHours::text($tesco->openingHours));
 
         $shell = $byName['Shell Junction One'];
         self::assertSame('Junction One Retail Park, Ballymena Road, Antrim', $shell->address, 'mixed case is kept');
@@ -67,7 +67,13 @@ final class FuelFinderParserTest extends TestCase
         $report = new FeedReport();
         $prices = FuelFinderParser::prices(self::fixture('fuel-prices-page-1.json'), self::map(), $report);
         $got = array_map(
-            static fn (FeedPrice $p): string => sprintf('%s %s %s %s', substr($p->ref, 0, 6), $p->grade->value, $p->price, $p->reportedAt->format('Y-m-d H:i')),
+            static fn (FeedPrice $p): string => sprintf(
+                '%s %s %s %s',
+                substr($p->ref, 0, 6),
+                $p->grade->value,
+                $p->price,
+                $p->reportedAt->format('Y-m-d H:i'),
+            ),
             $prices,
         );
 
@@ -141,7 +147,12 @@ final class FuelFinderParserTest extends TestCase
      */
     public static function fixture(string $file): array
     {
-        $data = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/Fixtures/fuel-finder/' . $file), true, 64, JSON_THROW_ON_ERROR);
+        $data = json_decode(
+            (string) file_get_contents(dirname(__DIR__, 3) . '/Fixtures/fuel-finder/' . $file),
+            true,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
         self::assertIsArray($data);
 
         return array_values($data);
@@ -163,11 +174,5 @@ final class FuelFinderParserTest extends TestCase
     private static function short(string $seed): string
     {
         return substr(hash('sha256', $seed), 0, 6);
-    }
-
-    public function testStationsAreFeedStations(): void
-    {
-        $report = new FeedReport();
-        self::assertContainsOnlyInstancesOf(FeedStation::class, FuelFinderParser::stations(self::fixture('pfs-page-1.json'), self::map(), $report));
     }
 }

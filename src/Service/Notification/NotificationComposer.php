@@ -158,8 +158,13 @@ final readonly class NotificationComposer
      * "E10 95 at Tesco Antrim is £1.359/L" (spec.md §7.34 *Price alerts*),
      * in the user's language and units.
      */
-    public function priceAlert(User $user, Station $station, PriceAlert $alert, ListedPrice $listed, string $currency): Notification
-    {
+    public function priceAlert(
+        User $user,
+        Station $station,
+        PriceAlert $alert,
+        ListedPrice $listed,
+        string $currency,
+    ): Notification {
         return $this->scope->run($user, fn (): Notification => new Notification(
             kind: NotificationKind::PriceAlert,
             title: $this->translator->trans('notifications.price_alert.title', [

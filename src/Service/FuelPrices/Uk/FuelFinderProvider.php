@@ -158,12 +158,24 @@ final readonly class FuelFinderProvider implements BulkPriceProvider
             ? []
             : ['effective-start-timestamp' => $since->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')];
 
-        $this->pages(self::STATIONS_PATH, $query, $token, $report, $cancelled, function (array $records) use ($sink, $gradeMap, $report): void {
+        $this->pages(self::STATIONS_PATH, $query, $token, $report, $cancelled, function (
+            array $records,
+        ) use (
+            $sink,
+            $gradeMap,
+            $report,
+        ): void {
             $stations = FuelFinderParser::stations($records, $gradeMap, $report);
             $report->stations += count($stations);
             $sink->stations($stations);
         });
-        $this->pages(self::PRICES_PATH, $query, $token, $report, $cancelled, function (array $records) use ($sink, $gradeMap, $report): void {
+        $this->pages(self::PRICES_PATH, $query, $token, $report, $cancelled, function (
+            array $records,
+        ) use (
+            $sink,
+            $gradeMap,
+            $report,
+        ): void {
             $prices = FuelFinderParser::prices($records, $gradeMap, $report);
             $report->prices += count($prices);
             $sink->prices($prices);

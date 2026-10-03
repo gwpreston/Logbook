@@ -41,14 +41,20 @@ final readonly class CheapestFuelWidgets
         }
         $place ??= $places[0] ?? null;
         $vehicles = $this->form->vehicles($user);
-        $vehicle = $selected !== null && in_array($selected->id, array_map(static fn (Vehicle $v): int => $v->id, $vehicles), true)
+        $vehicle = $selected !== null
+            && in_array($selected->id, array_map(static fn (Vehicle $v): int => $v->id, $vehicles), true)
             ? $selected
             : ($vehicles[0] ?? null);
 
         $result = null;
         if ($place !== null && $vehicle !== null) {
             $result = $this->near->search(
-                NearOrigin::place($place->id, $place->data->name, (float) $place->data->latitude, (float) $place->data->longitude),
+                NearOrigin::place(
+                    $place->id,
+                    $place->data->name,
+                    (float) $place->data->latitude,
+                    (float) $place->data->longitude,
+                ),
                 $vehicle,
                 null,
                 $user->preferences->distanceUnit->toKm((float) CheapestNear::DEFAULT_RADIUS),

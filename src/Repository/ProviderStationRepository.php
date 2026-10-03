@@ -341,7 +341,8 @@ final readonly class ProviderStationRepository
 
         return array_values(array_filter(
             array_map($this->hydrate(...), $rows),
-            static fn (ProviderStation $s): bool => strtoupper((string) preg_replace('/\s+/', '', $s->data->postcode ?? '')) === $compact,
+            static fn (ProviderStation $s): bool
+                => strtoupper((string) preg_replace('/\s+/', '', $s->data->postcode ?? '')) === $compact,
         ));
     }
 

@@ -49,7 +49,10 @@ final readonly class PriceAlertChecker
         if ($found === []) {
             return $counts;
         }
-        $sources = $this->providerStations->findByRefs($provider->code(), array_map(static fn (array $a): string => $a['ref'], $found));
+        $sources = $this->providerStations->findByRefs(
+            $provider->code(),
+            array_map(static fn (array $a): string => $a['ref'], $found),
+        );
         $prices = $this->providerStations->prices(array_values(array_map(static fn ($s): int => $s->id, $sources)));
 
         foreach ($found as ['alert' => $alert, 'ref' => $ref]) {

@@ -5747,8 +5747,9 @@ third party.
     #141). Times have no zone and are read as UTC.
   - **Grade map:** E10 → `e10_95`; E5 → `e5_97` (UK super unleaded),
     which an admin can change to `e5_98` or `e5_99` for their area (one
-    install-wide mapping, decided 2026-10-03, #136); B7_STANDARD → `b7`;
-    B7_PREMIUM → `b7_premium`; B10 → `b10`; HVO → `xtl`. An unknown code
+    install-wide mapping, decided 2026-10-03, #136); B7_STANDARD (and the
+    older `B7`) → `b7`; B7_PREMIUM (and `SDV`) → `b7_premium`; B10 → `b10`;
+    HVO → `xtl`. An unknown code
     is skipped and counted.
   - **Closures** (decided 2026-10-03, #140): a station marked
     `permanent_closure` is treated as removed. One marked
@@ -5796,8 +5797,10 @@ third party.
     current prices**. A run that fails (credentials, network, a bad
     answer) is `failed` with the reason, and the next run retries from
     the same point; one that skipped bad records is `ok` with the counts.
-  - **History:** each price change of a *tracked* station is appended to
-    `listed_price_changes` (§6). A provider station is tracked while it is
+  - **History:** each sync records the prices a *tracked* station lists,
+    once per reported time, in `listed_price_changes` (§6), so every change
+    still listed at a sync is kept (one made and replaced between two syncs
+    is never seen). A provider station is tracked while it is
     linked to a Logbook station that someone has used (any fill-up) or
     favourited (decided 2026-10-03, #144). The cleanup job (§7.30) drops
     changes older than `PRICE_HISTORY_DAYS` (default 1,095).
@@ -5840,10 +5843,12 @@ third party.
     geolocation fills hidden `lat`/`lng`, asked only when chosen; the
     position is used for this search and never stored or logged), one of
     the user's places, or a station with a position.
-  - **Vehicle:** the user's vehicles they can see (default: the one with
-    the most recent fill-up). **Grade:** default the vehicle's reference
-    grade (Phase 16, §7.3), else its most used, else E10 95 / B7 by fuel
-    type. **Radius:** 2, 5 (default), 10 or 20 in the user's distance unit.
+  - **Vehicle:** the user's active vehicles they can see that burn a
+    liquid fuel (electric ones are left out: no feed lists charging
+    prices), default the one with the most recent fill-up. **Grade:**
+    default the vehicle's reference grade (Phase 16, §7.3: its most used
+    over 12 months), else the vehicle's own default grade, else E10 95 /
+    B7 by fuel type. **Radius:** 2, 5 (default), 10 or 20 in the user's distance unit.
   - Searched as a bounding box in SQL, then haversine (§7.33) in PHP;
     temporarily closed and removed stations, and prices older than 48
     hours (unless asked), are left out.
@@ -5923,8 +5928,8 @@ third party.
   a place: "Add a place to see the cheapest fuel near it" linking to
   Settings → Places.
 - **Price alerts** (decided 2026-10-03, #138): on a **favourite** linked
-  station's page, *Alert me below* per grade it lists: a price per litre
-  (in the provider's currency). After each sync, an alert whose station's
+  station's page, *Alert me below* per grade it lists: a price per unit of
+  the user's volume unit (stored per litre), in the provider's currency. After each sync, an alert whose station's
   fresh listed price is below its threshold sends one notification
   through the user's channels (§7.11, kind `price_alert`: "E10 95 at Tesco
   Antrim is £1.359, below your £1.369"), naming the station, grade, price
@@ -5932,11 +5937,15 @@ third party.
   *triggered* and sends nothing more until the price goes back to or
   above the threshold, which re-arms it. Claiming an alert (armed →
   triggered) happens before sending, so two runs never both send it; a
-  delivery that fails on every channel re-arms it. Up to 20 alerts per
+  delivery that fails on every channel re-arms it. A user with no channel
+  set up has it marked triggered all the same (the station page shows it
+  as sent), so it is not tried at every sync. Up to 20 alerts per
   user. Removing the favourite, the link, or the user removes the
   alerts. Alerts are in backups.
 - **API** (§7.20): `GET /api/v1/fuel-prices/near?vehicle=&grade=&lat=&lng=&radius=`
-  or `&place=<name>` or `&station=<id>` (exactly one origin), the rows of
+  or `&place=<name>` or `&station=<id>` (exactly one origin; `radius` in
+  the key user's distance unit, above 0 and up to 50, default 5; `sort` as
+  the page's; `include_older=true` for prices over 48 hours), the rows of
   *Cheapest near me* with the raw and display figures, the sync time and
   the attribution. A position in the request is used and never stored
   or logged; a place is the key user's, by name. 404 problem details while
@@ -5949,6 +5958,11 @@ third party.
   them; Ask's page sends none, so the answer asks for a place). Omitted,
   it is the user's first place. Positions are used and never stored or
   logged. Only while a provider is enabled.
+- **Sample data:** outside production a *Sample prices (demo)* provider is
+  also offered: eleven made-up stations near the demo places, with prices
+  that move a little each hour, fetched from nowhere. `DemoDataSeeder`
+  enables it and links three of the demo's stations, with a year of listed
+  prices and an alert, so every price feature can be tried offline.
 - **Attribution** from the provider's licence is shown wherever its data
   appears: the station page, the results, the widget, the API and the
   tool's results.

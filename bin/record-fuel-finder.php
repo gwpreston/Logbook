@@ -47,7 +47,8 @@ try {
     $token = $http->request('POST', $base . '/api/v1/oauth/generate_access_token', [
         'json' => ['client_id' => $id, 'client_secret' => $secret],
     ])->toArray();
-    $access = $token['data']['access_token'] ?? $token['access_token'] ?? null;
+    $payload = is_array($token['data'] ?? null) ? $token['data'] : $token;
+    $access = $payload['access_token'] ?? null;
     if (!is_string($access)) {
         throw new RuntimeException('No access token in the answer.');
     }
@@ -64,7 +65,9 @@ try {
     $ids = array_flip(array_filter(array_column($stations, 'node_id'), 'is_string'));
     $prices = array_values(array_filter(
         $page('/api/v1/pfs/fuel-prices'),
-        static fn (mixed $record): bool => is_array($record) && is_string($record['node_id'] ?? null) && isset($ids[$record['node_id']]),
+        static fn (mixed $record): bool => is_array($record)
+            && is_string($record['node_id'] ?? null)
+            && isset($ids[$record['node_id']]),
     ));
 } catch (Throwable $e) {
     fwrite(STDERR, 'The feed could not be read: ' . $e->getMessage() . "\n");
@@ -72,6 +75,12 @@ try {
 }
 
 $dir = dirname(__DIR__) . '/tests/Fixtures/fuel-finder';
-file_put_contents($dir . '/recorded-pfs.json', json_encode($stations, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
-file_put_contents($dir . '/recorded-fuel-prices.json', json_encode($prices, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
+file_put_contents(
+    $dir . '/recorded-pfs.json',
+    json_encode($stations, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n",
+);
+file_put_contents(
+    $dir . '/recorded-fuel-prices.json',
+    json_encode($prices, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n",
+);
 printf("Recorded %d station(s) and the prices of %d.\n", count($stations), count($prices));

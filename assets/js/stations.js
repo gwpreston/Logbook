@@ -15,6 +15,10 @@
  *   press. Nothing is stored unless the form is saved.
  * - `a[data-geo-href]` (*Open in maps*): a `geo:` link on touch devices,
  *   OpenStreetMap elsewhere.
+ * - Phase 30.2 (spec.md §7.34): at a linked station the hint shows the
+ *   listed price for the chosen grade, and *Use listed price* puts it in the
+ *   price field (never on its own); `[data-near-form]`'s *My current
+ *   location* asks the browser when the form is sent, for that search only.
  *
  * The pure helpers at the top have no DOM and are unit tested with
  * `composer test:js` (node --test, tests/js/stations.test.js).

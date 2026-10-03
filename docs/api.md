@@ -339,7 +339,7 @@ petrol or diesel, is a `404`.
 curl -H "Authorization: Bearer $KEY" "$BASE/fuel-prices/near?place=Home&radius=5"
 ```
 
-The answer, trimmed to two stations, for a user who uses miles:
+The answer, here with two stations, for a user who uses miles:
 
 ```json
 {

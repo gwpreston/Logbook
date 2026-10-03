@@ -75,7 +75,8 @@ final class TestBrowser
      * POST a form, adding the session's CSRF token unless $withCsrf is false
      * (fetching a page first if none has been seen yet).
      *
-     * @param array<string, string|list<string>> $fields (a list for multi-value fields such as checkboxes[])
+     * @param array<string, string|list<string>|array<string, string>> $fields (a list for multi-value fields such as
+     *     checkboxes[], a map for named ones such as secret[client_id])
      * @param array<string, UploadedFileInterface|list<UploadedFileInterface>> $files (a list for attachments[])
      * @param array<string, string> $headers e.g. the X-Requested-With a script sends
      */
@@ -146,7 +147,8 @@ final class TestBrowser
     }
 
     /**
-     * @param array<string, string|list<string>> $fields (a list for multi-value fields such as checkboxes[])
+     * @param array<string, string|list<string>|array<string, string>> $fields (a list for multi-value fields such as
+     *     checkboxes[], a map for named ones such as secret[client_id])
      * @param array<string, UploadedFileInterface|list<UploadedFileInterface>> $files (a list for attachments[])
      * @param array<string, string> $headers
      */

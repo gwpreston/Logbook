@@ -109,7 +109,12 @@ final readonly class FuelPricesNearAction
     {
         foreach ($this->form->places($user) as $place) {
             if (StationName::normalise($place->data->name) === StationName::normalise($name)) {
-                return NearOrigin::place($place->id, $place->data->name, (float) $place->data->latitude, (float) $place->data->longitude);
+                return NearOrigin::place(
+                    $place->id,
+                    $place->data->name,
+                    (float) $place->data->latitude,
+                    (float) $place->data->longitude,
+                );
             }
         }
 
@@ -123,6 +128,11 @@ final readonly class FuelPricesNearAction
             throw ApiProblem::invalidParameter('station', 'no such station with a position.');
         }
 
-        return NearOrigin::station($station->id, $station->data->name, (float) $station->data->latitude, (float) $station->data->longitude);
+        return NearOrigin::station(
+            $station->id,
+            $station->data->name,
+            (float) $station->data->latitude,
+            (float) $station->data->longitude,
+        );
     }
 }

@@ -241,72 +241,72 @@ in what it sends and how it is disclosed.
 ## Tasks
 
 ### Spec and docs
-- [ ] §6 and §7.34 in `spec.md`; §4 (provider endpoints, licence); §9
+- [x] §6 and §7.34 in `spec.md`; §4 (provider endpoints, licence); §9
       (`PRICE_HISTORY_DAYS`); the Phase 30.2 line in §13.
-- [ ] `docs/stations.md`: *Fuel prices*: enabling UK Fuel Finder, what is
+- [x] `docs/stations.md`: *Fuel prices*: enabling UK Fuel Finder, what is
       downloaded and stored, cheapest near me and effective cost explained,
       and adding a provider adapter.
 
 ### Migrations (every engine, each reversible)
-- [ ] `provider_stations`, `provider_prices`, `listed_price_changes`,
+- [x] `provider_stations`, `provider_prices`, `listed_price_changes`,
       `price_alerts`, `fuel_price_secrets`; `stations.provider`,
       `stations.provider_ref`, `stations.keep_my_details` (#143, #144).
 
 ### Code
-- [ ] `Service\FuelPrices\PriceProvider` interface (kind, grade map,
+- [x] `Service\FuelPrices\PriceProvider` interface (kind, grade map,
       `sync()` for bulk, `search()` for area), `ProviderRegistry`.
-- [ ] `Service\FuelPrices\Uk\FuelFinderProvider`: download, parse, map
+- [x] `Service\FuelPrices\Uk\FuelFinderProvider`: download, parse, map
       grades, with timeouts, size limits and the configured credentials.
-- [ ] `fuel_prices` job (Phase 28.1): batch upserts, removals, history.
-- [ ] `Service\FuelPrices\StationLinker` (150 m candidates, name and
+- [x] `fuel_prices` job (Phase 28.1): batch upserts, removals, history.
+- [x] `Service\FuelPrices\StationLinker` (150 m candidates, name and
       postcode similarity).
-- [ ] `Service\FuelPrices\CheapestNear` (bounding box then haversine,
+- [x] `Service\FuelPrices\CheapestNear` (bounding box then haversine,
       freshness, usual fill, consumption, effective cost, saving).
-- [ ] Price alerts (#138): `price_alerts`, the station page form, the
+- [x] Price alerts (#138): `price_alerts`, the station page form, the
       check after each sync, notification kind `price_alert`.
-- [ ] `bin/record-fuel-finder.php` (#139): record and trim a real
+- [x] `bin/record-fuel-finder.php` (#139): record and trim a real
       download into the test fixture.
-- [ ] Settings page, station page additions, the results page with
+- [x] Settings page, station page additions, the results page with
       geolocation, the fill-up form hint, the widget, the API endpoint, the
       Ask tool, attribution.
-- [ ] Translations (en, de).
+- [x] Translations (en, de).
 
 ### Tests
-- [ ] **Feed fixture** (synthetic, to the published schema, #139): sync
+- [x] **Feed fixture** (synthetic, to the published schema, #139): sync
       creates stations and prices, maps every grade, marks removed
       stations, and keeps current prices on a failed sync.
-- [ ] History: price changes only for linked stations that are used or
+- [x] History: price changes only for linked stations that are used or
       favourited; daily low, high and close derived; retention.
-- [ ] Price alerts: sent once below the threshold, re-armed above it,
+- [x] Price alerts: sent once below the threshold, re-armed above it,
       never twice for one drop, not for stale prices or closed stations.
-- [ ] Linking: candidates within 150 m ordered by name similarity; postcode
+- [x] Linking: candidates within 150 m ordered by name similarity; postcode
       fallback; *Keep my details* respected; merge keeps the link.
-- [ ] Effective cost: worked examples in the test file (a cheaper, farther
+- [x] Effective cost: worked examples in the test file (a cheaper, farther
       station that loses; one that wins), the 40 L default, the road factor,
       plug-in hybrids using the liquid series.
-- [ ] **Was it worth it?**: the worked example (7 mi, 4p, 50 L, 48 mpg) gives the
+- [x] **Was it worth it?**: the worked example (7 mi, 4p, 50 L, 48 mpg) gives the
       stated breakdown; after-fill-up comparison with and without a Home
       place; no comparison at the usual station or without a listed price
       in effect at the fill-up's time (#144); the *Shopping around* total and its minimum of
       3 fill-ups.
-- [ ] Freshness: older than 48 hours excluded unless asked; labels.
-- [ ] Location: a current-location search stores nothing; places are used
+- [x] Freshness: older than 48 hours excluded unless asked; labels.
+- [x] Location: a current-location search stores nothing; places are used
       by name in the API.
-- [ ] Off by default: no request is made, and no page shows prices, until a
+- [x] Off by default: no request is made, and no page shows prices, until a
       provider is enabled.
-- [ ] Access: settings admin only; results use only the user's vehicles.
+- [x] Access: settings admin only; results use only the user's vehicles.
 - [ ] Integration suite green on every engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: a small synthetic provider dataset near the demo
+- [x] `DemoDataSeeder`: a small synthetic provider dataset near the demo
       places (clearly fake names) with prices, so *Cheapest near me* works
       in the demo without any outside call.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.14.0**: live fuel prices (UK Fuel Finder) and
+- [x] `CHANGELOG.md` **2.14.0**: live fuel prices (UK Fuel Finder) and
       cheapest near me. Upgrade notes: migrations; off until an admin
       enables a provider.
-- [ ] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Bump `VERSION`, rebuild assets, update the README status.
 
 ---
 

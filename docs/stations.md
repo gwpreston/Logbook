@@ -323,7 +323,7 @@ The feed's grades become Logbook's:
 | B7 standard | B7 |
 | B7 premium (super diesel) | B7 premium |
 | B10 | B10 |
-| HVO | XTL (HVO) |
+| HVO | XTL (HVO / XTL, paraffinic) |
 
 The feed has **one** E5 price. Most UK super unleaded is 97 RON, so it is
 E5 97 unless an admin chooses E5 98 or E5 99+ under *E5 is sold as*. The
@@ -435,15 +435,15 @@ station:
 - **actual saving** = the nearest's effective cost − this one's: *worth
   the trip* above zero, *not worth the trip* otherwise.
 
-For example, the nearest station lists £1.399, and one **7 mi further
-away** lists £1.359, **4p cheaper**. The car's usual fill is **50 L** and
+For example, the nearest station is where you are and lists £1.399, and
+one **7 mi further away** lists £1.359, **4p cheaper**. The car's usual fill is **50 L** and
 it does **48 mpg** (UK):
 
 | | |
 |---|---|
 | Fuel saving | 50 L × £0.04 = **£2.00** |
 | Extra distance | 14 mi there and back, about 18.2 mi by road |
-| Fuel for that | about 1.72 L at £1.359 = **£2.34** |
+| Fuel for that | about 1.72 L for the 18.2 mi at £1.359 = **£2.34** (the nearest needs no driving) |
 | Actual saving | £2.00 − £2.34 = **−£0.34: not worth the trip** |
 
 **After a fill-up:** a fill-up of petrol or diesel (with a volume and a

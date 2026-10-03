@@ -53,15 +53,24 @@ final readonly class CheapestFuel implements AskTool
         return new ToolDefinition(
             $this->name(),
             'The cheapest listed fuel near one of the user\'s places, a station, or a position, ranked by effective cost: '
-            . 'the vehicle\'s usual fill plus the fuel to drive there and back (straight-line distance × 1.3 at its usual economy). '
-            . 'Each row has the listed price and when it was reported, the effective cost, and the sum against the nearest station. '
+            . 'the vehicle\'s usual fill plus the fuel to drive there and back '
+            . '(straight-line distance × 1.3 at its usual economy). '
+            . 'Each row has the listed price and when it was reported, the effective cost, '
+            . 'and the sum against the nearest station. '
             . 'Quote the attribution with the answer.',
             [
                 'type' => 'object',
                 'properties' => [
                     'vehicle' => ['type' => 'integer', 'description' => 'A vehicle id; default the one filled most recently.'],
-                    'grade' => ['type' => 'string', 'description' => 'A grade code such as e10_95, e5_97 or b7; default the vehicle\'s usual grade.'],
-                    'near' => ['type' => 'string', 'description' => 'A place name ("Home", "Work"), a station name or id, or "here" with lat and lng. Default: the user\'s first place.'],
+                    'grade' => [
+                        'type' => 'string',
+                        'description' => 'A grade code such as e10_95, e5_97 or b7; default the vehicle\'s usual grade.',
+                    ],
+                    'near' => [
+                        'type' => 'string',
+                        'description' => 'A place name ("Home", "Work"), a station name or id, or "here" with lat and lng. '
+                            . 'Default: the user\'s first place.',
+                    ],
                     'radius' => ['type' => 'number', 'description' => 'In the user\'s distance unit: 2, 5 (default), 10 or 20.'],
                     'lat' => ['type' => 'number', 'description' => 'With near "here": latitude in degrees.'],
                     'lng' => ['type' => 'number', 'description' => 'With near "here": longitude in degrees.'],
@@ -89,11 +98,18 @@ final readonly class CheapestFuel implements AskTool
                 throw new ToolError(sprintf('"%s" is not a grade this provider lists for the vehicle.', $code));
             }
         }
-        $radius = is_numeric($arguments->values['radius'] ?? null) ? (float) $arguments->values['radius'] : (float) CheapestNear::DEFAULT_RADIUS;
+        $radius = is_numeric($arguments->values['radius'] ?? null)
+            ? (float) $arguments->values['radius']
+            : (float) CheapestNear::DEFAULT_RADIUS;
         $radius = max(0.5, min(20.0, $radius));
 
-        $result = $this->near->search($origin, $vehicle, $grade, $user->preferences->distanceUnit->toKm($radius), limit: self::LIMIT)
-            ?? throw new ToolError('Fuel prices are off on this install.');
+        $result = $this->near->search(
+            $origin,
+            $vehicle,
+            $grade,
+            $user->preferences->distanceUnit->toKm($radius),
+            limit: self::LIMIT,
+        ) ?? throw new ToolError('Fuel prices are off on this install.');
         $data = $this->serializer->near($result);
         if ($origin->kind === NearOrigin::HERE) {
             // The client's own position is never echoed back or kept in the thread.
@@ -140,7 +156,12 @@ final readonly class CheapestFuel implements AskTool
         if ($near === '') {
             $first = $places[0] ?? throw new ToolError('The user has no places; ask which place or station to search near.');
 
-            return NearOrigin::place($first->id, $first->data->name, (float) $first->data->latitude, (float) $first->data->longitude);
+            return NearOrigin::place(
+                $first->id,
+                $first->data->name,
+                (float) $first->data->latitude,
+                (float) $first->data->longitude,
+            );
         }
         if (strtolower($near) === 'here') {
             return NearOrigin::validPosition($arguments->values['lat'] ?? null, $arguments->values['lng'] ?? null)
@@ -148,12 +169,22 @@ final readonly class CheapestFuel implements AskTool
         }
         foreach ($places as $place) {
             if (StationName::normalise($place->data->name) === StationName::normalise($near)) {
-                return NearOrigin::place($place->id, $place->data->name, (float) $place->data->latitude, (float) $place->data->longitude);
+                return NearOrigin::place(
+                    $place->id,
+                    $place->data->name,
+                    (float) $place->data->latitude,
+                    (float) $place->data->longitude,
+                );
             }
         }
         $station = ctype_digit($near) ? $this->stations->resolve((int) $near) : $this->stations->existing($near);
         if ($station !== null && $station->data->hasPosition()) {
-            return NearOrigin::station($station->id, $station->data->name, (float) $station->data->latitude, (float) $station->data->longitude);
+            return NearOrigin::station(
+                $station->id,
+                $station->data->name,
+                (float) $station->data->latitude,
+                (float) $station->data->longitude,
+            );
         }
 
         throw new ToolError(sprintf('No place or station with a position is called "%s".', mb_substr($near, 0, 50)));

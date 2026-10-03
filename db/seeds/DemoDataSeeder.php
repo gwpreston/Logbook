@@ -973,7 +973,10 @@ final class DemoDataSeeder extends AbstractSeed
         // favourite Shell and Maxol Antrim.
         $links = ['Tesco Extra' => 'demo-3', 'Shell' => 'demo-4', 'Maxol Antrim' => 'demo-2'];
         foreach ($links as $name => $ref) {
-            $this->execute('UPDATE stations SET provider = ?, provider_ref = ? WHERE name = ?', [DemoPriceProvider::CODE, $ref, $name]);
+            $this->execute(
+                'UPDATE stations SET provider = ?, provider_ref = ? WHERE name = ?',
+                [DemoPriceProvider::CODE, $ref, $name],
+            );
             [, , , , , $grades, $offset] = DemoPriceProvider::STATIONS[$ref];
             $changes = [];
             for ($day = 400; $day >= 0; $day--) {
@@ -1018,7 +1021,10 @@ final class DemoDataSeeder extends AbstractSeed
                 'scope' => 'global',
                 'owner_id' => 0,
                 'name' => 'fuel_prices',
-                'value' => json_encode(['provider' => DemoPriceProvider::CODE, 'refresh' => 60, 'e5' => 'e5_97'], JSON_THROW_ON_ERROR),
+                'value' => json_encode(
+                    ['provider' => DemoPriceProvider::CODE, 'refresh' => 60, 'e5' => 'e5_97'],
+                    JSON_THROW_ON_ERROR,
+                ),
                 'created_at' => $now,
                 'updated_at' => $now,
             ],

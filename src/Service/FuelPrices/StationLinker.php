@@ -53,7 +53,8 @@ final readonly class StationLinker
         $data = $station->data;
         $found = [];
         if ($data->hasPosition()) {
-            foreach ($this->providerStations->nearby($code, (float) $data->latitude, (float) $data->longitude, self::RADIUS_KM) as $hit) {
+            $hits = $this->providerStations->nearby($code, (float) $data->latitude, (float) $data->longitude, self::RADIUS_KM);
+            foreach ($hits as $hit) {
                 $found[] = new LinkCandidate($hit['station'], $hit['km'], self::similarity($data, $hit['station']));
             }
         } else {

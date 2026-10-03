@@ -139,7 +139,9 @@ final readonly class FuelPriceSerializer
                     'amount' => $this->formatter->money($cost->total, $currency),
                     'volume' => $this->formatter->volume($cost->fill, 1),
                 ]),
-                'saves' => $worth === null ? $this->translator->trans('fuel_prices.near.nearest') : $this->saves($worth->actualSaving, $currency),
+                'saves' => $worth === null
+                    ? $this->translator->trans('fuel_prices.near.nearest')
+                    : $this->saves($worth->actualSaving, $currency),
             ],
         ];
     }

@@ -43,11 +43,13 @@ final class FuelPriceSyncTest extends FuelPricesTestCase
         self::assertSame('POST', $this->requests[0]['method']);
         self::assertSame(
             ['client_id' => 'client-id-1234', 'client_secret' => 'client-secret-5678'],
-            json_decode((string) ($this->requests[0]['options']['body'] ?? ''), true),
+            json_decode(self::text($this->requests[0]['options']['body'] ?? ''), true),
         );
         self::assertSame([['batch-number' => '1']], $this->queries('/api/v1/pfs'));
         self::assertSame([['batch-number' => '1']], $this->queries('/api/v1/pfs/fuel-prices'));
-        self::assertContains('Authorization: Bearer ' . self::TOKEN, $this->requests[1]['options']['normalized_headers']['authorization'] ?? []);
+        $authorization = self::headers($this->requests[1]['options'])['authorization'] ?? [];
+        self::assertIsArray($authorization);
+        self::assertContains('Authorization: Bearer ' . self::TOKEN, $authorization);
         self::assertCount(3, $this->requests);
 
         $repository = $this->service($app, ProviderStationRepository::class);
@@ -68,6 +70,22 @@ final class FuelPriceSyncTest extends FuelPricesTestCase
         self::assertSame(10, $repository->countPrices(FuelFinderProvider::CODE));
     }
 
+    private static function text(mixed $value): string
+    {
+        return is_string($value) ? $value : '';
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<mixed>
+     */
+    private static function headers(array $options): array
+    {
+        $headers = $options['normalized_headers'] ?? [];
+
+        return is_array($headers) ? $headers : [];
+    }
+
     public function testLaterRunsAskForChangesAndOnlyADailyFullSyncRemoves(): void
     {
         [$app] = $this->pricesApp();
@@ -85,7 +103,10 @@ final class FuelPriceSyncTest extends FuelPricesTestCase
         $run = $this->sync($app);
 
         self::assertSame(JobStatus::Ok, $run->status, (string) $run->summary);
-        self::assertSame([['batch-number' => '1', 'effective-start-timestamp' => '2026-10-03 06:50:00']], $this->queries('/api/v1/pfs/fuel-prices'));
+        self::assertSame(
+            [['batch-number' => '1', 'effective-start-timestamp' => '2026-10-03 06:50:00']],
+            $this->queries('/api/v1/pfs/fuel-prices'),
+        );
         $tesco = $repository->findByRef(FuelFinderProvider::CODE, self::ref('antrim-tesco'));
         self::assertNotNull($tesco);
         $prices = $repository->prices([$tesco->id])[$tesco->id];
@@ -127,7 +148,11 @@ final class FuelPriceSyncTest extends FuelPricesTestCase
         self::assertSame(JobStatus::Failed, $run->status);
         self::assertSame('The provider answered with HTTP 503.', $run->summary);
         self::assertSame(10, $repository->countPrices(FuelFinderProvider::CODE), 'never deletes current prices');
-        self::assertEquals($before, $this->service($app, FuelPriceConfig::class)->syncState(), 'the next run asks from the same point');
+        self::assertEquals(
+            $before,
+            $this->service($app, FuelPriceConfig::class)->syncState(),
+            'the next run asks from the same point',
+        );
     }
 
     public function testRefusedCredentialsAndRateLimitsAreReported(): void
@@ -184,9 +209,17 @@ final class FuelPriceSyncTest extends FuelPricesTestCase
         $this->sync($app);
 
         $history = $this->service($app, ListedPriceRepository::class);
-        self::assertCount(3, $history->changes(FuelFinderProvider::CODE, self::ref('antrim-tesco')), 'used: its three prices, once');
+        self::assertCount(
+            3,
+            $history->changes(FuelFinderProvider::CODE, self::ref('antrim-tesco')),
+            'used: its three prices, once',
+        );
         self::assertCount(3, $history->changes(FuelFinderProvider::CODE, self::ref('antrim-shell')), 'favourited');
-        self::assertSame([], $history->changes(FuelFinderProvider::CODE, self::ref('antrim-maxol')), 'linked but neither used nor favourited');
+        self::assertSame(
+            [],
+            $history->changes(FuelFinderProvider::CODE, self::ref('antrim-maxol')),
+            'linked but neither used nor favourited',
+        );
 
         // Kept for PRICE_HISTORY_DAYS (1,095 by default), then the cleanup job drops them.
         self::assertSame(1095, $this->service($app, AppSettings::class)->priceHistoryDays);
@@ -203,7 +236,11 @@ final class FuelPriceSyncTest extends FuelPricesTestCase
         $followed = $this->station($app, 'Tesco Antrim');
         $kept = $this->station($app, 'My Shell', '54.700000', '-6.200000');
         $stations->setLink($followed->id, new StationLink(FuelFinderProvider::CODE, self::ref('antrim-tesco')), $now);
-        $stations->setLink($kept->id, new StationLink(FuelFinderProvider::CODE, self::ref('antrim-shell'), keepMyDetails: true), $now);
+        $stations->setLink(
+            $kept->id,
+            new StationLink(FuelFinderProvider::CODE, self::ref('antrim-shell'), keepMyDetails: true),
+            $now,
+        );
 
         $this->sync($app);
 

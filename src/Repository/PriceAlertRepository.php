@@ -59,7 +59,17 @@ final readonly class PriceAlertRepository
     public function forProvider(string $provider): array
     {
         $rows = $this->connection->createQueryBuilder()
-            ->select('a.id', 'a.user_id', 'a.station_id', 'a.grade', 'a.below', 'a.triggered_at', 'a.created_at', 'a.updated_at', 's.provider_ref')
+            ->select(
+                'a.id',
+                'a.user_id',
+                'a.station_id',
+                'a.grade',
+                'a.below',
+                'a.triggered_at',
+                'a.created_at',
+                'a.updated_at',
+                's.provider_ref',
+            )
             ->from(self::TABLE, 'a')
             ->innerJoin('a', 'stations', 's', 's.id = a.station_id')
             ->where('s.provider = :provider', 's.provider_ref IS NOT NULL', 's.merged_into IS NULL')
@@ -96,7 +106,15 @@ final readonly class PriceAlertRepository
     public function save(int $userId, int $stationId, FuelGrade $grade, string $below, DateTimeImmutable $now): void
     {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
-        $this->connection->transactional(function (Connection $connection) use ($userId, $stationId, $grade, $below, $timestamp): void {
+        $this->connection->transactional(function (
+            Connection $connection,
+        ) use (
+            $userId,
+            $stationId,
+            $grade,
+            $below,
+            $timestamp,
+        ): void {
             $updated = $connection->update(self::TABLE, [
                 'below' => $below,
                 'triggered_at' => null,

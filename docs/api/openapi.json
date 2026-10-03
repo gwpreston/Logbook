@@ -6381,13 +6381,17 @@
             "description": "Per fuel, grade and currency, most volume first."
           },
           "listed": {
-            "type": [
-              "array",
-              "null"
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ListedPrice"
+                }
+              },
+              {
+                "type": "null"
+              }
             ],
-            "items": {
-              "$ref": "#/components/schemas/ListedPrice"
-            },
             "description": "The listed prices of a station linked to the enabled price provider, by grade; null when it is not linked or prices are off."
           },
           "created_at": {

@@ -88,7 +88,8 @@ final class ComparisonsTest extends FuelPricesTestCase
 
         $this->fillAt($app, $golf, $this->shell, '2026-09-15T10:00:00Z', '11800', '1.369');
         $this->fillAt($app, $golf, $this->shell, '2026-09-20T10:00:00Z', '12400', '1.379');
-        self::assertNull($comparisons->shoppingAround($owner, $golf), 'two are not enough');
+        $twoOnly = $comparisons->shoppingAround($owner, $golf);
+        self::assertNull($twoOnly, 'two are not enough');
 
         $this->fillAt($app, $golf, $this->shell, '2026-09-25T10:00:00Z', '13000', '1.389');
         $shopping = $comparisons->shoppingAround($owner, $golf);
@@ -97,7 +98,8 @@ final class ComparisonsTest extends FuelPricesTestCase
         self::assertSame('2.40', $shopping->total, '£1.20 + £0.80 + £0.40 on fuel');
         self::assertFalse($shopping->withDistance);
         self::assertSame(
-            'about £2.40 better off from 3 fill-ups away from your usual station in the last 12 months. (Before the extra driving: add a Home place to count it.)',
+            'about £2.40 better off from 3 fill-ups away from your usual station in the last 12 months. '
+            . '(Before the extra driving: add a Home place to count it.)',
             $this->service($app, ComparisonWording::class)->shoppingAround($shopping),
         );
     }
@@ -120,17 +122,38 @@ final class ComparisonsTest extends FuelPricesTestCase
 
         $golf = $this->vehicle($app);
         // 40 L every 600 km: the usual economy.
-        foreach (['2026-06-01' => '9400', '2026-07-01' => '10000', '2026-08-01' => '10600', '2026-09-01' => '11200'] as $day => $km) {
+        $fills = ['2026-06-01' => '9400', '2026-07-01' => '10000', '2026-08-01' => '10600', '2026-09-01' => '11200'];
+        foreach ($fills as $day => $km) {
             $this->fillAt($app, $golf, $this->tesco, $day . 'T08:00:00Z', $km, '1.399');
         }
 
         $history = $this->service($app, ListedPriceRepository::class);
-        $history->record(FuelFinderProvider::CODE, self::ref('antrim-tesco'), new PriceChange(FuelGrade::E10_95, '1.399', new DateTimeImmutable('2026-09-11T07:00:00Z')));
-        $history->record(FuelFinderProvider::CODE, self::ref('antrim-tesco'), new PriceChange(FuelGrade::E10_95, '1.399', new DateTimeImmutable('2026-09-15T07:00:00Z')));
-        $history->record(FuelFinderProvider::CODE, self::ref('antrim-shell'), new PriceChange(FuelGrade::E10_95, '1.369', new DateTimeImmutable('2026-09-15T08:00:00Z')));
+        $history->record(
+            FuelFinderProvider::CODE,
+            self::ref('antrim-tesco'),
+            new PriceChange(FuelGrade::E10_95, '1.399', new DateTimeImmutable('2026-09-11T07:00:00Z')),
+        );
+        $history->record(
+            FuelFinderProvider::CODE,
+            self::ref('antrim-tesco'),
+            new PriceChange(FuelGrade::E10_95, '1.399', new DateTimeImmutable('2026-09-15T07:00:00Z')),
+        );
+        $history->record(
+            FuelFinderProvider::CODE,
+            self::ref('antrim-shell'),
+            new PriceChange(FuelGrade::E10_95, '1.369', new DateTimeImmutable('2026-09-15T08:00:00Z')),
+        );
         foreach (['2026-09-20', '2026-09-25'] as $day) {
-            $history->record(FuelFinderProvider::CODE, self::ref('antrim-tesco'), new PriceChange(FuelGrade::E10_95, '1.399', new DateTimeImmutable($day . 'T07:00:00Z')));
-            $history->record(FuelFinderProvider::CODE, self::ref('antrim-shell'), new PriceChange(FuelGrade::E10_95, '1.379', new DateTimeImmutable($day . 'T07:00:00Z')));
+            $history->record(
+                FuelFinderProvider::CODE,
+                self::ref('antrim-tesco'),
+                new PriceChange(FuelGrade::E10_95, '1.399', new DateTimeImmutable($day . 'T07:00:00Z')),
+            );
+            $history->record(
+                FuelFinderProvider::CODE,
+                self::ref('antrim-shell'),
+                new PriceChange(FuelGrade::E10_95, '1.379', new DateTimeImmutable($day . 'T07:00:00Z')),
+            );
         }
 
         return [$app, $owner, $golf];
@@ -141,8 +164,21 @@ final class ComparisonsTest extends FuelPricesTestCase
      */
     private function fillAt(App $app, Vehicle $vehicle, Station $station, string $utc, string $km, string $price): FuelEntry
     {
-        $entry = $this->fillUp($app, $vehicle, $utc, $km, '40', number_format(40 * (float) $price, 2, '.', ''), pricePerLitre: $price, grade: FuelGrade::E10_95);
-        $this->connection($app)->update('fuel_entries', ['station_id' => $station->id, 'station' => $station->data->name], ['id' => $entry->id]);
+        $entry = $this->fillUp(
+            $app,
+            $vehicle,
+            $utc,
+            $km,
+            '40',
+            number_format(40 * (float) $price, 2, '.', ''),
+            pricePerLitre: $price,
+            grade: FuelGrade::E10_95,
+        );
+        $this->connection($app)->update(
+            'fuel_entries',
+            ['station_id' => $station->id, 'station' => $station->data->name],
+            ['id' => $entry->id],
+        );
 
         return $this->service($app, FuelService::class)->get($vehicle, $entry->id);
     }

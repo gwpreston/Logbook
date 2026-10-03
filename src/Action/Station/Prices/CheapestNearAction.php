@@ -111,14 +111,24 @@ final readonly class CheapestNearAction
         if ($kind === NearOrigin::PLACE) {
             foreach ($places as $place) {
                 if ((string) $place->id === $id) {
-                    return NearOrigin::place($place->id, $place->data->name, (float) $place->data->latitude, (float) $place->data->longitude);
+                    return NearOrigin::place(
+                        $place->id,
+                        $place->data->name,
+                        (float) $place->data->latitude,
+                        (float) $place->data->longitude,
+                    );
                 }
             }
         }
         if ($kind === NearOrigin::STATION) {
             foreach ($stations as $station) {
                 if ((string) $station->id === $id && $station->data->hasPosition()) {
-                    return NearOrigin::station($station->id, $station->data->name, (float) $station->data->latitude, (float) $station->data->longitude);
+                    return NearOrigin::station(
+                        $station->id,
+                        $station->data->name,
+                        (float) $station->data->latitude,
+                        (float) $station->data->longitude,
+                    );
                 }
             }
         }

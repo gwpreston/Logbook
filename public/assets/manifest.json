@@ -1,5 +1,5 @@
 {
-    "css/app.css": "b741bb6366f6",
+    "css/app.css": "ae49a20d782c",
     "images/apple-touch-icon.png": "5d20e32cd66d",
     "images/icon-192.png": "4655ae88d21d",
     "images/icon-512.png": "c9e6d3a34934",
@@ -11,7 +11,7 @@
     "js/first-inspection.js": "ed3d5a7ddcde",
     "js/jobs.js": "0081265b888d",
     "js/service-worker.js": "a2493a9adcf6",
-    "js/stations.js": "1ad0ecb46a46",
+    "js/stations.js": "902c79d2d8cb",
     "js/theme.js": "effc85a28e76",
     "js/trip-form.js": "3bdfa6acdffe",
     "vendor/THIRD-PARTY-NOTICES.txt": "95a5844d48b4",

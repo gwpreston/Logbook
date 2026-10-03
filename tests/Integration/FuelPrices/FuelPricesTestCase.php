@@ -60,7 +60,11 @@ abstract class FuelPricesTestCase extends AppTestCase
      */
     protected function pricesApp(bool $enable = true): array
     {
-        $app = $this->createApp(['FF_ID' => 'client-id-1234', 'FF_SECRET' => 'client-secret-5678']);
+        $app = $this->createApp([
+            'FF_ID' => 'client-id-1234',
+            'FF_SECRET' => 'client-secret-5678',
+            'SESSION_SECRET' => 'a-session-secret-for-sealing-credentials-in-tests',
+        ]);
         $this->resetDatabase($app);
         $this->clock = $this->pinClock($app, self::NOW);
         $owner = $this->createOwner($app);
@@ -104,8 +108,13 @@ abstract class FuelPricesTestCase extends AppTestCase
     /**
      * @param App<ContainerInterface> $app
      */
-    protected function station(App $app, string $name, ?string $lat = null, ?string $lon = null, ?string $postcode = null): Station
-    {
+    protected function station(
+        App $app,
+        string $name,
+        ?string $lat = null,
+        ?string $lon = null,
+        ?string $postcode = null,
+    ): Station {
         $repository = $this->service($app, StationRepository::class);
         $id = $repository->insert(
             new StationData($name, postcode: $postcode, latitude: $lat, longitude: $lon),
@@ -119,8 +128,13 @@ abstract class FuelPricesTestCase extends AppTestCase
     /**
      * @param App<ContainerInterface> $app
      */
-    protected function home(App $app, User $user, string $lat = '54.716000', string $lon = '-6.208000', string $name = 'Home'): void
-    {
+    protected function home(
+        App $app,
+        User $user,
+        string $lat = '54.716000',
+        string $lon = '-6.208000',
+        string $name = 'Home',
+    ): void {
         $this->service($app, PlaceService::class)->create($user, new PlaceData($name, $lat, $lon));
     }
 
@@ -137,20 +151,29 @@ abstract class FuelPricesTestCase extends AppTestCase
      */
     protected static function fixture(string $file): array
     {
-        $data = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/Fixtures/fuel-finder/' . $file), true, 64, JSON_THROW_ON_ERROR);
+        $data = json_decode(
+            (string) file_get_contents(dirname(__DIR__, 2) . '/Fixtures/fuel-finder/' . $file),
+            true,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
         self::assertIsArray($data);
 
         return array_values($data);
     }
 
     /**
-     * @param array<string, mixed> $options
+     * @param array<mixed> $options
      */
     private function respond(string $method, string $url, array $options): ResponseInterface
     {
-        $this->requests[] = ['method' => $method, 'url' => $url, 'options' => $options];
+        $named = [];
+        foreach ($options as $key => $value) {
+            $named[(string) $key] = $value;
+        }
+        $this->requests[] = ['method' => $method, 'url' => $url, 'options' => $named];
         if ($this->answer !== null) {
-            $custom = ($this->answer)($method, $url, $options);
+            $custom = ($this->answer)($method, $url, $named);
             if ($custom !== null) {
                 return $custom;
             }
@@ -162,8 +185,12 @@ abstract class FuelPricesTestCase extends AppTestCase
                 'success' => true,
                 'data' => ['access_token' => self::TOKEN, 'token_type' => 'Bearer', 'expires_in' => 3600],
             ], JSON_THROW_ON_ERROR)),
-            '/api/v1/pfs' => new MockResponse(json_encode($this->stations ?? self::fixture('pfs-page-1.json'), JSON_THROW_ON_ERROR)),
-            '/api/v1/pfs/fuel-prices' => new MockResponse(json_encode($this->prices ?? self::fixture('fuel-prices-page-1.json'), JSON_THROW_ON_ERROR)),
+            '/api/v1/pfs' => new MockResponse(
+                json_encode($this->stations ?? self::fixture('pfs-page-1.json'), JSON_THROW_ON_ERROR),
+            ),
+            '/api/v1/pfs/fuel-prices' => new MockResponse(
+                json_encode($this->prices ?? self::fixture('fuel-prices-page-1.json'), JSON_THROW_ON_ERROR),
+            ),
             default => new MockResponse('{}', ['http_code' => 404]),
         };
     }
@@ -179,7 +206,13 @@ abstract class FuelPricesTestCase extends AppTestCase
         foreach ($this->requests as $request) {
             if ($request['method'] === 'GET' && parse_url($request['url'], PHP_URL_PATH) === $path) {
                 parse_str((string) parse_url($request['url'], PHP_URL_QUERY), $query);
-                $found[] = array_map(strval(...), array_filter($query, is_string(...)));
+                $values = [];
+                foreach ($query as $key => $value) {
+                    if (is_string($key) && is_string($value)) {
+                        $values[$key] = $value;
+                    }
+                }
+                $found[] = $values;
             }
         }
 

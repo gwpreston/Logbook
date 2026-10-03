@@ -96,7 +96,17 @@ final class EffectiveCostTest extends TestCase
         $now = new DateTimeImmutable('2026-10-03T00:00:00Z');
 
         return new VehicleFuelProfile(
-            new Vehicle(1, 1, new VehicleData(VehicleType::Car, 'Volkswagen', 'Golf', FuelType::Petrol), VehicleStatus::Active, null, null, null, $now, $now),
+            new Vehicle(
+                1,
+                1,
+                new VehicleData(VehicleType::Car, 'Volkswagen', 'Golf', FuelType::Petrol),
+                VehicleStatus::Active,
+                null,
+                null,
+                null,
+                $now,
+                $now,
+            ),
             $fill,
             $assumed,
             $km,

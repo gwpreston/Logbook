@@ -15,7 +15,11 @@ final class OpeningHoursTest extends TestCase
 {
     public function testDaysWithTheSameHoursShareARange(): void
     {
-        $day = static fn (string $open, string $close, bool $allDay = false): array => ['open' => $open, 'close' => $close, 'is_24_hours' => $allDay];
+        $day = static fn (string $open, string $close, bool $allDay = false): array => [
+            'open' => $open,
+            'close' => $close,
+            'is_24_hours' => $allDay,
+        ];
 
         self::assertSame('Mo-Fr 06:00-22:00; Sa 07:00-21:00; Su off', OpeningHours::text(['usual_days' => [
             'monday' => $day('06:00', '22:00'),

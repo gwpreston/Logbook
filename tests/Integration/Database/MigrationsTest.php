@@ -109,7 +109,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 30.2 fuel price tables, the Phase 30.1 station links and tables, the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
+        // Newest first: the Phase 30.2 fuel price tables, the Phase 30.1 station links and tables,
+        // the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
         // the Phase 28.1 job runs, the Phase 27.2 disposal, estimate and incident scans,
         // the Phase 27.1 incidents, the Phase 26.5 draft source,
         // the Phase 26.4 pending uploads, the Phase 26.3 drafts,

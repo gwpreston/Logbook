@@ -60,7 +60,13 @@ final readonly class EditFuelEntryAction
         }
 
         $updated = $this->fuel->update($vehicle, $entry, $data, $files);
-        $this->flash->queue(RequestContext::session($request), $vehicle, $updated, 'fuel.updated', RequestContext::requireUser($request));
+        $this->flash->queue(
+            RequestContext::session($request),
+            $vehicle,
+            $updated,
+            'fuel.updated',
+            RequestContext::requireUser($request),
+        );
 
         return $this->redirect->backOr($request, 'fuel.index', ['id' => (string) $vehicle->id]);
     }
