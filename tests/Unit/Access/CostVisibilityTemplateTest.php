@@ -65,6 +65,10 @@ final class CostVisibilityTemplateTest extends TestCase
         'stations/index.twig' => 'the stations list: averages from StationStats, visible amounts only',
         'stations/show.twig' => 'the station page: StationStats and each fill-up’s amountVisible',
         'fuel/_by_station.twig' => 'the By station card: built only with ViewCosts',
+        // Fuel prices (Phase 30.2): listed prices are public, and effective costs are worked out
+        // from them and the vehicle's usual fill, never from anything the viewer paid.
+        'stations/near.twig' => 'Cheapest near me: listed prices and effective costs, nobody’s spending',
+        'dashboard/_cheapest_fuel.twig' => 'the Cheapest fuel widget: listed prices and effective costs',
     ];
 
     /**

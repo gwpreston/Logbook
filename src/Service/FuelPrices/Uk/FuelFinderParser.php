@@ -211,13 +211,22 @@ final class FuelFinderParser
     }
 
     /**
-     * "TESCO ANTRIM" → "Tesco Antrim"; mixed case is left as typed.
+     * "TESCO ANTRIM" → "Tesco Antrim"; words with a digit (postcodes, "M2")
+     * stay as they are, and mixed case is left as typed.
      */
     private static function titleCase(string $text): string
     {
-        return mb_strtoupper($text) === $text && mb_strtolower($text) !== $text
-            ? mb_convert_case(mb_strtolower($text), MB_CASE_TITLE)
-            : $text;
+        if (mb_strtoupper($text) !== $text || mb_strtolower($text) === $text) {
+            return $text;
+        }
+
+        return (string) preg_replace_callback(
+            '/[^\s,]+/u',
+            static fn (array $word): string => preg_match('/\d/', $word[0]) === 1
+                ? $word[0]
+                : mb_convert_case(mb_strtolower($word[0]), MB_CASE_TITLE),
+            $text,
+        );
     }
 
     /**

@@ -96,7 +96,7 @@ final class DashboardTest extends AppTestCase
         self::assertSame([
             'order' => [
                 'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel',
-                'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance',
+                'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel',
             ],
             'hidden' => ['efficiency'],
         ], $stored->value);

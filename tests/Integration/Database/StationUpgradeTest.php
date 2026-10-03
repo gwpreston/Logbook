@@ -31,6 +31,9 @@ use Slim\App;
  */
 final class StationUpgradeTest extends AppTestCase
 {
+    /** The migration before the data migration (later migrations are rolled back with it). */
+    private const string BEFORE_LINKS = '20261027100000';
+
     protected function tearDown(): void
     {
         Migrator::run('migrate');
@@ -65,7 +68,7 @@ final class StationUpgradeTest extends AppTestCase
         $app = $this->createApp();
         $this->resetDatabase($app);
         // Before the data migration: the column exists, nothing is linked.
-        Migrator::run('rollback');
+        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
 
         $owner = $this->createOwner($app);
         $preset = UnitPreset::Us;
@@ -124,8 +127,8 @@ final class StationUpgradeTest extends AppTestCase
         self::assertSame([null, 'Home'], $links[$g], 'home charging is never a station');
         self::assertSame($byName['Ionity Antrim']->id, $links[$h][0], 'a public charger is');
 
-        Migrator::run('rollback');
-        self::assertSame([], $this->service($app, StationRepository::class)->listActive());
+        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
+        self::assertSame(0, (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM stations'));
         foreach ($this->service($app, FuelEntryRepository::class)->listForVehicle($golf) as $entry) {
             self::assertNull($entry->data->stationId);
         }
@@ -137,7 +140,7 @@ final class StationUpgradeTest extends AppTestCase
     {
         $app = $this->createApp();
         $this->resetDatabase($app);
-        Migrator::run('rollback');
+        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
         $owner = $this->createOwner($app);
         $golf = $this->service($app, VehicleRepository::class)->insert(
             $owner->id,
