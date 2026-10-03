@@ -129,6 +129,7 @@ user prefers, so automations can compare and chart them:
 | `GET /journeys` | your saved journeys, in your order (trips module) |
 | `GET /stations` | stations, your favourites first, then by your last visit, each with what you paid there per grade (`?q=` name, brand or postcode; `?favourites=true`; stations module) |
 | `GET /stations/{station}` | one station and what you paid there; a merged station's id answers with the station it became (stations module) |
+| `GET /fuel-prices/near` | *Cheapest near me*: listed prices near a point, ranked by effective cost for a vehicle ([Fuel prices](#fuel-prices); only while a price provider is enabled) |
 | `GET /openapi.json` | the OpenAPI description (no key) |
 
 A vehicle id the key's user cannot see answers `404`, like one that does
@@ -303,6 +304,150 @@ curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
 
 Add it to the Home Screen or ask Siri by the shortcut's name. For a one-way
 trip on a return journey add `is_return` (Boolean) = *false*.
+
+## Fuel prices
+
+From 2.14, with a fuel price provider enabled on Settings → Fuel prices
+([stations.md](stations.md#fuel-prices)). While none is enabled, or the
+stations module is off, `GET /fuel-prices/near` answers `404` and stations
+have `"listed": null`.
+
+`GET /fuel-prices/near` is *Cheapest near me* for the key's user: the
+stations with a listed price for the grade, ranked by **effective cost**
+(the vehicle's usual fill plus the fuel to drive there and back), each
+with its sum against the nearest station. It is answered from the copy of
+the feed on your server; nothing is sent to the provider.
+
+| Parameter | |
+|---|---|
+| `lat`, `lng` | a position in degrees (both) |
+| `place` | one of your places, by name (`Home`; capitals and spacing ignored) |
+| `station` | a station id (`GET /stations`) that has a position |
+| `vehicle` | a vehicle id; default the petrol or diesel vehicle filled most recently. Electric vehicles are not offered. |
+| `grade` | a grade code the provider lists for the vehicle's fuel (`e10_95`, `e5_97`, `b7`, …); default the vehicle's usual grade |
+| `radius` | above 0 and up to 50, **in the key user's distance unit**; default `5` |
+| `sort` | `effective` (default), `price` or `distance` |
+| `include_older` | `true` also counts prices reported more than 48 hours ago |
+
+Give **exactly one** origin: `lat` and `lng`, `place` or `station`. None,
+or more than one, is a `400 invalid_parameter`, as is a bad value for any
+parameter. A position in the request is used for this answer only: it is
+never stored, logged or echoed back. An unknown vehicle, or none with
+petrol or diesel, is a `404`.
+
+```sh
+curl -H "Authorization: Bearer $KEY" "$BASE/fuel-prices/near?place=Home&radius=5"
+```
+
+The answer, trimmed to two stations, for a user who uses miles:
+
+```json
+{
+  "provider": {
+    "code": "uk_fuel_finder",
+    "name": "UK Fuel Finder",
+    "attribution": "Contains public sector information licensed under the Open Government Licence v3.0.",
+    "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+  },
+  "currency": "GBP",
+  "synced_at": "2026-10-03T13:00:12Z",
+  "origin": {"kind": "place", "label": "Home"},
+  "vehicle_id": 1,
+  "grade": "e10_95",
+  "radius_km": 8.047,
+  "sort": "effective",
+  "include_older": false,
+  "usual_fill": {"litres": "45.210", "assumed": false, "display": "45.2 L"},
+  "economy": {"distance_km": "6436.000", "litres": "378.770", "all_time": false, "display": "48.0 mpg"},
+  "road_factor": 1.3,
+  "total": 2,
+  "items": [
+    {
+      "station_id": 12,
+      "provider_ref": "a1b2c3d4",
+      "name": "Tesco Antrim",
+      "brand": "Tesco",
+      "address": "Junction One, Antrim",
+      "postcode": "BT41 4LL",
+      "latitude": "54.705100",
+      "longitude": "-6.240100",
+      "distance_km": 3.4,
+      "listed": {
+        "grade": "e10_95",
+        "price": "1.369",
+        "currency": "GBP",
+        "reported_at": "2026-10-03T11:20:00Z",
+        "fresh": true,
+        "display": "£1.369/L"
+      },
+      "usual_fill_litres": "45.210",
+      "detour_km": 8.84,
+      "detour_litres": "0.520",
+      "effective_cost": "62.60",
+      "nearest": false,
+      "worth_it": {
+        "fuel_saving": "0.90",
+        "extra_km": 4.4,
+        "extra_road_km": 5.72,
+        "fuel_for_that": "0.46",
+        "actual_saving": "0.45",
+        "worth_the_trip": true
+      },
+      "display": {"distance": "2.1 mi", "effective_cost": "£62.60 for your usual 45.2 L", "saves": "saves £0.45"}
+    },
+    {
+      "station_id": null,
+      "provider_ref": "e5f6a7b8",
+      "name": "Sample Service Station",
+      "brand": null,
+      "address": "Main Street, Antrim",
+      "postcode": "BT41 1AB",
+      "latitude": "54.716900",
+      "longitude": "-6.220300",
+      "distance_km": 1.2,
+      "listed": {
+        "grade": "e10_95",
+        "price": "1.389",
+        "currency": "GBP",
+        "reported_at": "2026-10-03T09:05:00Z",
+        "fresh": true,
+        "display": "£1.389/L"
+      },
+      "usual_fill_litres": "45.210",
+      "detour_km": 3.12,
+      "detour_litres": "0.184",
+      "effective_cost": "63.05",
+      "nearest": true,
+      "worth_it": null,
+      "display": {"distance": "0.7 mi", "effective_cost": "£63.05 for your usual 45.2 L", "saves": "Nearest"}
+    }
+  ]
+}
+```
+
+- Distances are kilometres, **straight-line**; `detour_km` and
+  `extra_road_km` are by road, × `road_factor`. Prices are per litre in
+  `currency`, to three places; money is to two.
+- `origin.kind` is `here` (a position), `place` or `station`; `label` is
+  the place's or station's name, `null` for a position.
+- `usual_fill.assumed` is `true` when the vehicle has no full fills and
+  40 L is used. `economy` is `null` when the vehicle has none: then the
+  drive is not counted and `detour_litres` is `null`.
+- `station_id` is the linked Logbook station, or `null`.
+- The nearest station selling the grade has `"nearest": true` and
+  `"worth_it": null`; every other row's `worth_it` is its sum against
+  that one, and `actual_saving` is negative when the trip costs more than
+  it saves.
+- `total` is how many stations matched; `items` holds up to 50.
+- Show the `provider.attribution` wherever you show the data.
+
+**Station responses** (`GET /stations`, `GET /stations/{station}`) carry
+`listed`: for a linked station, its listed prices now, one per grade, as
+`listed` above (`grade`, `price`, `currency`, `reported_at`, `fresh`,
+`display`). `fresh` is `false` for a price reported more than 48 hours
+ago. A linked station with no prices yet has `[]`. It is `null` for a
+station that isn't linked (or whose feed record isn't synced yet), and
+while no provider is enabled.
 
 ## Errors
 
