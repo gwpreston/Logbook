@@ -34,6 +34,8 @@ final class EconomyCheck
     private const array BANDS = [
         'liquid' => ['more' => '1.25', 'less' => '0.80'],
         'electric' => ['more' => '1.35', 'less' => '0.74'],
+        // CNG (Phase 31) varies like liquid fuel: the same band.
+        'gas' => ['more' => '1.25', 'less' => '0.80'],
     ];
 
     public static function of(FuelHistory $history): EconomyChecks

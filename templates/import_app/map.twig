@@ -1,0 +1,208 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/import_app.twig' as app_import %}
+{#
+ # Importing from another app, steps 2 and 3: map what the file can't say
+ # (a GET form, so the preview is a plain URL and works without JS), then
+ # preview every row of every section and import (POST). See
+ # Action\ImportApp\ImportAppAction for the variables.
+ #}
+
+{% set active_nav = 'settings' %}
+{% set heading = 'import_app.title'|trans %}
+{% set v = export.vehicle %}
+{% set file_vehicle = [v.name, ([v.make, v.model]|filter(p => p)|join(' ')), v.plate]|filter(p => p)|join(' · ') %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('import_app.upload') }}">{{ ui.icon('chevron_left') }}{{ heading }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ 'import_app.from_fuelio'|trans }}</p>
+                <h1 class="page-header__title">{{ filename }}</h1>
+                <p class="page-header__lead">{{ 'import_app.map.file_vehicle'|trans({name: file_vehicle}) }}</p>
+            </div>
+        </header>
+
+        {% if error %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ trans(error.key, error.params) }}</span></div>
+        {% endif %}
+
+        <form class="form" method="get" action="{{ url_for('import_app.map', {token: token}) }}" aria-labelledby="map-heading">
+            <h2 id="map-heading" class="visually-hidden">{{ 'import_app.map.heading'|trans }}</h2>
+            <section class="card" aria-labelledby="vehicle-heading">
+                <h2 id="vehicle-heading" class="card__title">{{ 'import_app.map.vehicle_heading'|trans }}</h2>
+                <div class="field">
+                    <label class="field__label" for="f-vehicle">{{ 'import_app.map.vehicle_label'|trans }}</label>
+                    <select class="select" id="f-vehicle" name="vehicle">
+                        {% for vehicle in manageable %}
+                            <option value="{{ vehicle.id }}"{% if options.vehicle == vehicle.id ~ '' %} selected{% endif %}>{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</option>
+                        {% endfor %}
+                        <option value="new"{% if options.vehicle == 'new' %} selected{% endif %}>{{ 'import_app.map.new_vehicle'|trans({name: file_vehicle}) }}</option>
+                        <option value="skip"{% if options.vehicle == 'skip' %} selected{% endif %}>{{ 'import_app.map.skip_vehicle'|trans }}</option>
+                    </select>
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="units-heading">
+                <h2 id="units-heading" class="card__title">{{ 'import_app.map.units_heading'|trans }}</h2>
+                {% if not units_from_file %}
+                    <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'import_app.map.units_guessed'|trans }}</span></div>
+                {% endif %}
+                <div class="form-row form-row--3">
+                    <div class="field">
+                        <label class="field__label" for="f-distance-unit">{{ 'import.distance_unit'|trans }}</label>
+                        <select class="select" id="f-distance-unit" name="distance_unit">
+                            {% for unit in distance_units %}
+                                <option value="{{ unit.value }}"{% if unit == options.distanceUnit %} selected{% endif %}>{{ ('units.name.' ~ unit.value)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="f-volume-unit">{{ 'import.volume_unit'|trans }}</label>
+                        <select class="select" id="f-volume-unit" name="volume_unit" aria-describedby="f-volume-unit-hint">
+                            {% for unit in volume_units %}
+                                <option value="{{ unit.value }}"{% if unit == options.volumeUnit %} selected{% endif %}>{{ ('units.name.' ~ unit.value)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="field__hint" id="f-volume-unit-hint">{{ 'import_app.map.volume_hint'|trans }}</p>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="f-date-order">{{ 'import.date_order'|trans }}</label>
+                        <select class="select" id="f-date-order" name="date_order" aria-describedby="f-date-order-hint">
+                            {% for order in date_orders %}
+                                <option value="{{ order.value }}"{% if order == options.dateOrder %} selected{% endif %}>{{ ('import.date_order_option.' ~ order.value)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="field__hint" id="f-date-order-hint">{{ 'import_app.map.dates_as_read'|trans({dates: export.fills|slice(0, 3)|map(f => f.date)|join(', ')}) }}</p>
+                    </div>
+                </div>
+                <p class="field__hint">{{ 'import_app.map.currency'|trans({currency: preview ? preview.currency : prefs().currency}) }}</p>
+            </section>
+
+            {% if export.categoryIds() is not empty %}
+                <section class="card" aria-labelledby="categories-heading">
+                    <h2 id="categories-heading" class="card__title">{{ 'import_app.map.categories_heading'|trans }}</h2>
+                    <p class="field__hint">{{ 'import_app.map.categories_intro'|trans }}</p>
+                    <div class="form-row form-row--3">
+                        {% for id in export.categoryIds() %}
+                            {% set current = options.categories[id] ?? 'skip' %}
+                            <div class="field">
+                                <label class="field__label" for="f-cat-{{ id }}">{{ export.categories[id] ?? ('import_app.map.category_id'|trans({id: id})) }}</label>
+                                <select class="select" id="f-cat-{{ id }}" name="cat[{{ id }}]"{% if not known_categories[id] %} aria-describedby="f-cat-{{ id }}-hint"{% endif %}>
+                                    <optgroup label="{{ 'import_app.map.maintenance_group'|trans }}">
+                                        {% for category in maintenance_categories %}
+                                            <option value="maintenance:{{ category.value }}"{% if current == 'maintenance:' ~ category.value %} selected{% endif %}>{{ ('maintenance.category.' ~ category.value)|trans }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    <optgroup label="{{ 'import_app.map.expense_group'|trans }}">
+                                        {% for category in expense_categories %}
+                                            <option value="expense:{{ category.value }}"{% if current == 'expense:' ~ category.value %} selected{% endif %}>{{ ('expense.category.' ~ category.value)|trans }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    <option value="skip"{% if current == 'skip' %} selected{% endif %}>{{ 'import_app.map.dont_import'|trans }}</option>
+                                </select>
+                                {% if not known_categories[id] %}<p class="field__hint" id="f-cat-{{ id }}-hint">{{ ui.icon('warning') }}{{ 'import_app.map.check_it'|trans }}</p>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="card" aria-labelledby="fuels-heading">
+                <h2 id="fuels-heading" class="card__title">{{ 'import_app.map.fuels_heading'|trans }}</h2>
+                <div class="form-row form-row--3">
+                    {% for code in export.fuelCodes() %}
+                        {% set current = options.fuels[code] ?? 'skip' %}
+                        <div class="field">
+                            <label class="field__label" for="f-fuel-{{ code }}">{{ 'import_app.map.fuel_code'|trans({code: code}) }}</label>
+                            <select class="select" id="f-fuel-{{ code }}" name="fuel[{{ code }}]"{% if not known_fuels[code] %} aria-describedby="f-fuel-{{ code }}-hint"{% endif %}>
+                                {% for fuel in fuels %}
+                                    <optgroup label="{{ ('fuel.fuel.' ~ fuel.value)|trans }}">
+                                        <option value="{{ fuel.value }}"{% if current == fuel.value %} selected{% endif %}>{{ 'import_app.map.fuel_family'|trans({fuel: ('fuel.fuel.' ~ fuel.value)|trans}) }}</option>
+                                        {% for grade in grades[fuel.value] %}
+                                            <option value="{{ fuel.value }}:{{ grade.value }}"{% if current == fuel.value ~ ':' ~ grade.value %} selected{% endif %}>{{ grade.labelKey()|trans }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                                <option value="skip"{% if current == 'skip' %} selected{% endif %}>{{ 'import_app.map.dont_import'|trans }}</option>
+                            </select>
+                            {% if not known_fuels[code] %}<p class="field__hint" id="f-fuel-{{ code }}-hint">{{ ui.icon('warning') }}{{ 'import_app.map.check_it'|trans }}</p>{% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="schedules" value="1"{% if options.schedules %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'import_app.map.schedules'|trans }}</span>
+                        <span class="toggle__hint">{{ 'import_app.map.schedules_hint'|trans }}</span>
+                    </span>
+                </label>
+                <div class="btn-row">
+                    <button type="submit" class="btn{{ preview is null ? ' btn--primary' }}">{{ ui.icon('visibility') }}{{ 'import.preview'|trans }}</button>
+                </div>
+            </section>
+        </form>
+
+        {% if preview %}
+            <section class="page__stack" aria-labelledby="preview-heading">
+                <h2 id="preview-heading" class="section-title">{{ 'import.preview_heading'|trans }}</h2>
+
+                {% if sanity %}
+                    <div class="alert {{ sanity.unusual or sanity.matches is same as(false) ? 'alert--warning' : 'alert--info' }}" role="status">
+                        {{ ui.icon(sanity.unusual or sanity.matches is same as(false) ? 'warning' : 'speed') }}
+                        <span>
+                            {{ 'import_app.sanity.line'|trans(sanity.params) }}
+                            {% if sanity.matches is same as(true) %}{{ 'import_app.sanity.matches'|trans({app: sanity.app}) }}
+                            {% elseif sanity.matches is same as(false) %}{{ 'import_app.sanity.differs'|trans({app: sanity.app}) }}
+                            {% else %}{{ 'import_app.sanity.change'|trans }}{% endif %}
+                            {% if sanity.unusual %}{{ 'import_app.sanity.unusual'|trans }}{% endif %}
+                        </span>
+                    </div>
+                {% else %}
+                    <p class="muted">{{ 'import_app.sanity.none'|trans }}</p>
+                {% endif %}
+
+                {% if preview.newVehicle %}
+                    <p>{{ 'import_app.new_vehicle_note'|trans({name: file_vehicle}) }}</p>
+                {% endif %}
+
+                {% for section in sections %}
+                    {% if preview.rows(section) is not empty %}
+                        <section class="card" aria-labelledby="section-{{ section }}">
+                            <h3 id="section-{{ section }}" class="card__title">{{ ('import_app.section.' ~ section)|trans }}</h3>
+                            <p>{{ app_import.totals(preview, section, statuses) }}</p>
+                            {{ app_import.rows(listed[section], ('import_app.section.' ~ section)|trans) }}
+                            {% if unlisted[section] > 0 %}
+                                <p class="muted">{{ 'import.more_rows'|trans({count: unlisted[section]}) }}</p>
+                            {% endif %}
+                        </section>
+                    {% endif %}
+                {% endfor %}
+
+                <form class="form card" method="post" action="{{ url_for('import_app.map', {token: token}) }}">
+                    {{ ui.csrf(csrf) }}
+                    {% for name, value in query %}
+                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                    {% endfor %}
+                    {% if invalid > 0 %}
+                        <label class="toggle">
+                            <input type="checkbox" name="skip_invalid" value="1">
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ 'import.skip_invalid'|trans({count: invalid}) }}</span>
+                                <span class="toggle__hint">{{ 'import.skip_invalid_hint'|trans }}</span>
+                            </span>
+                        </label>
+                    {% endif %}
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary btn--lg"{% if importable == 0 %} disabled{% endif %}>{{ ui.icon('upload_file') }}{{ 'import_app.submit'|trans({count: importable}) }}</button>
+                        <a class="btn btn--lg btn--ghost" href="{{ url_for('settings') }}">{{ 'form.cancel'|trans }}</a>
+                    </div>
+                </form>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

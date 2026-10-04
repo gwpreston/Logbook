@@ -36,7 +36,7 @@ final readonly class VehicleSnapshots
         $fuel = $this->features->isEnabled(Feature::Fuel);
 
         return array_map(function (Vehicle $vehicle) use ($counts, $fuel, $attention): VehicleSnapshot {
-            $kind = $vehicle->data->fuelType->isElectric() ? EnergyKind::Electric : EnergyKind::Liquid;
+            $kind = $vehicle->data->fuelType->primaryKind();
 
             return new VehicleSnapshot(
                 $vehicle,

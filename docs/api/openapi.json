@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.19.0",
+    "version": "1.20.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -2086,6 +2086,7 @@
               "hybrid",
               "phev",
               "lpg",
+              "cng",
               "other"
             ]
           },
@@ -2129,7 +2130,8 @@
             "type": "string",
             "enum": [
               "l",
-              "kwh"
+              "kwh",
+              "kg"
             ],
             "description": "The tank in litres, or the battery in kWh for an EV."
           },
@@ -2275,7 +2277,8 @@
             "type": "string",
             "enum": [
               "l_per_100km",
-              "kwh_per_100km"
+              "kwh_per_100km",
+              "kg_per_100km"
             ]
           },
           "segment": {
@@ -2365,6 +2368,7 @@
               "petrol",
               "diesel",
               "lpg",
+              "cng",
               "ev",
               "other"
             ]
@@ -2406,7 +2410,8 @@
             "type": "string",
             "enum": [
               "liquid",
-              "electric"
+              "electric",
+              "gas"
             ]
           },
           "volume": {
@@ -2416,7 +2421,8 @@
             "type": "string",
             "enum": [
               "l",
-              "kwh"
+              "kwh",
+              "kg"
             ]
           },
           "is_partial": {
@@ -3301,14 +3307,16 @@
             "type": "string",
             "enum": [
               "l_per_100km",
-              "kwh_per_100km"
+              "kwh_per_100km",
+              "kg_per_100km"
             ]
           },
           "volume_unit": {
             "type": "string",
             "enum": [
               "l",
-              "kwh"
+              "kwh",
+              "kg"
             ]
           },
           "average_consumption": {
@@ -3402,6 +3410,7 @@
             "required": [
               "liquid",
               "electric",
+              "gas",
               "last_fill_up"
             ],
             "properties": {
@@ -3416,6 +3425,17 @@
                 ]
               },
               "electric": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EconomySeries"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "gas": {
+                "description": "CNG, in kg (Phase 31).",
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/EconomySeries"
@@ -3802,6 +3822,7 @@
               "petrol",
               "diesel",
               "lpg",
+              "cng",
               "ev",
               "other"
             ],
@@ -3846,7 +3867,8 @@
               "l",
               "gal_uk",
               "gal_us",
-              "kwh"
+              "kwh",
+              "kg"
             ],
             "description": "Default: the owner's, or kWh for electricity."
           },
@@ -6240,6 +6262,7 @@
               "petrol",
               "diesel",
               "lpg",
+              "cng",
               "ev",
               "other"
             ]

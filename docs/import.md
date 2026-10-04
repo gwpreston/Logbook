@@ -1,4 +1,4 @@
-# Importing from CSV
+# Importing from CSV and from Fuelio
 
 Each vehicle tab (Mileage, Fuel, Maintenance, Documents, Expenses, and Trips
 when the trips module is on) has an
@@ -102,3 +102,77 @@ imports back unchanged. *Return* and *Business* are yes or no; a missing
 places and distance as one already on the vehicle is a duplicate and is
 skipped. Imported trips are the importing user's own trips, and count in
 their claim. Trips never write odometer readings.
+
+## From Fuelio
+
+Fuelio's exports aren't one table per file, so they have their own import:
+**Settings → Import from another app** (also linked as *Coming from
+Fuelio?* on a vehicle's fill-up import). It needs the fuel module on.
+Logbook isn't affiliated with Fuelio.
+
+### Exporting from Fuelio
+
+- **CSV export**: one file per vehicle. In Fuelio, open the menu and export
+  the vehicle as CSV (under *Backup & sync* or *Export*; the menus change
+  between app versions). Upload it on the web page.
+- **Backup ZIP** (`backup-….fuelio.zip`): every vehicle, plus the photos
+  you took of fill-ups. These are often hundreds of megabytes, so they are
+  imported on the command line instead:
+
+  ```bash
+  php bin/import-app.php backup.fuelio.zip --dry-run
+  php bin/import-app.php backup.fuelio.zip
+  ```
+
+  With Docker: `docker compose exec -u www-data app php bin/import-app.php
+  /data/backup.fuelio.zip` (copy the file into the volume first). Add
+  `--as <username>` when the install has more than one user, `--vehicle
+  <id>` or `--create` to choose where a one-vehicle export goes, and
+  `--schedules` to turn repeating costs into service schedules.
+  `--dry-run` prints the preview and writes nothing. Like backups, it
+  needs PHP's `zip` extension (the Docker image has it).
+
+### What the import asks
+
+1. **Vehicle**: one of your active vehicles you can manage, or a new one
+   filled in from the export (name, make, model, year, registration, VIN,
+   fuel type, tank size). A later export of the same car proposes the
+   vehicle that already holds its rows.
+2. **Units and dates**: read from the export's headers ("Odo (mi)",
+   "Fuel (litres)"). The preview shows the economy they give, next to
+   Fuelio's own figures: *"With miles and litres, these fill-ups average
+   22.6 mpg (12.5 L/100 km). Fuelio's own figures agree."* If they
+   disagree, the units are probably wrong.
+3. **Cost categories**: each goes to a Maintenance category, an Expense
+   category, or nowhere. Fuelio's own categories have defaults (Service →
+   Maintenance *Service*; Parking, Tolls, Wash, Fines, Registration →
+   Expenses); your own categories match by name, else *Other*.
+4. **Fuel types**: Fuelio's fuel codes map to a fuel (and a grade if you
+   like), or *Don't import*. Petrol is recognised; check any other.
+5. **Service schedules** (optional): a cost that repeats every so many
+   miles or months becomes a schedule.
+
+### What comes across, and what doesn't
+
+| From Fuelio | In Logbook |
+|---|---|
+| Fill-ups | Fill-ups: date, odometer, volume, total and price per unit, full or partial, missed, notes, station. Each writes its odometer reading. |
+| Costs | Maintenance records (with their reading) or expenses, by the category mapping. |
+| Favourite stations | Stations with their position, as your favourites. A fill-up's station is matched by Fuelio's id, then by name, then within 150 m of a station you have; otherwise a new one is added by name. |
+| Photos (backup only) | Attachments on their fill-up, checked and stripped of their metadata like any upload. |
+| Income, cost templates | Not imported (listed with the reason). |
+| GPS trips | Not imported yet. |
+
+A fill-up's own GPS position is used only to find its station, and is
+never stored.
+
+The preview lists every row with its outcome: *import*, *invalid* (with
+the reason), *duplicate* (already on the vehicle), *already imported* and
+*not imported*. Everything is written in one transaction, so either the
+whole file lands or nothing does.
+
+### Importing a newer export later
+
+Logbook remembers each imported row by Fuelio's own id. Importing a newer
+export of the same car adds only what's new, even if you've edited the
+imported entries since. Deleted ones aren't brought back.

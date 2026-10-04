@@ -4,15 +4,15 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.14.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.15.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
-> Manage, costs shared or not, each person's own reminders and units, vehicles (petrol, diesel, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), a *First MOT due* date suggested from it, purchase and sale paperwork and archiving, per-user units, currency,
+> Manage, costs shared or not, each person's own reminders and units, vehicles (petrol, diesel, LPG, CNG, electric, self-charging and plug-in hybrids) with photos, variant, first registration date (and age), a *First MOT due* date suggested from it, purchase and sale paperwork and archiving, per-user units, currency,
 > language and time zone; a History tab per vehicle (and for the fleet) with a
 > printable service history that leaves costs off unless asked, and a sale pack for a buyer (summary, checkable mileage record, the paperwork as a ZIP); a mileage log with plausibility warnings; fuel / EV
 > charging logs with full-to-full economy (L/100 km, mpg UK and US, km/L,
-> kWh/100 km, mi/kWh), checks that flag tanks far from the usual (a mistyped odometer, a fill-up that was not full), prices and running costs, and the grade bought (E10 /
+> kWh/100 km, mi/kWh, kg/100 km and mi/kg for CNG), checks that flag tanks far from the usual (a mistyped odometer, a fill-up that was not full), prices and running costs, and the grade bought (E10 /
 > E5, diesel blends, home or rapid charging) compared by price and economy; a categorised service
 > history with recurring schedules ("every 10,000 mi or 12 months") that work
 > out when each job is next due; insurance, pollution certificates,
@@ -41,7 +41,10 @@ your own server.
 > whether the allowance covers what the car costs to run); fuel insights (whether a dearer grade is worth it, from fills
 > bought close together, cost per mile or km per tank and per charging
 > type, and economy by month to show what winter costs); a dashboard of widgets you can
-> rearrange; modules you can switch off; CSV import with a preview; one-click
+> rearrange; modules you can switch off; CSV import with a preview, and your
+> whole history from Fuelio (its CSV export, or a backup with the fill-up
+> photos on the command line), previewed with Fuelio's own economy beside
+> Logbook's and safe to repeat with a newer export; one-click
 > backup and restore of everything; an installable phone app that logs
 > fill-ups and trips offline; a REST API with keys, so Home Assistant, Shortcuts,
 > Grafana and Node-RED can read your garage and log fill-ups and other entries; optional AI with
@@ -111,7 +114,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
 | [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message; reading receipts, documents and insurer letters |
 | [docs/sso.md](docs/sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link; header sign-in behind a forward-auth proxy (nginx, Traefik, Caddy, the Authentik outpost) and how to deploy it safely |
-| [docs/import.md](docs/import.md) | Importing CSV files: columns, units, what is skipped and why |
+| [docs/import.md](docs/import.md) | Importing CSV files and Fuelio exports: columns, units, what is skipped and why |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/mcp.md](docs/mcp.md) | The MCP server: Claude Desktop, Claude Code and other assistants, keys and scopes, on your network or behind your reverse proxy, drafts to review |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |

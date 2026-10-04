@@ -1,0 +1,47 @@
+{
+    "_about": "Expected results of the owner's anonymised Fuelio export (Phase 31). export.csv is the CSV export; backup.fuelio.zip the backup of the same car, whose vehicle-1-local.csv has the same rows and row ids and whose pictures.data holds the 45 photos, replaced by tiny JPEGs with an EXIF block. Miles and litres; Fuelio's mpg is UK.",
+    "fills": 18,
+    "partial_fills": 2,
+    "costs": 1,
+    "categories": 9,
+    "stations": 4,
+    "photos": 45,
+    "total_volume_litres": "852.98",
+    "total_cost": "1348.04",
+    "measured_tanks": 15,
+    "economy_check_flags": 2,
+    "newest_fill": {
+        "date": "2024-09-08 16:44",
+        "odometer": "4116.0",
+        "volume": "49.22",
+        "total": "80.18",
+        "price": "1.629",
+        "station": "Station A",
+        "unique_id": "18"
+    },
+    "fuelio_mpg_by_opening_odometer": {
+        "271.0": "15.89",
+        "446.0": "17.03",
+        "636.0": "20.69",
+        "870.0": "18.25",
+        "1081.0": "21.55",
+        "1313.0": "24.5",
+        "1580.0": "25.05",
+        "1964.0": "20.94",
+        "2192.0": "22.91",
+        "2410.0": "23.44",
+        "2664.0": "22.49",
+        "3129.0": "22.18",
+        "3370.0": "23.84",
+        "3629.0": "25.1",
+        "3880.0": "21.8"
+    },
+    "photos_by_fill_unique_id": {
+        "1": 2,
+        "9": 4,
+        "12": 4,
+        "13": 4,
+        "17": 3,
+        "18": 3
+    }
+}

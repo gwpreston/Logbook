@@ -259,6 +259,18 @@
                     </a>
                 </li>
                 {% endif %}
+                {% if feature_enabled('fuel') %}
+                <li>
+                    <a class="list__item" href="{{ url_for('import_app.upload') }}">
+                        <span class="list__icon">{{ ui.icon('upload_file') }}</span>
+                        <span class="list__body">
+                            <span class="list__title">{{ 'import_app.link'|trans }}</span>
+                            <span class="list__meta">{{ 'import_app.link_hint'|trans }}</span>
+                        </span>
+                        {{ ui.icon('arrow_forward', 'list__trail') }}
+                    </a>
+                </li>
+                {% endif %}
                 <li>
                     <a class="list__item" href="{{ url_for('settings.api_keys') }}">
                         <span class="list__icon">{{ ui.icon('key') }}</span>

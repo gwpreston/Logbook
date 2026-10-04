@@ -72,7 +72,7 @@
                             </span>
                             {% if main and main.averagePrice %}
                                 <span class="list__end">
-                                    <span class="list__amount tabular">{{ main.averagePrice|unit_price(main.currency, main.fuel.isElectric()) }}</span>
+                                    <span class="list__amount tabular">{{ main.averagePrice|unit_price(main.currency, main.fuel.kind()) }}</span>
                                     <span class="list__meta">{{ 'stations.average_12m'|trans({grade: st.grade_label(main)}) }}</span>
                                 </span>
                             {% endif %}

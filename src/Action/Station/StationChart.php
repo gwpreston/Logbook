@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Logbook\Action\Station;
 
 use DateTimeInterface;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Service\FuelPrices\DailyPrice;
 use Logbook\Service\Station\PricePoint;
 use Logbook\Service\Station\StationSummary;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Units\EconomyScale;
 use Logbook\Support\View\LineChart;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -29,8 +31,8 @@ final readonly class StationChart
     }
 
     /**
-     * One chart per kind of energy with prices (liquid first), keyed `liquid`
-     * or `electric`.
+     * One chart per kind of energy with prices (liquid first), keyed by the
+     * kind: `liquid`, `electric` or `gas`.
      *
      * @param array<string, list<DailyPrice>> $listed the listed price by grade and day
      * @return array<string, LineChart>
@@ -46,7 +48,6 @@ final readonly class StationChart
         if ($currency === null) {
             return [];
         }
-        $unit = $preferences->volumeUnit;
         if ($listedCurrency !== $currency) {
             $listed = [];
         }
@@ -60,25 +61,27 @@ final readonly class StationChart
             if ($point->currency !== $currency) {
                 continue;
             }
-            $kind = $point->fuel->isElectric() ? 'electric' : 'liquid';
+            $kind = $point->fuel->kind()->value;
             $byKind[$kind][$point->grade->value ?? ''][] = $point;
         }
 
         $charts = [];
-        foreach (['liquid', 'electric'] as $kind) {
+        foreach (EnergyKind::cases() as $energy) {
+            $kind = $energy->value;
             if (!isset($byKind[$kind])) {
                 continue;
             }
-            $electric = $kind === 'electric';
+            $scale = $preferences->economyScale($energy);
             $label = $this->translator->trans('fuel.chart.price_axis', [
-                'unit' => $this->translator->trans('units.symbol.' . ($electric ? 'kwh' : $unit->value)),
+                'unit' => $this->translator->trans('units.symbol.' . $scale->quantityCode()),
             ]);
             $chart = new LineChart($preferences, $label, 3, $currency);
             $series = $byKind[$kind];
             $colour = 0;
             foreach (FuelGrade::cases() as $grade) {
                 $paid = isset($series[$grade->value]);
-                $prices = $electric ? [] : ($listed[$grade->value] ?? []);
+                // The listed feed has liquid fuel only.
+                $prices = $energy === EnergyKind::Liquid ? ($listed[$grade->value] ?? []) : [];
                 if (!$paid && $prices === []) {
                     continue;
                 }
@@ -86,7 +89,7 @@ final readonly class StationChart
                 if ($paid) {
                     $chart->addSeries(
                         $this->translator->trans($grade->shortLabelKey()),
-                        self::points($series[$grade->value], $electric, $unit->litresPerUnit()),
+                        self::points($series[$grade->value], $scale),
                         $tone,
                     );
                 }
@@ -96,7 +99,7 @@ final readonly class StationChart
                             'grade' => $this->translator->trans($grade->shortLabelKey()),
                         ]),
                         array_map(
-                            static fn (DailyPrice $day): array => [$day->day, (float) $day->close * $unit->litresPerUnit()],
+                            static fn (DailyPrice $day): array => [$day->day, $scale->pricePerShownUnit((float) $day->close)],
                             $prices,
                         ),
                         $tone,
@@ -107,7 +110,7 @@ final readonly class StationChart
             if (isset($series[''])) {
                 $chart->addSeries(
                     $this->translator->trans('fuel.grade_not_recorded'),
-                    self::points($series[''], $electric, $unit->litresPerUnit()),
+                    self::points($series[''], $scale),
                     'muted',
                 );
             }
@@ -121,11 +124,11 @@ final readonly class StationChart
      * @param list<PricePoint> $list
      * @return list<array{0: DateTimeInterface, 1: float}>
      */
-    private static function points(array $list, bool $electric, float $litresPerUnit): array
+    private static function points(array $list, EconomyScale $scale): array
     {
         $points = [];
         foreach ($list as $point) {
-            $points[] = [$point->filledAt, $electric ? (float) $point->price : (float) $point->price * $litresPerUnit];
+            $points[] = [$point->filledAt, $scale->pricePerShownUnit((float) $point->price)];
         }
 
         return $points;

@@ -382,14 +382,16 @@ MySQL only.
   the registration document; not the model year, not the purchase date;
   never converted through a time zone), registration (optional: a vehicle
   may not be registered yet), VIN (optional, up to 17 characters), fuel type
-  (`petrol`|`diesel`|`ev`|`hybrid`|`phev`|`lpg`|`other`; `hybrid` is a
+  (`petrol`|`diesel`|`ev`|`hybrid`|`phev`|`lpg`|`cng`|`other`; `cng` from
+  Phase 31; `hybrid` is a
   self-charging or mild hybrid that fills with petrol only, `phev` a plug-in
   hybrid that fills with petrol and charges from a plug), capacity
   (optional; the fuel tank in litres, the battery in kWh for `ev`; a
-  plug-in hybrid's battery is not recorded), default_grade (optional fuel
+  plug-in hybrid's battery is not recorded; the gas tank in kg for
+  `cng`), default_grade (optional fuel
   grade code, §7.3, that must belong to the vehicle's fuel type — a petrol
   grade for `hybrid` and `phev`, a charging type for `ev`, none for `lpg` /
-  `other`; changing the fuel type clears one that no longer fits), currency override (optional), photo
+  `cng` / `other`; changing the fuel type clears one that no longer fits), currency override (optional), photo
   (optional: stored path + MIME type), purchase date/price (optional), sale
   date/price (optional), status (`active` | `archived`), archived_at,
   disposal (optional, Phase 27.2: `sold` | `written_off`, and from Phase
@@ -452,13 +454,15 @@ MySQL only.
 
 **FuelEntry**
 - id, vehicle_id, filled_at (UTC instant, typed in the user's time zone),
-  odometer_km, fuel (`petrol`|`diesel`|`lpg`|`ev`|`other`; defaults to the
+  odometer_km, fuel (`petrol`|`diesel`|`lpg`|`cng`|`ev`|`other`; `cng`
+  from Phase 31; defaults to the
   vehicle's usual fuel, petrol for either kind of hybrid; there is no `hybrid`
   or `phev` fuel), grade (optional code refining
   `fuel`, §7.3: `e10_95`, `b7`, `dc_rapid`, …; must belong to the entry's
   fuel; null = not recorded, always valid; an unknown stored code reads as
-  null and is logged), volume (litres, or kWh when fuel
-  is `ev`; always > 0), price_per_unit (per litre or kWh, `decimal(14,6)` so a
+  null and is logged), volume (litres; kWh when fuel
+  is `ev`; kg when fuel is `cng`; always > 0), price_per_unit (per litre,
+  kWh or kg, `decimal(14,6)` so a
   price typed per gallon converts back exactly), total_cost
   (`decimal(14,3)`; 0 is valid), is_partial (bool), is_missed_previous (bool,
   for gap handling), station, notes, created/updated (UTC).
@@ -1056,6 +1060,17 @@ Provider stations, provider prices and fuel price secrets are **not in
 backups**; they are re-synced. Station links, price changes and alerts
 are. The schema version moves.
 
+**ImportSource** (Phase 31, §7.13 *Importing from another app*),
+`import_sources`
+- id, app (`fuelio`), source_id (the row's own id in the app's export:
+  Fuelio's `guid`, up to 64 characters), vehicle_id (`ON DELETE CASCADE`),
+  entity_type (`fuel`|`maintenance`|`expense`|`station`|`schedule`),
+  entity_id (no foreign key: the entry may be edited or deleted and its
+  origin is still known), imported_by (user, `ON DELETE SET NULL`),
+  imported_at (UTC). Unique `(app, source_id, vehicle_id)`.
+- In backups and `bin/export-user.php` (the user's vehicles' rows). The
+  schema version moves.
+
 **Setting / FeatureToggle**
 - key, value (JSON), scope (global | user). Drives enabled modules and defaults.
   User-scoped keys include `reminders` (lead times), `notifications`,
@@ -1413,6 +1428,13 @@ math stays correct across gaps. Show per-fill and rolling consumption
   fuel and electricity are separate series (plug-in hybrids).
 - **EV:** volume is kWh; efficiency is kWh/100 km for kilometre users and
   mi/kWh for mile users (follows the distance unit; no extra preference).
+- **CNG** (Phase 31, decided 2026-10-04, #146): compressed natural gas is
+  sold by mass, so its volume is kg in every unit system (never converted
+  to litres or gallons) and its price is per kg. Efficiency is kg/100 km
+  for kilometre users and mi/kg for mile users. CNG is a **third series**
+  beside liquid fuel and electricity, so a bi-fuel petrol and CNG car's
+  figures never mix. LPG, a liquid sold by the litre, stays in the liquid
+  series. The fill-up form shows "kg" as the unit for a CNG fill-up.
 - Fuel tab: average economy, last full-to-full, average price, cost per
   distance, total spend (per kind of energy); the average in the other
   consumption units (mpg UK vs US, L/100 km, km/L); economy trend (each
@@ -1519,7 +1541,7 @@ reworded.
 | diesel | `b7`, `b7_premium`, `b10`, `b20`, `b100`, `xtl` (HVO / XTL) | always |
 | ev | `home`, `ac` (public AC, up to 22 kW), `dc` (speed not recorded), `dc_rapid` (25–99 kW), `dc_ultra` (100 kW+) | always |
 
-`lpg` and `other` have no grades. A blank grade means *not recorded* and is
+`lpg`, `cng` and `other` have no grades. A blank grade means *not recorded* and is
 always valid; existing fill-ups are never guessed (they read "Not recorded").
 
 - **Picker:** the fill-up form has one grouped *Fuel* select whose values are
@@ -1528,7 +1550,7 @@ always valid; existing fill-ups are never guessed (they read "Not recorded").
   four grades from its fill-ups of the last 12 months, most used first);
   then the families that fit the vehicle (petrol for a petrol car or a
   self-charging / mild `hybrid`; petrol and electricity for a plug-in
-  `phev`; electricity for an EV; diesel; LPG), each starting with
+  `phev`; electricity for an EV; diesel; LPG; CNG), each starting with
   "*Family* — grade not recorded"; then *Other fuels* (every other family,
   so electricity stays reachable for a `hybrid` set to the wrong type);
   then *More grades* (regional grades for other regions). The owner's
@@ -2787,6 +2809,137 @@ vehicles; a disabled module cannot be imported).
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
+
+**Importing from another app** (Phase 31; Fuelio is the first reader, and
+the mapping, preview and import steps are shared so later readers add only
+a reader). Logbook isn't affiliated with Fuelio.
+
+- **Fuelio's format** (confirmed from a real 2026 export; anonymised
+  fixtures in `tests/Fixtures/import/fuelio/`):
+  - A **CSV export** is one vehicle: UTF-8, comma-separated, every value
+    quoted except empty ones. It is split into sections, each a `"## Name"`
+    line, a header row and its rows: `Vehicle`, `Log` (fill-ups),
+    `CostCategories`, `Costs`, `FavStations`, `Pictures` and `Category`
+    (trip categories, not read). A section Logbook doesn't know is listed
+    as not read.
+  - A **backup ZIP** (`*.fuelio.zip`) holds one `vehicle-<n>-local.csv`
+    per vehicle, in the same format, and `pictures.data`, itself a ZIP of
+    the photos the `Pictures` sections name.
+  - Units: the `Log` header names them (`Odo (mi)`, `Fuel (litres)`), and
+    the `Vehicle` row's `DistUnit` and `FuelUnit` codes agree (only `1` =
+    miles and `0` = litres are confirmed, so the codes aren't read). A
+    header without a unit proposes the owner's units, highlighted.
+  - Dates are local wall-clock `yyyy-MM-dd HH:mm` (the vehicle row's
+    `ImportCSVDateFormat` says which). Numbers use a decimal point.
+    Yes/no is `1`/`0`.
+  - Every row has a `guid` (a UUID) that is **the same in every export**,
+    and fill-ups and costs also have a per-vehicle `UniqueId`. The
+    vehicle's own `guid` changes on every export, so it is never used as a
+    key.
+  - Fuel types are numeric codes whose hundreds are the family (the sample
+    confirms `100` and `110` as petrol). Every code in the file appears on
+    the mapping page; codes Logbook doesn't recognise default to the
+    vehicle's fuel and are highlighted.
+  - Fuelio's own consumption (`mpg (optional)` or its metric equivalent)
+    sits on the fill-up that **starts** a full-to-full segment. Logbook
+    puts it on the one that closes it. The check pairs them accordingly.
+- **Where:** Settings → *Import from another app*
+  (`/settings/import-app`), and "Coming from Fuelio?" on each vehicle's
+  fill-up import page. It needs `Manage` on each target vehicle (Phase
+  19), and the `fuel` module on (cost rows need the module of the category
+  they map to).
+- **Web and command line:**
+  - The web page takes a **Fuelio CSV** only (up to `MAX_UPLOAD_MB` and
+    20,000 rows across its sections; staged as CSV imports are). A ZIP
+    uploaded there is refused with: "Backups with photos are imported on
+    the command line: `php bin/import-app.php <file.zip>`."
+  - `php bin/import-app.php <file.csv|file.zip> [--vehicle <id> | --create]
+    [--as <username>] [--schedules] [--dry-run]` takes either, with no size
+    limit beyond the archive rules below. It uses the detected and default
+    mappings, prints the preview, and writes only without `--dry-run`. For
+    a ZIP with several vehicles, `--vehicle` is refused and each vehicle is
+    created or matched as the mapping page would prefill it.
+- **ZIP safety** (the command line): the archive is read through PHP's
+  `ZipArchive` into a private temporary directory, never at paths taken
+  from entry names. Before anything is extracted: at most 50 entries; no
+  absolute paths, `..`, backslashes or drive letters; every uncompressed
+  size within 10 × the archive's size and 2 GB in all, and the compression
+  ratio of each entry over 1 MB under 100:1 (a small text file may
+  compress better). Each file is copied with its listed size enforced, so
+  a lying header can't fill the disk. **One nested archive is allowed:** an
+  entry named exactly `pictures.data`, opened one level deep under the same
+  rules, holding at most 5,000 images and nothing else. Any other nested
+  archive, or anything over a limit, refuses the whole file before reading,
+  and the temporary directory is always removed.
+- **Map** (a GET form, bookmarkable, working without JS):
+  - **Vehicle:** an existing active vehicle the user can manage (prefilled
+    with the vehicle that already holds rows from this export, by their
+    source ids, else by registration), **Create a new vehicle** (prefilled
+    from the `Vehicle` row: name, make, model, year, registration, VIN,
+    fuel type and tank capacity), or *Skip*.
+  - **Units:** distance and volume, prefilled from the file; currency is
+    the target vehicle's (Fuelio's export carries none).
+  - A **sanity line**: "With miles and litres, these fill-ups average 22.6
+    mpg (12.5 L/100 km); Fuelio says 22.6 mpg. Change the units if that
+    looks wrong." A result outside 1–40 L/100 km (5–40 kWh/100 km,
+    1–20 kg/100 km) or more than 5% from Fuelio's own is highlighted.
+  - **Date format:** detected, shown with three rows as read, changeable.
+  - **Cost categories:** each of the file's categories maps to a Logbook
+    maintenance category (rows go to Maintenance), an expense category
+    (Expenses) or *Don't import*. Defaults for Fuelio's built-in ones:
+    Service → maintenance *Service*; Maintenance → maintenance *Other*;
+    Registration → expense *Tax*; Parking → *Parking*; Wash → *Cleaning*;
+    Tolls → *Tolls*; Tickets/Fines → *Fines*; Tuning → *Accessories*;
+    Insurance → expense *Other*. A user-made category matches a Logbook
+    category by name in the owner's language or English, else defaults to
+    maintenance *Other*, highlighted.
+  - **Fuel types:** each code maps to a Logbook family (petrol, diesel,
+    LPG, CNG, electricity) and optionally a grade, or *Don't import*.
+  - **Option:** *Import repeating costs as service schedules* (off by
+    default): a maintenance cost with `RepeatOdo` or `RepeatMonths` above 0
+    becomes a schedule on its category, with *last done* from the most
+    recent matching record.
+- **Preview:** a table per section with §7.13's outcomes: *import*;
+  *invalid*, with reasons; *duplicate*; *already imported* (below); and
+  *not imported*, with the reason, for income (`isIncome`), cost templates
+  (`isTemplate`), fuel mapped to *Don't import* and photos (web: "photos
+  come with the backup ZIP"). Section totals first; new stations and a new
+  vehicle are listed.
+- **Import:** one transaction for the whole file, every vehicle in a ZIP
+  included. Rows go through the same services as the forms (readings,
+  schedules and reminders follow; `created_by` is the importing user). The
+  result page gives totals per section, every row not imported with its
+  section, line and reason, and the economy check's count linking to
+  `?check=1`.
+- **Mapping rules:**
+  - **Fill-up** (`Log`): `Data` (local time in the owner's time zone),
+    `Odo`, the fuel volume, `Price` as the total and `VolumePrice` as the
+    price per unit (both kept as entered, as the form does), `Full`
+    (`0` is partial), `Missed`, `Notes`, and the station. `TankNumber` 2
+    rows use the fuel mapping of their code like any other row.
+  - **Station:** matched by `StationID` to the file's favourite station,
+    then by normalised name, then by position within 150 m of an existing
+    station, else created from the name before ` - ` in `City`. The
+    fill-up's own latitude and longitude are used only for that match and
+    are **never stored**. `Weather`, `TankCalc` and `ExcludeDistance` are
+    not read.
+  - **Cost** (`Costs`): `Date`, `Odo` (a maintenance row with an odometer
+    writes its reading as the form does), `CostTitle`, `CostTypeID` as
+    mapped, `Cost`, `Notes`. Reminder columns (`RemindOdo`, `RemindDate`)
+    are not imported; Logbook's own schedules and reminders take over.
+  - **Favourite station** (`FavStations`): a station with `NameBrand`, the
+    `Description` as its address line, its position and its country
+    (`CountryCode`, three letters, converted to two), matched to an
+    existing station first, and set as a favourite of the importing user.
+  - **Photo** (`Pictures`, command line only): `Type` 1 is a fill-up, by
+    its `UniqueId` in `target_id`. Each becomes a `fuel` attachment,
+    validated as any upload and stripped (§7.12). Photos of another type,
+    or not in `pictures.data`, are listed as not imported.
+  - Amounts are never converted between currencies.
+- **Source ids** (§6 ImportSource): each imported row remembers the app
+  and its `guid`. A later import marks a row with a known `guid` *already
+  imported*, even if the Logbook entry was edited or deleted since, so
+  importing a newer export adds only the new rows.
 
 ### 7.14 Internationalisation
 All user-facing strings translatable via symfony/translation. English default
@@ -6282,6 +6435,11 @@ Real environment variables override `.env`; an empty value counts as unset.
 - MCP (Phase 26.5): a `bin/mcp-stdio.php` stdio bridge for clients that
   can't send headers (#87; `mcp-remote` is documented meanwhile); OAuth
   for MCP clients; SSE streams and list-changed subscriptions.
+- Import from another app (Phase 31): Fuelio's GPS trips as private trips
+  with "Fuelio trip" as both places, so the distances come across
+  (decided 2026-10-04, #147; waiting for an export that contains trips,
+  since the sample has none to build and test against). Drivvo, Tesla
+  and ABRP readers.
 
 ---
 
@@ -6608,6 +6766,16 @@ task breakdowns live in the per-phase files; this is the map.
   ProviderStation, ProviderPrice, ListedPriceChange, PriceAlert,
   FuelPriceSecret, Station; §7.11, §7.20, §7.26, §7.30, §7.34, §9).
   Release v2.14.0.
+- **Phase 31 — Import from Fuelio + v2.15 release.** CNG as a fuel
+  family (kg, its own consumption series); importing a Fuelio CSV on
+  Settings → *Import from another app* and a Fuelio CSV or backup ZIP
+  (with its fill-up photos) with `bin/import-app.php`: the vehicle, units
+  with an economy sanity check, cost categories and fuel types mapped, a
+  preview with §7.13's outcomes, one transaction, stations matched or
+  created without storing fill-up positions, optional service schedules
+  from repeating costs, and source ids so a newer export adds only new
+  rows (§6 Vehicle, FuelEntry, ImportSource; §7.3, §7.13). Release
+  v2.15.0.
 
 ---
 

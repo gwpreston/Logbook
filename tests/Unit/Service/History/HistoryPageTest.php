@@ -6,6 +6,7 @@ namespace Logbook\Tests\Unit\Service\History;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -100,7 +101,28 @@ final class HistoryPageTest extends TestCase
         self::assertSame(3, $run->fillUps());
         self::assertSame(2, $run->charges());
         self::assertNull($run->volume(), 'litres and kWh are never added up');
+        self::assertNull($run->kind());
         self::assertSame('173.300', $run->total());
+    }
+
+    public function testABiFuelRunNeverAddsKgToLitres(): void
+    {
+        $car = self::vehicle(1, FuelType::Cng);
+        $mixed = HistoryPage::fold([
+            self::fill($car, '2026-09-20', '15.00', '12', Fuel::Cng),
+            self::fill($car, '2026-09-18', '60.00', '40'),
+        ])[0];
+        self::assertInstanceOf(FillUpRun::class, $mixed);
+        self::assertNull($mixed->volume(), 'kg and litres are never added up');
+        self::assertSame(2, $mixed->fillUps(), 'a CNG fill is a fill-up, not a charge');
+
+        $gas = HistoryPage::fold([
+            self::fill($car, '2026-09-20', '15.00', '12', Fuel::Cng),
+            self::fill($car, '2026-09-10', '18.00', '14.5', Fuel::Cng),
+        ])[0];
+        self::assertInstanceOf(FillUpRun::class, $gas);
+        self::assertSame('26.500', $gas->volume());
+        self::assertSame(EnergyKind::Gas, $gas->kind());
     }
 
     public function testNothingFoldsUnderTheFuelChipAndRunsSitUnderTheirNewestMonth(): void

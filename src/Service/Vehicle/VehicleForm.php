@@ -351,11 +351,12 @@ final class VehicleForm
     }
 
     /**
-     * Litres (or kWh) for storage from the value typed in the user's unit.
+     * Litres (or kWh, or kg) for storage from the value typed in the user's
+     * unit.
      */
     private static function capacityForStorage(string $value, FuelType $fuelType, VolumeUnit $unit): string
     {
-        if ($fuelType->isElectric() || $unit === VolumeUnit::Litre) {
+        if (!$fuelType->primaryKind()->followsVolumeUnit() || $unit === VolumeUnit::Litre) {
             return $value;
         }
 
@@ -367,7 +368,7 @@ final class VehicleForm
         if ($stored === null) {
             return '';
         }
-        if ($fuelType->isElectric() || $unit === VolumeUnit::Litre) {
+        if (!$fuelType->primaryKind()->followsVolumeUnit() || $unit === VolumeUnit::Litre) {
             return Decimal::trim($stored);
         }
 

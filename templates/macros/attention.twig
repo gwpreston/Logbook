@@ -32,7 +32,7 @@
         {{ url_for('odometer.index', {id: id}) }}
     {%- elseif item.kind.value == 'valuation_stale' -%}
         {{ url_for('valuations.create', {id: id}) }}
-    {%- elseif item.kind.value in ['drift_liquid', 'drift_electric'] -%}
+    {%- elseif item.kind.value in ['drift_liquid', 'drift_electric', 'drift_gas'] -%}
         {%- set trend = '#economy-' ~ item.drift.kind.value -%}
         {{ url_for('fuel.index', {id: id}) }}{{ trend }}
     {%- elseif item.kind.value == 'fuel_price' -%}
@@ -53,7 +53,7 @@
     {%- elseif item.kind.value == 'economy' -%}{{ 'attention.action.review'|trans }}
     {%- elseif item.kind.value == 'mileage_stale' -%}{{ 'attention.action.add_reading'|trans }}
     {%- elseif item.kind.value == 'trips_exceed' -%}{{ 'attention.action.mileage'|trans }}
-    {%- elseif item.kind.value in ['drift_liquid', 'drift_electric'] -%}{{ 'attention.action.view_economy'|trans }}
+    {%- elseif item.kind.value in ['drift_liquid', 'drift_electric', 'drift_gas'] -%}{{ 'attention.action.view_economy'|trans }}
     {%- elseif item.kind.value in ['fuel_price', 'maintenance_cost'] -%}{{ 'attention.action.fix'|trans }}
     {%- elseif item.kind.value == 'stalled_claim' -%}{{ 'attention.action.open_claim'|trans }}
     {%- elseif item.kind.value in ['finance_missed', 'finance_mileage'] -%}{{ 'attention.action.open_agreement'|trans }}

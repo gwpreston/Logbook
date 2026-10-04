@@ -60,7 +60,7 @@ final readonly class DashboardCharts
      */
     public function efficiency(array $rows): ?LineChart
     {
-        foreach ([EnergyKind::Liquid, EnergyKind::Electric] as $kind) {
+        foreach (EnergyKind::cases() as $kind) {
             $chart = $this->chart($kind, array_values(array_filter(
                 $rows,
                 static fn (VehicleEfficiency $row): bool => $row->kind === $kind,
@@ -79,12 +79,9 @@ final readonly class DashboardCharts
     private function chart(EnergyKind $kind, array $rows): LineChart
     {
         $preferences = $this->display->preferences();
-        $electric = $kind === EnergyKind::Electric;
-        $efficiency = ElectricEfficiencyUnit::forDistanceUnit($preferences->distanceUnit);
-        $consumption = $preferences->consumptionUnit;
-        $unitKey = $electric ? $efficiency->value : $consumption->value;
+        $scale = $preferences->economyScale($kind);
 
-        $chart = new LineChart($preferences, $this->translator->trans('units.name.' . $unitKey), 1);
+        $chart = new LineChart($preferences, $this->translator->trans('units.name.' . $scale->code()), 1);
         foreach ($rows as $index => $row) {
             $points = [];
             foreach ($row->measured as $fill) {
@@ -92,9 +89,7 @@ final readonly class DashboardCharts
                 if ($segment === null) {
                     continue;
                 }
-                $value = $electric
-                    ? $efficiency->fromDistanceAndEnergy((float) $segment->distanceKm, (float) $segment->volume)
-                    : $consumption->fromDistanceAndVolume((float) $segment->distanceKm, (float) $segment->volume);
+                $value = $scale->value((float) $segment->distanceKm, (float) $segment->volume);
                 if ($value !== null) {
                     $points[] = [$segment->endedAt, $value];
                 }

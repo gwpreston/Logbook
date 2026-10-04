@@ -71,12 +71,10 @@ final readonly class FuelCharts
      */
     public function monthly(MonthlyEconomy $months, DisplayPreferences $preferences): BarChart
     {
-        $electric = $months->kind === EnergyKind::Electric;
-        $efficiency = ElectricEfficiencyUnit::forDistanceUnit($preferences->distanceUnit);
-        $consumption = $preferences->consumptionUnit;
-        $value = static fn (?MonthlyEconomyRow $row): ?float => $row === null || !$row->hasFigure() ? null : ($electric
-            ? $efficiency->fromDistanceAndEnergy((float) $row->distanceKm, (float) $row->volume)
-            : $consumption->fromDistanceAndVolume((float) $row->distanceKm, (float) $row->volume));
+        $scale = $preferences->economyScale($months->kind);
+        $value = static fn (?MonthlyEconomyRow $row): ?float => $row === null || !$row->hasFigure()
+            ? null
+            : $scale->value((float) $row->distanceKm, (float) $row->volume);
         $monthNumbers = range(1, 12);
 
         $chart = new BarChart(
@@ -85,7 +83,7 @@ final readonly class FuelCharts
             1,
             null,
             false,
-            $this->translator->trans('units.name.' . ($electric ? $efficiency->value : $consumption->value)),
+            $this->translator->trans('units.name.' . $scale->code()),
         );
         $chart->addSeries(
             $this->translator->trans('fuel.monthly.average'),
@@ -107,13 +105,9 @@ final readonly class FuelCharts
      */
     public function economy(FuelHistory $history, EnergyKind $kind, DisplayPreferences $preferences): LineChart
     {
-        $electric = $kind === EnergyKind::Electric;
-        $efficiency = ElectricEfficiencyUnit::forDistanceUnit($preferences->distanceUnit);
-        $consumption = $preferences->consumptionUnit;
-        $unitKey = $electric ? $efficiency->value : $consumption->value;
-        $value = static fn (float $km, float $volume): ?float => $electric
-            ? $efficiency->fromDistanceAndEnergy($km, $volume)
-            : $consumption->fromDistanceAndVolume($km, $volume);
+        $scale = $preferences->economyScale($kind);
+        $unitKey = $scale->code();
+        $value = $scale->value(...);
 
         $perFill = [];
         $average = [];
@@ -146,18 +140,16 @@ final readonly class FuelCharts
      */
     public function price(FuelHistory $history, EnergyKind $kind, DisplayPreferences $preferences, string $currency): LineChart
     {
-        $electric = $kind === EnergyKind::Electric;
-        $unit = $preferences->volumeUnit;
+        $scale = $preferences->economyScale($kind);
         /** @var array<string, list<array{0: DateTimeImmutable, 1: float}>> $series by grade code ('' = none) */
         $series = [];
         foreach ($history->ofKind($kind) as $fill) {
             $data = $fill->entry->data;
-            $perLitre = (float) $data->pricePerUnit;
-            $series[$data->grade->value ?? ''][] = [$data->filledAt, $electric ? $perLitre : $perLitre * $unit->litresPerUnit()];
+            $series[$data->grade->value ?? ''][] = [$data->filledAt, $scale->pricePerShownUnit((float) $data->pricePerUnit)];
         }
 
         $label = $this->translator->trans('fuel.chart.price_axis', [
-            'unit' => $this->translator->trans('units.symbol.' . ($electric ? 'kwh' : $unit->value)),
+            'unit' => $this->translator->trans('units.symbol.' . $scale->quantityCode()),
         ]);
         $chart = new LineChart($preferences, $label, 3, $currency);
 

@@ -6,6 +6,7 @@ namespace Logbook\Service\History;
 
 use DateTimeImmutable;
 use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -101,6 +102,15 @@ final readonly class ActivityItem
     public function isElectric(): bool
     {
         return $this->fuel?->isElectric() ?? false;
+    }
+
+    /**
+     * The kind of energy a fill-up's volume is in (liquid for anything
+     * else).
+     */
+    public function kind(): EnergyKind
+    {
+        return $this->fuel?->kind() ?? EnergyKind::Liquid;
     }
 
     /**

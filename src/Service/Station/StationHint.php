@@ -47,7 +47,7 @@ final readonly class StationHint
         foreach ($last as $id => $visit) {
             $data = $visit->entry->data;
             $hints[$id] = $this->translator->trans('stations.last_time', [
-                'price' => $this->formatter->unitPrice($data->pricePerUnit, $visit->currency, $data->fuel->isElectric()),
+                'price' => $this->formatter->unitPrice($data->pricePerUnit, $visit->currency, $data->fuel->kind()),
                 'grade' => $data->grade === null
                     ? $this->translator->trans('fuel.fuel.' . $data->fuel->value)
                     : $this->translator->trans($data->grade->shortLabelKey()),

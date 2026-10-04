@@ -9,7 +9,7 @@
         {% for row in dashboard.recentFuel %}
             {% set fill = row.fill %}
             {% set data = fill.entry.data %}
-            {% set electric = data.fuel.isElectric() %}
+            {% set electric = data.fuel.isElectric() %}{% set kind = data.fuel.kind() %}
             {% set segment = fill.segment %}
             <li class="list__item">
                 <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
@@ -21,8 +21,8 @@
                             {{ row.vehicle.name() }}
                         {%- endif %} {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
                     <span class="list__meta">
-                        {{- data.filledAt|instant_date }} · {{ data.volume|quantity(electric) -}}
-                        {%- if segment %} · {{ segment.distanceKm|economy(segment.volume, electric) }}{% endif -%}
+                        {{- data.filledAt|instant_date }} · {{ data.volume|quantity(kind) -}}
+                        {%- if segment %} · {{ segment.distanceKm|economy(segment.volume, kind) }}{% endif -%}
                         {%- if row.check %} {{ fuel_ui.check_mark(row.check) }}{% endif -%}
                     </span>
                 </span>

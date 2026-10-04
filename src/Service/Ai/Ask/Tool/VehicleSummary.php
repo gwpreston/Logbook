@@ -106,11 +106,15 @@ final readonly class VehicleSummary implements AskTool
             $data['economy'] = $economy === null || !$economy->hasEconomy() ? null : [
                 'distance_km' => $economy->measuredDistanceKm,
                 'volume' => $economy->measuredVolume,
-                'unit' => $kind === EnergyKind::Electric ? 'kwh' : 'litres',
+                'unit' => match ($kind) {
+                    EnergyKind::Liquid => 'litres',
+                    EnergyKind::Electric => 'kwh',
+                    EnergyKind::Gas => 'kg',
+                },
                 'display' => $this->kit->format->economy(
                     $economy->measuredDistanceKm,
                     $economy->measuredVolume,
-                    $kind === EnergyKind::Electric,
+                    $kind,
                 ),
             ];
             if ($data['economy'] !== null) {

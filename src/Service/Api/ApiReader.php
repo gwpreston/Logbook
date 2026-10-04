@@ -482,7 +482,7 @@ final readonly class ApiReader
                 : $this->format->economy(
                     $economy->measuredDistanceKm,
                     $economy->measuredVolume,
-                    $primary === EnergyKind::Electric,
+                    $primary,
                 );
             $display['last_fill_up'] = $last === null ? null : $this->format->dateTime($last->entry->data->filledAt);
         }

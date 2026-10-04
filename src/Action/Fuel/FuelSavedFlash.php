@@ -45,13 +45,13 @@ final readonly class FuelSavedFlash
                 $segment = $fill->segment;
             }
         }
-        $electric = $entry->data->fuel->isElectric();
+        $kind = $entry->data->fuel->kind();
 
         if ($segment === null) {
             $session->flash('success', $key);
         } else {
             $session->flash('success', $key . '_economy', [
-                'economy' => $this->formatter->economy($segment->distanceKm, $segment->volume, $electric),
+                'economy' => $this->formatter->economy($segment->distanceKm, $segment->volume, $kind),
             ]);
 
             // The fill-up is saved either way; a flag only asks to check it.
@@ -60,8 +60,8 @@ final readonly class FuelSavedFlash
                 $key = $check->verdict === EconomyVerdict::More ? 'fuel.check.saved_more' : 'fuel.check.saved_less';
                 $session->flash('warning', $key, [
                     'percent' => $this->formatter->percent($check->difference()),
-                    'economy' => $this->formatter->economy($segment->distanceKm, $segment->volume, $electric),
-                    'usual' => $this->formatter->economy('100', $check->baseline, $electric),
+                    'economy' => $this->formatter->economy($segment->distanceKm, $segment->volume, $kind),
+                    'usual' => $this->formatter->economy('100', $check->baseline, $kind),
                 ]);
             }
         }
