@@ -70,6 +70,7 @@ final class MigrationsTest extends AppTestCase
         'stations',
         'station_favourites',
         'places',
+        'import_sources',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -109,7 +110,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 30.2 fuel price tables, the Phase 30.1 station links and tables,
+        // Newest first: the Phase 31 import sources, the Phase 30.2 fuel price tables, the Phase
+        // 30.1 station links and tables,
         // the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
         // the Phase 28.1 job runs, the Phase 27.2 disposal, estimate and incident scans,
         // the Phase 27.1 incidents, the Phase 26.5 draft source,
@@ -127,6 +129,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 31: where imported rows came from.
+        self::assertTrue($schema->tablesExist(['import_sources']));
+        Migrator::run('rollback');
+        self::assertFalse($schema->tablesExist(['import_sources']), 'rollback must drop import_sources');
+
         // Phase 30.2: the fuel price tables and the station link columns.
         $prices = ['provider_stations', 'provider_prices', 'listed_price_changes', 'price_alerts', 'fuel_price_secrets'];
         self::assertTrue($schema->tablesExist($prices));

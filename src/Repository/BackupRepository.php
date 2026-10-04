@@ -74,6 +74,8 @@ final readonly class BackupRepository
         // they need no provider rows) and each user's price alerts.
         'listed_price_changes',
         'price_alerts',
+        // Phase 31: where imported rows came from, per vehicle.
+        'import_sources',
         // Phase 26.1: AI connections, their models and the task routing.
         // Never their secrets (`ai_secrets`): a restored connection asks
         // for its key again.

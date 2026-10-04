@@ -164,7 +164,8 @@ final readonly class Mapper
             }
         }
 
-        $electric = $choice?->fuel->isElectric() ?? $vehicle->data->fuelType->fittingFamilies()[0]->isElectric();
+        // kWh and kg (CNG) are read as printed, never converted.
+        $electric = !($choice?->fuel->kind() ?? $vehicle->data->fuelType->primaryKind())->followsVolumeUnit();
         $printedUnit = self::volumeUnit((string) $reading->value('volume_unit'), $user->preferences->volumeUnit);
         $unit = $electric ? VolumeUnit::Litre : $user->preferences->volumeUnit;
         $volume = $form->number('volume');

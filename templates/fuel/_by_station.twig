@@ -35,7 +35,7 @@
                         <td class="table__num tabular">{{ summary.spend()|first|money(currency) }}</td>
                         <td class="table__num tabular">
                             {%- if stats and stats.averagePrice -%}
-                                {{ stats.averagePrice|unit_price(stats.currency, stats.fuel.isElectric()) }} <span class="muted">{{ st.grade_label(stats) }}</span>
+                                {{ stats.averagePrice|unit_price(stats.currency, stats.fuel.kind()) }} <span class="muted">{{ st.grade_label(stats) }}</span>
                             {%- else -%}—{%- endif -%}
                         </td>
                     </tr>

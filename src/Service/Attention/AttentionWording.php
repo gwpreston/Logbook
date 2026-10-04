@@ -55,7 +55,7 @@ final readonly class AttentionWording
             AttentionKind::ValuationStale => $this->translator->trans('attention.valuation.title', [
                 'months' => $item->months ?? 0,
             ]),
-            AttentionKind::DriftLiquid, AttentionKind::DriftElectric => $this->driftTitle($item->drift),
+            AttentionKind::DriftLiquid, AttentionKind::DriftElectric, AttentionKind::DriftGas => $this->driftTitle($item->drift),
             AttentionKind::FuelPrice => $this->priceTitle($item->price, $item->currency ?? ''),
             AttentionKind::MaintenanceCost => $this->costTitle($item->cost, $item->currency ?? ''),
             AttentionKind::StalledClaim => $this->translator->trans('attention.claim.title', [
@@ -113,9 +113,10 @@ final readonly class AttentionWording
             AttentionKind::ValuationStale => $this->translator->trans('attention.valuation.detail', [
                 'date' => $this->formatter->date($item->valuedOn),
             ]),
-            AttentionKind::DriftLiquid, AttentionKind::DriftElectric => $item->drift === null || $item->drift->seasonChecked
-                ? ''
-                : $this->translator->trans('attention.drift.season'),
+            AttentionKind::DriftLiquid, AttentionKind::DriftElectric, AttentionKind::DriftGas
+                => $item->drift === null || $item->drift->seasonChecked
+                    ? ''
+                    : $this->translator->trans('attention.drift.season'),
             AttentionKind::FuelPrice => $this->translator->trans(
                 ($item->price->digitSlip ?? false) ? 'attention.price.digit' : 'attention.price.detail',
             ),
@@ -218,8 +219,8 @@ final readonly class AttentionWording
             return '';
         }
         $electric = $drift->isElectric();
-        $recent = $this->formatter->economyValue($drift->recentDistanceKm, $drift->recentVolume, $electric);
-        $baseline = $this->formatter->economyValue($drift->baselineDistanceKm, $drift->baselineVolume, $electric);
+        $recent = $this->formatter->economyValue($drift->recentDistanceKm, $drift->recentVolume, $drift->kind);
+        $baseline = $this->formatter->economyValue($drift->baselineDistanceKm, $drift->baselineVolume, $drift->kind);
         $percent = $recent === null || $baseline === null || $baseline == 0.0
             ? 0
             : (int) round(abs($recent - $baseline) / $baseline * 100);
@@ -228,8 +229,8 @@ final readonly class AttentionWording
             'percent' => $percent,
             'electric' => $electric ? 'yes' : 'no',
             'tanks' => $drift->tanks,
-            'recent' => $this->formatter->economy($drift->recentDistanceKm, $drift->recentVolume, $electric),
-            'baseline' => $this->formatter->economy($drift->baselineDistanceKm, $drift->baselineVolume, $electric),
+            'recent' => $this->formatter->economy($drift->recentDistanceKm, $drift->recentVolume, $drift->kind),
+            'baseline' => $this->formatter->economy($drift->baselineDistanceKm, $drift->baselineVolume, $drift->kind),
         ]);
     }
 
@@ -241,16 +242,17 @@ final readonly class AttentionWording
         if ($price === null) {
             return '';
         }
-        $electric = $price->entry->data->fuel->kind() === EnergyKind::Electric;
+        $kind = $price->entry->data->fuel->kind();
+        $electric = $kind === EnergyKind::Electric;
 
         return $this->translator->trans('attention.price.title', [
             'electric' => $electric ? 'yes' : 'no',
             'date' => $this->formatter->instantDate($price->entry->data->filledAt),
-            'price' => $this->formatter->unitPrice($price->entry->data->pricePerUnit, $currency, $electric),
+            'price' => $this->formatter->unitPrice($price->entry->data->pricePerUnit, $currency, $kind),
             'ratio' => $this->ratio($price->ratio, $this->formatter->unitPrice(
                 Decimal::round($price->median, 6),
                 $currency,
-                $electric,
+                $kind,
             )),
         ]);
     }

@@ -32,6 +32,8 @@ enum AttentionKind: string
     case DriftLiquid = 'drift_liquid';
     /** The same for electricity: its own kind, so a plug-in hybrid can hide each. */
     case DriftElectric = 'drift_electric';
+    /** The same for CNG (Phase 31), so a bi-fuel car can hide each. */
+    case DriftGas = 'drift_gas';
     /** A fill-up's price far from nearby ones of the same grade (Phase 25). */
     case FuelPrice = 'fuel_price';
     /** A maintenance record far above its category's usual (Phase 25). */
@@ -61,7 +63,7 @@ enum AttentionKind: string
      */
     public function isDrift(): bool
     {
-        return $this === self::DriftLiquid || $this === self::DriftElectric;
+        return $this === self::DriftLiquid || $this === self::DriftElectric || $this === self::DriftGas;
     }
 
     /**

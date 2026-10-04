@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Vehicle;
 
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Fuel\EconomySummary;
@@ -31,6 +32,14 @@ final readonly class VehicleSnapshot
     public function isElectric(): bool
     {
         return $this->vehicle->data->fuelType->isElectric();
+    }
+
+    /**
+     * The kind of energy the snapshot's economy is in.
+     */
+    public function kind(): EnergyKind
+    {
+        return $this->vehicle->data->fuelType->primaryKind();
     }
 
     public function hasEconomy(): bool

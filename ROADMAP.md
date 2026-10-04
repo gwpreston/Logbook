@@ -68,7 +68,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | ✅ |
 | [30.1](docs/phases/phase-30.1.md) | Fuel stations + v2.13 release | ✅ |
 | [30.2](docs/phases/phase-30.2.md) | Live fuel prices and cheapest near me + v2.14 release | ✅ |
-| [31](docs/phases/phase-31.md) | Import from Fuelio and Drivvo + v2.15 release | 📋 |
+| [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | 🚧 |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 📋 |
 
 *Update the status column as each phase lands.*
@@ -674,9 +674,11 @@ you owe.*
 *Bring years of fill-ups, services and costs across from Fuelio in one
 go.*
 
-- Fuelio CSV and ZIP exports (one CSV per vehicle), with strict ZIP safety
-  limits; sections read into fill-ups, maintenance records, expenses and
-  stations through the existing row parsers.
+- A Fuelio CSV on the web page, and a Fuelio backup ZIP with its fill-up
+  photos on the command line, with strict ZIP safety limits; sections read
+  into fill-ups, maintenance records, expenses and stations through the
+  existing row parsers.
+- CNG as a fuel family (kg, its own consumption series).
 - Built from real anonymised exports as fixtures; a mapping step for
   vehicles, units (with an economy sanity check), formats, cost categories
   and fuel types; optional schedules from recurring costs.

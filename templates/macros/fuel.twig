@@ -150,12 +150,12 @@
     {% import 'macros/ui.twig' as ui %}
     {% set fill = check.fill %}
     {% set entry = fill.entry %}
-    {% set electric = entry.data.fuel.isElectric() %}
+    {% set electric = entry.data.fuel.isElectric() %}{% set kind = entry.data.fuel.kind() %}
     {% set other = check.otherEntry() %}
     {% set params = {
         percent: check.difference()|percent,
-        economy: fill.segment.distanceKm|economy(fill.segment.volume, electric),
-        usual: '100'|economy(check.baseline, electric),
+        economy: fill.segment.distanceKm|economy(fill.segment.volume, kind),
+        usual: '100'|economy(check.baseline, kind),
     } %}
     <div class="economy-check__body"{% if opts.id ?? null %} id="{{ opts.id }}"{% endif %}>
         {% if check.isFlagged() %}
@@ -203,7 +203,7 @@
     {% import 'macros/attachments.twig' as paperclip %}
     {% import _self as fuel_ui %}
     {% set data = fill.entry.data %}
-    {% set electric = data.fuel.isElectric() %}
+    {% set electric = data.fuel.isElectric() %}{% set kind = data.fuel.kind() %}
     {% set status = fill.status.value %}
     {% set check = opts.check ?? null %}
     {% set shown = check and (check.isFlagged() or check.isConfirmedFlag()) %}
@@ -216,8 +216,8 @@
             <span class="list__body">
                 <span class="list__title">{{ data.filledAt|local_datetime }} {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
                 <span class="list__meta tabular">
-                    {{- data.odometerKm|distance }} · {{ data.volume|quantity(electric) -}}
-                    {%- if own_amount %} · {{ data.pricePerUnit|unit_price(currency, electric) }}{% endif -%}
+                    {{- data.odometerKm|distance }} · {{ data.volume|quantity(kind) -}}
+                    {%- if own_amount %} · {{ data.pricePerUnit|unit_price(currency, kind) }}{% endif -%}
                     {%- if data.station %} · {{ data.station }}{% endif -%}
                 </span>
                 {{ ui.added_by(vehicle, fill.entry.createdBy) }}
@@ -228,7 +228,7 @@
             <span class="list__end">
                 {% if own_amount %}<span class="list__amount tabular">{{ data.totalCost|money(currency) }}</span>{% endif %}
                 {% if fill.segment %}
-                    <span class="economy tabular"{% if shown %} aria-describedby="{{ check_id }}"{% endif %}>{{ fill.segment.distanceKm|economy(fill.segment.volume, electric) }}</span>
+                    <span class="economy tabular"{% if shown %} aria-describedby="{{ check_id }}"{% endif %}>{{ fill.segment.distanceKm|economy(fill.segment.volume, kind) }}</span>
                     {% if shown %}{{ fuel_ui.check_mark(check) }}{% endif %}
                 {% else %}
                     <span class="economy economy--none">{{ ('fuel.status.' ~ status ~ (electric ? '_ev' : ''))|trans }}</span>

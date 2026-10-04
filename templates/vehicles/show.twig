@@ -37,7 +37,7 @@
                 latest ? 'odometer.stat.as_of'|trans({date: latest.recordedAt|instant_date}) : 'odometer.stat.none'|trans) }}
             {% if feature_enabled('fuel') %}
             {{ ui.stat((electric ? 'fuel.stat.average_ev' : 'fuel.stat.average')|trans,
-                fuel_summary and fuel_summary.hasEconomy() ? fuel_summary.measuredDistanceKm|economy(fuel_summary.measuredVolume, electric) : dash,
+                fuel_summary and fuel_summary.hasEconomy() ? fuel_summary.measuredDistanceKm|economy(fuel_summary.measuredVolume, kind) : dash,
                 fuel_summary and fuel_summary.hasEconomy() ? 'fuel.stat.all_time'|trans : 'fuel.stat.need_two_full'|trans,
                 fuel_summary and fuel_summary.hasEconomy() ? 'good' : '') }}
             {% if costs %}

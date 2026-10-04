@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Incident\IncidentTwigExtension;
 use Logbook\Service\Finance\FinanceTwigExtension;
 use Doctrine\DBAL\Connection;
@@ -341,6 +342,9 @@ return [
     OidcCache::class => static fn (ContainerInterface $c): OidcCache => new OidcCache($settingsOf($c)->cacheDir . '/oidc'),
     // Header sign-in (spec.md §7.9, Phase 23.2).
     ProxyAuthConfig::class => static fn (ContainerInterface $c): ProxyAuthConfig => $settingsOf($c)->proxy,
+    // Importing from another app (spec.md §7.13, Phase 31): archives open in a private folder here.
+    ArchiveReader::class => static fn (ContainerInterface $c): ArchiveReader
+        => new ArchiveReader($settingsOf($c)->cacheDir . '/app-import'),
     LogThrottle::class => static function (ContainerInterface $c) use ($settingsOf): LogThrottle {
         $clock = $c->get(ClockInterface::class);
         assert($clock instanceof ClockInterface);

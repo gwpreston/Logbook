@@ -201,13 +201,13 @@
                             </thead>
                             <tbody>
                                 {% for stats in priced %}
-                                    {% set electric = stats.fuel.isElectric() %}
+                                    {% set electric = stats.fuel.isElectric() %}{% set kind = stats.fuel.kind() %}
                                     <tr>
                                         <th scope="row">{{ st.grade_label(stats) }}</th>
                                         <td class="table__num tabular">{{ stats.visits }}</td>
                                         <td class="table__num tabular">{{ stats.spend|money(stats.currency) }}</td>
-                                        <td class="table__num tabular">{{ stats.averagePrice|unit_price(stats.currency, electric, true) }}</td>
-                                        <td class="table__num tabular">{{ stats.cheapestPrice|unit_price(stats.currency, electric, true) }}<span class="muted"> · {{ stats.cheapestOn|instant_date }}</span></td>
+                                        <td class="table__num tabular">{{ stats.averagePrice|unit_price(stats.currency, kind, true) }}</td>
+                                        <td class="table__num tabular">{{ stats.cheapestPrice|unit_price(stats.currency, kind, true) }}<span class="muted"> · {{ stats.cheapestOn|instant_date }}</span></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -232,14 +232,14 @@
                     {% for visit in fills %}
                         {% set entry = visit.entry %}
                         {% set vehicle = vehicles[entry.vehicleId] %}
-                        {% set electric = entry.data.fuel.isElectric() %}
+                        {% set electric = entry.data.fuel.isElectric() %}{% set kind = entry.data.fuel.kind() %}
                         <li class="list__item">
                             <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
                             <span class="list__body">
                                 <span class="list__title"><a href="{{ url_for('fuel.index', {id: vehicle.id}) }}">{{ entry.data.filledAt|instant_date }}</a></span>
                                 <span class="list__meta">
                                     {{- vehicle.name() }} · {{ (entry.data.grade ? entry.data.grade.shortLabelKey() : 'fuel.fuel.' ~ entry.data.fuel.value)|trans -}}
-                                    {%- if visit.amountVisible %} · {{ entry.data.pricePerUnit|unit_price(visit.currency, electric) }}{% endif -%}
+                                    {%- if visit.amountVisible %} · {{ entry.data.pricePerUnit|unit_price(visit.currency, kind) }}{% endif -%}
                                 </span>
                             </span>
                             {% if visit.amountVisible %}

@@ -51,7 +51,9 @@ were answered on 2026-10-02, before it was built; one found while
 building it (#130) was answered the same day. Phase 30.1's (#131–#135,
 three of them found while starting it) were answered on 2026-10-02,
 before it was built. Phase 30.2's (#136–#144, six of them found while
-starting it) were answered on 2026-10-03, before it was built.
+starting it) were answered on 2026-10-03, before it was built. Phase
+31's (#145–#149, two of them found while starting it) were answered on
+2026-10-04, before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -199,6 +201,11 @@ starting it) were answered on 2026-10-03, before it was built.
 | 142 | [30.2](phase-30.2.md) | Sync cadence when *Sync now* runs in the request (found while starting) | Decided | Incremental each run, full on the first run, with no stations, after a provider change and daily; only a full sync removes (spec §7.34 *Sync job*). | 2026-10-03 |
 | 143 | [30.2](phase-30.2.md) | Links by row id would dangle after a restore (found while starting) | Decided | Stations link by `provider` and `provider_ref`, the feed's own id, with no foreign key (spec §6 Station, §7.34 *Linking stations*). | 2026-10-03 |
 | 144 | [30.2](phase-30.2.md) | Comparing past fill-ups needs the price at a moment (found while starting) | Decided | Each listed price change of tracked stations is kept; the price in effect at the fill-up's time, reported within 48 hours before it (spec §6 ListedPriceChange, §7.34). | 2026-10-03 |
+| 145 | [31](phase-31.md) | The sample Fuelio export | Decided | The owner supplied a CSV export and a backup ZIP; the format is confirmed from them (spec §7.13 *Importing from another app*). | 2026-10-04 |
+| 146 | [31](phase-31.md) | LPG and CNG: skip, or add the fuel families? | Decided | Add them: LPG already exists; CNG added in kg with its own consumption series (spec §6 Vehicle, FuelEntry, §7.3 *CNG*). | 2026-10-04 |
+| 147 | [31](phase-31.md) | Fuelio GPS trips: skip, or import as private trips? | Parked | Import as private trips with "Fuelio trip" as the places, once an export with trips exists to build against; the sample has none (spec §12). | 2026-10-04 |
+| 148 | [31](phase-31.md) | A 213 MB backup against `MAX_UPLOAD_MB` of 10 (found while starting) | Decided | The web page takes the CSV only; backup ZIPs import with `bin/import-app.php` (spec §7.13). | 2026-10-04 |
+| 149 | [31](phase-31.md) | The backup's photos are a nested ZIP, `pictures.data` (found while starting) | Decided | Allowed as the one nested archive, by that exact name, one level deep, under the same limits (spec §7.13 *ZIP safety*). | 2026-10-04 |
 
 ## Other loose ends found in the review
 

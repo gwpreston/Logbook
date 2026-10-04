@@ -218,10 +218,11 @@ final class FuelEntryForm
 
     /**
      * The unit volumes and prices are typed in: the user's volume unit for
-     * liquid fuel; kWh (stored as-is, i.e. factor 1) for electricity.
+     * liquid fuel; kWh or kg (stored as-is, i.e. factor 1) for electricity
+     * and CNG.
      */
     private static function volumeUnit(Fuel $fuel, DisplayPreferences $preferences): VolumeUnit
     {
-        return $fuel->isElectric() ? VolumeUnit::Litre : $preferences->volumeUnit;
+        return $fuel->kind()->followsVolumeUnit() ? $preferences->volumeUnit : VolumeUnit::Litre;
     }
 }

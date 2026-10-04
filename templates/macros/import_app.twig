@@ -1,0 +1,60 @@
+{#
+ # Importing from another app (spec.md §7.13). Import with:
+ # {% import 'macros/import_app.twig' as app_import %}
+ #}
+
+{# Outcome of one row, as a pill. #}
+{% macro status(status) -%}
+    {% set tone = {import: 'valid', invalid: 'overdue', duplicate: 'soon', already_imported: 'soon', not_imported: ''}[status.value] %}
+    <span class="pill{{ tone ? ' pill--' ~ tone }}">{{ ('import_app.status.' ~ status.value)|trans }}</span>
+{%- endmacro %}
+
+{# One section's totals ("412 to import, 3 invalid"), only the statuses it has. #}
+{% macro totals(preview, section, statuses) -%}
+    {% set parts = [] %}
+    {% for status in statuses %}
+        {% set n = preview.count(section, status) %}
+        {% if n > 0 %}{% set parts = parts|merge([('import_app.count.' ~ status.value)|trans({count: n})]) %}{% endif %}
+    {% endfor %}
+    {{- parts is empty ? 'import_app.count.none'|trans : parts|join(', ') -}}
+{%- endmacro %}
+
+{# A section's rows with their line, outcome and reason. #}
+{% macro rows(rows, caption) -%}
+    {% import _self as app_import %}
+    <div class="table-wrap">
+        <table class="table">
+            <caption class="visually-hidden">{{ caption }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col" class="table__num">{{ 'import.column.line'|trans }}</th>
+                    <th scope="col">{{ 'import.column.status'|trans }}</th>
+                    <th scope="col">{{ 'import.column.row'|trans }}</th>
+                    <th scope="col">{{ 'import.column.problem'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <th scope="row" class="table__num tabular">{{ row.line }}</th>
+                        <td>{{ app_import.status(row.status) }}</td>
+                        <td>{{ row.summary }}</td>
+                        <td>
+                            {% if row.errors is not empty %}
+                                <ul class="plain-list">
+                                    {% for error in row.errors %}
+                                        <li>{{ ('import_app.field.' ~ error.field)|trans }}: {{ trans(error.key, error.params) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% elseif row.note %}
+                                <span class="muted">{{ trans(row.note.key, row.note.params) }}</span>
+                            {% elseif row.status.value != 'import' %}
+                                {{ ('import_app.reason.' ~ row.status.value)|trans }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{%- endmacro %}

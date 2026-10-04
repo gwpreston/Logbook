@@ -45,7 +45,7 @@
                 {% if feature_enabled('fuel') %}
                     <div>
                         <dt>{{ ui.icon(snapshot.isElectric() ? 'ev_station' : 'local_gas_station') }}<span class="visually-hidden">{{ 'garage.stat.economy'|trans }}</span></dt>
-                        <dd class="tabular">{{ snapshot.hasEconomy() ? snapshot.economy.measuredDistanceKm|economy(snapshot.economy.measuredVolume, snapshot.isElectric()) : '—' }}</dd>
+                        <dd class="tabular">{{ snapshot.hasEconomy() ? snapshot.economy.measuredDistanceKm|economy(snapshot.economy.measuredVolume, snapshot.kind()) : '—' }}</dd>
                     </div>
                 {% endif %}
             </dl>

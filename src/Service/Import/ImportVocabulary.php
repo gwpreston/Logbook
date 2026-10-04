@@ -156,15 +156,18 @@ final class ImportVocabulary
     }
 
     /**
-     * A volume unit name, code or symbol; 'kwh' for kilowatt-hours; null when unknown.
+     * A volume unit name, code or symbol; 'kwh' for kilowatt-hours, 'kg' for
+     * kilograms (CNG); null when unknown.
      */
     public function volumeUnit(string $value): VolumeUnit|string|null
     {
         $lookup = $this->lookup('volume', function (): array {
-            $words = ['kwh' => 'kwh'];
+            $words = ['kwh' => 'kwh', 'kg' => 'kg'];
             foreach ($this->locales() as $locale) {
-                $words[$this->word('units.name.kwh', $locale)] ??= 'kwh';
-                $words[$this->word('units.symbol.kwh', $locale)] ??= 'kwh';
+                foreach (['kwh', 'kg'] as $code) {
+                    $words[$this->word('units.name.' . $code, $locale)] ??= $code;
+                    $words[$this->word('units.symbol.' . $code, $locale)] ??= $code;
+                }
             }
 
             return $words + $this->unitWords(VolumeUnit::cases());
@@ -172,7 +175,7 @@ final class ImportVocabulary
 
         $word = $lookup[self::normalise($value)] ?? null;
 
-        return $word === null || $word === 'kwh' ? $word : VolumeUnit::from($word);
+        return $word === null || $word === 'kwh' || $word === 'kg' ? $word : VolumeUnit::from($word);
     }
 
     /**

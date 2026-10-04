@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Logbook\Support\Display;
 
 use DateTimeZone;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Support\Units\ConsumptionUnit;
 use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
+use Logbook\Support\Units\EconomyScale;
 use Logbook\Support\Units\UnitPreset;
 use Logbook\Support\Units\VolumeUnit;
 
@@ -48,6 +50,14 @@ final readonly class DisplayPreferences
     public function timeZone(): DateTimeZone
     {
         return new DateTimeZone($this->timezone);
+    }
+
+    /**
+     * The unit one kind of energy's economy is shown in for this person.
+     */
+    public function economyScale(EnergyKind $kind): EconomyScale
+    {
+        return EconomyScale::of($kind, $this->distanceUnit, $this->consumptionUnit, $this->volumeUnit);
     }
 
     public function withLocale(string $locale): self

@@ -129,7 +129,11 @@ final readonly class TrendChecks
                 continue;
             }
             $items[] = new AttentionItem(
-                kind: $electric ? AttentionKind::DriftElectric : AttentionKind::DriftLiquid,
+                kind: match ($kind) {
+                    EnergyKind::Liquid => AttentionKind::DriftLiquid,
+                    EnergyKind::Electric => AttentionKind::DriftElectric,
+                    EnergyKind::Gas => AttentionKind::DriftGas,
+                },
                 vehicle: $vehicle,
                 subjectId: $vehicle->id,
                 icon: 'trending_up',
