@@ -68,7 +68,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [29.2](docs/phases/phase-29.2.md) | Mileage, ending and finance everywhere + v2.12 release | ✅ |
 | [30.1](docs/phases/phase-30.1.md) | Fuel stations + v2.13 release | ✅ |
 | [30.2](docs/phases/phase-30.2.md) | Live fuel prices and cheapest near me + v2.14 release | ✅ |
-| [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | 🚧 |
+| [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | ✅ |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 📋 |
 
 *Update the status column as each phase lands.*

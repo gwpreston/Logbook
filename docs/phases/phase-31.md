@@ -3,7 +3,7 @@
 *Bring years of fill-ups, services and costs across from Fuelio in one
 go.*
 
-Status: 🚧 in progress · releases **v2.15.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.15.0** · file lives in `docs/phases/`
 
 Fuelio is one of the most used fuel and car-cost apps, and many people
 arriving at Logbook keep their history there. Fuelio exports a **CSV
@@ -246,6 +246,7 @@ ImportSource; §7.3 *CNG*; §7.13 *Importing from another app*; §12; §13.
       one migration; no configuration.
 - [x] Bump `VERSION`, rebuild assets, update the README status and the
       documentation table entry for `docs/import.md`.
+- [x] Tag `v2.15.0` once merged.
 
 ---
 
