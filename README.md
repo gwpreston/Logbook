@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.15.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.15.1.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or

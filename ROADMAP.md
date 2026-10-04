@@ -69,6 +69,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [30.1](docs/phases/phase-30.1.md) | Fuel stations + v2.13 release | ✅ |
 | [30.2](docs/phases/phase-30.2.md) | Live fuel prices and cheapest near me + v2.14 release | ✅ |
 | [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | ✅ |
+| [31.2](docs/phases/phase-31.2.md) | The Fuel stations module shows its icon + v2.15.1 | ✅ |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 📋 |
 
 *Update the status column as each phase lands.*
@@ -687,6 +688,15 @@ go.*
   readers. Release **v2.15.0**.
 
 → [`phase-31.md`](docs/phases/phase-31.md)
+
+## Phase 31.2 — The Fuel stations module shows its icon + v2.15.1
+*Settings → Modules shows the Fuel stations icon again.*
+
+- The `pin_drop` icon, missing from the bundled sprite since v2.13.0, is
+  vendored; a test checks every icon an enum names is in the sprite.
+- Release **v2.15.1**.
+
+→ [`docs/phases/phase-31.2.md`](docs/phases/phase-31.2.md)
 
 ## Phase 32 — True cost per mile, its breakdown and its trend + v2.16 release
 *One number for what a car costs to run, what it is made of, and why it
