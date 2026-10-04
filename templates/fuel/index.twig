@@ -26,7 +26,7 @@
 
         {% for section in sections %}
             {% set summary = section.summary %}
-            {% set electric = section.electric %}
+            {% set electric = section.electric %}{% set kind = section.kind %}
             {% set last = summary.lastSegment %}
             <section class="page__stack" aria-labelledby="summary-{{ section.kind.value }}">
                 <h2 id="summary-{{ section.kind.value }}" class="{{ sections|length > 1 ? 'section-title section-title--sm' : 'visually-hidden' }}">{{ ('fuel.kind.' ~ section.kind.value)|trans }}</h2>
@@ -34,16 +34,16 @@
                 {% set overview %}
                 <dl class="stats">
                     {{ ui.stat((electric ? 'fuel.stat.average_ev' : 'fuel.stat.average')|trans,
-                        summary.hasEconomy() ? summary.measuredDistanceKm|economy(summary.measuredVolume, electric) : dash,
+                        summary.hasEconomy() ? summary.measuredDistanceKm|economy(summary.measuredVolume, kind) : dash,
                         summary.hasEconomy() ? 'fuel.stat.average_over'|trans({distance: summary.measuredDistanceKm|distance}) : 'fuel.stat.need_two_full'|trans,
                         summary.hasEconomy() ? 'good' : '') }}
                     {{ ui.stat('fuel.stat.last'|trans,
-                        last ? last.distanceKm|economy(last.volume, electric) : dash,
+                        last ? last.distanceKm|economy(last.volume, kind) : dash,
                         last ? 'fuel.stat.last_over'|trans({distance: last.distanceKm|distance, date: last.endedAt|instant_date}) : '') }}
                     {% if costs %}
                     {{ ui.stat('fuel.stat.average_price'|trans,
-                        summary.averagePricePerUnit() is null ? dash : summary.averagePricePerUnit()|unit_price(currency, electric),
-                        'fuel.stat.bought'|trans({amount: summary.totalVolume|quantity(electric, 0), count: summary.fills})) }}
+                        summary.averagePricePerUnit() is null ? dash : summary.averagePricePerUnit()|unit_price(currency, kind),
+                        'fuel.stat.bought'|trans({amount: summary.totalVolume|quantity(kind, 0), count: summary.fills})) }}
                     {{ ui.stat((electric ? 'fuel.stat.cost_per_distance_ev' : 'fuel.stat.cost_per_distance')|trans,
                         summary.costPerKm() is null ? dash : summary.costPerKm()|per_distance(currency),
                         (electric ? 'fuel.stat.charging_only' : 'fuel.stat.fuel_only')|trans) }}
@@ -181,10 +181,10 @@
                                             <th scope="row">{{ month|month_name }}</th>
                                             {% for year in monthly.years() %}
                                                 {% set cell = monthly.cell(year, month) %}
-                                                <td class="table__num tabular">{{ cell and cell.hasFigure() ? cell.distanceKm|economy(cell.volume, electric) : dash }}</td>
+                                                <td class="table__num tabular">{{ cell and cell.hasFigure() ? cell.distanceKm|economy(cell.volume, kind) : dash }}</td>
                                             {% endfor %}
                                             {% set average = monthly.average(month) %}
-                                            <td class="table__num tabular"><strong>{{ average.hasFigure() ? average.distanceKm|economy(average.volume, electric) : dash }}</strong></td>
+                                            <td class="table__num tabular"><strong>{{ average.hasFigure() ? average.distanceKm|economy(average.volume, kind) : dash }}</strong></td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>

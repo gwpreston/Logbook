@@ -123,6 +123,7 @@ final readonly class ShowVehicleAction
             'fuel' => $fuel,
             'fuel_summary' => $fuel->summary($kind),
             'electric' => $kind === EnergyKind::Electric,
+            'kind' => $kind,
             'maintenance' => $this->maintenance->history($vehicle),
             'schedules' => array_slice(
                 $this->schedules->states($vehicle, $today, $odometer, $lead->scheduleDays, $lead->scheduleKm),

@@ -104,7 +104,7 @@ final class Serializer
             'fuel_type' => $data->fuelType->value,
             'default_grade' => $data->defaultGrade?->value,
             'capacity' => self::dec($data->capacity, self::QUANTITY_SCALE),
-            'capacity_unit' => $data->fuelType === FuelType::Electric ? 'kwh' : 'l',
+            'capacity_unit' => self::volumeUnit($data->fuelType->primaryKind()),
             'first_registered_on' => self::date($data->firstRegisteredOn),
             'first_inspection_due_on' => self::date($data->firstInspectionDueOn),
             'purchase_date' => self::date($data->purchaseDate),
@@ -139,7 +139,7 @@ final class Serializer
         bool $ownAmount = false,
     ): array {
         $data = $entry->data;
-        $electric = $data->fuel->isElectric();
+        $kind = $data->fuel->kind();
         $out = [
             'id' => $entry->id,
             'vehicle_id' => $entry->vehicleId,
@@ -148,15 +148,15 @@ final class Serializer
             'distance_unit' => self::DISTANCE_UNIT,
             'fuel' => $data->fuel->value,
             'grade' => $data->grade?->value,
-            'energy' => $electric ? EnergyKind::Electric->value : EnergyKind::Liquid->value,
+            'energy' => $kind->value,
             'volume' => self::dec($data->volume, self::QUANTITY_SCALE),
-            'volume_unit' => $electric ? 'kwh' : 'l',
+            'volume_unit' => self::volumeUnit($kind),
             'is_partial' => $data->isPartial,
             'is_missed_previous' => $data->isMissedPrevious,
             'station' => $data->station,
             'station_id' => $data->stationId,
             'notes' => $data->notes,
-            'economy' => $fill === null ? null : self::economy($fill, $electric, $costs),
+            'economy' => $fill === null ? null : self::economy($fill, $kind, $costs),
             'economy_check' => $check === null ? null : [
                 'verdict' => $check->verdict->value,
                 'flagged' => $check->isFlagged(),
@@ -178,12 +178,12 @@ final class Serializer
     /**
      * @return array<string, mixed>
      */
-    private static function economy(FillEconomy $fill, bool $electric, bool $costs): array
+    private static function economy(FillEconomy $fill, EnergyKind $kind, bool $costs): array
     {
         return [
             'status' => $fill->status->value,
             'distance_since_previous' => self::dec($fill->distanceSincePreviousKm, self::QUANTITY_SCALE),
-            'consumption_unit' => self::consumptionUnit($electric),
+            'consumption_unit' => self::consumptionUnit($kind),
             'segment' => $fill->segment === null ? null : self::segment($fill->segment, $costs),
         ];
     }
@@ -214,13 +214,12 @@ final class Serializer
      */
     public static function economySummary(EconomySummary $summary, bool $costs): array
     {
-        $electric = $summary->kind === EnergyKind::Electric;
         $last = $summary->lastSegment;
         $out = [
             'fills' => $summary->fills,
             'segments' => $summary->segments,
-            'consumption_unit' => self::consumptionUnit($electric),
-            'volume_unit' => $electric ? 'kwh' : 'l',
+            'consumption_unit' => self::consumptionUnit($summary->kind),
+            'volume_unit' => self::volumeUnit($summary->kind),
             'average_consumption' => $summary->hasEconomy()
                 ? self::per100Km($summary->measuredVolume, $summary->measuredDistanceKm)
                 : null,
@@ -883,9 +882,33 @@ final class Serializer
         return $value === null ? null : Decimal::round($value, $scale);
     }
 
-    public static function consumptionUnit(bool $electric): string
+    /**
+     * The canonical consumption unit of a kind (a bool means electricity or
+     * liquid): litres, kWh or kg (CNG, Phase 31) per 100 km.
+     */
+    public static function consumptionUnit(EnergyKind|bool $kind): string
     {
-        return $electric ? 'kwh_per_100km' : 'l_per_100km';
+        if (is_bool($kind)) {
+            $kind = $kind ? EnergyKind::Electric : EnergyKind::Liquid;
+        }
+
+        return match ($kind) {
+            EnergyKind::Liquid => 'l_per_100km',
+            EnergyKind::Electric => 'kwh_per_100km',
+            EnergyKind::Gas => 'kg_per_100km',
+        };
+    }
+
+    /**
+     * The canonical unit quantities of a kind are stored in.
+     */
+    public static function volumeUnit(EnergyKind $kind): string
+    {
+        return match ($kind) {
+            EnergyKind::Liquid => 'l',
+            EnergyKind::Electric => 'kwh',
+            EnergyKind::Gas => 'kg',
+        };
     }
 
     private static function per100Km(string $volume, string $distanceKm): ?string

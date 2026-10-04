@@ -32,10 +32,12 @@ final class UserExport
         'trips',
         'incidents',
         'finance_agreements',
+        // Phase 31: where the vehicles' imported rows came from.
+        'import_sources',
     ];
 
     /** Author columns, set to the exported user. */
-    private const array AUTHORS = ['created_by', 'uploaded_by'];
+    private const array AUTHORS = ['created_by', 'uploaded_by', 'imported_by'];
 
     /**
      * @param array<string, list<array<string, string|null>>> $tables every backed-up table => its rows

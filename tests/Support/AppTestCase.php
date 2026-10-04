@@ -157,6 +157,8 @@ abstract class AppTestCase extends TestCase
             'maintenance_entries',
             'maintenance_schedules',
             'fuel_entries',
+            // Phase 31: imported rows' origins.
+            'import_sources',
             // Phase 30.2: price alerts and listed prices, and the provider's copy.
             'price_alerts',
             'listed_price_changes',

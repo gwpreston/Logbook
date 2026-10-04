@@ -218,7 +218,7 @@ final readonly class DashboardService
         ?ReminderOverview $overview,
         DateTimeImmutable $today,
     ): PinnedVehicle {
-        $kind = $vehicle->data->fuelType->isElectric() ? EnergyKind::Electric : EnergyKind::Liquid;
+        $kind = $vehicle->data->fuelType->primaryKind();
         $economy = null;
         foreach ($efficiency as $row) {
             if ($row->vehicle->id === $vehicle->id && ($economy === null || $row->kind === $kind)) {

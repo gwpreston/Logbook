@@ -1,0 +1,54 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/import_app.twig' as app_import %}
+{#
+ # Importing from another app, done (spec.md §7.13 *Import*): totals per
+ # section, every row not imported with its line and reason, and the
+ # economy check's count. Expects: filename, result (an AppVehiclePreview
+ # with the vehicle written to), sections, statuses.
+ #}
+
+{% set active_nav = 'settings' %}
+{% set heading = 'import_app.result.title'|trans %}
+{% set vehicle = result.written %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ filename }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                {% if vehicle %}<p class="page-header__lead">{{ 'import_app.result.into'|trans({name: vehicle.name()}) }}</p>{% endif %}
+            </div>
+        </header>
+
+        <div class="alert alert--success" role="status">{{ ui.icon('check_circle') }}<span>{{ 'import_app.result.done'|trans({count: result.total(statuses|first)}) }}</span></div>
+
+        {% if result.unusualFills > 0 and vehicle %}
+            <div class="alert alert--warning" role="status">
+                {{ ui.icon('warning') }}
+                <span><a href="{{ url_for('fuel.index', {id: vehicle.id}, {check: 1}) }}">{{ 'import.unusual_fills'|trans({count: result.unusualFills}) }}</a></span>
+            </div>
+        {% endif %}
+
+        {% for section in sections %}
+            {% if result.rows(section) is not empty %}
+                {% set skipped = result.rows(section)|filter(r => r.status.value != 'import') %}
+                <section class="card" aria-labelledby="result-{{ section }}">
+                    <h2 id="result-{{ section }}" class="card__title">{{ ('import_app.section.' ~ section)|trans }}</h2>
+                    <p>{{ app_import.totals(result, section, statuses) }}</p>
+                    {% if skipped is not empty %}
+                        {{ app_import.rows(skipped, ('import_app.section.' ~ section)|trans) }}
+                    {% endif %}
+                </section>
+            {% endif %}
+        {% endfor %}
+
+        <div class="btn-row">
+            {% if vehicle %}<a class="btn btn--primary" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'import_app.result.view_vehicle'|trans({name: vehicle.name()}) }}</a>{% endif %}
+            <a class="btn btn--ghost" href="{{ url_for('import_app.upload') }}">{{ 'import_app.result.another'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

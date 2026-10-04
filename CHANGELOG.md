@@ -6,6 +6,58 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.15.0] — 2026-10-04
+
+Phase 31: **import from Fuelio**. Bring years of fill-ups, services,
+costs and favourite stations across from Fuelio in one go, checked
+against Fuelio's own economy before anything is written, and safe to
+repeat with a newer export. Also **CNG** as a fuel. See
+[docs/import.md](docs/import.md#from-fuelio).
+
+### Added
+- **Settings → Import from another app** (and *Coming from Fuelio?* on a
+  vehicle's fill-up import): upload a Fuelio CSV export. Logbook reads
+  every section (the vehicle, fill-ups, cost categories, costs, favourite
+  stations, photos) and asks only what it can't work out: the vehicle (one
+  you can manage, or a new one from the file), the units (read from the
+  file's headers), the date order, where each cost category goes
+  (Maintenance, Expenses or nowhere) and what each fuel code is.
+- **The units' sanity line**: "With miles and litres, these fill-ups
+  average 22.6 mpg (12.5 L/100 km). Fuelio's own figures agree." Miles read
+  as kilometres, or gallons as litres, show up before the import.
+- **A preview** per section with each row's outcome (*import*, *invalid*,
+  *duplicate*, *already imported*, *not imported* with the reason: income,
+  cost templates, a fuel or category set to *Don't import*), then **one
+  transaction** for the whole file.
+- **Stations**: a fill-up's station is matched by Fuelio's id to its
+  favourite station, then by name, then within 150 m of one you have; the
+  favourites come across with their positions as your favourites. A
+  fill-up's own GPS position is used for that match only and never stored.
+- **Re-importing**: each row is remembered by Fuelio's own id, so a newer
+  export adds only the new rows, even after you've edited imported ones.
+- **Service schedules** from repeating costs (optional).
+- **`php bin/import-app.php`** for Fuelio backup ZIPs, which carry the
+  fill-up photos and run to hundreds of megabytes: the same mapping and
+  preview, `--dry-run`, `--vehicle`, `--create`, `--as` and `--schedules`.
+  Photos are attached to their fill-ups, checked and stripped of their
+  metadata like any upload. Archives are checked before anything is read:
+  at most 50 entries, safe names only, sizes and compression ratios
+  capped, and only Fuelio's own `pictures.data` opened inside.
+- **CNG** as a fuel and a vehicle fuel type (bi-fuel with petrol): sold
+  and logged in kg, economy in kg/100 km or mi/kg, its own series so a
+  bi-fuel car's petrol and gas never mix, its own economy-drift check. The
+  CSV import and export, the API, *Ask Logbook* and the scans take it.
+- **API** (OpenAPI 1.20.0): `cng` for fuel and fuel type, `kg` as a
+  volume unit, `kg_per_100km`, the `gas` energy kind and a `gas` series in
+  the vehicle summary.
+- `bin/tools/anonymise-import.php` turns real exports into test fixtures.
+  English and German.
+
+### Upgrade notes
+- One migration (`import_sources`), included in backups and in
+  `bin/export-user.php`; the schema version moves, so a 2.15 backup
+  restores only into 2.15. No configuration.
+
 ## [2.14.0] — 2026-10-03
 
 Phase 30.2: **live fuel prices and cheapest near me**. Once an admin
@@ -1983,7 +2035,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.14.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.15.0...HEAD
+[2.15.0]: https://github.com/gwpreston16/Logbook/compare/v2.14.0...v2.15.0
 [2.14.0]: https://github.com/gwpreston16/Logbook/compare/v2.13.0...v2.14.0
 [2.13.0]: https://github.com/gwpreston16/Logbook/compare/v2.12.0...v2.13.0
 [2.12.0]: https://github.com/gwpreston16/Logbook/compare/v2.11.0...v2.12.0

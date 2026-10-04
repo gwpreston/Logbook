@@ -11,14 +11,16 @@ use Logbook\Domain\Vehicle\FuelType;
  * types, except that there is no "hybrid" or "phev" fuel: a hybrid fills
  * with petrol, and a plug-in hybrid also charges with electricity.
  *
- * Electricity is measured in kWh instead of litres; everything else about an
- * entry has the same shape.
+ * Electricity is measured in kWh and CNG in kg instead of litres; everything
+ * else about an entry has the same shape.
  */
 enum Fuel: string
 {
     case Petrol = 'petrol';
     case Diesel = 'diesel';
     case Lpg = 'lpg';
+    /** Compressed natural gas, sold by the kg (Phase 31). */
+    case Cng = 'cng';
     case Electricity = 'ev';
     case Other = 'other';
 
@@ -38,15 +40,15 @@ enum Fuel: string
 
     /**
      * The pump / charger label shape (spec.md §8): EN 16942 circle for
-     * petrol, square for diesel, rhombus for LPG, EN 17186 hexagon for
-     * charging; none for other fuels.
+     * petrol, square for diesel, rhombus for LPG and CNG, EN 17186 hexagon
+     * for charging; none for other fuels.
      */
     public function badgeShape(): ?string
     {
         return match ($this) {
             self::Petrol => 'circle',
             self::Diesel => 'square',
-            self::Lpg => 'rhombus',
+            self::Lpg, self::Cng => 'rhombus',
             self::Electricity => 'hexagon',
             self::Other => null,
         };
@@ -54,10 +56,14 @@ enum Fuel: string
 
     /**
      * Economy is only ever computed between entries of the same kind:
-     * litres and kWh cannot be added up.
+     * litres, kWh and kg cannot be added up.
      */
     public function kind(): EnergyKind
     {
-        return $this->isElectric() ? EnergyKind::Electric : EnergyKind::Liquid;
+        return match ($this) {
+            self::Electricity => EnergyKind::Electric,
+            self::Cng => EnergyKind::Gas,
+            default => EnergyKind::Liquid,
+        };
     }
 }

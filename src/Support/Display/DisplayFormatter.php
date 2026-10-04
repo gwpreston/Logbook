@@ -9,6 +9,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use IntlDateFormatter;
 use IntlDatePatternGenerator;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Money\Money;
@@ -16,6 +17,7 @@ use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\ConsumptionUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\ElectricEfficiencyUnit;
+use Logbook\Support\Units\GasEfficiencyUnit;
 use NumberFormatter;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -88,13 +90,15 @@ final readonly class DisplayFormatter
     }
 
     /**
-     * A price per litre (or per kWh for electricity), in the user's volume
-     * unit, with one more decimal than the currency normally uses:
-     * "£1.459/L", "$3.499/US gal", "£0.245/kWh".
+     * A price per litre (per kWh for electricity, per kg for CNG), in the
+     * user's volume unit, with one more decimal than the currency normally
+     * uses: "£1.459/L", "$3.499/US gal", "£0.245/kWh", "€1.329/kg".
      *
-     * @param string|null $perUnit canonical decimal per litre (or kWh)
+     * @param string|null $perUnit canonical decimal per litre (or kWh, or kg)
+     * @param EnergyKind|bool $kind the kind of energy; true and false mean
+     *                             electricity and liquid fuel
      */
-    public function unitPrice(?string $perUnit, string $currency, bool $electric, bool $fullPrecision = false): string
+    public function unitPrice(?string $perUnit, string $currency, EnergyKind|bool $kind, bool $fullPrecision = false): string
     {
         if ($perUnit === null || !Decimal::isCanonical($perUnit)) {
             return '';
@@ -103,10 +107,13 @@ final readonly class DisplayFormatter
         $digits = Currency::fractionDigits($currency);
         // A draft card shows the price as stored, every place (spec.md §7.26: "£1.390/L").
         $least = $fullPrecision ? $digits + 1 : $digits;
-        if ($electric) {
+        $kind = self::kind($kind);
+        if (!$kind->followsVolumeUnit()) {
             $price = $this->formatMoney((float) $perUnit, $currency, $least, $digits + 1);
 
-            return $this->translator->trans('units.price.kwh', ['price' => $price]);
+            $key = $kind === EnergyKind::Gas ? 'units.price.kg' : 'units.price.kwh';
+
+            return $this->translator->trans($key, ['price' => $price]);
         }
 
         $unit = $this->context->preferences()->volumeUnit;
@@ -241,6 +248,20 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * A mass of compressed natural gas (Phase 31): "12.4 kg". Gas is sold by
+     * the kg in every unit system.
+     */
+    public function mass(int|float|string|null $kg, int $maxDecimals = 2, int $minDecimals = 0): string
+    {
+        $value = self::toFloat($kg);
+        if ($value === null) {
+            return '';
+        }
+
+        return $this->translator->trans('units.mass.kg', ['value' => $this->number($value, $maxDecimals, $minDecimals)]);
+    }
+
+    /**
      * Consumption over a distance, in the user's consumption unit: "48.7 mpg".
      */
     public function consumption(
@@ -294,17 +315,47 @@ final readonly class DisplayFormatter
     }
 
     /**
-     * Consumption for liquid fuel, efficiency for electricity.
+     * CNG economy over a distance (Phase 31): kg/100 km for kilometre users,
+     * mi/kg for mile users ("38.2 mi/kg").
+     */
+    public function gasEconomy(
+        int|float|string|null $km,
+        int|float|string|null $kg,
+        int $decimals = 1,
+        ?GasEfficiencyUnit $unit = null,
+    ): string {
+        $distance = self::toFloat($km);
+        $mass = self::toFloat($kg);
+        if ($distance === null || $mass === null) {
+            return '';
+        }
+
+        $unit ??= GasEfficiencyUnit::forDistanceUnit($this->context->preferences()->distanceUnit);
+        $value = $unit->fromDistanceAndMass($distance, $mass);
+        if ($value === null) {
+            return '';
+        }
+
+        return $this->translator->trans('units.gas_economy.' . $unit->value, [
+            'value' => $this->number($value, $decimals, $decimals),
+        ]);
+    }
+
+    /**
+     * Consumption for liquid fuel, efficiency for electricity, kg-based
+     * economy for CNG. A bool kind means electricity (true) or liquid.
      */
     public function economy(
         int|float|string|null $km,
         int|float|string|null $volume,
-        bool $electric,
+        EnergyKind|bool $kind,
         int $decimals = 1,
     ): string {
-        return $electric
-            ? $this->efficiency($km, $volume, $decimals)
-            : $this->consumption($km, $volume, $decimals);
+        return match (self::kind($kind)) {
+            EnergyKind::Electric => $this->efficiency($km, $volume, $decimals),
+            EnergyKind::Gas => $this->gasEconomy($km, $volume, $decimals),
+            EnergyKind::Liquid => $this->consumption($km, $volume, $decimals),
+        };
     }
 
     /**
@@ -315,7 +366,7 @@ final readonly class DisplayFormatter
     public function economyValue(
         int|float|string|null $km,
         int|float|string|null $volume,
-        bool $electric,
+        EnergyKind|bool $kind,
         int $decimals = 1,
     ): ?float {
         $distance = self::toFloat($km);
@@ -323,22 +374,32 @@ final readonly class DisplayFormatter
         if ($distance === null || $amount === null) {
             return null;
         }
-        $value = $electric
-            ? ElectricEfficiencyUnit::forDistanceUnit($this->context->preferences()->distanceUnit)
-                ->fromDistanceAndEnergy($distance, $amount)
-            : $this->context->preferences()->consumptionUnit->fromDistanceAndVolume($distance, $amount);
+        $distanceUnit = $this->context->preferences()->distanceUnit;
+        $value = match (self::kind($kind)) {
+            EnergyKind::Electric => ElectricEfficiencyUnit::forDistanceUnit($distanceUnit)
+                ->fromDistanceAndEnergy($distance, $amount),
+            EnergyKind::Gas => GasEfficiencyUnit::forDistanceUnit($distanceUnit)->fromDistanceAndMass($distance, $amount),
+            EnergyKind::Liquid => $this->context->preferences()->consumptionUnit->fromDistanceAndVolume($distance, $amount),
+        };
 
         return $value === null ? null : round($value, $decimals);
     }
 
     /**
-     * Litres (in the user's volume unit), or kWh for electricity.
+     * Litres (in the user's volume unit), kWh for electricity or kg for CNG.
+     * A bool kind means electricity (true) or liquid.
      */
-    public function quantity(int|float|string|null $value, bool $electric, int $maxDecimals = 2, int $minDecimals = 0): string
-    {
-        return $electric
-            ? $this->energy($value, $maxDecimals, $minDecimals)
-            : $this->volume($value, $maxDecimals, $minDecimals);
+    public function quantity(
+        int|float|string|null $value,
+        EnergyKind|bool $kind,
+        int $maxDecimals = 2,
+        int $minDecimals = 0,
+    ): string {
+        return match (self::kind($kind)) {
+            EnergyKind::Electric => $this->energy($value, $maxDecimals, $minDecimals),
+            EnergyKind::Gas => $this->mass($value, $maxDecimals, $minDecimals),
+            EnergyKind::Liquid => $this->volume($value, $maxDecimals, $minDecimals),
+        };
     }
 
     /**
@@ -522,6 +583,19 @@ final readonly class DisplayFormatter
     private function locale(): string
     {
         return $this->context->preferences()->locale;
+    }
+
+    /**
+     * A kind given as a bool by older callers: true is electricity, false
+     * liquid fuel.
+     */
+    private static function kind(EnergyKind|bool $kind): EnergyKind
+    {
+        if ($kind instanceof EnergyKind) {
+            return $kind;
+        }
+
+        return $kind ? EnergyKind::Electric : EnergyKind::Liquid;
     }
 
     private static function toFloat(int|float|string|null $value): ?float

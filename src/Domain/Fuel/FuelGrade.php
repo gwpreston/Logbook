@@ -119,18 +119,19 @@ enum FuelGrade: string
 
     /**
      * The family a vehicle's default grade comes from: its own fuel type,
-     * petrol for either kind of hybrid, none for LPG and other (they have no grades).
+     * petrol for either kind of hybrid, none for LPG, CNG and other (they have
+     * no grades).
      */
     public static function defaultFamilyFor(FuelType $type): ?Fuel
     {
         return match ($type) {
-            FuelType::Lpg, FuelType::Other => null,
+            FuelType::Lpg, FuelType::Cng, FuelType::Other => null,
             default => Fuel::defaultFor($type),
         };
     }
 
     /**
-     * Every grade of a family, in picker order (none for LPG and other).
+     * Every grade of a family, in picker order (none for LPG, CNG and other).
      *
      * @return list<self>
      */

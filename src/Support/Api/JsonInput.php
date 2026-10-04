@@ -242,12 +242,18 @@ final class JsonInput
             if ($fuel !== null && !$fuel->isElectric()) {
                 $errors->add('volume_unit', 'api.validation.kwh_for_electric');
             }
+        } elseif ($unit === 'kg') {
+            if ($fuel !== null && $fuel !== Fuel::Cng) {
+                $errors->add('volume_unit', 'api.validation.kg_for_cng');
+            }
         } elseif ($unit !== '') {
             $volume = VolumeUnit::tryFrom($unit) ?? $volume;
             if (VolumeUnit::tryFrom($unit) === null) {
                 $errors->add('volume_unit', 'validation.choice');
             } elseif ($fuel !== null && $fuel->isElectric()) {
                 $errors->add('volume_unit', 'api.validation.electric_in_kwh');
+            } elseif ($fuel === Fuel::Cng) {
+                $errors->add('volume_unit', 'api.validation.cng_in_kg');
             }
         }
 

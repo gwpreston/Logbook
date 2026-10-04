@@ -6,6 +6,7 @@ namespace Logbook\Service\Export;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Tyre\TyreChangeLine;
 use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Domain\User\User;
@@ -273,7 +274,8 @@ final readonly class CsvExporter
         $rows = [];
         foreach ($this->fuel->listForVehicle($vehicle->id) as $entry) {
             $data = $entry->data;
-            $electric = $data->fuel->isElectric();
+            $kind = $data->fuel->kind();
+            $electric = !$kind->followsVolumeUnit();
             $rows[] = [
                 $this->localDateTime($data->filledAt, $user),
                 CsvNumber::distance($data->odometerKm, $prefs->distanceUnit),
@@ -281,7 +283,11 @@ final readonly class CsvExporter
                 $data->grade === null ? null : $this->t($data->grade->labelKey()),
                 $data->grade?->value,
                 CsvNumber::volume($data->volume, $prefs->volumeUnit, $electric),
-                $this->t('units.name.' . ($electric ? 'kwh' : $prefs->volumeUnit->value)),
+                $this->t('units.name.' . match ($kind) {
+                    EnergyKind::Electric => 'kwh',
+                    EnergyKind::Gas => 'kg',
+                    EnergyKind::Liquid => $prefs->volumeUnit->value,
+                }),
                 CsvNumber::unitPrice($data->pricePerUnit, $prefs->volumeUnit, $electric),
                 CsvNumber::money($data->totalCost, $currency),
                 $currency,

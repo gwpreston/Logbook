@@ -132,7 +132,7 @@ final readonly class DraftWriter
         $entry = $result['entry'];
         $data = $entry->data;
         $currency = $this->vehicles->currencyFor($user, $vehicle);
-        $electric = $data->fuel->isElectric();
+        $kind = $data->fuel->kind();
         $given = static fn (string $field): bool => ($input[$field] ?? null) !== null;
         $derived = match (true) {
             !$given('total_cost') => 'total',
@@ -140,8 +140,8 @@ final readonly class DraftWriter
             !$given('volume') => 'volume',
             default => null,
         };
-        $volume = $this->format->quantity($data->volume, $electric, 2, 2);
-        $price = $this->format->unitPrice($data->pricePerUnit, $currency, $electric, true);
+        $volume = $this->format->quantity($data->volume, $kind, 2, 2);
+        $price = $this->format->unitPrice($data->pricePerUnit, $currency, $kind, true);
         $total = $this->format->money(Money::of($data->totalCost, $currency));
         $fuel = $data->grade === null
             ? $this->t('fuel.fuel.' . $data->fuel->value)

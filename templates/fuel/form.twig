@@ -10,6 +10,7 @@
 {% set fuel = fuel_choice|split(':')|first %}
 {% set volume_symbol = ('units.symbol.' ~ prefs().volumeUnit.value)|trans %}
 {% set energy_symbol = 'units.symbol.kwh'|trans %}
+{% set mass_symbol = 'units.symbol.kg'|trans %}
 {% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
 {% set money_symbol = currency_symbol(currency) %}
 {% set money_digits = currency_digits(currency) %}
@@ -80,17 +81,17 @@
                 <div class="form-row form-row--3">
                     <div class="field">
                         <label class="field__label" for="f-volume">
-                            <span x-text="fuel === 'ev' ? '{{ 'fuel.field.energy'|trans|e('js') }}' : '{{ 'fuel.field.volume'|trans|e('js') }}'">{{ (fuel == 'ev' ? 'fuel.field.energy' : 'fuel.field.volume')|trans }}</span>
+                            <span x-text="fuel === 'ev' ? '{{ 'fuel.field.energy'|trans|e('js') }}' : (fuel === 'cng' ? '{{ 'fuel.field.mass'|trans|e('js') }}' : '{{ 'fuel.field.volume'|trans|e('js') }}')">{{ (fuel == 'ev' ? 'fuel.field.energy' : (fuel == 'cng' ? 'fuel.field.mass' : 'fuel.field.volume'))|trans }}</span>
                         </label>
                         <div class="input-group">
                             <input class="input" id="f-volume" name="volume" type="number" step="any" min="0" inputmode="decimal" data-amount="volume" value="{{ values.volume ?? '' }}"{{ ui.described_by('volume', errors, false) }}>
-                            <span class="input-group__suffix" aria-hidden="true" x-text="fuel === 'ev' ? '{{ energy_symbol|e('js') }}' : '{{ volume_symbol|e('js') }}'">{{ fuel == 'ev' ? energy_symbol : volume_symbol }}</span>
+                            <span class="input-group__suffix" aria-hidden="true" x-text="fuel === 'ev' ? '{{ energy_symbol|e('js') }}' : (fuel === 'cng' ? '{{ mass_symbol|e('js') }}' : '{{ volume_symbol|e('js') }}')">{{ fuel == 'ev' ? energy_symbol : (fuel == 'cng' ? mass_symbol : volume_symbol) }}</span>
                         </div>
                         {{ ui.field_error(errors, 'volume') }}
                     </div>
                     <div class="field">
                         <label class="field__label" for="f-price">
-                            <span x-text="fuel === 'ev' ? '{{ 'fuel.field.price_per'|trans({unit: energy_symbol})|e('js') }}' : '{{ 'fuel.field.price_per'|trans({unit: volume_symbol})|e('js') }}'">{{ 'fuel.field.price_per'|trans({unit: fuel == 'ev' ? energy_symbol : volume_symbol}) }}</span>
+                            <span x-text="fuel === 'ev' ? '{{ 'fuel.field.price_per'|trans({unit: energy_symbol})|e('js') }}' : (fuel === 'cng' ? '{{ 'fuel.field.price_per'|trans({unit: mass_symbol})|e('js') }}' : '{{ 'fuel.field.price_per'|trans({unit: volume_symbol})|e('js') }}')">{{ 'fuel.field.price_per'|trans({unit: fuel == 'ev' ? energy_symbol : (fuel == 'cng' ? mass_symbol : volume_symbol)}) }}</span>
                         </label>
                         <div class="input-group">
                             <input class="input" id="f-price" name="price" type="number" step="any" min="0" inputmode="decimal" data-amount="price" value="{{ values.price ?? '' }}"{{ ui.described_by('price', errors, false) }}>

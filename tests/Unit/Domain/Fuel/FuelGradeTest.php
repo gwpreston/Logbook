@@ -189,6 +189,7 @@ final class FuelGradeTest extends TestCase
         yield 'hybrid' => [FuelType::Hybrid, [Fuel::Petrol]];
         yield 'plug-in hybrid' => [FuelType::Phev, [Fuel::Petrol, Fuel::Electricity]];
         yield 'lpg' => [FuelType::Lpg, [Fuel::Lpg]];
+        yield 'cng, almost always bi-fuel' => [FuelType::Cng, [Fuel::Cng, Fuel::Petrol]];
         yield 'other' => [FuelType::Other, [Fuel::Other]];
     }
 

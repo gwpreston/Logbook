@@ -44,7 +44,7 @@
                 {{- item.date|local_date }}
                 {%- if show_vehicle %} · {{ item.vehicle.name() }}{% endif %}
                 {%- if title != kind %} · {{ kind }}{% endif %}
-                {%- if item.quantity %} · {{ item.quantity|quantity(item.electric) }}{% endif -%}
+                {%- if item.quantity %} · {{ item.quantity|quantity(item.fuel ? item.fuel.kind() : item.electric) }}{% endif -%}
                 {%- if derived and linked %} · {{ 'finance.ledger_line'|trans }}{% endif -%}
             </span>
             {% if not derived %}{{ ui.added_by(item.vehicle, item.createdBy) }}{% endif %}

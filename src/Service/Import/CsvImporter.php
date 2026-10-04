@@ -248,7 +248,8 @@ final readonly class CsvImporter
         $fuelText = $values['fuel'] ?? '';
         $fuelCode = $fuelText === '' ? ($defaults['fuel'] ?? '') : $vocabulary->choice(Fuel::class, 'fuel.fuel.', $fuelText);
         $fuel = Fuel::tryFrom($fuelCode ?? '');
-        $electric = $fuel?->isElectric() ?? false;
+        // kWh and kg (CNG) read as they are, whatever the file's volume unit.
+        $electric = $fuel !== null && !$fuel->kind()->followsVolumeUnit();
 
         foreach ($fields as $field) {
             $value = $values[$field->key] ?? '';

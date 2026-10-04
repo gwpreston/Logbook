@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\History;
 
 use DateTimeImmutable;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Support\Number\Decimal;
 
@@ -75,12 +76,12 @@ final readonly class FillUpRun
     }
 
     /**
-     * The volume together when every fill-up has the same unit (litres, or
-     * kWh for charges); null for a mix.
+     * The volume together when every fill-up has the same unit (litres, kWh
+     * for charges or kg for CNG); null for a mix.
      */
     public function volume(): ?string
     {
-        if ($this->charges() !== 0 && $this->fillUps() !== 0) {
+        if ($this->kind() === null) {
             return null;
         }
         $volume = '0';
@@ -89,6 +90,16 @@ final readonly class FillUpRun
         }
 
         return Decimal::round($volume, self::SCALE);
+    }
+
+    /**
+     * The kind of energy every fill-up in the run shares; null for a mix.
+     */
+    public function kind(): ?EnergyKind
+    {
+        $kinds = array_unique(array_map(static fn (ActivityItem $fill): string => $fill->kind()->value, $this->fills));
+
+        return count($kinds) === 1 ? EnergyKind::from($kinds[0]) : null;
     }
 
     public function isElectric(): bool

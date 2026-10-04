@@ -166,6 +166,10 @@ final class RouteInventoryTest extends AppTestCase
         'api.fuel_prices.near',
         'stations.link',
         'stations.alerts',
+        // Phase 31: importing from another app; the target vehicle must be one the user can
+        // manage (VehicleService::listWith Manage, else 404), a new vehicle is their own.
+        'import_app.upload',
+        'import_app.map',
     ];
 
     public function testEveryRouteIsClassified(): void

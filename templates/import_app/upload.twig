@@ -1,0 +1,52 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Importing from another app, step 1: upload a Fuelio CSV (spec.md §7.13).
+ # Expects: error, max_upload_mb, max_rows, command.
+ #}
+
+{% set active_nav = 'settings' %}
+{% set heading = 'import_app.title'|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'import_app.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <form class="form" method="post" enctype="multipart/form-data" action="{{ url_for('import_app.upload') }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card">
+                {% if error %}
+                    <div class="alert alert--error" role="alert" id="f-file-error">{{ ui.icon('error') }}<span>{{ trans(error.key, error.params) }}</span></div>
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-file">{{ 'import_app.file'|trans }}</label>
+                    {% set native %}<input class="input input--file" id="f-file" name="file" type="file" accept=".csv,text/csv" required aria-describedby="f-file-hint{{ error ? ' f-file-error' }}"{% if error %} aria-invalid="true"{% endif %}>{% endset %}
+                    {{ ui.file_drop(native, {max_mb: max_upload_mb, type_message: 'not_csv'}) }}
+                    <p class="field__hint" id="f-file-hint">{{ 'import_app.file_hint'|trans({max: max_upload_mb, rows: max_rows}) }}</p>
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary">{{ ui.icon('upload_file') }}{{ 'import_app.upload'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ url_for('settings') }}">{{ 'form.cancel'|trans }}</a>
+                </div>
+            </section>
+        </form>
+
+        <section class="card card--quiet" aria-labelledby="how-heading">
+            <h2 id="how-heading" class="card__title">{{ 'import_app.how_heading'|trans }}</h2>
+            <p>{{ 'import_app.how_csv'|trans }}</p>
+            <p>{{ 'import_app.how_zip'|trans }}</p>
+            <p><code>{{ command }}</code></p>
+            <p>{{ 'import_app.what'|trans }}</p>
+            <p class="field__hint">{{ 'import_app.not_affiliated'|trans }}</p>
+        </section>
+    </div>
+{% endblock %}

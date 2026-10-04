@@ -6,6 +6,7 @@ namespace Logbook\Tests\Unit\Support\Display;
 
 use DateTimeImmutable;
 use IntlDateFormatter;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Kernel;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\Env;
@@ -155,6 +156,31 @@ final class DisplayFormatterTest extends TestCase
         $this->prefs('de_DE', 'Europe/Berlin');
         self::assertSame('10,0 kWh/100 km', $this->formatter->efficiency('600', '60'));
         self::assertSame('7,0 L/100 km', $this->formatter->economy('500', '35', false));
+    }
+
+    public function testCngIsShownInKgWhateverTheVolumeUnit(): void
+    {
+        // A mile and UK-gallon user still sees kg and mi/kg for CNG (Phase 31).
+        $this->prefs('en_GB', 'Europe/London', DistanceUnit::Mile, VolumeUnit::UkGallon, ConsumptionUnit::MpgUk);
+        self::assertSame('12.4 kg', $this->formatter->quantity('12.400', EnergyKind::Gas));
+        self::assertSame('12.4 kg', $this->formatter->mass('12.4'));
+        // 400 km on 16 kg: 248.5 mi / 16 kg = 15.5 mi/kg.
+        self::assertSame('15.5 mi/kg', $this->formatter->economy('400', '16', EnergyKind::Gas));
+        self::assertSame(15.5, $this->formatter->economyValue('400', '16', EnergyKind::Gas));
+        self::assertSame('£1.329/kg', $this->formatter->unitPrice('1.329', 'GBP', EnergyKind::Gas));
+        // The same price for petrol follows the gallon.
+        self::assertSame('£6.042/gal', $this->formatter->unitPrice('1.329', 'GBP', EnergyKind::Liquid));
+        // An enum kind and the old bool agree for the other kinds.
+        self::assertSame(
+            $this->formatter->economy('600', '60', true),
+            $this->formatter->economy('600', '60', EnergyKind::Electric),
+        );
+        self::assertSame($this->formatter->quantity('35', false), $this->formatter->quantity('35', EnergyKind::Liquid));
+
+        $this->prefs('de_DE', 'Europe/Berlin');
+        self::assertSame('4,0 kg/100 km', $this->formatter->economy('400', '16', EnergyKind::Gas));
+        self::assertSame('', $this->formatter->gasEconomy('0', '16'));
+        self::assertSame('', $this->formatter->mass(null));
     }
 
     private function prefs(

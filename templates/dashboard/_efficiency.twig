@@ -5,7 +5,7 @@
 {% else %}
     <ul class="list">
         {% for row in dashboard.efficiency %}
-            {% set electric = row.isElectric() %}
+            {% set electric = row.isElectric() %}{% set kind = row.kind %}
             {% set last = row.last() %}
             <li class="list__item">
                 <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : row.vehicle.data.type.icon()) }}</span>
@@ -13,14 +13,14 @@
                     <a class="list__title" href="{{ url_for('fuel.index', {id: row.vehicle.id}) }}">{{ row.vehicle.name() }}</a>
                     <span class="list__meta">
                         {%- if last and last.segment -%}
-                            {{ 'dashboard.efficiency.last'|trans({economy: last.segment.distanceKm|economy(last.segment.volume, electric)}) }}
+                            {{ 'dashboard.efficiency.last'|trans({economy: last.segment.distanceKm|economy(last.segment.volume, kind)}) }}
                         {%- else -%}
                             {{ 'dashboard.efficiency.not_yet'|trans }}
                         {%- endif -%}
                     </span>
                 </span>
                 <span class="list__end">
-                    <span class="list__amount tabular">{{ row.hasEconomy() ? row.distanceKm()|economy(row.volume(), electric) : '—' }}</span>
+                    <span class="list__amount tabular">{{ row.hasEconomy() ? row.distanceKm()|economy(row.volume(), kind) : '—' }}</span>
                     <span class="list__meta">{{ 'dashboard.efficiency.average'|trans }}</span>
                 </span>
             </li>

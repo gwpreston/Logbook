@@ -82,7 +82,7 @@ final readonly class Stations implements AskTool
             $stations[] = $this->station($row);
             $main = $row->summary?->mainGrade();
             if ($main !== null && $main->averagePrice !== null && count($figures) < 3) {
-                $figures[] = $this->kit->format->unitPrice($main->averagePrice, $main->currency, $main->fuel->isElectric());
+                $figures[] = $this->kit->format->unitPrice($main->averagePrice, $main->currency, $main->fuel->kind());
             }
         }
 
@@ -120,10 +120,10 @@ final readonly class Stations implements AskTool
      */
     private function grade(GradeStats $stats): array
     {
-        $electric = $stats->fuel->isElectric();
+        $kind = $stats->fuel->kind();
         $price = fn (?string $value): ?array => $value === null ? null : [
             'per_unit' => $value,
-            'display' => $this->kit->format->unitPrice($value, $stats->currency, $electric, true),
+            'display' => $this->kit->format->unitPrice($value, $stats->currency, $kind, true),
         ];
 
         $priced = $stats->averagePrice !== null;

@@ -161,6 +161,7 @@ final class AttentionThresholdsTest extends TestCase
                 AttentionKind::ValuationStale,
                 AttentionKind::DriftLiquid,
                 AttentionKind::DriftElectric,
+                AttentionKind::DriftGas,
                 AttentionKind::FuelPrice,
                 AttentionKind::MaintenanceCost,
                 AttentionKind::StalledClaim,

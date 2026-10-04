@@ -80,7 +80,7 @@ user prefers, so automations can compare and chart them:
 | What | Unit | Example |
 |---|---|---|
 | distances, odometer | kilometres (`"distance_unit": "km"`) | `"odometer": "78421.000"` |
-| fuel volume | litres, or kWh for electricity (`"volume_unit": "l"` / `"kwh"`) | `"volume": "44.210"` |
+| fuel volume | litres, kWh for electricity, kg for CNG (`"volume_unit": "l"` / `"kwh"` / `"kg"`) | `"volume": "44.210"` |
 | consumption | L/100 km or kWh/100 km (`"consumption_unit"`) | `"average_consumption": "6.357"` |
 | money | the vehicle's currency (`"currency": "GBP"`) | `"total_cost": "61.370"` |
 | tread depth | millimetres | `"depth": "7.938"` |
@@ -106,7 +106,7 @@ user prefers, so automations can compare and chart them:
 | `GET /me` | the key's user and preferences, the key's name and scope, which modules are on |
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default `active`) |
 | `GET /vehicles/{id}` | one vehicle, as its edit form holds it |
-| `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric), the last fill-up, running cost per km over 12 months, what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
+| `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months, what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with the economy of the tank it closes and its economy-check flag (paged) |
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
 | `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre) (paged) |
@@ -166,7 +166,7 @@ intervals, reminders and the economy check.
 | `distance_unit` | `km` or `mi`; default the owner's |
 | `fuel`, `grade` | codes; default the vehicle's usual fuel and the grade last bought. A grade alone is enough (`"grade": "e5_97"`). |
 | `volume`, `price_per_unit`, `total_cost` | **any two**; the third is worked out as the form does. `price_per_unit` is per `volume_unit`. |
-| `volume_unit` | `l`, `gal_uk`, `gal_us`; `kwh` for electricity; default the owner's |
+| `volume_unit` | `l`, `gal_uk`, `gal_us`; `kwh` for electricity, `kg` for CNG; default the owner's |
 | `is_partial`, `is_missed_previous` | `true` / `false` |
 | `station` | a station's name: linked to the station with that name (ignoring case and spacing), or a new one. Not with `station_id`. |
 | `station_id` | a station from `GET /stations`. Not with `station`. Ignored for home charging, which is never a station. |
@@ -553,7 +553,8 @@ With `device_class: distance` and `km`, Home Assistant shows the odometer in
 miles when your system is set to US customary units. For text exactly as
 Logbook shows it, use `value_json.display.odometer` or
 `value_json.display.economy` ("44.4 mpg"). For an electric car use
-`fuel.electric` in place of `fuel.liquid` (kWh/100 km).
+`fuel.electric` in place of `fuel.liquid` (kWh/100 km), and for CNG `fuel.gas`
+(kg/100 km).
 
 ## Apple Shortcuts
 

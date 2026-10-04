@@ -228,6 +228,31 @@ final class FuelEconomyTest extends TestCase
         self::assertCount(1, $history->measured(EnergyKind::Electric));
     }
 
+    public function testCngIsASeriesOfItsOwnOnABiFuelCar(): void
+    {
+        // A bi-fuel petrol and CNG car (Phase 31): kg never mix with litres,
+        // while LPG would stay with petrol as a liquid.
+        $history = FuelEconomy::analyse([
+            $this->fill('1000', '40', '60'),
+            $this->fill('1100', '12', '15.60', fuel: Fuel::Cng),
+            $this->fill('1500', '16', '20.80', fuel: Fuel::Cng),
+            $this->fill('2000', '30', '45'),
+        ]);
+
+        self::assertSame(EnergyKind::Gas, Fuel::Cng->kind());
+        self::assertSame(EnergyKind::Liquid, Fuel::Lpg->kind());
+        self::assertSame('400.000', $history->fills[2]->segment?->distanceKm, 'gas to gas');
+        self::assertSame('16.000', $history->fills[2]->segment->volume, 'kg only');
+        self::assertSame('1000.000', $history->fills[3]->segment?->distanceKm, 'petrol to petrol');
+        self::assertSame('30.000', $history->fills[3]->segment->volume, 'litres only');
+
+        $gas = $history->summary(EnergyKind::Gas);
+        self::assertNotNull($gas);
+        self::assertSame(2, $gas->fills);
+        self::assertSame('28.000', $gas->totalVolume);
+        self::assertSame(2, $history->summary(EnergyKind::Liquid)?->fills);
+    }
+
     public function testElectricEfficiencyFromTheSameShape(): void
     {
         $history = FuelEconomy::analyse([

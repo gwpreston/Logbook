@@ -116,6 +116,8 @@ use Logbook\Action\History\VehicleHistoryAction;
 use Logbook\Action\HomeAction;
 use Logbook\Action\Import\ImportAction;
 use Logbook\Action\Import\ImportUploadAction;
+use Logbook\Action\ImportApp\ImportAppAction;
+use Logbook\Action\ImportApp\ImportAppUploadAction;
 use Logbook\Action\Log\LogEntryAction;
 use Logbook\Action\Log\LogPickVehicleAction;
 use Logbook\Action\Maintenance\CreateMaintenanceEntryAction;
@@ -518,6 +520,10 @@ return static function (App $app): void {
             $fuel->post('/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}/economy', ConfirmEconomyAction::class)
                 ->setName('fuel.economy')
                 ->setArgument($ability, VehicleAbility::Log->value);
+            // Importing from another app (spec.md §7.13, Phase 31): Manage is checked per target vehicle.
+            $fuel->map(['GET', 'POST'], '/settings/import-app', ImportAppUploadAction::class)->setName('import_app.upload');
+            $fuel->map(['GET', 'POST'], '/settings/import-app/{token:[a-f0-9]{32}}', ImportAppAction::class)
+                ->setName('import_app.map');
         })->add($module(Feature::Fuel));
 
         $group->group('/vehicles/{id:[0-9]+}', function (Group $vehicle) use ($module, $ability): void {

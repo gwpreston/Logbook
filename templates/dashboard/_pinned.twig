@@ -24,7 +24,7 @@
         <dl class="pinned__tiles">
             <div class="pinned__tile">
                 <dt>{{ 'dashboard.pinned.economy'|trans }}</dt>
-                <dd class="pinned__value tabular">{{ economy and economy.hasEconomy() ? economy.distanceKm()|economy(economy.volume(), economy.isElectric()) : dash }}</dd>
+                <dd class="pinned__value tabular">{{ economy and economy.hasEconomy() ? economy.distanceKm()|economy(economy.volume(), economy.kind) : dash }}</dd>
                 <dd class="pinned__sub">{{ 'dashboard.pinned.twelve_month_average'|trans }}</dd>
             </div>
             {% if can_see_costs(vehicle) %}

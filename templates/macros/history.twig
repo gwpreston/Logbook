@@ -26,7 +26,7 @@
 {% macro summary(item) -%}
     {%- set parts = [] -%}
     {%- if item.kind.value == 'fuel' and item.volume is not null -%}
-        {%- set parts = parts|merge([item.volume|quantity(item.isElectric())]) -%}
+        {%- set parts = parts|merge([item.volume|quantity(item.kind())]) -%}
     {%- elseif item.kind.value == 'maintenance' -%}
         {%- set parts = parts|merge([item.labelKey|trans]|merge(item.vendor ? [item.vendor] : [])) -%}
     {%- elseif item.kind.value == 'valuation' -%}
@@ -117,7 +117,7 @@
                 <span class="list__meta">
                     {{- '' -}}<time datetime="{{ run.oldest()|date('Y-m-d', 'UTC') }}">{{ run.oldest()|local_date }}</time> – <time datetime="{{ run.newest()|date('Y-m-d', 'UTC') }}">{{ run.newest()|local_date }}</time>
                     {%- if opts.show_vehicle ?? false %} · {{ run.vehicle().name() }}{% endif %}
-                    {%- if volume is not null %} · {{ volume|quantity(run.isElectric()) }}{% endif -%}
+                    {%- if volume is not null %} · {{ volume|quantity(run.kind()) }}{% endif -%}
                 </span>
             </span>
             <span class="list__end">

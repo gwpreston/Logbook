@@ -139,14 +139,13 @@ final readonly class FuelStats implements AskTool
             if ($ofKind === []) {
                 continue;
             }
-            $electric = $kind === EnergyKind::Electric;
-            [$totals, $shown] = $this->totals($ofKind, $electric, $costs, $currency);
+            [$totals, $shown] = $this->totals($ofKind, $kind, $costs, $currency);
             $byGrade = [];
             foreach ($this->byGrade($ofKind) as $key => $group) {
                 $byGrade[] = [
                     'grade' => $key === '' ? null : $key,
                     'label' => $this->kit->t($key === '' ? 'ask.result.grade_not_recorded' : FuelGrade::from($key)->labelKey()),
-                    ...$this->totals($group, $electric, $costs, $currency, $key === '' ? null : FuelGrade::from($key))[0],
+                    ...$this->totals($group, $kind, $costs, $currency, $key === '' ? null : FuelGrade::from($key))[0],
                 ];
             }
             $breakdown = $breakdowns[$kind->value] ?? null;
@@ -182,7 +181,7 @@ final readonly class FuelStats implements AskTool
      * @param list<FillEconomy> $fills
      * @return array{array<string, mixed>, list<string>} the figures, and their key display strings
      */
-    private function totals(array $fills, bool $electric, bool $costs, string $currency, ?FuelGrade $grade = null): array
+    private function totals(array $fills, EnergyKind $kind, bool $costs, string $currency, ?FuelGrade $grade = null): array
     {
         $volume = '0';
         $spend = '0';
@@ -199,8 +198,8 @@ final readonly class FuelStats implements AskTool
         }
         $hasEconomy = Decimal::compare($distance, '0') > 0 && Decimal::compare($measured, '0') > 0;
         $price = Decimal::compare($volume, '0') > 0 ? Decimal::divide($spend, $volume, 6) : null;
-        $volumeShown = $this->kit->format->quantity($volume, $electric);
-        $economyShown = $hasEconomy ? $this->kit->format->economy($distance, $measured, $electric) : null;
+        $volumeShown = $this->kit->format->quantity($volume, $kind);
+        $economyShown = $hasEconomy ? $this->kit->format->economy($distance, $measured, $kind) : null;
         $spendShown = $costs ? $this->kit->format->money(Money::of($spend, $currency)) : null;
         $shown = array_values(array_filter(
             [$volumeShown, $economyShown, $spendShown],
@@ -210,14 +209,18 @@ final readonly class FuelStats implements AskTool
         return [[
             'fill_ups' => count($fills),
             'volume' => [
-                $electric ? 'kwh' : 'litres' => $volume,
+                match ($kind) {
+                    EnergyKind::Liquid => 'litres',
+                    EnergyKind::Electric => 'kwh',
+                    EnergyKind::Gas => 'kg',
+                } => $volume,
                 'display' => $volumeShown,
             ],
             ...($costs ? [
                 'spend' => $this->kit->money(Money::of($spend, $currency)),
                 'average_price_per_unit' => $price === null ? null : [
                     'amount' => Decimal::round($price, 3),
-                    'display' => $this->kit->format->unitPrice($price, $currency, $electric),
+                    'display' => $this->kit->format->unitPrice($price, $currency, $kind),
                 ],
             ] : []),
             'economy' => $hasEconomy ? [
