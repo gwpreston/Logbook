@@ -118,7 +118,9 @@ final class HeaderSignInTest extends AppTestCase
         $psr7 = (new \Slim\Psr7\Factory\ServerRequestFactory())->createServerRequest('GET', '/')
             ->withHeader('Remote_User', 'owner');
         self::assertSame('owner', $psr7->getHeaderLine('Remote-User'), 'why PSR-7\'s header list is not read');
-        self::assertStringContainsString('data-proxy-notice="missing"', self::body($browser->get('/login')));
+        $login = self::body($browser->get('/login'));
+        self::assertStringContainsString('data-proxy-notice="missing"', $login);
+        self::assertStringContainsString('class="auth__brand"', $login, 'in the signed-out layout (Phase 33.2)');
     }
 
     public function testTheCgiRemoteUserVariableIsNeverRead(): void

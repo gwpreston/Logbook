@@ -122,4 +122,17 @@ final class UnitsTest extends TestCase
 
         self::assertSame($input, Decimal::fromFloat($back, 3));
     }
+
+    public function testThePresetMatchingAFormsValues(): void
+    {
+        $uk = ['distance_unit' => 'mi', 'volume_unit' => 'l', 'consumption_unit' => 'mpg_uk', 'depth_unit' => 'mm'];
+        self::assertSame(UnitPreset::Uk, UnitPreset::matchingValues($uk));
+        self::assertSame(UnitPreset::Us, UnitPreset::matchingValues(
+            ['distance_unit' => 'mi', 'volume_unit' => 'gal_us', 'consumption_unit' => 'mpg_us', 'depth_unit' => 'in32'],
+        ));
+        self::assertNull(UnitPreset::matchingValues(['distance_unit' => 'km'] + $uk), 'mixed');
+        self::assertNull(UnitPreset::matchingValues(['depth_unit' => 'in32'] + $uk), 'US depth with UK units');
+        self::assertNull(UnitPreset::matchingValues(['volume_unit' => 'barrel'] + $uk), 'unknown');
+        self::assertNull(UnitPreset::matchingValues([]), 'missing');
+    }
 }

@@ -287,6 +287,21 @@ final class DesignAlignmentTest extends AppTestCase
         self::assertStringContainsString('data-accent="blue"', self::body($this->get($app, '/login')));
     }
 
+    public function testSidebarOrderAndTheFuelStationsLabel(): void
+    {
+        $browser = $this->signedIn($this->createApp());
+        $home = self::body($browser->get('/'));
+        $sidebar = substr($home, (int) strpos($home, '<aside class="sidebar">'), (int) strpos($home, '</nav>'));
+
+        preg_match_all('~<span class="nav-link__label">([^<]+)</span>~', $sidebar, $labels);
+        self::assertSame(['Dashboard', 'Garage', 'Reminders', 'Reports', 'Fuel stations', 'Settings'], $labels[1]);
+        self::assertStringContainsString('<title>Fuel stations · Logbook</title>', self::body($browser->get('/stations')));
+
+        $browser->get('/settings/modules');
+        $browser->post('/settings/modules', ['fuel' => '1', 'reminders' => '1', 'reports' => '1']);
+        self::assertStringNotContainsString('Fuel stations', self::body($browser->get('/')), 'module off: absent');
+    }
+
     public function testVersionIsShownInTheSidebarAndOnSettings(): void
     {
         $app = $this->createApp();
