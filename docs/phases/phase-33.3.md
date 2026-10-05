@@ -3,7 +3,7 @@
 *Every tab of a vehicle looks like the same page, and the cards the
 prototype added are there.*
 
-Status: 📋 planned · no release of its own (ships with Phase 33.4 as
+Status: 🚧 in progress · no release of its own (ships with Phase 33.4 as
 **v3.0.0**) · file lives in `docs/phases/`
 
 A vehicle's page has tabs (Overview, History, Mileage, Trips, Fuel,
@@ -140,8 +140,12 @@ the audit and the owner's decisions:
 - [x] *Current tyres* shows each fitted position with estimate labels, car
       and motorbike; the bar only with two measurements.
 - [x] Incidents: breakdown type; stats respect detail and cost access.
-- [ ] Integration suite green on every engine; design-reviewer clean of
-      HIGH findings.
+- [x] Integration suite green on every engine; design-reviewer clean of
+      HIGH findings. (2026-10-05: 2,870 tests on PostgreSQL 17, MySQL 8.4
+      and MariaDB 11.4 at d5a4234, migration up/down/up on each; the
+      review fixes after it change no SQL. Review: 2 HIGH, both fixed and
+      checked at 375/768/1280 px, light and dark; open LOW items listed
+      under 33.3.9.)
 
 ### 33.3.9 Design review fixes
 - [x] Trips legend: the label keeps its width, the value wraps under it.

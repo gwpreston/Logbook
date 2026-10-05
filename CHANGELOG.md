@@ -69,6 +69,51 @@ new design**.
   addresses (`/stations`) are unchanged.
 - **Settings** sits below **Ask** in the sidebar.
 
+Phase 33.3 (ships with 33.4 as **v3.0.0**): **the vehicle pages to the new
+design**. See [docs/finance.md](docs/finance.md) and
+[docs/incidents.md](docs/incidents.md).
+
+### Added
+- **Finance is a tab** on each vehicle, between Incidents and Expenses,
+  for those who can manage the vehicle and see its costs. It shows the
+  current agreement as cards: the monthly payment with *Payment 18 of 36*
+  and the end month, *Paid so far* and *Still to pay*, the figures, a
+  *Purchase* card and *Value & equity*, then the schedule, extras and
+  quotes, and earlier agreements below. The header's *Finance* button is
+  gone; every finance address still works.
+- **Bought from** and **Mileage when bought** on the vehicle form. The
+  mileage joins the Mileage tab as a *Bought* reading on the purchase
+  date.
+- An **Insights** dashboard widget: up to two short observations worked
+  out from your own figures (money saved by shopping around, business
+  mileage you can claim, your cheapest vehicle to run, equity in a
+  financed car), each linking to the page behind it.
+- The trips tab's **Business and private** card: this tax year's split of
+  the distance driven, as a bar with percentages, and a *Trips* count.
+- A **Breakdown** incident type, and **Copy for insurance quote** on the
+  claims history.
+- **Current tyres** shows each tyre's depth with a tread bar (once it has
+  been measured twice), when it was fitted or moved, and a note with your
+  own replace-at and legal-minimum settings. *Check tread* is a button.
+
+### Changed
+- The vehicle's name is the same size on every tab, and the tabs follow
+  the new order: … Documents, Incidents, Finance, Expenses. The tab strip
+  scrolls to the current tab and shows when there are more.
+- The **dashboard's Your vehicles** shows three to a row on a wide screen.
+- **Incidents** are cards with a type icon, the claim's status and a row
+  of totals; an incident's page and the claims history (now with totals
+  for the period) follow the same style.
+
+### Fixed
+- The edit link of a reading written by an incident opened a "not found"
+  page.
+- The trips tab said "no rates" when there were simply no business trips
+  this tax year.
+
+### Upgrade notes
+- One migration (`vehicles.purchase_seller`). Nothing to do.
+
 ## [2.16.0] — 2026-10-05
 
 Phase 32: **true cost per mile or km**. What each vehicle really costs to
