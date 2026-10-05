@@ -3350,9 +3350,11 @@ a.list__title:hover {
     min-width: 0;
 }
 
-/* The label keeps its own width; the value moves under it rather than over it. */
+/* The label keeps its own width; the value moves under it rather than
+   over it, and a label longer than the item wraps inside it. */
 .legend__label {
     flex: 1 0 auto;
+    max-width: 100%;
     color: var(--muted);
 }
 
