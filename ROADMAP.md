@@ -71,6 +71,10 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | ✅ |
 | [31.2](docs/phases/phase-31.2.md) | The Fuel stations module shows its icon + v2.15.1 | ✅ |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 📋 |
+| [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 📋 |
+| [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 📋 |
+| [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 📋 |
+| [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -712,6 +716,54 @@ changed.*
   explain them. Release **v2.16.0**.
 
 → [`phase-32.md`](docs/phases/phase-32.md)
+
+## Phase 33.1 — Accounts: forgotten password, admin controls, avatars and dev mail
+*Get back in without asking anyone, and see every email the app sends while
+developing.*
+
+- *Forgotten your password?* on sign-in: a 60-minute link by email, with
+  no account enumeration, throttled; supersedes #36.
+- One email address per user (reset links and reminders); changing it
+  needs the current password.
+- Admins: send a reset email, sign a user out everywhere, revoke access,
+  add a user. Avatars for everyone, re-encoded and served privately.
+- Mailpit in the dev stack; fresh random sample passwords on every
+  `--with-sample-data` run. Ships with 33.4 as **v3.0.0**.
+
+→ [`phase-33.1.md`](docs/phases/phase-33.1.md)
+
+## Phase 33.2 — Sign-in and Settings to the prototype, and the sidebar
+*The first page anyone sees and the page everyone configures from.*
+
+- Sign-in, forgotten and reset password (and the other signed-out pages)
+  drawn from `design-import/`.
+- Settings laid out as the prototype, cards regrouped so *Reminders and
+  notifications* holds only reminders; unit presets show hover and which
+  one matches.
+- *Fuel stations* in the sidebar; *Settings* below *Ask*.
+
+→ [`phase-33.2.md`](docs/phases/phase-33.2.md)
+
+## Phase 33.3 — Vehicle pages: Finance tab, Insights, trips, incidents, tyres
+*Every tab of a vehicle looks like the same page.*
+
+- The vehicle's name the same size on every tab; Finance becomes a tab.
+- *Insights* on the overview from figures Logbook already computes.
+- Trips: *Business and personal* split and *Your vehicles* three to a row;
+  incidents and *Current tyres* to the prototype.
+
+→ [`phase-33.3.md`](docs/phases/phase-33.3.md)
+
+## Phase 33.4 — Cost of ownership, Ask and Fuel stations + v3.0 release
+*What each car has really cost, in one look.*
+
+- *Total cost*, *Per month*, *Depreciation* and *Finance interest*, then a
+  card per vehicle with a multicolour cost bar.
+- Ask and Fuel stations to the prototype, with the features the owner
+  picks.
+- Release **v3.0.0** (Phases 33.1–33.4).
+
+→ [`phase-33.4.md`](docs/phases/phase-33.4.md)
 
 ---
 
