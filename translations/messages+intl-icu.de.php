@@ -2917,6 +2917,7 @@ return [
         'widget' => [
             'fleet' => 'Deine Fahrzeuge',
             'reminders' => 'Anstehende Erinnerungen',
+            'insights' => 'Einblicke',
             'coming_up' => 'Demnächst',
             'spend' => 'Ausgaben diesen Monat',
             'recent_fuel' => 'Letzte Tankfüllungen',
@@ -5100,6 +5101,28 @@ return [
         ],
     ],
     // Live-Kraftstoffpreise und Günstigste in der Nähe (Phase 30.2, spec.md §7.34).
+    'insights' => [
+        'nothing' => 'Gerade fällt nichts auf.',
+        'shopping_around' => [
+            'title' => 'Etwa {amount} besser dank Preisvergleich',
+            'body' => '{vehicle}: {count, plural, one {# Tankvorgang} other {# Tankvorgänge}} außerhalb deiner üblichen Tankstelle in den letzten 12 Monaten.',
+            'body_before_driving' => '{vehicle}: {count, plural, one {# Tankvorgang} other {# Tankvorgänge}} außerhalb deiner üblichen Tankstelle in den letzten 12 Monaten, ohne die zusätzliche Strecke.',
+        ],
+        'business_mileage' => [
+            'title' => '{amount} für Dienstfahrten erstattungsfähig',
+            'body' => '{distance} Dienstfahrten seit dem {since}, zu deinen Kilometersätzen.',
+        ],
+        'cheapest_to_run' => [
+            'title' => '{vehicle} ist am günstigsten im Unterhalt',
+            'body' => '{rate} in den letzten 12 Monaten, gegenüber {other_rate} für {other}. Nur laufende Kosten.',
+        ],
+        'equity' => [
+            'title' => '{vehicle}: etwa {amount} Eigenkapital',
+            'title_negative' => '{vehicle}: etwa {amount} negatives Eigenkapital',
+            'body' => 'Bewertet mit {value}, gegenüber einem geschätzten Ablösebetrag von {settlement}.',
+            'body_quote' => 'Bewertet mit {value}, gegenüber dem Ablöseangebot des Kreditgebers von {settlement}.',
+        ],
+    ],
     'fuel_prices' => [
         'listed_at' => '{price} gemeldet um {when}',
         'may_be_out_of_date' => 'Möglicherweise veraltet',

@@ -2920,6 +2920,7 @@ return [
         'widget' => [
             'fleet' => 'Your vehicles',
             'reminders' => 'Upcoming reminders',
+            'insights' => 'Insights',
             'coming_up' => 'Coming up',
             'spend' => 'Spend this month',
             'recent_fuel' => 'Recent fuel',
@@ -5103,6 +5104,28 @@ return [
         ],
     ],
     // Live fuel prices and cheapest near me (Phase 30.2, spec.md §7.34).
+    'insights' => [
+        'nothing' => 'Nothing stands out right now.',
+        'shopping_around' => [
+            'title' => 'About {amount} better off from shopping around',
+            'body' => '{vehicle}: {count, plural, one {# fill-up} other {# fill-ups}} away from your usual station over the last 12 months.',
+            'body_before_driving' => '{vehicle}: {count, plural, one {# fill-up} other {# fill-ups}} away from your usual station over the last 12 months, before the extra driving.',
+        ],
+        'business_mileage' => [
+            'title' => '{amount} claimable in business mileage',
+            'body' => '{distance} of business trips since {since}, at your mileage rates.',
+        ],
+        'cheapest_to_run' => [
+            'title' => '{vehicle} is your cheapest to run',
+            'body' => '{rate} over the last 12 months, against {other_rate} for {other}. Running costs only.',
+        ],
+        'equity' => [
+            'title' => '{vehicle} has about {amount} of equity',
+            'title_negative' => '{vehicle} is about {amount} in negative equity',
+            'body' => 'Valued at {value} against an estimated settlement of {settlement}.',
+            'body_quote' => 'Valued at {value} against the lender\'s settlement quote of {settlement}.',
+        ],
+    ],
     'fuel_prices' => [
         'listed_at' => 'Listed {price} at {when}',
         'may_be_out_of_date' => 'May be out of date',

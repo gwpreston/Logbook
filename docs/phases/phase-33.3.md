@@ -109,13 +109,13 @@ the audit and the owner's decisions:
       fields are listed.
 
 ### 33.3.4 Insights widget
-- [ ] `InsightsService` returning typed insights from existing services;
+- [x] `InsightsService` returning typed insights from existing services;
       `insights` widget (two shown).
-- [ ] Translations with ICU plurals, units and currency.
+- [x] Translations with ICU plurals, units and currency.
 
 ### 33.3.5 Trips and Your vehicles
 - [ ] Trips tab tiles and the *Business and private* card.
-- [ ] *Your vehicles* widget tiles 3 / 2 / 1 per row.
+- [x] *Your vehicles* widget tiles 3 / 2 / 1 per row.
 
 ### 33.3.6 Incidents
 - [ ] Tab as cards with the stat strip; incident page layout; `breakdown`
@@ -134,7 +134,7 @@ the audit and the owner's decisions:
 - [ ] *Business and private*: worked example (12,400 driven, 3,100
       business → 25% / 75%); business over driven shows the warning; no
       destinations in the HTML.
-- [ ] *Insights*: each kind appears from its fixture and never without
+- [x] *Insights*: each kind appears from its fixture and never without
       `ViewCosts` for a cost insight; module off removes its insights;
       nothing when there's nothing to say.
 - [ ] *Current tyres* shows each fitted position with estimate labels, car

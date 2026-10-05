@@ -3373,6 +3373,88 @@ a.list__title:hover {
     font-weight: 600;
 }
 
+/* Insights (spec.md §7.8, Phase 33.3): a whole-row link per observation,
+   an icon tile in its tone, the title and two lines of the sentence. */
+.insights {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.insight {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.insight:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+}
+
+.insight__tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.insight__tile .icon {
+    width: 1.1875rem;
+    height: 1.1875rem;
+}
+
+.insight__tile--good {
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.insight__tile--watch {
+    background: var(--amber-soft);
+    color: var(--amber);
+}
+
+.insight__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.insight__title {
+    font-size: var(--fs-base);
+    font-weight: 700;
+}
+
+.insight__body {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.insights__empty {
+    margin: 0;
+    font-size: var(--fs-base);
+}
+
 .widget__foot,
 .widget__hidden-note {
     margin: 0;
@@ -3687,14 +3769,27 @@ a.list__title:hover {
     font-weight: 600;
 }
 
-/* Dashboard "Your vehicles" tiles. */
+/* Dashboard "Your vehicles" tiles: one per row on phones, two on tablets,
+   three from the sidebar breakpoint (spec.md §7.8, Phase 33.3). */
 .vehicle-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 13.5rem), 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+@media (min-width: 48rem) {
+    .vehicle-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 60rem) {
+    .vehicle-tiles {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 .vehicle-tile {
@@ -3753,6 +3848,14 @@ a.list__title:hover {
     gap: var(--space-2);
     color: var(--muted);
     font-size: var(--fs-sm);
+}
+
+/* The due text and the Needs attention marker together on the right. */
+.vehicle-tile__status {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-left: auto;
 }
 
 /* "Log something" chooser. */

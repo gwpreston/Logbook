@@ -17,6 +17,7 @@ use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Dashboard\DashboardWidget;
 use Logbook\Service\History\HistoryChip;
 use Logbook\Service\History\Milestone;
+use Logbook\Service\Insights\InsightKind;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -33,7 +34,7 @@ final class IconSpriteTest extends TestCase
             LogKind::class, Location::class, ComplianceType::class, CostGroup::class,
             ExpenseCategory::class, Feature::class, MaintenanceCategory::class,
             OdometerSource::class, TyreChangeKind::class, VehicleType::class,
-            DashboardWidget::class, HistoryChip::class, Milestone::class,
+            DashboardWidget::class, HistoryChip::class, Milestone::class, InsightKind::class,
         ];
         foreach ($enums as $enum) {
             foreach ($enum::cases() as $case) {

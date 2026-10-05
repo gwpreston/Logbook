@@ -1,0 +1,23 @@
+{# Insights (spec.md §7.8, Phase 33.3): the first two observations worked
+   out from figures Logbook already has, each a link to the page that shows
+   the figure. The body is clamped to two lines on screen; the whole text
+   stays in the page for screen readers. #}
+{% import 'macros/ui.twig' as ui %}
+{% set insights = dashboard.insights ?? [] %}
+{% if insights is empty %}
+    <p class="muted insights__empty">{{ 'insights.nothing'|trans }}</p>
+{% else %}
+    <ul class="insights">
+        {% for insight in insights %}
+            <li>
+                <a class="insight" href="{{ url_for(insight.route, insight.routeParams) }}" data-insight="{{ insight.kind.value }}">
+                    <span class="insight__tile insight__tile--{{ insight.tone.value }}">{{ ui.icon(insight.icon()) }}</span>
+                    <span class="insight__text">
+                        <span class="insight__title">{{ insight.title|trans(insight.titleParams) }}</span>
+                        <span class="insight__body">{{ insight.body|trans(insight.bodyParams) }}</span>
+                    </span>
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

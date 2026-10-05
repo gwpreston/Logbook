@@ -27,8 +27,8 @@ final class DashboardTest extends AppTestCase
 
     private const string NOW = '2026-09-27T10:00:00Z';
     private const array DEFAULT_ORDER = [
-        'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage',
-        'recent_activity', 'true_cost',
+        'needs_attention', 'reminders', 'insights', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'compliance',
+        'mileage', 'recent_activity', 'true_cost',
     ];
 
     public function testWidgetsShowTheActiveFleetInTheDefaultOrder(): void
@@ -86,6 +86,7 @@ final class DashboardTest extends AppTestCase
         self::assertSame('/?customise=1#widget-spend', $moved->getHeaderLine('Location'));
         $browser->post('/dashboard/layout', ['widget' => 'spend', 'move' => 'up']);
         $browser->post('/dashboard/layout', ['widget' => 'spend', 'move' => 'up']);
+        $browser->post('/dashboard/layout', ['widget' => 'spend', 'move' => 'up']);
         $browser->post('/dashboard/layout', ['widget' => 'spend', 'move' => 'up']); // already first: no change
         $browser->post('/dashboard/layout', ['widget' => 'fleet', 'move' => 'up']);
         $browser->post('/dashboard/layout', ['widget' => 'efficiency', 'toggle' => '1']);
@@ -95,7 +96,7 @@ final class DashboardTest extends AppTestCase
         self::assertNotNull($stored, 'kept as a user-scoped settings row');
         self::assertSame([
             'order' => [
-                'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel',
+                'spend', 'needs_attention', 'reminders', 'insights', 'coming_up', 'fleet', 'recent_fuel',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel',
                 'true_cost',
             ],
@@ -104,7 +105,7 @@ final class DashboardTest extends AppTestCase
 
         $html = self::body($browser->get('/'));
         $arranged = [
-            'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel', 'compliance', 'mileage',
+            'spend', 'needs_attention', 'reminders', 'insights', 'coming_up', 'fleet', 'recent_fuel', 'compliance', 'mileage',
             'recent_activity', 'true_cost',
         ];
         self::assertSame($arranged, self::widgetOrder($html), 'hidden: not shown');
@@ -138,8 +139,8 @@ final class DashboardTest extends AppTestCase
 
         self::assertSame(
             [
-                'compliance', 'efficiency', 'fleet', 'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel',
-                'mileage', 'recent_activity', 'true_cost',
+                'compliance', 'efficiency', 'fleet', 'needs_attention', 'reminders', 'insights', 'coming_up', 'spend',
+                'recent_fuel', 'mileage', 'recent_activity', 'true_cost',
             ],
             self::widgetOrder(self::body($browser->get('/'))),
             'unknown ids dropped, the rest appended',
@@ -170,7 +171,7 @@ final class DashboardTest extends AppTestCase
         $html = self::body($browser->get('/'));
         self::assertSame(
             [
-                'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'mileage',
+                'needs_attention', 'reminders', 'insights', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'mileage',
                 'recent_activity', 'true_cost',
             ],
             self::widgetOrder($html),
@@ -185,12 +186,32 @@ final class DashboardTest extends AppTestCase
         self::assertSame(
             // Customising lists the finance widget, which the dashboard leaves out until there is an agreement.
             [
-                'needs_attention', 'reminders', 'coming_up', 'fleet', 'compliance', 'mileage', 'recent_activity', 'finance',
-                'true_cost',
+                'needs_attention', 'reminders', 'insights', 'coming_up', 'fleet', 'compliance', 'mileage', 'recent_activity',
+                'finance', 'true_cost',
             ],
             self::widgetOrder($html),
             'the stored setting wins',
         );
+    }
+
+    public function testInsightsJoinALayoutSavedBeforeThem(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $this->vehicle($app);
+        // A layout saved before Phase 33.3: no insights in it.
+        $this->service($app, SettingRepository::class)->save(DashboardLayoutStore::SETTING, [
+            'order' => [
+                'fleet', 'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'efficiency', 'compliance',
+                'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel', 'true_cost',
+            ],
+            'hidden' => [],
+        ], SettingScope::User, $this->owner($app)->id);
+
+        $html = self::body($browser->get('/'));
+        self::assertSame('insights', array_slice(self::widgetOrder($html), -1)[0], 'appended, not lost');
+        self::assertStringContainsString('Nothing stands out right now.', $html);
+        self::assertStringContainsString('Hide Insights', self::body($browser->get('/?customise=1')), 'in the customise list');
     }
 
     public function testWithoutVehiclesTheDashboardInvitesYouToAddOne(): void
