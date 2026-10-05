@@ -207,7 +207,7 @@ final class CostOfOwnershipPageTest extends AppTestCase
         self::assertStringContainsString('39,000 mi driven', $html);
         self::assertStringContainsString('3 yrs 6 mo', $html);
         self::assertStringContainsString('since Mar 2023', $html);
-        self::assertStringContainsString('over 43 months since buying it on 1 Mar 2023', $html);
+        self::assertStringContainsString('over 42 months since buying it on 1 Mar 2023', $html);
         self::assertStringContainsString('How it’s worked out', $html);
         self::assertStringContainsString('with its latest value', $html);
         self::assertStringNotContainsString('Add purchase price', $html, 'it has one');

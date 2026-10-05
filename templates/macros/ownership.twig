@@ -110,7 +110,7 @@
                     {%- if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span> {% endif -%}
                     <span>
                         {%- if card.agreementType %}{{ card.agreementType.labelKey()|trans }} · {% endif -%}
-                        {{- 'ownership.page.months'|trans({count: cost.months}) -}}
+                        {{- 'ownership.page.months'|trans({count: cost.ownedFor.years * 12 + cost.ownedFor.months}) -}}
                         {%- if not card.isActive() %} · {{ 'ownership.page.sold'|trans }}{% endif -%}
                     </span>
                 </p>

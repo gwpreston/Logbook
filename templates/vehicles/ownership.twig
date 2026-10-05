@@ -26,6 +26,7 @@
         {% else %}
             {% set cost = card.cost() %}
             {% set unit = user.preferences.distanceUnit.value %}
+            {% set owned_months = cost.ownedFor.years * 12 + cost.ownedFor.months %}
             <dl class="stats">
                 {{ ui.stat('ownership.page.total'|trans, card.total()|money, (cost.start.value == 'purchase' ? 'ownership.tab.since_purchase' : 'ownership.tab.logged')|trans) }}
                 {{ ui.stat('ownership.page.per_month'|trans, cost.perMonth ? cost.perMonth|money : dash, cost.perMonth ? (cost.perMonthIsPartial ? 'ownership.running_only' : 'ownership.tab.all_in')|trans : '') }}
@@ -43,11 +44,11 @@
                         <strong class="figure tabular">{{ card.total()|money }}</strong>
                         <span class="muted">
                             {%- if vehicle.isArchived() -%}
-                                {{ 'ownership.tab.over_owned'|trans({count: cost.months}) }}
+                                {{ 'ownership.tab.over_owned'|trans({count: owned_months}) }}
                             {%- elseif cost.start.value == 'purchase' -%}
-                                {{ 'ownership.tab.over_since'|trans({count: cost.months, date: cost.period.from|local_date}) }}
+                                {{ 'ownership.tab.over_since'|trans({count: owned_months, date: cost.period.from|local_date}) }}
                             {%- else -%}
-                                {{ 'ownership.tab.over_records'|trans({count: cost.months}) }}
+                                {{ 'ownership.tab.over_records'|trans({count: owned_months}) }}
                             {%- endif -%}
                             {%- if card.isRunningOnly() %} ({{ 'ownership.running_only'|trans }}){% endif -%}
                         </span>
