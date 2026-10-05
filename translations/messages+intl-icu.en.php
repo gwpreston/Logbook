@@ -188,6 +188,13 @@ return [
         'login_link_lead' => 'This link signs in {username}, once. It was made on the server\'s command line.',
         'login_link_submit' => 'Sign in as {name}',
         'login_link_used' => 'Signed in with a one-time link, {name}.',
+        'password_reveal' => 'Show password',
+        'rules' => [
+            'length' => 'At least {min} characters',
+            'match' => 'Both passwords match',
+            'met' => 'done',
+            'unmet' => 'not yet',
+        ],
         'username_or_email' => 'Username or email',
         'forgot' => [
             'link' => 'Forgotten your password?',

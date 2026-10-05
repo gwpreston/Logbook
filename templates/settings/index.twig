@@ -211,6 +211,7 @@
                     {{ ui.input('new_password', 'settings.new_password'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password', hint: 'auth.password_hint'|trans}) }}
                     {{ ui.input('new_password_confirm', 'auth.password_confirm'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password'}) }}
                 </div>
+                {{ ui.password_rules('new_password', 'new_password_confirm') }}
                 <p class="field__hint">{{ 'settings.password_note'|trans }}</p>
                 <div class="btn-row">
                     <button type="submit" class="btn">{{ ui.icon('lock') }}{{ (has_password ? 'settings.change_password' : 'settings.set_password')|trans }}</button>

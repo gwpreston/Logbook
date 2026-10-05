@@ -1203,6 +1203,50 @@
             syncPressed();
         });
 
+        // Password fields: show / hide (spec.md §7.9 *Signed-out pages*).
+        document.querySelectorAll('[data-password-reveal]').forEach(function (button) {
+            var input = document.getElementById(button.getAttribute('aria-controls'));
+            if (!input) {
+                return;
+            }
+            button.hidden = false;
+            button.addEventListener('click', function () {
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                button.setAttribute('aria-pressed', show ? 'true' : 'false');
+            });
+            // Never submit with the password showing in the field's history.
+            if (input.form) {
+                input.form.addEventListener('submit', function () {
+                    input.type = 'password';
+                    button.setAttribute('aria-pressed', 'false');
+                });
+            }
+        });
+
+        // New passwords: a live checklist of the app's own rules; the server still decides.
+        document.querySelectorAll('[data-password-rules]').forEach(function (list) {
+            var form = list.closest('form');
+            var password = form && form.querySelector('[name="' + list.getAttribute('data-password') + '"]');
+            var confirm = form && form.querySelector('[name="' + list.getAttribute('data-confirm') + '"]');
+            if (!password || !confirm) {
+                return;
+            }
+            var update = function () {
+                list.querySelectorAll('[data-rule]').forEach(function (rule) {
+                    var met = rule.getAttribute('data-rule') === 'length'
+                        ? Array.from(password.value).length >= Number(rule.getAttribute('data-min'))
+                        : password.value !== '' && password.value === confirm.value;
+                    rule.classList.toggle('is-met', met);
+                    rule.querySelector('[data-rule-state]').textContent = ': ' + list.getAttribute(met ? 'data-met' : 'data-unmet');
+                });
+            };
+            list.hidden = false;
+            password.addEventListener('input', update);
+            confirm.addEventListener('input', update);
+            update();
+        });
+
         // First-run setup: pre-select the browser's time zone.
         document.querySelectorAll('select[data-detect-timezone]').forEach(function (select) {
             var zone;

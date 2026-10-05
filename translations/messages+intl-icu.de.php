@@ -187,6 +187,13 @@ return [
         'login_link_lead' => 'Dieser Link meldet {username} einmal an. Er wurde auf der Kommandozeile des Servers erstellt.',
         'login_link_submit' => 'Als {name} anmelden',
         'login_link_used' => 'Mit einem einmaligen Link angemeldet, {name}.',
+        'password_reveal' => 'Passwort anzeigen',
+        'rules' => [
+            'length' => 'Mindestens {min} Zeichen',
+            'match' => 'Beide Passwörter stimmen überein',
+            'met' => 'erfüllt',
+            'unmet' => 'noch nicht',
+        ],
         'username_or_email' => 'Benutzername oder E-Mail',
         'forgot' => [
             'link' => 'Passwort vergessen?',

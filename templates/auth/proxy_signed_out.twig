@@ -10,6 +10,7 @@
 
 {% block content %}
     <div class="auth">
+        {{ ui.auth_brand() }}
         <section class="card auth__card" aria-labelledby="signed-out-heading" data-proxy-signed-out>
             <header class="auth__header">
                 <h1 id="signed-out-heading">{{ 'proxy.signed_out_title'|trans }}</h1>
