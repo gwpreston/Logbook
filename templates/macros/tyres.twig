@@ -76,38 +76,77 @@
     {%- endif -%}
 {%- endmacro %}
 
-{# One position of the On the vehicle grid: plain HTML, reads well to a screen reader. #}
-{% macro position_card(position, view, vehicle, standing = null) -%}
+{#
+ # One position of the Current tyres grid (spec.md §7.17, Phase 33.3): the
+ # position and its pill, the latest measured depth (never an assumed one),
+ # the tread bar once there are two measurements, the tyre, then when it was
+ # fitted, the distance and the estimate. Plain HTML, reads well to a screen
+ # reader: the bar is decorative, the depth says it in words.
+ #}
+{% macro position_card(position, view, vehicle, flags = []) -%}
     {% import _self as tyres %}
+    {% import 'macros/ui.twig' as ui %}
     <article class="tyre-card{{ view ? '' : ' tyre-card--empty' }}{{ position.value == 'spare' ? ' tyre-card--spare' }}" aria-labelledby="tyre-pos-{{ position.value }}">
-        <h3 class="tyre-card__position" id="tyre-pos-{{ position.value }}">{{ ('tyre.position.' ~ position.value)|trans }}</h3>
+        <div class="tyre-card__head">
+            <h3 class="tyre-card__position" id="tyre-pos-{{ position.value }}">{{ ('tyre.position.' ~ position.value)|trans }}</h3>
+            {% if not view %}
+                <span class="pill">{{ 'tyre.empty_position'|trans }}</span>
+            {% elseif flags is not empty %}
+                {% set top = flags|first %}
+                <span class="pill pill--{{ top.tone }}" data-testid="tyre-pill">{{ ui.icon(top.icon) }}{{ ('tyre.flag.' ~ top.key)|trans }}</span>
+            {% endif %}
+        </div>
         {% if view %}
             {% set tyre = view.tyre %}
-            <p class="tyre-card__name">
-                {%- if vehicle.isArchived() -%}
-                    {{ tyres.name(tyre) }}
-                {%- else -%}
-                    <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}" data-modal>{{ tyres.name(tyre) }}</a>
-                {%- endif -%}
-            </p>
-            <p class="tyre-card__meta">
-                {%- if tyre.data.size %}<span class="tabular">{{ tyre.data.size }}</span>{% endif %}
-                {{ tyres.season(tyre) }}
-            </p>
-            <dl class="tyre-card__figures">
-                <div><dt class="visually-hidden">{{ 'tyre.field.age'|trans }}</dt><dd>{{ tyres.age(view) }}</dd></div>
-                <div><dt class="visually-hidden">{{ 'tyre.field.distance'|trans }}</dt><dd class="tabular">{{ tyres.distance(view) }}</dd></div>
-                {% if view.wear.latest %}
-                    <div><dt class="visually-hidden">{{ 'tyre.field.tread'|trans }}</dt><dd class="tabular">{{ tyres.latest_depth(view) }}</dd></div>
+            {% set wear = view.wear %}
+            {% set tone = flags is not empty ? (flags|first).tone : '' %}
+            {% if wear.latest %}
+                <p class="tyre-card__depth{{ tone ? ' tyre-card__depth--' ~ tone }}">
+                    <span class="visually-hidden">{{ 'tyre.field.tread'|trans }}: </span><span class="tyre-card__depth-value tabular">{{ wear.latest.treadMm|depth }}</span>
+                    <span class="tyre-card__checked">{{ 'tyre.checked'|trans({date: wear.latest.doneOn|local_date}) }}</span>
+                </p>
+                {% set fill = wear.barPercent() %}
+                {% if fill is not null %}
+                    <span class="bar tyre-card__bar{{ tone ? ' tyre-card__bar--' ~ tone }}" aria-hidden="true" data-testid="tyre-bar"><span class="bar__fill" style="--w: {{ fill }}%"></span></span>
                 {% endif %}
-            </dl>
-            {% if view.wear.isKnown() %}
-                <p class="tyre-card__estimate"><span class="visually-hidden">{{ 'tyre.field.estimate'|trans }}: </span>{{ tyres.estimate(view) }}</p>
+            {% else %}
+                <p class="tyre-card__depth tyre-card__depth--none muted">{{ 'tyre.not_measured'|trans }}</p>
             {% endif %}
-            {% set flags = tyres.standing_flag(standing, view) %}
-            {% if flags|trim %}<p class="tyre-card__flags">{{ flags }}</p>{% endif %}
-        {% else %}
-            <p class="tyre-card__name muted">{{ 'tyre.empty_position'|trans }}</p>
+            <div class="tyre-card__tyre">
+                <p class="tyre-card__name">
+                    {%- if vehicle.isArchived() -%}
+                        {{ tyres.name(tyre) }}
+                    {%- else -%}
+                        <a href="{{ url_for('tyres.edit', {id: vehicle.id, tyre: tyre.id}) }}" data-modal>{{ tyres.name(tyre) }}</a>
+                    {%- endif %}
+                    {{ tyres.season(tyre) }}
+                </p>
+                <p class="tyre-card__meta">
+                    {%- if tyre.data.size %}<span class="tabular">{{ tyre.data.size }}</span> · {% endif -%}
+                    {{ tyres.age(view) }}
+                </p>
+            </div>
+            <div class="tyre-card__foot">
+                <p class="tabular">
+                    {%- if view.fittedOn %}{{ 'tyre.fitted_on'|trans({month: view.fittedOn|local_month}) }} · {% endif -%}
+                    {%- if view.since -%}
+                        {{ 'tyre.covered_since'|trans({distance: view.distance.km|distance, date: view.since|local_date}) }}
+                    {%- else -%}
+                        {{ 'tyre.covered'|trans({distance: view.distance.km|distance}) }}
+                    {%- endif -%}
+                    {%- if view.distance.flagged %} <span class="tyre-flag" title="{{ 'tyre.flag_label'|trans }}">{{ ui.icon('warning') }}<span class="visually-hidden">{{ 'tyre.flag_label'|trans }}</span></span>{% endif -%}
+                </p>
+                {% if wear.isKnown() %}
+                    <p class="tyre-card__estimate"><span class="visually-hidden">{{ 'tyre.field.estimate'|trans }}: </span>{{ tyres.estimate(view) }}</p>
+                {% endif %}
+                {% if flags|length > 1 %}
+                    <p class="tyre-card__flags">
+                        {%- for flag in flags|slice(1) -%}
+                            <span class="pill pill--{{ flag.tone }}">{{ ui.icon(flag.icon) }}{{ ('tyre.flag.' ~ flag.key)|trans }}</span>
+                        {%- endfor -%}
+                    </p>
+                {% endif %}
+            </div>
         {% endif %}
     </article>
 {%- endmacro %}

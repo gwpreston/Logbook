@@ -29,7 +29,22 @@ final readonly class TyreOverview
         public array $sets,
         /** The tyres judged as one: the tab badge, and what the tyre reminder says. */
         public TyreVerdict $verdict = new TyreVerdict(DueStatus::Unknown),
+        /** The owner's replace-at for this vehicle type, mm (a car's non-winter value): the note under the cards. */
+        public string $replaceAtMm = TyreThresholds::DEFAULT_CAR_REPLACE_MM,
+        /** The owner's legal minimum for this vehicle type, mm. */
+        public string $legalMm = TyreThresholds::DEFAULT_CAR_LEGAL_MM,
     ) {
+    }
+
+    /**
+     * A tyre's card flags, most severe first (Phase 33.3): the pill and the
+     * others listed under it.
+     *
+     * @return list<TyreCardFlag>
+     */
+    public function flags(TyreView $view): array
+    {
+        return TyreCardFlag::of($this->verdict->standing($view->tyre->id), $view);
     }
 
     /**

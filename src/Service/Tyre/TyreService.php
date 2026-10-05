@@ -109,7 +109,19 @@ final readonly class TyreService
             $change->data->maintenanceEntryId === null ? null : ($records[$change->data->maintenanceEntryId] ?? null),
         ), $changes);
 
-        return new TyreOverview($fitted, $stored, $retired, $listed, $sets, $this->judge($vehicle, $user, $views));
+        $thresholds = $this->settings->thresholds($user->id);
+        $type = $vehicle->data->type;
+
+        return new TyreOverview(
+            $fitted,
+            $stored,
+            $retired,
+            $listed,
+            $sets,
+            $this->judge($vehicle, $user, $views),
+            $thresholds->replaceAt($type, null),
+            $thresholds->legalMinimum($type),
+        );
     }
 
     /**
@@ -325,11 +337,15 @@ final readonly class TyreService
             $byId[$change->id] = $change;
         }
         $retiredOn = [];
+        $placedBy = [];
         $ordered = $changes;
         usort($ordered, TyreChange::compare(...));
         foreach ($ordered as $change) {
             foreach ($change->linesOf(TyreLineAction::Retire) as $line) {
                 $retiredOn[$line->tyreId] = $change->data->doneOn;
+            }
+            foreach ([...$change->linesOf(TyreLineAction::On), ...$change->linesOf(TyreLineAction::Move)] as $line) {
+                $placedBy[$line->tyreId] = $change;
             }
         }
 
@@ -359,10 +375,23 @@ final readonly class TyreService
                 costPerKm: $this->costPerKm($tyre, $fitting, $records, $distance),
                 wear: $wear,
                 ageLimitOn: $tyre->isRetired() ? null : $thresholds->ageLimitOn($made),
+                fittedOn: self::fittedOn($tyre, $placedBy[$tyre->id] ?? null),
             );
         }
 
         return $views;
+    }
+
+    /**
+     * When a fitted tyre was put where it is now: its latest `on` or `move`
+     * (spec.md §7.17, Phase 33.3); null when not fitted or when that was the
+     * tyres already on the vehicle, counted "since" instead.
+     */
+    private static function fittedOn(Tyre $tyre, ?TyreChange $placedBy): ?DateTimeImmutable
+    {
+        return $tyre->isFitted() && $placedBy !== null && $placedBy->kind !== TyreChangeKind::Existing
+            ? $placedBy->data->doneOn
+            : null;
     }
 
     /**

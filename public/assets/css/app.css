@@ -4654,9 +4654,10 @@ a.list__title:hover {
  * Phase 11.1: tyres.
  * ------------------------------------------------------------------------- */
 
-/* On the vehicle: a card per position. A car's four road wheels form a
- * 2 × 2 grid (front row first) with the spare across the bottom; a bike's
- * front and rear sit side by side. Plain HTML, not a drawing. */
+/* Current tyres (Phase 33.3, was On the vehicle): a card per position. A
+ * car's four road wheels form a 2 × 2 grid (front row first) with the spare
+ * across the bottom; a bike's front and rear sit side by side. Plain HTML,
+ * not a drawing. */
 .tyre-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4666,9 +4667,9 @@ a.list__title:hover {
 .tyre-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-2);
     min-width: 0;
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-4);
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -4683,6 +4684,110 @@ a.list__title:hover {
     background: transparent;
 }
 
+/* The position and its status pill on one row. */
+.tyre-card__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+/* The latest measured depth, large, coloured by the pill's status. */
+.tyre-card__depth {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+    margin: 0;
+}
+
+.tyre-card__depth-value {
+    font-family: var(--font-display);
+    font-size: var(--fs-display);
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.tyre-card__depth--valid .tyre-card__depth-value {
+    color: var(--green);
+}
+
+.tyre-card__depth--soon .tyre-card__depth-value {
+    color: var(--amber);
+}
+
+.tyre-card__depth--overdue .tyre-card__depth-value {
+    color: var(--red);
+}
+
+.tyre-card__depth--none {
+    font-size: var(--fs-sm);
+}
+
+.tyre-card__checked {
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+/* First measured depth (full) down to the legal minimum (empty). */
+.tyre-card__bar {
+    height: 0.5rem;
+    background: var(--surface);
+}
+
+.tyre-card__bar--valid {
+    --swatch: var(--green);
+}
+
+.tyre-card__bar--soon {
+    --swatch: var(--amber);
+}
+
+.tyre-card__bar--overdue {
+    --swatch: var(--red);
+}
+
+.tyre-card__tyre {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* When it was fitted, the distance and the estimate, under a hairline. */
+.tyre-card__foot {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: auto;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.tyre-card__foot p {
+    margin: 0;
+}
+
+.tyre-card__estimate {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.tyre-card__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    padding-top: var(--space-1);
+}
+
+.tyre-note {
+    margin: var(--space-3) 0 0;
+    font-size: var(--fs-sm);
+}
+
 .tyre-card__position {
     color: var(--muted);
     font-family: var(--font-sans);
@@ -4693,6 +4798,10 @@ a.list__title:hover {
 }
 
 .tyre-card__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
     margin: 0;
     font-weight: 700;
     overflow-wrap: anywhere;
@@ -4706,18 +4815,6 @@ a.list__title:hover {
     margin: 0;
     color: var(--muted);
     font-size: var(--fs-sm);
-}
-
-.tyre-card__figures {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-    margin: 0;
-    font-size: var(--fs-sm);
-}
-
-.tyre-card__figures dd {
-    margin: 0;
 }
 
 .tyre-flag {

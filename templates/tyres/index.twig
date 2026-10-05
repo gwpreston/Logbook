@@ -3,7 +3,7 @@
 {% import 'macros/tyres.twig' as tyres %}
 
 {#
- # The Tyres tab (spec.md §7.17): on the vehicle (a card per position), in
+ # The Tyres tab (spec.md §7.17): current tyres (a card per position), in
  # storage by set, retired (folded away) and every change. Archived vehicles
  # are read-only here; their changes stay editable.
  #}
@@ -28,8 +28,9 @@
                 {% if not archived and not overview.isEmpty() %}
                     <details class="menu">
                         <summary class="btn">{{ ui.icon('tune') }}{{ 'tyre.more'|trans }}</summary>
-                        {{ tyres.change_links(vehicle, kinds, ['fit']) }}
+                        {{ tyres.change_links(vehicle, kinds, ['fit', 'check']) }}
                     </details>
+                    <a class="btn" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'check'}) }}" data-modal>{{ ui.icon('fact_check') }}{{ 'tyre.kind.check'|trans }}</a>
                     <a class="btn btn--primary" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'fit'}) }}" data-modal>{{ ui.icon('add') }}{{ 'tyre.kind.fit'|trans }}</a>
                 {% endif %}
             </div>
@@ -59,13 +60,17 @@
             {% endif %}
 
             <section class="card" aria-labelledby="tyres-fitted">
-                <h2 id="tyres-fitted" class="card__title">{{ 'tyre.section.fitted'|trans }}</h2>
+                <h2 id="tyres-fitted" class="card__title">{{ 'tyre.section.current'|trans }}</h2>
                 <div class="tyre-grid tyre-grid--{{ vehicle.data.type.value }}">
                     {% for position in vehicle.data.type.tyrePositions() %}
                         {% set view = overview.at(position) %}
-                        {{ tyres.position_card(position, view, vehicle, view ? overview.verdict.standing(view.tyre.id) : null) }}
+                        {{ tyres.position_card(position, view, vehicle, view ? overview.flags(view) : []) }}
                     {% endfor %}
                 </div>
+                <p class="tyre-note muted" data-testid="tyre-thresholds">
+                    {{ 'tyre.thresholds_note'|trans({replace: overview.replaceAtMm|depth, legal: overview.legalMm|depth}) }}
+                    {{ 'tyre.settings.legal_hint'|trans }}
+                </p>
             </section>
 
             <section class="card" aria-labelledby="tyres-stored">

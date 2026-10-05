@@ -122,7 +122,7 @@ the audit and the owner's decisions:
       type; claims history stats, list and *Copy for insurance quote*.
 
 ### 33.3.7 Tyres
-- [ ] *Current tyres* replacing *On the vehicle*: pill, depth, bar,
+- [x] *Current tyres* replacing *On the vehicle*: pill, depth, bar,
       *Fitted*, the note, *Check tread* button.
 
 ### 33.3.8 Tests
@@ -137,7 +137,7 @@ the audit and the owner's decisions:
 - [x] *Insights*: each kind appears from its fixture and never without
       `ViewCosts` for a cost insight; module off removes its insights;
       nothing when there's nothing to say.
-- [ ] *Current tyres* shows each fitted position with estimate labels, car
+- [x] *Current tyres* shows each fitted position with estimate labels, car
       and motorbike; the bar only with two measurements.
 - [x] Incidents: breakdown type; stats respect detail and cost access.
 - [ ] Integration suite green on every engine; design-reviewer clean of

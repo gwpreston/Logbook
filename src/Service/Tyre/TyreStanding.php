@@ -25,7 +25,22 @@ final readonly class TyreStanding
         public ?DateTimeImmutable $dueOn = null,
         /** The wear-out odometer (wear only). */
         public ?string $dueKm = null,
+        /**
+         * Its other known standings, less urgent (Phase 33.3: a worn tyre can
+         * be over its age limit too, and the card lists both).
+         *
+         * @var list<TyreStanding>
+         */
+        public array $others = [],
     ) {
+    }
+
+    /**
+     * @param list<TyreStanding> $others
+     */
+    public function withOthers(array $others): self
+    {
+        return new self($this->view, $this->status, $this->reason, $this->dueOn, $this->dueKm, $others);
     }
 
     public function isKnown(): bool

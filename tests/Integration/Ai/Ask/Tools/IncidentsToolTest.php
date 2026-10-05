@@ -12,6 +12,7 @@ use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\IncidentData;
 use Logbook\Domain\Incident\IncidentType;
 use Logbook\Repository\IncidentRepository;
+use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Ai\Draft\DraftStore;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -81,6 +82,36 @@ final class IncidentsToolTest extends ToolsBTestCase
         self::assertSame(IncidentType::Pothole, $saved[0]->data->type);
         self::assertSame([DamageArea::Wheels], $saved[0]->data->damageAreas);
         self::assertSame('Direct Line', $saved[0]->data->claim->insurer, 'the policy current on the date');
+    }
+
+    public function testTheDraftToolListsEveryIncidentTypeIncludingBreakdown(): void
+    {
+        [$app, $owner] = $this->askApp();
+        $golf = $this->vehicle($app);
+        $this->assertSchemaAccepts($app, $owner, 'draft_incident', ['vehicle' => $golf->id, 'type' => 'breakdown']);
+
+        $definition = null;
+        foreach ($this->service($app, ToolRegistry::class)->definitions($owner) as $offered) {
+            if ($offered->name === 'draft_incident') {
+                $definition = $offered;
+            }
+        }
+        self::assertNotNull($definition);
+        $types = new JsonDoc($definition->parameters);
+        self::assertSame(
+            array_map(static fn (IncidentType $type): string => $type->value, IncidentType::cases()),
+            $types->get('properties', 'type', 'enum'),
+        );
+        self::assertStringContainsString('breakdown', $definition->description);
+        self::assertStringContainsString('parked damage', $definition->description);
+
+        $card = new JsonDoc($this->toolResult($app, $owner, 'draft_incident', [
+            'vehicle' => $golf->id,
+            'type' => 'breakdown',
+        ])->data);
+        $this->service($app, DraftStore::class)->apply($owner, $card->int('draft_id'));
+        $saved = $this->service($app, IncidentRepository::class)->listForVehicle($golf->id);
+        self::assertSame(IncidentType::Breakdown, $saved[0]->data->type);
     }
 
     public function testTheModuleOffHidesBothTools(): void
