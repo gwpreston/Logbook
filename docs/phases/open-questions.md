@@ -225,6 +225,10 @@ it) were answered on 2026-10-05, before it was built.
 | 163 | [33.1](phase-33.1.md) | Addresses already in the notification preferences: confirmed? (found while starting) | Decided | Yes, on upgrade (spec §6 User). | 2026-10-05 |
 | 164 | [33.1](phase-33.1.md) | What a pending address is used for (found while starting) | Decided | Nothing; the old confirmed address stays in use (spec §7.9 *Email addresses*). | 2026-10-05 |
 | 165 | [33.1](phase-33.1.md) | Addresses from outside the profile form (found while starting) | Decided | Confirmed without a link: *Add user* once its link is used, OIDC with `email_verified`, the proxy, the sample users (spec §7.9 *Email addresses*). | 2026-10-05 |
+| 166 | [33.2](phase-33.2.md) | Settings as sections with their own URLs? (found by the audit) | Decided | No: one page, regrouped, with in-page anchors, as the prototype draws it (spec §8 *Settings layout*). | 2026-10-05 |
+| 167 | [33.2](phase-33.2.md) | User management pages the prototype doesn't draw (found by the audit) | Decided | Restyled with the shared card, list-row and button styles; controls unchanged (spec §8). | 2026-10-05 |
+| 168 | [33.2](phase-33.2.md) | New things in the prototype's Settings and sign-in | Parked | Webhook formats, *Send at*, *Frequency*, *Reset dashboard layout*, a Settings expenses export, a self-service *Reset password*, a letter-and-number rule (spec §12). | 2026-10-05 |
+| 169 | [33.2](phase-33.2.md) | Keep any Settings link where it is? | Decided | No: the draft grouping as it stands (spec §8 *Settings layout*). | 2026-10-05 |
 
 ## Other loose ends found in the review
 

@@ -3,7 +3,7 @@
 *The first page anyone sees and the page everyone configures from, drawn
 the way the design says.*
 
-Status: 📋 planned · no release of its own (ships with Phase 33.4 as
+Status: 🚧 in progress · no release of its own (ships with Phase 33.4 as
 **v3.0.0**) · file lives in `docs/phases/`
 
 The prototype in `design-import/` has new designs for the sign-in,
@@ -351,8 +351,22 @@ another app, API keys, and every admin and installation link.
 
 ## Open questions
 
-- **Settings grouping:** the cards and names above are a draft; the
-  prototype's win where they differ. Does the owner want any link kept
-  where it is today?
-- **Anything new in the prototype's Settings** (settings the app doesn't
-  have) is listed here by task 33.2.1 for a decision.
+All decided by the owner on 2026-10-05, after the prototype audit and
+before any code ([`open-questions.md`](open-questions.md) #166–#169).
+
+- **Settings structure** (found by the audit: the prototype draws one
+  page with no section navigation): *Decided 2026-10-05 (#166):* one
+  page, regrouped as the draft, with in-page anchors; no section
+  sub-pages. Every linked page keeps its URL (spec §8 *Settings layout*).
+- **User management pages** (found by the audit: not in the prototype):
+  *Decided 2026-10-05 (#167):* restyled with the shared card, list-row and
+  button styles; controls unchanged.
+- **Anything new in the prototype's Settings and sign-in:** *Decided
+  2026-10-05 (#168):* parked in spec §12, none built: Gotify / Home
+  Assistant / generic-webhook formats, *Send at*, *Frequency*, *Reset
+  dashboard layout*, *Export expenses (CSV)* on Settings, a self-service
+  *Reset password* button, a "letter and a number" password rule.
+- **Settings grouping:** *Decided 2026-10-05 (#169):* the draft grouping
+  as it stands; no link kept where it is today. The display name stays in
+  the preferences form it is saved with; backup and restore sits under
+  *Your data* (spec §8).

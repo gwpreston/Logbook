@@ -2175,6 +2175,23 @@ toggles.
 Username/password login, Argon2id, secure sessions, logout, change password.
 First-run setup creates the initial account. CSRF on all forms.
 
+- **Signed-out pages** (Phase 33.2, from the prototype): sign-in,
+  forgotten password, reset password, setup, invitation, welcome,
+  break-glass, the proxy signed-out page and email confirmation share one
+  layout: the Logbook mark and wordmark centred above one card (setup and
+  invitation keep a wider card for their longer form), 48 px fields and a
+  full-width primary button. Errors stay tied to their fields and are
+  announced; the form's summary is a banner in the card. Every password
+  field gets a show/hide button added by JS (`aria-pressed`, labelled,
+  keyboard-operable); without JS it is a plain field. New-password forms
+  show a live checklist of the app's own rules (at least 8 characters;
+  both entries match), JS only; the server still decides. Behaviour and
+  wording rules are unchanged (no account enumeration; the SSO button
+  above the password form; only the button with local sign-in off; sign-in
+  by username or email, #162; reset links last 60 minutes, #159; a reset
+  signs the user straight in, so there is no separate *Password updated*
+  page).
+
 - **First run:** while no user exists every page redirects to `/setup`, which
   creates the first account, an **admin** (username, password, display
   name, locale, time zone, unit preset, currency) and signs it in. Once a
@@ -6514,6 +6531,51 @@ it replaces none of the other figures.
   a switched-off module count for nothing, and with the reminders module
   off there is no badge and no dots. The same counts drive the garage and
   dashboard "N due" badges.
+- **Sidebar order** (Phase 33.2): Dashboard, Garage, Reminders, Reports,
+  Fuel stations (module on), Ask (AI on), **Settings**, then the
+  *Vehicles* list. The mobile bottom navigation keeps its slots and its
+  order; only its labels follow the rename below.
+- **Fuel stations** (Phase 33.2): the module and its pages are called
+  *Fuel stations* (de *Tankstellen*) everywhere a person reads it:
+  sidebar, bottom navigation, page titles, Settings → Modules,
+  breadcrumbs. Route names, URLs (`/stations`) and the module key
+  (`stations`) are unchanged, so links and API clients keep working.
+- **Settings layout** (Phase 33.2, from the prototype): one page,
+  `/settings`, in one column at most 45 rem wide, of cards in the shared
+  card style, under group headings that are also in-page anchors. There is
+  no section navigation and no per-section URL; every page Settings links
+  to keeps its URL. Groups, in order, each card shown only to those who can
+  use it:
+  - **Account** (`#account`): who is signed in (avatar or initial, name,
+    username, confirmed address) with *Sign out*; email address; avatar;
+    password; single sign-on; *Use AI*.
+  - **Preferences** (`#preferences`): one form with one *Save*: profile
+    (display name, saved with the rest as before), appearance, units and
+    currency, region, preview.
+  - **Reminders and notifications** (`#reminders`, reminders on): the
+    link to *Settings → Reminders* (lead times, channels, digest, calendar
+    feed). Nothing else.
+  - **Vehicles and driving** (`#driving`): tyre thresholds (tyres on),
+    trips and mileage claims (trips on), places (fuel stations on); absent
+    when none is on.
+  - **Your data** (`#data`): import from another app (fuel on), backup
+    and restore (admins).
+  - **Developers** (`#developers`): API keys (and MCP, which uses them).
+  - **Administration** (`#admin`, admins): users, modules, AI
+    connections, fuel prices.
+  - **Installation** (`#installation`): version, health, scheduled jobs
+    and updates (admins), deep-link check.
+
+  The user management pages, *Settings → Reminders* and the other linked
+  pages use the same card, list-row (icon tile, title, hint) and button
+  styles; their controls are unchanged.
+- **Unit presets** (Phase 33.2): each *Quick setup* preset (Metric, UK,
+  US) is `aria-pressed="true"` when the four unit fields match it exactly
+  (`UnitPreset::matching()`, on the server for the first render, and again
+  in JS whenever a field changes) and `false` otherwise, none pressed when
+  the units are mixed. Pressed uses the chip's selected style; every
+  preset has the chip's hover and `:focus-visible` styles in both themes
+  and every accent. Without JS the presets stay hidden.
 - **Two-column layouts:** one grid utility (`.split`) puts two cards side by
   side at 50/50 on wide screens and stacks them on narrow ones: the Fuel
   tab's *Economy trend* | *Price trend* and Reports' *By category* | *By
@@ -6800,6 +6862,12 @@ Real environment variables override `.env`; an empty value counts as unset.
   (decided 2026-10-04, #147; waiting for an export that contains trips,
   since the sample has none to build and test against). Drivvo, Tesla
   and ABRP readers.
+- From the Phase 33.2 prototype (decided 2026-10-05, #168): Gotify, Home
+  Assistant and generic-webhook formats for reminder pushes; a *Send at*
+  time and a *Frequency* for reminder delivery; *Reset dashboard layout*;
+  one *Export expenses (CSV)* on Settings; a *Reset password* button on
+  the Account card that emails the user a link; a "letter and a number"
+  password rule.
 
 ---
 
@@ -7163,6 +7231,17 @@ task breakdowns live in the per-phase files; this is the map.
   `--with-sample-data` run (§6 User, Invitation, §7.9, §7.11, §9, §10).
   No release of its own: ships with 33.4 as v3.0.0.
 
+- **Phase 33.2 — Sign-in and Settings to the prototype, and the
+  sidebar.** One signed-out layout from the prototype (the mark above one
+  card) for sign-in, forgotten and reset password, setup, invitation,
+  welcome, break-glass, the proxy signed-out page and email confirmation,
+  with a show/hide password control and a live checklist of the app's own
+  password rules; Settings regrouped into Account, Preferences, Reminders
+  and notifications, Vehicles and driving, Your data, Developers,
+  Administration and Installation on one page; unit presets that show
+  hover, focus and which preset matches; *Fuel stations* everywhere and
+  *Settings* below *Ask* in the sidebar (§7.9, §8). No migration. No
+  release of its own: ships with 33.4 as v3.0.0.
 ---
 
 ## 14. Definition of done
