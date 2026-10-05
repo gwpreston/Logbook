@@ -71,9 +71,10 @@ and §8 first, and the *Working from the prototype* section of
 
 ### §7.22 Trips (changed)
 
-> **Business and personal** card (trips module on; the vehicle's trips
-> tab): for the period chosen on the page (default the current UK tax
-> year for GB users, otherwise the calendar year; as the claim report):
+> **Business and private** card (the prototype's *Business and
+> personal*; *private* is the app's word throughout) (trips module on; the vehicle's trips
+> tab): for the user's current tax year (their tax year start, spec §6
+> *Trip settings*; as the claim report):
 >
 > - *Business* = the distance of the vehicle's business trips in the
 >   period;
@@ -85,7 +86,9 @@ and §8 first, and the *Working from the prototype* section of
 > When business is more than the distance driven (readings missing), the
 > card says so and links to the Mileage tab instead of showing a negative
 > personal figure. Without distance driven in the period: "Not enough
-> readings this year". Destinations never appear on it.
+> readings this year". A viewer who can't see every driver's business
+> trips sees the distance driven only, with no split (as the tab does
+> today). Destinations never appear on it.
 >
 > **Your vehicles** on the trips page: cards three to a row from the
 > sidebar breakpoint (≥ 960 px), two on tablets, one on phones, same card
@@ -133,10 +136,10 @@ and §8 first, and the *Working from the prototype* section of
       audit settles the details; §13 entry.
 
 ### 33.3.1 Prototype audit
-- [ ] *Prototype notes* for: the vehicle header on two tabs, overview
+- [x] *Prototype notes* for: the vehicle header on two tabs, overview
       *Insights*, trips (*Business and personal*, *Your vehicles*),
       incidents (tab and incident page), finance, tyres *Current tyres*.
-- [ ] For *Insights*: map each example in the prototype to an existing
+- [x] For *Insights*: map each example in the prototype to an existing
       figure, or list it as an open question.
 - [ ] For finance: confirm which prototype content the brief means (see
       open questions).
@@ -182,7 +185,173 @@ and §8 first, and the *Working from the prototype* section of
 
 ## Prototype notes
 
-*Filled in by task 33.3.1.*
+Audited 2026-10-05 against `design-import/Logbook.dc.html` (line numbers
+are that file's). Sorted as in Phase 33.2: **L** layout and style (build),
+**H** behaviour or data the app has (build from existing services), **N**
+new (not built; see *Open questions*), **K** kept as the app does it
+because an earlier decision or spec rule says so.
+
+### Vehicle header (every tab; l.389–434)
+
+The prototype draws the same header on every tab; nothing in it changes
+with the tab.
+
+- **L** Name: Outfit 28 px, 600, -.02em, margin 8 px 0 2 px (l.411), the
+  app's global `h1`. The app shows that on Overview and `--fs-xl` (20 px)
+  on every other tab (`.vehicle-hero__name`). Build: one style at
+  `--fs-3xl`.
+- **L** The prototype has **no per-tab title**: tab content starts with
+  cards titled by 17 px `<h3>`s. The app's tabs have a 26 px
+  `section-title` `<h1>`, which would then sit under a 28 px name (#180).
+- **L** Tab order: … Documents, **Incidents, Finance, Expenses**, Cost of
+  ownership, Sale pack (l.1677). The app has … Documents, Expenses,
+  Incidents (#179).
+- **L** Tab icons: Overview `dashboard` (app `space_dashboard`), Documents
+  `description` (app `verified_user`), Finance `account_balance`.
+- **K** Tab labels *History* and *Maintenance* (the prototype's
+  *Timeline* and *Service*); header actions Sharing, Prepare for sale and
+  Delete (the prototype has no sharing or permissions).
+- **K** Sale pack and Cost of ownership as tabs are not in this phase
+  (Cost of ownership is 33.4).
+- **L** A four-tile stat strip under the tabs on Overview, Mileage, Fuel,
+  Trips, Incidents (none on Finance). Built in this phase only for Trips
+  and Incidents, from existing figures.
+
+### Overview *Insights* (l.312–322, l.958–985, `insights()` l.1552–1569)
+
+- **Not on the vehicle overview.** The prototype's vehicle Overview
+  (l.436–464) has *Coming up* and *Recent activity* only. Insights appear
+  as a **dashboard widget** (the first 2, fleet-wide, not filtered by the
+  vehicle chip; "All insights") and an **Insights page** in the nav
+  (`auto_awesome`, "Patterns and AI answers") with *Ask Logbook* above
+  every insight card (#178).
+- **K** Every insight is a computed template string; only *Ask* uses a
+  model (#175 obsolete).
+- **L** Widget row: whole-row button, 36 px tone tile, title 14 px bold,
+  body 12.5 px muted clamped to 2 lines; empty "Nothing stands out right
+  now." Page card: 40 px tile, 15/13.5 px, accent action link with
+  `arrow_forward`; grid min 380 px.
+
+The prototype's seven insights, in its order, against the app:
+
+| # | Prototype | App | Sort |
+|---|---|---|---|
+| 1 | Tyre at x mm, reaches the legal limit in about y | `TyreWearEstimate` (to *replace at*, not legal) | **K**, duplicate of *Needs attention* / *Coming up*: left out |
+| 2a | Economy down x % (3 months against 12, ≥ 4 %) | `EconomyDrift` (5 tanks, 10 %/15 %) | **K**, duplicate of *Needs attention*: left out |
+| 2b | Economy up x % | none: an improvement is never flagged (§7.24) | **N** (#174) |
+| 3 | About £x due in the next 3 months, converted | *Coming up* (12 months, per currency) | **K**, duplicate: left out |
+| 4 | Save about £x a year on fuel at the cheapest nearby | none; *Shopping around* is realised, not projected | **N** (#174) |
+| 5 | £x claimable in business mileage this tax year | `ClaimReportService::thisYear` | **H** (rates and tax year the app's, **K**) |
+| 6 | {vehicle} is your cheapest to run, converted | `VehicleCost::costPerKm` | **H** among same-currency vehicles only (**K**); fleet only |
+| 7 | {vehicle} has about £x of equity (15 %/yr estimate) | `Finance\Equity` with a valuation | **H**; **K** no estimate: no valuation, no insight |
+
+The draft's other sources (fuel by grade, *What changed*, finance
+mileage allowance, *Shopping around*) have no prototype example (#174).
+
+### Finance (tab; l.671–701, sheet l.1122–1136)
+
+- **L** A tab, `account_balance`, between Incidents and Expenses; no stat
+  tiles. With the shared vehicle header (today `finance/index.twig` has
+  its own back link and `<h1>`).
+- **L** Empty: one card, 44 px accent-soft tile, "How did you buy it?",
+  a lead, an accent-soft add button. **K** Wording to the app's scope (HP,
+  PCP, loan, lease; no "purchase" record).
+- **L** With an agreement, a grid (min 340 px) of cards:
+  1. **Agreement:** type as title, lender · agreement number under it,
+     *Edit*; *Monthly payment* as a 32 px figure; a 10 px progress bar
+     "Payment k of n · Ends {Mon YYYY}"; two tiles *Paid so far* and
+     *Still to pay*; hairline key/value rows (deposit, amount borrowed,
+     APR, term, optional final payment, total interest, total payable); an
+     end note.
+  2. **Purchase:** price, date, mileage when bought, seller, how paid
+     (#182).
+  3. **Value & equity:** current value, settlement (est.), equity.
+- **H** Monthly payment, payment k of n, end date, still to pay, deposit,
+  amount of credit, APR, optional final payment, total payable,
+  settlement, equity: all existing figures. *Paid so far* is
+  `AgreementFigures::paidTotal()`, existing but not shown today.
+- **K** *Still to pay* for PCP shows the optional final payment beside the
+  remaining amount, not inside it (§7.32). *Total interest* is the app's
+  *Cost of credit*. The payment is typed and checked, never computed from
+  the APR as the prototype's sheet does. The value is the latest valuation:
+  no 15 %-a-year estimate (§7.1 "There is no depreciation curve"). The
+  prototype's combined *Add purchase & finance* sheet: the app keeps the
+  vehicle form and the finance form. Finance stays out of History.
+- **H** Kept, not drawn: loan and lease, mileage allowance, half-paid
+  point, schedule with marks, extras, quotes, End, CSV, print, warnings,
+  earlier agreements (#181).
+- **N** Seller and mileage when bought are not stored (#182). The PCP end
+  note "you can pay … and keep it, hand it back, or part-exchange" is new
+  wording against §7.32's "nothing recommends" (#183).
+
+### Trips tab (l.485–502, JS l.1699–1702)
+
+- **K** The prototype's *Personal* is the sum of logged non-business
+  trips; the app's private is distance driven minus business (Phase 22,
+  `MileageSplit`), as drafted.
+- **H** Period: the prototype hard-codes the UK tax year with no picker;
+  the app already has each user's tax year start (§6 *Trip settings*,
+  §7.23) and the tab uses it (#176 answered).
+- **H** The app's *exceeds* warning and *total only* view (a viewer who
+  can't see other drivers' trips sees distance driven only, no split)
+  stay; the draft now says so.
+- **L** Bar 14 px, business accent, private `--c-other`, legend with
+  swatches; whole percents that add to 100 (round business, private =
+  100 − business); bar `aria-hidden`, text carries the figures.
+- **K** "Private", the app's word everywhere, not "Personal": the card is
+  *Business and private*.
+- **K** Claim value at the user's rate sets, not hard-coded HMRC; no
+  hard-coded rate note.
+- **H** Stat strip: Business, Private, Claim value, Trips (count this tax
+  year).
+- **L** *Log trip* and *Export CSV* may move into the card header.
+- **"Your vehicles":** not on trips anywhere. The prototype has no fleet
+  trips page and no vehicles card on the trips tab. *Your vehicles* is
+  the dashboard widget (l.237–255, one scrolling row of 220 px tiles); the
+  only "three to a row" grid is the garage (l.361), which the app's
+  `.vehicle-grid` already matches (#177).
+
+### Incidents (tab l.651–669, l.1711–1715; sheet l.1136–1190; claims l.907–920)
+
+- **L** A card grid (min 320 px) in place of the list; whole card links to
+  the incident page. An icon per type (mapping on the enum). A status pill
+  from `claim_status` ("Claim open", "Claim settled", "No claim", …) with
+  the app's other badges kept. A two-column meta grid: fault, insurer,
+  insurer paid, net cost.
+- **H** Location and description on the card, only where `IncidentView`
+  gives them (detail fields). Stat strip: incidents, claims ("n at
+  fault" when fault is visible), insurer paid and net cost (`ViewCosts`,
+  per currency).
+- **K** The prototype's *Your cost = repair cost + excess*: the app's cost
+  is the net of linked records less payouts; the excess is a detail.
+  No cost field on the incident. Claim on/off is `claim_status`; the
+  description stays optional; open incidents first; the app's extra
+  types, faults and statuses; damage, severity, *added by*, paperclip.
+- **K** The prototype has **no incident page** (a card opens the edit
+  sheet). The app's page (linked records, costs, photos, *Update from a
+  letter*, reminder) stays and is laid out in the prototype's card
+  language: a header with the type tile, title, "date · location", the
+  pill; the description first; the meta grid in place of the `dl`.
+- **H** Claims history: stat tiles (claims in 5 years, since last fault
+  claim, paid by insurers, excess paid); rows as a list on screen, the
+  table kept for print and CSV.
+- **N** A *Breakdown* type; *Copy for insurance quote* (#185).
+
+### Tyres *Current tyres* (l.602–619, `tyreState` l.1520–1524)
+
+- **L** Title *Current tyres*; per position: uppercase muted label and
+  status pill on one row, the depth large, a bar, brand over size, then a
+  hairline and footer lines. Two columns; *Tread check* as a visible
+  button beside *Fit tyres*.
+- **H** Pill from `TyreJudgement`/legal flags, text and icon. Depth is the
+  latest measurement with "Checked {date}". Distance covered.
+- **K** No assumed depth when nothing is measured (the prototype shows 8 or
+  6 mm); the estimate is the app's to *replace at*, labelled "about", not
+  "≈ to legal limit". The spare, age from DOT and season stay. No
+  hard-coded UK note (#11).
+- **N** The bar's full scale: the prototype divides by an assumed new
+  depth (#184). "Fitted {month}" (derived from changes but not in
+  `TyreView`) and a thresholds note from the user's settings (#185).
 
 ---
 
@@ -200,16 +369,49 @@ and §8 first, and the *Working from the prototype* section of
 
 ## Open questions
 
-- **Finance bullet:** the brief's line under "Move finance" repeats the
-  incidents wording ("Review the content of incidents content…").
+Numbers are the log's ([`open-questions.md`](open-questions.md)).
+
+- **#173 Finance bullet:** the brief's line under "Move finance" repeats
+  the incidents wording ("Review the content of incidents content…").
   Drafted as meaning the prototype's **finance** content. Correct?
-- **Insights the app can't back:** any prototype insight without an
-  existing figure (listed by 33.3.1). Build the figure in a later phase,
-  or leave it out?
-- **Insights from AI?** If the prototype's insights read as generated
-  text, the draft still computes them; a model-written version would sit
-  behind the AI module (§7.25) and its grounding check. Wanted?
-- **Business and personal period:** tax year for GB users and calendar
-  year otherwise (drafted), or a period picker?
-- **"Your vehicles" on trips:** the brief places it in the trip content.
-  Is it the fleet trips page, or a card on each vehicle's trips tab?
+  *Needs a decision.*
+- **#174 Insights the app can't back:** *economy up*, a 3-month cost
+  outlook and a yearly fuel saving against the cheapest nearby station
+  have no figure today; the draft's fuel by grade, *What changed*,
+  mileage allowance and *Shopping around* have no prototype example.
+  Build the figures in a later phase, or leave them out? *Needs a
+  decision.*
+- **#175 Insights from AI?** *Obsolete:* the prototype's insights are
+  computed template strings; only *Ask* uses a model, and that is
+  [33.4](phase-33.4.md).
+- **#176 Business and personal period:** *Answered:* the user's tax year
+  start (spec §6 *Trip settings*, §7.23), which the trips tab already uses;
+  the prototype has no picker. The draft now says "the user's current
+  tax year".
+- **#177 "Your vehicles" on trips:** the prototype has it on neither a
+  fleet trips page nor the trips tab: it is the dashboard widget, and the
+  only three-to-a-row grid is the garage, which the app already matches.
+  Which did the brief mean, or drop it? *Needs a decision.* (found by the
+  audit)
+- **#178 Where Insights lives:** the prototype has no card on the vehicle
+  overview; it has a fleet-wide dashboard widget (2 items) and an
+  Insights page with *Ask* above the cards. *Needs a decision.* (found by
+  the audit)
+- **#179 Tab order:** the prototype's … Documents, Incidents, Finance,
+  Expenses, or the draft's Finance after Expenses? *Needs a decision.*
+  (found by the audit)
+- **#180 Name above the tab's title:** at 28 px on every tab the name sits
+  above each tab's 26 px `<h1>`; the prototype has no tab title. *Needs a
+  decision.* (found by the audit)
+- **#181 Finance tab with several agreements, and the overview card:** the
+  prototype has one record. *Needs a decision.* (found by the audit)
+- **#182 Purchase card:** seller and mileage when bought aren't stored.
+  *Needs a decision.* (found by the audit)
+- **#183 PCP end note** listing keep, hand back or part-exchange, against
+  §7.32's "nothing recommends". *Needs a decision.* (found by the audit)
+- **#184 Tyre bar scale:** the prototype divides by an assumed new depth.
+  *Needs a decision.* (found by the audit)
+- **#185 Other prototype extras:** a *Breakdown* incident type, *Copy for
+  insurance quote*, a period picker on *Business and private*, "Fitted
+  {month}" on tyre cards, a tyre thresholds note. *Needs a decision.*
+  (found by the audit)
