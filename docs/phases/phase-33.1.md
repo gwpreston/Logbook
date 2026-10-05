@@ -3,7 +3,7 @@
 *Get back in without asking anyone, see who's who at a glance, and see
 every email the app sends while developing.*
 
-Status: ✅ complete · no release of its own (ships with Phase 33.4 as
+Status: 🚧 built, awaiting merge · no release of its own (ships with Phase 33.4 as
 **v3.0.0**) · file lives in `docs/phases/`
 
 Phase 19 gave Logbook users, invitations and an admin's one-time reset
