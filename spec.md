@@ -3721,7 +3721,7 @@ parameter answers 400 (`invalid_parameter`).
 |---|---|
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default active) |
 | `GET /vehicles/{id}` | one vehicle, as the edit form holds it (with `first_inspection_due_on`, Phase 21.2) |
-| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it), next due item (a *First MOT* item can be it, source `first_inspection`), open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
+| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it) and, from Phase 32, the true cost per distance (§7.35), next due item (a *First MOT* item can be it, source `first_inspection`), open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with its segment economy when it closes one and its economy-check flag |
 | `GET /vehicles/{id}/odometer` | readings with source |
 | `GET /vehicles/{id}/maintenance` | service records |
@@ -3844,6 +3844,12 @@ the other party). Links to records and attachments are read-only here
 active agreement's summary and schedule (the latest ended one when none is
 active), with §7.32's access rules and without the agreement number; no
 writes. With `finance` off it answers 404.
+
+**True cost** (Phase 32, §7.35): `GET /api/v1/vehicles/{id}/true-cost`
+(`?period=last_12_months`, the default, or `since_bought`), the parts per
+km, the change against the 12 months before, each calendar year and its
+*What changed*; core, needs `ViewCosts` (403 without). The summary's
+`costs` carries `true_cost_per_distance`.
 
 **Not in this version:** editing or deleting through the API, writes
 beyond those above (valuations, schedules, tyre fitting and changes, trips'
@@ -6165,7 +6171,9 @@ it replaces none of the other figures.
   folded into a part.
 - **Periods:** *Since bought* (§7.7's ownership period, unchanged), *Last
   12 months* (the reports' preset: this month and the 11 before, cut to the
-  ownership period), and each **calendar year** in the owner's time zone
+  ownership period; under 90 days, no per-distance figure, as §7.7), and
+  the 12 months before it for the change, and each **calendar year** in
+  the owner's time zone
   (calendar years only; UK tax years are parked, #150). The current year
   and the first year of ownership are partial and say so ("2026 so far",
   "2023 from 14 Mar"); so is the year of a sale ("2026 to 12 Mar").
@@ -6180,9 +6188,13 @@ it replaces none of the other figures.
   exactly as §7.7 does.
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
-  the date it is measured to (below). Shown in the owner's unit to the
-  penny or cent ("£0.34/mi"); the parts' unrounded rates add up exactly to
-  the total's, and rounding is for display only. Without distance in a
+  the date it is measured to (below). Rates are kept per km to 6 places:
+  the running parts and the payouts are shared out (largest remainder) so
+  they add up exactly to the running rate, and the depreciation rate is
+  added to it, so the parts always add up exactly to the total. Shown in
+  the owner's unit as money per distance with the currency's places and
+  one more ("£0.34/mi", "£0.344/mi"); rounding is for display only, and a
+  negative part carries a minus sign ("−£0.02/mi"). Without distance in a
   period, or without a mileage log reaching back to its start, no
   per-distance figure is shown ("Not enough mileage logged"). *Since bought*
   is §7.7's *Per distance*, split: its five parts and the payouts line add
@@ -6202,14 +6214,15 @@ it replaces none of the other figures.
     it and labelled "depreciation to 1 Mar 2026"; a period entirely after
     it (or entirely before the first) shows depreciation as "—" and the
     total as *running costs only*, with §7.1's prompt to add a valuation.
-    Without a purchase price and date there are no value points from the
-    purchase, so no depreciation before the first valuation.
-  - For a lease without a purchase price there is no depreciation; the
-    rentals are the cost (§7.32).
+  - **A purchase price is needed**, as for §7.1's depreciation: without
+    one (a lease, typically) there is no depreciation in any period and the
+    rentals are the cost (§7.32). With a price but no purchase date, the
+    points are the valuations and the sale.
 - **Overview *Cost of ownership* card:** under *Per distance*, the
-  five-part breakdown as a stacked bar and a list ("Fuel 14p · Maintenance
-  5p · Insurance, tax and MOT 4p · Other 2p · Depreciation 9p = 34p"),
-  with a switch between *Since bought* and *Last 12 months* (two links,
+  five-part breakdown as a stacked bar and a list (in a line, as the
+  widget, the API and Ask give it: "Fuel £0.14/mi · Maintenance £0.05/mi ·
+  Insurance, tax and MOT £0.04/mi · Other £0.02/mi · Depreciation £0.09/mi
+  = £0.34/mi"), with a switch between *Since bought* and *Last 12 months* (two links,
   `?true_cost=last_12_months`, so it works without JS). §7.7's other figures are
   unchanged. A negative part (a gain, payouts) is listed with its sign and
   left out of the bar.
@@ -6219,8 +6232,8 @@ it replaces none of the other figures.
     chosen period (*Last 12 months* by default, #152, or *Since bought*:
     two links in the widget's title row, `?true_cost=since_bought`, kept with the
     vehicle chip and not saved), its stacked bar, and the change
-    against the previous 12 months ("↑ 3p", "↓ 1p", or nothing when either
-    period has no figure);
+    against the previous 12 months ("↑ £0.03/mi", "↓ £0.01/mi", "No
+    change", or nothing when either period has no figure);
   - ranked highest first, grouped by currency (the currency with most
     vehicles first), with amounts never converted;
   - vehicles without distance in the period are listed last, with "Not
@@ -6257,26 +6270,34 @@ it replaces none of the other figures.
   - **distance:** for the fixed-cost parts (documents and depreciation,
     always treated as time-based, #151), the change caused by driving a
     different distance with the same amount, shown as its own line
-    ("Insurance, tax and MOT: +1.2p, because you drove 2,140 mi less").
+    ("Insurance, tax and MOT +£0.02/mi, because you drove 1,185 mi less").
     This is the part's amount this year ÷ this year's distance − the same
     amount ÷ last year's distance, with the rest of the part's change shown
     as the change in the amount itself;
   - payouts, when either year has some, are one line.
   Each contribution is shown as a fixed, translated sentence, largest
-  first, with its sign: "Fuel +2.1p: fuel cost 7% more per litre (+2.6p);
-  economy improved 3% (−0.5p)". Contributions under 0.2 of the currency's
-  smallest unit per distance unit are grouped as *Other small changes*. The
-  figures are never rounded so that they stop adding up: the total line is
-  the exact sum, and rounding is per line for display only.
+  first, with its sign: "Fuel +£0.003/mi: fuel cost 5% more per litre
+  (+£0.007/mi); economy improved by 3% (−£0.005/mi)"; a part's amount
+  line says how much more or less was spent ("£88.46 more spent";
+  depreciation: "lost £187.23 more in value"). Contributions under 0.2 of
+  the currency's smallest unit per distance unit (0.2p a mile) are grouped
+  as *Other small changes* ("Other changes too small to show" when they
+  round to nothing), and a fuel detail that small is left out of the fuel
+  sentence. The figures are never rounded so that they stop adding up: the
+  total line is the exact sum, and rounding is per line for display only.
 - **Ask Logbook** (§7.26): a `true_cost(vehicles?, period, by_year?)` tool
   (`period` one of `since_bought`, `last_12_months`) returning the
   breakdowns, the trend and the *What changed* contributions with their
   sentences and display strings, so "Why has my BMW got more expensive?" is
   answered from these figures, and the grounding check applies as usual.
+  Core (no module), offered to MCP clients with the other read tools
+  (§7.28).
 - **API** (§7.20): `GET /api/v1/vehicles/{id}/true-cost?period=` (the same
   two periods, default `last_12_months`, plus `years` and their *What
-  changed*) with the same figures as decimal strings; the vehicle summary
-  endpoint gains `true_cost_per_km_12m`.
+  changed*) with the same figures as decimal strings (money to 3 places,
+  rates per km to 6), sentences and `display` text; the vehicle summary's
+  `costs` gains `true_cost_per_distance` (per km, the last 12 months) and
+  its `display` the same, formatted.
 - **Access:** everything here needs `ViewCosts` (§5, Phase 19): without it
   the card's breakdown, the widget's row, the report, the API route (403)
   and the tool leave the vehicle out.

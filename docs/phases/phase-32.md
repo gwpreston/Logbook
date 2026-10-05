@@ -57,6 +57,9 @@ driven), Phase 14.2's cost of ownership, Phase 29's finance lines, §7.8 and
 
 ## Spec additions
 
+*The draft below was settled while building: the decisions (#150–#156)
+and the details found then are in `spec.md` §7.35, which is the source.*
+
 ### §7.35 True cost (new)
 
 > - **Parts:** *Fuel*, *Maintenance*, *Documents* and *Other* are the cost
@@ -169,56 +172,56 @@ driven), Phase 14.2's cost of ownership, Phase 29's finance lines, §7.8 and
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.35 in `spec.md`; the depreciation-for-a-period rule in §7.1 beside
+- [x] §7.35 in `spec.md`; the depreciation-for-a-period rule in §7.1 beside
       Phase 14.2's; the widget in §7.8; the Phase 32 line in §13.
-- [ ] `docs/reports.md` (or the README's reports section): true cost, its
+- [x] `docs/reports.md` (or the README's reports section): true cost, its
       parts, periods, the trend and how *What changed* is worked out.
 
 ### Code
-- [ ] `Service\Report\ValueCurve` (value points, interpolation, the
+- [x] `Service\Report\ValueCurve` (value points, interpolation, the
       no-extrapolation rule, leases).
-- [ ] `Service\Report\TrueCost` (per period: parts, per distance,
+- [x] `Service\Report\TrueCost` (per period: parts, per distance,
       partial-period labels) on the existing ledger and distance services.
-- [ ] `Service\Report\CostChange` (per-part change, fuel price and economy
+- [x] `Service\Report\CostChange` (per-part change, fuel price and economy
       split, distance effect, exact sums with display rounding).
-- [ ] Overview card breakdown and period switch; the `true_cost` widget;
+- [x] Overview card breakdown and period switch; the `true_cost` widget;
       Reports *True cost* tab with charts, table, CSV and print; the
       Expenses tab card.
-- [ ] Ask tool and API endpoint.
-- [ ] Translations (en, de), with ICU plurals, units and currency.
+- [x] Ask tool and API endpoint.
+- [x] Translations (en, de), with ICU plurals, units and currency.
 
 ### Tests
-- [ ] **Breakdown:** the five parts add up exactly to Phase 14.2's lifetime
+- [x] **Breakdown:** the five parts add up exactly to Phase 14.2's lifetime
       total per distance for every demo vehicle; finance lines are under
       *Other*; tyre costs under *Maintenance*; module off removes its part.
-- [ ] **Value curve:** interpolation between two valuations; a period past
+- [x] **Value curve:** interpolation between two valuations; a period past
       the last point is labelled and stops there; a period wholly after it
       gives "—"; a sold vehicle is exact to the sale date; a lease has no
       depreciation; a gain is negative.
-- [ ] **Periods:** calendar years in the owner's time zone (a 31 Dec 23:30
+- [x] **Periods:** calendar years in the owner's time zone (a 31 Dec 23:30
       fill-up in the right year); partial-year labels; under 500 km only in
       the table.
-- [ ] **What changed:** the contributions sum exactly to the change for
+- [x] **What changed:** the contributions sum exactly to the change for
       worked examples (a price rise with better economy; a year with less
       driving and the same insurance); the fuel split sums to the fuel part;
       small contributions grouped; display rounding never alters the total.
-- [ ] **Widget:** ranked, grouped by currency, vehicles without distance
+- [x] **Widget:** ranked, grouped by currency, vehicles without distance
       last, change against the previous 12 months, follows the chip.
-- [ ] Access: no `ViewCosts` → none of it, in HTML, API or Ask.
-- [ ] Ask tool returns figures that pass the grounding check.
+- [x] Access: no `ViewCosts` → none of it, in HTML, API or Ask.
+- [x] Ask tool returns figures that pass the grounding check.
 - [ ] Integration suite green on every engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: the Golf gets valuations each spring, so its trend
+- [x] `DemoDataSeeder`: the Golf gets valuations each spring, so its trend
       shows four years with depreciation. One year has a fuel price rise and
       less driving, so *What changed* shows the price, economy and distance
       lines.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.16.0**: true cost per mile, its breakdown, the
+- [x] `CHANGELOG.md` **2.16.0**: true cost per mile, its breakdown, the
       dashboard widget and the yearly trend. Upgrade notes: no migration; the
       widget is appended to existing dashboards.
-- [ ] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Bump `VERSION`, rebuild assets, update the README status.
 
 ---
 

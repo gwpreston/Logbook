@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.15.1.** First-run setup, secure sign-in (with a password, single
+> **Status: v2.16.0.** First-run setup, secure sign-in (with a password, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -27,7 +27,10 @@ your own server.
 > mile or km, any date range) with CSV export and a clean printout (or PDF)
 > of every report, charts in black and grey beside their tables; valuations, depreciation and
 > the total cost of ownership since you bought each vehicle (running costs
-> plus what it has lost in value, exact once sold), leases and finance
+> plus what it has lost in value, exact once sold), and the true cost per
+> mile or km split into fuel, maintenance, insurance, tax and MOT, other
+> costs and depreciation, ranked on the dashboard and traced year by year
+> with what changed and why ([docs/reports.md](docs/reports.md)), leases and finance
 > included; a *Coming up* view of the next 12 months (services, renewals,
 > tyres and reminders, each at what it cost last time, plus a fuel
 > estimate); a *Needs attention* list on each vehicle and the dashboard of
@@ -188,7 +191,7 @@ start if something else already holds the app port. On Windows run it from
 
 | Option | What it does |
 |---|---|
-| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since; and a member (`partner` / `logbook-demo`) with Log access to the self-charging hybrid without costs, whose recent fill-ups they logged, and View access to the Golf. Skipped if an account already exists. |
+| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (the Golf's going back to 2021, one a month, with a valuation each spring, for its true cost trend; including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since; and a member (`partner` / `logbook-demo`) with Log access to the self-charging hybrid without costs, whose recent fill-ups they logged, and View access to the Golf. Skipped if an account already exists. |
 | `--postgres`, `--mysql`, `--mariadb`, `--sqlite` | Which database engine to run. PostgreSQL is the default. Each engine keeps its own data and photos, so you can switch back and forth. |
 | `--reset` | Empty the chosen engine's database (full rollback + migrate) and delete its uploads. With `--stop`, delete every dev database, the uploads and the `vendor/` volume instead. Asks first unless `--yes`. |
 | `--stop`, `--down` | Stop the containers instead of starting them. |

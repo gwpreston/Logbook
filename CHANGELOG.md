@@ -6,6 +6,57 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.16.0] — 2026-10-05
+
+Phase 32: **true cost per mile or km**. What each vehicle really costs to
+run per distance, what that figure is made of, and why it changed from one
+year to the next. See [docs/reports.md](docs/reports.md).
+
+### Added
+- **The breakdown** on the overview's *Cost of ownership* card: the cost
+  per distance split into *Fuel*, *Maintenance*, *Insurance, tax and MOT*,
+  *Other* and *Depreciation* (with insurance payouts on their own line), as
+  a bar and a list that add up exactly, with a switch between *Since
+  bought* and *Last 12 months*.
+- **Depreciation for any period**: the value between two value points
+  (purchase, valuations, sale) runs in a straight line. A period past the
+  latest value is measured up to it and says so; nothing is extrapolated.
+- **The *True cost per distance* dashboard widget**: every active vehicle
+  ranked by cost per mile or km, by currency, with the change against the
+  12 months before. It follows the vehicle chips and switches between the
+  last 12 months and since bought.
+- **Reports → True cost** (`/reports/true-cost`): each vehicle's cost per
+  distance by calendar year, stacked by part, with partial years hatched
+  and the table beside it; a fleet chart with one line per vehicle; CSV
+  export and a printout. The vehicle's Expenses tab shows the same trend.
+- **What changed**: each year against the year before, split into
+  contributions that add up exactly. Each part, fuel price against economy
+  (per energy, so a plug-in hybrid gets both), and the effect of driving
+  more or fewer miles on insurance, tax and MOT and on depreciation.
+- In the 12-month and yearly figures, a document with a start and an expiry
+  date is spread over its cover, so a renewal counts for the months it
+  covers.
+- **Ask Logbook**: a `true_cost` tool, so "Why has my car got more
+  expensive?" is answered from these figures (also offered to MCP clients).
+- **API**: `GET /api/v1/vehicles/{id}/true-cost?period=` (`last_12_months`
+  or `since_bought`), and `true_cost_per_distance` in the vehicle
+  summary's costs.
+- **Sample data**: the demo Golf now has a fill-up a month from 2021 and a
+  valuation each spring, so its trend has four full years with
+  depreciation, and 2024 shows a fuel price rise, better economy and less
+  driving.
+
+### Changed
+- A vehicle that has **gained** value now shows its depreciation per
+  distance as a negative figure ("−£0.02/mi") instead of none. Its cost of
+  ownership per distance includes the gain instead of being marked
+  "running costs only". No other cost of ownership figure changes.
+
+### Upgrade notes
+- No migration and no configuration change. The new dashboard widget is
+  added to the end of existing dashboards; move or hide it under
+  *Customise*.
+
 ## [2.15.1] — 2026-10-04
 
 Phase 31.2: the Fuel stations module shows its icon.
@@ -2048,7 +2099,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.15.1...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.16.0...HEAD
+[2.16.0]: https://github.com/gwpreston16/Logbook/compare/v2.15.1...v2.16.0
 [2.15.1]: https://github.com/gwpreston16/Logbook/compare/v2.15.0...v2.15.1
 [2.15.0]: https://github.com/gwpreston16/Logbook/compare/v2.14.0...v2.15.0
 [2.14.0]: https://github.com/gwpreston16/Logbook/compare/v2.13.0...v2.14.0

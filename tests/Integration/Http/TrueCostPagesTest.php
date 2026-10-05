@@ -65,8 +65,17 @@ final class TrueCostPagesTest extends AppTestCase
         $this->fillUp($app, $polo, '2025-11-15T09:00:00Z', '20000', '200', '4900.00');
         $unlogged = $this->car($app, 'Skoda', 'Fabia', '2024-01-01', '8000');
         $this->expense($app, $unlogged, '2026-05-01', '40');
+        // Dearer per km than all of them, but in euros: its own ranking, never converted.
+        $euro = $this->car($app, 'Renault', 'Clio', '2024-01-01', '9000', 'EUR');
+        $this->reading($app, $euro, '1000', '2024-01-01T09:00:00Z');
+        $this->fillUp($app, $euro, '2025-11-15T09:00:00Z', '3000', '200', '9000.00');
 
         $widget = self::section(self::body($browser->get('/')), 'id="widget-true_cost"');
+        $lists = explode('<ol class="true-cost__ranking">', $widget);
+        self::assertCount(3, $lists, 'one ranking per currency');
+        self::assertStringContainsString('Volkswagen Golf', $lists[1], 'pounds first: more vehicles');
+        self::assertStringContainsString('Renault Clio', $lists[2]);
+        self::assertStringContainsString('€', $lists[2]);
 
         $polo = strpos($widget, 'Volkswagen Polo');
         $golfAt = strpos($widget, 'Volkswagen Golf');
@@ -150,14 +159,21 @@ final class TrueCostPagesTest extends AppTestCase
     /**
      * @param App<ContainerInterface> $app
      */
-    private function car(App $app, string $make, string $model, string $purchased, string $price): Vehicle
-    {
+    private function car(
+        App $app,
+        string $make,
+        string $model,
+        string $purchased,
+        string $price,
+        ?string $currency = null,
+    ): Vehicle {
         return $this->service($app, VehicleService::class)->create($this->owner($app), new VehicleData(
             VehicleType::Car,
             $make,
             $model,
             FuelType::Petrol,
             registration: strtoupper(substr($model, 0, 2)) . '19 ABC',
+            currency: $currency,
             purchaseDate: self::date($purchased),
             purchasePrice: $price,
         ));
