@@ -141,9 +141,9 @@ the audit and the owner's decisions:
       and motorbike; the bar only with two measurements.
 - [x] Incidents: breakdown type; stats respect detail and cost access.
 - [x] Integration suite green on every engine; design-reviewer clean of
-      HIGH findings. (2026-10-05: 2,870 tests on PostgreSQL 17, MySQL 8.4
-      and MariaDB 11.4 at d5a4234, migration up/down/up on each; the
-      review fixes after it change no SQL. Review: 2 HIGH, both fixed and
+      HIGH findings. (2026-10-05: 2,877 tests on SQLite, PostgreSQL 17,
+      MySQL 8.4 and MariaDB 11.4 at e9ccd57, migrations up/down/up on
+      each; coverage 94.28%, changed lines 99%. Review: 2 HIGH, both fixed and
       checked at 375/768/1280 px, light and dark; open LOW items listed
       under 33.3.9.)
 
