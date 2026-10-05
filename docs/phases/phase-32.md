@@ -3,7 +3,7 @@
 *One number for what a car costs to run, what it is made of, and why it
 changed.*
 
-Status: 🚧 in progress · releases **v2.16.0** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.16.0** · file lives in `docs/phases/`
 
 Phase 14.2 already works out a vehicle's **cost of ownership per distance**:
 running costs plus depreciation, shown on the overview card and in the
@@ -209,7 +209,7 @@ and the details found then are in `spec.md` §7.35, which is the source.*
       last, change against the previous 12 months, follows the chip.
 - [x] Access: no `ViewCosts` → none of it, in HTML, API or Ask.
 - [x] Ask tool returns figures that pass the grounding check.
-- [ ] Integration suite green on every engine.
+- [x] Integration suite green on every engine.
 
 ### Sample data
 - [x] `DemoDataSeeder`: the Golf gets valuations each spring, so its trend
