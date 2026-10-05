@@ -405,8 +405,8 @@ Numbers are the log's ([`open-questions.md`](open-questions.md)).
 - **#185 Other prototype extras:** a *Breakdown* incident type, *Copy for
   insurance quote*, a period picker on *Business and private*, "Fitted
   {month}" on tyre cards, a tyre thresholds note. *Decided 2026-10-05:* build all four extras (*Breakdown*, *Copy for insurance quote*, *Fitted {month}*, the thresholds note); the period picker is parked (spec §12).
-  (found by the audit) *Amended 2026-10-05 (design review, owner's
-  decision):* a tyre whose latest change was a move or rotation reads
+  (found by the audit) *Changed 2026-10-05 by the design review (pending the owner's
+  confirmation):* a tyre whose latest change was a move or rotation reads
   "Moved {month}" rather than "Fitted"; the distance is the tyre's whole
   distance, with "since {date}" only for a tyre recorded as already on
   the vehicle and not fitted or moved since (spec §7.17).

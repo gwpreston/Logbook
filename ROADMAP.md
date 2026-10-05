@@ -749,9 +749,11 @@ developing.*
 *Every tab of a vehicle looks like the same page.*
 
 - The vehicle's name the same size on every tab; Finance becomes a tab.
-- *Insights* on the overview from figures Logbook already computes.
-- Trips: *Business and personal* split and *Your vehicles* three to a row;
-  incidents and *Current tyres* to the prototype.
+- An *Insights* dashboard widget from figures Logbook already computes
+  (the Insights page and AI insights are 33.4's).
+- Trips: the *Business and private* card; the dashboard's *Your vehicles*
+  three to a row; incidents and *Current tyres* to the prototype; the
+  vehicle's seller and mileage when bought.
 
 → [`phase-33.3.md`](docs/phases/phase-33.3.md)
 

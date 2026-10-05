@@ -1412,7 +1412,7 @@ jumps, going backwards) without blocking.
   back link, then *Edit*, *Archive* / *Restore* and *Delete* in the same
   place on every tab, the hero and the tab bar. Every list tab shares one
   toolbar partial (`templates/vehicles/_list_toolbar.twig`): the tab's title
-  on the left; *Export CSV*, *Import CSV* and the tab's add button
+  (from Phase 33.3 visually hidden, §8 *Vehicle header*) on the left; *Export CSV*, *Import CSV* and the tab's add button
   right-aligned (as the Fuel tab always had them).
   The overview also shows the three most urgent schedules and where each
   current document stands.
@@ -5867,9 +5867,9 @@ contract hire with VAT recovery, and refinancing a balloon as its own
 flow, are out of scope (#121; a refinance is entered as a new loan).
 
 - **Module** `finance` (§7.10), on by default. Nothing shows until a
-  vehicle has an agreement: *Add finance* is in the vehicle header's menu,
-  and the overview card appears once one exists. (From Phase 33.3, the
-  *Finance tab*, below, replaces the header's menu item.) Switching it off hides
+  vehicle has an agreement: from Phase 33.3 *Add finance* is on the
+  vehicle's *Finance tab* (below; until then it was in the header's menu),
+  and the overview card appears once one exists. Switching it off hides
   every page, card, widget, cost line, reminder and attention item; the
   data is kept.
 - **Form** (page and desktop modal), with fields by type:
@@ -5969,11 +5969,9 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     track to finish 2,400 mi under the allowance." Without enough readings
     to project, the distance so far only. Shown in the agreement's
     mileage unit.
-- **Finance page** (`/vehicles/{id}/finance`, from the vehicle header's
-  menu once an agreement exists): the active agreement first, then ended
-  ones under *Earlier agreements*, each with its type, lender, dates and
-  status, linking to its agreement page; *Add finance* while none is
-  active.
+- **Finance page** (Phases 29.1–33.2; replaced by the *Finance tab* below
+  in Phase 33.3): the active agreement first, then ended ones under
+  *Earlier agreements*, linking to their agreement pages.
 - **Finance tab** (Phase 33.3, #173, #181): `/vehicles/{id}/finance` is a
   vehicle tab (icon `account_balance`, between *Incidents* and
   *Expenses*), shown to those `finance_menu()` allows (Manage with
