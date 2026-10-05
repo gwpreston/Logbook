@@ -68,6 +68,7 @@ final class CostVisibilityTemplateTest extends TestCase
         // Fuel prices (Phase 30.2): listed prices are public, and effective costs are worked out
         // from them and the vehicle's usual fill, never from anything the viewer paid.
         'stations/near.twig' => 'Cheapest near me: listed prices and effective costs, nobody’s spending',
+        'stations/_nearby.twig' => 'Prices nearby: listed prices; the saving only with ViewCosts (PricesNearby)',
         'dashboard/_cheapest_fuel.twig' => 'the Cheapest fuel widget: listed prices and effective costs',
     ];
 

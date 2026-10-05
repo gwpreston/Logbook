@@ -3,8 +3,9 @@
 {% import 'macros/stations.twig' as st %}
 
 {#
- # The stations list (spec.md §7.33 *Stations page*): favourites first,
- # then by last visit; distances from the user's own places only.
+ # The Fuel stations page (spec.md §7.33 *Fuel stations page*): *Prices
+ # nearby* when a price provider is on, then *Your stations*, favourites
+ # first, then by last visit; distances from the user's own places only.
  #}
 {% set active_nav = 'stations' %}
 
@@ -24,6 +25,10 @@
         </div>
         <p class="muted">{{ 'stations.lead'|trans }}</p>
 
+        {% if nearby %}
+            {% include 'stations/_nearby.twig' %}
+        {% endif %}
+
         <form class="form search-form" method="get" action="{{ url_for('stations.index') }}" role="search">
             <div class="field">
                 <label class="field__label" for="f-q">{{ 'stations.search'|trans }}</label>
@@ -39,7 +44,7 @@
         {% endif %}
 
         <section class="card" aria-labelledby="stations-list">
-            <h2 id="stations-list" class="visually-hidden">{{ 'stations.title'|trans }}</h2>
+            <h2 id="stations-list" class="{{ nearby ? 'card__title' : 'visually-hidden' }}">{{ (nearby ? 'stations.yours' : 'stations.title')|trans }}</h2>
             {% if rows is empty %}
                 <div class="empty">
                     {{ ui.icon('local_gas_station') }}

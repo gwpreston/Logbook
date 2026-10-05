@@ -92,4 +92,61 @@ final readonly class NearForm
                 && ($family === null || $g->family() === $family),
         ));
     }
+
+    /**
+     * Where a search starts from the form's `from` (spec.md §7.34): the
+     * position for "here", one of the user's places, or a station with one.
+     *
+     * @param list<Place> $places
+     * @param list<Station> $stations
+     */
+    public static function origin(string $from, string $lat, string $lng, array $places, array $stations): ?NearOrigin
+    {
+        if ($from === NearOrigin::HERE) {
+            return NearOrigin::validPosition($lat, $lng);
+        }
+        [$kind, $id] = array_pad(explode(':', $from, 2), 2, '');
+        if ($kind === NearOrigin::PLACE) {
+            foreach ($places as $place) {
+                if ((string) $place->id === $id) {
+                    return NearOrigin::place(
+                        $place->id,
+                        $place->data->name,
+                        (float) $place->data->latitude,
+                        (float) $place->data->longitude,
+                    );
+                }
+            }
+        }
+        if ($kind === NearOrigin::STATION) {
+            foreach ($stations as $station) {
+                if ((string) $station->id === $id && $station->data->hasPosition()) {
+                    return NearOrigin::station(
+                        $station->id,
+                        $station->data->name,
+                        (float) $station->data->latitude,
+                        (float) $station->data->longitude,
+                    );
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The vehicle the form names, if it is one of the choices.
+     *
+     * @param list<Vehicle> $vehicles
+     */
+    public static function pick(array $vehicles, string $id): ?Vehicle
+    {
+        foreach ($vehicles as $vehicle) {
+            if ((string) $vehicle->id === $id) {
+                return $vehicle;
+            }
+        }
+
+        return null;
+    }
 }

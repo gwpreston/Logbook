@@ -3362,6 +3362,115 @@ a.list__title:hover {
     font-weight: 700;
 }
 
+/* Fuel stations' *Prices nearby* (spec.md §7.33, Phase 33.4): the prototype's price rows. */
+.prices-nearby {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.prices-nearby__fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--space-3);
+}
+
+.prices-nearby__form .btn-row {
+    margin-top: var(--space-2);
+}
+
+.prices-nearby__sort {
+    align-self: flex-start;
+}
+
+.prices-nearby__saving {
+    margin: 0;
+}
+
+.nearby-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nearby-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding-block: var(--space-3);
+    border-top: 1px solid var(--border);
+}
+
+.nearby-row:first-child {
+    border-top: 0;
+}
+
+.nearby-row__tile {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.nearby-row__name,
+.nearby-row__meta {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.nearby-row__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    font-weight: 700;
+}
+
+.nearby-row__meta {
+    font-size: var(--fs-sm);
+}
+
+.nearby-row__price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    font-size: var(--fs-sm);
+}
+
+.nearby-row__below {
+    color: var(--green);
+    font-weight: 600;
+}
+
+.nearby-row__actions {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 2 / -1;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.nearby-row__actions form {
+    margin: 0;
+}
+
+.nearby-row__star[aria-pressed="true"] {
+    color: var(--amber);
+}
+
+.nearby-row__star[aria-pressed="true"] .icon {
+    fill: currentColor;
+}
+
 /* Cost of ownership page (spec.md §7.7, Phase 33.4): summary tiles, then a card per vehicle. */
 .ownership-page {
     display: flex;

@@ -6351,18 +6351,19 @@ request to any outside service.
     *Add station* does, then favourited); **Directions**, an
     OpenStreetMap directions link to the station's position
     (`https://www.openstreetmap.org/directions?route=%3B{lat}%2C{lng}`,
-    new tab, `rel="noopener noreferrer"`; only the station's position is
-    in it, never the user's, and the server fetches nothing); **Log
+    new tab, `rel="noopener noreferrer"`; on a touch device a `geo:` link,
+    as the station page's *Open in maps*; only the station's position and
+    name are in it, never the user's, and the server fetches nothing); **Log
     fill-up here**, which opens the vehicle's fill-up form with the
     station chosen (`?station={id}`; an unlinked station is added first).
   - **Saving banner** (#196): for the vehicle and grade, when the user's
     average price paid in the last 12 months (its fill-ups of that grade:
     cost ÷ volume, in the vehicle's currency) is above the cheapest listed
-    price by at least the price's smallest shown unit, and the provider's
-    currency is the vehicle's: "The cheapest E10 nearby is 139.9p at
-    Tesco Extra, 1.2 mi away. You've paid 146.3p on average in the Golf
-    over the last 12 months, so filling up there would save about £2.88 a
-    tank." The tank is *Cheapest near me*'s usual fill (labelled
+    price by at least the price's smallest shown unit, the provider's
+    currency is the vehicle's, and the user may see the vehicle's costs:
+    "The cheapest E10 95 nearby is £1.359/L at Tesco Extra, 0.5 mi away.
+    You've paid £1.459/L on average in the Golf over the last 12 months,
+    so filling up there would save about £4.00 a tank." The tank is *Cheapest near me*'s usual fill (labelled
     "assumed" when it is); the trip there is not counted, and the banner
     says so ("Not counting the trip there."). No fill-ups of the grade in
     12 months: no banner.
