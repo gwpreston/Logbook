@@ -3,7 +3,7 @@
 *Every tab of a vehicle looks like the same page, and the cards the
 prototype added are there.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 33.4 as
+Status: ✅ complete · no release of its own (ships with Phase 33.4 as
 **v3.0.0**) · file lives in `docs/phases/`
 
 A vehicle's page has tabs (Overview, History, Mileage, Trips, Fuel,

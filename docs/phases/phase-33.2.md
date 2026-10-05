@@ -3,7 +3,7 @@
 *The first page anyone sees and the page everyone configures from, drawn
 the way the design says.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 33.4 as
+Status: ✅ complete · no release of its own (ships with Phase 33.4 as
 **v3.0.0**) · file lives in `docs/phases/`
 
 The prototype in `design-import/` has new designs for the sign-in,

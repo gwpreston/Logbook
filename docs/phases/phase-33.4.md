@@ -3,7 +3,7 @@
 *What each car has really cost, in one look; and the last two pages
 brought into line with the design.*
 
-Status: 🚧 in progress · releases **v3.0.0** · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.0.0** (Phases 33.1–33.4) · file lives in `docs/phases/`
 
 The prototype in `design-import/` has a *Cost of ownership* page: a card
 per vehicle with a multicolour bar showing what its cost is made of, and
@@ -86,65 +86,96 @@ answers (#186–#197):
       one *build* (#196).
 
 ### 33.4.2 Cost of ownership
-- [ ] `OwnershipSummary` (the four totals per currency) from the existing
+- [x] `OwnershipSummary` (the four totals per currency) from the existing
       ownership, true cost and finance services.
-- [ ] Vehicle cards with the stacked bar macro (`ui.cost_bar(parts)`),
+- [x] Vehicle cards with the stacked bar macro (`ui.cost_bar(parts)`),
       reused by the overview's true cost card.
-- [ ] Print and CSV unchanged; the screen layout to the prototype.
-- [ ] The vehicle *Cost of ownership* tab (#191).
+- [x] Print and CSV unchanged; the screen layout to the prototype.
+- [x] The vehicle *Cost of ownership* tab (#191).
 
 ### 33.4.3 Ask
-- [ ] Page to the prototype's *Ask Logbook* card within §7.26; the four
+- [x] Page to the prototype's *Ask Logbook* card within §7.26; the four
       suggestions.
 
 ### 33.4.3a Insights page and AI insights
-- [ ] Insights page (`/insights`, sidebar `auto_awesome`) with the Ask
+- [x] Insights page (`/insights`, sidebar `auto_awesome`) with the Ask
       card above every computed insight; the widget's *All insights* link.
-- [ ] AI insights (spec §7.26 *AI insights*): daily per user, cached,
+- [x] AI insights (spec §7.26 *AI insights*): daily per user, cached,
       *Refresh*, grounding check, marked as AI; only with AI on.
-- [ ] Tests: nothing generated or shown with AI off; grounding
+- [x] Tests: nothing generated or shown with AI off; grounding
       highlights an unmatched number; the cache serves the day.
 
 ### 33.4.4 Fuel stations
-- [ ] *Prices nearby* above *Your stations*: grade chips, *Cheapest* /
+- [x] *Prices nearby* above *Your stations*: grade chips, *Cheapest* /
       *Nearest*, *Use my location*, the *Cheapest* badge, listed time.
-- [ ] Area average per row; the saving banner.
-- [ ] Favourite star (adds an unlinked station first), OSM *Directions*,
+- [x] Area average per row; the saving banner.
+- [x] Favourite star (adds an unlinked station first), OSM *Directions*,
       *Log fill-up here* and the fill-up form's `?station=` prefill.
 
 ### 33.4.4a Tyres
-- [ ] "Fitted {month}" from the tyre's first fitting; "Moved" removed
+- [x] "Fitted {month}" from the tyre's first fitting; "Moved" removed
       (#197).
 
 ### 33.4.5 Tests
-- [ ] Summary cards equal the sum of the vehicle cards; per currency with
+- [x] Summary cards equal the sum of the vehicle cards; per currency with
       two currencies; *Per month* adds the active vehicles only.
-- [ ] *Finance interest*: HP and PCP interest and fees counted, lease
+- [x] *Finance interest*: HP and PCP interest and fees counted, lease
       rentals not, future payments not, "No finance" without either;
       matches §7.32's ledger.
-- [ ] Bar segments sum to the vehicle's total; a depreciation gain is left
+- [x] Bar segments sum to the vehicle's total; a depreciation gain is left
       out of the bar; switched-off modules remove their part.
-- [ ] Access: a View share without costs shows no vehicle card and no
+- [x] Access: a View share without costs shows no vehicle card and no
       totals for it, and no *Cost of ownership* tab.
-- [ ] Ask and Fuel stations: the existing suites stay green; area
+- [x] Ask and Fuel stations: the existing suites stay green; area
       average, saving banner, prefill, add-then-favourite tested.
-- [ ] Design-reviewer clean of HIGH findings on every changed page.
+- [x] Design-reviewer clean of HIGH findings on every changed page.
+      (2026-10-05: 3 HIGH, 4 MEDIUM, 5 LOW at 375/768/1280 px, light and
+      dark, purple, teal and blue accents, the partner's view, no JS and
+      keyboard. Every HIGH and MEDIUM fixed (33.4.7) and re-checked; the
+      LOW left are listed there.)
+- [x] Suite green on every engine: SQLite, PostgreSQL 17, MySQL 8.4 and
+      MariaDB 11.4, migrations up, down and up on each; coverage 94.30%
+      (floor 94).
+
+### 33.4.7 Design review fixes
+- [x] The `auto_awesome`, `directions` and `refresh` icons were missing
+      from the sprite (blank tiles and buttons); added, with a test that
+      every icon a template names is in it.
+- [x] The price rows' star is an outline until favourited (state was by
+      colour only).
+- [x] At phone width the price goes under the station name, and names no
+      longer break mid-word.
+- [x] A lease's documentation fee was counted as *Finance interest*; every
+      line of a lease is now left out (#186).
+- [x] The cost legend is an even grid (dot, name, amount).
+- [x] With the indigo or purple accent, *Insurance, tax and MOT* takes a
+      rose colour so it stays apart from *Fuel* (the accent) in the bar.
+- [x] A suggestion on the Ask card asks at once with JS (a link that
+      fills the box without).
+- [x] AI insights say "busy with another AI request" rather than Ask's
+      "your last question"; insight action links are 36 px tall; a vehicle
+      whose mileage log starts after the purchase says so.
+- Left as LOW: Ask's first progress line reads "Thinking…" before the
+  tools' own lines (the box shows "Reading your logbook…" while it
+  posts); per-mile figures trim a trailing zero as everywhere in the
+  app; the 403 page's wording for a tab without cost access is the app's
+  general one.
 
 ### 33.4.6 Release
-- [ ] `CHANGELOG.md` **3.0.0**: forgotten password by email, admin
+- [x] `CHANGELOG.md` **3.0.0**: forgotten password by email, admin
       controls, avatars, the redesigned sign-in and Settings, the vehicle
       tabs (Finance tab, Insights, trips, incidents, tyres), Cost of
       ownership, Ask, Insights and Fuel stations, Mailpit in development.
-- [ ] Upgrade notes: migrations (user email and avatar columns; reminder
+- [x] Upgrade notes: migrations (user email and avatar columns; reminder
       email addresses move to the user); a forgotten-password link
       appears on the sign-in page when email is configured
       (`PASSWORD_RESET_ENABLED=false` to hide it); *Stations* is now
       *Fuel stations* (URLs unchanged); Settings links have moved; the
       sample users no longer have fixed passwords.
-- [ ] Why 3.0: the sign-in flow and the account model change (self-service
+- [x] Why 3.0: the sign-in flow and the account model change (self-service
       reset, one email per user), and the app's navigation and Settings
       are reorganised. No API change: the API stays v1.
-- [ ] Bump `VERSION`, rebuild assets, update README and ROADMAP status.
+- [x] Bump `VERSION`, rebuild assets, update README and ROADMAP status.
 - [ ] Tag `v3.0.0` once merged.
 
 ---
@@ -270,7 +301,7 @@ question is obsolete (#188).
 | 1 | Title "Fuel stations", sub "{location} · prices" | "Fuel stations" (Phase 33.2), lead about your stations | **L** |
 | 2 | *Use my location* button | `/stations/near`'s *My current location* (JS, never stored) | **H** |
 | 3 | Grade chips (E10, E5, B7, premium diesel), default the vehicle's grade | `/near`'s grade select, `FuelGrade`, default from the vehicle | **H** |
-| 4 | Sort *Cheapest* / *Nearest* | `/near`'s sort: effective, price, distance | **H** (the app's *effective* kept as a third) |
+| 4 | Sort *Cheapest* / *Nearest* | `/near`'s sort: effective, price, distance | **H**; *effective* stays on *Cheapest near me*, which *See all* opens |
 | 5 | Rows: brand initials tile, name, *Cheapest* badge, "brand · area · 1.2 mi · updated 40 min ago", price, diff | provider station name, brand, distance, listed price and its time, *may be out of date* | **H** (the badge is the first row by price) |
 | 6 | "−1.4p vs average" / "Area average" per row | none: no average of the listed prices | **N** |
 | 7 | Saving banner: "The cheapest E10 nearby is … You've paid … on average in the Golf, so filling up there would save about £x a tank." | `/near` has *worth it* against the nearest; no comparison with the user's own average paid | **N** |

@@ -71,10 +71,10 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | ✅ |
 | [31.2](docs/phases/phase-31.2.md) | The Fuel stations module shows its icon + v2.15.1 | ✅ |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | ✅ |
-| [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 🚧 |
-| [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 🚧 |
-| [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 🚧 |
-| [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | 🚧 |
+| [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | ✅ |
+| [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | ✅ |
+| [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | ✅ |
+| [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -762,8 +762,11 @@ developing.*
 
 - *Total cost*, *Per month*, *Depreciation* and *Finance interest*, then a
   card per vehicle with a multicolour cost bar.
-- Ask and Fuel stations to the prototype, with the features the owner
-  picks.
+- A vehicle *Cost of ownership* tab (#191).
+- Ask to the prototype's card, keeping its menu entry; an Insights page
+  with *Ask* above every insight and the day's AI insights.
+- Fuel stations with *Prices nearby* (area average, saving banner,
+  favourite, directions, *Log fill-up here*) above *Your stations*.
 - Release **v3.0.0** (Phases 33.1–33.4).
 
 → [`phase-33.4.md`](docs/phases/phase-33.4.md)
