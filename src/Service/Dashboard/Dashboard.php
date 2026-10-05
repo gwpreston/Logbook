@@ -13,6 +13,7 @@ use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\History\ActivityItem;
 use Logbook\Service\Reminder\ReminderOverview;
 use Logbook\Service\Report\Report;
+use Logbook\Service\Report\TrueCostWidget;
 use Logbook\Service\Vehicle\VehicleSnapshot;
 
 /**
@@ -57,6 +58,8 @@ final readonly class Dashboard
         public ?array $finance = null,
         /** The cheapest fuel near a place (Phase 30.2); null while hidden or prices are off. */
         public ?CheapestFuelWidget $cheapestFuel = null,
+        /** Each vehicle's true cost, ranked (Phase 32); null while hidden. */
+        public ?TrueCostWidget $trueCost = null,
     ) {
     }
 

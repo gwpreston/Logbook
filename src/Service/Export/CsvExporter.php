@@ -29,6 +29,8 @@ use Logbook\Service\Report\GroupTotal;
 use Logbook\Service\Report\OwnershipCost;
 use Logbook\Service\Report\OwnershipReport;
 use Logbook\Service\Report\Report;
+use Logbook\Service\Report\TruePart;
+use Logbook\Service\Report\VehicleTrueCost;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Repository\TripRepository;
@@ -259,6 +261,67 @@ final readonly class CsvExporter
                 'export.column.running_per_month',
                 'export.column.depreciation_per_month',
                 'export.column.total_per_month',
+            ]),
+            $rows,
+        );
+    }
+
+    /**
+     * The true cost trend (spec.md §7.35): one row per vehicle and calendar
+     * year, each part's amount and per distance, the payouts and the total.
+     * Money per distance is in the owner's distance unit; a figure that
+     * cannot be worked out is empty.
+     *
+     * @param list<VehicleTrueCost> $vehicles
+     */
+    public function trueCost(User $user, array $vehicles, DateTimeImmutable $today): CsvTable
+    {
+        $unit = $user->preferences->distanceUnit;
+        $unitName = ['unit' => $this->t('units.name.' . $unit->value)];
+        $perUnit = $this->t('units.symbol.' . $unit->value);
+        $money = static fn (?Money $m): ?string
+            => $m === null ? null : CsvNumber::money($m->toDecimal(3), $m->currency);
+        $perDistance = static fn (?string $perKm): ?string => $perKm === null ? null : Decimal::trim(
+            $unit === DistanceUnit::Mile ? Decimal::multiply($perKm, DistanceUnit::KM_PER_MILE_DECIMAL, 6) : $perKm,
+        );
+        $partName = fn (TruePart $p): string => $this->t($p->labelKey());
+
+        $rows = [];
+        foreach ($vehicles as $vtc) {
+            foreach ($vtc->years as $year) {
+                $rows[] = [
+                    $vtc->vehicle->name(),
+                    $vtc->vehicle->data->registration,
+                    $vtc->currency,
+                    (string) $year->period->year,
+                    $this->yesNo($year->period->isPartial()),
+                    $year->distanceKm === null ? null : CsvNumber::distance($year->distanceKm, $unit),
+                    ...array_map(static fn (TruePart $p): ?string => $money($year->amount($p)), TruePart::cases()),
+                    ...array_map(static fn (TruePart $p): ?string => $perDistance($year->rate($p)), TruePart::cases()),
+                    $money($year->payouts),
+                    $money($year->total()),
+                    $perDistance($year->perKm),
+                ];
+            }
+        }
+
+        return new CsvTable(
+            sprintf('logbook-true-cost-%s.csv', $today->format('Y-m-d')),
+            $this->headers([
+                'export.column.vehicle',
+                'export.column.registration',
+                'export.column.currency',
+                'export.column.calendar_year',
+                'export.column.partial_year',
+                ['export.column.distance_driven', $unitName],
+                ...array_map(fn (TruePart $p): array => ['export.column.part_amount', ['part' => $partName($p)]], TruePart::cases()),
+                ...array_map(fn (TruePart $p): array => [
+                    'export.column.part_per_distance',
+                    ['part' => $partName($p), 'unit' => $perUnit],
+                ], TruePart::cases()),
+                'export.column.insurance_payouts',
+                'export.column.total',
+                ['export.column.total_per_distance', ['unit' => $perUnit]],
             ]),
             $rows,
         );

@@ -1,0 +1,95 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/true_cost.twig' as tcm %}
+{% import 'macros/vehicles.twig' as vehicle_ui %}
+
+{% set active_nav = 'reports' %}
+
+{% block title %}{{ 'true_cost.report_title'|trans }} · {{ 'report.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack print-report">
+        {% include 'print/_header.twig' with {
+            title: 'true_cost.report_title'|trans,
+            vehicle: filter.vehicleId ? (all_vehicles|filter(v => v.id == filter.vehicleId)|first ?: null) : null,
+            fleet_note: filter.includeArchived ? 'report.archived_included'|trans : null,
+            period: 'print.ownership_period'|trans,
+        } %}
+
+        <a class="back-link" href="{{ url_for('reports.index') }}">{{ ui.icon('chevron_left') }}{{ 'report.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'true_cost.report_title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'true_cost.report_lead'|trans }}</p>
+            </div>
+            <div class="btn-row">
+                {{ ui.print_button() }}
+                <a class="btn" href="{{ url_for('reports.true_cost.export', {}, filter_query) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+            </div>
+        </header>
+
+        {{ ui.costs_excluded_note() }}
+
+        <form class="card report-filter" method="get" action="{{ url_for('reports.true_cost') }}" data-auto-submit>
+            <div class="form-row">
+                <div class="field">
+                    <label class="field__label" for="f-vehicle">{{ 'report.field.vehicle'|trans }}</label>
+                    <select class="select" id="f-vehicle" name="vehicle">
+                        <option value="">{{ 'report.fleet'|trans }}</option>
+                        {% for vehicle in all_vehicles %}
+                            <option value="{{ vehicle.id }}"{% if filter.vehicleId == vehicle.id %} selected{% endif %}>
+                                {{- vehicle.name() }}{% if vehicle.isArchived() %} ({{ 'vehicle.status.archived'|trans }}){% endif -%}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <label class="checkbox report-filter__archived">
+                    <input type="checkbox" name="include_archived" value="1"{% if filter.includeArchived %} checked{% endif %}>
+                    <span>{{ 'report.field.include_archived'|trans }}</span>
+                </label>
+            </div>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary">{{ ui.icon('check') }}{{ 'report.apply'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url_for('reports.true_cost') }}">{{ 'report.reset'|trans }}</a>
+            </div>
+        </form>
+
+        {% if rows is empty %}
+            <div class="card empty">
+                {{ ui.icon('toll') }}
+                <p class="empty__title">{{ 'true_cost.empty_title'|trans }}</p>
+                <p>{{ 'true_cost.empty_body'|trans }}</p>
+            </div>
+        {% endif %}
+
+        {# Fleet view: one line per vehicle, for vehicles in the same currency. #}
+        {% for currency, chart in fleet_charts %}
+            <section class="card" aria-labelledby="true-cost-fleet-{{ currency }}">
+                <h2 id="true-cost-fleet-{{ currency }}" class="card__title">{{ 'true_cost.fleet_title'|trans }}</h2>
+                <p class="muted">{{ 'true_cost.fleet_lead'|trans({currency: currency_name(currency)}) }}</p>
+                {{ ui.chart(chart, 'true_cost.fleet_lead'|trans({currency: currency_name(currency)})) }}
+            </section>
+        {% endfor %}
+
+        {% for vtc in rows %}
+            <section class="card" aria-labelledby="true-cost-{{ vtc.vehicle.id }}">
+                <div class="card__header">
+                    <h2 id="true-cost-{{ vtc.vehicle.id }}" class="card__title">
+                        <a href="{{ url_for('vehicles.show', {id: vtc.vehicle.id}) }}">{{ vtc.vehicle.name() }}</a>
+                        {%- if vtc.vehicle.isArchived() %} <span class="muted">({{ vtc.vehicle.isWrittenOff() or vtc.vehicle.isReturned() ? vehicle_ui.disposal(vtc.vehicle) : 'vehicle.status.archived'|trans }})</span>{% endif -%}
+                    </h2>
+                </div>
+                {% set since = vtc.sinceBought %}
+                {% if since.perKm is not null %}
+                    <p>{{ 'true_cost.range.since_bought'|trans }}: {{ tcm.headline(since, true_cost_wording) }}</p>
+                {% endif %}
+                {% if charts[loop.index0] %}
+                    {{ ui.chart(charts[loop.index0], chart_labels[loop.index0]) }}
+                {% endif %}
+                {{ tcm.table(vtc, true_cost_wording, chart_labels[loop.index0]) }}
+                {{ tcm.changes(vtc, true_cost_wording) }}
+            </section>
+        {% endfor %}
+    </div>
+{% endblock %}

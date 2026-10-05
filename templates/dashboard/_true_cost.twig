@@ -1,0 +1,37 @@
+{# True cost per distance (spec.md §7.35): each vehicle ranked by currency, highest first; no figure last. #}
+{% import 'macros/true_cost.twig' as tcm %}
+{% set widget_data = dashboard.trueCost %}
+{% set chip = selected ? {vehicle: selected.id} : {} %}
+{{ tcm.switch(
+    widget_data.range,
+    url_for('home', {}, chip|merge({true_cost: 'since_bought'})) ~ '#widget-true_cost',
+    url_for('home', {}, chip) ~ '#widget-true_cost'
+) }}
+{% if widget_data.isEmpty() %}
+    <p class="muted">{{ 'true_cost.widget_empty'|trans }}</p>
+{% else %}
+    {% for currency, rows in widget_data.byCurrency %}
+        <ol class="true-cost__ranking">
+            {% for vtc in rows %}
+                {% set tc = vtc.period(widget_data.range) %}
+                <li class="true-cost__row">
+                    <div class="true-cost__row-head">
+                        <a href="{{ url_for('vehicles.show', {id: vtc.vehicle.id}) }}#true-cost">{{ vtc.vehicle.name() }}</a>
+                        {% if tc and tc.perKm is not null %}
+                            <span>{{ tcm.headline(tc, true_cost_wording) }}</span>
+                        {% endif %}
+                    </div>
+                    {% if tc and tc.perKm is not null %}
+                        {{ tcm.bar(tc) }}
+                        <p class="muted true-cost__row-foot">
+                            {{- true_cost_wording.breakdown(tc) -}}
+                            {%- if vtc.twelveMonthChange() is not null %} · {{ tcm.change(vtc.twelveMonthChange(), vtc.currency, true_cost_wording) }}{% endif -%}
+                        </p>
+                    {% else %}
+                        <p class="muted">{{ (tc and tc.gap ? tc.gap.messageKey() : 'true_cost.gap.no_mileage')|trans }}</p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    {% endfor %}
+{% endif %}

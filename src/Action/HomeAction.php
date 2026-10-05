@@ -11,6 +11,8 @@ use Logbook\Service\Attention\AttentionWording;
 use Logbook\Service\Dashboard\DashboardService;
 use Logbook\Service\Forecast\ForecastWording;
 use Logbook\Service\Reminder\ReminderWording;
+use Logbook\Service\Report\TrueCostRange;
+use Logbook\Service\Report\TrueCostWording;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
@@ -38,6 +40,7 @@ final readonly class HomeAction
         private AttentionWording $attentionWording,
         private DraftStore $drafts,
         private DraftCards $draftCards,
+        private TrueCostWording $trueCostWording,
     ) {
     }
 
@@ -48,7 +51,8 @@ final readonly class HomeAction
         $customise = ($query['customise'] ?? null) === '1';
         $vehicle = $query['vehicle'] ?? null;
         $vehicleId = !$customise && is_string($vehicle) && ctype_digit($vehicle) ? (int) $vehicle : null;
-        $dashboard = $this->dashboards->build($user, $vehicleId);
+        // The true cost widget's period (spec.md §7.35): a link, not a saved setting.
+        $dashboard = $this->dashboards->build($user, $vehicleId, TrueCostRange::chosen($query['true_cost'] ?? null));
 
         return $this->view->render($request, $response, 'home.twig', [
             'dashboard' => $dashboard,
@@ -60,6 +64,7 @@ final readonly class HomeAction
             'attention_wording' => $this->attentionWording,
             'efficiency_chart' => $this->charts->efficiency($dashboard->efficiency),
             'mileage_chart' => $this->charts->mileage($dashboard->mileage),
+            'true_cost_wording' => $this->trueCostWording,
         ]);
     }
 }

@@ -348,6 +348,31 @@
                         </div>
                     {% endif %}
                 </dl>
+                {# True cost (spec.md §7.35): the five parts per distance, since bought or over the last 12 months. #}
+                {% if true_cost %}
+                    {% import 'macros/true_cost.twig' as tcm %}
+                    {% set tc = true_cost.period(true_cost_range) %}
+                    <div class="true-cost" id="true-cost">
+                        <div class="true-cost__head">
+                            <h3 class="card__subtitle">{{ 'true_cost.breakdown_label'|trans }}</h3>
+                            {{ tcm.switch(
+                                true_cost_range,
+                                url_for('vehicles.show', {id: vehicle.id}) ~ '#true-cost',
+                                url_for('vehicles.show', {id: vehicle.id}, {true_cost: 'last_12_months'}) ~ '#true-cost'
+                            ) }}
+                        </div>
+                        {% if tc and tc.perKm is not null %}
+                            <p>{{ tcm.headline(tc, true_cost_wording) }}</p>
+                            {{ tcm.bar(tc) }}
+                            {{ tcm.parts(tc, true_cost_wording) }}
+                            {% if tc.isRunningOnly() and tc.period.range.value != 'since_bought' %}
+                                <p class="field__hint">{{ 'true_cost.no_depreciation'|trans }}</p>
+                            {% endif %}
+                        {% else %}
+                            <p class="muted">{{ (tc and tc.gap ? tc.gap.messageKey() : 'true_cost.gap.no_mileage')|trans }}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
                 {% if not cost.isComplete() %}
                     <p class="field__hint">{{ (cost.depreciation.state.value == 'no_purchase_price' ? 'valuation.hint.no_purchase_price' : 'valuation.hint.no_value')|trans }}</p>
                 {% endif %}
@@ -362,6 +387,9 @@
                     <a class="btn" href="{{ url_for('expenses.index', {id: vehicle.id}) }}">{{ 'expense.title'|trans }}</a>
                     {% if feature_enabled('reports') %}
                         <a class="btn" href="{{ url_for('reports.ownership', {}, {vehicle: vehicle.id}) }}">{{ 'ownership.report_link'|trans }}</a>
+                        {% if true_cost %}
+                            <a class="btn" href="{{ url_for('reports.true_cost', {}, {vehicle: vehicle.id}) }}">{{ 'true_cost.report_link'|trans }}</a>
+                        {% endif %}
                     {% endif %}
                 </div>
             </section>

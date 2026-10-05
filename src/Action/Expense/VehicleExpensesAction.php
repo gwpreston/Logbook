@@ -25,6 +25,9 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Logbook\Service\Finance\FinanceService;
+use Logbook\Action\Report\TrueCostCharts;
+use Logbook\Service\Report\TrueCostService;
+use Logbook\Service\Report\TrueCostWording;
 
 /**
  * GET /vehicles/{id}/expenses — the expenses tab: the vehicle's spend over a
@@ -46,6 +49,9 @@ final readonly class VehicleExpensesAction
         private VehicleAccess $access,
         private ExpenseService $expenses,
         private FinanceService $finance,
+        private TrueCostService $trueCosts,
+        private TrueCostWording $trueCostWording,
+        private TrueCostCharts $trueCostCharts,
     ) {
     }
 
@@ -68,6 +74,7 @@ final readonly class VehicleExpensesAction
         [$report, $lastTwelve] = $this->reports->compare($user, [$vehicle], [$filter, $twelve]);
         $rows = $report->newestFirst();
         $pagination = Pagination::fromQuery($query, count($rows));
+        $trueCost = $this->trueCosts->forVehicle($user, $vehicle, $today);
 
         return $this->view->render($request, $response, 'expenses/index.twig', [
             'vehicle' => $vehicle,
@@ -82,6 +89,11 @@ final readonly class VehicleExpensesAction
             'attachment_counts' => $this->attachments->counts($vehicle),
             // Phase 29.1 (spec.md §7.32 *Overlap warning*): manual finance expenses an agreement may count twice.
             'finance_overlap' => $this->finance->overlapFor($user, $vehicle),
+            // True cost by year (spec.md §7.35).
+            'true_cost' => $trueCost,
+            'true_cost_chart' => $trueCost === null ? null : $this->trueCostCharts->vehicle($trueCost),
+            'true_cost_chart_label' => $trueCost === null ? '' : $this->trueCostCharts->label($trueCost),
+            'true_cost_wording' => $this->trueCostWording,
         ]);
     }
 

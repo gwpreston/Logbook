@@ -123,6 +123,48 @@
         context.restore();
     }
 
+    // Partial periods (a year so far, the year it was bought): diagonal
+    // stripes over their bars, as plain strokes so they print too.
+    function partialHatch(hatched) {
+        return {
+            id: 'partialHatch',
+            afterDatasetsDraw: function (chart) {
+                var context = chart.ctx;
+                chart.data.datasets.forEach(function (dataset, index) {
+                    var meta = chart.getDatasetMeta(index);
+                    if (meta.hidden || dataset.type === 'line') {
+                        return;
+                    }
+                    meta.data.forEach(function (bar, i) {
+                        if (!hatched[i]) {
+                            return;
+                        }
+                        var props = bar.getProps(['x', 'y', 'base', 'width'], true);
+                        var top = Math.min(props.y, props.base);
+                        var height = Math.abs(props.base - props.y);
+                        var left = props.x - props.width / 2;
+                        if (height < 1) {
+                            return;
+                        }
+                        context.save();
+                        context.beginPath();
+                        context.rect(left, top, props.width, height);
+                        context.clip();
+                        context.strokeStyle = printing ? printColour(0) : 'rgba(255, 255, 255, 0.65)';
+                        context.lineWidth = 2;
+                        context.beginPath();
+                        for (var d = -height; d < props.width; d += 7) {
+                            context.moveTo(left + d, top + height);
+                            context.lineTo(left + d + height, top);
+                        }
+                        context.stroke();
+                        context.restore();
+                    });
+                });
+            },
+        };
+    }
+
     var printTexture = {
         id: 'printTexture',
         afterDatasetsDraw: function (chart) {
@@ -363,6 +405,9 @@
                 : { type: 'line', data: chartData(spec), options: chartOptions(spec) };
             if (printing && spec.type === 'bar') {
                 config.plugins = [printTexture];
+            }
+            if (spec.type === 'bar' && Array.isArray(spec.hatched) && spec.hatched.indexOf(true) !== -1) {
+                config.plugins = (config.plugins || []).concat([partialHatch(spec.hatched)]);
             }
             var chart = new window.Chart(canvas, config);
             if (printing) {

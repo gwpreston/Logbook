@@ -25,6 +25,9 @@ use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Report\OwnershipService;
+use Logbook\Service\Report\TrueCostRange;
+use Logbook\Service\Report\TrueCostService;
+use Logbook\Service\Report\TrueCostWording;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
@@ -79,6 +82,8 @@ final readonly class ShowVehicleAction
         private AttentionWording $attentionWording,
         private AttentionSettingsStore $attentionSettings,
         private FinanceService $finance,
+        private TrueCostService $trueCosts,
+        private TrueCostWording $trueCostWording,
     ) {
     }
 
@@ -145,6 +150,10 @@ final readonly class ShowVehicleAction
             'finance' => $this->finance->activeView($user, $vehicle),
             // Core, like the Expenses tab: shown whatever modules are on (spec.md §7.1).
             'ownership_cost' => $this->ownership->forVehicle($user, $vehicle, $odometer->readings, $depreciation, $today),
+            // True cost (spec.md §7.35): the card's breakdown, since bought by default.
+            'true_cost' => $this->trueCosts->forVehicle($user, $vehicle, $today),
+            'true_cost_range' => TrueCostRange::chosen($request->getQueryParams()['true_cost'] ?? null, TrueCostRange::SinceBought),
+            'true_cost_wording' => $this->trueCostWording,
             'coming_up' => $comingUp,
             'attention' => $comingUp === null ? [] : $this->attention->forVehicles($user, [$vehicle], forecast: $comingUp)->items,
             'attention_wording' => $this->attentionWording,

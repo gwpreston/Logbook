@@ -17,6 +17,8 @@ final class BarChart implements JsonSerializable
 {
     /** @var list<array{label: string, color: string, type: string, values: list<?float>}> */
     private array $series = [];
+    /** @var list<bool> bars drawn hatched (a partial period), one per label */
+    private array $hatched = [];
 
     /**
      * @param list<string> $labels one per bar, e.g. localised month names
@@ -51,6 +53,18 @@ final class BarChart implements JsonSerializable
     }
 
     /**
+     * Hatch the bars of partial periods (spec.md §7.35: a year so far).
+     *
+     * @param list<bool> $hatched one per label
+     */
+    public function hatch(array $hatched): self
+    {
+        $this->hatched = $hatched;
+
+        return $this;
+    }
+
+    /**
      * Worth drawing: some bar above zero.
      */
     public function hasData(): bool
@@ -80,6 +94,7 @@ final class BarChart implements JsonSerializable
             'stacked' => $this->stacked,
             'unit' => $this->unit,
             'series' => $this->series,
+            'hatched' => $this->hatched,
         ];
     }
 }

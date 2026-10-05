@@ -142,6 +142,8 @@ use Logbook\Action\Reminder\EditReminderAction;
 use Logbook\Action\Reminder\ReminderListAction;
 use Logbook\Action\Reminder\ReminderStatusAction;
 use Logbook\Action\Report\OwnershipExportAction;
+use Logbook\Action\Report\TrueCostExportAction;
+use Logbook\Action\Report\TrueCostReportAction;
 use Logbook\Action\Report\OwnershipReportAction;
 use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
@@ -715,6 +717,8 @@ return static function (App $app): void {
             $reports->get('/reports/export.csv', ReportExportAction::class)->setName('reports.export');
             $reports->get('/reports/ownership', OwnershipReportAction::class)->setName('reports.ownership');
             $reports->get('/reports/ownership.csv', OwnershipExportAction::class)->setName('reports.ownership.export');
+            $reports->get('/reports/true-cost', TrueCostReportAction::class)->setName('reports.true_cost');
+            $reports->get('/reports/true-cost.csv', TrueCostExportAction::class)->setName('reports.true_cost.export');
         })->add($module(Feature::Reports));
 
         $group->get('/settings', SettingsAction::class)->setName('settings');

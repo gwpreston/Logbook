@@ -30,6 +30,8 @@ enum DashboardWidget: string
     case Finance = 'finance';
     /** The cheapest listed fuel near a place (Phase 30.2, spec.md §7.34): only while a price provider is enabled. */
     case CheapestFuel = 'cheapest_fuel';
+    /** Each vehicle's true cost per distance, ranked (Phase 32, spec.md §7.35); core. */
+    case TrueCost = 'true_cost';
 
     /**
      * The module it shows, hidden with it (spec.md §7.10).
@@ -37,7 +39,7 @@ enum DashboardWidget: string
     public function feature(): ?Feature
     {
         return match ($this) {
-            self::Fleet, self::Mileage, self::RecentActivity, self::ComingUp, self::NeedsAttention => null,
+            self::Fleet, self::Mileage, self::RecentActivity, self::ComingUp, self::NeedsAttention, self::TrueCost => null,
             self::Reminders => Feature::Reminders,
             self::Spend => Feature::Reports,
             self::RecentFuel, self::Efficiency => Feature::Fuel,
@@ -64,6 +66,7 @@ enum DashboardWidget: string
             self::RecentActivity => 'history',
             self::Finance => 'account_balance',
             self::CheapestFuel => 'price_check',
+            self::TrueCost => 'toll',
         };
     }
 

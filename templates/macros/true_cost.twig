@@ -1,0 +1,110 @@
+{# True cost (spec.md §7.35): shared by the overview card, the dashboard widget, the report and the Expenses tab. #}
+
+{# The positive parts as one stacked bar; a gain and payouts are listed, not drawn. #}
+{% macro bar(tc) -%}
+    {%- set segments = tc.bar() -%}
+    {%- if segments is not empty -%}
+        <div class="stack-bar" aria-hidden="true">
+            {%- for segment in segments -%}
+                <span class="stack-bar__part" style="--w: {{ segment.percent|round(1) }}%; --swatch: var(--{{ segment.part.color() }})"></span>
+            {%- endfor -%}
+        </div>
+    {%- endif -%}
+{%- endmacro %}
+
+{# Each part per distance, the payouts, and the total they add up to. #}
+{% macro parts(tc, wording) -%}
+    <ul class="legend true-cost__parts">
+        {%- for part in tc.parts() %}
+            <li class="legend__item"><span class="swatch" style="--swatch: var(--{{ part.color() }})" aria-hidden="true"></span><span class="legend__label">{{ wording.part(part) }}</span><span class="legend__value tabular">{{ wording.rate(tc.rate(part), tc.currency) }}</span></li>
+        {%- endfor %}
+        {%- if tc.payoutsPerKm is not null %}
+            <li class="legend__item"><span class="swatch" aria-hidden="true"></span><span class="legend__label">{{ 'true_cost.payouts'|trans }}</span><span class="legend__value tabular">{{ wording.rate(tc.payoutsPerKm, tc.currency) }}</span></li>
+        {%- endif %}
+    </ul>
+{%- endmacro %}
+
+{# The headline with what it covers: "£0.34/mi (depreciation to 1 Mar 2026)". #}
+{% macro headline(tc, wording) -%}
+    <strong class="figure-sm tabular">{{ wording.rate(tc.perKm, tc.currency) }}</strong>
+    {%- if tc.isRunningOnly() %} <span class="muted">({{ 'true_cost.running_only'|trans }})</span>
+    {%- elseif tc.depreciationTo %} <span class="muted">({{ 'true_cost.depreciation_to'|trans({date: tc.depreciationTo|local_date}) }})</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{# The change against the 12 months before: "↑ £0.03/mi". #}
+{% macro change(perKm, currency, wording) -%}
+    {%- if perKm is not null -%}
+        {%- set sign = wording.sign(perKm) -%}
+        <span class="true-cost__change{{ sign > 0 ? ' true-cost__change--up' : (sign < 0 ? ' true-cost__change--down') }}">{{ wording.arrow(perKm, currency) }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{# Two links switching the period, so it works without JS. #}
+{% macro switch(current, href_since, href_twelve) -%}
+    <nav class="chip-row true-cost__switch" aria-label="{{ 'true_cost.switch_label'|trans }}">
+        <a class="chip" href="{{ href_twelve }}"{% if current.value == 'last_12_months' %} aria-current="true"{% endif %}>{{ 'true_cost.range.last_12_months'|trans }}</a>
+        <a class="chip" href="{{ href_since }}"{% if current.value == 'since_bought' %} aria-current="true"{% endif %}>{{ 'true_cost.range.since_bought'|trans }}</a>
+    </nav>
+{%- endmacro %}
+
+{# The trend table: one row per year, the no-JS and print fallback of the chart. #}
+{% macro table(vtc, wording, caption) -%}
+    {%- set parts = ['fuel', 'maintenance', 'compliance', 'other', 'depreciation'] -%}
+    <div class="table-wrap">
+        <table class="table">
+            <caption class="visually-hidden">{{ caption }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'true_cost.column.year'|trans }}</th>
+                    <th scope="col" class="table__num">{{ 'true_cost.column.distance'|trans }}</th>
+                    {% for part in parts %}<th scope="col" class="table__num">{{ ('true_cost.part.' ~ part)|trans }}</th>{% endfor %}
+                    <th scope="col" class="table__num">{{ 'true_cost.column.per_distance'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for year in vtc.years|reverse %}
+                    <tr>
+                        <th scope="row">
+                            {{ wording.label(year) }}
+                            {%- if year.perKm is not null and not year.isComparable() %}<br><span class="muted">{{ 'true_cost.too_little'|trans }}</span>{% endif -%}
+                        </th>
+                        <td class="table__num tabular">{{ year.distanceKm is not null ? year.distanceKm|distance : '—' }}</td>
+                        {% for part in parts %}
+                            {% set rate = year.rates[part] ?? null %}
+                            <td class="table__num tabular">{{ rate is not null ? wording.rate(rate, year.currency) : '—' }}</td>
+                        {% endfor %}
+                        <td class="table__num tabular">
+                            {%- if year.perKm is not null -%}
+                                <strong>{{ wording.rate(year.perKm, year.currency) }}</strong>
+                                {%- if year.isRunningOnly() %}<br><span class="muted">{{ 'true_cost.running_only'|trans }}</span>{% endif -%}
+                            {%- else -%}
+                                <span class="muted">{{ year.gap.messageKey()|trans }}</span>
+                            {%- endif -%}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{%- endmacro %}
+
+{# What changed: each comparable year against the one before, newest first. #}
+{% macro changes(vtc, wording) -%}
+    {%- set years = vtc.years -%}
+    {%- for i in years|length > 1 ? (years|length - 1)..1 : [] -%}
+        {%- set change = vtc.changeFor(years[i].period.year) -%}
+        {%- if change -%}
+            <section class="true-cost__changed" aria-labelledby="changed-{{ vtc.vehicle.id }}-{{ years[i].period.year }}">
+                <h4 id="changed-{{ vtc.vehicle.id }}-{{ years[i].period.year }}" class="card__subtitle">{{ 'true_cost.what_changed'|trans }}: {{ wording.label(years[i]) }}</h4>
+                <p class="muted">{{ 'true_cost.what_changed_lead'|trans({year: wording.label(years[i]), previous: wording.label(years[i - 1])}) }}</p>
+                <ul class="true-cost__lines">
+                    {% for line in change.lines %}
+                        <li>{{ wording.sentence(line, vtc.currency) }}</li>
+                    {% endfor %}
+                    <li class="true-cost__total"><strong>{{ 'true_cost.change.total'|trans({amount: wording.signed(change.perKm, vtc.currency)}) }}</strong></li>
+                </ul>
+            </section>
+        {%- endif -%}
+    {%- endfor -%}
+{%- endmacro %}
