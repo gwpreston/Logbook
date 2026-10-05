@@ -194,8 +194,146 @@ done the same way:
 
 ## Prototype notes
 
-*Filled in by task 33.2.1, one subsection per screen, before any code for
-that screen.*
+Audited 2026-10-05 against `design-import/Logbook.dc.html` (the only
+prototype file; `support.js` is its runtime). Each difference is sorted as
+**L** layout and style (build), **H** behaviour the app has (build from
+existing services), **N** new (not built; see *Open questions*), or **K**
+kept as the app does it because an earlier decision says so.
+
+### Signed-out shell (all signed-out pages)
+
+The prototype draws one column, 420 px wide, centred, top padding
+`clamp(28px, 8vh, 96px)`, gap 20 px:
+
+- **L** The Logbook mark and wordmark (*Log* / *book* in the two brand
+  colours) centred **above** the card, not inside it. The app shows the
+  card only.
+- **L** One card: surface, 1 px border, 22 px radius, 24 px padding,
+  shadow, 16 px gap between its parts.
+- **L** Heading 24 px Outfit 600, lead 14 px muted under it.
+- **L** Fields: label 13 px bold muted above a 48 px input on `surface2`
+  with a 12 px radius. Primary button 50 px, full width.
+- **L** Errors: one red-soft banner with the `error` icon at the bottom of
+  the card. The app shows it at the top, and ties field errors to fields;
+  keep both (the banner where the prototype puts it is a layout choice;
+  field-tied errors are the accessibility rule).
+- **N/demo** The "Email preview · demo only" panel and the demo hint line
+  are prototype scaffolding; not built.
+
+### Sign in
+
+- **K** Field is "Email"; the app keeps *Username or email* (#162).
+- **L** *Forgot password?* sits right-aligned **between** the password
+  field and the button; the app has it below the field already (move to
+  right-aligned).
+- **L** Lead "Welcome back. Your vehicles are waiting." The app's lead
+  stays translatable; wording may follow the prototype (new key, en/de).
+- **H** Show/hide password: an eye icon inside the password field
+  (`visibility` / `visibility_off`). Built as progressive enhancement: a
+  real button with `aria-pressed` and a label, added by JS; without JS
+  the plain field.
+- **H** SSO button, *or* divider, local-off and header-sign-in notices:
+  not in the prototype (it has no SSO); kept, drawn in the same card
+  style.
+
+### Forgotten password
+
+- **L** Back link *‹ Sign in* at the top of the card (the app has it).
+- **L** Heading "Reset your password", lead about the email link.
+- **K** Field label *Username or email* (#162).
+- **L** *Sent* state: a 52 px rounded icon tile (`mark_email_read`,
+  accent-soft) above the heading "Check your inbox"; two buttons side by
+  side, *Resend email* (outlined) and *Back to sign in* (surface2); a
+  muted spam-folder hint under them.
+- **K** The prototype says the link works for 30 minutes; the app's is 60
+  (#159). It names the typed address in bold; the app may, as it is only
+  an echo of what was typed (no enumeration).
+
+### Reset password (and invitation's password step)
+
+- **L** Heading "Choose a new password", lead "For {address}". The app's
+  lead names the username; keep the username (the link is per user, and
+  it may have no address).
+- **L** New password and confirm fields; a *Show passwords* text toggle
+  under them (JS, as above).
+- **H/N** A live checklist under the fields. Of its three rules, *At least
+  8 characters* and *Both passwords match* are what the app already
+  checks (build, JS only, server still decides). *Includes a letter and a
+  number* is **not** an app rule: **N**, see *Open questions*.
+- **K** A *Password updated* end screen with *Sign in*, saying other
+  devices were signed out. The app signs the user straight in after a
+  reset (spec §7.9) and does end every other session, so there is no end
+  screen; the confirmation is a flash on the page they land on.
+
+### Setup, invitation, welcome, break-glass, proxy signed-out, email confirmation
+
+- Not in the prototype. Drawn in the same shell (mark above, one card,
+  same field and button sizes) so the signed-out pages match. Setup and
+  invitation keep their wider card for the longer form.
+
+### Settings (single page)
+
+The prototype's Settings is **one page**, max 720 px wide, title 28 px,
+a column of cards (surface, 20 px radius, 18 px padding, card title 17 px
+Outfit 600). **It has no section navigation, no per-section URLs and no
+user management.** Its cards, in order:
+
+1. **Account:** a 44 px initial circle, the address, "Signed in on this
+   device", *Reset password* and *Sign out* buttons.
+   - **H** Initial circle → the app's avatar (Phase 33.1) or initial.
+   - **H** *Sign out* (the app has it at the foot of the page).
+   - **N** *Reset password* that emails yourself a link: the app has a
+     change-password form instead (keep the form).
+   - The app's profile, email, avatar, password, SSO and *Use AI* cards
+     aren't drawn; they go in this group in the same card style.
+2. **Appearance:** theme as a segmented control (System / Light / Dark
+   with icons). **L** The app has the same three as chips, plus the
+   accent picker (kept, under it).
+3. **Units & currency:** *Quick setup* row of presets as pill chips, then
+   one chip row per unit group (distance, volume, economy, currency),
+   each row divided by a hairline, and a muted note on conversion.
+   - **L** Rows and hairlines; presets as pills with pressed state
+     (task 33.2.4).
+   - **H** The app uses selects for the four fields; chips are a style
+     choice the app's `ui.chips` macro already offers.
+4. **Reminder lead time:** day chips and distance chips.
+   **H** The app has lead days and distance on *Settings → Reminders*.
+5. **Reminder delivery:** rows with a 40 px icon tile, title, hint and a
+   switch: In-app (always on, badge), Email (address and *Send test*),
+   Push via webhook (format chips ntfy / Gotify / Home Assistant / any
+   URL, URL and *Send test*), *Send at* time chips and *Frequency* chips,
+   Calendar feed (URL, copy, *Download .ics*, reset).
+   - **H** In-app, email, ntfy, test send, calendar feed, the monthly
+     digest: the app has them (on *Settings → Reminders*).
+   - **N** Gotify / Home Assistant / generic webhook formats, a *Send at*
+     time, a *Frequency* choice, *Download .ics* from Settings.
+6. **Data:** *Export expenses (CSV)*, *Reset dashboard layout*, reset demo.
+   - **H** Exports exist per vehicle and on Reports; no single expenses
+     export on Settings.
+   - **N** *Reset dashboard layout* (the app has no such action).
+   - **demo** Reset demo: not built.
+
+Not drawn at all, so kept and drawn in the card style: preferences
+region and preview, tyres, trips and mileage claims, places, import from
+another app, API keys, and every admin and installation link.
+
+### Settings → Users (list, invite, add user, actions, delete)
+
+- **Not in the prototype.** No list, invite, add-user, per-user action or
+  delete screen is drawn. Only the shared card, list-row (icon tile,
+  title, hint) and button styles above can be applied.
+
+### Settings → Account profile with avatar
+
+- **Not in the prototype** beyond the Account card's initial circle.
+
+### Sidebar and bottom navigation
+
+- **L** Order: Dashboard, Garage, Reminders, Reports, Fuel stations,
+  Insights (the app's *Ask*), Settings. Matches Goal 5.
+- **L** Label *Fuel stations*. Matches Goal 5.
+- Bottom nav: Home, Garage, Log, Reminders, More; Settings in *More*. The
+  app's bottom nav is unchanged apart from the label.
 
 ---
 
