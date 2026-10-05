@@ -164,7 +164,7 @@ which configured channels to use in **Settings → Reminders**. See
 | `MAIL_ENCRYPTION` | `tls` | `tls` (STARTTLS, required), `ssl` (implicit TLS, usually port 465) or `none`. |
 | `MAIL_FROM` | `logbook@localhost` | Sender, `address` or `Name <address>`. |
 | `MAIL_TO` | *(empty)* | The admins' default recipient for reminders. Each user's confirmed address (Settings → Account) comes first, members get email only at their own, and it is never used for reset links. |
-| `MAILPIT_PORT` | `8025` | Development only (`docker-compose.dev.yml`): the Mailpit web UI on the host. |
+| `MAILPIT_PORT` | `8025` | Development only (`docker-compose.dev.yml`): the Mailpit web UI on the host. Unset, `bin/dev-setup.sh` moves to the next free port when 8025 is taken. |
 | `NTFY_URL` | *(empty)* | ntfy topic URL, e.g. `https://ntfy.sh/my-garage`: the admins' reminders; each user can set their own topic. |
 | `NTFY_TOKEN` | *(empty)* | Access token for a protected topic. |
 | `GOTIFY_URL`, `GOTIFY_TOKEN` | *(empty)* | Gotify server URL and application token (the admins'; each user can set their own token on this server). |

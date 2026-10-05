@@ -101,7 +101,9 @@ The port may be set for a single run with either of:
   APP_PORT=8081 ./bin/dev-setup.sh
 
 Every email the app sends (password resets, invitations, reminders) lands in
-Mailpit at http://localhost:8025 (MAILPIT_PORT to change it).
+Mailpit at http://localhost:8025. If something else holds 8025 (another
+project's Mailpit), the next free port is used and printed; MAILPIT_PORT=<n>
+asks for one.
 USAGE
 }
 
@@ -165,7 +167,11 @@ if [ "$APP_PORT" = "8080" ]; then
 fi
 export APP_PORT
 BASE_URL="http://localhost:${APP_PORT}"
+MAILPIT_PORT_ASKED="${MAILPIT_PORT:-}"
 MAILPIT_PORT="${MAILPIT_PORT:-8025}"
+case "$MAILPIT_PORT" in
+    ''|*[!0-9]*) die "MAILPIT_PORT \"$MAILPIT_PORT\" is not a port number." ;;
+esac
 export MAILPIT_PORT
 MAILPIT_URL="http://localhost:${MAILPIT_PORT}"
 CREDENTIALS="var/dev-credentials"
@@ -312,6 +318,8 @@ if [ "$DO_STATUS" -eq 1 ]; then
         info "the app is not running — start it with ./bin/dev-setup.sh"
     fi
     if service_running mailpit; then
+        published="$(compose port mailpit 8025 2>/dev/null | sed 's/.*://' || true)"
+        [ -n "$published" ] && MAILPIT_URL="http://localhost:${published}"
         ok "Mailpit catches the app's email on $MAILPIT_URL"
     else
         info "Mailpit is not running"
@@ -360,6 +368,26 @@ if port_in_use "$APP_PORT" && ! port_is_ours "$APP_PORT"; then
 fi
 ok "port $APP_PORT is free (or already ours)"
 
+# Mailpit's web UI. Another project's Mailpit on 8025 is common; with no
+# MAILPIT_PORT asked for, move to the next free port rather than fail.
+if port_in_use "$MAILPIT_PORT" && ! port_is_ours "$MAILPIT_PORT"; then
+    if [ -n "$MAILPIT_PORT_ASKED" ]; then
+        die "Port $MAILPIT_PORT (MAILPIT_PORT) is already in use by something else.
+       Pick a free one: MAILPIT_PORT=8026 ./bin/dev-setup.sh"
+    fi
+    taken="$MAILPIT_PORT"
+    for candidate in $(seq $((MAILPIT_PORT + 1)) $((MAILPIT_PORT + 20))); do
+        if ! port_in_use "$candidate" || port_is_ours "$candidate"; then
+            MAILPIT_PORT="$candidate"
+            break
+        fi
+    done
+    [ "$MAILPIT_PORT" != "$taken" ] || die "No free port for Mailpit near $taken. Set one: MAILPIT_PORT=9025 ./bin/dev-setup.sh"
+    export MAILPIT_PORT
+    MAILPIT_URL="http://localhost:${MAILPIT_PORT}"
+    info "port $taken is taken by something else; Mailpit uses $MAILPIT_PORT instead"
+fi
+
 # Asked now, before the build, rather than after a wait of several minutes.
 if [ "$DO_RESET" -eq 1 ]; then
     confirm "This deletes ALL data in the $ENGINE_NAME dev database and its uploads. Continue?" \
@@ -382,6 +410,9 @@ fi
 # Every email the app sends goes to Mailpit (spec.md §10 *Development stack*).
 if run_logged up -d --wait mailpit; then
     ok "Mailpit is up on $MAILPIT_URL"
+elif grep -qE "address already in use|port is already allocated" "$LOG"; then
+    warn "Mailpit could not have port $MAILPIT_PORT; the app runs, but its email goes nowhere"
+    info "pick another port: MAILPIT_PORT=8026 ./bin/dev-setup.sh"
 else
     warn "Mailpit did not start; the app runs, but its email goes nowhere"
 fi
