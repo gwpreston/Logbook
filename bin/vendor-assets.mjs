@@ -154,6 +154,9 @@ const icons = [
   // A filled star for a favourite, the outline for not (Material Symbols has one name, two fills).
   { name: 'star', file: 'star-fill' },
   { name: 'star_outline', file: 'star' },
+  // Phase 33.2 (signed-out pages).
+  'mark_email_read',
+  'radio_button_unchecked',
 ];
 
 mkdirSync(join(outDir, 'fonts'), { recursive: true });

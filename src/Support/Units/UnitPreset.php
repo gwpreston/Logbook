@@ -69,4 +69,25 @@ enum UnitPreset: string
 
         return null;
     }
+
+    /**
+     * The preset matching a units form's values (`distance_unit`,
+     * `volume_unit`, `consumption_unit`, `depth_unit`), if any: null when
+     * one is missing or unknown, or the four are mixed (spec.md §8 *Unit
+     * presets*).
+     *
+     * @param array<string, string> $values
+     */
+    public static function matchingValues(array $values): ?self
+    {
+        $distance = DistanceUnit::tryFrom($values['distance_unit'] ?? '');
+        $volume = VolumeUnit::tryFrom($values['volume_unit'] ?? '');
+        $consumption = ConsumptionUnit::tryFrom($values['consumption_unit'] ?? '');
+        $depth = DepthUnit::tryFrom($values['depth_unit'] ?? '');
+        if ($distance === null || $volume === null || $consumption === null || $depth === null) {
+            return null;
+        }
+
+        return self::matching($distance, $volume, $consumption, $depth);
+    }
 }

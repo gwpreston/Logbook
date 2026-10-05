@@ -106,7 +106,7 @@ case "$variant" in
         expect "$base/" 200 'Hello, smoke'
         # nginx overwrites what a client sends, and drops the underscore spelling.
         status="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code}' \
-            -H 'Remote-User: someone-else' -H 'Remote_User: someone-else' "$base/settings")"
+            -H 'Remote-User: someone-else' -H 'Remote_User: someone-else' "$base/profile")"
         { [ "$status" = 200 ] && grep -q 'value="smoke"' /tmp/smoke.body; } \
             || fail "a client's own Remote-User reached the app ($status)"
         echo "ok  client Remote-User and Remote_User replaced by nginx"

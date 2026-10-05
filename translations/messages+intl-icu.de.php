@@ -187,6 +187,13 @@ return [
         'login_link_lead' => 'Dieser Link meldet {username} einmal an. Er wurde auf der Kommandozeile des Servers erstellt.',
         'login_link_submit' => 'Als {name} anmelden',
         'login_link_used' => 'Mit einem einmaligen Link angemeldet, {name}.',
+        'password_reveal' => 'Passwort anzeigen',
+        'rules' => [
+            'length' => 'Mindestens {min} Zeichen',
+            'match' => 'Beide Passwörter stimmen überein',
+            'met' => 'erfüllt',
+            'unmet' => 'noch nicht',
+        ],
         'username_or_email' => 'Benutzername oder E-Mail',
         'forgot' => [
             'link' => 'Passwort vergessen?',
@@ -1540,7 +1547,7 @@ return [
             'test_no_channels' => 'Kein Benachrichtigungskanal ist eingeschaltet und eingerichtet, daher wurde nichts gesendet.',
             'email_none_admin' => 'Dein Konto hat noch keine Adresse: Erinnerungs-E-Mails gehen an die Standardadresse des Servers (MAIL_TO).',
             'email_none' => 'Dein Konto hat noch keine Adresse, daher bekommst du keine Erinnerungs-E-Mails.',
-            'email_change' => 'Unter Einstellungen → Konto ändern',
+            'email_change' => 'In deinem Profil ändern',
         ],
         'calendar' => [
             'name' => 'Logbook-Erinnerungen',
@@ -3203,11 +3210,23 @@ return [
             'unexpected_file' => 'Diese Sicherung enthält eine Datei, die nicht hineingehört ({name}), und wurde daher nicht wiederhergestellt.',
         ],
     ],
+    // Die Profilseite (spec.md §8 *Profile page*, Phase 33.2).
+    'profile' => [
+        'title' => 'Profil',
+        'link_hint' => 'Deine E-Mail-Adresse, dein Bild und dein Passwort sowie Einheiten, Sprache und Aussehen',
+    ],
     'settings' => [
+        'group' => [
+            'account' => 'Konto',
+            'preferences' => 'Vorlieben',
+            'reminders' => 'Erinnerungen und Benachrichtigungen',
+            'driving' => 'Fahrzeuge und Fahrten',
+            'data' => 'Deine Daten',
+            'developers' => 'Entwickler',
+            'admin' => 'Verwaltung',
+        ],
         'title' => 'Einstellungen',
-        'data_heading' => 'Module und Daten',
-        'preferences' => 'Vorlieben',
-        'profile' => 'Profil',
+        'profile' => 'Name',
         'appearance' => 'Darstellung',
         'units' => 'Einheiten und Währung',
         'quick_setup' => 'Schnelleinstellung',
@@ -3580,7 +3599,7 @@ return [
         'failed' => 'Die Anmeldung mit {name} hat nicht geklappt. Versuche es noch einmal.',
         'unavailable_password' => '{name} ist gerade nicht erreichbar. Versuche es später noch einmal oder melde dich mit deinem Passwort an.',
         'unavailable' => '{name} ist gerade nicht erreichbar. Versuche es später noch einmal.',
-        'not_linked' => 'Dein {name}-Konto ist nicht mit Logbook verknüpft. Bitte einen Admin um eine Einladung und verknüpfe es dann unter Einstellungen → Konto.',
+        'not_linked' => 'Dein {name}-Konto ist nicht mit Logbook verknüpft. Bitte einen Admin um eine Einladung und verknüpfe es dann unter deinem Profil.',
         'card_title' => 'Single Sign-on',
         'card_lead' => 'Verknüpfe dein {name}-Konto, um dich damit anzumelden. Du wirst gebeten, dich dort anzumelden.',
         'link' => '{name}-Konto verknüpfen',

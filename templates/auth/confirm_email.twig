@@ -9,6 +9,7 @@
 
 {% block content %}
     <div class="auth">
+        {{ ui.auth_brand() }}
         <section class="card auth__card" aria-labelledby="confirm-heading">
             <header class="auth__header">
                 <h1 id="confirm-heading">{{ 'account.email.confirm_title'|trans }}</h1>

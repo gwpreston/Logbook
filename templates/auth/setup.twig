@@ -5,6 +5,7 @@
 
 {% block content %}
     <div class="auth auth--wide">
+        {{ ui.auth_brand() }}
         <section class="card auth__card" aria-labelledby="setup-heading">
             <header class="auth__header">
                 <p class="page-header__eyebrow">{{ 'setup.eyebrow'|trans }}</p>
@@ -35,6 +36,7 @@
                         type: 'password', required: true, autocomplete: 'new-password',
                     }) }}
                 </div>
+                {{ ui.password_rules('password', 'password_confirm') }}
 
                 <h2 class="form__section">{{ 'setup.preferences'|trans }}</h2>
                 {% set preset_options = [] %}

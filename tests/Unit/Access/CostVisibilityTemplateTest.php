@@ -40,7 +40,7 @@ final class CostVisibilityTemplateTest extends TestCase
         'forecast/index.twig' => 'Coming up: ComingUp leaves amounts out for vehicles without ViewCosts',
         'macros/forecast.twig' => 'Coming up rows: ComingUp leaves amounts out for vehicles without ViewCosts',
         // Not an amount of anyone's: the formatting preview.
-        'settings/index.twig' => 'the money formatting preview',
+        'profile/index.twig' => 'the money formatting preview',
         // Entry forms: amounts being entered or chosen, on Log / Manage pages.
         'tyres/form.twig' => 'the linked service record picker on a Manage form',
         'tyres/change_edit.twig' => 'the linked service record picker on a Manage form',

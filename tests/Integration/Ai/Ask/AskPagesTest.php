@@ -44,6 +44,9 @@ final class AskPagesTest extends AskTestCase
 
         $home = (string) $browser->get('/')->getBody();
         self::assertStringContainsString('data-ask-entry', $home);
+        // Settings below Ask in the sidebar (spec.md §8 *Sidebar order*, Phase 33.2).
+        $sidebar = substr($home, (int) strpos($home, '<aside class="sidebar">'));
+        self::assertLessThan(strpos($sidebar, 'href="/settings"'), strpos($sidebar, 'data-ask-entry'));
         self::assertStringContainsString('"url": "/ask"', (string) $browser->get('/manifest.webmanifest')->getBody());
         $page = (string) $browser->get('/ask')->getBody();
         self::assertStringContainsString('Answered by Ollama on the desktop on your network. Nothing leaves it.', $page);

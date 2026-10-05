@@ -151,14 +151,14 @@ final class CsrfAndPasswordTest extends AppTestCase
         $laptop->post('/login', ['username' => 'owner', 'password' => self::PASSWORD]);
         self::assertSame(200, $laptop->get('/')->getStatusCode());
 
-        $phone->get('/settings');
+        $phone->get('/profile');
         $before = $phone->sessionCookie();
         $response = $phone->post('/settings/password', [
             'current_password' => self::PASSWORD,
             'new_password' => 'a brand new passphrase',
             'new_password_confirm' => 'a brand new passphrase',
         ]);
-        self::assertSame('/settings', $response->getHeaderLine('Location'));
+        self::assertSame('/profile', $response->getHeaderLine('Location'));
         self::assertNotSame($before, $phone->sessionCookie(), 'this session moves to a new id');
         self::assertStringContainsString('Your password was changed.', self::body($phone->follow($response)));
 

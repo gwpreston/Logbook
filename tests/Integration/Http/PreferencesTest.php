@@ -23,9 +23,9 @@ final class PreferencesTest extends AppTestCase
         'timezone' => 'America/Los_Angeles',
     ];
 
-    public function testSettingsShowTheSavedPreferences(): void
+    public function testTheProfileShowsTheSavedPreferences(): void
     {
-        $html = self::body($this->signedIn($this->createApp())->get('/settings'));
+        $html = self::body($this->signedIn($this->createApp())->get('/profile'));
 
         self::assertStringContainsString('value="Pat Owner"', $html);
         self::assertMatchesRegularExpression('~value="mi" checked~', $html);
@@ -40,10 +40,10 @@ final class PreferencesTest extends AppTestCase
     {
         $app = $this->createApp();
         $browser = $this->signedIn($app);
-        $browser->get('/settings');
+        $browser->get('/profile');
 
         $response = $browser->post('/settings/preferences', self::US);
-        self::assertSame('/settings', $response->getHeaderLine('Location'));
+        self::assertSame('/profile', $response->getHeaderLine('Location'));
 
         $page = $browser->follow($response);
         $html = self::body($page);
@@ -64,14 +64,14 @@ final class PreferencesTest extends AppTestCase
         // Metric with km/L: mix and match is allowed.
         $metric = ['distance_unit' => 'km', 'volume_unit' => 'l', 'consumption_unit' => 'km_per_l'];
         $browser->post('/settings/preferences', $metric + self::US);
-        self::assertStringContainsString('12,346 km', self::body($browser->get('/settings')));
+        self::assertStringContainsString('12,346 km', self::body($browser->get('/profile')));
     }
 
     public function testInvalidPreferencesAreRejectedInPlace(): void
     {
         $app = $this->createApp();
         $browser = $this->signedIn($app);
-        $browser->get('/settings');
+        $browser->get('/profile');
 
         $invalid = ['timezone' => 'Mars/Olympus_Mons', 'currency' => 'DOGE', 'display_name' => ''];
         $response = $browser->post('/settings/preferences', $invalid + self::US);

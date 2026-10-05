@@ -1149,6 +1149,18 @@ a.list__item:hover {
     color: var(--on-accent);
 }
 
+/* Hover for chips people press (unit presets, choices); the pressed one darkens like a primary button. */
+button.chip:hover,
+label.chip:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+button.chip[aria-pressed="true"]:hover,
+label.chip:has(input:checked):hover {
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
+}
+
 .chip input {
     position: absolute;
     opacity: 0;
@@ -1195,6 +1207,31 @@ a.list__item:hover {
     background: var(--surface);
     color: var(--text);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+label.segmented__option:has(input:checked) {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+label.segmented__option:hover {
+    color: var(--text);
+}
+
+.segmented__option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.segmented__option:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.fieldset .segmented {
+    align-self: flex-start;
 }
 
 a.segmented__option {
@@ -1421,16 +1458,50 @@ a.segmented__option {
     }
 }
 
+/* Signed-out pages (spec.md §7.9 *Signed-out pages*, Phase 33.2 from the
+   prototype): the mark and wordmark centred above one card. */
 .auth {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    padding-top: clamp(var(--space-2), 8vh - var(--space-8), var(--space-14));
+}
+
+.auth__brand {
+    display: flex;
+    align-items: center;
     justify-content: center;
-    padding-top: var(--space-4);
+    gap: 0.625rem;
+    margin: 0;
+}
+
+.auth__mark {
+    width: 2.625rem;
+    height: 2.5rem;
+    object-fit: contain;
+}
+
+.auth__wordmark {
+    font-size: var(--fs-display);
+}
+
+/* One brand per page: the card's replaces the top bar's; signed in, the sidebar's. */
+.app--signed-out:has(.auth__brand) .topbar .brand {
+    visibility: hidden;
+}
+
+.app:not(.app--signed-out) .auth__brand {
+    display: none;
 }
 
 .auth__card {
     width: 100%;
-    max-width: 26rem;
-    gap: var(--space-5);
+    max-width: 26.25rem;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border-radius: var(--radius-sheet);
+    box-shadow: var(--shadow);
 }
 
 .auth--wide .auth__card {
@@ -1440,7 +1511,122 @@ a.segmented__option {
 .auth__header {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+}
+
+.auth__header h1 {
+    font-size: var(--fs-2xl);
+    letter-spacing: -0.01em;
+}
+
+.auth__header p {
+    margin: 0;
+    font-size: var(--fs-base);
+    line-height: 1.5;
+}
+
+/* The icon tile above a finished step's heading ("Check your inbox"). */
+.auth__tile {
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.auth__tile .icon {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.auth__actions {
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
+}
+
+.auth__actions > * {
+    flex: 1 1 10rem;
+}
+
+.auth__note {
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+/* Show / hide password (added by JS). */
+.input-reveal {
+    position: relative;
+    display: flex;
+}
+
+.input-reveal .input {
+    flex: 1;
+    min-width: 0;
+}
+
+.input-reveal:has(.input-reveal__btn:not([hidden])) .input {
+    padding-right: calc(var(--control-h) + var(--space-1));
+}
+
+.input-reveal__btn {
+    position: absolute;
+    top: 50%;
+    right: var(--space-1);
+    display: grid;
+    place-items: center;
+    width: var(--control-h);
+    height: var(--control-h);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.input-reveal__btn:hover {
+    color: var(--text);
+}
+
+.input-reveal__btn[hidden] {
+    display: none;
+}
+
+.input-reveal__btn[aria-pressed="true"] .input-reveal__show,
+.input-reveal__btn[aria-pressed="false"] .input-reveal__hide {
+    display: none;
+}
+
+/* The live checklist under a new password (JS only). */
+.password-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.password-rules li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+}
+
+.password-rules li.is-met {
+    color: var(--green);
+}
+
+.password-rules li.is-met .password-rules__off,
+.password-rules li:not(.is-met) .password-rules__on {
+    display: none;
 }
 
 /* "or sign in with your password" between the SSO button and the form (Phase 23.1). */
@@ -1818,6 +2004,25 @@ a.segmented__option {
     color: var(--muted);
     font-weight: 600;
     overflow-wrap: anywhere;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+}
+
+/* The name and avatar open the profile (spec.md §8 *Profile page*). */
+.sidebar__user:hover {
+    background: var(--surface-2);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.sidebar__user[aria-current="page"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.topbar__profile .avatar {
+    width: 1.75rem;
+    height: 1.75rem;
 }
 
 /* Avatars (spec.md §7.9, Phase 33.1): a picture, or initials on a tone from the user id.
@@ -1897,11 +2102,77 @@ a.segmented__option {
     display: contents;
 }
 
-/* The sidebar has its own sign-out button on wide screens. */
-@media (min-width: 60rem) {
-    .settings-signout {
-        display: none;
-    }
+/* Settings (spec.md §8 *Settings layout*): groups of cards under labels
+   that are also in-page anchors. */
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    scroll-margin-top: calc(var(--topbar-h) + var(--space-4));
+}
+
+.settings-group + .settings-group {
+    margin-top: var(--space-4);
+}
+
+.settings-group__title {
+    padding: 0 var(--space-1);
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+}
+
+/* A hairline between the rows of a card of choices (Units and currency). */
+.card--rows > .field:not([hidden]) + .fieldset,
+.card--rows > .fieldset + .fieldset,
+.card--rows > .fieldset + .field {
+    padding-top: var(--space-3);
+    /* A shadow, not a border: a fieldset's legend sits on its top border. */
+    box-shadow: inset 0 1px 0 var(--border);
+}
+
+/* A card title's leading icon sits on the title's line. */
+.card__title > .icon:first-child {
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: -0.2em;
+}
+
+/* Signed-out pages are one centred column, footer included. */
+.app--signed-out:has(.auth__brand) .app-footer {
+    text-align: center;
+}
+
+/* The profile page's header: avatar, name and *Sign out* (spec.md §8 *Profile page*). */
+.profile-header {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.profile-header__who {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.profile-header__who p {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--fs-sm);
+}
+
+.account-card__name {
+    font-size: var(--fs-base);
+    font-weight: 700;
+}
+
+.account-card__meta {
+    font-size: var(--fs-sm);
 }
 
 /* ------------------------------------------------- Phase 2: mileage + fuel */

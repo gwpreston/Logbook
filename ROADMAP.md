@@ -72,7 +72,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [31.2](docs/phases/phase-31.2.md) | The Fuel stations module shows its icon + v2.15.1 | ✅ |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | ✅ |
 | [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 🚧 |
-| [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 📋 |
+| [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 🚧 |
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 📋 |
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | 📋 |
 

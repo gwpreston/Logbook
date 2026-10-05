@@ -31,6 +31,26 @@
     </a>
 {%- endmacro %}
 
+{# The signed-out pages' brand, centred above their card (spec.md §7.9
+   *Signed-out pages*). Hidden by CSS when signed in: the sidebar has one. #}
+{% macro auth_brand() -%}
+    <p class="auth__brand">
+        <img class="auth__mark" src="{{ asset('images/logbook-mark.png') }}" alt="" width="256" height="242">
+        <span class="brand__wordmark auth__wordmark"><span class="visually-hidden">{{ 'app.name'|trans }}</span><span aria-hidden="true">{{ 'brand.wordmark_lead'|trans }}<span class="brand__wordmark-tail">{{ 'brand.wordmark_tail'|trans }}</span></span></span>
+    </p>
+{%- endmacro %}
+
+{# A live checklist of the app's own password rules under a new-password
+   pair (spec.md §7.9 *Signed-out pages*); JS only, the server still
+   decides. `password` and `confirm` are the two fields' names. #}
+{% macro password_rules(password, confirm) -%}
+    {% import _self as ui %}
+    <ul class="password-rules" data-password-rules data-password="{{ password }}" data-confirm="{{ confirm }}" data-met="{{ 'auth.rules.met'|trans }}" data-unmet="{{ 'auth.rules.unmet'|trans }}" hidden>
+        <li data-rule="length" data-min="8">{{ ui.icon('radio_button_unchecked', 'password-rules__off') }}{{ ui.icon('check_circle', 'password-rules__on') }}<span>{{ 'auth.rules.length'|trans({min: 8}) }}</span><span class="visually-hidden" data-rule-state></span></li>
+        <li data-rule="match">{{ ui.icon('radio_button_unchecked', 'password-rules__off') }}{{ ui.icon('check_circle', 'password-rules__on') }}<span>{{ 'auth.rules.match'|trans }}</span><span class="visually-hidden" data-rule-state></span></li>
+    </ul>
+{%- endmacro %}
+
 {# Theme toggle; hidden until js/theme.js enables it. `compact` = icon only.
    Signed in, it is a small form that saves the preference (theme.js fills in
    the value); signed out, theme.js remembers the choice per browser. #}
@@ -152,7 +172,9 @@
     {% set hint = opts.hint ?? null %}
     <div class="field">
         <label class="field__label" for="f-{{ name }}">{{ label }}{% if opts.optional ?? false %} <span class="field__optional">{{ 'form.optional'|trans }}</span>{% endif %}{{ ui.from_message(name, values) }}</label>
+        {% set reveal = (opts.type ?? 'text') == 'password' %}
         {% if opts.suffix ?? null %}<div class="input-group">{% endif %}
+        {% if reveal %}<div class="input-reveal">{% endif %}
         <input class="input" id="f-{{ name }}" name="{{ name }}" type="{{ opts.type ?? 'text' }}"
             {%- if opts.type ?? 'text' != 'password' %} value="{{ values[name] ?? '' }}"{% endif %}
             {%- if opts.required ?? false %} required{% endif %}
@@ -165,6 +187,11 @@
             {%- if opts.placeholder ?? null %} placeholder="{{ opts.placeholder }}"{% endif %}
             {%- if opts.readonly ?? false %} readonly{% endif %}
             {{- ui.described_by(name, errors, hint, values) }}>
+        {% if reveal %}
+            {# Show / hide (spec.md §7.9): added by JS, so without it this is a plain field. #}
+            <button type="button" class="input-reveal__btn" data-password-reveal aria-controls="f-{{ name }}" aria-pressed="false" hidden>{{ ui.icon('visibility', 'input-reveal__show') }}{{ ui.icon('visibility_off', 'input-reveal__hide') }}<span class="visually-hidden">{{ 'auth.password_reveal'|trans }}</span></button>
+        </div>
+        {% endif %}
         {% if opts.suffix ?? null %}<span class="input-group__suffix" aria-hidden="true">{{ opts.suffix }}</span></div>{% endif %}
         {% if hint %}<p class="field__hint" id="f-{{ name }}-hint">{{ hint }}</p>{% endif %}
         {{ ui.scan_note(name, values) }}
@@ -216,9 +243,10 @@
     {% set current = values[name] ?? '' %}
     <fieldset class="field fieldset"{% if errors[name] ?? null %} aria-describedby="f-{{ name }}-error"{% endif %}>
         <legend class="field__label">{{ legend }}</legend>
-        <div class="chip-row">
+        {# `segmented`: one control of a few options (System / Light / Dark), as the prototype draws the theme. #}
+        <div class="{{ (opts.segmented ?? false) ? 'segmented' : 'chip-row' }}">
             {% for option in options %}
-                <label class="chip">
+                <label class="{{ (opts.segmented ?? false) ? 'segmented__option' : 'chip' }}">
                     <input type="radio" name="{{ name }}" value="{{ option.value }}"{% if option.value == current %} checked{% endif %}{% if opts.required ?? false %} required{% endif %}{% if opts.data ?? null %} {{ opts.data }}{% endif %}>
                     {% if option.icon ?? null %}{{ ui.icon(option.icon) }}{% endif %}
                     <span>{{ option.label }}</span>

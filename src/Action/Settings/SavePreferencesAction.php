@@ -21,7 +21,7 @@ final readonly class SavePreferencesAction
 {
     public function __construct(
         private UserService $users,
-        private SettingsPage $page,
+        private ProfilePage $page,
         private Redirector $redirect,
         private AvailableLocales $locales,
     ) {
@@ -31,12 +31,14 @@ final readonly class SavePreferencesAction
     {
         $profile = ProfileForm::parse(RequestContext::form($request), RequestContext::locale($request), $this->locales);
         if ($profile instanceof ValidationErrors) {
-            return $this->page->render($request, $response, RequestContext::formValues($request), $profile, null, 422);
+            $values = RequestContext::formValues($request);
+
+            return $this->page->render($request, $response, 422, values: $values, preferenceErrors: $profile);
         }
 
         $this->users->updateProfile(RequestContext::requireUser($request), $profile);
         RequestContext::session($request)->flash('success', 'settings.saved');
 
-        return $this->redirect->toRoute('settings');
+        return $this->redirect->toRoute('profile');
     }
 }

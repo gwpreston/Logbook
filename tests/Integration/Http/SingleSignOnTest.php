@@ -391,20 +391,20 @@ final class SingleSignOnTest extends AppTestCase
         self::assertStringNotContainsString('Sign in with', self::body($this->get($app, '/login')));
     }
 
-    public function testASignedInUserLinksTheirAccountFromSettings(): void
+    public function testASignedInUserLinksTheirAccountFromTheirProfile(): void
     {
         [$app, $idp] = $this->ssoApp();
         $browser = $this->signedIn($app);
         $owner = $this->owner($app);
         $member = $this->createMember($app);
 
-        $settings = self::body($browser->get('/settings'));
+        $settings = self::body($browser->get('/profile'));
         self::assertStringContainsString('Link Authentik account', $settings);
         $start = $browser->post('/settings/sso/link');
         self::assertSame(303, $start->getStatusCode());
         self::assertStringStartsWith(FakeIdentityProvider::ISSUER, $start->getHeaderLine('Location'));
         $done = $browser->get($idp->authorize($start->getHeaderLine('Location'), ['sub' => 'sub-owner']));
-        self::assertSame('/settings', $done->getHeaderLine('Location'));
+        self::assertSame('/profile', $done->getHeaderLine('Location'));
         self::assertStringContainsString('Your Authentik account is linked.', self::body($browser->follow($done)));
         self::assertCount(1, $this->identities($app)->forUser($owner->id));
 
@@ -421,7 +421,7 @@ final class SingleSignOnTest extends AppTestCase
 
         // Unlinking: the owner still has a password, so it may go.
         $identity = $this->identities($app)->forUser($owner->id)[0];
-        $browser->get('/settings');
+        $browser->get('/profile');
         $unlink = $browser->post('/settings/sso/' . $identity->id . '/unlink');
         self::assertStringContainsString('is unlinked', self::body($browser->follow($unlink)));
         self::assertSame([], $this->identities($app)->forUser($owner->id));
@@ -474,7 +474,7 @@ final class SingleSignOnTest extends AppTestCase
         self::assertNotNull($kim);
         $identity = $this->identities($app)->forUser($kim->id)[0];
 
-        $settings = self::body($browser->get('/settings'));
+        $settings = self::body($browser->get('/profile'));
         self::assertStringContainsString('Set a password', $settings);
         self::assertStringNotContainsString('current_password', $settings, 'there is no current password');
         self::assertStringContainsString('This is your only way to sign in.', $settings);

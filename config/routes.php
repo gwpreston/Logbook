@@ -186,6 +186,7 @@ use Logbook\Action\Settings\EmailSettingsAction;
 use Logbook\Action\Settings\ModuleSettingsAction;
 use Logbook\Action\Settings\OidcLinkAction;
 use Logbook\Action\Settings\OidcUnlinkAction;
+use Logbook\Action\Settings\ProfileAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\RemoveIdentityAction;
 use Logbook\Action\Settings\RevokeApiKeyAction;
@@ -738,6 +739,8 @@ return static function (App $app): void {
         })->add($module(Feature::Reports));
 
         $group->get('/settings', SettingsAction::class)->setName('settings');
+        // The signed-in user's own account (spec.md §8 *Profile page*, Phase 33.2).
+        $group->get('/profile', ProfileAction::class)->setName('profile');
         // Lead times also drive the vehicle tabs' due badges, so this page stays when reminders are off.
         $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');
         $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules')

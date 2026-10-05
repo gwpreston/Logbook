@@ -85,7 +85,7 @@ single sign-on is on. `APP_URL` must be the address people open Logbook at:
 the redirect URI is built from it.
 
 After a restart the sign-in page has the button. Sign in with your password
-as usual, then go to **Settings → Account → Single sign-on** and choose
+as usual, then go to **Profile → Single sign-on** and choose
 **Link Authentik account**. From then on the button signs you in.
 
 > **The issuer must match exactly.** Logbook compares `OIDC_ISSUER` with the
@@ -190,7 +190,7 @@ isn't linked yet finds its user is set by `OIDC_LINK` and
 
 | Setting | An account that isn't linked yet | Risk |
 |---|---|---|
-| `OIDC_LINK=explicit` (default) | reaches nobody until a signed-in user links it in **Settings → Account** | none: linking proves both sides |
+| `OIDC_LINK=explicit` (default) | reaches nobody until a signed-in user links it on their **Profile** | none: linking proves both sides |
 | `OIDC_LINK=username` | is linked to the user with the same username (`preferred_username`, lower-cased), if that user has no linked account yet | anyone who can choose their username at the provider can take over the Logbook user of that name. Use it **only** if usernames at the provider are set by admins alone. |
 | `OIDC_AUTO_CREATE=true` | becomes a new member, with no password, the username from the claim (made valid, with `-2` added if it is taken) and the name and language from the provider. They see a short welcome form (units, currency, time zone). | anyone allowed to sign in at the provider gets an account. Combine it with `OIDC_ALLOWED_GROUPS`. |
 
@@ -203,10 +203,10 @@ Account." The usual way in for a new person is an invitation
 ([users-and-sharing.md](users-and-sharing.md#inviting-someone)): they sign
 up with a password, then link their account.
 
-**Unlinking.** Settings → Account → *Unlink* removes the link. It is refused
+**Unlinking.** *Unlink* on your Profile removes the link. It is refused
 while it is your only way in: if you have no password, or password sign-in
 is off. A user created by single sign-on can **Set a password** in
-Settings → Account (no current password asked, as there is none) while
+your Profile (no current password asked, as there is none) while
 password sign-in is on.
 
 **Admins** see each user's sign-in methods on Settings → Users (*Password*,
@@ -232,7 +232,7 @@ Group names are compared exactly. The groups come from the claim named by
 ## Switching password sign-in off
 
 With `AUTH_LOCAL_LOGIN=false` the sign-in page shows only the *Sign in
-with …* button. A password sent anyway is refused, and Settings → Account
+with …* button. A password sent anyway is refused, and the Profile page
 hides the password card. First-run setup still creates a local admin with
 a password: the password just isn't accepted at sign-in.
 
@@ -290,7 +290,7 @@ ones:
 | The token endpoint answered HTTP 400 (invalid_grant) | The redirect URI registered differs from the one Settings → Users shows (scheme, host, base path), or the code was used already. |
 | The callback's state is unknown or already used | The sign-in was started in another browser, the session cookie was lost (check `SESSION_SECURE` behind a TLS proxy), or the back button replayed it. Start again. |
 | The sign-in took longer than 10 minutes | Start again. |
-| … is not linked to any user | Link the account in Settings → Account, or see [Linking](#linking-accounts-to-users). |
+| … is not linked to any user | Link the account on your Profile, or see [Linking](#linking-accounts-to-users). |
 | … not in OIDC_ALLOWED_GROUPS | The user isn't in the group, or the groups claim isn't sent (Keycloak: the Group Membership mapper; Authelia: the `groups` scope). |
 
 A provider that can't be reached at all shows "Authentik can't be reached
@@ -578,7 +578,7 @@ stores its linked accounts in the same table. Backups and
 only with the same provider and issuer.
 
 Rolling the migration back is refused while any user has no password, and
-the message names them. Give each a password first (Settings → Account, or
+the message names them. Give each a password first (their Profile, or
 an admin's reset link), then roll back. Rolling back also removes open
 break-glass links.
 

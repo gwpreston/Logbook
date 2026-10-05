@@ -32,7 +32,7 @@ admin switches them on**.
 
 ## Switching it on or off
 
-Stations are **on by default**. They are part of fuel: an admin can switch
+Fuel stations are **on by default**. They are part of fuel: an admin can switch
 them off on **Settings → Modules** (or with `FEATURES_STATIONS=false`, see
 [configuration.md](configuration.md)), and with fuel off they are off too.
 While off, the fill-up form has its plain *Station* text field again and
@@ -48,7 +48,7 @@ most. Each fill-up is linked to its station; the text on it is kept as you
 typed it.
 
 Different spellings are **not** guessed to be the same place: "Tesco
-Antrim" and "Tesco, Antrim Rd" become two stations. **Stations →
+Antrim" and "Tesco, Antrim Rd" become two stations. **Fuel stations →
 Duplicates** lists the likely pairs (see [Duplicates and
 merging](#duplicates-and-merging)); for any others, use *Merge* on the
 station's page. Once merged, typing or importing the old spelling again
@@ -75,7 +75,7 @@ spacing) always links that station rather than making a second one.
 
 ## The stations list and a station's page
 
-**Stations** in the menu lists every station: favourites first, then by your
+**Fuel stations** in the menu lists every station: favourites first, then by your
 last visit. Each shows its brand and postcode, how far it is from each of
 your places, your visits and last visit, and the average you paid in the
 last 12 months for the grade you buy most there. Search by name, brand or
@@ -125,7 +125,7 @@ or on OpenStreetMap on a computer. Nothing is loaded until you press it.
 
 ## Duplicates and merging
 
-**Stations → Duplicates** lists pairs that may be the same forecourt:
+**Fuel stations → Duplicates** lists pairs that may be the same forecourt:
 
 - the same brand and the same name once the brand is taken out ("Tesco
   Antrim" and "Antrim", both Tesco);

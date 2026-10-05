@@ -26,7 +26,7 @@ return [
         'garage' => 'Garage',
         'reminders' => 'Reminders',
         'reports' => 'Reports',
-        'stations' => 'Stations',
+        'stations' => 'Fuel stations',
         'settings' => 'Settings',
         'log_fill_up' => 'Log fill-up',
         'log_entry' => 'Log entry',
@@ -188,6 +188,13 @@ return [
         'login_link_lead' => 'This link signs in {username}, once. It was made on the server\'s command line.',
         'login_link_submit' => 'Sign in as {name}',
         'login_link_used' => 'Signed in with a one-time link, {name}.',
+        'password_reveal' => 'Show password',
+        'rules' => [
+            'length' => 'At least {min} characters',
+            'match' => 'Both passwords match',
+            'met' => 'done',
+            'unmet' => 'not yet',
+        ],
         'username_or_email' => 'Username or email',
         'forgot' => [
             'link' => 'Forgotten your password?',
@@ -1542,7 +1549,7 @@ return [
             'test_no_channels' => 'No notification channel is turned on and set up, so nothing was sent.',
             'email_none_admin' => 'No address on your account yet: reminder email goes to the server\'s default address (MAIL_TO).',
             'email_none' => 'No address on your account yet, so you get no reminder email.',
-            'email_change' => 'Change it on Settings → Account',
+            'email_change' => 'Change it on your profile',
         ],
         'calendar' => [
             'name' => 'Logbook reminders',
@@ -2830,7 +2837,7 @@ return [
             'template' => 'A cost template, not a cost.',
             'category_skipped' => 'Its category is set to Don’t import.',
             'maintenance_off' => 'Maintenance is switched off.',
-            'stations_off' => 'Stations are switched off.',
+            'stations_off' => 'Fuel stations are switched off.',
             'photos_web' => 'Photos come with the backup ZIP, on the command line.',
             'photo_type' => 'A photo of something other than a fill-up.',
             'photo_missing' => 'Not in the backup.',
@@ -3074,7 +3081,7 @@ return [
             ],
             'stations' => [
                 'title' => 'Fuel stations',
-                'hint' => 'Stations as records: what you paid where, favourites, your places and distances. Part of Fuel.',
+                'hint' => 'Fuel stations as records: what you paid where, favourites, your places and distances. Part of Fuel.',
             ],
             // AI (spec.md §7.25): listed only while AI is set up.
             'ai_ask' => [
@@ -3206,11 +3213,23 @@ return [
             'unexpected_file' => 'This backup contains a file that does not belong in it ({name}), so it was not restored.',
         ],
     ],
+    // The profile page (spec.md §8 *Profile page*, Phase 33.2).
+    'profile' => [
+        'title' => 'Profile',
+        'link_hint' => 'Your email, picture and password, and your units, language and look',
+    ],
     'settings' => [
+        'group' => [
+            'account' => 'Account',
+            'preferences' => 'Preferences',
+            'reminders' => 'Reminders and notifications',
+            'driving' => 'Vehicles and driving',
+            'data' => 'Your data',
+            'developers' => 'Developers',
+            'admin' => 'Administration',
+        ],
         'title' => 'Settings',
-        'data_heading' => 'Modules and data',
-        'preferences' => 'Preferences',
-        'profile' => 'Profile',
+        'profile' => 'Name',
         'appearance' => 'Appearance',
         'units' => 'Units and currency',
         'quick_setup' => 'Quick setup',
@@ -3583,7 +3602,7 @@ return [
         'failed' => 'Sign-in with {name} didn\'t work. Try again.',
         'unavailable_password' => '{name} can\'t be reached just now. Try again later, or sign in with your password.',
         'unavailable' => '{name} can\'t be reached just now. Try again later.',
-        'not_linked' => 'Your {name} account isn\'t linked to Logbook. Ask an admin to invite you, then link it from Settings → Account.',
+        'not_linked' => 'Your {name} account isn\'t linked to Logbook. Ask an admin to invite you, then link it from your profile.',
         'card_title' => 'Single sign-on',
         'card_lead' => 'Link your {name} account to sign in with it. You will be asked to sign in there.',
         'link' => 'Link {name} account',
@@ -4111,7 +4130,7 @@ return [
             'incidents' => 'Claims history',
             'needs_attention' => 'Needs attention',
             'finance' => 'Finance',
-            'stations' => 'Stations',
+            'stations' => 'Fuel stations',
             'cheapest_fuel' => 'Cheapest fuel',
             'draft' => 'Draft',
         ],
@@ -4887,7 +4906,7 @@ return [
     ],
     // Fuel stations (Phase 30.1, spec.md §7.33).
     'stations' => [
-        'title' => 'Stations',
+        'title' => 'Fuel stations',
         'lead' => 'Where you fill up and charge, and what you paid there. Stations are shared with everyone on this Logbook; favourites and places are yours alone.',
         'add' => 'Add station',
         'add_title' => 'Add station',
@@ -5218,7 +5237,7 @@ return [
             'here' => 'My current location',
             'here_hint' => 'Your location, rounded to about 100 m, is used for this search only: Logbook doesn\'t save it, though it is part of the page\'s address.',
             'places' => 'Your places',
-            'stations' => 'Stations',
+            'stations' => 'Fuel stations',
             'locate_failed' => 'Your location could not be found. Choose a place or a station.',
             'needs_position' => 'Choose a place or a station to search from. My current location needs your browser to share it.',
             'vehicle' => 'Vehicle',
