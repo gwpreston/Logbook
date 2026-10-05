@@ -35,8 +35,12 @@
 {% if signed_in and feature_enabled('stations') %}
     {% set nav_items = nav_items|merge([{route: 'stations.index', label: 'nav.stations', icon: 'local_gas_station', key: 'stations'}]) %}
 {% endif %}
+{% if signed_in %}
+    {# Insights (spec.md §7.26, Phase 33.4): core; never in the phone's bottom bar (the dashboard widget links to it). #}
+    {% set nav_items = nav_items|merge([{route: 'insights', label: 'nav.insights', icon: 'auto_awesome', key: 'insights'}]) %}
+{% endif %}
 {% set nav_items = nav_items|merge([{route: 'settings', label: 'nav.settings', icon: 'settings', key: 'settings'}]) %}
-{% set bottom_items = nav_items|slice(0, 4) %}
+{% set bottom_items = nav_items|filter(i => i.key != 'insights')|slice(0, 4) %}
 {% set current_nav = active_nav|default('') %}
 {# The vehicle whose pages are open, highlighted in the sidebar list. #}
 {% set current_vehicle_id = current_nav == 'garage' ? (vehicle.id ?? null) : null %}

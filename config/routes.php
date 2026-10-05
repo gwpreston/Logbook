@@ -211,6 +211,7 @@ use Logbook\Action\Incident\EditIncidentAction;
 use Logbook\Action\Incident\IncidentListAction;
 use Logbook\Action\Incident\LinkIncidentRecordAction;
 use Logbook\Action\Incident\ShowIncidentAction;
+use Logbook\Action\Insights\InsightsPageAction;
 use Logbook\Action\Trip\ClaimExportAction;
 use Logbook\Action\Trip\ClaimReportAction;
 use Logbook\Action\Trip\CreateTripAction;
@@ -892,6 +893,9 @@ return static function (App $app): void {
         $group->post('/settings/sso/link', OidcLinkAction::class)->setName('settings.sso.link');
         $group->post('/settings/sso/{identity:[0-9]+}/unlink', OidcUnlinkAction::class)->setName('settings.sso.unlink');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');
+
+        // Insights (spec.md §7.26 *Ask and the Insights page*, Phase 33.4): core.
+        $group->get('/insights', InsightsPageAction::class)->setName('insights');
 
         // AI (spec.md §7.25, Phase 26.1): not routed at all with AI_ENABLED=false.
         if ($settings->ai->enabled) {

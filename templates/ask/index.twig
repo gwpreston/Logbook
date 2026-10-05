@@ -15,16 +15,12 @@
 
 {% block content %}
     <div class="page__stack page__stack--narrow" data-ask>
-        <header class="page-header">
-            <div>
-                <h1 class="page-header__title">{{ 'ask.title'|trans }}</h1>
-                <p class="page-header__lead">{{ 'ask.lead'|trans }}</p>
-            </div>
-        </header>
-
         {% if review_drafts is not empty %}
             {% include 'ask/_review_drafts.twig' with {review_drafts: review_drafts, back: 'ask'} %}
         {% endif %}
+
+        <section class="card ask-card" aria-labelledby="ask-card-title">
+        {% include 'ask/_card_head.twig' with {level: 'h1'} %}
 
         {% if connection %}
             <p class="ask-where" data-ask-where>
@@ -102,35 +98,8 @@
             </ol>
         {% endif %}
 
-        <form class="card form ask-form" method="post" action="{{ url_for('ask.post') }}" data-ask-form data-progress-url="{{ url_for('ask.progress', {token: progress_token}) }}" data-working="{{ 'ask.working'|trans }}" data-failed="{{ 'ask.failed'|trans }}">
-            {{ ui.csrf(csrf) }}
-            <input type="hidden" name="progress" value="{{ progress_token }}">
-            {% if thread %}<input type="hidden" name="thread" value="{{ thread.id }}">{% endif %}
-            <div class="field">
-                <label class="field__label" for="ask-question">{{ (thread ? 'ask.field.follow_up' : 'ask.field.question')|trans }}</label>
-                <textarea class="input" id="ask-question" name="question" rows="3" maxlength="1000" required
-                    {%- if error %} aria-invalid="true" aria-describedby="ask-question-error"{% endif %}
-                    placeholder="{{ 'ask.placeholder'|trans }}">{{ question }}</textarea>
-                {% if error %}<p class="field__error" id="ask-question-error" role="alert">{{ error }}</p>{% endif %}
-            </div>
-            <div class="btn-row">
-                <button class="btn btn--primary" type="submit" data-ask-submit>{{ ui.icon('forum') }}{{ 'ask.submit'|trans }}</button>
-                {% if thread %}<a class="btn" href="{{ url_for('ask') }}">{{ 'ask.new_thread'|trans }}</a>{% endif %}
-            </div>
-            <p class="ask-progress muted" data-ask-progress role="status" aria-live="polite" hidden></p>
-            <p class="field__hint">{{ 'ask.hint'|trans }}</p>
-        </form>
-
-        {% if not thread %}
-            <section class="card" aria-labelledby="ask-examples-heading">
-                <h2 id="ask-examples-heading" class="card__title">{{ ui.icon('info') }}{{ 'ask.examples.heading'|trans }}</h2>
-                <ul class="list">
-                    {% for key in ['fuel_year', 'last_oil', 'cost_per_mile', 'coming_up'] %}
-                        <li><a class="list__item" href="{{ url_for('ask', {}, {q: ('ask.examples.' ~ key)|trans}) }}"><span class="list__body"><span class="list__title">{{ ('ask.examples.' ~ key)|trans }}</span></span></a></li>
-                    {% endfor %}
-                </ul>
-            </section>
-        {% endif %}
+        {% include 'ask/_card_form.twig' %}
+        </section>
 
         <section class="card" aria-labelledby="ask-threads-heading">
             <h2 id="ask-threads-heading" class="card__title">{{ ui.icon('history') }}{{ 'ask.threads.heading'|trans }}</h2>

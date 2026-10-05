@@ -294,7 +294,9 @@ final class DesignAlignmentTest extends AppTestCase
         $sidebar = substr($home, (int) strpos($home, '<aside class="sidebar">'), (int) strpos($home, '</nav>'));
 
         preg_match_all('~<span class="nav-link__label">([^<]+)</span>~', $sidebar, $labels);
-        self::assertSame(['Dashboard', 'Garage', 'Reminders', 'Reports', 'Fuel stations', 'Settings'], $labels[1]);
+        self::assertSame(['Dashboard', 'Garage', 'Reminders', 'Reports', 'Fuel stations', 'Insights', 'Settings'], $labels[1]);
+        $bottom = substr($home, (int) strpos($home, '<nav class="bottom-nav"'));
+        self::assertStringNotContainsString('href="/insights"', $bottom, 'Insights is never in the phone bar (Phase 33.4)');
         self::assertStringContainsString('<title>Fuel stations · Logbook</title>', self::body($browser->get('/stations')));
 
         $browser->get('/settings/modules');

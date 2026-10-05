@@ -74,6 +74,35 @@ final class AskPagesTest extends AskTestCase
         self::assertStringContainsString('How much did I spend on fuel in 2025?', $list, 'listed');
     }
 
+    public function testTheInsightsPageHasTheAskBoxAndAskKeepsItsPlace(): void
+    {
+        [$app] = $this->askApp();
+        $browser = $this->browserFor($app, 'owner');
+        $this->vehicle($app, 'BMW', '320d');
+
+        $insights = (string) $browser->get('/insights')->getBody();
+        self::assertStringContainsString('<h2 class="ask-card__title" id="ask-card-title">Ask Logbook</h2>', $insights);
+        self::assertStringContainsString('AI answers using only your logged data', $insights);
+        self::assertStringContainsString('action="/ask" data-ask-form', $insights, 'opens the thread on Ask (#193)');
+        self::assertStringContainsString('placeholder="e.g. Why has my fuel spend gone up?"', $insights);
+        $suggestions = ['Which vehicle costs me most per mile?', 'Summarise my last 12 months', 'How could I cut my fuel costs?'];
+        foreach ($suggestions as $q) {
+            self::assertStringContainsString('href="/ask?q=' . urlencode($q) . '"', $insights, $q);
+        }
+        $sidebar = substr($insights, (int) strpos($insights, '<aside class="sidebar">'));
+        self::assertStringContainsString('data-ask-entry', $sidebar, 'Ask keeps its own entry (#192)');
+        self::assertLessThan(strpos($sidebar, 'data-ask-entry'), strpos($sidebar, 'href="/insights"'), 'Insights, then Ask');
+
+        $this->provider->queue(Script::tools(['find_vehicles', ['query' => 'BMW']]), Script::answer('One BMW.'));
+        $posted = $browser->post('/ask', ['question' => 'Which BMWs?']);
+        self::assertMatchesRegularExpression('#^/ask/threads/\d+\#answer-\d+$#', $posted->getHeaderLine('Location'));
+
+        $ask = (string) $browser->get('/ask')->getBody();
+        self::assertStringContainsString('<h1 class="ask-card__title" id="ask-card-title">Ask Logbook</h1>', $ask);
+        self::assertStringContainsString('data-ask-enter', $ask);
+        self::assertStringContainsString('data-busy-label="Thinking…"', $ask);
+    }
+
     public function testInTheBackgroundTheReplyIsJsonAndProgressCanBePolled(): void
     {
         [$app] = $this->askApp();

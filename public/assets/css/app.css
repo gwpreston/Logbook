@@ -3856,6 +3856,139 @@ a.list__title:hover {
     line-clamp: 3;
 }
 
+/* The Insights page (spec.md §7.26, Phase 33.4): a card per insight in a grid. */
+.insight-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 23.75rem), 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.insight-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.insight-card__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.insight-card__tile {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.insight-card__title {
+    margin: 0;
+    font-size: var(--fs-md);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.insight-card__body {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+}
+
+.insight-card__action {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: var(--space-1);
+    margin-top: auto;
+    font-weight: 700;
+}
+
+.insight-card__action .icon {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.insights-page__empty {
+    margin: 0;
+}
+
+/* The *Ask Logbook* card (spec.md §7.26): the tile and title, the box beside *Ask*, the suggestions. */
+.ask-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.ask-card__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.ask-card__tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.ask-card__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    font-weight: 600;
+}
+
+.ask-card__lead {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.ask-form__row {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-2);
+}
+
+.ask-form__input {
+    flex: 1;
+    min-width: 0;
+    resize: vertical;
+}
+
+.ask-form__submit {
+    flex: none;
+    align-self: flex-end;
+}
+
+.ask-suggestions {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (max-width: 30rem) {
+    .ask-form__row {
+        flex-direction: column;
+    }
+
+    .ask-form__submit {
+        align-self: stretch;
+    }
+}
+
 .insights__empty {
     margin: 0;
     font-size: var(--fs-base);

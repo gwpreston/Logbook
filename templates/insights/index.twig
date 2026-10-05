@@ -1,0 +1,51 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # The Insights page (spec.md §7.26 *Ask and the Insights page*, Phase 33.4):
+ # the *Ask Logbook* box when Ask is available (it opens the new thread on
+ # the Ask page), then every computed insight (§7.8) as a card.
+ #}
+{% set active_nav = 'insights' %}
+
+{% block head %}{% if ask_on %}<script defer src="{{ asset('js/ask.js') }}"></script>{% endif %}{% endblock %}
+
+{% block title %}{{ 'insights.page.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack insights-page">
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'insights.page.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'insights.page.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if ask_on %}
+            <section class="card ask-card" aria-labelledby="ask-card-title" data-insights-ask>
+                {% include 'ask/_card_head.twig' with {level: 'h2'} %}
+                {% include 'ask/_card_form.twig' with {thread: null, question: '', error: null} %}
+            </section>
+        {% endif %}
+
+        <section aria-labelledby="insights-heading">
+            <h2 id="insights-heading" class="visually-hidden">{{ 'insights.page.found'|trans }}</h2>
+            {% if insights is empty %}
+                <p class="card muted insights-page__empty">{{ 'insights.page.empty'|trans }}</p>
+            {% else %}
+                <ul class="insight-cards" data-insight-cards>
+                    {% for insight in insights %}
+                        <li class="insight-card" data-insight="{{ insight.kind.value }}">
+                            <div class="insight-card__head">
+                                <span class="insight__tile insight-card__tile insight__tile--{{ insight.tone.value }}">{{ ui.icon(insight.icon()) }}</span>
+                                <h3 class="insight-card__title">{{ insight.title|trans(insight.titleParams) }}</h3>
+                            </div>
+                            <p class="insight-card__body">{{ insight.body|trans(insight.bodyParams) }}</p>
+                            <a class="insight-card__action" href="{{ url_for(insight.route, insight.routeParams) }}">{{ ('insights.action.' ~ insight.kind.value)|trans }}{{ ui.icon('arrow_forward') }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

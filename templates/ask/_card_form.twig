@@ -1,0 +1,33 @@
+{#
+ # The *Ask Logbook* box (spec.md §7.26 *Ask and the Insights page*): the
+ # question, *Ask* and, for a new question, the four suggestions. Shared by
+ # the Ask page (after the thread) and the Insights page; both post to
+ # /ask, and assets/js/ask.js posts in the background, shows progress and
+ # opens the thread on the Ask page.
+ # Expects: progress_token, csrf; optional thread, question, error.
+ #}
+{% import 'macros/ui.twig' as ui %}
+<form class="form ask-form" method="post" action="{{ url_for('ask.post') }}" data-ask-form data-progress-url="{{ url_for('ask.progress', {token: progress_token}) }}" data-working="{{ 'ask.working'|trans }}" data-failed="{{ 'ask.failed'|trans }}">
+    {{ ui.csrf(csrf) }}
+    <input type="hidden" name="progress" value="{{ progress_token }}">
+    {% if thread|default(null) %}<input type="hidden" name="thread" value="{{ thread.id }}">{% endif %}
+    <div class="field">
+        <label class="{{ thread|default(null) ? 'field__label' : 'visually-hidden' }}" for="ask-question">{{ (thread|default(null) ? 'ask.field.follow_up' : 'ask.field.question')|trans }}</label>
+        <div class="ask-form__row">
+            <textarea class="input ask-form__input" id="ask-question" name="question" rows="2" maxlength="1000" required data-ask-enter
+                {%- if error|default(null) %} aria-invalid="true" aria-describedby="ask-question-error"{% endif %}
+                placeholder="{{ 'ask.placeholder'|trans }}">{{ question|default('') }}</textarea>
+            <button class="btn btn--primary ask-form__submit" type="submit" data-ask-submit data-busy-label="{{ 'ask.thinking'|trans }}">{{ ui.icon('send') }}<span data-ask-submit-label>{{ 'ask.submit'|trans }}</span></button>
+        </div>
+        {% if error|default(null) %}<p class="field__error" id="ask-question-error" role="alert">{{ error }}</p>{% endif %}
+    </div>
+    {% if not thread|default(null) %}
+        <ul class="chip-row ask-suggestions" aria-label="{{ 'ask.examples.heading'|trans }}">
+            {% for key in ['cost_most', 'summary_12m', 'coming_up', 'cut_fuel'] %}
+                <li><a class="chip" href="{{ url_for('ask', {}, {q: ('ask.examples.' ~ key)|trans}) }}">{{ ('ask.examples.' ~ key)|trans }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <p class="ask-progress muted" data-ask-progress role="status" aria-live="polite" hidden></p>
+    <p class="field__hint">{{ 'ask.hint'|trans }}</p>
+</form>

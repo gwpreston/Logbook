@@ -74,7 +74,29 @@
         var question = form.querySelector('textarea[name="question"]');
         var working = form.getAttribute('data-working') || '';
         var failed = form.getAttribute('data-failed') || '';
+        var label = form.querySelector('[data-ask-submit-label]');
+        var idle = label ? label.textContent : '';
         var busy = false;
+        var setBusy = function (on) {
+            submit.disabled = on;
+            if (label) {
+                label.textContent = on ? (submit.getAttribute('data-busy-label') || idle) : idle;
+            }
+        };
+
+        // Enter sends, Shift+Enter starts a new line (spec.md §7.26).
+        if (question && question.hasAttribute('data-ask-enter')) {
+            question.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+                    event.preventDefault();
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit(submit);
+                    } else {
+                        submit.click();
+                    }
+                }
+            });
+        }
 
         form.addEventListener('submit', function (event) {
             if (busy || !window.fetch || !window.FormData) {
@@ -82,7 +104,7 @@
             }
             event.preventDefault();
             busy = true;
-            submit.disabled = true;
+            setBusy(true);
             form.setAttribute('aria-busy', 'true');
             setProgress(progress, working);
 
@@ -105,7 +127,7 @@
                 }
                 polling = false;
                 busy = false;
-                submit.disabled = false;
+                setBusy(false);
                 form.removeAttribute('aria-busy');
                 setProgress(progress, result.error);
                 progress.classList.add('field__error');

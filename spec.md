@@ -5109,8 +5109,9 @@ entries by message*.
 - **Ask stays in the navigation** (#192): its sidebar entry and top-bar
   button as today; *Insights* is a separate entry.
 - **Insights page** (`/insights`, *Insights* in the sidebar with
-  `auto_awesome` after *Fuel stations*, and under *More* on a phone;
-  core, every signed-in user): title "Insights", lead "Patterns spotted in
+  `auto_awesome` after *Fuel stations*; never in the phone's bottom bar,
+  where the dashboard widget's *All insights* reaches it; core, every
+  signed-in user): title "Insights", lead "Patterns spotted in
   your records, and answers to your own questions." Then:
   - the *Ask Logbook* card above (box, *Ask* and the four suggestions),
     only when Ask is available to the user (§7.26 *Where*). Its form posts
