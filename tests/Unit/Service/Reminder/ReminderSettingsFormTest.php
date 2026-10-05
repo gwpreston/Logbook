@@ -24,7 +24,6 @@ final class ReminderSettingsFormTest extends TestCase
             'document_days' => '0',
             'manual_days' => '3',
             'channels' => ['ntfy', 'bogus'],
-            'email' => 'pat@example.com',
             'digest' => '1',
         ], $uk, ['email', 'ntfy', 'gotify']);
 
@@ -35,7 +34,6 @@ final class ReminderSettingsFormTest extends TestCase
         self::assertSame(0, $reminders->documentDays, 'zero is a legitimate lead time');
         self::assertSame(3, $reminders->manualDays);
         self::assertSame(['ntfy'], $notifications->channels, 'unknown channels are ignored');
-        self::assertSame('pat@example.com', $notifications->email);
         self::assertTrue($notifications->digest);
 
         self::assertSame('500', ReminderSettingsForm::values($reminders, $notifications, $uk)['schedule_distance']);
@@ -62,11 +60,11 @@ final class ReminderSettingsFormTest extends TestCase
             'schedule_distance' => '-1',
             'document_days' => 'soon',
             'manual_days' => '',
-            'email' => 'not an address',
+            'ntfy_url' => 'not a topic',
         ], self::preferences(UnitPreset::Metric), []);
 
         self::assertInstanceOf(ValidationErrors::class, $errors);
-        foreach (['schedule_days', 'schedule_distance', 'document_days', 'manual_days', 'email'] as $field) {
+        foreach (['schedule_days', 'schedule_distance', 'document_days', 'manual_days', 'ntfy_url'] as $field) {
             self::assertTrue($errors->has($field), $field);
         }
     }

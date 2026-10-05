@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Auth;
 
 use Logbook\Service\Auth\AuthService;
+use Logbook\Service\Auth\PasswordResets;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -30,6 +31,7 @@ final readonly class LoginAction
         private Redirector $redirect,
         private AppSettings $settings,
         private LoggerInterface $logger,
+        private PasswordResets $resets,
     ) {
     }
 
@@ -92,6 +94,7 @@ final readonly class LoginAction
             'next' => $next,
             'username' => '',
             'local_login' => $this->settings->localLogin,
+            'forgot_password' => $this->resets->isAvailable(),
             'sso' => $this->settings->oidc->isConfigured() ? ['name' => $this->settings->oidc->providerName] : null,
         ];
     }

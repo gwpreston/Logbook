@@ -1,0 +1,23 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # An email confirmation link (spec.md §7.9 *Email addresses*). The POST
+ # confirms, so a mail scanner opening the link confirms nothing.
+ #}
+{% block title %}{{ 'account.email.confirm_title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="auth">
+        <section class="card auth__card" aria-labelledby="confirm-heading">
+            <header class="auth__header">
+                <h1 id="confirm-heading">{{ 'account.email.confirm_title'|trans }}</h1>
+                <p class="muted">{{ 'account.email.confirm_lead'|trans({address: address, username: username}) }}</p>
+            </header>
+            <form class="form" method="post" action="{{ url_for('email.confirm', {token: token}) }}">
+                {{ ui.csrf(csrf) }}
+                <button type="submit" class="btn btn--primary btn--lg btn--block">{{ ui.icon('mail') }}{{ 'account.email.confirm_submit'|trans({address: address}) }}</button>
+            </form>
+        </section>
+    </div>
+{% endblock %}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Auth;
 
+use Logbook\Domain\User\EmailAddress;
 use Logbook\Domain\User\User;
 use Logbook\Domain\User\Username;
 use Logbook\Repository\SessionRepository;
@@ -65,10 +66,14 @@ final readonly class AuthService
      * The user for these credentials, or null. Takes the same time whether
      * or not the username exists. Upgrades the hash when PHP's Argon2id
      * defaults have changed.
+     *
+     * $login is a username or, when no user has it as one and it has an
+     * `@`, a confirmed email address held by exactly one active user with
+     * a password (spec.md §7.9 *Sign-in by username or email*, #162).
      */
-    public function authenticate(string $username, #[SensitiveParameter] string $password): ?User
+    public function authenticate(string $login, #[SensitiveParameter] string $password): ?User
     {
-        $user = $this->users->findByUsername(Username::normalise($username));
+        $user = $this->findForSignIn($login);
         if ($user === null || $user->passwordHash === null) {
             // No such user, or one with single sign-on only (Phase 23.1).
             $this->hasher->verifyDummy($password);
@@ -89,6 +94,20 @@ final readonly class AuthService
         }
 
         return $user;
+    }
+
+    private function findForSignIn(string $login): ?User
+    {
+        $normalised = Username::normalise($login);
+        $user = $this->users->findByUsername($normalised);
+        if ($user !== null || !str_contains($normalised, '@')) {
+            return $user;
+        }
+        $email = EmailAddress::parse($normalised);
+        $candidates = $email === null ? [] : $this->users->findSignInCandidatesByEmail($email);
+
+        // A shared address is ambiguous: those users sign in by username.
+        return count($candidates) === 1 ? $candidates[0] : null;
     }
 
     public function verifyPassword(User $user, #[SensitiveParameter] string $password): bool

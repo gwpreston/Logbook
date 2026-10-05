@@ -15,6 +15,10 @@ final readonly class Invitation
     public const int VALID_DAYS = 7;
     /** A break-glass sign-in link (`login`) lasts ten minutes (spec.md §7.9). */
     public const int LOGIN_VALID_MINUTES = 10;
+    /** A reset the user asked for themselves lasts an hour (spec.md §7.9 *Forgotten password*, #159). */
+    public const int SELF_RESET_VALID_MINUTES = 60;
+    /** An email confirmation link lasts a day (spec.md §7.9 *Email addresses*). */
+    public const int EMAIL_VALID_HOURS = 24;
 
     public function __construct(
         public int $id,
@@ -29,7 +33,15 @@ final readonly class Invitation
         public ?DateTimeImmutable $usedAt,
         public ?DateTimeImmutable $revokedAt,
         public DateTimeImmutable $createdAt,
+        /** The address an `email` link confirms. */
+        public ?string $email = null,
     ) {
+    }
+
+    /** A reset the user asked for from the sign-in page, not an admin's. */
+    public function isSelfService(): bool
+    {
+        return $this->kind === InvitationKind::Reset && $this->userId === $this->createdBy;
     }
 
     public function isOpen(DateTimeImmutable $now): bool

@@ -1,0 +1,34 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Confirmation before *Revoke access* or *Sign out everywhere* (spec.md
+ # §7.9 *Admin controls*).
+ #}
+{% set active_nav = 'settings' %}
+{% set key = action == 'sign-out' ? 'sign_out' : 'revoke' %}
+{% set heading = ('users.confirm.' ~ key ~ '_title')|trans({name: target.displayName}) %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.users') }}">{{ ui.icon('chevron_left') }}{{ 'users.title'|trans }}</a>
+
+        <section class="card" aria-labelledby="confirm-heading">
+            <h1 id="confirm-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            {% if action == 'disable' and self %}
+                <p>{{ 'users.refused.yourself'|trans }}</p>
+            {% else %}
+                <p>{{ ('users.confirm.' ~ key ~ (self ? '_body_self' : '_body'))|trans({name: target.displayName}) }}</p>
+                <form class="form" method="post" action="{{ url_for('settings.users.confirm', {member: target.id, action: action}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--danger">{{ ui.icon(action == 'sign-out' ? 'logout' : 'block') }}{{ ('users.confirm.' ~ key ~ '_submit')|trans }}</button>
+                        <a class="btn btn--ghost" href="{{ url_for('settings.users') }}">{{ 'form.cancel'|trans }}</a>
+                    </div>
+                </form>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

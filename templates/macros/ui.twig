@@ -9,6 +9,20 @@
     <svg class="icon{{ class ? ' ' ~ class }}" aria-hidden="true" focusable="false"><use href="{{ asset('vendor/icons.svg') }}#{{ name }}"></use></svg>
 {%- endmacro %}
 
+{# A person's avatar (spec.md §7.9 *Avatars*, Phase 33.1): their picture, or
+   their initials on a colour taken from their id. `user` is a User; size
+   is 'xs' (20 px, "added by"), 'sm' (32 px, lists) or 'md' (48 px, Settings). Decorative: the name
+   is always shown beside it. #}
+{% macro avatar(user, size = 'sm') -%}
+    {% if user.avatarPath %}
+        <img class="avatar avatar--{{ size }}" src="{{ url_for('users.avatar', {member: user.id}, {v: user.avatarUpdatedAt ? user.avatarUpdatedAt|date('U') : '0'}) }}" alt="" width="{{ {xs: 20, sm: 32, md: 48}[size] }}" height="{{ {xs: 20, sm: 32, md: 48}[size] }}" loading="lazy" decoding="async">
+    {% else %}
+        {% set words = user.displayName|trim|split(' ')|filter(w => w != '') %}
+        {% set initials = (words|first|default(user.username))|slice(0, 1) ~ (words|length > 1 ? (words|last)|slice(0, 1) : '') %}
+        <span class="avatar avatar--{{ size }} avatar--tone-{{ user.id % 6 }}" aria-hidden="true">{{ initials|upper }}</span>
+    {% endif %}
+{%- endmacro %}
+
 {# Brand lock-up: mark + two-tone wordmark, linking to the dashboard. #}
 {% macro brand() -%}
     <a class="brand" href="{{ url_for('home') }}">
@@ -221,7 +235,10 @@
 {% macro added_by(vehicle, created_by) -%}
     {% import _self as ui %}
     {% set by = added_by(vehicle, created_by) %}
-    {% if by is not null %}<span class="list__meta added-by">{{ ui.icon('person') }}{{ by == '' ? 'sharing.added_by_former'|trans : 'sharing.added_by'|trans({name: by}) }}</span>{% endif %}
+    {% if by is not null %}
+        {% set author = by == '' ? null : added_by_user(vehicle, created_by) %}
+        <span class="list__meta added-by">{{ author ? ui.avatar(author, 'xs') : ui.icon('person') }}{{ by == '' ? 'sharing.added_by_former'|trans : 'sharing.added_by'|trans({name: by}) }}</span>
+    {% endif %}
 {%- endmacro %}
 
 {# Under a fleet cost figure (spec.md §7.21): how many vehicles it leaves

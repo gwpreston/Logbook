@@ -27,7 +27,7 @@ final readonly class UserRepository
     private const array COLUMNS = [
         'id', 'username', 'password_hash', 'display_name', 'locale', 'timezone', 'distance_unit',
         'volume_unit', 'consumption_unit', 'depth_unit', 'currency', 'theme', 'accent', 'created_at', 'updated_at',
-        'is_admin', 'disabled_at',
+        'is_admin', 'disabled_at', 'email', 'email_pending', 'avatar_path', 'avatar_updated_at',
     ];
 
     public function __construct(private Connection $connection)
@@ -87,7 +87,28 @@ final readonly class UserRepository
     }
 
     /**
+     * Active users with a password and this confirmed address (already
+     * lower-case), oldest first: a household may share one (spec.md §7.9).
+     *
+     * @return list<User>
+     */
+    public function findSignInCandidatesByEmail(string $email): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select(...self::COLUMNS)
+            ->from(self::TABLE)
+            ->where('email = :email', 'disabled_at IS NULL', 'password_hash IS NOT NULL')
+            ->setParameter('email', $email)
+            ->orderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
+    /**
      * @param string|null $passwordHash null for an account created through single sign-on
+     * @param string|null $email        a confirmed address (lower-case)
+     * @param string|null $emailPending an address still to be confirmed (lower-case)
      */
     public function insert(
         string $username,
@@ -96,6 +117,8 @@ final readonly class UserRepository
         DisplayPreferences $preferences,
         DateTimeImmutable $now,
         bool $isAdmin = false,
+        ?string $email = null,
+        ?string $emailPending = null,
     ): User {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
 
@@ -104,6 +127,8 @@ final readonly class UserRepository
             'password_hash' => $passwordHash,
             'display_name' => $displayName,
             'is_admin' => $isAdmin,
+            'email' => $email,
+            'email_pending' => $emailPending,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
         ] + self::preferenceColumns($preferences), ['is_admin' => ParameterType::BOOLEAN]);
@@ -135,6 +160,50 @@ final readonly class UserRepository
         $this->connection->update(self::TABLE, [
             'password_hash' => $passwordHash,
             'updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
+        ], ['id' => $id], ['id' => ParameterType::INTEGER]);
+    }
+
+    /**
+     * Set both addresses (lower-case, or null): the confirmed one and the one
+     * waiting for its link.
+     */
+    public function setEmails(int $id, ?string $email, ?string $emailPending, DateTimeImmutable $now): void
+    {
+        $this->connection->update(self::TABLE, [
+            'email' => $email,
+            'email_pending' => $emailPending,
+            'updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()),
+        ], ['id' => $id], ['id' => ParameterType::INTEGER]);
+    }
+
+    /**
+     * Make the pending address the confirmed one, if it is still $address:
+     * false when it was changed or cancelled meanwhile.
+     */
+    public function confirmPendingEmail(int $id, string $address, DateTimeImmutable $now): bool
+    {
+        return $this->connection->createQueryBuilder()
+            ->update(self::TABLE)
+            ->set('email', 'email_pending')
+            ->set('email_pending', 'NULL')
+            ->set('updated_at', ':now')
+            ->where('id = :id', 'email_pending = :address')
+            ->setParameter('now', UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()))
+            ->setParameter('id', $id, ParameterType::INTEGER)
+            ->setParameter('address', $address)
+            ->executeStatement() === 1;
+    }
+
+    /**
+     * @param string|null $path relative to UPLOAD_PATH/avatars; null removes it
+     */
+    public function setAvatar(int $id, ?string $path, DateTimeImmutable $now): void
+    {
+        $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
+        $this->connection->update(self::TABLE, [
+            'avatar_path' => $path,
+            'avatar_updated_at' => $path === null ? null : $timestamp,
+            'updated_at' => $timestamp,
         ], ['id' => $id], ['id' => ParameterType::INTEGER]);
     }
 
@@ -220,6 +289,12 @@ final readonly class UserRepository
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'], $platform),
             isAdmin: Row::bool($row, 'is_admin'),
             disabledAt: ($row['disabled_at'] ?? null) === null ? null : UtcDateTime::fromDatabase($row['disabled_at'], $platform),
+            email: Row::nullableString($row, 'email'),
+            emailPending: Row::nullableString($row, 'email_pending'),
+            avatarPath: Row::nullableString($row, 'avatar_path'),
+            avatarUpdatedAt: ($row['avatar_updated_at'] ?? null) === null
+                ? null
+                : UtcDateTime::fromDatabase($row['avatar_updated_at'], $platform),
         );
     }
 }

@@ -753,7 +753,7 @@ MySQL only.
   there), and removes it from the preferences; rollback moves it back and
   drops `email_pending`. Applies and rolls back on every engine.
 - **Avatar** (Phase 33.1, §7.9 *Avatars*): `avatar_path` (nullable: the
-  stored file's path relative to `UPLOAD_PATH/avatars`) and
+  stored file's path relative to `UPLOAD_PATH`, under `avatars/`) and
   `avatar_updated_at` (nullable, UTC), used to bust caches.
 - **Trip settings** (Phase 22), stored as a user-scope setting `trips`:
   tax year start (`MM-DD`; default `04-06` when the user's locale region is

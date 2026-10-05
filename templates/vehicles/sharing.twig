@@ -65,7 +65,7 @@
                             <li class="share-row">
                                 <form class="form" method="post" action="{{ url_for('vehicles.sharing.change', {id: vehicle.id, member: row.user.id, action: 'save'}) }}">
                                     {{ ui.csrf(csrf) }}
-                                    <p class="list__title">{{ row.user.displayName }} <span class="muted">({{ row.user.username }})</span>
+                                    <p class="list__title share-person">{{ ui.avatar(row.user) }}{{ row.user.displayName }} <span class="muted">({{ row.user.username }})</span>
                                         {% if not row.user.isActive() %}<span class="pill pill--soon">{{ 'users.status.disabled'|trans }}</span>{% endif %}</p>
                                     {{ _self.share_fields({
                                         level: share.level.value,

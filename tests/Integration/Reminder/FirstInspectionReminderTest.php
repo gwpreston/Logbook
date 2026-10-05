@@ -175,7 +175,6 @@ final class FirstInspectionReminderTest extends ReminderTestCase
             'document_days' => '30',
             'manual_days' => '7',
             'channels' => ['email'],
-            'email' => 'pat@example.com',
             'digest' => '1',
         ]);
         $this->service($this->app, ScheduledTasks::class)->run();

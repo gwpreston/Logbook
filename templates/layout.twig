@@ -131,7 +131,7 @@
                 <div class="sidebar__footer">
                     {{ ui.theme_toggle('btn sidebar__theme', false, true, csrf, current_path) }}
                     <div class="sidebar__account">
-                        <span class="sidebar__user">{{ ui.icon('person') }}<span>{{ user.displayName }}</span></span>
+                        <span class="sidebar__user">{{ ui.avatar(user) }}<span>{{ user.displayName }}</span></span>
                         <form method="post" action="{{ url_for('logout') }}">
                             {{ ui.csrf(csrf) }}
                             <button type="submit" class="btn btn--ghost sidebar__logout">{{ ui.icon('logout') }}{{ 'auth.sign_out'|trans }}</button>

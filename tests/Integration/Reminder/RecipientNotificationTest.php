@@ -45,8 +45,9 @@ final class RecipientNotificationTest extends ReminderTestCase
         $shares->insert($golf->id, $partner->id, ShareLevel::Log, false, true, $now);
         $shares->insert($golf->id, $viewer->id, ShareLevel::View, false, false, $now);
         $ntfy = 'https://ntfy.test/sam';
-        $this->preferences($app, $partner, new NotificationPreferences(null, 'partner@example.com', false, $ntfy));
-        $this->preferences($app, $viewer, new NotificationPreferences(null, 'viewer@example.com'));
+        $partner = $this->withEmail($app, $partner, 'partner@example.com');
+        $this->preferences($app, $partner, new NotificationPreferences(null, false, $ntfy));
+        $this->withEmail($app, $viewer, 'viewer@example.com');
 
         $summary = $this->service($app, ScheduledTasks::class)->run();
 
@@ -84,7 +85,7 @@ final class RecipientNotificationTest extends ReminderTestCase
         $partner = $this->member($app, 'partner', 'en_GB', 'Europe/London');
         $this->service($app, VehicleShareRepository::class)
             ->insert($golf->id, $partner->id, ShareLevel::View, false, true, new DateTimeImmutable(self::NOW));
-        $this->preferences($app, $partner, new NotificationPreferences(null, 'partner@example.com'));
+        $this->withEmail($app, $partner, 'partner@example.com');
 
         $this->mail->failing = true;
         $first = $this->service($app, ScheduledTasks::class)->run();

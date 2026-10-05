@@ -24,6 +24,11 @@ final readonly class ExternalAccount
         /** A locale such as "de" or "en-GB", when the provider says. */
         public ?string $locale = null,
         public array $groups = [],
+        /**
+         * Whether $email counts as confirmed (spec.md §7.9 *Email addresses*,
+         * #165): a trusted proxy's always, OIDC's when `email_verified` is true.
+         */
+        public bool $emailVerified = false,
     ) {
     }
 

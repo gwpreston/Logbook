@@ -104,6 +104,8 @@ final readonly class ProxyHeaders
             displayName: $optional($this->config->nameHeader),
             email: $optional($this->config->emailHeader),
             groups: $groups === null ? [] : self::list($groups),
+            // The proxy is already trusted for who someone is (#165).
+            emailVerified: true,
         );
     }
 
@@ -124,6 +126,7 @@ final readonly class ProxyHeaders
             email: $text($claims['email'] ?? null),
             locale: $text($claims['locale'] ?? null),
             groups: ExternalAccount::groupList($claims['groups'] ?? []),
+            emailVerified: true,
         );
     }
 

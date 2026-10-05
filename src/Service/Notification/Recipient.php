@@ -17,7 +17,7 @@ final readonly class Recipient
     public function __construct(
         public int $userId,
         public string $name,
-        /** Their email address; null = the server default (MAIL_TO), for admins. */
+        /** Their confirmed email address; null = the server default (MAIL_TO), for admins. */
         public ?string $email = null,
         public bool $isAdmin = true,
         public string $username = '',
@@ -33,7 +33,7 @@ final readonly class Recipient
         return new self(
             $user->id,
             $user->displayName,
-            $preferences->email,
+            $user->email,
             $user->isAdmin,
             $user->username,
             $preferences->ntfyUrl,

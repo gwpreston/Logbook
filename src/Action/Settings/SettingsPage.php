@@ -9,6 +9,8 @@ use Logbook\Domain\User\UserIdentity;
 use Logbook\Service\Ai\AiPreferences;
 use Logbook\Service\Ai\AiStatus;
 use Logbook\Service\Auth\SignInMethods;
+use Logbook\Service\User\AvatarService;
+use Logbook\Service\User\EmailAddresses;
 use Logbook\Service\User\ProfileForm;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Display\Accent;
@@ -41,11 +43,13 @@ final readonly class SettingsPage
         private AppSettings $settings,
         private AiStatus $ai,
         private AiPreferences $aiPreferences,
+        private EmailAddresses $emails,
     ) {
     }
 
     /**
-     * @param array<string, string>|null $values preference form values; null = the saved ones
+     * @param array<string, string>|null $values      preference form values; null = the saved ones
+     * @param array<string, string>|null $emailValues the email form as posted; null = the user's address
      */
     public function render(
         ServerRequestInterface $request,
@@ -54,6 +58,9 @@ final readonly class SettingsPage
         ?ValidationErrors $preferenceErrors = null,
         ?ValidationErrors $passwordErrors = null,
         int $status = 200,
+        ?ValidationErrors $emailErrors = null,
+        ?array $emailValues = null,
+        ?ValidationErrors $avatarErrors = null,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
 
@@ -61,6 +68,12 @@ final readonly class SettingsPage
             'values' => $values ?? ProfileForm::values($user),
             'errors' => $preferenceErrors?->all() ?? [],
             'password_errors' => $passwordErrors?->all() ?? [],
+            // Email and avatar (spec.md §7.9, Phase 33.1).
+            'email_values' => $emailValues ?? ['email' => $user->emailPending ?? $user->email ?? ''],
+            'email_errors' => $emailErrors?->all() ?? [],
+            'can_confirm_email' => $this->emails->canConfirm(),
+            'avatar_errors' => $avatarErrors?->all() ?? [],
+            'avatar_max_mb' => AvatarService::MAX_MB,
             'themes' => Theme::cases(),
             'accents' => Accent::cases(),
             'distance_units' => DistanceUnit::cases(),

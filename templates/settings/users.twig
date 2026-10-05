@@ -53,7 +53,7 @@
                     {% for identity in member_identities %}{% set methods = methods|merge([identity.provider == 'proxy' ? 'users.method.proxy'|trans : sso.name]) %}{% endfor %}
                     <li class="user-row">
                         <div class="list__item">
-                            <span class="list__icon">{{ ui.icon(member.isActive() ? (member.isAdmin ? 'admin_panel_settings' : 'person') : 'person_off') }}</span>
+                            <span class="list__icon">{{ ui.avatar(member) }}</span>
                             <span class="list__body">
                                 <span class="list__title">{{ member.displayName }} <span class="muted">({{ member.username }})</span>{% if is_me %} · {{ 'users.you'|trans }}{% endif %}</span>
                                 <span class="list__meta">
@@ -62,6 +62,10 @@
                                     {{ row.lastSeenAt ? 'users.last_seen'|trans({when: row.lastSeenAt|local_datetime}) : 'users.never_seen'|trans -}}
                                 </span>
                                 <span class="list__meta" data-sign-in-methods>{{ 'users.methods'|trans({methods: methods is empty ? 'users.method.none'|trans : methods|join(', ')}) }}</span>
+                                <span class="list__meta" data-email>
+                                    {%- if member.email %}{{ member.email }}{% else %}{{ 'users.no_email'|trans }}{% endif %}
+                                    {%- if member.emailPending %} · {{ 'users.email_pending'|trans({address: member.emailPending}) }}{% endif -%}
+                                </span>
                             </span>
                         </div>
                         <div class="btn-row user-row__actions">
@@ -71,8 +75,10 @@
                             </form>
                             <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: 'reset'}) }}">
                                 {{ ui.csrf(csrf) }}
-                                <button type="submit" class="btn btn--sm">{{ ui.icon('lock_reset') }}{{ 'users.reset'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                                {% set emails_reset = mail_configured and (member.email or (member.emailPending and not member.hasPassword())) %}
+                                <button type="submit" class="btn btn--sm">{{ ui.icon('lock_reset') }}{{ (emails_reset ? 'users.send_reset' : 'users.reset')|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
                             </form>
+                            <a class="btn btn--sm" href="{{ url_for('settings.users.confirm', {member: member.id, action: 'sign-out'}) }}">{{ ui.icon('logout') }}{{ 'users.sign_out_everywhere'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></a>
                             {% for identity in member_identities %}
                                 <form method="post" action="{{ url_for('settings.users.identity.remove', {member: member.id, identity: identity.id}) }}">
                                     {{ ui.csrf(csrf) }}
@@ -80,10 +86,14 @@
                                 </form>
                             {% endfor %}
                             {% if not is_me %}
-                                <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: member.isActive() ? 'disable' : 'enable'}) }}">
-                                    {{ ui.csrf(csrf) }}
-                                    <button type="submit" class="btn btn--sm">{{ ui.icon(member.isActive() ? 'person_off' : 'person_check') }}{{ (member.isActive() ? 'users.disable' : 'users.enable')|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
-                                </form>
+                                {% if member.isActive() %}
+                                    <a class="btn btn--sm" href="{{ url_for('settings.users.confirm', {member: member.id, action: 'disable'}) }}">{{ ui.icon('person_off') }}{{ 'users.disable'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></a>
+                                {% else %}
+                                    <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: 'enable'}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <button type="submit" class="btn btn--sm">{{ ui.icon('person_check') }}{{ 'users.enable'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                                    </form>
+                                {% endif %}
                                 <a class="btn btn--sm btn--danger" href="{{ url_for('settings.users.delete', {member: member.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></a>
                             {% endif %}
                         </div>
@@ -141,7 +151,7 @@
                                 <span class="list__icon">{{ ui.icon({reset: 'lock_reset', login: 'key'}[link.kind.value] ?? 'mail') }}</span>
                                 <span class="list__body">
                                     <span class="list__title">{{ link.displayName }} <span class="muted">({{ link.username }})</span></span>
-                                    <span class="list__meta">{{ ('users.link_kind.' ~ link.kind.value)|trans }} · {{ 'users.expires'|trans({when: link.expiresAt|local_datetime}) }}</span>
+                                    <span class="list__meta">{{ ('users.link_kind.' ~ link.kind.value)|trans }}{% if link.isSelfService() %} · {{ 'users.requested_by_them'|trans }}{% endif %} · {{ 'users.expires'|trans({when: link.expiresAt|local_datetime}) }}</span>
                                 </span>
                                 <span class="list__end">
                                     <form method="post" action="{{ url_for('settings.users.revoke', {invitation: link.id}) }}">
@@ -158,6 +168,13 @@
 
         <section class="card" aria-labelledby="invite-heading">
             <h2 id="invite-heading" class="card__title">{{ ui.icon('person_add') }}{{ 'users.invite_heading'|trans }}</h2>
+            {# *Add user* (Phase 33.1): the account at once, with a set-password link by email. #}
+            <p class="muted">{{ (mail_configured ? 'users.add.offer' : 'users.add.needs_email')|trans }}</p>
+            {% if mail_configured %}
+                <div class="btn-row">
+                    <a class="btn" href="{{ url_for('settings.users.add') }}">{{ ui.icon('person_add') }}{{ 'users.add.title'|trans }}</a>
+                </div>
+            {% endif %}
             <form class="form" method="post" action="{{ url_for('settings.users') }}">
                 {{ ui.csrf(csrf) }}
                 {{ ui.input('username', 'auth.username'|trans, values, errors, {required: true, maxlength: 64, autocomplete: 'off', hint: 'auth.username_hint'|trans({min: 3, max: 64})}) }}

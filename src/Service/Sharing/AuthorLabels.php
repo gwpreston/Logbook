@@ -39,6 +39,20 @@ final class AuthorLabels
         return $createdBy === null ? '' : $this->directory->displayName($createdBy) ?? '';
     }
 
+    /**
+     * The author to show with their avatar (Phase 33.1), when label() names
+     * someone: null for the viewer's own entry, an unshared vehicle or a
+     * former user.
+     */
+    public function author(User $viewer, Vehicle $vehicle, ?int $createdBy): ?User
+    {
+        if ($createdBy === null || $createdBy === $viewer->id || !$this->isShared($vehicle)) {
+            return null;
+        }
+
+        return $this->directory->find($createdBy);
+    }
+
     public function isShared(Vehicle $vehicle): bool
     {
         return $this->shared[$vehicle->id] ??= $this->shares->sharedVehicleIds([$vehicle->id]) !== [];

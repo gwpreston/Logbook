@@ -97,4 +97,15 @@ final class RequestContext
 
         return $values;
     }
+
+    /**
+     * The connecting address as PHP sees it (`REMOTE_ADDR`; never a
+     * forwarded header), for logs and per-address limits.
+     */
+    public static function clientAddress(ServerRequestInterface $request): string
+    {
+        $address = $request->getServerParams()['REMOTE_ADDR'] ?? null;
+
+        return is_string($address) && $address !== '' ? $address : 'unknown';
+    }
 }

@@ -5,6 +5,7 @@
  # Sign-in (spec.md §7.9). With single sign-on configured, *Sign in with
  # {name}* comes first; with AUTH_LOCAL_LOGIN=false it is all there is.
  # Header sign-in leaves a notice when the proxy sent no usable user.
+ # *Forgotten your password?* appears when it is available (Phase 33.1).
  #}
 {% block title %}{{ 'auth.sign_in'|trans }} · {{ parent() }}{% endblock %}
 
@@ -37,8 +38,12 @@
                     {{ ui.csrf(csrf) }}
                     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-                    {{ ui.input('username', 'auth.username'|trans, {username: username}, {}, {required: true, autocomplete: 'username', maxlength: 64}) }}
+                    {{ ui.input('username', 'auth.username_or_email'|trans, {username: username}, {}, {required: true, autocomplete: 'username', maxlength: 254}) }}
                     {{ ui.input('password', 'auth.password'|trans, {}, {}, {type: 'password', required: true, autocomplete: 'current-password'}) }}
+                    {% if forgot_password %}
+                        {# Phase 33.1: only with email set up and password sign-in on (spec.md §7.9). #}
+                        <p class="auth__forgot"><a href="{{ url_for('password.forgot') }}">{{ 'auth.forgot.link'|trans }}</a></p>
+                    {% endif %}
 
                     <button type="submit" class="btn {{ sso ? 'btn--soft' : 'btn--primary' }} btn--lg btn--block">{{ ui.icon('login') }}{{ 'auth.sign_in'|trans }}</button>
                 </form>

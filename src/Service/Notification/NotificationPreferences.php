@@ -6,7 +6,8 @@ namespace Logbook\Service\Notification;
 
 /**
  * An owner's delivery choices (spec.md §7.11), stored as the
- * `notifications` user setting.
+ * `notifications` user setting. Their email address is on the user from
+ * Phase 33.1 (§6 User `email`), no longer here.
  */
 final readonly class NotificationPreferences
 {
@@ -16,8 +17,6 @@ final readonly class NotificationPreferences
          *                        owner chooses, meaning every configured one
          */
         public ?array $channels = null,
-        /** Where email goes; null = MAIL_TO. */
-        public ?string $email = null,
         /** Send the monthly "what's due this month" digest. */
         public bool $digest = false,
         /** A personal ntfy topic URL (Phase 19); null = NTFY_URL, for admins. */
@@ -50,7 +49,6 @@ final readonly class NotificationPreferences
 
         return new self(
             is_array($channels) ? array_values(array_filter($channels, is_string(...))) : null,
-            $text('email'),
             ($value['digest'] ?? false) === true,
             $text('ntfy_url'),
             $text('gotify_token'),
@@ -60,7 +58,6 @@ final readonly class NotificationPreferences
     /**
      * @return array{
      *     channels: list<string>|null,
-     *     email: string|null,
      *     digest: bool,
      *     ntfy_url: string|null,
      *     gotify_token: string|null,
@@ -70,7 +67,6 @@ final readonly class NotificationPreferences
     {
         return [
             'channels' => $this->channels,
-            'email' => $this->email,
             'digest' => $this->digest,
             'ntfy_url' => $this->ntfyUrl,
             'gotify_token' => $this->gotifyToken,

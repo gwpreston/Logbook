@@ -58,10 +58,11 @@ final readonly class OidcUsers
             $subject,
             username: $text($claims[$config->usernameClaim] ?? null),
             displayName: $text($claims['name'] ?? null),
-            // Not kept from OIDC: Logbook doesn't verify emails (#51).
-            email: null,
+            // Kept only for a new user, confirmed only when the provider verified it (#165).
+            email: $text($claims['email'] ?? null),
             locale: $text($claims['locale'] ?? null),
             groups: ExternalAccount::groupList($claims[$config->groupsClaim] ?? []),
+            emailVerified: ($claims['email_verified'] ?? false) === true,
         );
     }
 }

@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Repository\ReminderRepository;
+use Logbook\Repository\UserRepository;
 use Logbook\Service\Reminder\ReminderSync;
 use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Service\Scheduler\TaskSummary;
@@ -174,7 +175,6 @@ final class NotificationDeliveryTest extends ReminderTestCase
             'document_days' => '30',
             'manual_days' => '7',
             'channels' => ['ntfy'],
-            'email' => '',
         ]);
         $this->runTasks($app);
 
@@ -293,13 +293,15 @@ final class NotificationDeliveryTest extends ReminderTestCase
         $this->runTasks($app);
         self::assertSame([], $this->digests(), 'off for a user from before 2.1.0 (new users: DigestDefaultTest)');
 
+        $owner = $this->service($app, UserRepository::class)->findByUsername('owner');
+        self::assertNotNull($owner);
+        $this->withEmail($app, $owner, 'pat@example.com');
         $browser->post('/settings/reminders', [
             'schedule_days' => '30',
             'schedule_distance' => '621',
             'document_days' => '30',
             'manual_days' => '7',
             'channels' => ['email'],
-            'email' => 'pat@example.com',
             'digest' => '1',
         ]);
         $summary = $this->runTasks($app);

@@ -43,22 +43,9 @@ final readonly class ReminderSettingsStore
     /**
      * Store a new user's starting delivery choices (the digest on, §7.11).
      */
-    /**
-     * @param string|null $email where their email goes (header sign-in's email header, Phase 23.2)
-     */
-    public function startNewUser(int $userId, ?string $email = null): void
+    public function startNewUser(int $userId): void
     {
-        $preferences = NotificationPreferences::forNewUser();
-        if ($email !== null) {
-            $preferences = new NotificationPreferences(
-                $preferences->channels,
-                $email,
-                $preferences->digest,
-                $preferences->ntfyUrl,
-                $preferences->gotifyToken,
-            );
-        }
-        $this->saveNotificationPreferences($userId, $preferences);
+        $this->saveNotificationPreferences($userId, NotificationPreferences::forNewUser());
     }
 
     public function saveNotificationPreferences(int $userId, NotificationPreferences $preferences): void
