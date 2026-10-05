@@ -63,9 +63,10 @@ final readonly class SettingsPage
         ?ValidationErrors $avatarErrors = null,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
+        $values ??= ProfileForm::values($user);
 
         return $this->view->render($request, $response, 'settings/index.twig', [
-            'values' => $values ?? ProfileForm::values($user),
+            'values' => $values,
             'errors' => $preferenceErrors?->all() ?? [],
             'password_errors' => $passwordErrors?->all() ?? [],
             // Email and avatar (spec.md §7.9, Phase 33.1).
@@ -81,6 +82,8 @@ final readonly class SettingsPage
             'consumption_units' => ConsumptionUnit::cases(),
             'depth_units' => DepthUnit::cases(),
             'unit_presets' => UnitPreset::cases(),
+            // The preset the units match, shown pressed (spec.md §8 *Unit presets*).
+            'unit_preset' => UnitPreset::matchingValues($values),
             'locale_options' => FormOptions::locales($this->locales),
             'timezone_options' => FormOptions::timezones(),
             'currency_options' => FormOptions::currencies(RequestContext::locale($request)),

@@ -1160,22 +1160,47 @@
         flushOutbox();
         window.addEventListener('online', flushOutbox);
 
-        // Settings: "Quick setup" buttons fill in the four unit preferences.
+        // Settings: "Quick setup" buttons fill in the four unit preferences,
+        // and the one the units match is pressed (spec.md §8 *Unit presets*).
         document.querySelectorAll('[data-unit-presets]').forEach(function (group) {
+            var unitNames = ['distance_unit', 'volume_unit', 'consumption_unit', 'depth_unit'];
+            var buttons = Array.prototype.slice.call(group.querySelectorAll('[data-unit-preset]'));
+            var form = buttons.length ? buttons[0].form : null;
+            var checked = function (name) {
+                var radio = form && form.querySelector('input[type="radio"][name="' + name + '"]:checked');
+                return radio ? radio.value : null;
+            };
+            var syncPressed = function () {
+                buttons.forEach(function (button) {
+                    var matches = unitNames.every(function (name) {
+                        return checked(name) === button.getAttribute('data-' + name.replace('_', '-'));
+                    });
+                    button.setAttribute('aria-pressed', matches ? 'true' : 'false');
+                });
+            };
             group.hidden = false;
-            group.querySelectorAll('[data-unit-preset]').forEach(function (button) {
+            buttons.forEach(function (button) {
                 button.addEventListener('click', function () {
-                    ['distance_unit', 'volume_unit', 'consumption_unit', 'depth_unit'].forEach(function (name) {
+                    unitNames.forEach(function (name) {
                         var value = button.getAttribute('data-' + name.replace('_', '-'));
-                        var radio = button.form && button.form.querySelector(
+                        var radio = form && form.querySelector(
                             'input[type="radio"][name="' + name + '"][value="' + value + '"]'
                         );
                         if (radio) {
                             radio.checked = true;
                         }
                     });
+                    syncPressed();
                 });
             });
+            if (form) {
+                form.addEventListener('change', function (event) {
+                    if (event.target && unitNames.indexOf(event.target.name) !== -1) {
+                        syncPressed();
+                    }
+                });
+            }
+            syncPressed();
         });
 
         // First-run setup: pre-select the browser's time zone.

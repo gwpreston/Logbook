@@ -77,7 +77,7 @@
                     <span class="field__label">{{ 'settings.quick_setup'|trans }}</span>
                     <div class="chip-row">
                         {% for preset in unit_presets %}
-                            <button type="button" class="chip" data-unit-preset
+                            <button type="button" class="chip" data-unit-preset aria-pressed="{{ preset == unit_preset ? 'true' : 'false' }}"
                                     data-distance-unit="{{ preset.distance().value }}"
                                     data-volume-unit="{{ preset.volume().value }}"
                                     data-consumption-unit="{{ preset.consumption().value }}"

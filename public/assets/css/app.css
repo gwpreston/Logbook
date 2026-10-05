@@ -1149,6 +1149,18 @@ a.list__item:hover {
     color: var(--on-accent);
 }
 
+/* Hover for chips people press (unit presets, choices); the pressed one darkens like a primary button. */
+button.chip:hover,
+label.chip:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+button.chip[aria-pressed="true"]:hover,
+label.chip:has(input:checked):hover {
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
+}
+
 .chip input {
     position: absolute;
     opacity: 0;

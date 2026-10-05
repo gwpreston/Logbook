@@ -85,7 +85,17 @@
 
                 <nav aria-label="{{ 'nav.label'|trans }}">
                     <ul class="nav-list">
-                        {% for item in nav_items %}
+                        {# Settings comes last, below Ask (spec.md §8 *Sidebar order*). #}
+                        {% for item in nav_items|filter(i => i.key != 'settings')|merge(nav_items|filter(i => i.key == 'settings')) %}
+                            {% if item.key == 'settings' and ask_available() %}
+                            {# Ask Logbook (spec.md §7.26): only while it is available to this user. #}
+                            <li>
+                                <a class="nav-link" href="{{ url_for('ask') }}" data-ask-entry{% if current_nav == 'ask' %} aria-current="page"{% endif %}>
+                                    {{ ui.icon('forum') }}
+                                    <span class="nav-link__label">{{ 'ask.nav'|trans }}</span>
+                                </a>
+                            </li>
+                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{{ url_for(item.route) }}"{% if current_nav == item.key %} aria-current="page"{% endif %}>
                                     {{ ui.icon(item.icon) }}
@@ -97,15 +107,6 @@
                                 </a>
                             </li>
                         {% endfor %}
-                        {% if ask_available() %}
-                            {# Ask Logbook (spec.md §7.26): only while it is available to this user. #}
-                            <li>
-                                <a class="nav-link" href="{{ url_for('ask') }}" data-ask-entry{% if current_nav == 'ask' %} aria-current="page"{% endif %}>
-                                    {{ ui.icon('forum') }}
-                                    <span class="nav-link__label">{{ 'ask.nav'|trans }}</span>
-                                </a>
-                            </li>
-                        {% endif %}
                     </ul>
                 </nav>
 
