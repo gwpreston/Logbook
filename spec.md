@@ -2279,10 +2279,10 @@ First-run setup creates the initial account. CSRF on all forms.
   that username and it contains `@` is it matched as a **confirmed email
   address**, and then only when exactly one active user with a password
   has it. Several users sharing the address sign in by username; for them
-  an email is refused with the same message as a wrong password, and the
-  attempt counts against the sign-in throttle as any other.
-- Everything else about sign-in (throttle, messages, disabled users,
-  session regeneration) is unchanged.
+  an email is refused with the same message as a wrong password, after
+  the same work, and logged as any failed sign-in.
+- Everything else about sign-in (messages, the failed sign-in log,
+  disabled users, session regeneration) is unchanged.
 
 **Forgotten password** (Phase 33.1, decided 2026-10-04, superseding #36)
 
@@ -2309,7 +2309,8 @@ First-run setup creates the initial account. CSRF on all forms.
   sent. Logged at notice level with the address, never the typed text.
 - **The email** is in the user's language: who asked (the client address
   the request came from), the link
-  (`{APP_URL}{APP_BASE_PATH}/reset/{token}`), that it expires in 60
+  (`{APP_URL}{APP_BASE_PATH}/invite/{token}`, as every reset link), that
+  it expires in 60
   minutes (#159), and "If this wasn't you, ignore this email. Your
   password hasn't changed." Plain text and HTML, no remote images.
   Requesting a link changes nothing else: the user's sessions stay.
@@ -2364,10 +2365,10 @@ it would lock everyone out, as today):
   every file input (Phase 21.1).
 - Processed with GD as vehicle photos are: turned upright from EXIF, then
   **re-encoded** to a 256 × 256 centre-cropped WebP (JPEG where GD lacks
-  WebP), which drops all metadata. Images over 40 megapixels are refused
-  before decoding. The original is not kept.
+  WebP), which drops all metadata. Images over the photo limit (50
+  megapixels) are refused before decoding. The original is not kept.
 - Stored under `UPLOAD_PATH/avatars/`, never in the web root. Served by
-  `GET /users/{id}/avatar?v={avatar_updated_at}` to signed-in users only;
+  `GET /users/{member}/avatar?v={avatar_updated_at}` to signed-in users only;
   any signed-in user may see any avatar (#161). Sent with
   `Cache-Control: private, max-age=31536000, immutable` and
   `X-Content-Type-Options: nosniff`; a user without one answers 404.
