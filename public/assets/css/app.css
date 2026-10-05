@@ -3070,6 +3070,10 @@ a.list__title:hover {
     background: var(--surface-2);
 }
 
+.stack-bar--lg {
+    height: 0.875rem;
+}
+
 .stack-bar__part {
     width: var(--w, 0%);
     min-width: 2px;

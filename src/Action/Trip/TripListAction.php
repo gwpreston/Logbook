@@ -19,8 +19,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET /vehicles/{id}/trips — the Trips tab (spec.md §7.22): this tax year's
- * business and private distance and the viewer's claim value, then the
- * trips the viewer may see, newest first.
+ * business and private distance, the viewer's claim value and the count of
+ * the trips they may see, the *Business and private* card, then those
+ * trips, newest first.
  */
 final readonly class TripListAction
 {
@@ -48,6 +49,7 @@ final readonly class TripListAction
         $claim = $this->claims->thisYear($user, $today, [$vehicle->id]);
         $year = $claim->filter->taxYear;
         assert($year !== null);
+        $until = min($today, $year->lastDay());
 
         return $this->view->render($request, $response, 'trips/index.twig', [
             'vehicle' => $vehicle,
@@ -56,7 +58,8 @@ final readonly class TripListAction
             'total' => count($trips),
             'attachment_counts' => $this->attachments->counts($vehicle),
             'tax_year' => $year,
-            'split' => $this->split->forVehicle($user, $vehicle, $year->start, min($today, $year->lastDay())),
+            'split' => $this->split->forVehicle($user, $vehicle, $year->start, $until),
+            'year_trips' => $this->trips->countVisible($user, $vehicle, $year->start, $until),
             'claim_totals' => ClaimTotals::byCurrency($claim->rows),
             'sees_everyone' => $this->trips->seesEveryone($user, $vehicle),
         ]);

@@ -1761,6 +1761,7 @@ return [
             'longer_than_driven' => 'Diese Fahrt ist {distance} lang, laut Kilometerstand wurden am {date} aber höchstens {driven} gefahren. Prüfe die Strecke oder die Kilometerstände.',
         ],
         'stat' => [
+            'trips' => 'Fahrten',
             'business' => 'Dienstlich',
             'private' => 'Privat',
             'total' => 'Gefahren',
@@ -1774,6 +1775,12 @@ return [
             'exceeds_short' => 'Kilometerstände zu weit auseinander',
         ],
         'split' => [
+            'title' => 'Dienstlich und privat',
+            'driven' => '{total} gefahren',
+            'share' => '{distance} · {percent}',
+            'no_readings' => 'Nicht genug Kilometerstände in diesem Jahr',
+            'total_only' => 'Einige Fahrten gehören anderen Fahrern, daher wird nur die gefahrene Strecke gezeigt.',
+            'mileage_link' => 'Zum Tab Kilometerstand',
             'exceeds' => 'Deine Fahrten ergeben mehr, als die Kilometerstände für diesen Zeitraum zeigen. Ein weiterer Kilometerstand behebt das.',
         ],
         'claim' => [

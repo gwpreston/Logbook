@@ -114,7 +114,7 @@ the audit and the owner's decisions:
 - [x] Translations with ICU plurals, units and currency.
 
 ### 33.3.5 Trips and Your vehicles
-- [ ] Trips tab tiles and the *Business and private* card.
+- [x] Trips tab tiles and the *Business and private* card.
 - [x] *Your vehicles* widget tiles 3 / 2 / 1 per row.
 
 ### 33.3.6 Incidents
@@ -131,7 +131,7 @@ the audit and the owner's decisions:
       no-costs shares; old finance URLs still answer; header button gone.
 - [x] Purchase seller and mileage: saved, moved, removed; date rules;
       migration rolls back.
-- [ ] *Business and private*: worked example (12,400 driven, 3,100
+- [x] *Business and private*: worked example (12,400 driven, 3,100
       business → 25% / 75%); business over driven shows the warning; no
       destinations in the HTML.
 - [x] *Insights*: each kind appears from its fixture and never without

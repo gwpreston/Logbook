@@ -1763,6 +1763,7 @@ return [
             'longer_than_driven' => 'This trip is {distance}, but the mileage log shows at most {driven} driven on {date}. Check the distance or the readings.',
         ],
         'stat' => [
+            'trips' => 'Trips',
             'business' => 'Business',
             'private' => 'Private',
             'total' => 'Distance driven',
@@ -1776,6 +1777,12 @@ return [
             'exceeds_short' => 'readings too far apart',
         ],
         'split' => [
+            'title' => 'Business and private',
+            'driven' => '{total} driven',
+            'share' => '{distance} · {percent}',
+            'no_readings' => 'Not enough readings this year',
+            'total_only' => 'Some trips are other drivers’, so only the distance driven is shown.',
+            'mileage_link' => 'Open the Mileage tab',
             'exceeds' => 'Your trips add up to more than the mileage log shows for this period. Add an odometer reading to fix it.',
         ],
         'claim' => [

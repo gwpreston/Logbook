@@ -5,7 +5,8 @@
 
 {#
  # The Trips tab (spec.md §7.22): this tax year's business and private
- # distance and the viewer's claim value, then the trips the viewer may see
+ # distance, the viewer's claim value and trip count, the Business and
+ # private card, then the trips the viewer may see
  # (their own; everyone's for Manage and Own), newest first.
  #}
 {% set active_nav = 'garage' %}
@@ -17,9 +18,12 @@
     <div class="page__stack">
         {% include 'vehicles/_header.twig' with {active_tab: 'trips'} %}
 
-        {% include 'vehicles/_list_toolbar.twig' with {title: 'trip.title'|trans, module: 'trips', add: {route: 'trips.create', label: 'trip.add'|trans}} %}
+        {# Log trip and Export CSV sit in the Business and private card's header. #}
+        {% include 'vehicles/_list_toolbar.twig' with {title: 'trip.title'|trans, module: 'trips', add: null, export: false} %}
 
-        {{ trips_ui.split_stats(split, tax_year, claim_totals) }}
+        {{ trips_ui.split_stats(split, tax_year, claim_totals, year_trips) }}
+
+        {{ trips_ui.split_card(vehicle, split, tax_year) }}
 
         <p class="btn-row">
             <a class="btn btn--ghost" href="{{ url_for('trips.claim', {}, {year: tax_year.startYear(), vehicles: [vehicle.id]}) }}">{{ ui.icon('receipt_long') }}{{ 'trip.claim.open'|trans({year: tax_year.label()}) }}</a>
