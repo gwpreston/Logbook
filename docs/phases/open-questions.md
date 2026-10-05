@@ -230,6 +230,7 @@ it) were answered on 2026-10-05, before it was built.
 | 168 | [33.2](phase-33.2.md) | New things in the prototype's Settings and sign-in | Parked | Webhook formats, *Send at*, *Frequency*, *Reset dashboard layout*, a Settings expenses export, a self-service *Reset password*, a letter-and-number rule (spec §12). | 2026-10-05 |
 | 169 | [33.2](phase-33.2.md) | Keep any Settings link where it is? | Decided | No: the draft grouping as it stands (spec §8 *Settings layout*). | 2026-10-05 |
 | 170 | [33.2](phase-33.2.md) | Display name in *Account* or *Preferences*? (found while building) | Decided | *Preferences*: it is saved by that form; the *Account* card shows the name (spec §8 *Settings layout*). | 2026-10-05 |
+| 171 | [33.2](phase-33.2.md) | Fold the email, picture and password forms under the *Account* card? (found by the design review) | Needs a decision | Today they are open cards under it. | 2026-10-05 |
 
 ## Other loose ends found in the review
 

@@ -172,9 +172,10 @@ done the same way:
       mixed units render none pressed.
 - [x] Sidebar order and the *Fuel stations* label (also with the module
       off: absent).
-- [ ] `DesignAlignmentTest` updated; design-reviewer report clean of HIGH
-      findings. *(Test updated; the `design-reviewer` agent is not in
-      `.claude/agents/`, so the review is still to do.)*
+- [x] `DesignAlignmentTest` updated; design-reviewer report clean of HIGH
+      findings. *(2026-10-05, run from the definition on the
+      `claude-skills` branch: 0 HIGH. Fixed: users' card-title icons, the
+      signed-out footer. The MEDIUM, a tall* Account *group, is #171.)*
 
 ---
 
@@ -359,3 +360,8 @@ audit and before any code, #170 while building
   *Account*, but the display name is saved by the preferences form):
   *Decided 2026-10-05 (#170):* it stays in *Preferences*, one form and one
   *Save*; the *Account* card at the top shows the name.
+- **A tall *Account* group** (found by the design review): the prototype
+  draws one slim Account card; the app follows it with full email,
+  picture and password forms (about 1,400 px at 1280 wide). Fold those
+  three into `<details>` under the Account card (works without JS), or
+  keep them open? *Needs a decision (#171).*
