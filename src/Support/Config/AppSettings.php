@@ -53,6 +53,8 @@ final readonly class AppSettings
         public OidcConfig $oidc = new OidcConfig(),
         /** Password sign-in (`AUTH_LOCAL_LOGIN`); setup and break-glass links work either way. */
         public bool $localLogin = true,
+        /** *Forgotten password* on sign-in (`PASSWORD_RESET_ENABLED`, Phase 33.1); also needs email. */
+        public bool $passwordResetEnabled = true,
         /** Header sign-in behind a forward-auth proxy (spec.md §7.9, Phase 23.2). */
         public ProxyAuthConfig $proxy = new ProxyAuthConfig(),
         /** AI connections (spec.md §7.25, Phase 26.1). */
@@ -113,6 +115,7 @@ final readonly class AppSettings
             apiCorsOrigins: self::origins($env->string('API_CORS_ORIGINS')),
             oidc: OidcConfig::fromEnv($env),
             localLogin: $env->bool('AUTH_LOCAL_LOGIN', true),
+            passwordResetEnabled: $env->bool('PASSWORD_RESET_ENABLED', true),
             proxy: ProxyAuthConfig::fromEnv($env),
             ai: AiConfig::fromEnv($env),
             mcpEnabled: $env->bool('MCP_ENABLED', true),

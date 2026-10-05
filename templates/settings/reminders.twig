@@ -77,7 +77,14 @@
                         </label>
                     {% endfor %}
                 </fieldset>
-                {{ ui.input('email', 'reminders.settings.email'|trans, values, errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: (is_admin ? 'reminders.settings.email_hint' : 'reminders.settings.email_hint_member')|trans}) }}
+                {# The address is the account's, confirmed on Settings → Account (Phase 33.1). #}
+                <div class="field">
+                    <span class="field__label">{{ 'reminders.settings.email'|trans }}</span>
+                    <p>
+                        {%- if user.email %}<strong>{{ user.email }}</strong>{% else %}{{ (is_admin ? 'reminders.settings.email_none_admin' : 'reminders.settings.email_none')|trans }}{% endif %}
+                        · <a href="{{ url_for('settings') }}#email-heading">{{ 'reminders.settings.email_change'|trans }}</a>
+                    </p>
+                </div>
                 {{ ui.input('ntfy_url', 'reminders.settings.ntfy_url'|trans, values, errors, {type: 'url', optional: true, maxlength: 500, autocomplete: 'off', placeholder: 'https://ntfy.sh/my-topic', hint: (is_admin ? 'reminders.settings.ntfy_url_hint' : 'reminders.settings.ntfy_url_hint_member')|trans}) }}
                 {{ ui.input('gotify_token', 'reminders.settings.gotify_token'|trans, values, errors, {optional: true, maxlength: 200, autocomplete: 'off', hint: (is_admin ? 'reminders.settings.gotify_token_hint' : 'reminders.settings.gotify_token_hint_member')|trans}) }}
                 <label class="toggle">

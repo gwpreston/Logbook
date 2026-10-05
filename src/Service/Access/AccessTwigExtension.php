@@ -8,6 +8,7 @@ use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Feature\FeatureToggles;
@@ -73,6 +74,11 @@ final class AccessTwigExtension extends AbstractExtension
                 $user = $this->context->user();
 
                 return $user === null ? null : $this->authors->label($user, $vehicle, $createdBy);
+            }),
+            new TwigFunction('added_by_user', function (Vehicle $vehicle, ?int $createdBy): ?User {
+                $user = $this->context->user();
+
+                return $user === null ? null : $this->authors->author($user, $vehicle, $createdBy);
             }),
             new TwigFunction('costs_excluded', function (): int {
                 $user = $this->context->user();

@@ -118,6 +118,77 @@
         </form>
 
         {#
+         # Email address (spec.md §7.9 *Email addresses*, Phase 33.1): a new one
+         # waits for its link; changing it needs the current password.
+         #}
+        <section class="card" id="email" aria-labelledby="email-heading">
+            <h2 id="email-heading" class="card__title">{{ 'account.email.heading'|trans }}</h2>
+            {% if email_errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+            <p class="muted" data-email-current>
+                {%- if user.email %}{{ 'account.email.current'|trans({address: user.email}) }}{% else %}{{ 'account.email.none'|trans }}{% endif -%}
+            </p>
+            {% if user.emailPending %}
+                <div class="alert alert--info" role="status" data-email-pending>{{ ui.icon('info') }}<span>{{ 'account.email.waiting'|trans({address: user.emailPending}) }}</span></div>
+                <div class="btn-row">
+                    {% if can_confirm_email %}
+                        <form method="post" action="{{ url_for('settings.email.action', {action: 'resend'}) }}">
+                            {{ ui.csrf(csrf) }}
+                            <button type="submit" class="btn btn--sm">{{ ui.icon('send') }}{{ 'account.email.resend'|trans }}</button>
+                        </form>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('settings.email.action', {action: 'cancel'}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('close') }}{{ 'account.email.cancel'|trans }}</button>
+                    </form>
+                </div>
+            {% endif %}
+            <form class="form" method="post" action="{{ url_for('settings.email') }}">
+                {{ ui.csrf(csrf) }}
+                <input type="text" name="username" value="{{ user.username }}" autocomplete="username" hidden>
+                {{ ui.input('email', 'account.email.label'|trans, email_values, email_errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: (can_confirm_email ? 'account.email.hint' : 'account.email.hint_no_mail')|trans}) }}
+                {% if has_password %}
+                    {{ ui.input('email_password', 'settings.current_password'|trans, {}, email_errors, {type: 'password', required: true, autocomplete: 'current-password'}) }}
+                {% endif %}
+                <div class="btn-row">
+                    <button type="submit" class="btn">{{ ui.icon('check_circle') }}{{ 'account.email.save'|trans }}</button>
+                </div>
+            </form>
+        </section>
+
+        {# Avatar (spec.md §7.9 *Avatars*): re-encoded square, shown wherever a person is. #}
+        <section class="card" id="avatar" aria-labelledby="avatar-heading">
+            <h2 id="avatar-heading" class="card__title">{{ 'account.avatar.heading'|trans }}</h2>
+            {% if avatar_errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+            <div class="avatar-preview">
+                {{ ui.avatar(user, 'md') }}
+                <p class="muted">{{ (user.avatarPath ? 'account.avatar.has' : 'account.avatar.none')|trans }}</p>
+            </div>
+            <form class="form" method="post" action="{{ url_for('settings.avatar') }}" enctype="multipart/form-data">
+                {{ ui.csrf(csrf) }}
+                <div class="field">
+                    <label class="field__label" for="f-avatar">{{ (user.avatarPath ? 'account.avatar.replace' : 'account.avatar.upload')|trans }}</label>
+                    {% set native %}<input class="input input--file" id="f-avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp" required{{ ui.described_by('avatar', avatar_errors, true) }}>{% endset %}
+                    {{ ui.file_drop(native, {max_mb: avatar_max_mb, type_message: 'not_an_image'}) }}
+                    <p class="field__hint" id="f-avatar-hint">{{ 'account.avatar.hint'|trans({max: avatar_max_mb}) }}</p>
+                    {{ ui.field_error(avatar_errors, 'avatar') }}
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn">{{ ui.icon('upload_file') }}{{ 'account.avatar.save'|trans }}</button>
+                </div>
+            </form>
+            {% if user.avatarPath %}
+                <form method="post" action="{{ url_for('settings.avatar.action', {action: 'remove'}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('delete') }}{{ 'account.avatar.remove'|trans }}</button>
+                </form>
+            {% endif %}
+        </section>
+
+        {#
          # Password (spec.md §7.9): shown while password sign-in is on. A user
          # from single sign-on without one sets it without a current password.
          #}

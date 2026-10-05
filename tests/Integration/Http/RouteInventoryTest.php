@@ -45,6 +45,9 @@ final class RouteInventoryTest extends AppTestCase
         'oidc.callback',
         // Phase 28.1: the scheduler's secret URL (the token is the key; 404 while off).
         'scheduler.url',
+        // Phase 33.1: *Forgotten password* and email confirmation links (the token is the key).
+        'password.forgot',
+        'email.confirm',
     ];
 
     /**
@@ -59,6 +62,12 @@ final class RouteInventoryTest extends AppTestCase
         'api.trips.claim',
         'settings.api_keys',
         'settings.api_keys.revoke',
+        // Phase 33.1: one's own email address and avatar, and anyone's avatar picture (#161).
+        'settings.email',
+        'settings.email.action',
+        'settings.avatar',
+        'settings.avatar.action',
+        'users.avatar',
         'dashboard.layout',
         // Phase 30.2: the Cheapest fuel widget's place, one of the user's own.
         'dashboard.cheapest_fuel',
@@ -290,6 +299,8 @@ final class RouteInventoryTest extends AppTestCase
             'notices.dismiss' => InstanceAbility::RunJobs,
             'settings.users' => InstanceAbility::ManageUsers,
             'settings.users.change' => InstanceAbility::ManageUsers,
+            'settings.users.confirm' => InstanceAbility::ManageUsers,
+            'settings.users.add' => InstanceAbility::ManageUsers,
             'settings.users.delete' => InstanceAbility::ManageUsers,
             'settings.users.transfer' => InstanceAbility::ManageUsers,
             'settings.users.revoke' => InstanceAbility::ManageUsers,

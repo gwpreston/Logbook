@@ -76,9 +76,12 @@ Local development for Logbook: start it, or stop it again.
   ./bin/dev-setup.sh --stop --reset      Stop it and delete the data too
 
 Options
-  --with-sample-data   A demo owner (demo / logbook-demo) and six vehicles with
-                       a year of fill-ups, EV charges and odometer readings, and
-                       a member (partner / logbook-demo) two of them are shared with.
+  --with-sample-data   A demo owner (demo) and six vehicles with a year of
+                       fill-ups, EV charges and odometer readings, and a member
+                       (partner) two of them are shared with. Both get new random
+                       passwords on every run, printed at the end and kept in
+                       var/dev-credentials; on a database that already has them,
+                       only the passwords change.
   --postgres, --mysql, --mariadb, --sqlite
                        Which database engine to run. PostgreSQL is the default.
                        Each engine keeps its own data and photos.
@@ -96,6 +99,11 @@ Options
 The port may be set for a single run with either of:
   ./bin/dev-setup.sh --port 8081
   APP_PORT=8081 ./bin/dev-setup.sh
+
+Every email the app sends (password resets, invitations, reminders) lands in
+Mailpit at http://localhost:8025. If something else holds 8025 (another
+project's Mailpit), the next free port is used and printed; MAILPIT_PORT=<n>
+asks for one.
 USAGE
 }
 
@@ -159,6 +167,20 @@ if [ "$APP_PORT" = "8080" ]; then
 fi
 export APP_PORT
 BASE_URL="http://localhost:${APP_PORT}"
+MAILPIT_PORT_ASKED="${MAILPIT_PORT:-}"
+MAILPIT_PORT="${MAILPIT_PORT:-8025}"
+case "$MAILPIT_PORT" in
+    ''|*[!0-9]*) die "MAILPIT_PORT \"$MAILPIT_PORT\" is not a port number." ;;
+esac
+export MAILPIT_PORT
+MAILPIT_URL="http://localhost:${MAILPIT_PORT}"
+CREDENTIALS="var/dev-credentials"
+
+# 20 characters from an unambiguous alphabet (no 0/O, 1/l/I), from /dev/urandom.
+new_password() {
+    # tr ends with SIGPIPE once head has its 20, which pipefail would count as a failure.
+    { LC_ALL=C tr -dc 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789' </dev/urandom 2>/dev/null | head -c 20; } || true
+}
 
 service_running() {
     [ -n "$(compose ps -q --status running "$1" 2>/dev/null || true)" ]
@@ -295,6 +317,17 @@ if [ "$DO_STATUS" -eq 1 ]; then
     else
         info "the app is not running — start it with ./bin/dev-setup.sh"
     fi
+    if service_running mailpit; then
+        published="$(compose port mailpit 8025 2>/dev/null | sed 's/.*://' || true)"
+        [ -n "$published" ] && MAILPIT_URL="http://localhost:${published}"
+        ok "Mailpit catches the app's email on $MAILPIT_URL"
+    else
+        info "Mailpit is not running"
+    fi
+    if [ -f "$CREDENTIALS" ]; then
+        printf '\n      %sSample sign-ins%s (%s)\n' "$BOLD" "$RESET" "$CREDENTIALS"
+        indent <"$CREDENTIALS"
+    fi
 
     printf '\n'
     compose --profile all ps
@@ -335,6 +368,26 @@ if port_in_use "$APP_PORT" && ! port_is_ours "$APP_PORT"; then
 fi
 ok "port $APP_PORT is free (or already ours)"
 
+# Mailpit's web UI. Another project's Mailpit on 8025 is common; with no
+# MAILPIT_PORT asked for, move to the next free port rather than fail.
+if port_in_use "$MAILPIT_PORT" && ! port_is_ours "$MAILPIT_PORT"; then
+    if [ -n "$MAILPIT_PORT_ASKED" ]; then
+        die "Port $MAILPIT_PORT (MAILPIT_PORT) is already in use by something else.
+       Pick a free one: MAILPIT_PORT=8026 ./bin/dev-setup.sh"
+    fi
+    taken="$MAILPIT_PORT"
+    for candidate in $(seq $((MAILPIT_PORT + 1)) $((MAILPIT_PORT + 20))); do
+        if ! port_in_use "$candidate" || port_is_ours "$candidate"; then
+            MAILPIT_PORT="$candidate"
+            break
+        fi
+    done
+    [ "$MAILPIT_PORT" != "$taken" ] || die "No free port for Mailpit near $taken. Set one: MAILPIT_PORT=9025 ./bin/dev-setup.sh"
+    export MAILPIT_PORT
+    MAILPIT_URL="http://localhost:${MAILPIT_PORT}"
+    info "port $taken is taken by something else; Mailpit uses $MAILPIT_PORT instead"
+fi
+
 # Asked now, before the build, rather than after a wait of several minutes.
 if [ "$DO_RESET" -eq 1 ]; then
     confirm "This deletes ALL data in the $ENGINE_NAME dev database and its uploads. Continue?" \
@@ -352,6 +405,16 @@ if [ -n "$DB_SERVICE" ]; then
     ok "$ENGINE_NAME is healthy"
 else
     ok "SQLite needs no database container"
+fi
+
+# Every email the app sends goes to Mailpit (spec.md §10 *Development stack*).
+if run_logged up -d --wait mailpit; then
+    ok "Mailpit is up on $MAILPIT_URL"
+elif grep -qE "address already in use|port is already allocated" "$LOG"; then
+    warn "Mailpit could not have port $MAILPIT_PORT; the app runs, but its email goes nowhere"
+    info "pick another port: MAILPIT_PORT=8026 ./bin/dev-setup.sh"
+else
+    warn "Mailpit did not start; the app runs, but its email goes nowhere"
 fi
 
 # Other engines are not needed; stop them (their data is kept).
@@ -430,18 +493,35 @@ fi
 # Optional: a populated instance to look at, from the Phinx demo seed.
 # ---------------------------------------------------------------------------
 SAMPLE_LOADED=0
+DEMO_PASSWORD=""
+PARTNER_PASSWORD=""
 if [ "$SAMPLE_DATA" -eq 1 ]; then
     step "Creating sample data"
-    run_logged exec -T -u www-data app vendor/bin/phinx seed:run -e development -s DemoDataSeeder \
+    # New passwords on every run (Phase 33.1): nothing fixed to guess.
+    DEMO_PASSWORD="$(new_password)"
+    PARTNER_PASSWORD="$(new_password)"
+    [ "${#DEMO_PASSWORD}" -eq 20 ] && [ "${#PARTNER_PASSWORD}" -eq 20 ] \
+        || die "Could not make random passwords from /dev/urandom."
+    run_logged exec -T -u www-data -e DEMO_PASSWORD="$DEMO_PASSWORD" -e PARTNER_PASSWORD="$PARTNER_PASSWORD" \
+        app vendor/bin/phinx seed:run -e development -s DemoDataSeeder \
         || die "The seeder failed. See the output above."
-    # The seeder declines, rather than fails, when an account already exists;
-    # say which of the two happened.
+    # The seeder declines, rather than fails, when another account already
+    # exists, and only sets new passwords when the sample users do; say which.
     if grep -q "An account already exists" "$LOG"; then
         warn "skipped — this database already has an account"
         info "start from an empty one with: ./bin/dev-setup.sh --reset --with-sample-data"
     else
         SAMPLE_LOADED=1
-        ok "a demo owner and six vehicles with a year of history, and a partner they share two with"
+        if grep -q "new passwords set" "$LOG"; then
+            ok "the sample users were already there: new passwords set"
+        else
+            ok "a demo owner and six vehicles with a year of history, and a partner they share two with"
+        fi
+        mkdir -p var
+        ( umask 077; printf 'demo     %s   (demo@example.test, an admin)\npartner  %s   (partner@example.test, a member)\n' \
+            "$DEMO_PASSWORD" "$PARTNER_PASSWORD" >"$CREDENTIALS" )
+        chmod 600 "$CREDENTIALS"
+        info "written to $CREDENTIALS (readable by you only)"
     fi
 fi
 
@@ -462,9 +542,13 @@ printf '\n%s Ready. %s\n\n' "$GREEN$BOLD" "$RESET"
 printf '  %sApp%s          %s\n' "$BOLD" "$RESET" "$BASE_URL"
 printf '  %sDatabase%s     %s  %s(each engine keeps its own data)%s\n' \
     "$BOLD" "$RESET" "$ENGINE_NAME" "$DIM" "$RESET"
+printf '  %sMail%s         %s  %s(Mailpit: every email the app sends)%s\n' \
+    "$BOLD" "$RESET" "$MAILPIT_URL" "$DIM" "$RESET"
 
 if [ "$SAMPLE_LOADED" -eq 1 ]; then
-    printf '\n  %sSign in with%s  demo / logbook-demo  (or partner / logbook-demo, a member)\n' "$BOLD" "$RESET"
+    printf '\n  %sSign in with%s  demo / %s\n' "$BOLD" "$RESET" "$DEMO_PASSWORD"
+    printf '                or partner / %s  %s(a member)%s\n' "$PARTNER_PASSWORD" "$DIM" "$RESET"
+    printf '                %snew on every run; kept in %s (./bin/dev-setup.sh --status)%s\n' "$DIM" "$CREDENTIALS" "$RESET"
 elif [ "$SETUP_NEEDED" -eq 1 ]; then
     printf '\n  %sOpen the app to create your account.%s\n' "$BOLD" "$RESET"
 fi

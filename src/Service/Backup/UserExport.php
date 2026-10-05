@@ -174,6 +174,8 @@ final class UserExport
         $files = array_values(array_filter([
             ...array_column($out['vehicles'], 'photo_path'),
             ...array_column($out['attachments'], 'stored_path'),
+            // Phase 33.1: their avatar.
+            ...array_column($out['users'], 'avatar_path'),
         ], is_string(...)));
 
         return ['tables' => $out, 'files' => $files];

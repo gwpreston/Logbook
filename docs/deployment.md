@@ -112,6 +112,17 @@ WEBHOOK_URL=https://ha.example.com/api/webhook/logbook
 All variables are listed in `.env.example`; adding another kind of channel is
 described in [notification-channels.md](notification-channels.md).
 
+With email set up, people can also reset a forgotten password from the
+sign-in page, and admins can email reset links and add users directly
+([users-and-sharing.md](users-and-sharing.md#forgotten-passwords)). Set
+`APP_URL` so the links in those emails point at the address people use.
+`PASSWORD_RESET_ENABLED=false` turns the sign-in page's link off.
+
+In development, `docker-compose.dev.yml` runs **Mailpit** and points the app
+at it, so every email lands at `http://localhost:8025` instead of going
+anywhere. It is never part of `docker-compose.yml` or
+`docker-compose.mysql.yml`.
+
 ---
 
 ## Bare PHP 8.4

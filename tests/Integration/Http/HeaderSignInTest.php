@@ -7,7 +7,6 @@ namespace Logbook\Tests\Integration\Http;
 use Logbook\Domain\User\UserIdentity;
 use Logbook\Repository\UserIdentityRepository;
 use Logbook\Repository\UserRepository;
-use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\HeaderSignIn;
 use Logbook\Tests\Support\TestBrowser;
@@ -206,8 +205,8 @@ final class HeaderSignInTest extends AppTestCase
         self::assertSame('Robin Driver', $robin->displayName);
         self::assertFalse($robin->isAdmin);
         self::assertFalse($robin->hasPassword());
-        $notifications = $this->service($app, ReminderSettingsStore::class)->notificationPreferences($robin->id);
-        self::assertSame('robin@example.com', $notifications->email, 'their reminder email address');
+        self::assertSame('robin@example.com', $robin->email, 'their confirmed address: the proxy is trusted (#165)');
+        self::assertNull($robin->emailPending);
         self::assertSame(200, $browser->get('/welcome')->getStatusCode());
         self::assertSame('/garage', $browser->post('/welcome', ['skip' => '1'])->getHeaderLine('Location'));
     }

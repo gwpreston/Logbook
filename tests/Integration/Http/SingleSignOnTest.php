@@ -193,6 +193,34 @@ final class SingleSignOnTest extends AppTestCase
         self::assertNotNull($this->users($app)->findByUsername('sam-smith-2'), 'a taken username gets a suffix');
     }
 
+    public function testANewUsersEmailCountsAsConfirmedOnlyWhenTheProviderVerifiedIt(): void
+    {
+        [$app, $idp] = $this->ssoApp(['OIDC_AUTO_CREATE' => 'true']);
+        $this->resetDatabase($app);
+        $this->createOwner($app);
+
+        $this->ssoSignIn(new TestBrowser($app), $idp, [
+            'sub' => 'sub-verified',
+            'preferred_username' => 'verified',
+            'email' => 'Verified@Example.com',
+            'email_verified' => true,
+        ]);
+        $this->ssoSignIn(new TestBrowser($app), $idp, [
+            'sub' => 'sub-unverified',
+            'preferred_username' => 'unverified',
+            'email' => 'unverified@example.com',
+        ]);
+
+        $verified = $this->users($app)->findByUsername('verified');
+        self::assertNotNull($verified);
+        self::assertSame('verified@example.com', $verified->email, 'confirmed (#165)');
+        self::assertNull($verified->emailPending);
+        $unverified = $this->users($app)->findByUsername('unverified');
+        self::assertNotNull($unverified);
+        self::assertNull($unverified->email);
+        self::assertSame('unverified@example.com', $unverified->emailPending, 'waits for its link');
+    }
+
     public function testWithoutAutomaticCreationAnUnknownAccountIsRefused(): void
     {
         [$app, $idp] = $this->ssoApp(['OIDC_AUTO_CREATE' => 'false']);

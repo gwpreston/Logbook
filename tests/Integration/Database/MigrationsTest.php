@@ -110,7 +110,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 31 import sources, the Phase 30.2 fuel price tables, the Phase
+        // Newest first: the Phase 33.1 account email and avatar columns, the Phase 31 import
+        // sources, the Phase 30.2 fuel price tables, the Phase
         // 30.1 station links and tables,
         // the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
         // the Phase 28.1 job runs, the Phase 27.2 disposal, estimate and incident scans,
@@ -129,6 +130,17 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 33.1: the account's email addresses and avatar, and the address on a link.
+        foreach (['email', 'email_pending', 'avatar_path', 'avatar_updated_at'] as $column) {
+            self::assertTrue($this->hasColumn('users', $column), $column);
+        }
+        self::assertTrue($this->hasColumn('invitations', 'email'));
+        Migrator::run('rollback');
+        foreach (['email', 'email_pending', 'avatar_path', 'avatar_updated_at'] as $column) {
+            self::assertFalse($this->hasColumn('users', $column), 'rollback must drop users.' . $column);
+        }
+        self::assertFalse($this->hasColumn('invitations', 'email'));
+
         // Phase 31: where imported rows came from.
         self::assertTrue($schema->tablesExist(['import_sources']));
         Migrator::run('rollback');

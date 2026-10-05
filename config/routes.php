@@ -67,6 +67,8 @@ use Logbook\Action\Api\VehicleSummaryAction as ApiSummaryAction;
 use Logbook\Action\Attachment\DeleteAttachmentAction;
 use Logbook\Action\Attachment\ShowAttachmentAction;
 use Logbook\Action\Attention\HideAttentionAction;
+use Logbook\Action\Auth\ConfirmEmailAction;
+use Logbook\Action\Auth\ForgotPasswordAction;
 use Logbook\Action\Auth\InviteAction;
 use Logbook\Action\Auth\LoginAction;
 use Logbook\Action\Auth\LoginLinkAction;
@@ -175,8 +177,12 @@ use Logbook\Action\Settings\Ai\AiThisHostAction;
 use Logbook\Action\Settings\AiUseAction;
 use Logbook\Action\Settings\ApiKeysAction;
 use Logbook\Action\Settings\CalendarFeedSettingsAction;
+use Logbook\Action\Settings\AddUserAction;
+use Logbook\Action\Settings\AvatarSettingsAction;
 use Logbook\Action\Settings\ChangePasswordAction;
+use Logbook\Action\Settings\ConfirmUserAction;
 use Logbook\Action\Settings\DeleteUserAction;
+use Logbook\Action\Settings\EmailSettingsAction;
 use Logbook\Action\Settings\ModuleSettingsAction;
 use Logbook\Action\Settings\OidcLinkAction;
 use Logbook\Action\Settings\OidcUnlinkAction;
@@ -190,6 +196,7 @@ use Logbook\Action\Settings\SetThemeAction;
 use Logbook\Action\Settings\SettingsAction;
 use Logbook\Action\Settings\TyreSettingsAction;
 use Logbook\Action\Settings\UserAction;
+use Logbook\Action\User\AvatarAction;
 use Logbook\Action\Settings\UsersAction;
 use Logbook\Action\Sharing\ChangeShareAction;
 use Logbook\Action\Sharing\MyShareAction;
@@ -407,6 +414,11 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/login', LoginAction::class)->setName('login');
         // One-time invitation and password-reset links (spec.md §7.9): the token is the authentication.
         $group->map(['GET', 'POST'], '/invite/{token:[A-Za-z0-9_-]{43}}', InviteAction::class)->setName('invite.accept');
+        // *Forgotten password* (spec.md §7.9, Phase 33.1): 404 unless email is set up and it is on.
+        $group->map(['GET', 'POST'], '/forgot-password', ForgotPasswordAction::class)->setName('password.forgot');
+        // Email confirmation links (spec.md §7.9 *Email addresses*): the token is the authentication.
+        $group->map(['GET', 'POST'], '/confirm-email/{token:[A-Za-z0-9_-]{43}}', ConfirmEmailAction::class)
+            ->setName('email.confirm');
         // Break-glass sign-in links from bin/auth.php (spec.md §7.9): the token is the authentication.
         $group->map(['GET', 'POST'], '/login/link/{token:[A-Za-z0-9_-]{43}}', LoginLinkAction::class)->setName('login.link');
         // Single sign-on (spec.md §7.9): 404 unless OIDC_ISSUER is set. The callback also ends a
@@ -832,8 +844,16 @@ return static function (App $app): void {
         // Users and their one-time links (spec.md §7.9): admins only.
         $group->map(['GET', 'POST'], '/settings/users', UsersAction::class)->setName('settings.users')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);
-        $group->post('/settings/users/{member:[0-9]+}/{action:admin|member|disable|enable|reset}', UserAction::class)
+        $group->post('/settings/users/{member:[0-9]+}/{action:admin|member|enable|reset}', UserAction::class)
             ->setName('settings.users.change')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        // *Revoke access* (the old *Disable*) and *Sign out everywhere* ask first (Phase 33.1).
+        $group->map(['GET', 'POST'], '/settings/users/{member:[0-9]+}/{action:disable|sign-out}', ConfirmUserAction::class)
+            ->setName('settings.users.confirm')
+            ->setArgument($instance, InstanceAbility::ManageUsers->value);
+        // *Add user* (Phase 33.1): the account at once, with a set-password link by email.
+        $group->map(['GET', 'POST'], '/settings/users/add', AddUserAction::class)
+            ->setName('settings.users.add')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);
         $group->map(['GET', 'POST'], '/settings/users/{member:[0-9]+}/delete', DeleteUserAction::class)
             ->setName('settings.users.delete')
@@ -853,6 +873,13 @@ return static function (App $app): void {
             ->setName('settings.api_keys.revoke');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
+        // One's own email address and avatar (spec.md §7.9, Phase 33.1).
+        $group->post('/settings/email', EmailSettingsAction::class)->setName('settings.email');
+        $group->post('/settings/email/{action:resend|cancel}', EmailSettingsAction::class)->setName('settings.email.action');
+        $group->post('/settings/avatar', AvatarSettingsAction::class)->setName('settings.avatar');
+        $group->post('/settings/avatar/{action:remove}', AvatarSettingsAction::class)->setName('settings.avatar.action');
+        // Anyone's avatar, to any signed-in user (#161).
+        $group->get('/users/{member:[0-9]+}/avatar', AvatarAction::class)->setName('users.avatar');
         // One's own single sign-on account (spec.md §7.9 *Linking*).
         $group->post('/settings/sso/link', OidcLinkAction::class)->setName('settings.sso.link');
         $group->post('/settings/sso/{identity:[0-9]+}/unlink', OidcUnlinkAction::class)->setName('settings.sso.unlink');

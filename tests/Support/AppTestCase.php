@@ -233,6 +233,22 @@ abstract class AppTestCase extends TestCase
     }
 
     /**
+     * Give a user a confirmed email address (Phase 33.1), as a used
+     * confirmation link would; returns them re-read.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function withEmail(App $app, User $user, string $address): User
+    {
+        $users = $this->service($app, UserRepository::class);
+        $users->setEmails($user->id, $address, null, new DateTimeImmutable('2026-01-01T00:00:00Z'));
+        $found = $users->find($user->id);
+        self::assertNotNull($found);
+
+        return $found;
+    }
+
+    /**
      * A browser signed in as a freshly created owner (the database is reset first).
      *
      * @param App<ContainerInterface> $app

@@ -177,7 +177,6 @@ final class ReminderPagesTest extends ReminderTestCase
             'schedule_distance' => '600',
             'document_days' => '7',
             'manual_days' => '3',
-            'email' => '',
         ]);
         self::assertSame(303, $saved->getStatusCode());
         self::assertStringContainsString('Your reminder settings were saved.', self::body($browser->follow($saved)));

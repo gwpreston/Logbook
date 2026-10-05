@@ -67,9 +67,6 @@ final class StationUpgradeTest extends AppTestCase
     {
         $app = $this->createApp();
         $this->resetDatabase($app);
-        // Before the data migration: the column exists, nothing is linked.
-        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
-
         $owner = $this->createOwner($app);
         $preset = UnitPreset::Us;
         $member = $this->createMember($app, 'partner', new DisplayPreferences(
@@ -80,6 +77,9 @@ final class StationUpgradeTest extends AppTestCase
             $preset->consumption(),
             'USD',
         ));
+        // Before the data migration: the column exists, nothing is linked. The users come
+        // first: today's code writes columns (Phase 33.1's) the older schema lacks.
+        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
         $vehicles = $this->service($app, VehicleRepository::class);
         $now = new DateTimeImmutable('2026-01-01T00:00:00Z');
         $golf = $vehicles->insert($owner->id, new VehicleData(VehicleType::Car, 'Volkswagen', 'Golf', FuelType::Petrol), $now);
@@ -140,8 +140,9 @@ final class StationUpgradeTest extends AppTestCase
     {
         $app = $this->createApp();
         $this->resetDatabase($app);
-        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
+        // The owner first: today's code writes columns (Phase 33.1's) the older schema lacks.
         $owner = $this->createOwner($app);
+        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
         $golf = $this->service($app, VehicleRepository::class)->insert(
             $owner->id,
             new VehicleData(VehicleType::Car, 'Volkswagen', 'Golf', FuelType::Petrol),

@@ -25,7 +25,19 @@ final readonly class User
         public DateTimeImmutable $updatedAt,
         public bool $isAdmin = false,
         public ?DateTimeImmutable $disabledAt = null,
+        /** Their confirmed address, lower-case (Phase 33.1): reset links, email sign-in, reminders. */
+        public ?string $email = null,
+        /** An address waiting for its confirmation link, used for nothing else. */
+        public ?string $emailPending = null,
+        /** The avatar's path under UPLOAD_PATH/avatars, if they have one. */
+        public ?string $avatarPath = null,
+        public ?DateTimeImmutable $avatarUpdatedAt = null,
     ) {
+    }
+
+    public function hasAvatar(): bool
+    {
+        return $this->avatarPath !== null;
     }
 
     public function isActive(): bool

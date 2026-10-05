@@ -45,7 +45,7 @@ final readonly class InviteAction
     {
         $token = $args['token'] ?? '';
         $invitation = $this->invitations->open($token);
-        if ($invitation === null || $invitation->kind === InvitationKind::Login) {
+        if ($invitation === null || in_array($invitation->kind, [InvitationKind::Login, InvitationKind::Email], true)) {
             throw new HttpNotFoundException($request);
         }
 

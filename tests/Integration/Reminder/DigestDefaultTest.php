@@ -98,7 +98,6 @@ final class DigestDefaultTest extends ReminderTestCase
             'document_days' => '30',
             'manual_days' => '7',
             'channels' => ['email'],
-            'email' => '',
         ]);
         self::assertSame(303, $saved->getStatusCode(), self::body($saved));
         self::assertFalse($this->digestOf($app, 'owner'), 'unticked is stored');

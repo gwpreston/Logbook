@@ -1,0 +1,16 @@
+{% autoescape false %}
+{% for paragraph in mail.paragraphs %}
+{{ paragraph }}
+
+{% endfor %}
+{% if mail.link %}
+{{ mail.link }}
+
+{% endif %}
+{% for paragraph in mail.after %}
+{{ paragraph }}
+
+{% endfor %}
+-- 
+{{ 'app.name'|trans }}
+{% endautoescape %}

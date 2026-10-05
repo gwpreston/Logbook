@@ -38,7 +38,7 @@
                 {% for turn in turns %}
                     <li class="ask-turn">
                         {% if turn.question %}
-                            <p class="ask-question"><span class="visually-hidden">{{ 'ask.you_asked'|trans }}</span>{{ turn.question.content }}</p>
+                            <p class="ask-question">{{ ui.avatar(user, 'xs') }}<span class="visually-hidden">{{ 'ask.you_asked'|trans }}</span>{{ turn.question.content }}</p>
                         {% endif %}
                         {% if turn.answer %}
                             {% set answer = turn.answer %}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Service\Auth\PasswordResets;
 use Logbook\Service\User\UserAdmin;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -12,10 +13,12 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
 
 /**
- * POST /settings/users/{member}/{action:admin|member|disable|enable|reset} —
- * one change to a user (spec.md §7.9; admins only). *Reset* answers with the
- * new one-time link, shown once. Refusals (the last admin, oneself) come
- * back as a message.
+ * POST /settings/users/{member}/{action:admin|member|enable|reset} — one
+ * change to a user (spec.md §7.9; admins only). *Reset* emails the new
+ * one-time link to their address when it can (*Send reset email*, Phase
+ * 33.1), and otherwise answers with it, shown once: never both. Refusals
+ * (the last admin, oneself) come back as a message. *Revoke access* and
+ * *Sign out everywhere* ask first (ConfirmUserAction).
  */
 final readonly class UserAction
 {
@@ -23,6 +26,7 @@ final readonly class UserAction
         private UserAdmin $admin,
         private UsersPage $page,
         private Redirector $redirect,
+        private PasswordResets $resets,
     ) {
     }
 
@@ -38,13 +42,24 @@ final readonly class UserAction
 
         $action = $args['action'] ?? '';
         if ($action === 'reset') {
-            return $this->page->render($request, $response, $this->admin->resetLink($actor, $user));
+            $address = $this->resets->adminAddress($user);
+            $link = $this->admin->resetLink($actor, $user, $address);
+            $client = RequestContext::clientAddress($request);
+            if ($address !== null && $this->resets->emailAdminLink($actor, $user, $link, $address, $client)) {
+                $session->flash('success', 'users.done.reset_emailed', $params + ['address' => $address]);
+
+                return $this->redirect->toRoute('settings.users');
+            }
+            if ($address !== null) {
+                $session->flash('warning', 'users.email_failed');
+            }
+
+            return $this->page->render($request, $response, $link);
         }
 
         $refusal = match ($action) {
             'admin' => $this->admin->setAdmin($user, true),
             'member' => $this->admin->setAdmin($user, false),
-            'disable' => $this->admin->disable($actor, $user),
             default => null,
         };
         if ($action === 'enable') {

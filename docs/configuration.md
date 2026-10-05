@@ -68,6 +68,7 @@ variable. The redirect URI to register is
 | `OIDC_ADMIN_GROUPS` | *(empty)* | Comma-separated: admin is set from these groups at every SSO sign-in, both ways. The last admin is never demoted. Empty: admin stays as set in the app. |
 | `OIDC_LOGOUT` | `false` | Also sign out at the provider. Register `{APP_URL}{APP_BASE_PATH}/login` there as the post-logout redirect URI. |
 | `AUTH_LOCAL_LOGIN` | `true` | Password sign-in. `false` leaves only SSO. First-run setup still creates a local admin, and `php bin/auth.php login-link <username>` still works. |
+| `PASSWORD_RESET_ENABLED` | `true` | *Forgotten your password?* on sign-in: a 60-minute reset link emailed to the account's confirmed address. Offered only when email (`MAIL_HOST`) is set up and password sign-in is on; `false` hides it anyway. See [users-and-sharing.md](users-and-sharing.md#forgotten-passwords). |
 
 ## Header sign-in
 
@@ -162,7 +163,8 @@ which configured channels to use in **Settings → Reminders**. See
 | `MAIL_USERNAME`, `MAIL_PASSWORD` | *(empty)* | SMTP credentials. |
 | `MAIL_ENCRYPTION` | `tls` | `tls` (STARTTLS, required), `ssl` (implicit TLS, usually port 465) or `none`. |
 | `MAIL_FROM` | `logbook@localhost` | Sender, `address` or `Name <address>`. |
-| `MAIL_TO` | *(empty)* | The admins' default recipient; each user can set their own, and members get email only at their own. |
+| `MAIL_TO` | *(empty)* | The admins' default recipient for reminders. Each user's confirmed address (Settings → Account) comes first, members get email only at their own, and it is never used for reset links. |
+| `MAILPIT_PORT` | `8025` | Development only (`docker-compose.dev.yml`): the Mailpit web UI on the host. Unset, `bin/dev-setup.sh` moves to the next free port when 8025 is taken. |
 | `NTFY_URL` | *(empty)* | ntfy topic URL, e.g. `https://ntfy.sh/my-garage`: the admins' reminders; each user can set their own topic. |
 | `NTFY_TOKEN` | *(empty)* | Access token for a protected topic. |
 | `GOTIFY_URL`, `GOTIFY_TOKEN` | *(empty)* | Gotify server URL and application token (the admins'; each user can set their own token on this server). |

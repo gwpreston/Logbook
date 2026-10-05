@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\User;
 
 use DateInterval;
+use Logbook\Domain\User\EmailAddress;
 use Logbook\Domain\User\Invitation;
 use Logbook\Domain\User\InvitationKind;
 use Logbook\Domain\User\User;
@@ -15,8 +16,10 @@ use Logbook\Repository\SessionRepository;
 use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\Transaction;
+use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Http\AbsoluteUrl;
 use Psr\Clock\ClockInterface;
 
@@ -38,6 +41,9 @@ final readonly class UserAdmin
         private ClockInterface $clock,
         private AppSettings $app,
         private AbsoluteUrl $urls,
+        private OneTimeLinks $links,
+        private ReminderSettingsStore $reminderSettings,
+        private AvatarService $avatars,
     ) {
     }
 
@@ -84,15 +90,52 @@ final readonly class UserAdmin
 
     /**
      * A one-time link to set a new password; the user's sessions end now and
-     * any earlier reset link stops working.
+     * any earlier reset link stops working. $sentTo: the address it will be
+     * emailed to (*Send reset email*, Phase 33.1).
      */
-    public function resetLink(User $admin, User $user): CreatedLink
+    public function resetLink(User $admin, User $user, ?string $sentTo = null): CreatedLink
     {
-        return $this->transaction->run(function () use ($admin, $user): CreatedLink {
-            $this->invitations->revokeResetsFor($user->id, $this->clock->now());
-            $this->sessions->deleteForUser($user->id);
+        $this->sessions->deleteForUser($user->id);
 
-            return $this->link($admin, InvitationKind::Reset, $user->id, $user->username, $user->displayName, $user->isAdmin);
+        return $this->links->reset($admin, $user, $sentTo);
+    }
+
+    /**
+     * *Sign out everywhere* (Phase 33.1): every session of the user ends,
+     * on any device and however it started. They are not disabled.
+     */
+    public function signOutEverywhere(User $user): void
+    {
+        $this->sessions->deleteForUser($user->id);
+    }
+
+    /**
+     * *Add user* (Phase 33.1): the account exists at once, with no password
+     * and its address pending until the set-password link is used. The
+     * caller emails that link. Display preferences are the install's
+     * defaults until they change them.
+     */
+    public function addUser(
+        User $admin,
+        string $username,
+        string $displayName,
+        string $email,
+        bool $isAdmin,
+        DisplayPreferences $preferences,
+    ): User {
+        return $this->transaction->run(function () use ($username, $displayName, $email, $isAdmin, $preferences): User {
+            $user = $this->users->insert(
+                Username::normalise($username),
+                null,
+                $displayName,
+                $preferences,
+                $this->clock->now(),
+                $isAdmin,
+                emailPending: EmailAddress::normalise($email),
+            );
+            $this->reminderSettings->startNewUser($user->id);
+
+            return $user;
         });
     }
 
@@ -171,6 +214,8 @@ final readonly class UserAdmin
             $this->settings->deleteAllOf($user->id);
             $this->users->delete($user->id);
         });
+        // Phase 33.1: their avatar goes with them.
+        $this->avatars->deleteFile($user->avatarPath);
 
         return null;
     }

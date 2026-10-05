@@ -10,6 +10,7 @@ use Logbook\Domain\User\User;
 use Logbook\Repository\InvitationRepository;
 use Logbook\Repository\SessionRepository;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Auth\PasswordResets;
 use Logbook\Service\Auth\SetupData;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Support\Config\AppSettings;
@@ -33,6 +34,8 @@ final readonly class InvitationService
         private ClockInterface $clock,
         private AppSettings $app,
         private ReminderSettingsStore $settings,
+        private EmailAddresses $emails,
+        private PasswordResets $resets,
     ) {
     }
 
@@ -103,7 +106,10 @@ final readonly class InvitationService
     }
 
     /**
-     * Set the new password of a reset link and end the user's sessions.
+     * Set the new password of a reset link: the user's sessions end and
+     * their other reset links stop working. A link emailed to the user's
+     * pending address (*Add user*) confirms it (#165). The confirmed
+     * address hears that the password changed.
      */
     public function acceptReset(Invitation $invitation, #[\SensitiveParameter] string $password): ?User
     {
@@ -112,15 +118,24 @@ final readonly class InvitationService
             return null;
         }
 
-        return $this->transaction->run(function () use ($invitation, $user, $password): ?User {
+        $changed = $this->transaction->run(function () use ($invitation, $user, $password): ?User {
             $now = $this->clock->now();
             if (!$this->invitations->markUsed($invitation->id, $now)) {
                 return null;
             }
             $this->users->updatePasswordHash($user->id, $this->hasher->hash($password), $now);
             $this->sessions->deleteForUser($user->id);
+            $this->invitations->revokeOpenFor($user->id, InvitationKind::Reset, $now);
+            if ($invitation->email !== null && $invitation->email === $user->emailPending) {
+                $this->emails->confirmPending($user);
+            }
 
             return $this->users->find($user->id);
         });
+        if ($changed !== null) {
+            $this->resets->notifyChanged($changed);
+        }
+
+        return $changed;
     }
 }

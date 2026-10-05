@@ -3,7 +3,7 @@
 *Get back in without asking anyone, see who's who at a glance, and see
 every email the app sends while developing.*
 
-Status: 📋 planned · no release of its own (ships with Phase 33.4 as
+Status: 🚧 built, awaiting merge · no release of its own (ships with Phase 33.4 as
 **v3.0.0**) · file lives in `docs/phases/`
 
 Phase 19 gave Logbook users, invitations and an admin's one-time reset
@@ -34,9 +34,9 @@ validation, serving) and §7.13 (backup) first, and
 1. **Forgotten password:** a *Forgotten your password?* link on sign-in
    that emails a one-time reset link, without revealing which accounts
    exist.
-2. **One email address per user**, stored on the user, used for reset
-   links and for reminder email (today it lives in the notification
-   preferences).
+2. **One confirmed email address per user**, stored on the user, confirmed
+   by a link, used for reset links, sign-in by email and reminder email
+   (today it lives in the notification preferences).
 3. **Password hashing** stays on one path: `PasswordHasher`
    (`password_hash()` with Argon2id), with a test that keeps it that way.
 4. **Admin controls:** email a reset link, *Sign out everywhere* for a
@@ -51,8 +51,8 @@ validation, serving) and §7.13 (backup) first, and
 
 ## Not in scope
 
-- Verifying email addresses (a confirmation round trip). Recorded as an
-  open question below; linking SSO accounts by email (#51) stays parked.
+- Linking SSO accounts by email (#51) stays parked, although addresses
+  are now confirmed (#157).
 - Two-factor authentication, passkeys, password strength meters.
 - Public sign-up. Only admins create accounts.
 - Resetting a password for an account with no password when local sign-in
@@ -63,246 +63,182 @@ validation, serving) and §7.13 (backup) first, and
 
 ## Spec additions
 
-### §6 User (changed)
-
-> - `email` (nullable, up to 254 characters, stored trimmed and
->   lower-cased, indexed, **not** unique: a household may share an
->   address). The user's own address, for reset links and reminder email.
-> - `avatar_path` (nullable): the stored file's path relative to
->   `UPLOAD_PATH/avatars`, and `avatar_updated_at` (nullable, UTC), used
->   to bust caches.
->
-> Migration: each user's notification-preferences `email` moves to
-> `users.email` and is removed from the preferences; rollback moves it
-> back. Applies and rolls back on every engine.
-
-### §6 Invitation (changed)
-
-> Kind `reset` gains a second origin. `created_by` = the user themselves
-> marks a **self-service** reset (60 minutes); an admin's stays 7 days.
-> Creating either revokes the user's other open reset links.
-
-### §7.9 Authentication and sessions (changed)
-
-Replaces "There is no self-service reset by email" with:
-
-> **Forgotten password** (Phase 33.1, decided 2026-10-04, superseding
-> #36)
->
-> - Shown only when email is configured (`MAIL_HOST`) and local sign-in is
->   on. Otherwise the link is absent and the routes answer 404.
-> - `GET /forgot-password` asks for **username or email address**.
->   `POST` always answers with the same page and wording, whatever was
->   typed: "If that matches an account with an email address, we've sent
->   it a link. It works for 60 minutes." No account, a disabled account,
->   an account with no address, an SSO-only account (no password): same
->   answer, nothing sent.
-> - Matching: a username matches one user; an email address matches every
->   active user with that address and a password, each getting their own
->   email (one link each, naming the username).
-> - **Equal timing:** the answer must not be measurably faster when
->   nothing is sent. The mail is handed to the mailer after the response
->   is flushed (`fastcgi_finish_request()` where available); otherwise the
->   request is padded to a fixed floor (1.5 s). Tested with a fake clock
->   and a fake mailer, not wall time.
-> - **Throttle:** at most 5 requests per client address per 15 minutes
->   and 3 emails per account per hour; over either, the same answer and
->   nothing sent. Logged at notice level with the address, never the
->   typed text.
-> - **The email** is in the user's language: who asked (the address the
->   request came from), the link
->   (`{APP_URL}{APP_BASE_PATH}/reset/{token}`), that it expires in 60
->   minutes, and "If this wasn't you, ignore this email. Your password
->   hasn't changed." Plain text and HTML, no remote images.
-> - **Using the link:** the existing reset page (new password and
->   confirmation). Opening it (GET) uses nothing up, so a mail scanner's
->   preview cannot spend it; the POST does. Success sets the password
->   through `PasswordHasher`, deletes all the user's sessions, revokes
->   their other reset links, signs them in (session regenerated, CSRF
->   rotated) and sends a short "Your Logbook password was changed" email.
->   API keys are untouched (they are not passwords).
-> - A used, expired, revoked or unknown link answers 404 as today.
->
-> **Email address**
->
-> - Settings → Account → *Profile* has **Email**. Changing it needs the
->   current password (when the user has one), and a notice goes to the
->   **old** address. Settings → Reminders shows the same address and links
->   to it; it no longer has its own field. `MAIL_TO` remains the fallback
->   for **reminders** to admins without an address, never for reset
->   links.
->
-> **Admin controls** on Settings → Users (`ManageUsers`, admins only;
-> each a plain POST with CSRF, refused on the last active admin where it
-> would lock everyone out, as today):
->
-> - *Send reset email*: creates the 7-day reset link and emails it to the
->   user's address, in their language. Without an address, or without
->   email configured, the link is shown once as today. The link is never
->   both emailed and shown.
-> - *Sign out everywhere*: deletes every session of that user (any device,
->   any method). It does not disable them; a header-based session will
->   sign straight back in, which the confirmation says. An admin may do
->   this to themselves (their current session included).
-> - *Revoke access*: the existing *Disable* under the label the prototype
->   uses (see open questions), plus revoking the user's open links and
->   API keys in the same transaction.
-> - *Add user*: username, display name, email, *Admin*. Creates the
->   account now, with no password, and emails a 7-day set-password link
->   (kind `reset`). Needs email configured; otherwise the form says to use
->   *Invite* instead. Unlike an invitation the account exists at once, so
->   vehicles can be shared or transferred to it before first sign-in.
-> - Members never see these controls, and every route under
->   `/settings/users` asks `ManageUsers`. Signing out another user is
->   admin-only; a member signs out only themselves.
->
-> **Avatars**
->
-> - Settings → Account → *Profile*: upload (JPEG, PNG or WebP, up to
->   5 MB, by type sniffing, not extension), replace, remove. Drag and drop
->   as every file input (Phase 21.1).
-> - Processed with GD as vehicle photos are: turned upright from EXIF,
->   then **re-encoded** to a 256 × 256 centre-cropped WebP (JPEG where
->   GD lacks WebP), which drops all metadata. The original is not kept.
-> - Stored under `UPLOAD_PATH/avatars/`, never in the web root. Served by
->   `GET /users/{id}/avatar?v={avatar_updated_at}` to signed-in users only
->   (any signed-in user may see any avatar: names are already visible to
->   them), with `Cache-Control: private, max-age=31536000, immutable` and
->   `X-Content-Type-Options: nosniff`.
-> - Without one: initials on a colour taken from the user id, as today's
->   placeholder. Shown in the sidebar footer, Settings → Users, sharing
->   lists, "added by" on entries and the Ask conversation.
-> - Included in backup and restore, in `bin/export-user.php`, and deleted
->   with the user.
-
-### §9 Configuration (changed)
-
-> - `PASSWORD_RESET_ENABLED` (default `true`): set `false` to hide the
->   forgotten-password link even with email configured.
-> - Development only (`docker-compose.dev.yml`): `MAILPIT_PORT` (default
->   `8025`), the Mailpit web UI on the host.
-
-### §10 Deployment — development stack (changed)
-
-> `docker-compose.dev.yml` runs **Mailpit** (`axllent/mailpit`, pinned
-> tag, multi-arch) as `mailpit`, and the app's dev environment points at
-> it: `MAIL_HOST=mailpit`, `MAIL_PORT=1025`, `MAIL_ENCRYPTION=none`,
-> `MAIL_FROM=logbook@localhost`. Its UI is on `http://localhost:8025`.
-> Mailpit is never in `docker-compose.yml` or `docker-compose.mysql.yml`.
->
-> `bin/dev-setup.sh --with-sample-data` generates a new random password
-> for each sample user on **every** run (20 characters from an
-> unambiguous alphabet, from `/dev/urandom`): on a fresh database the
-> seeder creates the users with them; on one that already has the sample
-> users, it sets the new passwords on `demo` and `partner` only (and their
-> other sessions end, as any password change does). The passwords are
-> printed in the summary and written to `var/dev-credentials` (mode 600,
-> git-ignored), which `--status` prints. The seeder refuses to run with
-> `APP_ENV=production`, as today.
+Written into [`spec.md`](../../spec.md) on 2026-10-05, with this phase's
+open questions decided (below): §6 User (`email`, `email_pending`,
+`avatar_path`, `avatar_updated_at`), §6 Invitation (self-service `reset`,
+kind `email`), §6 Session, §7.9 *Email addresses*, *Sign-in by username
+or email*, *Forgotten password*, *Admin controls* and *Avatars*, §7.9
+OIDC *Finding the user* (the `email` claim), §7.11 *Channels per user*,
+§9 `PASSWORD_RESET_ENABLED` and `MAIL_TO`, §10 *Development stack* and
+§13. The spec is the current text; the draft that stood here is
+superseded by it.
 
 ---
 
 ## Tasks
 
 ### 33.1.0 Spec and open questions first
-- [ ] `spec.md` §6, §7.9, §7.11, §9, §10 and §13 as above.
-- [ ] `open-questions.md`: #36 → *Decided* (2026-10-04): self-service reset
-      by email, Phase 33.1. Add this phase's open questions.
-- [ ] `ROADMAP.md` rows and sections for 33.1–33.4.
+- [x] `spec.md` §6, §7.9, §7.11, §9, §10 and §13 as above.
+- [x] `open-questions.md`: #36 → *Scheduled* (2026-10-04): self-service
+      reset by email, Phase 33.1 (and the note in Phase 19). This phase's
+      open questions added and decided (#157–#165).
+- [x] `ROADMAP.md` rows and sections for 33.1–33.4.
 
 ### 33.1.1 Password hashing check
-- [ ] Confirm every password is hashed through `PasswordHasher`
+- [x] Confirm every password is hashed through `PasswordHasher`
       (`password_hash()`, `PASSWORD_ARGON2ID`) and verified with
       `password_verify()`, with re-hash on sign-in when needed.
-- [ ] `DemoDataSeeder` uses `PasswordHasher` instead of calling
+- [x] `DemoDataSeeder` uses `PasswordHasher` instead of calling
       `password_hash()` itself, so the sample users get the app's options.
-- [ ] Architecture test: no `password_hash(`, `crypt(`, `md5(` or `sha1(`
+- [x] Architecture test: no `password_hash(`, `crypt(`, `md5(` or `sha1(`
       on a password anywhere in `src/`, `db/` or `bin/` outside
       `PasswordHasher`.
 
 ### 33.1.2 Email address on the user
-- [ ] Migration: `users.email`, index; move each user's preference email
-      across and back on rollback. SQLite, MySQL, MariaDB, PostgreSQL.
-- [ ] `NotificationPreferences` reads the address from the user; Settings
+- [x] Migration: `users.email`, `users.email_pending`, index;
+      `invitations.email`; move each user's preference email across
+      (confirmed) and back on rollback. SQLite, MySQL, MariaDB, PostgreSQL.
+- [x] `NotificationPreferences` reads the address from the user; Settings
       → Reminders shows it with a link to Account.
-- [ ] Profile field with current-password check and notice to the old
-      address. Proxy and OIDC auto-created users get their address here
-      instead of in the preferences.
+- [x] Profile field with current-password check, pending address,
+      confirmation link (kind `email`, 24 hours, GET shows, POST
+      confirms), *Send the link again*, *Cancel*, and notices to the old
+      address.
+- [x] Proxy and OIDC auto-created users get their address on the user:
+      proxy confirmed, OIDC confirmed only with `email_verified`, else
+      pending.
+- [x] Sign-in by username or confirmed email (#162).
 
 ### 33.1.3 Forgotten password
-- [ ] `ForgotPasswordAction` (GET/POST), `PasswordResetService`
+- [x] `ForgotPasswordAction` (GET/POST), `PasswordResets`
       (matching, throttle, link, email), reusing `InvitationRepository`
       and the keyed token hash.
-- [ ] Throttle generalised from `FailedKeyThrottle` (per address and per
+- [x] Throttle generalised from `FailedKeyThrottle` (per address and per
       account).
-- [ ] Mail after the response is flushed, or the timing floor.
-- [ ] Reset POST: password set, sessions and other links revoked, sign-in,
+- [x] Mail after the response is flushed, or the timing floor.
+- [x] Reset POST: password set, sessions and other links revoked, sign-in,
       "password changed" email.
-- [ ] Sign-in page link, shown under the rules above.
-- [ ] Email templates (text and HTML) in en and de.
+- [x] Sign-in page link, shown under the rules above.
+- [x] Email templates (text and HTML) in en and de.
 
 ### 33.1.4 Admin controls
-- [ ] *Send reset email*, *Sign out everywhere*, *Revoke access*, *Add
-      user* on Settings → Users, with confirmation pages for the last
-      three.
-- [ ] Self-service resets shown in the open links list as "Requested by
+- [x] *Send reset email*, *Sign out everywhere*, *Revoke access* /
+      *Restore access* (the renamed *Disable* / *Enable*, #158), *Add
+      user* on Settings → Users, with confirmation pages for *Sign out
+      everywhere*, *Revoke access* and *Add user*. Using *Add user*'s link
+      confirms the address.
+- [x] Self-service resets shown in the open links list as "Requested by
       them", revocable.
-- [ ] Route inventory: every `/settings/users*` route classified
+- [x] Route inventory: every `/settings/users*` route classified
       `ManageUsers`; a member gets 403 on each.
 
 ### 33.1.5 Avatars
-- [ ] Migration: `avatar_path`, `avatar_updated_at`.
-- [ ] `AvatarService` (validate, orient, crop, re-encode, store, delete)
+- [x] Migration: `avatar_path`, `avatar_updated_at`.
+- [x] `AvatarService` (validate, orient, crop, re-encode, store, delete)
       and `AvatarAction` (serve).
-- [ ] `ui.avatar(user, size)` macro; used in the sidebar footer, users
+- [x] `ui.avatar(user, size)` macro; used in the sidebar footer, users
       list, sharing lists, "added by", Ask.
-- [ ] Backup, restore, export and user deletion include avatars.
+- [x] Backup, restore, export and user deletion include avatars.
 
 ### 33.1.6 Development stack
-- [ ] `docker-compose.dev.yml`: `mailpit` service (pinned tag, healthcheck)
+- [x] `docker-compose.dev.yml`: `mailpit` service (pinned tag, healthcheck)
       and the app's `MAIL_*` pointing at it.
-- [ ] `bin/dev-setup.sh`: start Mailpit with the stack; print its URL in
+- [x] `bin/dev-setup.sh`: start Mailpit with the stack; print its URL in
       the summary and `--status`; generate the sample passwords and pass
       them to the seeder (`DEMO_PASSWORD`, `PARTNER_PASSWORD`); write
       `var/dev-credentials`; update `--help`.
-- [ ] `DemoDataSeeder`: read the passwords from the environment (generate
+- [x] `DemoDataSeeder`: read the passwords from the environment (generate
       and print them when run directly); when the sample users exist,
       set the new passwords instead of skipping silently. Give `demo` and
       `partner` email addresses (`demo@example.test`,
       `partner@example.test`) so resets can be tried in Mailpit.
-- [ ] README, `docs/configuration.md`, `docs/deployment.md`,
+- [x] README, `docs/configuration.md`, `docs/deployment.md`,
       `docs/users-and-sharing.md`: forgotten password, admin controls,
       avatars, Mailpit, and that sample passwords are no longer fixed.
 
 ### 33.1.7 Tests
-- [ ] **Enumeration:** identical response body, status and headers for an
+- [x] **Enumeration:** identical response body, status and headers for an
       unknown username, unknown address, disabled user, SSO-only user and
       a real one; the fake mailer received exactly one message, for the
       real one only.
-- [ ] **Shared address:** two users with one address get one email each.
-- [ ] **Throttle:** the sixth request from an address and the fourth email
+- [x] **Shared address:** two users with one address get one email each.
+- [x] **Throttle:** the sixth request from an address and the fourth email
       for an account in an hour send nothing and look the same.
-- [ ] **Link:** GET doesn't spend it; POST does; expired at 60 minutes;
+- [x] **Link:** GET doesn't spend it; POST does; expired at 60 minutes;
       a newer link revokes the older; sessions of the user all deleted;
       the user is signed in; API keys still work.
-- [ ] **Hidden** without `MAIL_HOST`, with `AUTH_LOCAL_LOGIN=false` and with
+- [x] **Hidden** without `MAIL_HOST`, with `AUTH_LOCAL_LOGIN=false` and with
       `PASSWORD_RESET_ENABLED=false` (link absent, routes 404).
-- [ ] **Admin controls:** each one admin-only; last-admin guards; *Sign out
+- [x] **Admin controls:** each one admin-only; last-admin guards; *Sign out
       everywhere* removes every session; *Revoke access* blocks sign-in
-      and API keys at once; *Add user* emails a set-password link and the
+      and API keys at once (as *Disable* does); *Add user* emails a set-password link and the
       account can be shared to before first sign-in.
-- [ ] **Email change** needs the current password and notifies the old
-      address.
-- [ ] **Avatars:** rejects a PHP file named `.jpg`, an SVG, a 6 MB file, a
+- [x] **Email change** needs the current password, notifies the old
+      address, stays pending (unused for resets, sign-in and reminders)
+      until the link's POST; the GET spends nothing; an expired or
+      replaced link answers 404.
+- [x] **Sign-in by email:** a confirmed address of one user signs in; a
+      shared or pending address is refused like a wrong password; a
+      username containing `@` wins over an address.
+- [x] **Avatars:** rejects a PHP file named `.jpg`, an SVG, a 6 MB file, a
       decompression bomb (pixel limit); output has no EXIF; served only to
       signed-in users; removed with the user; survives backup and restore.
-- [ ] **Hashing** architecture test.
-- [ ] **Migration** round trip on every engine, email moved both ways.
-- [ ] `bin/dev-setup.sh`: a shell test (or the smoke test) that two runs
+- [x] **Hashing** architecture test.
+- [x] **Migration** round trip on every engine, email moved both ways.
+- [x] `bin/dev-setup.sh`: a shell test (or the smoke test) that two runs
       with `--with-sample-data` print different passwords and that both
       sign in.
 
 ---
+
+## Changed while building it
+
+spec.md §6, §7.9, §7.11, §9 and §10 are the current text.
+
+- **No sign-in throttle existed to count against.** Sign-in has only the
+  failed sign-in log (for fail2ban); a refused email sign-in is logged the
+  same way. The spec said otherwise and was corrected.
+- **Reset links stay `/invite/{token}`**, as every reset link was; no
+  `/reset/` route.
+- **A new `RateLimiter`** (a sliding window per bucket and key, files in
+  `var/cache/rate-limit`) rather than reshaping `FailedKeyThrottle`, whose
+  block-after-N semantics the API still wants.
+- **The timing floor is the main path, not a fallback.** The Docker image
+  runs Apache with mod_php, where `fastcgi_finish_request()` doesn't exist.
+  Every *Forgotten password* answer is padded to 1.5 s, and its emails are
+  queued in `AfterResponse`, which the front controller runs after the
+  response is emitted. Under PHP-FPM it closes the connection first. Under
+  mod_php the answer carries its exact `Content-Length` and `Connection:
+  close`, is kept out of mod_deflate (`no-gzip`), and is flushed before the
+  queue runs. Measured on the Docker image with an unreachable SMTP host:
+  without this, a real account's answer took 61.6 s against 1.5 s for an
+  unknown one; with it, both took 1.5 s, and the send failed afterwards in
+  the log.
+- **The answer echoes what was typed**, in a hidden field, so *Send it
+  again* re-posts it; the enumeration test compares answers with that value
+  taken out.
+- **Avatars use the photo pixel limit** (50 megapixels, `ImageCleaner`)
+  rather than a second 40 MP limit, and `avatar_path` is relative to
+  `UPLOAD_PATH` (under `avatars/`), like every stored file, so backups,
+  restores and `bin/export-user.php` carry it with no special case.
+- **The avatar route is `/users/{member}/avatar`**: Slim puts route
+  arguments into request attributes, so user routes use `{member}`
+  (Phase 19).
+- **Email links are left out of the open links list** on Settings → Users:
+  they are the user's own, and *Cancel* on Settings → Account revokes them.
+- **A reset link records the address it was emailed to**
+  (`invitations.email`), so using *Add user*'s link confirms exactly that
+  pending address and no other.
+- **The email field's password is `email_password`**, so the Account page
+  doesn't have two inputs with one id.
+- **`phpunit.xml.dist` pins `MAIL_HOST` empty**: the dev container now
+  points at Mailpit, and tests choose email themselves.
+- **The dev-setup round trip is `bin/tools/dev-sample-passwords-test.sh`**,
+  run against the Docker stack (in an isolated compose project for this
+  phase: `COMPOSE_PROJECT_NAME=logbook-check APP_PORT=8091
+  MAILPIT_PORT=8026`). It checks two runs give two passwords, the latest
+  signs in and the earlier doesn't, `var/dev-credentials` is mode 600, and a
+  reset email for `demo` reaches Mailpit.
 
 ## Acceptance criteria
 
@@ -322,17 +258,31 @@ Replaces "There is no self-service reset by email" with:
 
 ## Open questions
 
-- **Verify email addresses?** A confirmation link when an address is set
-  would stop a typo sending reset links to a stranger, and would let
-  `OIDC_LINK=email` (#51) be reconsidered. Drafted: not verified, but a
-  change needs the current password and notifies the old address.
-- **"Revoke the user":** the brief asks for it beside the reset email. The
-  draft maps it to the existing *Disable* plus revoking links and API
-  keys. Does the prototype mean that, or deleting the account, or only
-  ending their sessions (*Sign out everywhere*)?
-- **Self-service reset lifetime:** 60 minutes drafted (an admin's link
-  stays 7 days).
-- **Reset for SSO-only users** with local sign-in on: allow it to set a
-  first password, or keep "nothing sent" as drafted?
-- **Avatar visibility:** any signed-in user drafted. Restrict to users who
-  share a vehicle with them?
+All decided by the owner on 2026-10-05, before the phase was built
+([`open-questions.md`](open-questions.md) #157–#165).
+
+- **Verify email addresses?** *Decided 2026-10-05 (#157):* yes. A new or
+  changed address waits as pending until its 24-hour link is used, and is
+  used for nothing until then. #51 stays parked.
+- **"Revoke the user":** *Decided 2026-10-05 (#158):* the prototype has no
+  such control. *Revoke access* / *Restore access* is the existing
+  *Disable* / *Enable* renamed: sessions and API keys are already refused
+  while disabled, and work again on *Restore access*.
+- **Self-service reset lifetime:** *Decided 2026-10-05 (#159):* 60 minutes;
+  an admin's link stays 7 days.
+- **Reset for SSO-only users** with local sign-in on: *Decided 2026-10-05
+  (#160):* nothing sent, as drafted.
+- **Avatar visibility:** *Decided 2026-10-05 (#161):* any signed-in user.
+- **What a user signs in with** (found while starting: the prototype signs
+  in by email, the draft by username with shared addresses): *Decided
+  2026-10-05 (#162):* either. A username first; otherwise a confirmed
+  address held by exactly one active user with a password.
+- **Are the addresses already in the notification preferences confirmed?**
+  (found while starting): *Decided 2026-10-05 (#163):* yes, on upgrade.
+- **What a pending address is used for** (found while starting):
+  *Decided 2026-10-05 (#164):* nothing; the old confirmed address (or
+  none) stays in use.
+- **Addresses from outside the profile form** (found while starting):
+  *Decided 2026-10-05 (#165):* confirmed without a link for *Add user*
+  once its set-password link is used, OIDC with `email_verified`, the
+  proxy's header or claim, and the sample users.

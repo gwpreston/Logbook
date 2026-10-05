@@ -28,6 +28,8 @@ use Logbook\Service\Notification\Channel\GotifyChannel;
 use Logbook\Service\Notification\Channel\NtfyChannel;
 use Logbook\Service\Notification\Channel\WebhookChannel;
 use Logbook\Service\Notification\ChannelRegistry;
+use Logbook\Support\Clock\Sleeper;
+use Logbook\Support\Clock\SystemSleeper;
 use Logbook\Support\Clock\UtcClock;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\OidcConfig;
@@ -119,6 +121,7 @@ return [
     },
 
     ClockInterface::class => static fn (): ClockInterface => new UtcClock(),
+    Sleeper::class => static fn (): Sleeper => new SystemSleeper(),
 
     // Who may do what (spec.md §5 Access policy): owners, shares and admins (Phase 19).
     VehicleAccess::class => get(SharedVehicleAccess::class),

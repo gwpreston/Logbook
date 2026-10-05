@@ -55,7 +55,8 @@ starting it) were answered on 2026-10-03, before it was built. Phase
 31's (#145–#149, two of them found while starting it) were answered on
 2026-10-04, before it was built. Phase 32's (#150–#156, four of them
 found while starting it) were answered on 2026-10-05, before it was
-built.
+built. Phase 33.1's (#157–#165, four of them found while starting
+it) were answered on 2026-10-05, before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -215,6 +216,15 @@ built.
 | 154 | [32](phase-32.md) | A value gain per distance (found while starting) | Decided | A negative part in every period, *Since bought* included; Phase 14.2's per-distance figure changes for gains only (spec §7.1, §7.35). | 2026-10-05 |
 | 155 | [32](phase-32.md) | Price and economy split for plug-in hybrids (found while starting) | Decided | Per energy: a price and an economy line for each (spec §7.35). | 2026-10-05 |
 | 156 | [32](phase-32.md) | Where insurance payouts go in the breakdown (found while starting) | Answered | Their own *Insurance payouts* line, as spec §7.7 already shows them (spec §7.35). | 2026-10-05 |
+| 157 | [33.1](phase-33.1.md) | Verify email addresses? | Decided | Yes: a new address is pending until its 24-hour link is used (spec §7.9 *Email addresses*); #51 stays parked. | 2026-10-05 |
+| 158 | [33.1](phase-33.1.md) | "Revoke the user": disable, delete or sign out? | Decided | *Disable* / *Enable* renamed *Revoke access* / *Restore access*; behaviour unchanged (spec §7.9). | 2026-10-05 |
+| 159 | [33.1](phase-33.1.md) | Self-service reset lifetime | Decided | 60 minutes; an admin's link stays 7 days (spec §6 Invitation, §7.9 *Forgotten password*). | 2026-10-05 |
+| 160 | [33.1](phase-33.1.md) | Reset for SSO-only users with local sign-in on? | Decided | No: nothing sent, the same answer (spec §7.9 *Forgotten password*). | 2026-10-05 |
+| 161 | [33.1](phase-33.1.md) | Avatar visibility | Decided | Any signed-in user (spec §7.9 *Avatars*). | 2026-10-05 |
+| 162 | [33.1](phase-33.1.md) | Sign in with username or email? (found while starting) | Decided | Either: a username first, else a confirmed address held by exactly one active user with a password (spec §7.9 *Sign-in by username or email*). | 2026-10-05 |
+| 163 | [33.1](phase-33.1.md) | Addresses already in the notification preferences: confirmed? (found while starting) | Decided | Yes, on upgrade (spec §6 User). | 2026-10-05 |
+| 164 | [33.1](phase-33.1.md) | What a pending address is used for (found while starting) | Decided | Nothing; the old confirmed address stays in use (spec §7.9 *Email addresses*). | 2026-10-05 |
+| 165 | [33.1](phase-33.1.md) | Addresses from outside the profile form (found while starting) | Decided | Confirmed without a link: *Add user* once its link is used, OIDC with `email_verified`, the proxy, the sample users (spec §7.9 *Email addresses*). | 2026-10-05 |
 
 ## Other loose ends found in the review
 

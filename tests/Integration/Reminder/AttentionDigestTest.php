@@ -12,6 +12,7 @@ use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\AttentionHiddenRepository;
+use Logbook\Repository\UserRepository;
 use Logbook\Domain\Attention\AttentionKind;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Odometer\OdometerService;
@@ -157,7 +158,7 @@ final class AttentionDigestTest extends ReminderTestCase
         $sharing = $this->service($this->app, SharingService::class);
         self::assertNull($sharing->add($golf, 'viewer', ShareLevel::View, true, true));
         $this->browserFor($this->app, 'viewer')->get('/');
-        $this->saveChannels($this->browserFor($this->app, 'viewer'), 'viewer@example.com');
+        $this->saveChannels($this->browserFor($this->app, 'viewer'), 'viewer', 'viewer@example.com');
 
         $this->runTasks();
 
@@ -176,11 +177,14 @@ final class AttentionDigestTest extends ReminderTestCase
         $this->app = $this->createRecordingApp(self::CHANNELS);
         $this->pinClock($this->app, self::NOW);
         $this->browser = $this->signedIn($this->app);
-        $this->saveChannels($this->browser, 'pat@example.com');
+        $this->saveChannels($this->browser, 'owner', 'pat@example.com');
     }
 
-    private function saveChannels(TestBrowser $browser, string $email): void
+    private function saveChannels(TestBrowser $browser, string $username, string $email): void
     {
+        $user = $this->service($this->app, UserRepository::class)->findByUsername($username);
+        self::assertNotNull($user);
+        $this->withEmail($this->app, $user, $email);
         $browser->get('/settings/reminders');
         $response = $browser->post('/settings/reminders', [
             'schedule_days' => '30',
@@ -188,7 +192,6 @@ final class AttentionDigestTest extends ReminderTestCase
             'document_days' => '30',
             'manual_days' => '7',
             'channels' => ['email', 'webhook'],
-            'email' => $email,
             'digest' => '1',
         ]);
         self::assertSame(303, $response->getStatusCode());

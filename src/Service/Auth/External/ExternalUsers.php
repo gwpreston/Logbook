@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Auth\External;
 
+use Logbook\Domain\User\EmailAddress;
 use Logbook\Domain\User\User;
 use Logbook\Domain\User\Username;
 use Logbook\Repository\InvitationRepository;
@@ -12,6 +13,7 @@ use Logbook\Repository\UserRepository;
 use Logbook\Service\Auth\Oidc\OidcOutcome;
 use Logbook\Service\Auth\Oidc\OidcResult;
 use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\User\EmailAddresses;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Display\DisplayPreferences;
@@ -40,6 +42,7 @@ final readonly class ExternalUsers
         private Transaction $transaction,
         private ClockInterface $clock,
         private LoggerInterface $logger,
+        private EmailAddresses $emails,
     ) {
     }
 
@@ -183,9 +186,7 @@ final readonly class ExternalUsers
         $displayName = $name !== null && trim($name) !== '' ? mb_substr(trim($name), 0, 100) : $base;
         $locale = str_replace('-', '_', $account->locale ?? '');
         $locale = $locale !== '' && $this->locales->supports($locale) ? $locale : $this->settings->locale;
-        $email = $account->email !== null && filter_var(trim($account->email), FILTER_VALIDATE_EMAIL) !== false
-            ? trim($account->email)
-            : null;
+        $email = EmailAddress::parse($account->email);
         $preset = UnitPreset::Metric;
         $preferences = new DisplayPreferences(
             $locale,
@@ -197,7 +198,7 @@ final readonly class ExternalUsers
             depthUnit: $preset->depth(),
         );
 
-        return $this->transaction->run(function () use ($policy, $account, $base, $displayName, $email, $preferences): ?User {
+        $user = $this->transaction->run(function () use ($policy, $account, $base, $displayName, $email, $preferences): ?User {
             $now = $this->clock->now();
             $username = $this->freeUsername($base);
             if ($username === null) {
@@ -208,13 +209,26 @@ final readonly class ExternalUsers
 
                 return null;
             }
-            $user = $this->users->insert($username, null, $displayName, $preferences, $now);
-            $this->reminderSettings->startNewUser($user->id, $email);
+            $user = $this->users->insert(
+                $username,
+                null,
+                $displayName,
+                $preferences,
+                $now,
+                email: $account->emailVerified ? $email : null,
+                emailPending: $account->emailVerified ? null : $email,
+            );
+            $this->reminderSettings->startNewUser($user->id);
             $this->identities->insert($user->id, $policy->provider, $account->issuer, $account->subject, $now);
             $this->logger->info('{label} created the user "{username}".', ['label' => $policy->label, 'username' => $username]);
 
             return $user;
         });
+        if ($user !== null && $user->emailPending !== null) {
+            $this->emails->sendConfirmation($user, $user);
+        }
+
+        return $user;
     }
 
     /**

@@ -35,6 +35,7 @@ final readonly class InvitationRepository
         bool $isAdmin,
         DateTimeImmutable $expiresAt,
         DateTimeImmutable $now,
+        ?string $email = null,
     ): int {
         $platform = $this->connection->getDatabasePlatform();
         $this->connection->insert(self::TABLE, [
@@ -47,6 +48,7 @@ final readonly class InvitationRepository
             'is_admin' => $isAdmin,
             'expires_at' => UtcDateTime::toDatabase($expiresAt, $platform),
             'created_at' => UtcDateTime::toDatabase($now, $platform),
+            'email' => $email,
         ], ['created_by' => ParameterType::INTEGER, 'is_admin' => ParameterType::BOOLEAN]);
 
         return (int) $this->connection->lastInsertId();
@@ -80,13 +82,17 @@ final readonly class InvitationRepository
     }
 
     /**
+     * The links Settings → Users lists: invites, resets and sign-in links,
+     * not email confirmations (they are the user's own).
+     *
      * @return list<Invitation> newest first
      */
     public function listOpen(DateTimeImmutable $now): array
     {
         $rows = $this->select()
-            ->where('used_at IS NULL', 'revoked_at IS NULL', 'expires_at > :now')
+            ->where('used_at IS NULL', 'revoked_at IS NULL', 'expires_at > :now', 'kind <> :email')
             ->setParameter('now', UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()))
+            ->setParameter('email', InvitationKind::Email->value)
             ->orderBy('created_at', 'DESC')
             ->addOrderBy('id', 'DESC')
             ->fetchAllAssociative();
@@ -152,11 +158,22 @@ final readonly class InvitationRepository
     }
 
     /**
-     * Revoke every open reset link of a user (a new one replaces them).
+     * The user's open link of this kind, newest first (an email change still
+     * waiting for confirmation).
      */
-    public function revokeResetsFor(int $userId, DateTimeImmutable $now): void
+    public function findOpenFor(int $userId, InvitationKind $kind, DateTimeImmutable $now): ?Invitation
     {
-        $this->revokeOpenFor($userId, InvitationKind::Reset, $now);
+        $row = $this->select()
+            ->where('user_id = :user', 'kind = :kind', 'used_at IS NULL', 'revoked_at IS NULL', 'expires_at > :now')
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('kind', $kind->value)
+            ->setParameter('now', UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform()))
+            ->orderBy('created_at', 'DESC')
+            ->addOrderBy('id', 'DESC')
+            ->setMaxResults(1)
+            ->fetchAssociative();
+
+        return $row === false ? null : $this->hydrate($row);
     }
 
     /**
@@ -178,7 +195,7 @@ final readonly class InvitationRepository
     {
         return $this->connection->createQueryBuilder()
             ->select('id', 'kind', 'created_by', 'user_id', 'username', 'display_name', 'is_admin')
-            ->addSelect('expires_at', 'used_at', 'revoked_at', 'created_at')
+            ->addSelect('expires_at', 'used_at', 'revoked_at', 'created_at', 'email')
             ->from(self::TABLE);
     }
 
@@ -204,6 +221,7 @@ final readonly class InvitationRepository
             usedAt: $instant('used_at'),
             revokedAt: $instant('revoked_at'),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
+            email: Row::nullableString($row, 'email'),
         );
     }
 }

@@ -113,6 +113,56 @@ final class ImageCleaner
         return $ok && $bytes !== '' ? $bytes : null;
     }
 
+    /**
+     * The image upright, centre-cropped to a square and scaled to $edge
+     * pixels, re-encoded as WebP (JPEG where GD lacks WebP), so nothing of
+     * the original's metadata survives (an avatar, spec.md §7.9). Null when
+     * it cannot be decoded.
+     *
+     * @return array{bytes: string, mime: string, extension: string}|null
+     */
+    public static function square(string $path, string $mime, int $edge): ?array
+    {
+        $edge = max(1, $edge);
+        $image = self::open($path, $mime);
+        if ($image === null) {
+            return null;
+        }
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $side = min($width, $height);
+        $canvas = imagecreatetruecolor($edge, $edge);
+        if ($canvas === false) {
+            return null;
+        }
+        imagefill($canvas, 0, 0, (int) imagecolorallocate($canvas, 255, 255, 255));
+        imagealphablending($canvas, true);
+        imagecopyresampled(
+            $canvas,
+            $image,
+            0,
+            0,
+            intdiv($width - $side, 2),
+            intdiv($height - $side, 2),
+            $edge,
+            $edge,
+            $side,
+            $side,
+        );
+
+        $webp = function_exists('imagewebp') && (imagetypes() & IMG_WEBP) !== 0;
+        ob_start();
+        $ok = $webp ? imagewebp($canvas, null, self::WEBP_QUALITY) : imagejpeg($canvas, null, self::JPEG_QUALITY);
+        $bytes = (string) ob_get_clean();
+        if (!$ok || $bytes === '') {
+            return null;
+        }
+
+        return $webp
+            ? ['bytes' => $bytes, 'mime' => 'image/webp', 'extension' => 'webp']
+            : ['bytes' => $bytes, 'mime' => 'image/jpeg', 'extension' => 'jpg'];
+    }
+
     private static function open(string $path, string $mime): ?GdImage
     {
         $info = @getimagesize($path);

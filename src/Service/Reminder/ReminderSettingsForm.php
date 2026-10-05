@@ -14,13 +14,12 @@ use Logbook\Support\Validation\Validator;
 
 /**
  * Settings → Reminders form: lead times (the distance in the owner's unit),
- * which channels to use, their email address, personal ntfy topic URL and
- * Gotify token (Phase 19), the digest, and the *Needs attention*
+ * which channels to use, their personal ntfy topic URL and Gotify token
+ * (Phase 19; the email address is on Settings → Account from Phase 33.1), the digest, and the *Needs attention*
  * thresholds (Phase 24; left blank, the defaults).
  */
 final class ReminderSettingsForm
 {
-    private const int EMAIL_MAX = 254;
     private const int URL_MAX = 500;
     private const int TOKEN_MAX = 200;
     private const int KM_SCALE = 3;
@@ -40,7 +39,6 @@ final class ReminderSettingsForm
             'schedule_distance' => Decimal::trim($display->distanceUnit->fromKmDecimal($reminders->scheduleKm, 0)),
             'document_days' => (string) $reminders->documentDays,
             'manual_days' => (string) $reminders->manualDays,
-            'email' => $notifications->email ?? '',
             'ntfy_url' => $notifications->ntfyUrl ?? '',
             'gotify_token' => $notifications->gotifyToken ?? '',
             'mileage_days' => (string) $attention->mileageDays,
@@ -68,10 +66,6 @@ final class ReminderSettingsForm
         $distance = $validator->decimal('schedule_distance', true, 0, '0', $maxDistance);
         $documentDays = $validator->integer('document_days', true, 0, $max);
         $manualDays = $validator->integer('manual_days', true, 0, $max);
-        $email = $validator->string('email', false, self::EMAIL_MAX);
-        if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $validator->addError('email', 'validation.email');
-        }
         $ntfyUrl = $validator->string('ntfy_url', false, self::URL_MAX);
         if ($ntfyUrl !== null && !NtfyChannel::isTopicUrl($ntfyUrl)) {
             $validator->addError('ntfy_url', 'reminders.settings.ntfy_url_invalid');
@@ -145,7 +139,7 @@ final class ReminderSettingsForm
                 $documentDays,
                 $manualDays,
             ),
-            new NotificationPreferences($channels, $email, $validator->checkbox('digest'), $ntfyUrl, $gotifyToken),
+            new NotificationPreferences($channels, $validator->checkbox('digest'), $ntfyUrl, $gotifyToken),
             new AttentionThresholds(
                 $mileageDays ?? AttentionThresholds::DEFAULT_MILEAGE_DAYS,
                 $valuationMonths ?? AttentionThresholds::DEFAULT_VALUATION_MONTHS,
