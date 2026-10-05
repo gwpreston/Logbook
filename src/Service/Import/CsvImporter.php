@@ -290,9 +290,10 @@ final readonly class CsvImporter
                 case FieldKind::Source:
                     assert($field->enum !== null && $field->labelPrefix !== null);
                     $source = $vocabulary->choice($field->enum, $field->labelPrefix, $value);
-                    // Tyre history is not imported, so a tyre change's reading is kept as a
-                    // manual one (spec.md §7.13); the other owners write theirs on import.
-                    $owned = [OdometerSource::Manual->value, OdometerSource::Tyre->value];
+                    // Tyre history and vehicle details are not imported, so a tyre change's
+                    // reading and the mileage when bought are kept as manual ones (spec.md
+                    // §7.13); the other owners write theirs on import.
+                    $owned = [OdometerSource::Manual->value, OdometerSource::Tyre->value, OdometerSource::Purchase->value];
                     if ($source !== null && !in_array($source, $owned, true)) {
                         return ImportRowStatus::Implied;
                     }

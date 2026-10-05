@@ -102,9 +102,9 @@ the audit and the owner's decisions:
       below; every finance page within the tab frame.
 
 ### 33.3.3 Purchase fields
-- [ ] Migration: `vehicles.purchase_seller`; the `purchase` reading
+- [x] Migration: `vehicles.purchase_seller`; the `purchase` reading
       source (rollback turns them `manual`).
-- [ ] Vehicle form *Bought from* and *Mileage when bought*, validation,
+- [x] Vehicle form *Bought from* and *Mileage when bought*, validation,
       the Ownership card; Mileage tab label; API and export where vehicle
       fields are listed.
 
@@ -129,7 +129,7 @@ the audit and the owner's decisions:
 - [ ] Every vehicle tab: the name has the same class; exactly one `<h1>`.
 - [ ] Finance tab shown to Manage with costs, absent for View, Log and
       no-costs shares; old finance URLs still answer; header button gone.
-- [ ] Purchase seller and mileage: saved, moved, removed; date rules;
+- [x] Purchase seller and mileage: saved, moved, removed; date rules;
       migration rolls back.
 - [ ] *Business and private*: worked example (12,400 driven, 3,100
       business → 25% / 75%); business over driven shows the warning; no

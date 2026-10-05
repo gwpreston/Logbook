@@ -110,7 +110,8 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 33.1 account email and avatar columns, the Phase 31 import
+        // Newest first: the Phase 33.3 purchase seller, the Phase 33.1 account email and avatar
+        // columns, the Phase 31 import
         // sources, the Phase 30.2 fuel price tables, the Phase
         // 30.1 station links and tables,
         // the Phase 29.2 wider disposal, the Phase 29.1 finance tables,
@@ -130,6 +131,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 33.3: who the vehicle was bought from.
+        self::assertTrue($this->hasColumn('vehicles', 'purchase_seller'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('vehicles', 'purchase_seller'), 'rollback must drop vehicles.purchase_seller');
+
         // Phase 33.1: the account's email addresses and avatar, and the address on a link.
         foreach (['email', 'email_pending', 'avatar_path', 'avatar_updated_at'] as $column) {
             self::assertTrue($this->hasColumn('users', $column), $column);

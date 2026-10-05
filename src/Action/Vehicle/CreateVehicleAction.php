@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Vehicle;
 
+use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Vehicle\FirstInspectionPrompt;
 use Logbook\Service\Vehicle\PaperworkNeedsDate;
+use Logbook\Service\Vehicle\PurchaseMileageNeedsDate;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -23,9 +25,10 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET|POST /vehicles/new — add a vehicle, optionally with a photo, its
- * current odometer and the date it was read (written as its first reading)
- * and its purchase and sale paperwork. Without JS, a blank *First MOT due*
- * gets the suggestion, and the flash says so (spec.md §7.1).
+ * current odometer and the date it was read (written as its first reading),
+ * its mileage when bought and its purchase and sale paperwork. Without JS, a
+ * blank *First MOT due* gets the suggestion, and the flash says so (spec.md
+ * §7.1).
  */
 final readonly class CreateVehicleAction
 {
@@ -38,6 +41,7 @@ final readonly class CreateVehicleAction
         private FeatureToggles $features,
         private FirstInspectionPrompt $prompt,
         private DisplayFormatter $formatter,
+        private OdometerWarningFlash $warnings,
     ) {
     }
 
@@ -68,8 +72,8 @@ final readonly class CreateVehicleAction
         }
 
         try {
-            $vehicle = $this->vehicles->create($user, $new->data, $new->startingReading, $files);
-        } catch (PaperworkNeedsDate $refused) {
+            $vehicle = $this->vehicles->create($user, $new->data, $new->startingReading, $files, $new->purchaseKm);
+        } catch (PaperworkNeedsDate | PurchaseMileageNeedsDate $refused) {
             $errors = VehiclePaperwork::refusal($refused);
 
             return $this->page->render($request, $response, RequestContext::formValues($request), null, $errors, 422);
@@ -92,6 +96,9 @@ final readonly class CreateVehicleAction
         VehicleRoute::flashModelYearWarning($session, $new->data);
         if (VehicleForm::startingReadingWarning($new)) {
             $session->flash('warning', 'vehicle.reading_before_registration');
+        }
+        if ($new->purchaseKm !== null) {
+            $this->warnings->queue($session, $this->vehicles->purchaseWarning($vehicle));
         }
 
         return $this->redirect->toRoute('vehicles.show', ['id' => (string) $vehicle->id]);

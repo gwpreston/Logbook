@@ -11,6 +11,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Vehicle\OwnershipFiles;
 use Logbook\Service\Vehicle\PaperworkNeedsDate;
+use Logbook\Service\Vehicle\PurchaseMileageNeedsDate;
 use Logbook\Support\Validation\ValidationErrors;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -46,7 +47,7 @@ final readonly class VehiclePaperwork
         ]);
     }
 
-    public static function refusal(PaperworkNeedsDate $refused): ValidationErrors
+    public static function refusal(PaperworkNeedsDate|PurchaseMileageNeedsDate $refused): ValidationErrors
     {
         $errors = new ValidationErrors();
         $errors->add($refused->field(), $refused->messageKey());

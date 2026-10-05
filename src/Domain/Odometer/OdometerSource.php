@@ -6,8 +6,9 @@ namespace Logbook\Domain\Odometer;
 
 /**
  * Where an odometer reading came from. Readings from fill-ups, maintenance
- * entries, compliance documents and tyre changes are owned by that entry
- * and change with it.
+ * entries, compliance documents, tyre changes and incidents are owned by
+ * that entry and change with it; the `purchase` reading (Phase 33.3) is the
+ * vehicle form's *Mileage when bought*, owned by the vehicle itself.
  */
 enum OdometerSource: string
 {
@@ -17,6 +18,7 @@ enum OdometerSource: string
     case Document = 'document';
     case Tyre = 'tyre';
     case Incident = 'incident';
+    case Purchase = 'purchase';
 
     /**
      * Icon name in the vendored sprite (assets/vendor/icons.svg).
@@ -30,6 +32,7 @@ enum OdometerSource: string
             self::Document => 'verified_user',
             self::Tyre => 'tire_repair',
             self::Incident => 'car_crash',
+            self::Purchase => 'key',
         };
     }
 }

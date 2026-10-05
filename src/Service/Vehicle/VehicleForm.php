@@ -46,10 +46,11 @@ final class VehicleForm
 
     /**
      * Form values for an existing vehicle, converted to the user's units.
+     * $purchaseKm is its `purchase` reading (*Mileage when bought*), if any.
      *
      * @return array<string, string>
      */
-    public static function values(Vehicle $vehicle, DisplayPreferences $preferences): array
+    public static function values(Vehicle $vehicle, DisplayPreferences $preferences, ?string $purchaseKm = null): array
     {
         $data = $vehicle->data;
 
@@ -70,6 +71,10 @@ final class VehicleForm
             'currency' => $data->currency ?? '',
             'purchase_date' => $data->purchaseDate?->format('Y-m-d') ?? '',
             'purchase_price' => $data->purchasePrice === null ? '' : Decimal::trim($data->purchasePrice),
+            'purchase_seller' => $data->purchaseSeller ?? '',
+            'purchase_odometer' => $purchaseKm === null
+                ? ''
+                : Decimal::trim($preferences->distanceUnit->fromKmDecimal($purchaseKm, OdometerReadingForm::KM_SCALE)),
             'sale_date' => $data->saleDate?->format('Y-m-d') ?? '',
             'sale_price' => $data->salePrice === null ? '' : Decimal::trim($data->salePrice),
         ];
@@ -105,10 +110,31 @@ final class VehicleForm
         bool $firstInspectionOnForm = true,
         ?DateTimeImmutable $keptFirstInspection = null,
     ): VehicleData|ValidationErrors {
+        $edit = self::parseEdit($input, $preferences, $today, $firstInspectionOnForm, $keptFirstInspection);
+
+        return $edit instanceof VehicleEdit ? $edit->data : $edit;
+    }
+
+    /**
+     * The edit form with its *Mileage when bought* (blank removes the
+     * reading), as parse().
+     *
+     * @param array<array-key, mixed> $input
+     */
+    public static function parseEdit(
+        array $input,
+        DisplayPreferences $preferences,
+        DateTimeImmutable $today,
+        bool $firstInspectionOnForm = true,
+        ?DateTimeImmutable $keptFirstInspection = null,
+    ): VehicleEdit|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
         $data = self::parseWith($validator, $preferences, $today, $firstInspectionOnForm, $keptFirstInspection);
+        $mileage = self::purchaseMileage($validator, $preferences);
 
-        return $data ?? $validator->errors();
+        return $data === null || !$validator->errors()->isEmpty()
+            ? $validator->errors()
+            : new VehicleEdit($data, $mileage);
     }
 
     /**
@@ -138,6 +164,7 @@ final class VehicleForm
         );
 
         $readOn = $odometer === null ? null : self::readOn($validator, $today);
+        $mileage = self::purchaseMileage($validator, $preferences);
 
         if ($data === null || !$validator->errors()->isEmpty()) {
             return $validator->errors();
@@ -157,6 +184,7 @@ final class VehicleForm
                 $readOn,
             ),
             $suggested,
+            $mileage->km,
         );
     }
 
@@ -217,6 +245,7 @@ final class VehicleForm
         $currency = $validator->choice('currency', Currency::SUPPORTED);
         $purchaseDate = $validator->date('purchase_date');
         $purchasePrice = $validator->decimal('purchase_price', false, self::MONEY_SCALE, '0', null, 11);
+        $purchaseSeller = $validator->string('purchase_seller', false, 100);
         $saleDate = $validator->date('sale_date');
         $salePrice = $validator->decimal('sale_price', false, self::MONEY_SCALE, '0', null, 11);
 
@@ -247,6 +276,29 @@ final class VehicleForm
             variant: $variant,
             firstRegisteredOn: $firstRegistered,
             firstInspectionDueOn: $firstInspection,
+            purchaseSeller: $purchaseSeller,
+        );
+    }
+
+    /**
+     * *Mileage when bought*: typed in the user's distance unit, ≥ 0 (0 is
+     * valid), stored in km; blank is none. Whether it has its purchase date
+     * is the save's to check (PurchaseMileageNeedsDate), which knows whether
+     * the date is being cleared.
+     */
+    private static function purchaseMileage(Validator $validator, DisplayPreferences $preferences): PurchaseMileage
+    {
+        $km = $validator->decimal(
+            'purchase_odometer',
+            false,
+            OdometerReadingForm::KM_SCALE,
+            '0',
+            null,
+            OdometerReadingForm::MAX_WHOLE_DIGITS,
+        );
+
+        return new PurchaseMileage(
+            $km === null ? null : $preferences->distanceUnit->toKmDecimal($km, OdometerReadingForm::KM_SCALE),
         );
     }
 

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Logbook\Action\Vehicle;
 
 use Logbook\Service\Vehicle\FirstInspectionPrompt;
+use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Service\Vehicle\PaperworkNeedsDate;
+use Logbook\Service\Vehicle\PurchaseMileageNeedsDate;
 use Logbook\Service\Vehicle\TyresBlockTypeChange;
 use Logbook\Service\Vehicle\VehicleForm;
 use Logbook\Service\Vehicle\VehicleService;
@@ -22,7 +24,7 @@ use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * GET|POST /vehicles/{id}/edit — edit details; upload, replace or remove the
- * photo; add purchase and sale paperwork.
+ * photo; add purchase and sale paperwork; the mileage when bought.
  */
 final readonly class EditVehicleAction
 {
@@ -33,6 +35,7 @@ final readonly class EditVehicleAction
         private ClockInterface $clock,
         private VehiclePaperwork $paperwork,
         private FirstInspectionPrompt $prompt,
+        private OdometerWarningFlash $warnings,
     ) {
     }
 
@@ -46,20 +49,22 @@ final readonly class EditVehicleAction
         $preferences = $user->preferences;
 
         if ($request->getMethod() !== 'POST') {
-            return $this->page->render($request, $response, VehicleForm::values($vehicle, $preferences), $vehicle);
+            $values = VehicleForm::values($vehicle, $preferences, $this->vehicles->purchaseReading($vehicle)?->readingKm);
+
+            return $this->page->render($request, $response, $values, $vehicle);
         }
 
         $input = RequestContext::form($request);
         $today = LocalTime::today($this->clock, $preferences->timeZone());
         // Off the form (compliance off, or read-only after the first certificate), the stored date stays.
         $withFirstInspection = $this->page->hasFirstInspectionField($vehicle);
-        $data = VehicleForm::parse($input, $preferences, $today, $withFirstInspection, $vehicle->data->firstInspectionDueOn);
+        $edit = VehicleForm::parseEdit($input, $preferences, $today, $withFirstInspection, $vehicle->data->firstInspectionDueOn);
         $files = $this->paperwork->fromRequest($request);
         $photo = VehicleRoute::photo($request);
         $checked = $photo === null ? null : FileUpload::check($photo, $this->vehicles->maxPhotoBytes(), UploadKind::Image);
-        $errors = $this->paperwork->errors($data, $files);
+        $errors = $this->paperwork->errors($edit, $files);
 
-        if ($errors !== null || $data instanceof ValidationErrors || ($checked !== null && !$checked->isValid())) {
+        if ($errors !== null || $edit instanceof ValidationErrors || ($checked !== null && !$checked->isValid())) {
             $errors ??= new ValidationErrors();
             if ($checked !== null && $checked->error !== null) {
                 $errors->add('photo', $checked->error, ['max' => $this->vehicles->maxPhotoMegabytes()]);
@@ -69,7 +74,7 @@ final readonly class EditVehicleAction
         }
 
         try {
-            $updated = $this->vehicles->update($user, $vehicle, $data, $files);
+            $updated = $this->vehicles->update($user, $vehicle, $edit->data, $files, $edit->purchaseMileage);
         } catch (TyresBlockTypeChange $refused) {
             $errors = new ValidationErrors();
             $errors->add('type', 'vehicle.error.type_tyres', [
@@ -78,7 +83,7 @@ final readonly class EditVehicleAction
             ]);
 
             return $this->page->render($request, $response, RequestContext::formValues($request), $vehicle, $errors, 422);
-        } catch (PaperworkNeedsDate $refused) {
+        } catch (PaperworkNeedsDate | PurchaseMileageNeedsDate $refused) {
             $errors = VehiclePaperwork::refusal($refused);
 
             return $this->page->render($request, $response, RequestContext::formValues($request), $vehicle, $errors, 422);
@@ -95,7 +100,8 @@ final readonly class EditVehicleAction
 
         $session = RequestContext::session($request);
         $session->flash('success', 'vehicle.updated', ['name' => $updated->name()]);
-        VehicleRoute::flashModelYearWarning($session, $data);
+        VehicleRoute::flashModelYearWarning($session, $edit->data);
+        $this->warnings->queue($session, $this->vehicles->purchaseWarning($updated));
 
         return $this->redirect->backOr($request, 'vehicles.show', ['id' => (string) $vehicle->id]);
     }

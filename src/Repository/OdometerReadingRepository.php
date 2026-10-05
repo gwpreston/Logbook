@@ -145,8 +145,25 @@ final readonly class OdometerReadingRepository
     }
 
     /**
+     * The vehicle's `purchase` reading (*Mileage when bought*, spec.md §6):
+     * at most one, owned by the vehicle, so found by its source.
+     */
+    public function findPurchase(int $vehicleId): ?OdometerReading
+    {
+        $row = $this->select()
+            ->where('vehicle_id = :vehicle', 'source = :source')
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->setParameter('source', OdometerSource::Purchase->value)
+            ->orderBy('id')
+            ->setMaxResults(1)
+            ->fetchAssociative();
+
+        return $row === false ? null : $this->hydrate($row);
+    }
+
+    /**
      * @param int|null $entryId the owning fill-up, maintenance entry, document or tyre change
-     *                          (per $source); null for manual readings
+     *                          (per $source); null for manual and purchase readings
      */
     public function insert(
         int $vehicleId,
@@ -157,7 +174,9 @@ final readonly class OdometerReadingRepository
         ?int $createdBy = null,
     ): int {
         $timestamp = UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform());
-        $owner = $source === OdometerSource::Manual ? [] : [self::entryColumn($source) => $entryId];
+        $owner = in_array($source, [OdometerSource::Manual, OdometerSource::Purchase], true)
+            ? []
+            : [self::entryColumn($source) => $entryId];
 
         $this->connection->insert(self::TABLE, [
             'vehicle_id' => $vehicleId,
@@ -214,7 +233,9 @@ final readonly class OdometerReadingRepository
             OdometerSource::Document => 'compliance_document_id',
             OdometerSource::Tyre => 'tyre_change_id',
             OdometerSource::Incident => 'incident_id',
-            OdometerSource::Manual => throw new LogicException('Manual readings have no owning entry.'),
+            OdometerSource::Manual, OdometerSource::Purchase => throw new LogicException(
+                sprintf('%s readings have no owning entry.', ucfirst($source->value)),
+            ),
         };
     }
 

@@ -1436,6 +1436,10 @@ jumps, going backwards) without blocking.
   edit link opens the change. A change linked to a service record that has
   an odometer writes none (the record's reading covers it): one event, one
   reading.
+- The *Mileage when bought* (§7.1, Phase 33.3) joins the series as the
+  `purchase` reading (label *Bought*) at local noon on the purchase date;
+  its edit link opens the vehicle form, and it is never edited or deleted
+  as a manual reading.
 - **Age** (derived, never stored): whole years and months from
   first_registered_on to today in the owner's time zone ("7 yrs 6 mo";
   "4 mo" under a year; "under 1 mo" under a month). A month is complete on
@@ -2983,8 +2987,9 @@ vehicles; a disabled module cannot be imported).
   before) and is read like the form's field: a row with an odometer writes
   its reading at local noon on its start date, and an odometer without a
   start date makes the row invalid.
-- A `tyre` reading in an odometer CSV imports as an ordinary manual
-  reading (tyre history itself is not imported, so it is not *implied*); the
+- A `tyre` or `purchase` reading in an odometer CSV imports as an ordinary
+  manual reading (tyre history and vehicle details are not imported, so it
+  is not *implied*); the
   duplicate key (time and odometer) keeps a re-import from doubling it.
 - Imports go through the same services as the forms: a fill-up writes its
   odometer reading, a maintenance entry with an odometer writes its reading

@@ -108,6 +108,7 @@ final class Serializer
             'first_registered_on' => self::date($data->firstRegisteredOn),
             'first_inspection_due_on' => self::date($data->firstInspectionDueOn),
             'purchase_date' => self::date($data->purchaseDate),
+            'purchase_seller' => $data->purchaseSeller,
             'sale_date' => self::date($data->saleDate),
             'currency' => $currency,
             'currency_override' => $data->currency,
@@ -251,7 +252,8 @@ final class Serializer
             'distance_unit' => self::DISTANCE_UNIT,
             'source' => $reading->source->value,
             'source_id' => match ($reading->source) {
-                OdometerSource::Manual => null,
+                // A manual reading has no owner; the purchase reading's is the vehicle itself.
+                OdometerSource::Manual, OdometerSource::Purchase => null,
                 OdometerSource::Fuel => $reading->fuelEntryId,
                 OdometerSource::Maintenance => $reading->maintenanceEntryId,
                 OdometerSource::Document => $reading->complianceDocumentId,

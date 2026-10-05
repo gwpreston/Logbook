@@ -242,7 +242,20 @@
                 <h2 id="ownership-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>
                 <dl class="details">
                     {% if data.purchaseDate or data.purchasePrice is not null %}
-                        <div><dt>{{ 'valuation.row.bought'|trans }}</dt><dd>{{ _self.dated(data.purchaseDate, data.purchasePrice, currency, costs) }}{{ _self.paperwork(vehicle, 'purchase', paperwork) }}</dd></div>
+                        {% set bought_at = odometer.purchase() %}
+                        <div>
+                            <dt>{{ 'valuation.row.bought'|trans }}</dt>
+                            <dd>
+                                {{- _self.dated(data.purchaseDate, data.purchasePrice, currency, costs) }}{{ _self.paperwork(vehicle, 'purchase', paperwork) -}}
+                                {%- if data.purchaseSeller or bought_at -%}
+                                    <br><span class="muted">
+                                        {%- if data.purchaseSeller %}{{ 'vehicle.bought_from'|trans({seller: data.purchaseSeller}) }}{% endif -%}
+                                        {%- if data.purchaseSeller and bought_at %} · {% endif -%}
+                                        {%- if bought_at %}<span class="tabular">{{ 'vehicle.bought_at'|trans({distance: bought_at.readingKm|distance}) }}</span>{% endif -%}
+                                    </span>
+                                {%- endif -%}
+                            </dd>
+                        </div>
                     {% endif %}
                     {% if value and value.kind.value == 'valuation' %}
                         <div><dt>{{ 'valuation.row.latest'|trans }}</dt><dd>{{ _self.dated(value.date, value.amount, currency, costs) }}{% if value.source %} <span class="muted">· {{ value.source }}</span>{% endif %}</dd></div>

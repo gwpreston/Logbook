@@ -1,7 +1,7 @@
 # Incidents, damage and insurance claims
 
 Log what happened to a vehicle (a scrape in a car park, a break-in, a
-pothole) and keep the claim with it. Repairs, expenses and tyre changes stay
+pothole, a breakdown) and keep the claim with it. Repairs, expenses and tyre changes stay
 ordinary records that you **link** to the incident, so their cost is counted
 once, where it always was.
 

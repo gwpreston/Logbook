@@ -7,6 +7,7 @@ namespace Logbook\Tests\Integration\Http;
 use DateTimeImmutable;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Incident\IncidentType;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\IncidentRepository;
@@ -96,6 +97,19 @@ final class ApiIncidentsTest extends AppTestCase
         self::assertSame(200, $retry->getStatusCode());
         self::assertTrue(ApiClient::json($retry)->get('duplicate'));
         self::assertCount(1, $this->service($this->app, IncidentRepository::class)->listForVehicle($this->golf->id));
+    }
+
+    public function testABreakdownRoundTrips(): void
+    {
+        // Phase 33.3 (#185): a breakdown with no damage, like any other type.
+        $response = $this->api->post($this->path, self::incident(['type' => 'breakdown', 'damage_areas' => []]));
+        self::assertSame(201, $response->getStatusCode(), self::body($response));
+        self::assertSame('breakdown', ApiClient::json($response)->doc('entry')->get('type'));
+
+        $stored = $this->service($this->app, IncidentRepository::class)->listForVehicle($this->golf->id);
+        self::assertCount(1, $stored);
+        self::assertSame(IncidentType::Breakdown, $stored[0]->data->type);
+        self::assertSame('breakdown', ApiClient::json($this->api->get($this->path))->get('items', 0, 'type'));
     }
 
     public function testAnInvalidIncidentIsRefusedWithTheApiFieldNames(): void

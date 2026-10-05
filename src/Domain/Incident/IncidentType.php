@@ -19,6 +19,8 @@ enum IncidentType: string
     case Pothole = 'pothole';
     case Animal = 'animal';
     case Fire = 'fire';
+    /** A breakdown or recovery with no damage (Phase 33.3). */
+    case Breakdown = 'breakdown';
     case Other = 'other';
 
     public function labelKey(): string

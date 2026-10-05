@@ -41,6 +41,8 @@ final readonly class VehicleData
          * only while the vehicle has no inspection document (FirstInspection).
          */
         public ?DateTimeImmutable $firstInspectionDueOn = null,
+        /** Who it was bought from (Phase 33.3): free text, up to 100. */
+        public ?string $purchaseSeller = null,
     ) {
         if ($defaultGrade !== null && $defaultGrade->family() !== FuelGrade::defaultFamilyFor($fuelType)) {
             throw new InvalidArgumentException(
@@ -73,6 +75,7 @@ final readonly class VehicleData
             variant: $this->variant,
             firstRegisteredOn: $this->firstRegisteredOn,
             firstInspectionDueOn: $on,
+            purchaseSeller: $this->purchaseSeller,
         );
     }
 }
