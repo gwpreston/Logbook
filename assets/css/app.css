@@ -2058,11 +2058,57 @@ a.segmented__option {
     display: contents;
 }
 
-/* The sidebar has its own sign-out button on wide screens. */
-@media (min-width: 60rem) {
-    .settings-signout {
-        display: none;
-    }
+/* Settings (spec.md §8 *Settings layout*): groups of cards under labels
+   that are also in-page anchors. */
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    scroll-margin-top: calc(var(--topbar-h) + var(--space-4));
+}
+
+.settings-group + .settings-group {
+    margin-top: var(--space-4);
+}
+
+.settings-group__title {
+    padding: 0 var(--space-1);
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+}
+
+/* Who is signed in: avatar, name, and *Sign out* (the prototype's Account card). */
+.account-card {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.account-card__who {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.account-card__name,
+.account-card__meta {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-card__name {
+    font-size: var(--fs-base);
+    font-weight: 700;
+}
+
+.account-card__meta {
+    font-size: var(--fs-sm);
 }
 
 /* ------------------------------------------------- Phase 2: mileage + fuel */

@@ -1,7 +1,23 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import _self as settings %}
 
 {% set active_nav = 'settings' %}
+
+{# One link row in a Settings card. #}
+{% macro row(href, icon, title, meta) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <li>
+        <a class="list__item" href="{{ href }}">
+            <span class="list__icon">{{ ui.icon(icon) }}</span>
+            <span class="list__body">
+                <span class="list__title">{{ title }}</span>
+                <span class="list__meta">{{ meta }}</span>
+            </span>
+            {{ ui.icon('arrow_forward', 'list__trail') }}
+        </a>
+    </li>
+{%- endmacro %}
 
 {% block title %}{{ 'settings.title'|trans }} · {{ parent() }}{% endblock %}
 
@@ -27,459 +43,375 @@
         {% set depth_options = depth_options|merge([{value: unit.value, label: ('units.name.' ~ unit.value)|trans}]) %}
     {% endfor %}
 
-    <div class="page__stack page__stack--narrow">
+    {#
+     # One page of cards in groups, each heading an in-page anchor (spec.md §8
+     # *Settings layout*, Phase 33.2). Every page linked from here keeps its URL.
+     #}
+    {% set driving = feature_enabled('tyres') or feature_enabled('trips') or feature_enabled('stations') %}
+    {% set your_data = feature_enabled('fuel') or can_instance('backup') %}
+    {% set admin = can_instance('manage_users') or can_instance('manage_modules') or (ai.enabled and can_instance('manage_ai')) or (fuel_prices_available() and can_instance('manage_fuel_prices')) %}
+    <div class="page__stack page__stack--narrow settings">
         <header class="page-header">
             <h1 class="page-header__title">{{ 'settings.title'|trans }}</h1>
         </header>
 
-        <form class="form" method="post" action="{{ url_for('settings.preferences') }}" aria-labelledby="prefs-heading">
-            {{ ui.csrf(csrf) }}
-            <h2 id="prefs-heading" class="visually-hidden">{{ 'settings.preferences'|trans }}</h2>
+        <section class="settings-group" id="account" aria-labelledby="account-heading">
+            <h2 id="account-heading" class="settings-group__title">{{ 'settings.group.account'|trans }}</h2>
 
-            {% if errors is not empty %}
-                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
-            {% endif %}
-
-            <section class="card" aria-labelledby="profile-heading">
-                <h3 id="profile-heading" class="card__title">{{ 'settings.profile'|trans }}</h3>
-                <div class="form-row">
-                    {{ ui.input('display_name', 'prefs.display_name'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'name'}) }}
-                    <div class="field">
-                        <span class="field__label">{{ 'auth.username'|trans }}</span>
-                        <span class="field__static">{{ user.username }}</span>
-                    </div>
+            {# Who is signed in, with *Sign out* (the prototype's Account card). #}
+            <section class="card account-card" aria-label="{{ 'settings.signed_in_as'|trans }}" data-account-card>
+                {{ ui.avatar(user, 'md') }}
+                <div class="account-card__who">
+                    <p class="account-card__name">{{ user.displayName }}</p>
+                    <p class="account-card__meta muted">{{ user.username }}{% if user.email %} · {{ user.email }}{% endif %}</p>
                 </div>
+                <form method="post" action="{{ url_for('logout') }}" class="account-card__signout">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn">{{ ui.icon('logout') }}{{ 'auth.sign_out'|trans }}</button>
+                </form>
             </section>
 
-            <section class="card" aria-labelledby="appearance-heading">
-                <h3 id="appearance-heading" class="card__title">{{ 'settings.appearance'|trans }}</h3>
-                {{ ui.chips('theme', 'prefs.theme'|trans, values, errors, theme_options, {required: true}) }}
-                <fieldset class="field fieldset"{% if errors.accent ?? null %} aria-describedby="f-accent-error"{% endif %}>
-                    <legend class="field__label">{{ 'prefs.accent'|trans }}</legend>
-                    <div class="chip-row">
-                        {% for accent in accents %}
-                            <label class="chip">
-                                <input type="radio" name="accent" value="{{ accent.value }}"{% if accent.value == (values.accent ?? 'blue') %} checked{% endif %}>
-                                <span class="accent-swatch" style="--swatch: {{ accent.swatch() }}" aria-hidden="true"></span>
-                                <span>{{ ('theme.accent.' ~ accent.value)|trans }}</span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                    <p class="field__hint">{{ 'prefs.accent_hint'|trans }}</p>
-                    {{ ui.field_error(errors, 'accent') }}
-                </fieldset>
-            </section>
-
-            <section class="card" aria-labelledby="units-heading">
-                <h3 id="units-heading" class="card__title">{{ 'settings.units'|trans }}</h3>
-
-                <div class="field" data-unit-presets hidden>
-                    <span class="field__label">{{ 'settings.quick_setup'|trans }}</span>
-                    <div class="chip-row">
-                        {% for preset in unit_presets %}
-                            <button type="button" class="chip" data-unit-preset aria-pressed="{{ preset == unit_preset ? 'true' : 'false' }}"
-                                    data-distance-unit="{{ preset.distance().value }}"
-                                    data-volume-unit="{{ preset.volume().value }}"
-                                    data-consumption-unit="{{ preset.consumption().value }}"
-                                    data-depth-unit="{{ preset.depth().value }}">{{ ('units.preset.' ~ preset.value)|trans }}</button>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                {{ ui.chips('distance_unit', 'prefs.distance_unit'|trans, values, errors, distance_options, {required: true}) }}
-                {{ ui.chips('volume_unit', 'prefs.volume_unit'|trans, values, errors, volume_options, {required: true}) }}
-                {{ ui.chips('consumption_unit', 'prefs.consumption_unit'|trans, values, errors, consumption_options, {required: true, hint: 'settings.mpg_hint'|trans}) }}
-                {{ ui.chips('depth_unit', 'prefs.depth_unit'|trans, values, errors, depth_options, {required: true}) }}
-                {{ ui.select('currency', 'prefs.currency'|trans, values, errors, currency_options, {required: true, hint: 'settings.currency_hint'|trans}) }}
-                <p class="field__hint">{{ 'settings.units_note'|trans }}</p>
-            </section>
-
-            <section class="card" aria-labelledby="region-heading">
-                <h3 id="region-heading" class="card__title">{{ 'settings.region'|trans }}</h3>
-                {{ ui.select('locale', 'prefs.locale'|trans, values, errors, locale_options, {required: true}) }}
-                {{ ui.timezone_select(values, errors, timezone_options) }}
-            </section>
-
-            <section class="card card--quiet" aria-labelledby="preview-heading">
-                <h3 id="preview-heading" class="card__title">{{ 'settings.preview'|trans }}</h3>
-                <dl class="details details--compact" data-testid="format-preview">
-                    <div><dt>{{ 'settings.preview_distance'|trans }}</dt><dd class="tabular">{{ 12345.6|distance }}</dd></div>
-                    <div><dt>{{ 'settings.preview_volume'|trans }}</dt><dd class="tabular">{{ 45.5|volume }}</dd></div>
-                    <div><dt>{{ 'settings.preview_depth'|trans }}</dt><dd class="tabular">{{ '4.763'|depth }}</dd></div>
-                    <div><dt>{{ 'settings.preview_money'|trans }}</dt><dd class="tabular">{{ '1234.5'|money }}</dd></div>
-                    <div><dt>{{ 'settings.preview_date'|trans }}</dt><dd>{{ now|local_datetime }}</dd></div>
-                </dl>
-                <p class="field__hint">{{ 'settings.preview_hint'|trans }}</p>
-            </section>
-
-            <div class="btn-row">
-                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'settings.save'|trans }}</button>
-            </div>
-        </form>
-
-        {#
-         # Email address (spec.md §7.9 *Email addresses*, Phase 33.1): a new one
-         # waits for its link; changing it needs the current password.
-         #}
-        <section class="card" id="email" aria-labelledby="email-heading">
-            <h2 id="email-heading" class="card__title">{{ 'account.email.heading'|trans }}</h2>
-            {% if email_errors is not empty %}
-                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
-            {% endif %}
-            <p class="muted" data-email-current>
-                {%- if user.email %}{{ 'account.email.current'|trans({address: user.email}) }}{% else %}{{ 'account.email.none'|trans }}{% endif -%}
-            </p>
-            {% if user.emailPending %}
-                <div class="alert alert--info" role="status" data-email-pending>{{ ui.icon('info') }}<span>{{ 'account.email.waiting'|trans({address: user.emailPending}) }}</span></div>
-                <div class="btn-row">
-                    {% if can_confirm_email %}
-                        <form method="post" action="{{ url_for('settings.email.action', {action: 'resend'}) }}">
+            {#
+             # Email address (spec.md §7.9 *Email addresses*, Phase 33.1): a new one
+             # waits for its link; changing it needs the current password.
+             #}
+            <section class="card" id="email" aria-labelledby="email-heading">
+                <h3 id="email-heading" class="card__title">{{ 'account.email.heading'|trans }}</h3>
+                {% if email_errors is not empty %}
+                    <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                {% endif %}
+                <p class="muted" data-email-current>
+                    {%- if user.email %}{{ 'account.email.current'|trans({address: user.email}) }}{% else %}{{ 'account.email.none'|trans }}{% endif -%}
+                </p>
+                {% if user.emailPending %}
+                    <div class="alert alert--info" role="status" data-email-pending>{{ ui.icon('info') }}<span>{{ 'account.email.waiting'|trans({address: user.emailPending}) }}</span></div>
+                    <div class="btn-row">
+                        {% if can_confirm_email %}
+                            <form method="post" action="{{ url_for('settings.email.action', {action: 'resend'}) }}">
+                                {{ ui.csrf(csrf) }}
+                                <button type="submit" class="btn btn--sm">{{ ui.icon('send') }}{{ 'account.email.resend'|trans }}</button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('settings.email.action', {action: 'cancel'}) }}">
                             {{ ui.csrf(csrf) }}
-                            <button type="submit" class="btn btn--sm">{{ ui.icon('send') }}{{ 'account.email.resend'|trans }}</button>
+                            <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('close') }}{{ 'account.email.cancel'|trans }}</button>
+                        </form>
+                    </div>
+                {% endif %}
+                <form class="form" method="post" action="{{ url_for('settings.email') }}">
+                    {{ ui.csrf(csrf) }}
+                    <input type="text" name="username" value="{{ user.username }}" autocomplete="username" hidden>
+                    {{ ui.input('email', 'account.email.label'|trans, email_values, email_errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: (can_confirm_email ? 'account.email.hint' : 'account.email.hint_no_mail')|trans}) }}
+                    {% if has_password %}
+                        {{ ui.input('email_password', 'settings.current_password'|trans, {}, email_errors, {type: 'password', required: true, autocomplete: 'current-password'}) }}
+                    {% endif %}
+                    <div class="btn-row">
+                        <button type="submit" class="btn">{{ ui.icon('check_circle') }}{{ 'account.email.save'|trans }}</button>
+                    </div>
+                </form>
+            </section>
+            {# Avatar (spec.md §7.9 *Avatars*): re-encoded square, shown wherever a person is. #}
+            <section class="card" id="avatar" aria-labelledby="avatar-heading">
+                <h3 id="avatar-heading" class="card__title">{{ 'account.avatar.heading'|trans }}</h3>
+                {% if avatar_errors is not empty %}
+                    <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                {% endif %}
+                <div class="avatar-preview">
+                    {{ ui.avatar(user, 'md') }}
+                    <p class="muted">{{ (user.avatarPath ? 'account.avatar.has' : 'account.avatar.none')|trans }}</p>
+                </div>
+                <form class="form" method="post" action="{{ url_for('settings.avatar') }}" enctype="multipart/form-data">
+                    {{ ui.csrf(csrf) }}
+                    <div class="field">
+                        <label class="field__label" for="f-avatar">{{ (user.avatarPath ? 'account.avatar.replace' : 'account.avatar.upload')|trans }}</label>
+                        {% set native %}<input class="input input--file" id="f-avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp" required{{ ui.described_by('avatar', avatar_errors, true) }}>{% endset %}
+                        {{ ui.file_drop(native, {max_mb: avatar_max_mb, type_message: 'not_an_image'}) }}
+                        <p class="field__hint" id="f-avatar-hint">{{ 'account.avatar.hint'|trans({max: avatar_max_mb}) }}</p>
+                        {{ ui.field_error(avatar_errors, 'avatar') }}
+                    </div>
+                    <div class="btn-row">
+                        <button type="submit" class="btn">{{ ui.icon('upload_file') }}{{ 'account.avatar.save'|trans }}</button>
+                    </div>
+                </form>
+                {% if user.avatarPath %}
+                    <form method="post" action="{{ url_for('settings.avatar.action', {action: 'remove'}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('delete') }}{{ 'account.avatar.remove'|trans }}</button>
+                    </form>
+                {% endif %}
+            </section>
+            {#
+             # Password (spec.md §7.9): shown while password sign-in is on. A user
+             # from single sign-on without one sets it without a current password.
+             #}
+            {% if local_login %}
+            <form class="form" method="post" action="{{ url_for('settings.password') }}">
+                {{ ui.csrf(csrf) }}
+                <section class="card" aria-labelledby="password-heading">
+                    <h3 id="password-heading" class="card__title">{{ (has_password ? 'settings.password' : 'settings.set_password')|trans }}</h3>
+                    {% if password_errors is not empty %}
+                        <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                    {% endif %}
+                    {# Lets password managers associate the new password with the account. #}
+                    <input type="text" name="username" value="{{ user.username }}" autocomplete="username" hidden>
+                    {% if has_password %}
+                        {{ ui.input('current_password', 'settings.current_password'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'current-password'}) }}
+                    {% else %}
+                        <p class="muted">{{ 'settings.set_password_lead'|trans }}</p>
+                    {% endif %}
+                    <div class="form-row">
+                        {{ ui.input('new_password', 'settings.new_password'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password', hint: 'auth.password_hint'|trans}) }}
+                        {{ ui.input('new_password_confirm', 'auth.password_confirm'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password'}) }}
+                    </div>
+                    {{ ui.password_rules('new_password', 'new_password_confirm') }}
+                    <p class="field__hint">{{ 'settings.password_note'|trans }}</p>
+                    <div class="btn-row">
+                        <button type="submit" class="btn">{{ ui.icon('lock') }}{{ (has_password ? 'settings.change_password' : 'settings.set_password')|trans }}</button>
+                    </div>
+                </section>
+            </form>
+            {% endif %}
+            {% if sso %}
+                {# Single sign-on and header sign-in accounts (spec.md §7.9 *Linking*, *Settings*). #}
+                <section class="card" id="sso" aria-labelledby="sso-heading">
+                    <h3 id="sso-heading" class="card__title">{{ 'sso.card_title'|trans }}</h3>
+                    {% if sso.identities is not empty %}
+                        <ul class="list">
+                            {% for row in sso.identities %}
+                                {% set is_proxy = row.identity.provider == 'proxy' %}
+                                <li>
+                                    <div class="list__item">
+                                        <span class="list__icon">{{ ui.icon('verified_user') }}</span>
+                                        <span class="list__body">
+                                            <span class="list__title">{{ is_proxy ? 'proxy.linked_title'|trans({name: row.identity.subject}) : 'sso.linked_title'|trans({name: sso.name}) }}</span>
+                                            <span class="list__meta">{{ row.identity.lastLoginAt ? 'sso.last_used'|trans({when: row.identity.lastLoginAt|local_datetime}) : 'sso.linked_on'|trans({when: row.identity.createdAt|local_datetime}) }}</span>
+                                        </span>
+                                        <span class="list__end">
+                                            {% if row.can_remove %}
+                                                <form method="post" action="{{ url_for('settings.sso.unlink', {identity: row.identity.id}) }}">
+                                                    {{ ui.csrf(csrf) }}
+                                                    <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('block') }}{{ 'sso.unlink'|trans }}<span class="visually-hidden">: {{ is_proxy ? 'proxy.name'|trans : sso.name }}</span></button>
+                                                </form>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        {% if sso.identities|filter(row => not row.can_remove) is not empty %}
+                            <p class="field__hint">{{ (local_login ? 'sso.only_way_in_password' : 'sso.only_way_in')|trans }}</p>
+                        {% endif %}
+                    {% endif %}
+                    {% if sso.can_link_oidc %}
+                        <p class="muted">{{ 'sso.card_lead'|trans({name: sso.name}) }}</p>
+                        <form method="post" action="{{ url_for('settings.sso.link') }}">
+                            {{ ui.csrf(csrf) }}
+                            <button type="submit" class="btn">{{ ui.icon('link') }}{{ 'sso.link'|trans({name: sso.name}) }}</button>
                         </form>
                     {% endif %}
-                    <form method="post" action="{{ url_for('settings.email.action', {action: 'cancel'}) }}">
-                        {{ ui.csrf(csrf) }}
-                        <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('close') }}{{ 'account.email.cancel'|trans }}</button>
-                    </form>
-                </div>
+                </section>
             {% endif %}
-            <form class="form" method="post" action="{{ url_for('settings.email') }}">
-                {{ ui.csrf(csrf) }}
-                <input type="text" name="username" value="{{ user.username }}" autocomplete="username" hidden>
-                {{ ui.input('email', 'account.email.label'|trans, email_values, email_errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: (can_confirm_email ? 'account.email.hint' : 'account.email.hint_no_mail')|trans}) }}
-                {% if has_password %}
-                    {{ ui.input('email_password', 'settings.current_password'|trans, {}, email_errors, {type: 'password', required: true, autocomplete: 'current-password'}) }}
-                {% endif %}
-                <div class="btn-row">
-                    <button type="submit" class="btn">{{ ui.icon('check_circle') }}{{ 'account.email.save'|trans }}</button>
-                </div>
-            </form>
-        </section>
-
-        {# Avatar (spec.md §7.9 *Avatars*): re-encoded square, shown wherever a person is. #}
-        <section class="card" id="avatar" aria-labelledby="avatar-heading">
-            <h2 id="avatar-heading" class="card__title">{{ 'account.avatar.heading'|trans }}</h2>
-            {% if avatar_errors is not empty %}
-                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
-            {% endif %}
-            <div class="avatar-preview">
-                {{ ui.avatar(user, 'md') }}
-                <p class="muted">{{ (user.avatarPath ? 'account.avatar.has' : 'account.avatar.none')|trans }}</p>
-            </div>
-            <form class="form" method="post" action="{{ url_for('settings.avatar') }}" enctype="multipart/form-data">
-                {{ ui.csrf(csrf) }}
-                <div class="field">
-                    <label class="field__label" for="f-avatar">{{ (user.avatarPath ? 'account.avatar.replace' : 'account.avatar.upload')|trans }}</label>
-                    {% set native %}<input class="input input--file" id="f-avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp" required{{ ui.described_by('avatar', avatar_errors, true) }}>{% endset %}
-                    {{ ui.file_drop(native, {max_mb: avatar_max_mb, type_message: 'not_an_image'}) }}
-                    <p class="field__hint" id="f-avatar-hint">{{ 'account.avatar.hint'|trans({max: avatar_max_mb}) }}</p>
-                    {{ ui.field_error(avatar_errors, 'avatar') }}
-                </div>
-                <div class="btn-row">
-                    <button type="submit" class="btn">{{ ui.icon('upload_file') }}{{ 'account.avatar.save'|trans }}</button>
-                </div>
-            </form>
-            {% if user.avatarPath %}
-                <form method="post" action="{{ url_for('settings.avatar.action', {action: 'remove'}) }}">
+            {# *Use AI features* (spec.md §7.25 *Users*): only once AI is set up. #}
+            {% if ai.set_up %}
+                <form class="form" method="post" action="{{ url_for('settings.ai_use') }}" id="ai">
                     {{ ui.csrf(csrf) }}
-                    <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('delete') }}{{ 'account.avatar.remove'|trans }}</button>
+                    <section class="card" aria-labelledby="ai-use-heading" data-ai-use>
+                        <h3 id="ai-use-heading" class="card__title">{{ ui.icon('smart_toy') }}{{ 'ai.use.heading'|trans }}</h3>
+                        <input type="hidden" name="use_ai" value="0">
+                        <label class="toggle">
+                            <input type="checkbox" name="use_ai" value="1"{% if ai.on %} checked{% endif %} aria-describedby="f-use-ai-hint">
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ 'ai.use.label'|trans }}</span>
+                                <span class="toggle__hint" id="f-use-ai-hint">{{ 'ai.use.hint'|trans }}</span>
+                            </span>
+                        </label>
+                        <div class="btn-row">
+                            <button type="submit" class="btn">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                        </div>
+                    </section>
                 </form>
             {% endif %}
         </section>
 
-        {#
-         # Password (spec.md §7.9): shown while password sign-in is on. A user
-         # from single sign-on without one sets it without a current password.
-         #}
-        {% if local_login %}
-        <form class="form" method="post" action="{{ url_for('settings.password') }}">
-            {{ ui.csrf(csrf) }}
-            <section class="card" aria-labelledby="password-heading">
-                <h2 id="password-heading" class="card__title">{{ (has_password ? 'settings.password' : 'settings.set_password')|trans }}</h2>
-                {% if password_errors is not empty %}
+        <section class="settings-group" id="preferences" aria-labelledby="preferences-heading">
+            <h2 id="preferences-heading" class="settings-group__title">{{ 'settings.group.preferences'|trans }}</h2>
+            <form class="form" method="post" action="{{ url_for('settings.preferences') }}" aria-labelledby="preferences-heading">
+                {{ ui.csrf(csrf) }}
+
+                {% if errors is not empty %}
                     <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
                 {% endif %}
-                {# Lets password managers associate the new password with the account. #}
-                <input type="text" name="username" value="{{ user.username }}" autocomplete="username" hidden>
-                {% if has_password %}
-                    {{ ui.input('current_password', 'settings.current_password'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'current-password'}) }}
-                {% else %}
-                    <p class="muted">{{ 'settings.set_password_lead'|trans }}</p>
-                {% endif %}
-                <div class="form-row">
-                    {{ ui.input('new_password', 'settings.new_password'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password', hint: 'auth.password_hint'|trans}) }}
-                    {{ ui.input('new_password_confirm', 'auth.password_confirm'|trans, {}, password_errors, {type: 'password', required: true, autocomplete: 'new-password'}) }}
-                </div>
-                {{ ui.password_rules('new_password', 'new_password_confirm') }}
-                <p class="field__hint">{{ 'settings.password_note'|trans }}</p>
-                <div class="btn-row">
-                    <button type="submit" class="btn">{{ ui.icon('lock') }}{{ (has_password ? 'settings.change_password' : 'settings.set_password')|trans }}</button>
-                </div>
-            </section>
-        </form>
-        {% endif %}
 
-        {% if sso %}
-            {# Single sign-on and header sign-in accounts (spec.md §7.9 *Linking*, *Settings*). #}
-            <section class="card" id="sso" aria-labelledby="sso-heading">
-                <h2 id="sso-heading" class="card__title">{{ 'sso.card_title'|trans }}</h2>
-                {% if sso.identities is not empty %}
-                    <ul class="list">
-                        {% for row in sso.identities %}
-                            {% set is_proxy = row.identity.provider == 'proxy' %}
-                            <li>
-                                <div class="list__item">
-                                    <span class="list__icon">{{ ui.icon('verified_user') }}</span>
-                                    <span class="list__body">
-                                        <span class="list__title">{{ is_proxy ? 'proxy.linked_title'|trans({name: row.identity.subject}) : 'sso.linked_title'|trans({name: sso.name}) }}</span>
-                                        <span class="list__meta">{{ row.identity.lastLoginAt ? 'sso.last_used'|trans({when: row.identity.lastLoginAt|local_datetime}) : 'sso.linked_on'|trans({when: row.identity.createdAt|local_datetime}) }}</span>
-                                    </span>
-                                    <span class="list__end">
-                                        {% if row.can_remove %}
-                                            <form method="post" action="{{ url_for('settings.sso.unlink', {identity: row.identity.id}) }}">
-                                                {{ ui.csrf(csrf) }}
-                                                <button type="submit" class="btn btn--ghost btn--sm">{{ ui.icon('block') }}{{ 'sso.unlink'|trans }}<span class="visually-hidden">: {{ is_proxy ? 'proxy.name'|trans : sso.name }}</span></button>
-                                            </form>
-                                        {% endif %}
-                                    </span>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                    {% if sso.identities|filter(row => not row.can_remove) is not empty %}
-                        <p class="field__hint">{{ (local_login ? 'sso.only_way_in_password' : 'sso.only_way_in')|trans }}</p>
-                    {% endif %}
-                {% endif %}
-                {% if sso.can_link_oidc %}
-                    <p class="muted">{{ 'sso.card_lead'|trans({name: sso.name}) }}</p>
-                    <form method="post" action="{{ url_for('settings.sso.link') }}">
-                        {{ ui.csrf(csrf) }}
-                        <button type="submit" class="btn">{{ ui.icon('link') }}{{ 'sso.link'|trans({name: sso.name}) }}</button>
-                    </form>
-                {% endif %}
-            </section>
-        {% endif %}
-
-        {# *Use AI features* (spec.md §7.25 *Users*): only once AI is set up. #}
-        {% if ai.set_up %}
-            <form class="form" method="post" action="{{ url_for('settings.ai_use') }}" id="ai">
-                {{ ui.csrf(csrf) }}
-                <section class="card" aria-labelledby="ai-use-heading" data-ai-use>
-                    <h2 id="ai-use-heading" class="card__title">{{ ui.icon('smart_toy') }}{{ 'ai.use.heading'|trans }}</h2>
-                    <input type="hidden" name="use_ai" value="0">
-                    <label class="toggle">
-                        <input type="checkbox" name="use_ai" value="1"{% if ai.on %} checked{% endif %} aria-describedby="f-use-ai-hint">
-                        <span class="toggle__text">
-                            <span class="toggle__title">{{ 'ai.use.label'|trans }}</span>
-                            <span class="toggle__hint" id="f-use-ai-hint">{{ 'ai.use.hint'|trans }}</span>
-                        </span>
-                    </label>
-                    <div class="btn-row">
-                        <button type="submit" class="btn">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                <section class="card" aria-labelledby="profile-heading">
+                    <h3 id="profile-heading" class="card__title">{{ 'settings.profile'|trans }}</h3>
+                    <div class="form-row">
+                        {{ ui.input('display_name', 'prefs.display_name'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'name'}) }}
+                        <div class="field">
+                            <span class="field__label">{{ 'auth.username'|trans }}</span>
+                            <span class="field__static">{{ user.username }}</span>
+                        </div>
                     </div>
                 </section>
+
+                <section class="card" aria-labelledby="appearance-heading">
+                    <h3 id="appearance-heading" class="card__title">{{ 'settings.appearance'|trans }}</h3>
+                    {{ ui.chips('theme', 'prefs.theme'|trans, values, errors, theme_options, {required: true}) }}
+                    <fieldset class="field fieldset"{% if errors.accent ?? null %} aria-describedby="f-accent-error"{% endif %}>
+                        <legend class="field__label">{{ 'prefs.accent'|trans }}</legend>
+                        <div class="chip-row">
+                            {% for accent in accents %}
+                                <label class="chip">
+                                    <input type="radio" name="accent" value="{{ accent.value }}"{% if accent.value == (values.accent ?? 'blue') %} checked{% endif %}>
+                                    <span class="accent-swatch" style="--swatch: {{ accent.swatch() }}" aria-hidden="true"></span>
+                                    <span>{{ ('theme.accent.' ~ accent.value)|trans }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <p class="field__hint">{{ 'prefs.accent_hint'|trans }}</p>
+                        {{ ui.field_error(errors, 'accent') }}
+                    </fieldset>
+                </section>
+
+                <section class="card" aria-labelledby="units-heading">
+                    <h3 id="units-heading" class="card__title">{{ 'settings.units'|trans }}</h3>
+
+                    <div class="field" data-unit-presets hidden>
+                        <span class="field__label">{{ 'settings.quick_setup'|trans }}</span>
+                        <div class="chip-row">
+                            {% for preset in unit_presets %}
+                                <button type="button" class="chip" data-unit-preset aria-pressed="{{ preset == unit_preset ? 'true' : 'false' }}"
+                                        data-distance-unit="{{ preset.distance().value }}"
+                                        data-volume-unit="{{ preset.volume().value }}"
+                                        data-consumption-unit="{{ preset.consumption().value }}"
+                                        data-depth-unit="{{ preset.depth().value }}">{{ ('units.preset.' ~ preset.value)|trans }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {{ ui.chips('distance_unit', 'prefs.distance_unit'|trans, values, errors, distance_options, {required: true}) }}
+                    {{ ui.chips('volume_unit', 'prefs.volume_unit'|trans, values, errors, volume_options, {required: true}) }}
+                    {{ ui.chips('consumption_unit', 'prefs.consumption_unit'|trans, values, errors, consumption_options, {required: true, hint: 'settings.mpg_hint'|trans}) }}
+                    {{ ui.chips('depth_unit', 'prefs.depth_unit'|trans, values, errors, depth_options, {required: true}) }}
+                    {{ ui.select('currency', 'prefs.currency'|trans, values, errors, currency_options, {required: true, hint: 'settings.currency_hint'|trans}) }}
+                    <p class="field__hint">{{ 'settings.units_note'|trans }}</p>
+                </section>
+
+                <section class="card" aria-labelledby="region-heading">
+                    <h3 id="region-heading" class="card__title">{{ 'settings.region'|trans }}</h3>
+                    {{ ui.select('locale', 'prefs.locale'|trans, values, errors, locale_options, {required: true}) }}
+                    {{ ui.timezone_select(values, errors, timezone_options) }}
+                </section>
+
+                <section class="card card--quiet" aria-labelledby="preview-heading">
+                    <h3 id="preview-heading" class="card__title">{{ 'settings.preview'|trans }}</h3>
+                    <dl class="details details--compact" data-testid="format-preview">
+                        <div><dt>{{ 'settings.preview_distance'|trans }}</dt><dd class="tabular">{{ 12345.6|distance }}</dd></div>
+                        <div><dt>{{ 'settings.preview_volume'|trans }}</dt><dd class="tabular">{{ 45.5|volume }}</dd></div>
+                        <div><dt>{{ 'settings.preview_depth'|trans }}</dt><dd class="tabular">{{ '4.763'|depth }}</dd></div>
+                        <div><dt>{{ 'settings.preview_money'|trans }}</dt><dd class="tabular">{{ '1234.5'|money }}</dd></div>
+                        <div><dt>{{ 'settings.preview_date'|trans }}</dt><dd>{{ now|local_datetime }}</dd></div>
+                    </dl>
+                    <p class="field__hint">{{ 'settings.preview_hint'|trans }}</p>
+                </section>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'settings.save'|trans }}</button>
+                </div>
             </form>
-        {% endif %}
-
-        <section class="card" aria-labelledby="reminders-heading">
-            <h2 id="reminders-heading" class="card__title">{{ 'reminders.settings.title'|trans }}</h2>
-            <ul class="list">
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.reminders') }}">
-                        <span class="list__icon">{{ ui.icon('notifications') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'reminders.settings.link'|trans }}</span>
-                            <span class="list__meta">{{ 'reminders.settings.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% if feature_enabled('tyres') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.tyres') }}">
-                        <span class="list__icon">{{ ui.icon('tire_repair') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'tyre.settings.link'|trans }}</span>
-                            <span class="list__meta">{{ 'tyre.settings.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% if feature_enabled('trips') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.trips') }}">
-                        <span class="list__icon">{{ ui.icon('route') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'trip.settings.link'|trans }}</span>
-                            <span class="list__meta">{{ 'trip.settings.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% if feature_enabled('stations') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.places') }}">
-                        <span class="list__icon">{{ ui.icon('home_pin') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'places.link'|trans }}</span>
-                            <span class="list__meta">{{ 'places.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% if feature_enabled('fuel') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('import_app.upload') }}">
-                        <span class="list__icon">{{ ui.icon('upload_file') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'import_app.link'|trans }}</span>
-                            <span class="list__meta">{{ 'import_app.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.api_keys') }}">
-                        <span class="list__icon">{{ ui.icon('key') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'api_keys.link'|trans }}</span>
-                            <span class="list__meta">{{ 'api_keys.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-            </ul>
         </section>
 
-        {% if can_instance('manage_modules') or can_instance('backup') or can_instance('manage_users') or (ai.enabled and can_instance('manage_ai')) %}
-        <section class="card" aria-labelledby="data-heading">
-            <h2 id="data-heading" class="card__title">{{ 'settings.data_heading'|trans }}</h2>
-            <ul class="list">
-                {% if can_instance('manage_users') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.users') }}">
-                        <span class="list__icon">{{ ui.icon('manage_accounts') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'users.link'|trans }}</span>
-                            <span class="list__meta">{{ 'users.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% if can_instance('manage_modules') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.modules') }}">
-                        <span class="list__icon">{{ ui.icon('tune') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'modules.link'|trans }}</span>
-                            <span class="list__meta">{{ 'modules.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% if ai.enabled and can_instance('manage_ai') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.ai') }}">
-                        <span class="list__icon">{{ ui.icon('smart_toy') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'ai.link'|trans }}</span>
-                            <span class="list__meta">{{ 'ai.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% if fuel_prices_available() and can_instance('manage_fuel_prices') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.fuel_prices') }}">
-                        <span class="list__icon">{{ ui.icon('price_check') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'fuel_prices.settings.title'|trans }}</span>
-                            <span class="list__meta">{{ (fuel_prices_enabled() ? 'fuel_prices.settings.link_hint_on' : 'fuel_prices.settings.link_hint_off')|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% if can_instance('backup') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('backup.index') }}">
-                        <span class="list__icon">{{ ui.icon('backup') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'backup.link'|trans }}</span>
-                            <span class="list__meta">{{ 'backup.link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
+        <section class="settings-group" id="reminders" aria-labelledby="reminders-heading">
+            <h2 id="reminders-heading" class="settings-group__title">{{ 'settings.group.reminders'|trans }}</h2>
+            <div class="card">
+                <ul class="list">
+                    {{ settings.row(url_for('settings.reminders'), 'notifications', 'reminders.settings.link'|trans, 'reminders.settings.link_hint'|trans) }}
+                </ul>
+            </div>
+        </section>
+
+        {% if driving %}
+        <section class="settings-group" id="driving" aria-labelledby="driving-heading">
+            <h2 id="driving-heading" class="settings-group__title">{{ 'settings.group.driving'|trans }}</h2>
+            <div class="card">
+                <ul class="list">
+                    {% if feature_enabled('tyres') %}
+                        {{ settings.row(url_for('settings.tyres'), 'tire_repair', 'tyre.settings.link'|trans, 'tyre.settings.link_hint'|trans) }}
+                    {% endif %}
+                    {% if feature_enabled('trips') %}
+                        {{ settings.row(url_for('settings.trips'), 'route', 'trip.settings.link'|trans, 'trip.settings.link_hint'|trans) }}
+                    {% endif %}
+                    {% if feature_enabled('stations') %}
+                        {{ settings.row(url_for('settings.places'), 'home_pin', 'places.link'|trans, 'places.link_hint'|trans) }}
+                    {% endif %}
+                </ul>
+            </div>
         </section>
         {% endif %}
 
-        <section class="card" aria-labelledby="installation-heading">
-            <h2 id="installation-heading" class="card__title">{{ 'settings.installation'|trans }}</h2>
-            <dl class="details">
-                <div><dt>{{ 'settings.version'|trans }}</dt><dd data-app-version>{{ 'app.version'|trans({version: app_version()}) }}</dd></div>
-            </dl>
-            <ul class="list">
-                <li>
-                    <a class="list__item" href="{{ url_for('health') }}">
-                        <span class="list__icon">{{ ui.icon('check_circle') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'home.status_health'|trans }}</span>
-                            <span class="list__meta">{{ 'home.status_health_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% if can_instance('run_jobs') %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.jobs') }}">
-                        <span class="list__icon">{{ ui.icon('event_repeat') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'jobs.title'|trans }}</span>
-                            <span class="list__meta">{{ 'jobs.settings_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% if updates_allowed() %}
-                <li>
-                    <a class="list__item" href="{{ url_for('settings.updates') }}">
-                        <span class="list__icon">{{ ui.icon('sync') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'updates.title'|trans }}</span>
-                            <span class="list__meta">{{ 'updates.settings_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-                {% endif %}
-                {% endif %}
-                <li>
-                    <a class="list__item" href="{{ url_for('diagnostics.deep-link') }}">
-                        <span class="list__icon">{{ ui.icon('speed') }}</span>
-                        <span class="list__body">
-                            <span class="list__title">{{ 'home.status_deep_link'|trans }}</span>
-                            <span class="list__meta">{{ 'home.status_deep_link_hint'|trans }}</span>
-                        </span>
-                        {{ ui.icon('arrow_forward', 'list__trail') }}
-                    </a>
-                </li>
-            </ul>
+        {% if your_data %}
+        <section class="settings-group" id="data" aria-labelledby="data-heading">
+            <h2 id="data-heading" class="settings-group__title">{{ 'settings.group.data'|trans }}</h2>
+            <div class="card">
+                <ul class="list">
+                    {% if feature_enabled('fuel') %}
+                        {{ settings.row(url_for('import_app.upload'), 'upload_file', 'import_app.link'|trans, 'import_app.link_hint'|trans) }}
+                    {% endif %}
+                    {% if can_instance('backup') %}
+                        {{ settings.row(url_for('backup.index'), 'backup', 'backup.link'|trans, 'backup.link_hint'|trans) }}
+                    {% endif %}
+                </ul>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="settings-group" id="developers" aria-labelledby="developers-heading">
+            <h2 id="developers-heading" class="settings-group__title">{{ 'settings.group.developers'|trans }}</h2>
+            <div class="card">
+                <ul class="list">
+                    {{ settings.row(url_for('settings.api_keys'), 'key', 'api_keys.link'|trans, 'api_keys.link_hint'|trans) }}
+                </ul>
+            </div>
         </section>
 
-        <form method="post" action="{{ url_for('logout') }}" class="settings-signout">
-            {{ ui.csrf(csrf) }}
-            <button type="submit" class="btn btn--block">{{ ui.icon('logout') }}{{ 'auth.sign_out'|trans }}</button>
-        </form>
+        {% if admin %}
+        <section class="settings-group" id="admin" aria-labelledby="admin-heading">
+            <h2 id="admin-heading" class="settings-group__title">{{ 'settings.group.admin'|trans }}</h2>
+            <div class="card">
+                <ul class="list">
+                    {% if can_instance('manage_users') %}
+                        {{ settings.row(url_for('settings.users'), 'manage_accounts', 'users.link'|trans, 'users.link_hint'|trans) }}
+                    {% endif %}
+                    {% if can_instance('manage_modules') %}
+                        {{ settings.row(url_for('settings.modules'), 'tune', 'modules.link'|trans, 'modules.link_hint'|trans) }}
+                    {% endif %}
+                    {% if ai.enabled and can_instance('manage_ai') %}
+                        {{ settings.row(url_for('settings.ai'), 'smart_toy', 'ai.link'|trans, 'ai.link_hint'|trans) }}
+                    {% endif %}
+                    {% if fuel_prices_available() and can_instance('manage_fuel_prices') %}
+                        {{ settings.row(url_for('settings.fuel_prices'), 'price_check', 'fuel_prices.settings.title'|trans, (fuel_prices_enabled() ? 'fuel_prices.settings.link_hint_on' : 'fuel_prices.settings.link_hint_off')|trans) }}
+                    {% endif %}
+                </ul>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="settings-group" id="installation" aria-labelledby="installation-heading">
+            <h2 id="installation-heading" class="settings-group__title">{{ 'settings.installation'|trans }}</h2>
+            <div class="card">
+                <dl class="details">
+                    <div><dt>{{ 'settings.version'|trans }}</dt><dd data-app-version>{{ 'app.version'|trans({version: app_version()}) }}</dd></div>
+                </dl>
+                <ul class="list">
+                    {{ settings.row(url_for('health'), 'check_circle', 'home.status_health'|trans, 'home.status_health_hint'|trans) }}
+                    {% if can_instance('run_jobs') %}
+                        {{ settings.row(url_for('settings.jobs'), 'event_repeat', 'jobs.title'|trans, 'jobs.settings_hint'|trans) }}
+                        {% if updates_allowed() %}
+                            {{ settings.row(url_for('settings.updates'), 'sync', 'updates.title'|trans, 'updates.settings_hint'|trans) }}
+                        {% endif %}
+                    {% endif %}
+                    {{ settings.row(url_for('diagnostics.deep-link'), 'speed', 'home.status_deep_link'|trans, 'home.status_deep_link_hint'|trans) }}
+                </ul>
+            </div>
+        </section>
     </div>
 {% endblock %}

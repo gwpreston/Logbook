@@ -6552,7 +6552,7 @@ it replaces none of the other figures.
   - **Preferences** (`#preferences`): one form with one *Save*: profile
     (display name, saved with the rest as before), appearance, units and
     currency, region, preview.
-  - **Reminders and notifications** (`#reminders`, reminders on): the
+  - **Reminders and notifications** (`#reminders`): the
     link to *Settings → Reminders* (lead times, channels, digest, calendar
     feed). Nothing else.
   - **Vehicles and driving** (`#driving`): tyre thresholds (tyres on),
