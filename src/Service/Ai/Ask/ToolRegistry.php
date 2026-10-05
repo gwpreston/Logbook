@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Logbook\Domain\Ai\Ask\ToolResult;
 use Logbook\Domain\Ai\Ask\ToolRun;
 use Logbook\Domain\User\User;
+use Logbook\Service\Ai\Ask\Tool\Draft\DraftTool;
 use Logbook\Service\Ai\Draft\DraftStore;
 use Logbook\Service\Ai\Provider\ToolCall;
 use Logbook\Service\Ai\Provider\ToolDefinition;
@@ -60,6 +61,20 @@ final readonly class ToolRegistry
     public function definitions(User $user): array
     {
         return array_map(static fn (AskTool $tool): ToolDefinition => $tool->definition(), $this->available($user));
+    }
+
+    /**
+     * The read tools only, never a draft tool: for work that is not a
+     * conversation, so nothing can be drafted (AI insights, spec.md §7.26).
+     *
+     * @return list<ToolDefinition>
+     */
+    public function readDefinitions(User $user): array
+    {
+        return array_values(array_map(
+            static fn (AskTool $tool): ToolDefinition => $tool->definition(),
+            array_filter($this->available($user), static fn (AskTool $tool): bool => !$tool instanceof DraftTool),
+        ));
     }
 
     /**

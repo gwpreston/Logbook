@@ -212,6 +212,7 @@ use Logbook\Action\Incident\IncidentListAction;
 use Logbook\Action\Incident\LinkIncidentRecordAction;
 use Logbook\Action\Incident\ShowIncidentAction;
 use Logbook\Action\Insights\InsightsPageAction;
+use Logbook\Action\Insights\RefreshAiInsightsAction;
 use Logbook\Action\Trip\ClaimExportAction;
 use Logbook\Action\Trip\ClaimReportAction;
 use Logbook\Action\Trip\CreateTripAction;
@@ -902,6 +903,8 @@ return static function (App $app): void {
             // One's own *Use AI features* switch; 404 until AI is set up.
             $group->post('/settings/ai-use', AiUseAction::class)->setName('settings.ai_use');
             // Ask Logbook (spec.md §7.26, Phase 26.2): 404 unless Ask is available to the user.
+            // AI insights (spec.md §7.26, Phase 33.4): *Refresh*, or the Insights page's first view of the day.
+            $group->post('/insights/refresh', RefreshAiInsightsAction::class)->setName('insights.refresh');
             $group->get('/ask', AskAction::class)->setName('ask');
             $group->post('/ask', AskPostAction::class)->setName('ask.post');
             $group->get('/ask/progress/{token:[0-9a-f]{32}}', AskProgressAction::class)->setName('ask.progress');

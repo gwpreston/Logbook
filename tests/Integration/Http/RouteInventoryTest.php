@@ -103,6 +103,9 @@ final class RouteInventoryTest extends AppTestCase
         'settings.ai_use',
         // Phase 26.2: Ask Logbook, one's own threads only (404 unless Ask is available).
         'ask',
+        // Phase 33.4: the Insights page and one's own AI insights (Refresh: 404 unless Ask is available).
+        'insights',
+        'insights.refresh',
         'ask.post',
         'ask.progress',
         'ask.retention',

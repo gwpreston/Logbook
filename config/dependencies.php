@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Logbook\Service\Ai\Insights\AiInsightsJob;
 use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Incident\IncidentTwigExtension;
 use Logbook\Service\Finance\FinanceTwigExtension;
@@ -161,6 +162,8 @@ return [
             ...($settingsOf($c)->updateCheckAllowed ? [UpdateCheckJob::class] : []),
             // Never due while no price provider is enabled (spec.md §7.34).
             FuelPricesJob::class,
+            // The day's AI insights for those with AI on (spec.md §7.26, Phase 33.4).
+            AiInsightsJob::class,
         ],
     )),
     // Live fuel price providers (Phase 30.2, spec.md §7.34); one adapter per country.

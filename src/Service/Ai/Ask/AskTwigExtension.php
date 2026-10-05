@@ -35,6 +35,8 @@ final class AskTwigExtension extends AbstractExtension
     {
         return [
             new TwigFilter('ask_answer', $this->answer(...), ['is_safe' => ['html']]),
+            // One line with the same marks, for an AI insight's title (Phase 33.4).
+            new TwigFilter('ask_marked', $this->mark(...), ['is_safe' => ['html']]),
         ];
     }
 
@@ -74,7 +76,7 @@ final class AskTwigExtension extends AbstractExtension
     /**
      * @param list<string> $ungrounded
      */
-    private function mark(string $line, array $ungrounded): string
+    public function mark(string $line, array $ungrounded = []): string
     {
         $escaped = htmlspecialchars($line, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
         // Markdown bold, which models use often.

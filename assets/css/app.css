@@ -3915,6 +3915,68 @@ a.list__title:hover {
     height: 1.125rem;
 }
 
+/* AI insights (spec.md §7.26): after the computed ones, each marked as AI. */
+.ai-insights {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.ai-insights__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.ai-insights__head .section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.ai-insights__status,
+.ai-insights__by {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.insight-card__ai {
+    margin-inline-start: auto;
+    flex: none;
+}
+
+.insight-card__body p {
+    margin: 0;
+}
+
+.insight-card__body p + p {
+    margin-top: var(--space-2);
+}
+
+.insight-card__grounding {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.insight-card__sources {
+    font-size: var(--fs-sm);
+}
+
+.insight-card__sources ul {
+    margin: var(--space-2) 0 0;
+    padding-inline-start: var(--space-4);
+}
+
 .insights-page__empty {
     margin: 0;
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Dashboard;
 
+use Logbook\Service\Ai\Insights\AiInsightService;
 use Logbook\Service\Trip\ClaimReportService;
 use Logbook\Service\Attention\AttentionList;
 use DateTimeImmutable;
@@ -82,6 +83,7 @@ final readonly class DashboardService
         private CheapestFuelWidgets $cheapestFuel,
         private TrueCostService $trueCosts,
         private InsightsService $insights,
+        private AiInsightService $aiInsights,
     ) {
     }
 
@@ -180,6 +182,8 @@ final readonly class DashboardService
             insights: $show(DashboardWidget::Insights)
                 ? $this->insights->forVehicles($user, $scope, $selected === null, $today, self::INSIGHTS, $claim, $finance)
                 : null,
+            // The cache only: the dashboard never calls a model (spec.md §7.26 *AI insights*).
+            aiInsights: $show(DashboardWidget::Insights) ? $this->aiInsights->forToday($user) : null,
         );
     }
 

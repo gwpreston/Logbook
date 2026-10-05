@@ -30,7 +30,7 @@
 
         <section aria-labelledby="insights-heading">
             <h2 id="insights-heading" class="visually-hidden">{{ 'insights.page.found'|trans }}</h2>
-            {% if insights is empty %}
+            {% if insights is empty and not (ai_set and ai_set.insights is not empty) %}
                 <p class="card muted insights-page__empty">{{ 'insights.page.empty'|trans }}</p>
             {% else %}
                 <ul class="insight-cards" data-insight-cards>
@@ -47,5 +47,9 @@
                 </ul>
             {% endif %}
         </section>
+
+        {% if ask_on %}
+            {% include 'insights/_ai.twig' %}
+        {% endif %}
     </div>
 {% endblock %}

@@ -323,6 +323,7 @@ disagree):
     | `backup` | per *Scheduled backups* (off by default) | a backup into `BACKUP_PATH` |
     | `update_check` | daily at the install's own minute, while *Check for updates* is on (Phase 28.2, §7.31) | asks GitHub for the latest release; registered only while `UPDATE_CHECK_ALLOWED` is on |
     | `fuel_prices` | every 30, 60 or 120 minutes while a price provider is enabled; never otherwise (Phase 30.2, §7.34) | syncs provider stations and listed prices, records tracked stations' price changes, refreshes linked stations and checks price alerts |
+    | `ai_insights` | hourly while Ask is set up; never otherwise (Phase 33.4, §7.26 *AI insights*) | makes the day's AI insights for each active user with AI on, with a session in the last 30 days and no set for their today yet; up to 300 seconds a run, the rest left for the next; a user whose AI is busy waits for the next run |
 
     A job is due when its interval is `0`, or when its last finished run
     (any status but `skipped_locked`) started at least its interval ago.
@@ -925,6 +926,14 @@ MySQL only.
 **AiFeedback** (Phase 26.2, the counts)
 - id, month (`YYYY-MM`), mark (`helpful` | `not_right`), total. `(month,
   mark)` is unique. Kept when threads go. **Not in backups.**
+
+**AiInsightSet** (Phase 33.4, §7.26 *AI insights*; table `ai_insights`)
+- id, user_id (`ON DELETE CASCADE`; unique: one set per user, replaced
+  each day), day (the user's local date it was made for, `YYYY-MM-DD`),
+  insights (optional JSON: each title, body, the indexes of the tool runs
+  it came from, and its unmatched figures), tool_calls (optional JSON, as
+  AiMessage's), connection_name, location, model, error_code (optional),
+  created_at (UTC). **Not in backups** or exports: it is made again.
 
 **AiDraft** (Phase 26.3, §7.26 *Drafting entries*)
 - id, user_id (`ON DELETE CASCADE`), thread_id (optional, `ON DELETE
@@ -5143,16 +5152,28 @@ any other pattern) are found by the model:
   observations about the user's vehicles, each with a title, a body and
   the tool result it came from; it works the figures out itself. They are
   not tasks and not repeats of *Needs attention* or *Coming up*.
-- **When:** once a day per user (the scheduled task, §7.30, or the first
-  view of the day), cached for that day, with *Refresh* on the Insights
-  page (one at a time, the user's lock, §7.25). Nothing is generated for a
-  user who hasn't signed in for 30 days.
+- **When:** once a day per user (the `ai_insights` job, §5 *Jobs*, or the
+  Insights page's first view of the day, which posts *Refresh* in the
+  background; without JS it is a button), cached for that day, with
+  *Refresh* on the Insights page (one at a time, the user's lock, §7.25).
+  Reading the cache never calls a model: the page's GET and the dashboard
+  only read it. Nothing is generated for a user who hasn't signed in for 30
+  days. A failure once the model was reached (a timeout, an answer not in
+  the asked JSON shape) is kept as the day's set and shown as "Couldn't get
+  AI insights today." with *Refresh*; nothing half-read is ever shown.
+- **Tools:** only the read tools; a draft tool is never offered, and a
+  call to one is refused, so nothing is ever drafted. Every insight must
+  name the tool results it came from, or it is left out; a cached insight
+  whose sources are about a vehicle the user can no longer see is dropped
+  on reading, as a thread's history is.
 - **Grounding:** the check of *Ask* applies to every number: unmatched
   numbers are highlighted with "Logbook didn't provide this figure. Check
   it against the sources." Each AI insight is marked as one (an
   `auto_awesome` icon and "AI"), with its sources and the model.
-- **Where:** after the computed insights on the Insights page and in the
-  dashboard widget's list. Details in [Phase 33.4](docs/phases/phase-33.4.md).
+- **Where:** after the computed insights on the Insights page (with the
+  model, its connection and when) and in the dashboard widget's list, up to
+  two after its two computed ones, each linking to the page. Details in
+  [Phase 33.4](docs/phases/phase-33.4.md).
 
 ### 7.27 Reading files (Phase 26.4)
 

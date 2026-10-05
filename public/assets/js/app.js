@@ -1164,6 +1164,58 @@
         }
     }
 
+    // AI insights (spec.md §7.26): the Insights page's first view of the
+    // day asks for them in the background, then shows them. Without JS
+    // the form is a button; *Refresh* shows the same line while it posts.
+    function enhanceAiInsights(form) {
+        var section = form.closest('[data-ai-insights]');
+        var status = section ? section.querySelector('[data-ai-insights-status]') : null;
+        var button = form.querySelector('[data-ai-insights-submit]');
+        var working = form.getAttribute('data-working') || '';
+        var show = function (text) {
+            if (status) {
+                status.textContent = text;
+                status.hidden = text === '';
+            }
+        };
+        form.addEventListener('submit', function () {
+            show(working || (status ? status.textContent : ''));
+            if (button) {
+                button.disabled = true;
+            }
+        });
+        if (!form.hasAttribute('data-ai-insights-auto') || !window.fetch || !window.FormData) {
+            return;
+        }
+        show(working);
+        if (button) {
+            button.disabled = true;
+        }
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            credentials: 'same-origin',
+            headers: {'X-Insights': '1', Accept: 'application/json'},
+        }).then(function (response) {
+            return response.json();
+        }).then(function (body) {
+            // Reload only when a set was kept; otherwise (busy, AI off) say why and stop.
+            if (body && body.saved) {
+                window.location.reload();
+                return;
+            }
+            show(body && body.error ? body.error : '');
+            if (button) {
+                button.disabled = false;
+            }
+        }, function () {
+            show('');
+            if (button) {
+                button.disabled = false;
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('button[data-copy]').forEach(enhanceCopy);
         sendSchedulerBeacon();
@@ -1283,6 +1335,7 @@
         document.querySelectorAll('[data-sale-pack-paperwork]').forEach(enhancePaperwork);
         document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
         document.querySelectorAll('[data-vehicle-tabs]').forEach(enhanceTabs);
+        document.querySelectorAll('form[data-ai-insights-form]').forEach(enhanceAiInsights);
 
         drawCharts();
         window.addEventListener('beforeprint', beforePrint);

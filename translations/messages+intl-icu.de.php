@@ -4538,6 +4538,10 @@ return [
                 'title' => 'Kraftstoffpreise',
                 'description' => 'Lädt gemeldete Kraftstoffpreise vom Anbieter unter Einstellungen → Kraftstoffpreise herunter, solange einer eingeschaltet ist.',
             ],
+            'ai_insights' => [
+                'title' => 'KI-Einblicke',
+                'description' => 'Erstellt die KI-Einblicke des Tages für alle mit eingeschalteter KI, die in den letzten 30 Tagen da waren, jeweils ein paar.',
+            ],
         ],
         'summary' => [
             'interrupted' => 'Abgebrochen: Der Prozess, der sie ausführte, endete vorher.',
@@ -5195,6 +5199,23 @@ return [
         ],
     ],
     // Live-Kraftstoffpreise und Günstigste in der Nähe (Phase 30.2, spec.md §7.34).
+    // KI-Einblicke (spec.md §7.26 *AI insights*, Phase 33.4).
+    'ai_insights' => [
+        'heading' => 'KI-Einblicke',
+        'get' => 'KI-Einblicke für heute holen',
+        'refresh' => 'Aktualisieren',
+        'working' => 'Deine Aufzeichnungen werden durchgesehen…',
+        'due' => 'Die KI-Einblicke für heute sind noch nicht erstellt.',
+        'failed' => 'Die KI-Einblicke konnten heute nicht erstellt werden.',
+        'none' => 'Heute ist nichts Neues aufgefallen.',
+        'mark' => 'KI',
+        'by' => 'Von {model} auf {connection}, {when}',
+        'summary' => '{made, plural, =0 {Keine KI-Einblicke erstellt} one {KI-Einblicke für # Person erstellt} other {KI-Einblicke für # Personen erstellt}}{left, plural, =0 {} other {; # für den nächsten Lauf}}',
+        'system' => [
+            'text' => "Du bist Ask Logbook, der Assistent in Logbook, einer App, in der eine Person die Aufzeichnungen ihrer Fahrzeuge führt. Sieh die Aufzeichnungen der Person mit den Werkzeugen durch und finde bis zu {max} kurze, wissenswerte Beobachtungen: einen Trend, eine Veränderung, eine Ersparnis, einen Vergleich. Es sind keine Aufgaben und nichts, was schon fällig ist: Lass Erinnerungen, Verlängerungen, fällige Wartungen und alles weg, was Logbook unter Handlungsbedarf oder Demnächst zeigt.\n\nRegeln:\n- Nutze nur Werkzeugergebnisse. Ruf die nötigen Werkzeuge auf; rate nie.\n- Übernimm jede Zahl genau so, wie ein Werkzeug sie als Anzeigetext geliefert hat. Rechne nie Einheiten oder Währungen um und runde nie. Du darfst zwei Zahlen in Worten vergleichen (höher, niedriger, etwa gleich), aber keine neuen Zahlen ausrechnen.\n- Schreib in der Sprache der Person, schlicht, ohne Begrüßung.\n- Antworte nur mit JSON, ohne anderen Text, in der Form unten; wenn nichts erwähnenswert ist, mit einer leeren Liste.",
+            'request' => 'Finde bis zu {max} Beobachtungen zu meinen Fahrzeugen.',
+        ],
+    ],
     'insights' => [
         'nothing' => 'Gerade fällt nichts auf.',
         'all' => 'Alle Einblicke',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Insights;
 
 use Logbook\Service\Ai\Ask\AskAvailability;
+use Logbook\Service\Ai\Insights\AiInsightService;
 use Logbook\Service\Insights\InsightsService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
@@ -17,7 +18,8 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * GET /insights — the Insights page (spec.md §7.26 *Ask and the Insights
  * page*, Phase 33.4): the *Ask Logbook* box when Ask is available, then
- * every computed insight (§7.8) for the user's active vehicles.
+ * every computed insight (§7.8) for the user's active vehicles, then
+ * today's AI insights (§7.26 *AI insights*) when AI is on.
  */
 final readonly class InsightsPageAction
 {
@@ -25,6 +27,7 @@ final readonly class InsightsPageAction
         private VehicleService $vehicles,
         private InsightsService $insights,
         private AskAvailability $ask,
+        private AiInsightService $aiInsights,
         private View $view,
         private ClockInterface $clock,
     ) {
@@ -40,6 +43,9 @@ final readonly class InsightsPageAction
             'insights' => $this->insights->forVehicles($user, $this->vehicles->listFleet($user), true, $today),
             'ask_on' => $ask,
             'progress_token' => $ask ? bin2hex(random_bytes(16)) : null,
+            // Today's AI insights from the cache; when due, the page asks for them (never on this GET).
+            'ai_set' => $this->aiInsights->forToday($user),
+            'ai_due' => $this->aiInsights->isDue($user),
         ]);
     }
 }

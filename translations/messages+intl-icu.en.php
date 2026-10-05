@@ -4541,6 +4541,10 @@ return [
                 'title' => 'Fuel prices',
                 'description' => 'Downloads listed fuel prices from the provider on Settings → Fuel prices, while one is enabled.',
             ],
+            'ai_insights' => [
+                'title' => 'AI insights',
+                'description' => 'Makes the day’s AI insights for each person with AI on who has been here in the last 30 days, a few at a time.',
+            ],
         ],
         'summary' => [
             'interrupted' => 'Interrupted: the process running it stopped before it finished.',
@@ -5198,6 +5202,23 @@ return [
         ],
     ],
     // Live fuel prices and cheapest near me (Phase 30.2, spec.md §7.34).
+    // AI insights (spec.md §7.26 *AI insights*, Phase 33.4).
+    'ai_insights' => [
+        'heading' => 'AI insights',
+        'get' => 'Get today’s AI insights',
+        'refresh' => 'Refresh',
+        'working' => 'Looking through your records…',
+        'due' => 'Today’s AI insights haven’t been made yet.',
+        'failed' => 'Couldn’t get AI insights today.',
+        'none' => 'Nothing new stood out today.',
+        'mark' => 'AI',
+        'by' => 'From {model} on {connection}, {when}',
+        'summary' => '{made, plural, =0 {No AI insights made} one {Made AI insights for # person} other {Made AI insights for # people}}{left, plural, =0 {} other {; # left for the next run}}',
+        'system' => [
+            'text' => "You are Ask Logbook, the assistant inside Logbook, an app where one person keeps the records of their vehicles. Look through the user's own records with the tools and find up to {max} short observations worth knowing: a trend, a change, a saving, a comparison. They are not tasks and not things already due: leave out reminders, renewals, services due and anything Logbook lists under Needs attention or Coming up.\n\nRules:\n- Use only tool results. Call the tools you need; never guess.\n- For every figure, copy the display string a tool returned exactly as it is. Never convert units or currencies and never round. You may compare two figures in words (higher, lower, about the same) but do not work out new figures.\n- Write in the user's language, plainly, without greetings.\n- Reply with JSON only, no other text, in the shape below; with nothing worth saying, an empty list.",
+            'request' => 'Find up to {max} observations about my vehicles.',
+        ],
+    ],
     'insights' => [
         'nothing' => 'Nothing stands out right now.',
         'all' => 'All insights',
