@@ -56,7 +56,9 @@ starting it) were answered on 2026-10-03, before it was built. Phase
 2026-10-04, before it was built. Phase 32's (#150–#156, four of them
 found while starting it) were answered on 2026-10-05, before it was
 built. Phase 33.1's (#157–#165, four of them found while starting
-it) were answered on 2026-10-05, before it was built.
+it) were answered on 2026-10-05, before it was built. Phase 33.3's
+(#173–#185, eight of them found by its prototype audit) were answered
+on 2026-10-05, before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -232,19 +234,19 @@ it) were answered on 2026-10-05, before it was built.
 | 170 | [33.2](phase-33.2.md) | Display name in *Account* or *Preferences*? (found while building) | Decided | *Preferences*: it is saved by that form; the *Account* card shows the name (spec §8 *Settings layout*). | 2026-10-05 |
 | 171 | [33.2](phase-33.2.md) | Fold the email, picture and password forms under the *Account* card? (found by the design review) | Obsolete | The forms moved to their own profile page (#172), where they stay open. | 2026-10-05 |
 | 172 | [33.2](phase-33.2.md) | A profile page from the sidebar's name and avatar? (asked by the owner) | Decided | `/profile` takes the *Account* and *Preferences* groups (revised the same day: preferences too); reached from the sidebar, the narrow top bar's avatar and a Settings row (spec §8 *Profile page*). | 2026-10-05 |
-| 173 | [33.3](phase-33.3.md) | Finance bullet: does the brief mean the prototype's finance content? | Needs a decision | | |
-| 174 | [33.3](phase-33.3.md) | Insights the app can't back (economy up, 3-month outlook, yearly fuel saving; draft sources with no example) | Needs a decision | | |
+| 173 | [33.3](phase-33.3.md) | Finance bullet: does the brief mean the prototype's finance content? | Decided | Yes: the prototype's Finance tab content (spec §7.32). | 2026-10-05 |
+| 174 | [33.3](phase-33.3.md) | Insights the app can't back (economy up, 3-month outlook, yearly fuel saving; draft sources with no example) | Decided | Built in [33.4](phase-33.4.md) as AI insights: the model finds them from the *Ask* tools, generated daily per user and cached, with *Refresh*; shown only when AI is on; grounding check as *Ask* (spec §7.26). | 2026-10-05 |
 | 175 | [33.3](phase-33.3.md) | Insights from AI? | Obsolete | The prototype's insights are computed; only *Ask* uses a model ([33.4](phase-33.4.md)). | 2026-10-05 |
 | 176 | [33.3](phase-33.3.md) | Business and personal period | Answered | The user's tax year start (spec §6 *Trip settings*, §7.23), which the trips tab uses; no picker in the prototype. | 2026-10-05 |
-| 177 | [33.3](phase-33.3.md) | "Your vehicles" on trips: which screen? | Needs a decision | | |
-| 178 | [33.3](phase-33.3.md) | Where Insights lives (found by the audit) | Needs a decision | | |
-| 179 | [33.3](phase-33.3.md) | Vehicle tab order with Finance (found by the audit) | Needs a decision | | |
-| 180 | [33.3](phase-33.3.md) | Vehicle name above each tab's title (found by the audit) | Needs a decision | | |
-| 181 | [33.3](phase-33.3.md) | Finance tab with several agreements; the overview card (found by the audit) | Needs a decision | | |
-| 182 | [33.3](phase-33.3.md) | Finance *Purchase* card: seller and mileage when bought not stored (found by the audit) | Needs a decision | | |
-| 183 | [33.3](phase-33.3.md) | PCP end note wording (found by the audit) | Needs a decision | | |
-| 184 | [33.3](phase-33.3.md) | Tyre bar scale (found by the audit) | Needs a decision | | |
-| 185 | [33.3](phase-33.3.md) | Other prototype extras: *Breakdown* type, *Copy for insurance quote*, period picker, "Fitted {month}", thresholds note (found by the audit) | Needs a decision | | |
+| 177 | [33.3](phase-33.3.md) | "Your vehicles" on trips: which screen? | Decided | The dashboard *Your vehicles* widget, restyled to the prototype, 3 / 2 / 1 per row (spec §7.8). | 2026-10-05 |
+| 178 | [33.3](phase-33.3.md) | Where Insights lives (found by the audit) | Decided | A dashboard *Insights* widget now (computed); the Insights page with *Ask* in [33.4](phase-33.4.md). No overview card (spec §7.1, §7.8). | 2026-10-05 |
+| 179 | [33.3](phase-33.3.md) | Vehicle tab order with Finance (found by the audit) | Decided | The prototype's order: … Documents, Incidents, Finance, Expenses (spec §8). | 2026-10-05 |
+| 180 | [33.3](phase-33.3.md) | Vehicle name above each tab's title (found by the audit) | Decided | Each tab's title stays the `<h1>`, visually hidden; the name is the one visible heading (spec §8). | 2026-10-05 |
+| 181 | [33.3](phase-33.3.md) | Finance tab with several agreements; the overview card (found by the audit) | Decided | The tab is the active agreement's page in the prototype's cards, schedule, extras and quotes under them; earlier agreements listed below. The overview card stays (spec §7.32). | 2026-10-05 |
+| 182 | [33.3](phase-33.3.md) | Finance *Purchase* card: seller and mileage when bought not stored (found by the audit) | Decided | Stored: seller, and the odometer when bought as a dated reading (spec §6 Vehicle, §7.1, §7.32). | 2026-10-05 |
+| 183 | [33.3](phase-33.3.md) | PCP end note wording (found by the audit) | Decided | Kept as a neutral list of the options (spec §7.32). | 2026-10-05 |
+| 184 | [33.3](phase-33.3.md) | Tyre bar scale (found by the audit) | Decided | From the tyre's first measured depth to the legal minimum; no bar until two measurements (spec §7.17). | 2026-10-05 |
+| 185 | [33.3](phase-33.3.md) | Other prototype extras: *Breakdown* type, *Copy for insurance quote*, period picker, "Fitted {month}", thresholds note (found by the audit) | Decided | Build *Copy for insurance quote*, *Fitted {month}*, the thresholds note from the user's settings and a *Breakdown* incident type; the period picker is parked (spec §12). | 2026-10-05 |
 
 ## Other loose ends found in the review
 

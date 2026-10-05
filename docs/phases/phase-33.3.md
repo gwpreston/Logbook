@@ -28,112 +28,61 @@ and §8 first, and the *Working from the prototype* section of
 ## Goals
 
 1. **One vehicle header:** the vehicle's name is the same size on every
-   tab.
-2. **Finance as a tab** beside the others, laid out as the prototype's
-   finance content.
-3. **Insights** on the overview, if the prototype's card can be built
-   from figures Logbook already works out.
-4. **Trips:** a *Business and personal* card, and *Your vehicles* three
-   to a row on wide screens.
-5. **Incidents** laid out, and doing what, the prototype's incidents
-   content does (within what is decided below).
-6. **Tyres:** *Current tyres* replaces *On the vehicle*.
+   tab; each tab's own title stays its `<h1>`, visually hidden (#180).
+   Tabs in the prototype's order (#179).
+2. **Finance as a tab** between Incidents and Expenses that is the active
+   agreement's page in the prototype's cards (#173, #181), with a
+   Purchase card fed by two new vehicle fields: *Bought from* and
+   *Mileage when bought* (#182).
+3. **Insights** as a dashboard widget computed from existing figures
+   (#178); the Insights page and AI insights are Phase 33.4's (#174).
+4. **Trips:** a *Business and private* card on the trips tab; the
+   dashboard's *Your vehicles* three to a row on wide screens (#177).
+5. **Incidents** laid out as the prototype: cards, a stat strip, a
+   restyled incident page, a *Breakdown* type, the claims history's stats
+   and *Copy for insurance quote* (#185).
+6. **Tyres:** *Current tyres* replaces *On the vehicle*, with a tread bar
+   (#184), *Fitted {month}* and a thresholds note (#185).
 
 ## Not in scope
 
-- New stored data, new figures or new checks. Where a prototype card
-  needs one, it is an open question, not a task.
-- Ask, Fuel stations and *Cost of ownership* ([33.4](phase-33.4.md)).
+- New figures or checks beyond what the owner decided above. The new
+  stored data is exactly: `vehicles.purchase_seller`, the `purchase`
+  odometer reading source and the `breakdown` incident type (one
+  migration).
+- A period picker on *Business and private* (parked, spec §12).
+- The Insights page, AI insights, Ask, Fuel stations and *Cost of
+  ownership* ([33.4](phase-33.4.md)).
 
 ---
 
 ## Spec additions
 
-### §8 Vehicle header (changed)
+Written into [`spec.md`](../../spec.md) on 2026-10-05 (task 33.3.0), after
+the audit and the owner's decisions:
 
-> The vehicle's name looks the same on every tab: one style,
-> `vehicle-hero__name`, taken from the prototype (recorded in *Prototype
-> notes*). On Overview it is the page's `<h1>`; on other tabs the tab's own
-> title is the `<h1>` and the name keeps the same look as a `<p>`, so the
-> heading order stays right and the page doesn't jump between tabs. A
-> rule in `DesignAlignmentTest` compares the computed class on every tab.
-
-### §7.32 Finance (changed)
-
-> **Finance tab:** `/vehicles/{id}/finance` becomes a tab (icon
-> `account_balance`) after *Expenses*, shown to those `finance_menu()`
-> allows today (Manage with costs) when the vehicle has an agreement or
-> can have one. With no agreement the tab shows the empty state with
-> *Add agreement*. The header's *Finance* button goes. The tab's content
-> is laid out as the prototype's finance content; the figures are Phase
-> 29's, unchanged. Its add, edit, end and show pages keep their URLs and
-> open in the tab's frame.
-
-### §7.22 Trips (changed)
-
-> **Business and private** card (the prototype's *Business and
-> personal*; *private* is the app's word throughout) (trips module on; the vehicle's trips
-> tab): for the user's current tax year (their tax year start, spec §6
-> *Trip settings*; as the claim report):
->
-> - *Business* = the distance of the vehicle's business trips in the
->   period;
-> - *Personal* = the distance driven in the period (§7.7, from the mileage
->   log) minus *Business*; never the sum of logged private trips (Phase
->   22's rule);
-> - a two-part bar and the percentages, to whole percent.
->
-> When business is more than the distance driven (readings missing), the
-> card says so and links to the Mileage tab instead of showing a negative
-> personal figure. Without distance driven in the period: "Not enough
-> readings this year". A viewer who can't see every driver's business
-> trips sees the distance driven only, with no split (as the tab does
-> today). Destinations never appear on it.
->
-> **Your vehicles** on the trips page: cards three to a row from the
-> sidebar breakpoint (≥ 960 px), two on tablets, one on phones, same card
-> as the garage's.
-
-### §7.29 Incidents (changed)
-
-> The incidents tab and an incident's page are laid out as the
-> prototype's incidents content (recorded in *Prototype notes*). What is
-> recorded and who may see it is unchanged; anything the prototype shows
-> that isn't recorded today is an open question.
-
-### §7.17 Tyres (changed)
-
-> The tyres tab's *On the vehicle* card is replaced by **Current tyres**,
-> laid out as the prototype's card. It shows what *On the vehicle* showed
-> (each fitted position, brand and model, size, season, age from DOT,
-> tread and the wear estimate, labelled as an estimate) in the prototype's
-> arrangement.
-
-### §7.1 Overview — Insights (new; subject to the audit)
-
-> An **Insights** card on the overview, laid out as the prototype's card,
-> listing short statements about the vehicle. Each statement:
->
-> - comes from a figure Logbook already computes (economy trend and drift
->   §7.24–7.25, true cost and *What changed* §7.35, fuel by grade §7.3,
->   tyre wear §7.17, mileage against a finance allowance §7.32,
->   *Shopping around* §7.34);
-> - is worked out by Logbook, never written by a model, and links to
->   where the figure is shown;
-> - respects modules, sharing levels and `ViewCosts`;
-> - is not a duplicate of *Needs attention* (things to fix) or *Coming up*
->   (things due): insights are observations, not tasks.
->
-> At most four, in a fixed priority order (recorded when the audit maps
-> the prototype's examples). No card when there is nothing to say.
+- §6 Vehicle `purchase_seller`; OdometerReading source `purchase`;
+  Incident type `breakdown`.
+- §7.1 *Bought from and mileage when bought*; the Ownership card.
+- §7.2 tab order.
+- §7.8 *Your vehicles layout* and the **Insights** widget (four computed
+  kinds: shopping around, business mileage, cheapest to run, equity; two
+  shown).
+- §7.17 *Current tyres*.
+- §7.22 the trips tab's tiles and the *Business and private* card.
+- §7.26 *AI insights* (built in 33.4).
+- §7.29 the incidents layout, *Breakdown*, the claims history's stats and
+  *Copy for insurance quote*; the incident page's layout.
+- §7.32 the *Finance tab*.
+- §8 *Vehicle header*.
+- §12 the period picker; §13 this phase.
 
 ---
 
 ## Tasks
 
 ### 33.3.0 Spec first
-- [ ] `spec.md` §7.1, §7.17, §7.22, §7.29, §7.32 and §8 as above, after the
-      audit settles the details; §13 entry.
+- [x] `spec.md` as above; §13 entry.
 
 ### 33.3.1 Prototype audit
 - [x] *Prototype notes* for: the vehicle header on two tabs, overview
@@ -141,43 +90,56 @@ and §8 first, and the *Working from the prototype* section of
       incidents (tab and incident page), finance, tyres *Current tyres*.
 - [x] For *Insights*: map each example in the prototype to an existing
       figure, or list it as an open question.
-- [ ] For finance: confirm which prototype content the brief means (see
-      open questions).
+- [x] For finance: confirm which prototype content the brief means
+      (#173).
 
-### 33.3.2 Vehicle header and Finance tab
-- [ ] One `vehicle-hero__name` style; heading rules as above.
-- [ ] Finance in the tab list, header button removed; tab content to the
-      prototype; existing finance pages within the tab frame.
+### 33.3.2 Vehicle header, tab order and Finance tab
+- [ ] One `vehicle-hero__name` style; tab titles visually hidden `<h1>`s;
+      tab order and icons.
+- [ ] Finance in the tab list, header button removed; the tab is the
+      active agreement's page in the prototype's cards (*Paid so far*,
+      Purchase, Value & equity, the PCP end note); earlier agreements
+      below; every finance page within the tab frame.
 
-### 33.3.3 Overview Insights
+### 33.3.3 Purchase fields
+- [ ] Migration: `vehicles.purchase_seller`; the `purchase` reading
+      source (rollback turns them `manual`).
+- [ ] Vehicle form *Bought from* and *Mileage when bought*, validation,
+      the Ownership card; Mileage tab label; API and export where vehicle
+      fields are listed.
+
+### 33.3.4 Insights widget
 - [ ] `InsightsService` returning typed insights from existing services;
-      `insights` card on the overview.
+      `insights` widget (two shown).
 - [ ] Translations with ICU plurals, units and currency.
 
-### 33.3.4 Trips
-- [ ] *Business and personal* card from `TripService` and the distance
-      driven calculation.
-- [ ] *Your vehicles* grid: 3 / 2 / 1 per row.
+### 33.3.5 Trips and Your vehicles
+- [ ] Trips tab tiles and the *Business and private* card.
+- [ ] *Your vehicles* widget tiles 3 / 2 / 1 per row.
 
-### 33.3.5 Incidents
-- [ ] Tab and incident page to the prototype, from existing data.
+### 33.3.6 Incidents
+- [ ] Tab as cards with the stat strip; incident page layout; `breakdown`
+      type; claims history stats, list and *Copy for insurance quote*.
 
-### 33.3.6 Tyres
-- [ ] *Current tyres* card replacing *On the vehicle*.
+### 33.3.7 Tyres
+- [ ] *Current tyres* replacing *On the vehicle*: pill, depth, bar,
+      *Fitted*, the note, *Check tread* button.
 
-### 33.3.7 Tests
-- [ ] Every vehicle tab: the name has the same class and computed size;
-      exactly one `<h1>`.
+### 33.3.8 Tests
+- [ ] Every vehicle tab: the name has the same class; exactly one `<h1>`.
 - [ ] Finance tab shown to Manage with costs, absent for View, Log and
       no-costs shares; old finance URLs still answer; header button gone.
-- [ ] *Business and personal*: worked example (12,400 driven, 3,100
+- [ ] Purchase seller and mileage: saved, moved, removed; date rules;
+      migration rolls back.
+- [ ] *Business and private*: worked example (12,400 driven, 3,100
       business → 25% / 75%); business over driven shows the warning; no
       destinations in the HTML.
 - [ ] *Insights*: each kind appears from its fixture and never without
       `ViewCosts` for a cost insight; module off removes its insights;
       nothing when there's nothing to say.
 - [ ] *Current tyres* shows each fitted position with estimate labels, car
-      and motorbike.
+      and motorbike; the bar only with two measurements.
+- [ ] Incidents: breakdown type; stats respect detail and cost access.
 - [ ] Integration suite green on every engine; design-reviewer clean of
       HIGH findings.
 
@@ -360,10 +322,11 @@ mileage allowance, *Shopping around*) have no prototype example (#174).
 1. The vehicle's name is the same size on Overview, History, Mileage,
    Trips and every other tab.
 2. Finance is a tab beside the others, laid out as the prototype.
-3. The overview has an *Insights* card whose every line links to the
-   figure behind it (or the owner has decided against it).
-4. Trips shows a *Business and personal* split that adds up to the
-   distance driven, and *Your vehicles* three to a row on a desktop.
+3. The dashboard has an *Insights* widget whose every line links to the
+   figure behind it.
+4. Trips shows a *Business and private* split that adds up to the
+   distance driven, and the dashboard's *Your vehicles* is three to a row
+   on a desktop.
 5. Incidents and *Current tyres* look like the prototype.
 6. Definition of done (CLAUDE.md §11) holds.
 
@@ -374,13 +337,16 @@ Numbers are the log's ([`open-questions.md`](open-questions.md)).
 - **#173 Finance bullet:** the brief's line under "Move finance" repeats
   the incidents wording ("Review the content of incidents content…").
   Drafted as meaning the prototype's **finance** content. Correct?
-  *Needs a decision.*
+  *Decided 2026-10-05:* yes, the finance content.
 - **#174 Insights the app can't back:** *economy up*, a 3-month cost
   outlook and a yearly fuel saving against the cheapest nearby station
   have no figure today; the draft's fuel by grade, *What changed*,
   mileage allowance and *Shopping around* have no prototype example.
-  Build the figures in a later phase, or leave them out? *Needs a
-  decision.*
+  Build the figures in a later phase, or leave them out? *Decided
+  2026-10-05:* built in [33.4](phase-33.4.md) as AI insights: the model
+  works them out from the *Ask* tools, daily per user, cached, with
+  *Refresh*, only when AI is on, with the grounding check (spec §7.26
+  *AI insights*).
 - **#175 Insights from AI?** *Obsolete:* the prototype's insights are
   computed template strings; only *Ask* uses a model, and that is
   [33.4](phase-33.4.md).
@@ -391,27 +357,28 @@ Numbers are the log's ([`open-questions.md`](open-questions.md)).
 - **#177 "Your vehicles" on trips:** the prototype has it on neither a
   fleet trips page nor the trips tab: it is the dashboard widget, and the
   only three-to-a-row grid is the garage, which the app already matches.
-  Which did the brief mean, or drop it? *Needs a decision.* (found by the
+  Which did the brief mean, or drop it? *Decided 2026-10-05:* the dashboard widget, 3 / 2 / 1 per row (spec §7.8). (found by the
   audit)
 - **#178 Where Insights lives:** the prototype has no card on the vehicle
   overview; it has a fleet-wide dashboard widget (2 items) and an
-  Insights page with *Ask* above the cards. *Needs a decision.* (found by
+  Insights page with *Ask* above the cards. *Decided 2026-10-05:* a computed dashboard widget now; the page with *Ask* in 33.4 (spec §7.8). (found by
   the audit)
 - **#179 Tab order:** the prototype's … Documents, Incidents, Finance,
-  Expenses, or the draft's Finance after Expenses? *Needs a decision.*
+  Expenses, or the draft's Finance after Expenses? *Decided 2026-10-05:* the prototype's order (spec §7.2).
   (found by the audit)
 - **#180 Name above the tab's title:** at 28 px on every tab the name sits
-  above each tab's 26 px `<h1>`; the prototype has no tab title. *Needs a
-  decision.* (found by the audit)
+  above each tab's 26 px `<h1>`; the prototype has no tab title.
+  *Decided 2026-10-05:* the tab titles stay `<h1>`s, visually hidden
+  (spec §8). (found by the audit)
 - **#181 Finance tab with several agreements, and the overview card:** the
-  prototype has one record. *Needs a decision.* (found by the audit)
+  prototype has one record. *Decided 2026-10-05:* the tab is the active agreement's page in the prototype's cards, earlier agreements below; the overview card stays (spec §7.32). (found by the audit)
 - **#182 Purchase card:** seller and mileage when bought aren't stored.
-  *Needs a decision.* (found by the audit)
+  *Decided 2026-10-05:* stored: *Bought from* on the vehicle, and the mileage as a dated `purchase` reading (spec §6, §7.1). (found by the audit)
 - **#183 PCP end note** listing keep, hand back or part-exchange, against
-  §7.32's "nothing recommends". *Needs a decision.* (found by the audit)
+  §7.32's "nothing recommends". *Decided 2026-10-05:* kept, neutral (spec §7.32). (found by the audit)
 - **#184 Tyre bar scale:** the prototype divides by an assumed new depth.
-  *Needs a decision.* (found by the audit)
+  *Decided 2026-10-05:* from the first measured depth to the legal minimum, only with two measurements (spec §7.17). (found by the audit)
 - **#185 Other prototype extras:** a *Breakdown* incident type, *Copy for
   insurance quote*, a period picker on *Business and private*, "Fitted
-  {month}" on tyre cards, a tyre thresholds note. *Needs a decision.*
+  {month}" on tyre cards, a tyre thresholds note. *Decided 2026-10-05:* build all four extras (*Breakdown*, *Copy for insurance quote*, *Fitted {month}*, the thresholds note); the period picker is parked (spec §12).
   (found by the audit)

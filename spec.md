@@ -392,7 +392,9 @@ MySQL only.
   grade code, §7.3, that must belong to the vehicle's fuel type — a petrol
   grade for `hybrid` and `phev`, a charging type for `ev`, none for `lpg` /
   `cng` / `other`; changing the fuel type clears one that no longer fits), currency override (optional), photo
-  (optional: stored path + MIME type), purchase date/price (optional), sale
+  (optional: stored path + MIME type), purchase date/price (optional),
+  purchase_seller (optional, Phase 33.3: who it was bought from, free text
+  up to 100; trimmed, blank = null), sale
   date/price (optional), status (`active` | `archived`), archived_at,
   disposal (optional, Phase 27.2: `sold` | `written_off`, and from Phase
   29.2 `returned_lender` | `returned_lessor`, the column widened to 16;
@@ -423,7 +425,7 @@ MySQL only.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`), note (optional),
+  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`), note (optional),
   fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
   by `ON DELETE CASCADE`), maintenance_entry_id, compliance_document_id and
   tyre_change_id (likewise, for `maintenance`, `document` and `tyre`
@@ -447,6 +449,14 @@ MySQL only.
   `tyre` reading into a `manual` one first, as for `document`.
 - Only `manual` readings take attachments (owner type `odometer`); a derived
   reading's receipt belongs to the entry that owns it.
+- A `purchase` reading (Phase 33.3, #182) is the vehicle form's *Mileage
+  when bought* (§7.1): at most one per vehicle, at local noon on the
+  purchase date, owned by the vehicle (no link column: found by vehicle and
+  source). It is written, moved or removed when the vehicle is saved,
+  never edited on the Mileage tab (its edit link opens the vehicle form),
+  and checked for plausibility with the usual warning. Rolling the
+  migration back turns every `purchase` reading into a `manual` one first,
+  as for `document`.
 - The reading written by *Add vehicle*'s *Current odometer* (§7.1) is a
   `manual` reading at the moment of saving when its *As of* date is today,
   and at local noon on that date when it is earlier (Phase 12), like the
@@ -653,7 +663,8 @@ MySQL only.
   through a time zone), occurred_at_time (optional local time of day),
   location (optional free text, up to 200), type (`collision` |
   `parked_damage` | `theft` | `break_in` | `vandalism` | `weather` |
-  `glass` | `pothole` | `animal` | `fire` | `other`), fault (`at_fault` |
+  `glass` | `pothole` | `animal` | `fire` | `breakdown` (Phase 33.3, #185)
+  | `other`), fault (`at_fault` |
   `not_at_fault` | `split` | `unknown`, default `unknown`), description
   (optional, up to 2,000), damage_areas (JSON list of `front` | `rear` |
   `left` | `right` | `roof` | `underside` | `glass` | `wheels` |
@@ -1331,8 +1342,18 @@ from fleet totals unless "include archived" is toggled.
     third party.
   - Values are not costs: they are never in the cost ledger, the amount
     column of History or any report total.
+- **Bought from and mileage when bought** (Phase 33.3, #182): the form's
+  purchase section (page and modal, add and edit) has *Bought from*
+  (`purchase_seller`) and *Mileage when bought* (in the owner's distance
+  unit, ≥ 0, 0 valid). The mileage needs the purchase date ("Add the
+  purchase date to record the mileage when bought") and is stored as the
+  vehicle's `purchase` reading (§6 OdometerReading); the form shows the
+  current one, and blanking it removes the reading. Clearing the purchase
+  date while the mileage is set is refused ("Remove the mileage when
+  bought first, or keep the purchase date"), as for purchase paperwork.
 - **Overview *Ownership* card** (Phase 14.1): *Bought* (date with its
-  paperwork paperclip, price), *Latest value* (date, amount, source) or
+  paperwork paperclip, price, and from Phase 33.3 who from and the mileage
+  when bought), *Latest value* (date, amount, source) or
   *Sold* (date with its paperclip, price), *Change*, *Per year*, *Per
   distance*, the stale-value hint or the state hint, and *Valuations →* /
   *Add valuation*. Rows that are not set are left out; the card is hidden
@@ -1383,7 +1404,10 @@ jumps, going backwards) without blocking.
   (`/vehicles/{id}/maintenance`), Tyres (`/vehicles/{id}/tyres`, §7.17),
   Documents (`/vehicles/{id}/documents`) and Expenses
   (`/vehicles/{id}/expenses`, §7.7). Each list tab has an
-  "Export CSV" link (§7.7).
+  "Export CSV" link (§7.7). From Phase 33.3 (#179) the order is Overview,
+  History, Mileage, Trips, Fuel, Maintenance, Tyres, Documents, Incidents,
+  Finance, Expenses (each shown when its module is on and the viewer may
+  see it), and every tab looks the same at the top (§8 *Vehicle header*).
   Every tab shares one vehicle header (`templates/vehicles/_header.twig`):
   back link, then *Edit*, *Archive* / *Restore* and *Delete* in the same
   place on every tab, the hero and the tab bar. Every list tab shares one
@@ -2092,6 +2116,48 @@ toggles.
   of per-fill economy), *compliance status* (current documents that are
   expired or expiring, else "all in order", per active vehicle), *mileage*
   and *recent activity* (below). Archived vehicles never appear.
+- **Your vehicles layout** (Phase 33.3, #177): the tiles are laid out
+  three to a row from the sidebar breakpoint (≥ 960 px), two on tablets and
+  one on phones, as the prototype's garage; the tile is the prototype's
+  (photo with the plate over its lower-left corner, the name, then the
+  odometer on the left and the due text in its status colour on the
+  right).
+- **Insights** (id `insights`, Phase 33.3, #178; core; after *upcoming
+  reminders* in the default order, appended to saved layouts by the rule
+  above): short observations worked out by Logbook from figures it already
+  has, **never written by a model** in this widget, each with an icon, a
+  tone, a title, one or two sentences and a link to where the figure is
+  shown. They are observations, never tasks: nothing that *Needs
+  attention* or *Coming up* already says (tyre wear, economy falling,
+  amounts due). In this order, each only when its figure exists and the
+  viewer may see it, for the vehicles in view (the vehicle filter applies
+  as to every widget):
+  1. **Shopping around** (`ViewCosts`; Fuel stations on): per vehicle, the
+     Fuel tab's 12-month figure (§7.34) when it is better off: "About
+     £18.40 better off from shopping around" — "23 fill-ups away from your
+     usual station in the BMW 320d over the last 12 months." → the Fuel tab.
+  2. **Business mileage** (`trips` on): the signed-in user's business
+     distance this tax year and its claim value (§7.23), when above 0:
+     "£412.20 claimable in business mileage" — "916 mi of business trips
+     since 6 Apr 2026, at your mileage rates." → the claim report.
+  3. **Cheapest to run** (`ViewCosts`; *All vehicles* only): among active
+     vehicles in one currency that each drove at least 500 km in the last
+     12 months, the lowest running cost per distance (§7.7, the last 12
+     months) against the highest: "The Yaris is your cheapest to run" —
+     "£0.11/mi over the last 12 months, against £0.19/mi for the BMW 320d.
+     Running costs only." → Reports. Currencies are never converted:
+     with vehicles in several currencies it compares only within the
+     currency of the most vehicles (ties: the owner's currency).
+  4. **Equity** (`finance` on; Manage and `ViewCosts`, as §7.32): per
+     vehicle with an active HP or PCP agreement and a current equity
+     figure (a valuation from the last 12 months; never an estimate):
+     "The BMW 320d has about £2,150 of equity" or "… is about £800 in
+     negative equity" — "Valued at £14,000 against an estimated
+     settlement of £11,850." → the Finance tab.
+  The widget shows the first **two**, as the prototype; with none,
+  "Nothing stands out right now." From Phase 33.4 its title links to the
+  Insights page (*All insights*) and AI insights join it (§7.26 *AI
+  insights*).
 - **Mileage** (id `mileage`): *This month*, *This year* and *Monthly avg* in
   the owner's distance unit. This month / this year are the calendar month /
   year to date in the owner's time zone, measured as a report's *distance
@@ -2146,7 +2212,7 @@ toggles.
   ids are dropped and widgets added in later releases are appended, so an old
   saved layout never breaks. Without a saved layout (and without JS) the
   default order applies: needs attention (Phase 24), upcoming reminders,
-  coming up, spend this month, recent fuel, your vehicles, efficiency
+  insights (Phase 33.3), coming up, spend this month, recent fuel, your vehicles, efficiency
   trend, compliance status, mileage, recent activity, business mileage,
   finance, cheapest fuel, true cost.
 - **True cost** (id `true_cost`, Phase 32; core, vehicles the viewer may
@@ -3444,6 +3510,23 @@ the wear estimate and tyre reminders came with Phase 11.2 (below).
   - **On the vehicle:** a card per position in position order (a 2 × 2 grid
     plus the spare for a car; front and rear for a bike): position, brand,
     model, size, season badge, age and distance. Plain HTML, not a drawing.
+    From Phase 33.3 the section is **Current tyres**, laid out as the
+    prototype's card, with the same facts: per position, the position in
+    small capitals and a status pill (from the existing judgement and legal
+    flags, text and icon: *Good*, *Replace soon*, *Worn: replace*, *Below
+    the legal minimum*, *May be below the legal minimum*, the age flags,
+    or *No tyre*; the most severe in the pill, any others below); the
+    latest measured depth large, with "Checked {date}" (or "Not measured
+    yet", never an assumed depth); a **bar** from the tyre's first
+    measured depth down to the legal minimum, shown only once the tyre has
+    two measurements (#184); brand and model with the season, size with
+    the age from DOT; then "Fitted {Mon YYYY} · {distance} covered" (the
+    date of the tyre's latest fitting or move, derived from its changes,
+    #185; "since {date}" for a tyre already on the vehicle) and the wear
+    estimate as today, labelled as one. *Check tread* is a button beside
+    *Fit tyres*. Under the cards, a note from the owner's own tyre
+    settings (#185): "You replace at 3.0 mm; the legal minimum you set is
+    1.6 mm." with "Legal minimums differ by country; check yours."
   - **In storage:** grouped by set, with its storage location.
   - **Retired:** folded away, newest first, with lifetime distance, cost per
     distance where known, and reason.
@@ -4125,11 +4208,29 @@ public sign-up. (Self-service password reset by email arrived in Phase
   off hides the tab, chooser item, widget, report sections and API routes
   (404), and keeps the data.
 - **Trips tab** (`/vehicles/{id}/trips`), after Mileage: this tax year's
-  business and private distance and claim value at the top, then trips
+  business and private distance and claim value at the top (from Phase
+  33.3 a strip of four tiles, *Business*, *Private*, *Claim value* and
+  *Trips* (the count of visible trips this tax year), then the **Business
+  and private** card below), then trips
   newest first (25 per page) with date, journey ("Ballymena → Belfast",
   "Ballymena → Belfast → Ballymena" for a return), distance, purpose, a
   business or private badge, a paperclip, and *Log again*. The shared
   toolbar has *Export CSV*, *Import CSV* and *Log trip*.
+- **Business and private** card (Phase 33.3; the prototype's *Business
+  and personal*, *private* being the app's word): for the user's current
+  tax year (§7.23 *Tax year*; no period picker, #176, #185):
+  - *Business* = the distance of the vehicle's business trips in it;
+  - *Private* = the distance driven in it (§7.7, from the mileage log)
+    minus *Business*, never the sum of logged private trips;
+  - a two-part bar (decorative; the text carries the figures) and the
+    percentages of the distance driven to whole percent, adding to 100
+    (business rounded, private = 100 − business).
+  When business is more than the distance driven (readings missing), the
+  card says so and links to the Mileage tab instead of a split. Without
+  distance driven in the period: "Not enough readings this year". A viewer
+  who can't see every driver's business trips sees the distance driven
+  only, with no split (as the strip). Destinations never appear on it.
+  *Log trip* and *Export CSV* sit in the card's header.
 - **Trip form** (a page and a desktop modal, §5): date (default today),
   *Saved journey* (a select that fills from, to, distance, return, purpose
   and business; without JS, `?journey=<id>` pre-fills the page), from,
@@ -4915,6 +5016,31 @@ entries by message*.
   changing settings by chat (parked, #75, §12); several entries in one
   press.
 
+#### AI insights (Phase 33.4, decided 2026-10-05, #174)
+
+Insights the app has no computed figure for (the prototype's *economy up*,
+*about £x due in the next 3 months*, *save about £x a year on fuel*, and
+any other pattern) are found by the model:
+
+- **Only with AI on:** an assigned *Ask* task, the AI module on and the
+  user's *Use AI features* switch on (§7.25). Otherwise nothing changes:
+  the Insights widget shows the computed insights only (§7.8).
+- **How:** the model is given the *Ask* tools (§7.26 *Tools*, as the user,
+  through the §7.21 access policy) and asked for up to four short
+  observations about the user's vehicles, each with a title, a body and
+  the tool result it came from; it works the figures out itself. They are
+  not tasks and not repeats of *Needs attention* or *Coming up*.
+- **When:** once a day per user (the scheduled task, §7.30, or the first
+  view of the day), cached for that day, with *Refresh* on the Insights
+  page (one at a time, the user's lock, §7.25). Nothing is generated for a
+  user who hasn't signed in for 30 days.
+- **Grounding:** the check of *Ask* applies to every number: unmatched
+  numbers are highlighted with "Logbook didn't provide this figure. Check
+  it against the sources." Each AI insight is marked as one (an
+  `auto_awesome` icon and "AI"), with its sources and the model.
+- **Where:** after the computed insights on the Insights page and in the
+  dashboard widget's list. Details in [Phase 33.4](docs/phases/phase-33.4.md).
+
 ### 7.27 Reading files (Phase 26.4)
 
 A photo or PDF of an invoice, receipt or certificate fills in the right
@@ -5268,6 +5394,20 @@ nothing is counted twice (§6 Incident).
   badge, a write-off badge ("Cat S") when written off, the net cost (with
   `ViewCosts`), and a paperclip when it has files. The toolbar has *Log
   incident*, which is also in the *Log entry* chooser (§5).
+  - **Layout** (Phase 33.3, from the prototype): a strip of four tiles
+    (*Incidents*; *Claims*, with "{n} at fault" when the viewer can see
+    every fault; *Insurer paid* and *Net cost*, with `ViewCosts`, per
+    currency), then the incidents as a grid of cards, each linking to its
+    page: an icon per type (on the type enum), the type over "date ·
+    location", a pill from the claim status ("Claim open", "Claim
+    settled", "No claim", …) beside the other badges, the description
+    (clamped to three lines), damage and severity, and a two-column grid
+    of fault, insurer, insurer paid and net cost. Location, description,
+    fault, insurer and payout are detail fields: shown only where the
+    viewer may see details (below).
+  - **Breakdown** (type `breakdown`, #185): a breakdown or recovery with no
+    damage, recorded like any other incident (a recovery bill is an
+    expense linked to it).
 - **Form** (page and desktop modal, §5), in four sections: *What
   happened* (date, time, location, type, description, odometer, driver: a
   user who can view the vehicle, or a name), *Damage* (areas as
@@ -5285,7 +5425,10 @@ nothing is counted twice (§6 Incident).
   clears closed_on. Changing the claim status sets *Latest update* to the
   owner's today unless it was changed too. The odometer follows the
   reading rules (§7.2).
-- **Incident page** (`/vehicles/{id}/incidents/{incident}`): the details,
+- **Incident page** (`/vehicles/{id}/incidents/{incident}`; from Phase
+  33.3 laid out in the prototype's card style: a header with the type's
+  icon, the type, "date · location" and the claim pill; the description
+  first; the details as a two-column grid): the details,
   the photos as a grid (each opens the full file through the
   authenticated handler), and **Linked records**: the repairs, expenses
   and tyre changes linked to it, each with its date, cost and link.
@@ -5337,6 +5480,18 @@ nothing is counted twice (§6 Incident).
   - The hint: "Insurers usually ask about the last 5 years, including
     incidents that were not your fault and ones on vehicles you no
     longer own."
+  - From Phase 33.3, above the rows: *Claims* in the period ("{n} at
+    fault"), *Since last fault claim* ("Under 1 yr" or "{n} yrs", its date
+    under it), *Paid by insurers* and *Excess paid* (`ViewCosts`, per
+    currency), each counting only rows whose details the viewer may see.
+    On screen the rows are a list (type icon, "type · vehicle" over
+    "date · insurer · claim number", the fault pill, the payout over the
+    claim status); print and CSV keep the table.
+  - **Copy for insurance quote** (Phase 33.3, #185; with JS): copies the
+    rows in view as plain text, one line each ("12 Mar 2024 – Collision –
+    Not at fault – Claim settled – £1,240.00 – 2019 BMW 320d"; the payout
+    only with `ViewCosts`; a row without visible details as on screen), and
+    says "Copied". Without JS the button is absent; CSV and print stay.
   - Printable (the Phase 17.2 conventions: black on white, no app shell,
     the filters as a line under the heading) and CSV
     (`/incidents/history.csv`, same filters, the rules of every CSV
@@ -5704,7 +5859,8 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
 
 - **Module** `finance` (§7.10), on by default. Nothing shows until a
   vehicle has an agreement: *Add finance* is in the vehicle header's menu,
-  and the overview card appears once one exists. Switching it off hides
+  and the overview card appears once one exists. (From Phase 33.3, the
+  *Finance tab*, below, replaces the header's menu item.) Switching it off hides
   every page, card, widget, cost line, reminder and attention item; the
   data is kept.
 - **Form** (page and desktop modal), with fields by type:
@@ -5809,6 +5965,38 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   ones under *Earlier agreements*, each with its type, lender, dates and
   status, linking to its agreement page; *Add finance* while none is
   active.
+- **Finance tab** (Phase 33.3, #173, #181): `/vehicles/{id}/finance` is a
+  vehicle tab (icon `account_balance`, between *Incidents* and
+  *Expenses*), shown to those `finance_menu()` allows (Manage with
+  `ViewCosts`), with the shared vehicle header; the header's *Finance*
+  button goes. The tab **is the active agreement's page**, laid out as the
+  prototype's finance content:
+  - an **agreement card**: the type as its title, "lender · agreement
+    number" under it, *Edit*; the regular payment large; a progress bar
+    "Payment {k} of {n}" and "Ends {Mon YYYY}"; two tiles, *Paid so far*
+    (`AgreementFigures::paidTotal`: deposits, payments made, extras,
+    settlement and fees) and *Still to pay* (remaining to pay, with the
+    optional final payment beside it for PCP); then the figures as rows
+    (deposit, amount of credit, APR, term, optional final payment, cost of
+    credit, total amount payable, mileage position, half-paid point,
+    settlement); and for PCP the neutral end note (#183): "At the end you
+    can pay the optional final payment and keep the vehicle, hand it back,
+    or part-exchange it. Mileage and condition charges may apply.";
+  - a **Purchase** card: price, date, *Bought from*, *Mileage when bought*
+    (§7.1) and how it was paid (the agreement's type);
+  - a **Value & equity** card (not for a lease): current value (§7.1),
+    settlement (the estimate or quote, labelled), equity, or "Add a
+    valuation to see your equity";
+  - under them, the agreement page's own sections unchanged in content:
+    warnings, the schedule with its marks, extras, quotes, *End
+    agreement*, *Delete*, print and CSV;
+  - then *Earlier agreements* as a list, each linking to its agreement
+    page, which opens in the same tab frame (`/vehicles/{id}/finance/
+    {agreement}`, the same cards).
+  With no agreement, one card: "How did you buy it?", a lead and *Add
+  finance*. With no active agreement but earlier ones, that card above
+  *Earlier agreements*. Every finance URL keeps answering; the add, edit,
+  end and quote pages keep their URLs. The overview's finance card stays.
 - **Agreement page** (`/vehicles/{id}/finance/{agreement}`): the figures,
   then the schedule as a table (date, amount, status: *paid*, *due*,
   *missed*, *paid late*), each past row with *Mark missed* or *Mark paid
@@ -6540,6 +6728,15 @@ it replaces none of the other figures.
   sidebar, bottom navigation, page titles, Settings → Modules,
   breadcrumbs. Route names, URLs (`/stations`) and the module key
   (`stations`) are unchanged, so links and API clients keep working.
+- **Vehicle header** (Phase 33.3, #180): the vehicle's name looks the
+  same on every tab: one style, `vehicle-hero__name` (the prototype's
+  28 px display weight). On Overview it is the page's `<h1>`; on every
+  other tab it is a `<p>`, and the tab's own title stays the `<h1>`
+  but is **visually hidden** (screen readers and the browser title keep
+  it; the active tab shows where you are), so the heading order is right
+  and the page doesn't jump between tabs. Tab icons follow the prototype
+  (Overview `dashboard`, Documents `description`, Finance
+  `account_balance`).
 - **Settings layout** (Phase 33.2, from the prototype): one page,
   `/settings`, in one column at most 45 rem wide, of cards in the shared
   card style, under group headings that are also in-page anchors. There is
@@ -6883,6 +7080,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   one *Export expenses (CSV)* on Settings; a *Reset password* button on
   the profile page that emails the user a link; a "letter and a number"
   password rule.
+- Trips (Phase 33.3, #185): a period picker on the *Business and private*
+  card (it shows the current tax year).
 
 ---
 
@@ -7259,6 +7458,17 @@ task breakdowns live in the per-phase files; this is the map.
   user's own account, reached from the sidebar's name and avatar
   (§7.9, §8). No migration. No
   release of its own: ships with 33.4 as v3.0.0.
+- **Phase 33.3 — Vehicle pages: Finance tab, Insights, trips, incidents,
+  tyres.** One vehicle-name style on every tab with the tab titles
+  visually hidden; the prototype's tab order; Finance as a tab that is the
+  active agreement's page in the prototype's cards (with *Paid so far*,
+  a Purchase card and Value & equity); the vehicle's seller and mileage
+  when bought; a computed *Insights* dashboard widget; *Your vehicles*
+  three to a row; the trips tab's *Business and private* card; incidents
+  as cards with a stat strip, a *Breakdown* type and the claims history's
+  stats and *Copy for insurance quote*; tyres' *Current tyres* (§6, §7.1,
+  §7.2, §7.8, §7.17, §7.22, §7.29, §7.32, §8). One migration. No release
+  of its own: ships with 33.4 as v3.0.0.
 ---
 
 ## 14. Definition of done
