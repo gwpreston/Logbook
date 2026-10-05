@@ -2262,7 +2262,7 @@ First-run setup creates the initial account. CSRF on all forms.
 
 - Each user has one address (§6 User `email`), **confirmed** before it is
   used for anything: reset links, email sign-in and reminder email.
-- Settings → Account → *Profile* has **Email**. Changing or removing it
+- The *Profile* page (`/profile`) has **Email**. Changing or removing it
   needs the current password when the user has one. A new address is
   stored as `email_pending` and a confirmation link (kind `email`, 24
   hours, `{APP_URL}{APP_BASE_PATH}/confirm-email/{token}`) is sent to it;
@@ -2377,7 +2377,7 @@ it would lock everyone out, as today):
 
 **Avatars** (Phase 33.1)
 
-- Settings → Account → *Profile*: upload (JPEG, PNG or WebP, up to 5 MB,
+- *Profile* (`/profile`): upload (JPEG, PNG or WebP, up to 5 MB,
   by type sniffing, not extension), replace, remove. Drag and drop as
   every file input (Phase 21.1).
 - Processed with GD as vehicle photos are: turned upright from EXIF, then
@@ -2460,7 +2460,7 @@ can see. Guide: `docs/sso.md`.
      (`/welcome`: language, time zone, unit preset, currency, or *Skip*),
      as invitations ask, then go on to the page asked for.
   4. Else: "Your {name} account isn't linked to Logbook. Ask an admin to
-     invite you, then link it from Settings → Account."
+     invite you, then link it from Profile."
 - **Groups:** with `OIDC_ALLOWED_GROUPS`, a user in none of them is
   refused (message as 4), and cannot link an account either. With `OIDC_ADMIN_GROUPS`, `is_admin` is set
   from them at every SSO sign-in, both ways, except that the last active
@@ -2470,7 +2470,7 @@ can see. Guide: `docs/sso.md`.
   regenerated, CSRF rotated, it returns to `next`, and a disabled user is
   refused with the generic failure message. The identity's last_login_at
   is updated.
-- **Linking** (Settings → Account → *Single sign-on*): *Link {name}
+- **Linking** (Profile → *Single sign-on*): *Link {name}
   account* runs the flow for the signed-in user and stores the identity;
   it is refused if that identity belongs to someone else, and replaces
   nothing (unlink first). A link flow that returns to a session now signed
@@ -2603,7 +2603,7 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
   of Logbook, but your proxy signs you straight back in. Sign out at the
   proxy to end it there", since the next request would sign straight back
   in.
-- **Settings:** Settings → Users and Settings → Account show *Proxy* as a
+- **Settings:** Settings → Users and Profile show *Proxy* as a
   sign-in method; it can be removed like an OIDC identity (and, as there,
   not while it is the only way in). Settings → Users says whether header
   sign-in is on, and in which mode.
@@ -2711,7 +2711,7 @@ Extensible channel interface so more can be added.
 - **Channels per user** (Phase 19): email goes to the user's own address
   (Settings → Reminders; `MAIL_TO` is the default for admins only, so a
   member without an address gets no email). From Phase 33.1 that is the
-  user's confirmed address (§6 User `email`, set on Settings → Account),
+  user's confirmed address (§6 User `email`, set on Profile),
   no longer a preference. ntfy and Gotify take a
   personal topic URL / application token there, which replaces the
   instance's for that user; without one, only admins receive through the
@@ -4656,7 +4656,7 @@ request to any model service.
   `not_acknowledged`, `secret_unreadable`, `bad_response` (unparseable,
   or failing the JSON Schema check), `provider` (any other). Admins also
   see the provider's (redacted) text on Settings → AI.
-- **Users** (decided 2026-10-01, #67): Settings → Account → *Use AI
+- **Users** (decided 2026-10-01, #67): Profile → *Use AI
   features*, a user setting `ai.use`, **on** unless the user switched it
   off. Shown only once AI is set up (at least one task has a working
   assignment). Off hides every AI entry point for that user and sends
@@ -6546,9 +6546,8 @@ it replaces none of the other figures.
   no section navigation and no per-section URL; every page Settings links
   to keeps its URL. Groups, in order, each card shown only to those who can
   use it:
-  - **Account** (`#account`): who is signed in (avatar or initial, name,
-    username, confirmed address) with *Sign out*; email address; avatar;
-    password; single sign-on; *Use AI*.
+  - **Account** (`#account`): one link row, *Profile*, to the profile
+    page (#172).
   - **Preferences** (`#preferences`): one form with one *Save*: profile
     (display name, saved with the rest as before, #170), appearance (the
     theme as a segmented control, then the accent), units and currency
@@ -6570,6 +6569,19 @@ it replaces none of the other figures.
   pages use the same card and button styles (and list rows where they
   list things); their controls are unchanged. Their *‹ Settings* back
   link lands on the group they belong to.
+- **Profile page** (Phase 33.2, #172): `/profile` (route `profile`) holds
+  the signed-in user's own account: who they are (avatar or initial,
+  display name, username, confirmed address) with *Sign out*, then the
+  cards *Email address*, *Picture*, *Password* (password sign-in on),
+  *Single sign-on* (when configured or linked) and *Use AI* (AI set up).
+  The forms post to the same addresses as before and come back to
+  `/profile` (with the form in place and its errors on a 422), as do an
+  email-confirmation link opened while signed in and an SSO link. The
+  display name, appearance, units, region and preview stay on Settings →
+  *Preferences* (#170). The page is reached from the user's name and
+  avatar in the sidebar (a link, `aria-current` on the page), from their
+  avatar in the narrow top bar beside the Settings icon, and from the
+  *Profile* row at the top of Settings.
 - **Unit presets** (Phase 33.2): each *Quick setup* preset (Metric, UK,
   US) is `aria-pressed="true"` when the four unit fields match it exactly
   (`UnitPreset::matching()`, on the server for the first render, and again
@@ -6867,7 +6879,7 @@ Real environment variables override `.env`; an empty value counts as unset.
   Assistant and generic-webhook formats for reminder pushes; a *Send at*
   time and a *Frequency* for reminder delivery; *Reset dashboard layout*;
   one *Export expenses (CSV)* on Settings; a *Reset password* button on
-  the Account card that emails the user a link; a "letter and a number"
+  the profile page that emails the user a link; a "letter and a number"
   password rule.
 
 ---
@@ -7037,7 +7049,7 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 23.1 — Single sign-on with OpenID Connect.** One OIDC provider
   by environment variables and discovery; authorization code flow with
   PKCE, `state` and `nonce`; full ID token validation (`firebase/php-jwt`);
-  explicit linking from Settings → Account, optionally by username;
+  explicit linking from Profile, optionally by username;
   optional creation on first sign-in and admin from groups; local sign-in
   switchable off with a CLI break-glass link; optional provider sign-out
   (§6 UserIdentity, §7.9, §9). Also `GET /api/v1/journeys` (§7.20). One
@@ -7241,7 +7253,9 @@ task breakdowns live in the per-phase files; this is the map.
   and notifications, Vehicles and driving, Your data, Developers,
   Administration and Installation on one page; unit presets that show
   hover, focus and which preset matches; *Fuel stations* everywhere and
-  *Settings* below *Ask* in the sidebar (§7.9, §8). No migration. No
+  *Settings* below *Ask* in the sidebar; a `/profile` page for the
+  user's own account, reached from the sidebar's name and avatar
+  (§7.9, §8). No migration. No
   release of its own: ships with 33.4 as v3.0.0.
 ---
 

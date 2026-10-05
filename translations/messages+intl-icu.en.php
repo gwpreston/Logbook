@@ -1549,7 +1549,7 @@ return [
             'test_no_channels' => 'No notification channel is turned on and set up, so nothing was sent.',
             'email_none_admin' => 'No address on your account yet: reminder email goes to the server\'s default address (MAIL_TO).',
             'email_none' => 'No address on your account yet, so you get no reminder email.',
-            'email_change' => 'Change it on Settings → Account',
+            'email_change' => 'Change it on your profile',
         ],
         'calendar' => [
             'name' => 'Logbook reminders',
@@ -3598,7 +3598,7 @@ return [
         'failed' => 'Sign-in with {name} didn\'t work. Try again.',
         'unavailable_password' => '{name} can\'t be reached just now. Try again later, or sign in with your password.',
         'unavailable' => '{name} can\'t be reached just now. Try again later.',
-        'not_linked' => 'Your {name} account isn\'t linked to Logbook. Ask an admin to invite you, then link it from Settings → Account.',
+        'not_linked' => 'Your {name} account isn\'t linked to Logbook. Ask an admin to invite you, then link it from your profile.',
         'card_title' => 'Single sign-on',
         'card_lead' => 'Link your {name} account to sign in with it. You will be asked to sign in there.',
         'link' => 'Link {name} account',

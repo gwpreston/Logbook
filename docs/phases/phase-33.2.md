@@ -66,6 +66,10 @@ done the same way:
    current units match.
 5. **Sidebar:** *Stations* is called *Fuel stations*; *Settings* sits
    below *Ask*.
+6. **Profile page** (added 2026-10-05, #172): the name and avatar in the
+   sidebar open `/profile`, which holds the user's own account (email,
+   picture, password, single sign-on, *Use AI*, sign out). Settings'
+   *Account* group becomes one link row to it.
 
 ## Not in scope
 
@@ -160,6 +164,22 @@ done the same way:
 - [x] *Fuel stations* label (sidebar, bottom nav, page titles, modules
       page, docs), en and de (*Tankstellen*).
 - [x] *Settings* below *Ask* in the sidebar.
+
+### 33.2.7 Profile page (added 2026-10-05, #172)
+- [ ] `spec.md` §8 *Profile page*; §8 *Settings layout* (*Account* is one
+      row); §7.9 and the docs say *Profile* where they said *Settings →
+      Account*.
+- [ ] `GET /profile` (`ProfileAction`, `ProfilePage`): identity and *Sign
+      out*, then the email, picture, password, SSO and *Use AI* cards,
+      moved from Settings.
+- [ ] Email, picture, password, SSO link / unlink, *Use AI*, the OIDC
+      link callback and a signed-in email confirmation come back to
+      `/profile`; errors re-render it.
+- [ ] Sidebar name and avatar link to it; the narrow top bar has the
+      avatar beside Settings; Settings' *Account* group is one *Profile*
+      row and the Account card goes.
+- [ ] Tests: the page and its cards; each form returns to it; sidebar,
+      top bar and Settings link to it; Settings no longer has the forms.
 
 ### 33.2.6 Tests
 - [x] Sign-in pages render for: local only, SSO and local, SSO only,
@@ -364,4 +384,11 @@ audit and before any code, #170 while building
   draws one slim Account card; the app follows it with full email,
   picture and password forms (about 1,400 px at 1280 wide). Fold those
   three into `<details>` under the Account card (works without JS), or
-  keep them open? *Needs a decision (#171).*
+  keep them open? *Obsolete 2026-10-05 (#171):* the forms moved to their
+  own profile page (#172), where they stay open.
+- **A profile page** (asked by the owner while building): *Decided
+  2026-10-05 (#172):* the sidebar's name and avatar open `/profile`, which
+  takes the *Account* group (email, picture, password, SSO, *Use AI*,
+  sign out); *Preferences* stays on Settings (with the display name,
+  #170). On narrow screens an avatar in the top bar and a *Profile* row at
+  the top of Settings lead to it.

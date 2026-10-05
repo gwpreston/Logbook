@@ -62,7 +62,7 @@ variable. The redirect URI to register is
 | `OIDC_SCOPES` | `openid profile email` | Space- or comma-separated; must include `openid`. Add `groups` where the provider needs it for the groups claim. |
 | `OIDC_USERNAME_CLAIM` | `preferred_username` | The claim used for username linking and for new users' usernames. |
 | `OIDC_GROUPS_CLAIM` | `groups` | The claim holding group names (a list, or one string). |
-| `OIDC_LINK` | `explicit` | `explicit`: an account reaches a user only once that user links it in Settings → Account. `username`: also a user with the same username and no linked account yet. Only safe where usernames at the provider are set by admins alone. |
+| `OIDC_LINK` | `explicit` | `explicit`: an account reaches a user only once that user links it on their Profile. `username`: also a user with the same username and no linked account yet. Only safe where usernames at the provider are set by admins alone. |
 | `OIDC_AUTO_CREATE` | `false` | Create a member (no password) on first sign-in for an account nobody has. |
 | `OIDC_ALLOWED_GROUPS` | *(empty: everyone)* | Comma-separated: only members of these groups may sign in with SSO. |
 | `OIDC_ADMIN_GROUPS` | *(empty)* | Comma-separated: admin is set from these groups at every SSO sign-in, both ways. The last admin is never demoted. Empty: admin stays as set in the app. |
@@ -163,7 +163,7 @@ which configured channels to use in **Settings → Reminders**. See
 | `MAIL_USERNAME`, `MAIL_PASSWORD` | *(empty)* | SMTP credentials. |
 | `MAIL_ENCRYPTION` | `tls` | `tls` (STARTTLS, required), `ssl` (implicit TLS, usually port 465) or `none`. |
 | `MAIL_FROM` | `logbook@localhost` | Sender, `address` or `Name <address>`. |
-| `MAIL_TO` | *(empty)* | The admins' default recipient for reminders. Each user's confirmed address (Settings → Account) comes first, members get email only at their own, and it is never used for reset links. |
+| `MAIL_TO` | *(empty)* | The admins' default recipient for reminders. Each user's confirmed address (their Profile) comes first, members get email only at their own, and it is never used for reset links. |
 | `MAILPIT_PORT` | `8025` | Development only (`docker-compose.dev.yml`): the Mailpit web UI on the host. Unset, `bin/dev-setup.sh` moves to the next free port when 8025 is taken. |
 | `NTFY_URL` | *(empty)* | ntfy topic URL, e.g. `https://ntfy.sh/my-garage`: the admins' reminders; each user can set their own topic. |
 | `NTFY_TOKEN` | *(empty)* | Access token for a protected topic. |

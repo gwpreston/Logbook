@@ -1547,7 +1547,7 @@ return [
             'test_no_channels' => 'Kein Benachrichtigungskanal ist eingeschaltet und eingerichtet, daher wurde nichts gesendet.',
             'email_none_admin' => 'Dein Konto hat noch keine Adresse: Erinnerungs-E-Mails gehen an die Standardadresse des Servers (MAIL_TO).',
             'email_none' => 'Dein Konto hat noch keine Adresse, daher bekommst du keine Erinnerungs-E-Mails.',
-            'email_change' => 'Unter Einstellungen → Konto ändern',
+            'email_change' => 'In deinem Profil ändern',
         ],
         'calendar' => [
             'name' => 'Logbook-Erinnerungen',
@@ -3595,7 +3595,7 @@ return [
         'failed' => 'Die Anmeldung mit {name} hat nicht geklappt. Versuche es noch einmal.',
         'unavailable_password' => '{name} ist gerade nicht erreichbar. Versuche es später noch einmal oder melde dich mit deinem Passwort an.',
         'unavailable' => '{name} ist gerade nicht erreichbar. Versuche es später noch einmal.',
-        'not_linked' => 'Dein {name}-Konto ist nicht mit Logbook verknüpft. Bitte einen Admin um eine Einladung und verknüpfe es dann unter Einstellungen → Konto.',
+        'not_linked' => 'Dein {name}-Konto ist nicht mit Logbook verknüpft. Bitte einen Admin um eine Einladung und verknüpfe es dann unter deinem Profil.',
         'card_title' => 'Single Sign-on',
         'card_lead' => 'Verknüpfe dein {name}-Konto, um dich damit anzumelden. Du wirst gebeten, dich dort anzumelden.',
         'link' => '{name}-Konto verknüpfen',

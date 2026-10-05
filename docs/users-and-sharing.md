@@ -76,7 +76,7 @@ they ever sign in. Without email, use an invitation.
 
 ## Email addresses
 
-Everyone has one email address, on **Settings → Account**. It is where
+Everyone has one email address, on your **Profile** (click your name in the sidebar). It is where
 reset links and reminder email go, and you can sign in with it instead of
 your username. A new address is used for nothing until you confirm it: a
 link (24 hours) goes to it, and the old address is told about the change.
@@ -157,7 +157,7 @@ owner's lead times, so everyone agrees on what is due.
 
 Channels are per person (Settings → Reminders):
 
-- **Email** goes to your confirmed address (Settings → Account). `MAIL_TO`
+- **Email** goes to your confirmed address (your Profile). `MAIL_TO`
   is the admins' default only, so a member without an address gets no
   email.
 - **ntfy** and **Gotify**: set your own topic URL or application token.
