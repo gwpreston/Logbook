@@ -132,48 +132,49 @@ done the same way:
 - [x] Open questions for anything in them the app doesn't have.
 
 ### 33.2.2 Signed-out pages
-- [ ] One signed-out layout; sign-in, forgotten password and reset
+- [x] One signed-out layout; sign-in, forgotten password and reset
       password to the prototype.
-- [ ] Setup, invitation, welcome, break-glass and the proxy signed-out
+- [x] Setup, invitation, welcome, break-glass and the proxy signed-out
       page in the same layout.
-- [ ] Errors tied to their fields and announced; the password field's
+- [x] Errors tied to their fields and announced; the password field's
       show/hide control (if the prototype has one) works by keyboard and
       without JS falls back to a plain field.
 
 ### 33.2.3 Settings
-- [ ] One page regrouped under anchored group headings (#166); every
+- [x] One page regrouped under anchored group headings (#166); every
       linked page keeps its URL.
-- [ ] Cards regrouped as above; *Reminders and notifications* holds only
+- [x] Cards regrouped as above; *Reminders and notifications* holds only
       reminders.
-- [ ] User management pages in the shared card and list-row styles, with
+- [x] User management pages in the shared card and list-row styles, with
       Phase 33.1's controls and avatars (#167).
 
 ### 33.2.4 Unit presets
-- [ ] `UnitPreset::matching(...)` on the server; `aria-pressed` on first
+- [x] `UnitPreset::matching(...)` on the server; `aria-pressed` on first
       render.
-- [ ] `assets/js/app.js`: update `aria-pressed` when a preset is clicked
+- [x] `assets/js/app.js`: update `aria-pressed` when a preset is clicked
       and when any unit field changes.
-- [ ] CSS: `.chip:hover`, `.chip:focus-visible` and the pressed style
+- [x] CSS: `.chip:hover`, `.chip:focus-visible` and the pressed style
       apply to `[data-unit-preset]` in both themes and every accent.
 
 ### 33.2.5 Sidebar
-- [ ] *Fuel stations* label (sidebar, bottom nav, page titles, modules
+- [x] *Fuel stations* label (sidebar, bottom nav, page titles, modules
       page, docs), en and de (*Tankstellen*).
-- [ ] *Settings* below *Ask* in the sidebar.
+- [x] *Settings* below *Ask* in the sidebar.
 
 ### 33.2.6 Tests
-- [ ] Sign-in pages render for: local only, SSO and local, SSO only,
+- [x] Sign-in pages render for: local only, SSO and local, SSO only,
       email off (no forgotten link), header sign-in hint.
-- [ ] Settings shows only the groups and cards the user may use
+- [x] Settings shows only the groups and cards the user may use
       (member, admin, modules off, AI off) and works without JS.
-- [ ] *Reminders and notifications* contains no link to tyres, trips,
+- [x] *Reminders and notifications* contains no link to tyres, trips,
       places, import or API keys.
-- [ ] Unit presets: UK settings render UK pressed and the others not;
+- [x] Unit presets: UK settings render UK pressed and the others not;
       mixed units render none pressed.
-- [ ] Sidebar order and the *Fuel stations* label (also with the module
+- [x] Sidebar order and the *Fuel stations* label (also with the module
       off: absent).
 - [ ] `DesignAlignmentTest` updated; design-reviewer report clean of HIGH
-      findings.
+      findings. *(Test updated; the `design-reviewer` agent is not in
+      `.claude/agents/`, so the review is still to do.)*
 
 ---
 
@@ -199,9 +200,9 @@ The prototype draws one column, 420 px wide, centred, top padding
 - **L** Fields: label 13 px bold muted above a 48 px input on `surface2`
   with a 12 px radius. Primary button 50 px, full width.
 - **L** Errors: one red-soft banner with the `error` icon at the bottom of
-  the card. The app shows it at the top, and ties field errors to fields;
-  keep both (the banner where the prototype puts it is a layout choice;
-  field-tied errors are the accessibility rule).
+  the card. Built: the app's banner keeps its place at the top of the card
+  (read first, and the setup form is long) and field errors stay tied to
+  their fields.
 - **N/demo** The "Email preview · demo only" panel and the demo hint line
   are prototype scaffolding; not built.
 

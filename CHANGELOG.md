@@ -42,6 +42,28 @@ Phase 33.1 (ships with 33.4 as **v3.0.0**): **accounts**. See
   `demo` and `partner` on every run (printed, and kept in
   `var/dev-credentials`); there is no fixed demo password any more.
 
+Phase 33.2 (ships with 33.4 as **v3.0.0**): **sign-in and Settings to the
+new design**.
+
+### Changed
+- **Signed-out pages** (sign in, forgotten and reset password, setup,
+  invitation, one-time sign-in, email confirmation) share one layout: the
+  Logbook mark above one card. Password fields have a **show / hide**
+  button, and new passwords show a live checklist of the rules (at least 8
+  characters, both entries match). Without JavaScript both are left out.
+- **Settings** is grouped: *Account*, *Preferences*, *Reminders and
+  notifications*, *Vehicles and driving*, *Your data*, *Developers*,
+  *Administration* and *Installation*, each a link you can bookmark
+  (`/settings#driving`). Tyres, trips, places, importing and API keys
+  moved out of the reminders card into cards named for them. An *Account*
+  card at the top shows who is signed in, with *Sign out*. Every page
+  Settings links to keeps its address.
+- The **Metric / UK / US** quick-setup buttons show which one your units
+  match, and react to hover and keyboard focus.
+- **Stations** is now **Fuel stations** in the menu and page titles. Its
+  addresses (`/stations`) are unchanged.
+- **Settings** sits below **Ask** in the sidebar.
+
 ## [2.16.0] — 2026-10-05
 
 Phase 32: **true cost per mile or km**. What each vehicle really costs to
