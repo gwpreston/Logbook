@@ -116,6 +116,8 @@ final readonly class BackupRepository
         'ai_progress',
         'ai_feedback',
         'ai_drafts',
+        // Phase 33.4: the day's AI insights are made again.
+        'ai_insights',
         'pending_uploads',
         // Phase 28.1: job runs are this install's history, and name its accounts.
         'job_runs',

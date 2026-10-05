@@ -61,6 +61,7 @@ final class MigrationsTest extends AppTestCase
         'ai_progress',
         'ai_feedback',
         'ai_drafts',
+        'ai_insights',
         'pending_uploads',
         'incidents',
         'job_runs',
@@ -110,7 +111,7 @@ final class MigrationsTest extends AppTestCase
     {
         $schema = $this->connection($this->createApp())->createSchemaManager();
 
-        // Newest first: the Phase 33.3 purchase seller, the Phase 33.1 account email and avatar
+        // Newest first: the Phase 33.4 AI insights, the Phase 33.3 purchase seller, the Phase 33.1 account email and avatar
         // columns, the Phase 31 import
         // sources, the Phase 30.2 fuel price tables, the Phase
         // 30.1 station links and tables,
@@ -131,6 +132,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 33.4: the day's AI insights.
+        self::assertTrue($schema->tablesExist(['ai_insights']));
+        Migrator::run('rollback');
+        self::assertFalse($schema->tablesExist(['ai_insights']), 'rollback must drop ai_insights');
+
         // Phase 33.3: who the vehicle was bought from.
         self::assertTrue($this->hasColumn('vehicles', 'purchase_seller'));
         Migrator::run('rollback');

@@ -337,17 +337,11 @@ final readonly class TyreService
             $byId[$change->id] = $change;
         }
         $retiredOn = [];
-        $placedBy = [];
-        $moved = [];
         $ordered = $changes;
         usort($ordered, TyreChange::compare(...));
         foreach ($ordered as $change) {
             foreach ($change->linesOf(TyreLineAction::Retire) as $line) {
                 $retiredOn[$line->tyreId] = $change->data->doneOn;
-            }
-            foreach ([...$change->linesOf(TyreLineAction::On), ...$change->linesOf(TyreLineAction::Move)] as $line) {
-                $placedBy[$line->tyreId] = $change;
-                $moved[$line->tyreId] = $line->action === TyreLineAction::Move;
             }
         }
 
@@ -377,8 +371,7 @@ final readonly class TyreService
                 costPerKm: $this->costPerKm($tyre, $fitting, $records, $distance),
                 wear: $wear,
                 ageLimitOn: $tyre->isRetired() ? null : $thresholds->ageLimitOn($made),
-                fittedOn: self::fittedOn($tyre, $placedBy[$tyre->id] ?? null),
-                moved: $moved[$tyre->id] ?? false,
+                fittedOn: self::fittedOn($tyre, $fitting),
             );
         }
 
@@ -386,14 +379,14 @@ final readonly class TyreService
     }
 
     /**
-     * When a fitted tyre was put where it is now: its latest `on` or `move`
-     * (spec.md §7.17, Phase 33.3); null when not fitted or when that was the
-     * tyres already on the vehicle, counted "since" instead.
+     * When a fitted tyre first went on the vehicle: its first `on` (spec.md
+     * §7.17, #197), so a move or rotation never changes it; null when not
+     * fitted or when it was recorded as already on, counted "since" instead.
      */
-    private static function fittedOn(Tyre $tyre, ?TyreChange $placedBy): ?DateTimeImmutable
+    private static function fittedOn(Tyre $tyre, ?TyreChange $firstFitting): ?DateTimeImmutable
     {
-        return $tyre->isFitted() && $placedBy !== null && $placedBy->kind !== TyreChangeKind::Existing
-            ? $placedBy->data->doneOn
+        return $tyre->isFitted() && $firstFitting !== null && $firstFitting->kind !== TyreChangeKind::Existing
+            ? $firstFitting->data->doneOn
             : null;
     }
 

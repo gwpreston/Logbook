@@ -128,9 +128,9 @@
             </div>
             <div class="tyre-card__foot">
                 <p class="tabular">
-                    {#- "Fitted" or "Moved" with the tyre's whole distance; "since" only for a tyre recorded as already on and not placed since. -#}
+                    {#- "Fitted" (the first fitting) with the tyre's whole distance; "since" for a tyre recorded as already on. -#}
                     {%- if view.fittedOn -%}
-                        {{ (view.moved ? 'tyre.moved_on' : 'tyre.fitted_on')|trans({month: view.fittedOn|local_month}) }} · {{ 'tyre.covered'|trans({distance: view.distance.km|distance}) }}
+                        {{ 'tyre.fitted_on'|trans({month: view.fittedOn|local_month}) }} · {{ 'tyre.covered'|trans({distance: view.distance.km|distance}) }}
                     {%- elseif view.since -%}
                         {{ 'tyre.covered_since'|trans({distance: view.distance.km|distance, date: view.since|local_date}) }}
                     {%- else -%}

@@ -157,6 +157,11 @@ const icons = [
   // A filled star for a favourite, the outline for not (Material Symbols has one name, two fills).
   { name: 'star', file: 'star-fill' },
   { name: 'star_outline', file: 'star' },
+  // Phase 33.4 (Insights, Ask, AI insights, Fuel stations' directions).
+  // The prototype's sparkles; Material Symbols now calls them star_shine.
+  { name: 'auto_awesome', file: 'star_shine' },
+  'directions',
+  'refresh',
   // Phase 33.2 (signed-out pages).
   'mark_email_read',
   'radio_button_unchecked',

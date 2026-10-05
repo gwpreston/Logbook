@@ -38,7 +38,7 @@ final class FinanceTabTest extends AppTestCase
     /** Every tab, in the prototype's order (#179). */
     private const array TABS = [
         '', '/history', '/odometer', '/trips', '/fuel', '/maintenance', '/tyres', '/documents', '/incidents',
-        '/finance', '/expenses',
+        '/finance', '/expenses', '/ownership',
     ];
 
     /**

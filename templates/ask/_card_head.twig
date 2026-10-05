@@ -1,0 +1,9 @@
+{# The *Ask Logbook* card's head (spec.md §7.26): the tile, the title and its line. Expects: level ('h1' | 'h2'). #}
+{% import 'macros/ui.twig' as ui %}
+<div class="ask-card__head">
+    <span class="ask-card__tile">{{ ui.icon('auto_awesome') }}</span>
+    <div>
+        <{{ level }} class="ask-card__title" id="ask-card-title">{{ 'ask.title'|trans }}</{{ level }}>
+        <p class="ask-card__lead">{{ 'ask.card_lead'|trans }}</p>
+    </div>
+</div>

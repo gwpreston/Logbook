@@ -150,11 +150,15 @@
 
 :root[data-accent="indigo"] {
     --accent: #4b4fd6;
+    /* Fuel takes the accent: with a violet accent, documents turn rose so the bar's parts stay apart (Phase 33.4). */
+    --c-ins: #c2417a;
     --accent-soft: rgba(75, 79, 214, 0.1);
 }
 
 :root[data-accent="purple"] {
     --accent: #7c3fc4;
+    /* Fuel takes the accent: with a violet accent, documents turn rose so the bar's parts stay apart (Phase 33.4). */
+    --c-ins: #c2417a;
     --accent-soft: rgba(124, 63, 196, 0.1);
 }
 
@@ -228,11 +232,13 @@
 
     :root[data-accent="indigo"]:not([data-theme="light"]) {
         --accent: #9296ff;
+        --c-ins: #f08cb8;
         --accent-soft: rgba(146, 150, 255, 0.16);
     }
 
     :root[data-accent="purple"]:not([data-theme="light"]) {
         --accent: #b794ff;
+        --c-ins: #f08cb8;
         --accent-soft: rgba(183, 148, 255, 0.16);
     }
 }
@@ -244,11 +250,13 @@
 
 :root[data-accent="indigo"][data-theme="dark"] {
     --accent: #9296ff;
+    --c-ins: #f08cb8;
     --accent-soft: rgba(146, 150, 255, 0.16);
 }
 
 :root[data-accent="purple"][data-theme="dark"] {
     --accent: #b794ff;
+    --c-ins: #f08cb8;
     --accent-soft: rgba(183, 148, 255, 0.16);
 }
 
@@ -3362,6 +3370,291 @@ a.list__title:hover {
     font-weight: 700;
 }
 
+/* Fuel stations' *Prices nearby* (spec.md §7.33, Phase 33.4): the prototype's price rows. */
+.prices-nearby {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.prices-nearby__fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--space-3);
+}
+
+.prices-nearby__form .btn-row {
+    margin-top: var(--space-2);
+}
+
+.prices-nearby__sort {
+    align-self: flex-start;
+}
+
+.prices-nearby__saving {
+    margin: 0;
+}
+
+.nearby-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nearby-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding-block: var(--space-3);
+    border-top: 1px solid var(--border);
+}
+
+.nearby-row:first-child {
+    border-top: 0;
+}
+
+.nearby-row__tile {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.nearby-row__name,
+.nearby-row__meta {
+    margin: 0;
+    overflow-wrap: break-word;
+}
+
+.nearby-row__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    font-weight: 700;
+}
+
+.nearby-row__meta {
+    font-size: var(--fs-sm);
+}
+
+.nearby-row__price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    font-size: var(--fs-sm);
+}
+
+.nearby-row__below {
+    color: var(--green);
+    font-weight: 600;
+}
+
+/* A phone: the price under the name, so the name keeps the row's width. */
+@media (max-width: 30rem) {
+    .nearby-row {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .nearby-row__price {
+        flex-direction: row;
+        flex-wrap: wrap;
+        grid-column: 2;
+        align-items: baseline;
+        gap: 0 var(--space-2);
+        text-align: left;
+    }
+}
+
+.nearby-row__actions {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 2 / -1;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.nearby-row__actions form {
+    margin: 0;
+}
+
+.nearby-row__star[aria-pressed="true"] {
+    color: var(--amber);
+}
+
+.nearby-row__star[aria-pressed="true"] .icon {
+    fill: currentColor;
+}
+
+/* Cost of ownership page (spec.md §7.7, Phase 33.4): summary tiles, then a card per vehicle. */
+.ownership-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.ownership-page__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.ownership-page__note {
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.ownership-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ownership-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    height: 100%;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.ownership-card:hover {
+    border-color: var(--accent);
+}
+
+.ownership-card:has(.ownership-card__link:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.ownership-card__head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.ownership-card__photo {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius-md);
+}
+
+.ownership-card__name {
+    margin: 0;
+    font-size: var(--fs-md);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.ownership-card__link {
+    color: var(--text);
+}
+
+.ownership-card__link:hover {
+    text-decoration: none;
+}
+
+.ownership-card__link:focus-visible {
+    outline: none;
+}
+
+/* The name's link covers the card. */
+.ownership-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.ownership-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.ownership-card__total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    font-size: var(--fs-sm);
+}
+
+/* An even legend, as the prototype's: dot, name, amount on one line, the name wrapping. */
+.ownership-card__legend {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+
+.ownership-card__legend .legend__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+}
+
+.ownership-card__legend .legend__label {
+    max-width: none;
+}
+
+.ownership-card__legend .legend__value {
+    padding-inline-start: var(--space-2);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.ownership-card__foot {
+    margin: auto 0 0;
+    font-size: var(--fs-sm);
+}
+
+.swatch--none {
+    background: transparent;
+    border: 1px dashed var(--border);
+}
+
+/* The vehicle's Cost of ownership tab (spec.md §7.1). */
+.ownership-tab__total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-4);
+}
+
+.ownership-tab__prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.ownership-tab__prompt p {
+    margin: 0;
+}
+
 /* True cost (spec.md §7.35): the overview breakdown, the widget's ranking, What changed. */
 .card__subtitle {
     margin: 0;
@@ -3710,6 +4003,202 @@ a.list__title:hover {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     line-clamp: 3;
+}
+
+/* The Insights page (spec.md §7.26, Phase 33.4): a card per insight in a grid. */
+.insight-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 23.75rem), 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.insight-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.insight-card__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.insight-card__tile {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.insight-card__title {
+    margin: 0;
+    font-size: var(--fs-md);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.insight-card__body {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+}
+
+.insight-card__action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    align-self: flex-start;
+    gap: var(--space-1);
+    margin-top: auto;
+    font-weight: 700;
+}
+
+.insight-card__action .icon {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+/* AI insights (spec.md §7.26): after the computed ones, each marked as AI. */
+.ai-insights {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.ai-insights__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.ai-insights__head .section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.ai-insights__status,
+.ai-insights__by {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.insight-card__ai {
+    margin-inline-start: auto;
+    flex: none;
+}
+
+.insight-card__body p {
+    margin: 0;
+}
+
+.insight-card__body p + p {
+    margin-top: var(--space-2);
+}
+
+.insight-card__grounding {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.insight-card__sources {
+    font-size: var(--fs-sm);
+}
+
+.insight-card__sources ul {
+    margin: var(--space-2) 0 0;
+    padding-inline-start: var(--space-4);
+}
+
+.insights-page__empty {
+    margin: 0;
+}
+
+/* The *Ask Logbook* card (spec.md §7.26): the tile and title, the box beside *Ask*, the suggestions. */
+.ask-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.ask-card__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.ask-card__tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.ask-card__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    font-weight: 600;
+}
+
+.ask-card__lead {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.ask-form__row {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-2);
+}
+
+.ask-form__input {
+    flex: 1;
+    min-width: 0;
+    resize: vertical;
+}
+
+.ask-form__submit {
+    flex: none;
+    align-self: flex-end;
+}
+
+.ask-suggestions {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (max-width: 30rem) {
+    .ask-form__row {
+        flex-direction: column;
+    }
+
+    .ask-form__submit {
+        align-self: stretch;
+    }
 }
 
 .insights__empty {

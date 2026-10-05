@@ -149,6 +149,8 @@ final class AccessMatrixTest extends AppTestCase
         'finance.schedule' => self::FINANCE,
         'finance.end' => self::FINANCE,
         'valuations.index' => self::COSTS,
+        // Phase 33.4: the Cost of ownership tab.
+        'vehicles.ownership' => self::COSTS,
         'valuations.create' => self::MANAGE,
         'valuations.edit' => self::MANAGE,
         'valuations.delete' => self::MANAGE,

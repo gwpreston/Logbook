@@ -325,6 +325,19 @@
     {% endif %}
 {%- endmacro %}
 
+{# A stacked bar of cost parts (spec.md §7.7, §7.35): `parts` is a list of
+   {part, percent}, each part with a colour token (part.color()). Hidden
+   from assistive technology: the legend beside it carries the figures. #}
+{% macro cost_bar(parts, class = '') -%}
+    {%- if parts is not empty -%}
+        <div class="stack-bar{{ class ? ' ' ~ class }}" aria-hidden="true">
+            {%- for segment in parts -%}
+                <span class="stack-bar__part" style="--w: {{ segment.percent|round(1) }}%; --swatch: var(--{{ segment.part.color() }})"></span>
+            {%- endfor -%}
+        </div>
+    {%- endif -%}
+{%- endmacro %}
+
 {# Figure tile: label, big value, optional caption. `tone`: '', 'good'. #}
 {% macro stat(label, value, sub = '', tone = '') -%}
     <div class="stat{{ tone ? ' stat--' ~ tone }}">

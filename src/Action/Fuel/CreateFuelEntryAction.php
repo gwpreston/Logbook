@@ -14,6 +14,7 @@ use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Service\Station\StationService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
@@ -37,6 +38,7 @@ final readonly class CreateFuelEntryAction
         private AttachmentUpload $upload,
         private Redirector $redirect,
         private ClockInterface $clock,
+        private StationService $stations,
     ) {
     }
 
@@ -54,6 +56,7 @@ final readonly class CreateFuelEntryAction
             $defaults = FuelEntryForm::defaults($vehicle, $this->clock->now(), $user->preferences, $entries);
             $defaults = $this->prefill->values($request, DraftKind::Fuel, $vehicle->id, $defaults);
             $defaults = $this->scan->values($request, ScanTarget::Fuel, $vehicle, $defaults);
+            $defaults = $this->stationFromLink($request, $defaults);
 
             return $this->page->render($request, $response, $vehicle, $currency, $defaults);
         }
@@ -84,5 +87,27 @@ final readonly class CreateFuelEntryAction
         $done = $this->redirect->backOr($request, 'fuel.index', ['id' => (string) $vehicle->id]);
 
         return $this->scan->after($request, $claimed, $vehicle, $entry->data->odometerKm, $done);
+    }
+
+    /**
+     * *Log fill-up here* from the Fuel stations page (spec.md §7.33, Phase
+     * 33.4): `?station={id}` chooses that station (a merged one resolves to
+     * the station it went into); anything else is ignored.
+     *
+     * @param array<string, string> $defaults
+     * @return array<string, string>
+     */
+    private function stationFromLink(ServerRequestInterface $request, array $defaults): array
+    {
+        $id = $request->getQueryParams()['station'] ?? null;
+        if (!is_string($id) || !ctype_digit($id) || !$this->stations->enabled()) {
+            return $defaults;
+        }
+        $station = $this->stations->resolve((int) $id);
+        if ($station === null) {
+            return $defaults;
+        }
+
+        return ['station_id' => (string) $station->id, 'station' => $station->data->name] + $defaults;
     }
 }

@@ -1,0 +1,173 @@
+{#
+ # *Prices nearby* on the Fuel stations page (spec.md §7.33 *Fuel stations
+ # page*, Phase 33.4): the prototype's price list from *Cheapest near me*'s
+ # search. A GET form that works without JS: grade and order are links,
+ # *Use my location* asks the browser when the form is sent
+ # (js/stations.js, [data-near-form]) and is never stored.
+ # Expects: nearby (PricesNearbyView), csrf, current_path.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/fuel_prices.twig' as fp %}
+{% set result = nearby.result %}
+{% set currency = nearby.provider.currency() %}
+{% set base = nearby.nearQuery()|merge({sort: nearby.sort.value}) %}
+<section class="card prices-nearby" aria-labelledby="nearby-heading" data-prices-nearby>
+    <div class="card__header">
+        <h2 id="nearby-heading" class="card__title">{{ ui.icon('savings') }}{{ 'stations.nearby.title'|trans }}</h2>
+    </div>
+
+    <form class="prices-nearby__form" method="get" action="{{ url_for('stations.index') }}" data-near-form
+          data-finding="{{ 'stations.locate_finding'|trans }}" data-failed="{{ 'fuel_prices.near.locate_failed'|trans }}">
+        <div class="prices-nearby__fields">
+            <div class="field">
+                <label class="field__label" for="n-from">{{ 'fuel_prices.near.from'|trans }}</label>
+                <select class="select" id="n-from" name="from">
+                    <option value="here" data-here hidden{% if nearby.from == 'here' %} selected{% endif %}>{{ 'fuel_prices.near.here'|trans }}</option>
+                    {% for place in nearby.places %}
+                        <option value="place:{{ place.id }}"{% if nearby.from == 'place:' ~ place.id %} selected{% endif %}>{{ place.data.name }}</option>
+                    {% endfor %}
+                </select>
+                <p class="field__hint" data-near-status aria-live="polite">{{ 'fuel_prices.near.here_hint'|trans }}</p>
+                <input type="hidden" name="lat" value="{{ nearby.position.lat ?? '' }}" data-near-lat>
+                <input type="hidden" name="lng" value="{{ nearby.position.lng ?? '' }}" data-near-lng>
+            </div>
+            {% if nearby.vehicles|length > 1 %}
+                <div class="field">
+                    <label class="field__label" for="n-vehicle">{{ 'fuel_prices.near.vehicle'|trans }}</label>
+                    <select class="select" id="n-vehicle" name="vehicle">
+                        {% for v in nearby.vehicles %}
+                            <option value="{{ v.id }}"{% if v.id == nearby.vehicle.id %} selected{% endif %}>{{ v.name() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            <input type="hidden" name="sort" value="{{ nearby.sort.value }}">
+            {% if nearby.grade %}<input type="hidden" name="grade" value="{{ nearby.grade.value }}">{% endif %}
+        </div>
+        <div class="btn-row">
+            <button type="submit" class="btn">{{ ui.icon('my_location') }}{{ 'stations.nearby.show'|trans }}</button>
+        </div>
+    </form>
+
+    {% if nearby.grades|length > 1 %}
+        <nav class="chip-row" aria-label="{{ 'fuel_prices.near.grade'|trans }}">
+            {% for g in nearby.grades %}
+                <a class="chip" href="{{ url_for('stations.index', {}, base|merge({grade: g.value})) }}"{% if nearby.grade and g == nearby.grade %} aria-current="true"{% endif %}>{{ g.shortLabelKey()|trans }}</a>
+            {% endfor %}
+        </nav>
+    {% endif %}
+    <nav class="segmented prices-nearby__sort" aria-label="{{ 'fuel_prices.near.sort'|trans }}">
+        {% for option in ['price', 'distance'] %}
+            <a class="segmented__option" href="{{ url_for('stations.index', {}, base|merge({sort: option})) }}"{% if nearby.sort.value == option %} aria-current="true"{% endif %}>{{ ('stations.nearby.sort_' ~ option)|trans }}</a>
+        {% endfor %}
+    </nav>
+
+    {% if nearby.needsPlace %}
+        <p class="muted">{{ 'stations.nearby.needs_place'|trans }} <a href="{{ url_for('settings.places') }}">{{ 'stations.no_places_link'|trans }}</a></p>
+    {% elseif result is null %}
+        <p class="muted" data-needs-position>{{ 'fuel_prices.near.needs_position'|trans }}</p>
+    {% else %}
+        {% set saving = nearby.saving %}
+        {% if saving %}
+            {% set best = saving.row %}
+            <div class="alert alert--success prices-nearby__saving" role="note" data-near-saving>
+                {{ ui.icon('savings') }}
+                <span>
+                    {{- 'stations.nearby.saving'|trans({
+                        grade: result.grade.shortLabelKey()|trans,
+                        price: best.listed.price|unit_price(currency, false, true),
+                        station: best.station ? best.station.data.name : best.providerStation.data.name,
+                        distance: best.cost.km|distance(1),
+                        paid: saving.averagePaid|unit_price(currency, false, true),
+                        vehicle: nearby.vehicle.name(),
+                        amount: saving.perTank|money,
+                    }) }}
+                    {{ 'stations.nearby.saving_note'|trans }}{% if saving.fillAssumed %} ({{ 'stations.nearby.tank_assumed'|trans }}){% endif -%}
+                </span>
+            </div>
+        {% endif %}
+
+        {% if result.rows is empty %}
+            <p class="muted" data-near-empty>{{ 'fuel_prices.near.none'|trans({grade: result.grade.shortLabelKey()|trans, radius: result.radiusKm|distance(0)}) }}</p>
+        {% else %}
+            {% set cheapest = result.cheapestPrice() %}
+            <ul class="nearby-list" data-nearby-rows>
+                {% for row in result.rows %}
+                    {% set ps = row.providerStation %}
+                    {% set name = row.station ? row.station.data.name : ps.data.name %}
+                    {% set brand = ps.data.brand ?: name %}
+                    {% set diff = result.againstAverage(row) %}
+                    <li class="nearby-row" data-nearby-row="{{ ps.ref() }}">
+                        <span class="nearby-row__tile" aria-hidden="true">{{ brand|split(' ')|map(w => w|first)|join|slice(0, 2)|upper }}</span>
+                        <div class="nearby-row__main">
+                            <p class="nearby-row__name">
+                                {%- if row.station -%}
+                                    <a href="{{ url_for('stations.show', {station: row.station.id}) }}">{{ name }}</a>
+                                {%- else -%}
+                                    {{ name }}
+                                {%- endif -%}
+                                {%- if row.listed.price == cheapest %} <span class="pill pill--valid" data-cheapest>{{ 'stations.nearby.cheapest'|trans }}</span>{% endif -%}
+                            </p>
+                            <p class="nearby-row__meta muted">
+                                {%- if ps.data.brand and ps.data.brand != name %}{{ ps.data.brand }} · {% endif -%}
+                                {{ row.cost.km|distance(1) }} · {{ row.listed|listed_price(currency) }}
+                                {%- if not listed_fresh(row.listed) %} <span class="pill pill--soon" data-stale>{{ 'fuel_prices.may_be_out_of_date'|trans }}</span>{% endif -%}
+                            </p>
+                        </div>
+                        <div class="nearby-row__price">
+                            <span class="figure-sm tabular">{{ row.listed.price|unit_price(currency, false, true) }}</span>
+                            {% if diff is not null %}
+                                {% if diff|abs < 0.0005 %}
+                                    <span class="muted" data-vs-average>{{ 'stations.nearby.average'|trans }}</span>
+                                {% elseif diff < 0 %}
+                                    <span class="nearby-row__below" data-vs-average>{{ 'stations.nearby.below'|trans({amount: (diff|trim('-', 'left'))|unit_price(currency, false, true)}) }}</span>
+                                {% else %}
+                                    <span class="muted" data-vs-average>{{ 'stations.nearby.above'|trans({amount: diff|unit_price(currency, false, true)}) }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="nearby-row__actions">
+                            {% if row.station %}
+                                <form method="post" action="{{ url_for('stations.favourite', {station: row.station.id}) }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <input type="hidden" name="return" value="{{ current_path }}">
+                                    <input type="hidden" name="favourite" value="{{ row.station.id in favourites ? '0' : '1' }}">
+                                    <button type="submit" class="icon-btn nearby-row__star" aria-pressed="{{ row.station.id in favourites ? 'true' : 'false' }}">{{ ui.icon(row.station.id in favourites ? 'star' : 'star_outline') }}<span class="visually-hidden">{{ 'stations.nearby.favourite'|trans({station: name}) }}</span></button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{{ url_for('stations.near.add') }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <input type="hidden" name="ref" value="{{ ps.ref() }}">
+                                    <input type="hidden" name="then" value="favourite">
+                                    <input type="hidden" name="return" value="{{ current_path }}">
+                                    <button type="submit" class="icon-btn nearby-row__star" aria-pressed="false">{{ ui.icon('star_outline') }}<span class="visually-hidden">{{ 'stations.nearby.favourite'|trans({station: name}) }}</span></button>
+                                </form>
+                            {% endif %}
+                            {% if ps.data.hasPosition() %}
+                                {% set lat = ps.data.latitude %}
+                                {% set lon = ps.data.longitude %}
+                                <a class="btn btn--ghost" href="https://www.openstreetmap.org/directions?route=%3B{{ lat }}%2C{{ lon }}"
+                                   data-geo-href="geo:{{ lat }},{{ lon }}?q={{ lat }},{{ lon }}({{ name|url_encode }})"
+                                   rel="noopener noreferrer" target="_blank">{{ ui.icon('directions') }}{{ 'stations.nearby.directions'|trans }}<span class="visually-hidden"> {{ 'notices.new_tab'|trans }}</span></a>
+                            {% endif %}
+                            {% if row.station %}
+                                <a class="btn" href="{{ url_for('fuel.create', {id: nearby.vehicle.id}, {station: row.station.id}) }}" data-modal>{{ ui.icon('local_gas_station') }}{{ 'stations.nearby.log_here'|trans }}</a>
+                            {% else %}
+                                <form method="post" action="{{ url_for('stations.near.add') }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <input type="hidden" name="ref" value="{{ ps.ref() }}">
+                                    <input type="hidden" name="then" value="fuel">
+                                    <input type="hidden" name="vehicle" value="{{ nearby.vehicle.id }}">
+                                    <button type="submit" class="btn">{{ ui.icon('local_gas_station') }}{{ 'stations.nearby.log_here'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <p><a href="{{ url_for('stations.near', {}, nearby.nearQuery()) }}">{{ 'stations.nearby.see_all'|trans }}</a></p>
+        <p class="field__hint" data-near-sync>{{ result.lastSync ? 'fuel_prices.near.synced'|trans({when: result.lastSync|local_datetime}) : 'fuel_prices.settings.sync.never'|trans }}</p>
+    {% endif %}
+    {{ fp.attribution(nearby.provider) }}
+</section>

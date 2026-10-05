@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Logbook\Action\Station\Prices;
 
 use Logbook\Domain\Fuel\FuelGrade;
-use Logbook\Domain\Station\Place;
-use Logbook\Domain\Station\Station;
-use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\FuelPrices\CheapestNear;
 use Logbook\Service\FuelPrices\FuelPriceConfig;
 use Logbook\Service\FuelPrices\NearForm;
@@ -50,13 +47,13 @@ final readonly class CheapestNearAction
         $vehicles = $this->form->vehicles($user);
         $places = $this->form->places($user);
         $stations = $this->form->stations($user);
-        $vehicle = self::pick($vehicles, $text('vehicle')) ?? ($vehicles[0] ?? null);
+        $vehicle = NearForm::pick($vehicles, $text('vehicle')) ?? ($vehicles[0] ?? null);
 
         $from = $text('from');
         if ($from === '') {
             $from = $places === [] ? NearOrigin::HERE : 'place:' . $places[0]->id;
         }
-        $origin = $this->origin($from, $text('lat'), $text('lng'), $places, $stations);
+        $origin = NearForm::origin($from, $text('lat'), $text('lng'), $places, $stations);
 
         $unit = $user->preferences->distanceUnit;
         $radius = (int) $text('radius');
@@ -96,57 +93,5 @@ final readonly class CheapestNearAction
             'searched' => $result !== null,
             'needs_position' => $from === NearOrigin::HERE && $origin === null,
         ]);
-    }
-
-    /**
-     * @param list<Place> $places
-     * @param list<Station> $stations
-     */
-    private function origin(string $from, string $lat, string $lng, array $places, array $stations): ?NearOrigin
-    {
-        if ($from === NearOrigin::HERE) {
-            return NearOrigin::validPosition($lat, $lng);
-        }
-        [$kind, $id] = array_pad(explode(':', $from, 2), 2, '');
-        if ($kind === NearOrigin::PLACE) {
-            foreach ($places as $place) {
-                if ((string) $place->id === $id) {
-                    return NearOrigin::place(
-                        $place->id,
-                        $place->data->name,
-                        (float) $place->data->latitude,
-                        (float) $place->data->longitude,
-                    );
-                }
-            }
-        }
-        if ($kind === NearOrigin::STATION) {
-            foreach ($stations as $station) {
-                if ((string) $station->id === $id && $station->data->hasPosition()) {
-                    return NearOrigin::station(
-                        $station->id,
-                        $station->data->name,
-                        (float) $station->data->latitude,
-                        (float) $station->data->longitude,
-                    );
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param list<Vehicle> $vehicles
-     */
-    private static function pick(array $vehicles, string $id): ?Vehicle
-    {
-        foreach ($vehicles as $vehicle) {
-            if ((string) $vehicle->id === $id) {
-                return $vehicle;
-            }
-        }
-
-        return null;
     }
 }

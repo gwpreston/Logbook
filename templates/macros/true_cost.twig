@@ -2,14 +2,8 @@
 
 {# The positive parts as one stacked bar; a gain and payouts are listed, not drawn. #}
 {% macro bar(tc) -%}
-    {%- set segments = tc.bar() -%}
-    {%- if segments is not empty -%}
-        <div class="stack-bar" aria-hidden="true">
-            {%- for segment in segments -%}
-                <span class="stack-bar__part" style="--w: {{ segment.percent|round(1) }}%; --swatch: var(--{{ segment.part.color() }})"></span>
-            {%- endfor -%}
-        </div>
-    {%- endif -%}
+    {%- import 'macros/ui.twig' as ui -%}
+    {{- ui.cost_bar(tc.bar()) -}}
 {%- endmacro %}
 
 {# Each part per distance, the payouts, and the total they add up to. #}

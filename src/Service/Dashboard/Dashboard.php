@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Dashboard;
 
+use Logbook\Domain\Ai\Insights\AiInsightSet;
 use Logbook\Service\Trip\ClaimReport;
 use Logbook\Service\Attention\AttentionReport;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -64,6 +65,8 @@ final readonly class Dashboard
         public ?TrueCostWidget $trueCost = null,
         /** The first insights (Phase 33.3, spec.md §7.8); null while hidden. */
         public ?array $insights = null,
+        /** Today's AI insights joining them (Phase 33.4, spec.md §7.26); null while hidden or AI is off. */
+        public ?AiInsightSet $aiInsights = null,
     ) {
     }
 

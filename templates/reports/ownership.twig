@@ -65,6 +65,27 @@
             </div>
         {% endif %}
 
+        {% if overview is not empty %}
+            <div class="no-print ownership-page" data-ownership-cards>
+                {% for summary in overview %}
+                    {% set currency = summary.currency %}
+                    <section class="ownership-page__group" aria-labelledby="own-{{ currency }}">
+                        <h2 id="own-{{ currency }}" class="{{ overview|length > 1 ? 'section-title' : 'visually-hidden' }}">
+                            {{- overview|length > 1 ? 'report.in_currency'|trans({currency: currency_name(currency)}) : 'ownership.by_vehicle'|trans -}}
+                        </h2>
+                        {{ own.summary(summary) }}
+                        <ul class="ownership-cards">
+                            {% for card in summary.cards %}
+                                <li>{{ own.card(card) }}</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                {% endfor %}
+                <p class="muted ownership-page__note">{{ 'ownership.page.note'|trans }}</p>
+            </div>
+        {% endif %}
+
+        <div class="print-only">
         {% for section in report.sections %}
             {% set currency = section.currency %}
             <section class="card" aria-labelledby="ownership-{{ currency }}-heading">
@@ -150,5 +171,6 @@
                 </div>
             </section>
         {% endfor %}
+        </div>
     </div>
 {% endblock %}

@@ -1,0 +1,65 @@
+{#
+ # Today's AI insights on the Insights page (spec.md §7.26 *AI insights*):
+ # each marked as AI, with its figures checked against the tool results it
+ # came from, its sources and who answered; *Refresh*. When today's are
+ # still to come, a form that js/app.js posts in the background on the
+ # first view (a button without JS): this page's GET never calls a model.
+ # Expects: ai_set (AiInsightSet|null), ai_due, csrf.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ai.twig' as ai %}
+<section class="ai-insights" id="ai-insights" aria-labelledby="ai-insights-heading" data-ai-insights>
+    <div class="ai-insights__head">
+        <h2 id="ai-insights-heading" class="section-title">{{ ui.icon('auto_awesome') }}{{ 'ai_insights.heading'|trans }}</h2>
+        <form method="post" action="{{ url_for('insights.refresh') }}" class="ai-insights__refresh" data-ai-insights-form{% if ai_due %} data-ai-insights-auto data-working="{{ 'ai_insights.working'|trans }}"{% endif %}>
+            {{ ui.csrf(csrf) }}
+            <button type="submit" class="btn btn--ghost" data-ai-insights-submit>{{ ui.icon('refresh') }}{{ (ai_due ? 'ai_insights.get' : 'ai_insights.refresh')|trans }}</button>
+        </form>
+    </div>
+    <p class="muted ai-insights__status" data-ai-insights-status role="status" aria-live="polite"{% if not ai_due %} hidden{% endif %}>
+        {{- ai_due ? 'ai_insights.due'|trans : '' -}}
+    </p>
+    {% if ai_set %}
+        {% if ai_set.error %}
+            <div class="alert alert--warning" role="alert">{{ ui.icon('warning') }}<span>{{ 'ai_insights.failed'|trans }} {{ ai_set.error.messageKey()|trans }}</span></div>
+        {% elseif ai_set.insights is empty %}
+            <p class="muted">{{ 'ai_insights.none'|trans }}</p>
+        {% else %}
+            <ul class="insight-cards" data-ai-insight-cards>
+                {% for insight in ai_set.insights %}
+                    <li class="insight-card insight-card--ai" data-ai-insight>
+                        <div class="insight-card__head">
+                            <span class="insight__tile insight-card__tile">{{ ui.icon('auto_awesome') }}</span>
+                            <h3 class="insight-card__title">{{ insight.title|ask_marked(insight.ungrounded) }}</h3>
+                            <span class="pill insight-card__ai">{{ 'ai_insights.mark'|trans }}</span>
+                        </div>
+                        <div class="insight-card__body">{{ insight.body|ask_answer(insight.ungrounded) }}</div>
+                        {% if insight.ungrounded is not empty %}
+                            <p class="ask-grounding insight-card__grounding" role="note">{{ ui.icon('warning') }}<span>{{ 'ask.grounding.warning'|trans({count: insight.ungrounded|length}) }}</span></p>
+                        {% endif %}
+                        {% set sources = ai_set.sourcesOf(insight) %}
+                        {% if sources is not empty %}
+                            <details class="insight-card__sources">
+                                <summary>{{ 'ask.sources'|trans({count: sources|length}) }}</summary>
+                                <ul>
+                                    {% for run in sources %}
+                                        <li>
+                                            {%- if run.result.link -%}
+                                                <a href="{{ base_path() }}{{ run.result.link }}">{{ run.result.source }}</a>
+                                            {%- else -%}
+                                                {{ run.result.source }}
+                                            {%- endif -%}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </details>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if ai_set.connectionName %}
+            <p class="muted ai-insights__by">{% if ai_set.location %}{{ ai.location(ai_set.location) }} {% endif %}{{ 'ai_insights.by'|trans({model: ai_set.model ?? '', connection: ai_set.connectionName, when: ai_set.createdAt|local_datetime}) }}</p>
+        {% endif %}
+    {% endif %}
+</section>

@@ -211,6 +211,8 @@ use Logbook\Action\Incident\EditIncidentAction;
 use Logbook\Action\Incident\IncidentListAction;
 use Logbook\Action\Incident\LinkIncidentRecordAction;
 use Logbook\Action\Incident\ShowIncidentAction;
+use Logbook\Action\Insights\InsightsPageAction;
+use Logbook\Action\Insights\RefreshAiInsightsAction;
 use Logbook\Action\Trip\ClaimExportAction;
 use Logbook\Action\Trip\ClaimReportAction;
 use Logbook\Action\Trip\CreateTripAction;
@@ -243,6 +245,7 @@ use Logbook\Action\Vehicle\FirstInspectionPromptAction;
 use Logbook\Action\Vehicle\RestoreVehicleAction;
 use Logbook\Action\Vehicle\ShowVehicleAction;
 use Logbook\Action\Vehicle\VehiclePhotoAction;
+use Logbook\Action\Vehicle\VehicleOwnershipAction;
 use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
@@ -679,6 +682,10 @@ return static function (App $app): void {
                 ->setName('expenses.delete')
                 ->setArgument($ability, VehicleAbility::Log->value);
 
+            // Cost of ownership tab (spec.md §7.1, Phase 33.4): core, with costs only.
+            $vehicle->get('/ownership', VehicleOwnershipAction::class)->setName('vehicles.ownership')
+                ->setArgument($ability, VehicleAbility::ViewCosts->value);
+
             // Valuations (Phase 14.1) are core: no module toggle.
             $vehicle->get('/valuations', VehicleValuationsAction::class)->setName('valuations.index')
                 ->setArgument($ability, VehicleAbility::ViewCosts->value);
@@ -888,11 +895,16 @@ return static function (App $app): void {
         $group->post('/settings/sso/{identity:[0-9]+}/unlink', OidcUnlinkAction::class)->setName('settings.sso.unlink');
         $group->post('/settings/theme', SetThemeAction::class)->setName('settings.theme');
 
+        // Insights (spec.md §7.26 *Ask and the Insights page*, Phase 33.4): core.
+        $group->get('/insights', InsightsPageAction::class)->setName('insights');
+
         // AI (spec.md §7.25, Phase 26.1): not routed at all with AI_ENABLED=false.
         if ($settings->ai->enabled) {
             // One's own *Use AI features* switch; 404 until AI is set up.
             $group->post('/settings/ai-use', AiUseAction::class)->setName('settings.ai_use');
             // Ask Logbook (spec.md §7.26, Phase 26.2): 404 unless Ask is available to the user.
+            // AI insights (spec.md §7.26, Phase 33.4): *Refresh*, or the Insights page's first view of the day.
+            $group->post('/insights/refresh', RefreshAiInsightsAction::class)->setName('insights.refresh');
             $group->get('/ask', AskAction::class)->setName('ask');
             $group->post('/ask', AskPostAction::class)->setName('ask.post');
             $group->get('/ask/progress/{token:[0-9a-f]{32}}', AskProgressAction::class)->setName('ask.progress');

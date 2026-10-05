@@ -89,6 +89,17 @@ final readonly class CheapestNear
             ];
         }
 
+        // The area average (Phase 33.4): every fresh price in the radius, whatever is shown.
+        $fresh = array_values(array_filter($priced, static fn (array $hit): bool => $hit['fresh']));
+        $average = null;
+        if ($fresh !== []) {
+            $sum = '0';
+            foreach ($fresh as $hit) {
+                $sum = Decimal::add($sum, $hit['listed']->price);
+            }
+            $average = Decimal::divide($sum, (string) count($fresh), 6);
+        }
+
         // `nearby` is nearest first, so the first priced one is the nearest.
         $nearestCost = $priced[0]['cost'] ?? null;
         $rows = [];
@@ -122,6 +133,7 @@ final readonly class CheapestNear
             count($rows),
             $nearest,
             $this->providerStations->lastSynced($code),
+            $average,
         );
     }
 

@@ -75,7 +75,21 @@ spacing) always links that station rather than making a second one.
 
 ## The stations list and a station's page
 
-**Fuel stations** in the menu lists every station: favourites first, then by your
+With a [fuel price provider](#fuel-prices) on, **Fuel stations** opens with
+**Prices nearby**: the ten cheapest (or nearest) stations within 5 miles or km
+of your first place, or of your current location (*Use my location*;
+never saved), for a grade you pick. Each shows its listed price and how it
+compares with the area's average, a *Cheapest* badge, a favourite star,
+*Directions* (an OpenStreetMap link to the station, or your phone's maps
+app; only the station's position goes in it) and *Log fill-up here*, which
+opens the fill-up form with the station chosen. Starring a station, or
+filling up at one, that isn't in Logbook yet adds it first. When you can
+see the vehicle's costs and have bought the grade in the last 12 months, a
+banner says how much a tank would save at the cheapest against what you
+have paid on average (not counting the trip there). *See all* opens
+[Cheapest near me](#cheapest-near-me) with the cost of getting there.
+
+Below it, **Your stations** lists every station: favourites first, then by your
 last visit. Each shows its brand and postcode, how far it is from each of
 your places, your visits and last visit, and the average you paid in the
 last 12 months for the grade you buy most there. Search by name, brand or

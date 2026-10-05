@@ -8,7 +8,7 @@
  # elsewhere, where the tab's own <h1> is visually hidden.
  #
  # Expects: vehicle, active_tab ('overview' | 'history' | 'odometer' | 'trips' | 'fuel' |
- # 'maintenance' | 'tyres' | 'compliance' | 'incidents' | 'finance' | 'expenses').
+ # 'maintenance' | 'tyres' | 'compliance' | 'incidents' | 'finance' | 'expenses' | 'ownership').
  #}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/vehicles.twig' as vehicle_ui %}
@@ -26,6 +26,7 @@
     {route: 'incidents.index', key: 'incidents', icon: 'car_crash', label: 'vehicle.tab.incidents', feature: 'incidents'},
     {route: 'finance.index', key: 'finance', icon: 'account_balance', label: 'vehicle.tab.finance', shown: finance_menu(vehicle) is not null},
     {route: 'expenses.index', key: 'expenses', icon: 'payments', label: 'vehicle.tab.expenses'},
+    {route: 'vehicles.ownership', key: 'ownership', icon: 'savings', label: 'vehicle.tab.ownership', shown: can_see_costs(vehicle)},
 ]|filter(tab => (tab.feature is not defined or feature_enabled(tab.feature)) and (tab.shown ?? true)) %}
 
 <div class="toolbar">

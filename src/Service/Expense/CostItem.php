@@ -11,6 +11,7 @@ use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Expense\CostSource;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Expense\ExpenseEntry;
+use Logbook\Domain\Finance\AgreementType;
 use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
@@ -18,6 +19,7 @@ use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Finance\FinanceLine;
+use Logbook\Service\Finance\FinanceLineKind;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
 
@@ -56,6 +58,10 @@ final readonly class CostItem
          * spread over it (spec.md §7.35, #153).
          */
         public ?DateTimeImmutable $coverTo = null,
+        /** For a line derived from a finance agreement: what it is (spec.md §7.32 *Costs*). */
+        public ?FinanceLineKind $financeKind = null,
+        /** The finance line is a lease's: never a credit charge (spec.md §7.7, #186). */
+        public bool $fromLease = false,
     ) {
     }
 
@@ -175,6 +181,8 @@ final readonly class CostItem
             amount: Money::of($line->amount, $currency),
             kindKey: 'expense.category.' . ExpenseCategory::Finance->value,
             icon: ExpenseCategory::Finance->icon(),
+            financeKind: $line->kind,
+            fromLease: $agreement->type() === AgreementType::Lease,
         );
     }
 

@@ -205,6 +205,43 @@ final class InsightsTest extends FuelPricesTestCase
         );
     }
 
+    public function testTheInsightsPageShowsEveryInsightAndTheWidgetLinksToIt(): void
+    {
+        [$app, $golf] = $this->shoppingScene();
+        $this->allModules($app);
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $this->fillUp($app, $polo, '2026-01-01T08:00:00Z', '20000', '40', '50.00');
+        $this->fillUp($app, $polo, '2026-09-01T08:00:00Z', '22000', '40', '50.00');
+        $this->trip($app, $golf, '2026-07-01', '160.934');
+        $browser = $this->browserFor($app, 'owner');
+        $this->pcp($browser, $golf);
+        $this->valuation($app, $golf, '2026-09-20', '25000');
+
+        $page = self::body($browser->get('/insights'));
+        preg_match_all('/<li class="insight-card" data-insight="([a-z_]+)"/', $page, $kinds);
+        $every = ['shopping_around', 'business_mileage', 'cheapest_to_run', 'equity'];
+        self::assertSame($every, $kinds[1], 'all of them (Phase 33.4)');
+        self::assertStringContainsString('See the claim', $page);
+        self::assertStringContainsString('<title>Insights · Logbook</title>', $page);
+        self::assertStringNotContainsString('data-ask-form', $page, 'no Ask box without AI');
+
+        $home = self::body($browser->get('/'));
+        $widget = substr($home, (int) strpos($home, 'id="widget-insights"'), 2000);
+        self::assertStringContainsString('href="/insights"', $widget, 'All insights');
+    }
+
+    public function testTheInsightsPageWithNothingToShow(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, '2026-10-03T12:00:00Z');
+        $browser = $this->signedIn($app);
+
+        $page = self::body($browser->get('/insights'));
+
+        self::assertStringContainsString('Log a few more fill-ups and services and patterns will show up here.', $page);
+        self::assertStringContainsString('aria-current="page"', substr($page, (int) strpos($page, 'href="/insights"'), 80));
+    }
+
     public function testCostInsightsNeverShowWithoutCosts(): void
     {
         [$app, $golf] = $this->shoppingScene();

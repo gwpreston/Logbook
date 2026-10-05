@@ -47,6 +47,7 @@ final class CostVisibilityTemplateTest extends TestCase
         // Pages whose route itself needs ViewCosts (config/routes.php).
         'expenses/index.twig' => 'the Expenses tab with costs: without ViewCosts the Action renders expenses/without_costs.twig',
         'valuations/index.twig' => 'the Valuations page: its route needs ViewCosts',
+        'vehicles/ownership.twig' => 'the Cost of ownership tab: its route needs ViewCosts',
         // Finance (Phase 29.1): every finance page answers 404 without Manage and ViewCosts (FinanceRoute).
         'finance/_agreement.twig' => 'the Finance tab’s agreement: FinanceRoute needs Manage and ViewCosts',
         'finance/form.twig' => 'the agreement form: FinanceRoute needs Manage and ViewCosts',
@@ -67,6 +68,7 @@ final class CostVisibilityTemplateTest extends TestCase
         // Fuel prices (Phase 30.2): listed prices are public, and effective costs are worked out
         // from them and the vehicle's usual fill, never from anything the viewer paid.
         'stations/near.twig' => 'Cheapest near me: listed prices and effective costs, nobody’s spending',
+        'stations/_nearby.twig' => 'Prices nearby: listed prices; the saving only with ViewCosts (PricesNearby)',
         'dashboard/_cheapest_fuel.twig' => 'the Cheapest fuel widget: listed prices and effective costs',
     ];
 

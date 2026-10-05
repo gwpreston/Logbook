@@ -4,7 +4,9 @@
    stays in the page for screen readers. #}
 {% import 'macros/ui.twig' as ui %}
 {% set insights = dashboard.insights ?? [] %}
-{% if insights is empty %}
+{# Today's AI insights join them, from the cache (spec.md §7.26 *AI insights*): up to two, marked as AI. #}
+{% set ai_insights = dashboard.aiInsights ? dashboard.aiInsights.insights|slice(0, 2) : [] %}
+{% if insights is empty and ai_insights is empty %}
     <p class="muted insights__empty">{{ 'insights.nothing'|trans }}</p>
 {% else %}
     <ul class="insights">
@@ -15,6 +17,17 @@
                     <span class="insight__text">
                         <span class="insight__title">{{ insight.title|trans(insight.titleParams) }}</span>
                         <span class="insight__body">{{ insight.body|trans(insight.bodyParams) }}</span>
+                    </span>
+                </a>
+            </li>
+        {% endfor %}
+        {% for insight in ai_insights %}
+            <li>
+                <a class="insight" href="{{ url_for('insights') }}#ai-insights" data-ai-insight>
+                    <span class="insight__tile">{{ ui.icon('auto_awesome') }}</span>
+                    <span class="insight__text">
+                        <span class="insight__title">{{ insight.title|ask_marked(insight.ungrounded) }} <span class="pill insight-card__ai">{{ 'ai_insights.mark'|trans }}</span></span>
+                        <span class="insight__body">{{ insight.body|ask_marked(insight.ungrounded) }}</span>
                     </span>
                 </a>
             </li>
