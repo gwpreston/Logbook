@@ -115,7 +115,10 @@ final class ColourContrastTest extends TestCase
         self::assertSame([], $failures);
         if ($accent !== Accent::DEFAULT->value) {
             $changed = array_keys(self::accentTokens($accent, $theme));
-            self::assertSame(['accent', 'accent-soft'], $changed, 'only accent tokens change');
+            // A violet accent also moves documents off violet, so Fuel (the accent) stays apart in cost bars (Phase 33.4).
+            $violet = in_array($accent, ['indigo', 'purple'], true);
+            $expected = $violet ? ['accent', 'c-ins', 'accent-soft'] : ['accent', 'accent-soft'];
+            self::assertSame($expected, $changed, 'only accent tokens change');
         }
     }
 
