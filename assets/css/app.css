@@ -150,11 +150,15 @@
 
 :root[data-accent="indigo"] {
     --accent: #4b4fd6;
+    /* Fuel takes the accent: with a violet accent, documents turn rose so the bar's parts stay apart (Phase 33.4). */
+    --c-ins: #c2417a;
     --accent-soft: rgba(75, 79, 214, 0.1);
 }
 
 :root[data-accent="purple"] {
     --accent: #7c3fc4;
+    /* Fuel takes the accent: with a violet accent, documents turn rose so the bar's parts stay apart (Phase 33.4). */
+    --c-ins: #c2417a;
     --accent-soft: rgba(124, 63, 196, 0.1);
 }
 
@@ -228,11 +232,13 @@
 
     :root[data-accent="indigo"]:not([data-theme="light"]) {
         --accent: #9296ff;
+        --c-ins: #f08cb8;
         --accent-soft: rgba(146, 150, 255, 0.16);
     }
 
     :root[data-accent="purple"]:not([data-theme="light"]) {
         --accent: #b794ff;
+        --c-ins: #f08cb8;
         --accent-soft: rgba(183, 148, 255, 0.16);
     }
 }
@@ -244,11 +250,13 @@
 
 :root[data-accent="indigo"][data-theme="dark"] {
     --accent: #9296ff;
+    --c-ins: #f08cb8;
     --accent-soft: rgba(146, 150, 255, 0.16);
 }
 
 :root[data-accent="purple"][data-theme="dark"] {
     --accent: #b794ff;
+    --c-ins: #f08cb8;
     --accent-soft: rgba(183, 148, 255, 0.16);
 }
 
@@ -3423,7 +3431,7 @@ a.list__title:hover {
 .nearby-row__name,
 .nearby-row__meta {
     margin: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .nearby-row__name {
@@ -3449,6 +3457,22 @@ a.list__title:hover {
 .nearby-row__below {
     color: var(--green);
     font-weight: 600;
+}
+
+/* A phone: the price under the name, so the name keeps the row's width. */
+@media (max-width: 30rem) {
+    .nearby-row {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .nearby-row__price {
+        flex-direction: row;
+        flex-wrap: wrap;
+        grid-column: 2;
+        align-items: baseline;
+        gap: 0 var(--space-2);
+        text-align: left;
+    }
 }
 
 .nearby-row__actions {
@@ -3577,9 +3601,25 @@ a.list__title:hover {
     font-size: var(--fs-sm);
 }
 
+/* An even legend, as the prototype's: dot, name, amount on one line, the name wrapping. */
+.ownership-card__legend {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+}
+
+.ownership-card__legend .legend__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+}
+
+.ownership-card__legend .legend__label {
+    max-width: none;
+}
+
 .ownership-card__legend .legend__value {
-    margin-inline-start: auto;
     padding-inline-start: var(--space-2);
+    text-align: right;
+    white-space: nowrap;
 }
 
 .ownership-card__foot {
@@ -4013,6 +4053,7 @@ a.list__title:hover {
 .insight-card__action {
     display: inline-flex;
     align-items: center;
+    min-height: 2.25rem;
     align-self: flex-start;
     gap: var(--space-1);
     margin-top: auto;

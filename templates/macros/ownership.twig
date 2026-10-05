@@ -132,6 +132,8 @@
                 {%- if cost.perKmIsPartial %} ({{ 'ownership.running_only'|trans }}){% endif -%}
             {%- elseif cost.isTooShort() -%}
                 {{ 'ownership.hint.too_short'|trans }}
+            {%- elseif cost.mileageStartsOn() -%}
+                {{ 'ownership.hint.mileage_starts'|trans({date: cost.mileageStartsOn()|local_date}) }}
             {%- else -%}
                 {{ 'ownership.hint.no_distance'|trans }}
             {%- endif -%}

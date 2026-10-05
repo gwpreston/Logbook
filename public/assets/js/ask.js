@@ -84,6 +84,22 @@
             }
         };
 
+        // A suggestion asks at once, as the prototype's chips; without JS it opens Ask with the box filled.
+        form.querySelectorAll('.ask-suggestions a').forEach(function (chip) {
+            chip.addEventListener('click', function (event) {
+                if (busy || !question) {
+                    return;
+                }
+                event.preventDefault();
+                question.value = chip.textContent.trim();
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit(submit);
+                } else {
+                    submit.click();
+                }
+            });
+        });
+
         // Enter sends, Shift+Enter starts a new line (spec.md §7.26).
         if (question && question.hasAttribute('data-ask-enter')) {
             question.addEventListener('keydown', function (event) {

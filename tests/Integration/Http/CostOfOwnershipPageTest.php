@@ -109,7 +109,7 @@ final class CostOfOwnershipPageTest extends AppTestCase
             if ($item->source !== CostSource::Finance || $item->date > self::date('2026-09-01')) {
                 continue;
             }
-            if ($item->financeKind === FinanceLineKind::Rental) {
+            if ($item->financeKind === FinanceLineKind::Rental || $item->fromLease) {
                 $rentals = $rentals->add($item->amount);
             } else {
                 $expected = $expected->add($item->amount);
@@ -128,11 +128,11 @@ final class CostOfOwnershipPageTest extends AppTestCase
     {
         [$app, $browser] = $this->start();
         $kia = $this->car($app, 'Kia', 'EV6', purchased: '2025-01-01');
-        $this->agreement($app, $kia, AgreementType::Lease);
+        $this->agreement($app, $kia, AgreementType::Lease, documentationFee: '250');
 
         $stats = self::stats(self::screen(self::body($browser->get('/reports/ownership'))));
 
-        self::assertStringContainsString('No finance', $stats);
+        self::assertStringContainsString('No finance', $stats, 'a lease’s fee is not interest either');
     }
 
     public function testTheBarIsTheFivePartsAndAGainIsListedUnderIt(): void

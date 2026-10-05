@@ -121,7 +121,7 @@ final readonly class OwnershipCost
             $running = $running->add($item->amount);
             $byGroup[$item->group()->value] = $byGroup[$item->group()->value]->add($item->amount);
             $count++;
-            if ($item->financeKind !== null && $item->financeKind !== FinanceLineKind::Rental) {
+            if ($item->financeKind !== null && $item->financeKind !== FinanceLineKind::Rental && !$item->fromLease) {
                 $charges = ($charges ?? $zero)->add($item->amount);
             }
         }

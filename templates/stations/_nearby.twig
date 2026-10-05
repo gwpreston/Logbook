@@ -132,7 +132,7 @@
                                     {{ ui.csrf(csrf) }}
                                     <input type="hidden" name="return" value="{{ current_path }}">
                                     <input type="hidden" name="favourite" value="{{ row.station.id in favourites ? '0' : '1' }}">
-                                    <button type="submit" class="icon-btn nearby-row__star" aria-pressed="{{ row.station.id in favourites ? 'true' : 'false' }}">{{ ui.icon('star') }}<span class="visually-hidden">{{ 'stations.nearby.favourite'|trans({station: name}) }}</span></button>
+                                    <button type="submit" class="icon-btn nearby-row__star" aria-pressed="{{ row.station.id in favourites ? 'true' : 'false' }}">{{ ui.icon(row.station.id in favourites ? 'star' : 'star_outline') }}<span class="visually-hidden">{{ 'stations.nearby.favourite'|trans({station: name}) }}</span></button>
                                 </form>
                             {% else %}
                                 <form method="post" action="{{ url_for('stations.near.add') }}">
@@ -140,7 +140,7 @@
                                     <input type="hidden" name="ref" value="{{ ps.ref() }}">
                                     <input type="hidden" name="then" value="favourite">
                                     <input type="hidden" name="return" value="{{ current_path }}">
-                                    <button type="submit" class="icon-btn nearby-row__star" aria-pressed="false">{{ ui.icon('star') }}<span class="visually-hidden">{{ 'stations.nearby.favourite'|trans({station: name}) }}</span></button>
+                                    <button type="submit" class="icon-btn nearby-row__star" aria-pressed="false">{{ ui.icon('star_outline') }}<span class="visually-hidden">{{ 'stations.nearby.favourite'|trans({station: name}) }}</span></button>
                                 </form>
                             {% endif %}
                             {% if ps.data.hasPosition() %}

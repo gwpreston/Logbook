@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Insights;
 
+use Logbook\Domain\Ai\ErrorCode;
 use Logbook\Service\Ai\AiFailure;
 use Logbook\Service\Ai\Ask\Conversation;
 use Logbook\Service\Ai\Insights\AiInsightService;
@@ -44,7 +45,8 @@ final readonly class RefreshAiInsightsAction
         try {
             $error = $this->insights->generate($user)->error?->messageKey();
         } catch (AiFailure $failure) {
-            $error = $refused = $failure->messageKey();
+            // Busy is another AI request of the user's, not "your last question".
+            $error = $refused = $failure->error === ErrorCode::Busy ? 'ai_insights.busy' : $failure->messageKey();
         }
 
         if ($background) {
