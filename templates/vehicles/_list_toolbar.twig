@@ -1,6 +1,6 @@
 {#
- # Toolbar of a vehicle's list tab (spec.md §7.2): the tab's title on the
- # left; Export CSV, Import CSV and the add button right-aligned, the same
+ # Toolbar of a vehicle's list tab (spec.md §7.2): the tab's title, its
+ # <h1>, visually hidden (§8 *Vehicle header*); Export CSV, Import CSV and the add button right-aligned, the same
  # on every tab. Add buttons open in the modal on desktop (spec.md §5).
  #
  # Expects: vehicle, title, module (CSV module name),
@@ -11,7 +11,7 @@
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/expenses.twig' as exp %}
 <div class="toolbar list-toolbar">
-    <h1 class="section-title">{{ title }}</h1>
+    <h1 class="visually-hidden">{{ title }}</h1>
     <div class="btn-row list-toolbar__actions">
         {% if print|default(false) %}{{ ui.print_button() }}{% endif %}
         {{ exp.export_link(vehicle, module) }}

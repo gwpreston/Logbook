@@ -70,7 +70,7 @@ final class VehicleTest extends AppTestCase
         $updated = $browser->post($path . '/edit', $changes + self::GOLF);
         self::assertSame($path, $updated->getHeaderLine('Location'));
         $show = self::body($browser->follow($updated));
-        self::assertStringContainsString('<h1>The Golf</h1>', $show);
+        self::assertStringContainsString('<h1 class="vehicle-hero__name">The Golf</h1>', $show);
         self::assertStringContainsString('€12,500.50', $show, 'per-vehicle currency override');
 
         $confirm = $browser->get($path . '/delete');

@@ -17,7 +17,8 @@
         {% include 'vehicles/_header.twig' with {active_tab: 'tyres'} %}
 
         <div class="toolbar list-toolbar">
-            <h1 class="section-title">{{ 'tyre.title'|trans }} {{ tyres.verdict_badge(overview.verdict) }}</h1>
+            <h1 class="visually-hidden">{{ 'tyre.title'|trans }}</h1>
+            {{ tyres.verdict_badge(overview.verdict) }}
             <div class="btn-row list-toolbar__actions">
                 {% if not overview.isEmpty() %}
                     <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'tyres'}) }}" download>{{ ui.icon('download') }}{{ 'export.module.tyres'|trans }}</a>

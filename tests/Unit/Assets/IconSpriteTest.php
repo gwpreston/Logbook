@@ -43,7 +43,23 @@ final class IconSpriteTest extends TestCase
         }
     }
 
+    /**
+     * The vehicle tabs' icons (spec.md §8 *Vehicle header*), from the header template.
+     *
+     * @return iterable<string, array{string}>
+     */
+    public static function tabIcons(): iterable
+    {
+        $header = (string) file_get_contents(dirname(__DIR__, 3) . '/templates/vehicles/_header.twig');
+        // `icon: 'name'`, or `icon: test ? 'one' : 'other'`.
+        preg_match_all("/icon: (?:[^,']*\\? )?'([a-z_]+)'(?: : '([a-z_]+)')?/", $header, $matches);
+        foreach (array_filter(array_unique([...$matches[1], ...$matches[2]])) as $icon) {
+            yield 'tab ' . $icon => [$icon];
+        }
+    }
+
     #[DataProvider('icons')]
+    #[DataProvider('tabIcons')]
     public function testIconIsInTheSprite(string $icon): void
     {
         foreach (['assets/vendor/icons.svg', 'public/assets/vendor/icons.svg'] as $sprite) {

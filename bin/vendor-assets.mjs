@@ -60,6 +60,7 @@ const icons = [
   'contrast',
   'credit_card',
   'dark_mode',
+  'dashboard',
   'delete',
   'description',
   'directions_car',

@@ -11,10 +11,10 @@ use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 /**
- * `finance_menu(vehicle)`: what the vehicle header offers (spec.md §7.32
- * *Module*): `view` (the finance page) once the vehicle has an agreement,
- * `add` (*Add finance*) while it has none and isn't archived, or null for
- * someone who may not see finance. `finance_archive_offered(vehicle)`:
+ * `finance_menu(vehicle)`: whether the vehicle header shows the Finance tab
+ * (spec.md §7.32 *Finance tab*; any non-null value does): `view` once the
+ * vehicle has an agreement, `add` while it has none and isn't archived, or
+ * null for someone who may not see finance. `finance_archive_offered(vehicle)`:
  * whether *Archive* opens the confirm page for its agreement (#126).
  */
 final class FinanceTwigExtension extends AbstractExtension

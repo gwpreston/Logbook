@@ -45,10 +45,34 @@ attention* items, and keeps every agreement.
 
 ## Entering an agreement from the paperwork
 
-**Add finance** is in the vehicle's header. Once an agreement exists, the
-same place says **Finance** and opens the finance page: the active
-agreement first, then earlier ones. A vehicle has at most one active
+Finance is a **tab** on the vehicle's page, between *Incidents* and
+*Expenses*. Before there is an agreement it shows one card, *How did you
+buy it?*, with **Add finance**. A vehicle has at most one active
 agreement.
+
+Once there is one, the tab is that agreement's page:
+
+- **The agreement card:** the type, the lender and the agreement number's
+  last 4 characters, *Edit*; the monthly payment; a progress bar
+  ("Payment 18 of 36", "Ends Jan 2028"); two tiles, **Paid so far** (the
+  deposits, payments made, extra payments, any settlement and the fees
+  paid) and **Still to pay** (with a PCP's optional final payment beside
+  it); then the figures (see [below](#what-each-figure-means)). A PCP adds
+  a note on what you can do at the end: pay the optional final payment
+  and keep the car, hand it back, or part-exchange it.
+- **Purchase:** the vehicle's purchase price and date, *Bought from*,
+  *Mileage when bought* (all from the vehicle form) and how it was paid.
+- **Value & equity** (not for a lease): the current value (the latest
+  valuation, or the sale price once sold), the settlement figure and your
+  equity.
+- Then the schedule, extra payments, settlement quotes, *End agreement*,
+  *Delete*, *Print* and the schedule's CSV.
+- **Earlier agreements** below, each opening the same page for that
+  agreement. With no active agreement, *How did you buy it?* sits above
+  them.
+
+The add, edit and end pages keep their addresses and open within the tab.
+The overview's *Finance* card stays.
 
 Choose the type first. Each type asks only for what its paperwork gives:
 
@@ -268,8 +292,8 @@ twice with this agreement", list them, and link to each. Either:
 
 Finance is about money and ownership, so only people who can **manage**
 the vehicle **and** see its costs can see or change its agreements. For
-anyone else the finance pages don't exist (404), the header has no
-finance button, and there is no card.
+anyone else the finance pages don't exist (404), there is no Finance tab,
+and there is no card.
 
 Someone who sees the vehicle's costs without managing it still has the
 agreement's lines in their totals, so everyone sees the same figures. To
@@ -300,7 +324,7 @@ activity*.
 
 - **The agreement page** prints with its own header (*Print*), and its
   schedule exports as CSV.
-- **Export CSV** on the finance page (and the vehicle's CSV export
+- **Export all agreements** on the Finance tab (and the vehicle's CSV export
   `/vehicles/{id}/export/finance.csv`) lists every agreement's payments,
   scheduled and extra. Neither includes the agreement number.
 - **Backups** carry agreements, their payment marks and extra payments,

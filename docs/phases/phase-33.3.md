@@ -94,9 +94,9 @@ the audit and the owner's decisions:
       (#173).
 
 ### 33.3.2 Vehicle header, tab order and Finance tab
-- [ ] One `vehicle-hero__name` style; tab titles visually hidden `<h1>`s;
+- [x] One `vehicle-hero__name` style; tab titles visually hidden `<h1>`s;
       tab order and icons.
-- [ ] Finance in the tab list, header button removed; the tab is the
+- [x] Finance in the tab list, header button removed; the tab is the
       active agreement's page in the prototype's cards (*Paid so far*,
       Purchase, Value & equity, the PCP end note); earlier agreements
       below; every finance page within the tab frame.
@@ -126,8 +126,8 @@ the audit and the owner's decisions:
       *Fitted*, the note, *Check tread* button.
 
 ### 33.3.8 Tests
-- [ ] Every vehicle tab: the name has the same class; exactly one `<h1>`.
-- [ ] Finance tab shown to Manage with costs, absent for View, Log and
+- [x] Every vehicle tab: the name has the same class; exactly one `<h1>`.
+- [x] Finance tab shown to Manage with costs, absent for View, Log and
       no-costs shares; old finance URLs still answer; header button gone.
 - [x] Purchase seller and mileage: saved, moved, removed; date rules;
       migration rolls back.

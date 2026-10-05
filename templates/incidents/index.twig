@@ -16,7 +16,7 @@
         {% include 'vehicles/_header.twig' with {active_tab: 'incidents'} %}
 
         <div class="toolbar list-toolbar">
-            <h1 class="section-title">{{ 'incident.title'|trans }}</h1>
+            <h1 class="visually-hidden">{{ 'incident.title'|trans }}</h1>
             <div class="btn-row list-toolbar__actions">
                 <a class="btn btn--ghost" href="{{ url_for('incidents.history', {}, {vehicle: vehicle.id}) }}">{{ ui.icon('history') }}{{ 'incident.history.link'|trans }}</a>
                 {% if can_vehicle(vehicle, 'manage') %}

@@ -21,6 +21,11 @@ final readonly class FinanceFigures
         public PaymentSchedule $schedule,
         /** The scheduled payments still due, the optional final payment left out (shown beside). Exact. */
         public Money $remainingToPay,
+        /**
+         * Everything paid so far (AgreementFigures::paidTotal): deposits,
+         * payments made, extras, the settlement and fees paid. Exact.
+         */
+        public Money $paidSoFar,
         /** A PCP's optional final payment, shown beside what remains; null otherwise. */
         public ?ScheduledPayment $optionalFinal,
         public Money $totalAmountPayable,

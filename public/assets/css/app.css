@@ -1943,10 +1943,6 @@ a.segmented__option {
     min-width: 0;
 }
 
-.vehicle-hero__text h1 {
-    margin: var(--space-2) 0 2px;
-}
-
 .vehicle-hero__text p {
     margin: 0;
     font-size: var(--fs-base);
@@ -2189,12 +2185,21 @@ a.segmented__option {
     font-size: var(--fs-xl);
 }
 
+/* The vehicle's name, the same on every tab (spec.md §8 *Vehicle header*):
+   the Overview's <h1>, a <p> elsewhere, where the tab's own <h1> is
+   visually hidden. The compound selector beats `.vehicle-hero__text p`. */
 .vehicle-hero__text .vehicle-hero__name {
     margin: var(--space-2) 0 2px;
     font-family: var(--font-display);
-    font-size: var(--fs-xl);
+    font-size: var(--fs-3xl);
     font-weight: 600;
+    line-height: 1.2;
     letter-spacing: var(--tracking-tight);
+}
+
+/* A tab toolbar with nothing to show beside its hidden title takes no room. */
+.list-toolbar:not(:has(.list-toolbar__actions > *)):not(:has(> .pill)) {
+    position: absolute;
 }
 
 /* Vehicle tabs: one URL each, so they work without JS. */
@@ -5231,6 +5236,101 @@ a.list__title:hover {
 
 .finance-mark .input {
     width: auto;
+}
+
+/* The Finance tab (Phase 33.3, spec.md §7.32 *Finance tab*): the
+   prototype's agreement card with its progress bar and two tiles, and the
+   empty card. */
+.finance-card__title {
+    flex: 1;
+    min-width: 0;
+}
+
+.finance-card__title p {
+    margin: 2px 0 0;
+    font-size: var(--fs-sm);
+}
+
+p.stat__label {
+    margin: 0;
+}
+
+.finance-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.finance-progress__bar {
+    height: 0.625rem;
+}
+
+.finance-progress__labels {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+}
+
+.finance-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+    margin: 0;
+}
+
+.finance-tile {
+    min-width: 0;
+    padding: var(--space-3) 0.875rem;
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+}
+
+.finance-tile dt {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+}
+
+.finance-tile dd {
+    margin: 0;
+}
+
+.finance-tile__value {
+    margin-top: var(--space-1);
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    font-weight: 600;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.finance-tile__value--negative {
+    color: var(--red);
+}
+
+.finance-tile__sub {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+}
+
+.finance-empty {
+    align-items: flex-start;
+}
+
+.finance-empty__icon {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    color: var(--accent);
 }
 
 /* Ending an agreement (Phase 29.2, spec.md §7.32 *Ending*): every field shows
