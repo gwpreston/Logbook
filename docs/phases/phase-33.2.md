@@ -94,28 +94,14 @@ done the same way:
 
 ### §8 Settings layout (new)
 
-> Settings is laid out as the prototype's Settings: its sections, the
-> navigation between them and the card style (recorded in *Prototype
-> notes*). Every section keeps its own URL so it works without JS and
-> survives a hard refresh. Cards, in order, each shown only to those who
-> can use it:
->
-> - **Account:** profile (name, email, avatar), password, single sign-on,
->   *Use AI*.
-> - **Preferences:** appearance, units and currency, region, preview.
-> - **Reminders and notifications:** reminder settings (channels, lead
->   times, digest, calendar feed). Nothing else.
-> - **Vehicles and driving:** tyre thresholds (tyres on), trips and
->   mileage claims (trips on), places (fuel stations on).
-> - **Your data:** import from another app (fuel on), export.
-> - **Developers:** API keys (and MCP, which uses them).
-> - **Administration** (admins): users, modules, AI connections, fuel
->   prices, backup and restore.
-> - **Installation** (admins): health, scheduled jobs, updates,
->   deep-link check.
->
-> The grouping above is the draft; the prototype's names and order win
-> where they differ, and are recorded in *Prototype notes*.
+> *Rewritten after the audit (#166, #169); the full text is spec §8
+> *Settings layout*.* One page, `/settings`, of cards under group
+> headings that are in-page anchors: **Account**, **Preferences**,
+> **Reminders and notifications** (reminders only), **Vehicles and
+> driving**, **Your data**, **Developers**, **Administration** (admins),
+> **Installation**. No section navigation and no per-section URL; every
+> linked page keeps its URL. The user management pages and *Settings →
+> Reminders* use the same card and list-row styles (#167).
 >
 > **Unit presets:** each preset button is `aria-pressed="true"` when the
 > four unit fields match it exactly (worked out on the server for the
@@ -137,13 +123,13 @@ done the same way:
 ## Tasks
 
 ### 33.2.0 Spec first
-- [ ] `spec.md` §8 and §7.9 as above; §13 entry.
+- [x] `spec.md` §8 and §7.9 as above; §13 entry; §12 for #168.
 
 ### 33.2.1 Prototype audit
-- [ ] *Prototype notes* for: sign-in, forgotten password, reset password,
+- [x] *Prototype notes* for: sign-in, forgotten password, reset password,
       each Settings section, Settings → Users (list, invite, add user, a
       user's actions, delete), Settings → Account profile with avatar.
-- [ ] Open questions for anything in them the app doesn't have.
+- [x] Open questions for anything in them the app doesn't have.
 
 ### 33.2.2 Signed-out pages
 - [ ] One signed-out layout; sign-in, forgotten password and reset
@@ -155,12 +141,12 @@ done the same way:
       without JS falls back to a plain field.
 
 ### 33.2.3 Settings
-- [ ] Sections and navigation to the prototype, each with its own URL
-      (`/settings`, `/settings/account`, …; old URLs keep working).
+- [ ] One page regrouped under anchored group headings (#166); every
+      linked page keeps its URL.
 - [ ] Cards regrouped as above; *Reminders and notifications* holds only
       reminders.
-- [ ] User management pages to the prototype, with Phase 33.1's controls
-      and avatars.
+- [ ] User management pages in the shared card and list-row styles, with
+      Phase 33.1's controls and avatars (#167).
 
 ### 33.2.4 Unit presets
 - [ ] `UnitPreset::matching(...)` on the server; `aria-pressed` on first
@@ -178,9 +164,8 @@ done the same way:
 ### 33.2.6 Tests
 - [ ] Sign-in pages render for: local only, SSO and local, SSO only,
       email off (no forgotten link), header sign-in hint.
-- [ ] Each Settings section answers at its URL, shows only the cards the
-      user may use (member, admin, modules off, AI off) and works without
-      JS.
+- [ ] Settings shows only the groups and cards the user may use
+      (member, admin, modules off, AI off) and works without JS.
 - [ ] *Reminders and notifications* contains no link to tyres, trips,
       places, import or API keys.
 - [ ] Unit presets: UK settings render UK pressed and the others not;
