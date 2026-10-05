@@ -409,4 +409,7 @@ Numbers are the log's ([`open-questions.md`](open-questions.md)).
   confirmation):* a tyre whose latest change was a move or rotation reads
   "Moved {month}" rather than "Fitted"; the distance is the tyre's whole
   distance, with "since {date}" only for a tyre recorded as already on
-  the vehicle and not fitted or moved since (spec §7.17).
+  the vehicle and not fitted or moved since (spec §7.17). *Reverted
+  2026-10-05 by the owner (Phase 33.4, #197):* "Fitted {month}" is the
+  tyre's first fitting to the vehicle, with its distance since; no
+  "Moved".

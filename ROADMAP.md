@@ -74,7 +74,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 🚧 |
 | [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 🚧 |
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 🚧 |
-| [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | 📋 |
+| [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | 🚧 |
 
 *Update the status column as each phase lands.*
 

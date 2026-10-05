@@ -1408,6 +1408,24 @@ jumps, going backwards) without blocking.
   History, Mileage, Trips, Fuel, Maintenance, Tyres, Documents, Incidents,
   Finance, Expenses (each shown when its module is on and the viewer may
   see it), and every tab looks the same at the top (§8 *Vehicle header*).
+  From Phase 33.4 (#191) a **Cost of ownership** tab
+  (`/vehicles/{id}/ownership`, icon `savings`) follows Expenses: core, like
+  Expenses, shown only to a viewer with `ViewCosts` and only when the
+  ownership period has a start (as the overview card). It shows four stat
+  tiles (*Total cost* "since purchase" or "logged", *Per month* "all-in",
+  *Per mile/km* with the distance owned, *Owned* "3.2 years" or "8
+  months" with "since Mar 2023"); a card with the total "over 34 months
+  since buying it on 1 Mar 2023" (or "of ownership" when sold, or "of
+  records" without a purchase date) and one row per §7.35 *Since bought*
+  part with its amount, share of the total and a bar scaled to the
+  largest part (the payouts line and a depreciation gain listed under
+  them with their sign); and *How it's worked out*: "Depreciation compares
+  the price you paid with {the sale price | its latest value}. Finance
+  charges count only the payments made so far. Running costs are
+  everything logged between purchase and {sale | today}." Without a
+  purchase price, "Add the purchase price to include depreciation." with
+  *Add purchase price* (the vehicle form's purchase section). The figures
+  are the overview card's (§7.7 *Cost of ownership*), never different.
   Every tab shares one vehicle header (`templates/vehicles/_header.twig`):
   back link, then *Edit*, *Archive* / *Restore* and *Delete* in the same
   place on every tab, the hero and the tab bar. Every list tab shares one
@@ -2098,6 +2116,57 @@ currency and never converted.
     group and in total, depreciation, depreciation to (date), total, per
     distance (running, depreciation, total) and per month (running,
     depreciation, total); a figure that cannot be worked out is empty.
+- **Cost of ownership page** (Phase 33.4; the Ownership report's screen
+  layout, decided 2026-10-05, #186–#191): `/reports/ownership` keeps its
+  URL, its filters (vehicle, *include archived*, shown as *Include sold*),
+  its CSV export and its print view (the table above, unchanged). The
+  period is always the ownership period (*since bought*), as before: no
+  period picker (#190; the periods are the *True cost* tab's, §7.35). On
+  screen it becomes:
+  - **Four summary cards** for the vehicles shown, one set per currency
+    when vehicles use more than one (never converted):
+    - *Total cost*: the sum of the vehicles' totals (running costs plus
+      depreciation, net of payouts, as the table), "3 vehicles since
+      purchase"; a vehicle without a total adds its running costs and the
+      card says "2 of 3 with depreciation";
+    - *Per month*: the **active** vehicles' own *per month* figures added
+      up (each vehicle's total ÷ its own owned months, as the table),
+      "active vehicles combined"; sold vehicles count in *Total cost* but
+      not here (#187); "—" with no active vehicle;
+    - *Depreciation*: the sum of the vehicles' depreciation, "{n}% of
+      total" (a net gain is shown negative and labelled "gain in value");
+    - *Finance interest*: the HP, PCP and loan lines the finance ledger
+      counts in costs over the vehicles' ownership periods, so far:
+      interest, fees and the end-of-agreement adjustment (§7.32; never a
+      lease rental and never a future payment), "interest and fees paid
+      so far" (#186). With `finance` off, or no such agreement (or
+      `count_in_costs` off on all of them), it reads "No finance".
+  - **A card per vehicle**, a link to its *Cost of ownership* tab (§7.1):
+    photo (`ui.vehicle_photo`), name, registration, a sub line ("PCP ·
+    34 months", the active agreement's type when there is one, then the
+    owned months; " · sold" when archived), the total and "£312 a month";
+    a **stacked bar** (`ui.cost_bar(parts)`, the same macro as the
+    overview's true cost card) of §7.35's five *Since bought* parts
+    (*Fuel*, *Maintenance*, *Insurance, tax and MOT*, *Other*,
+    *Depreciation*; finance lines stay in *Other*, #189) in proportion to
+    their amounts, with a legend of coloured dots, name, amount and
+    percentage, largest first; colours are the part tokens of §7.35,
+    distinct in both themes, and the legend carries the labels so colour
+    is never the only cue. A negative part (a depreciation gain,
+    payouts) is left out of the bar and listed under it with its sign;
+    switched-off modules remove their part. At the foot: "£0.31/mi over
+    18,240 mi" (the table's per distance and distance owned), or the
+    table's reason when there is none. A vehicle without a total shows its
+    running costs, marked "running costs only", and the Ownership card's
+    prompt.
+  - Ordered by total, highest first (running costs for a vehicle without
+    one), within each currency; one note under the cards: "Cost of
+    ownership adds depreciation to everything logged since each vehicle
+    was bought, finance charges included. Without a sale price or a
+    valuation of your own, depreciation is to the latest value you
+    gave."
+  - Only vehicles the user may see costs for (`ViewCosts`); the summary
+    cards add up exactly the vehicle cards shown.
 - On the dashboard as its own widget from Phase 32 (`true_cost`, §7.35),
   not as a fifth tile: the pinned card keeps its four. Phase 32 also
   splits *Per distance* into its parts, by period and by year (§7.35).
@@ -3526,10 +3595,10 @@ the wear estimate and tyre reminders came with Phase 11.2 (below).
     measured depth down to the legal minimum, shown only once the tyre has
     two measurements (#184); brand and model with the season, size with
     the age from DOT; then "Fitted {Mon YYYY} · {distance} covered" (the
-    date of the tyre's latest fitting, derived from its changes, #185;
-    "Moved {Mon YYYY}" when its latest change was a move or rotation) with
-    the tyre's whole distance, or "{distance} covered since {date}" for a
-    tyre recorded as already on the vehicle and not fitted or moved since;
+    date the tyre was first fitted to the vehicle, derived from its
+    changes, so a move or rotation never changes it, #185, #197) with the
+    tyre's whole distance since then, or "{distance} covered since {date}"
+    for a tyre recorded as already on the vehicle;
     and the wear estimate as today, labelled as one. *Check tread* is a button beside
     *Fit tyres*. Under the cards, a note from the owner's own tyre
     settings (#185): "You replace at 3.0 mm; the legal minimum you set is
@@ -5023,6 +5092,43 @@ entries by message*.
   changing settings by chat (parked, #75, §12); several entries in one
   press.
 
+#### Ask and the Insights page (Phase 33.4, decided 2026-10-05, #192–#194)
+
+- **Ask page layout** (the prototype's *Ask Logbook* card): a card headed
+  by an accent tile with `auto_awesome`, "Ask Logbook" and "AI answers
+  using only your logged data"; a two-row question box ("e.g. Why has my
+  fuel spend gone up?") with an *Ask* button (`send`; "Thinking…" while
+  waiting); with JS, Enter sends and Shift+Enter starts a new line. Under
+  it four suggestions, each a link that fills the box (`/ask?q=`): "Which
+  vehicle costs me most per mile?", "Summarise my last 12 months",
+  "What's coming up in the next 3 months?", "How could I cut my fuel
+  costs?". While waiting, the progress line ("Reading your logbook…",
+  then the tools' own lines). The thread, sources, grounding marks,
+  drafts, feedback, copy, conversations and retention are unchanged and
+  sit below in the same card style. Nothing about grounding, tools or
+  *Add* changes.
+- **Ask stays in the navigation** (#192): its sidebar entry and top-bar
+  button as today; *Insights* is a separate entry.
+- **Insights page** (`/insights`, *Insights* in the sidebar with
+  `auto_awesome` after *Fuel stations*, and under *More* on a phone;
+  core, every signed-in user): title "Insights", lead "Patterns spotted in
+  your records, and answers to your own questions." Then:
+  - the *Ask Logbook* card above (box, *Ask* and the four suggestions),
+    only when Ask is available to the user (§7.26 *Where*). Its form posts
+    to `/ask` as a new question and **always opens the new thread on the
+    Ask page** (#193); with JS the card shows "Reading your logbook…"
+    while it posts, then goes there;
+  - every computed insight (§7.8 *Insights*, all of them, not the
+    widget's two) as a card in a grid: a tone tile with its icon, the
+    title, the body and its action link (`arrow_forward`);
+  - the AI insights (below) after them, when AI is on;
+  - with nothing to show: "Log a few more fill-ups and services and
+    patterns will show up here."
+- The dashboard *Insights* widget's title links to the page (*All
+  insights*).
+- **Ask features the existing tools can't support** (#194): none; the
+  prototype's Ask uses only what Ask already has.
+
 #### AI insights (Phase 33.4, decided 2026-10-05, #174)
 
 Insights the app has no computed figure for (the prototype's *economy up*,
@@ -6185,7 +6291,7 @@ request to any outside service.
   - The search behind the combo box is `GET /stations/search?q=` (JSON,
     signed in): the choices with their hints, and whether the typed name
     is a station already.
-- **Stations page** (`/stations`, *Stations* in the navigation after
+- **Stations page** (`/stations`, *Fuel stations* in the navigation after
   Reports, and *All stations* on the Fuel tab's card):
   - favourites first, then by last visit, then by name, with name, brand,
     the straight-line distance from each of the user's places, visits, last
@@ -6193,6 +6299,58 @@ request to any outside service.
     most-used grade there;
   - search by name, brand or postcode;
   - *Add station* and *Duplicates*.
+- **Fuel stations page** (Phase 33.4, decided 2026-10-05, #195, #196):
+  `/stations` is titled *Fuel stations*. With a fuel price provider on
+  (§7.34) and a vehicle that burns a liquid fuel, it opens with
+  **Prices nearby**, the prototype's price list, and the list above
+  follows as **Your stations**. With no provider it is *Your stations*
+  only, as before.
+  - **The form** (GET, works without JS; the query of *Cheapest near me*,
+    so the same `from`, `lat`/`lng`, `vehicle`, `grade` and `radius`):
+    *From* defaults to the user's first place; *Use my location* (JS)
+    fills the position as on *Cheapest near me* and is never stored.
+    Grades are chips (the provider's grades for the vehicle's fuel),
+    default as *Cheapest near me*; *Cheapest* (listed price) and
+    *Nearest* (distance) order the list; the radius is the default 5 (in
+    the user's unit). A vehicle select shows only with more than one
+    vehicle. Without a place or a position: "Add a place or use your
+    location to see prices nearby." with a link to *Places*.
+  - **Rows** (the first 10; *See all, with the cost of getting there*
+    opens *Cheapest near me* with the same query): a tile with the
+    brand's initials, the name (linking to the Logbook station when
+    linked), a *Cheapest* badge on the lowest listed price, a line "brand ·
+    1.2 mi · listed 40 min ago" (with *May be out of date* as on
+    *Cheapest near me*), the listed price, and its **difference from the
+    area average**: the mean listed price for the grade over every fresh
+    price in the radius ("−1.4p vs average", "+0.9p vs average", or "Area
+    average" within half of the price's last shown place). Derived on
+    every read, never stored.
+  - **Row actions:** a **favourite star** (a linked station toggles the
+    user's favourite; an unlinked one is added as a Logbook station, as
+    *Add station* does, then favourited); **Directions**, an
+    OpenStreetMap directions link to the station's position
+    (`https://www.openstreetmap.org/directions?route=%3B{lat}%2C{lng}`,
+    new tab, `rel="noopener noreferrer"`; only the station's position is
+    in it, never the user's, and the server fetches nothing); **Log
+    fill-up here**, which opens the vehicle's fill-up form with the
+    station chosen (`?station={id}`; an unlinked station is added first).
+  - **Saving banner** (#196): for the vehicle and grade, when the user's
+    average price paid in the last 12 months (its fill-ups of that grade:
+    cost ÷ volume, in the vehicle's currency) is above the cheapest listed
+    price by at least the price's smallest shown unit, and the provider's
+    currency is the vehicle's: "The cheapest E10 nearby is 139.9p at
+    Tesco Extra, 1.2 mi away. You've paid 146.3p on average in the Golf
+    over the last 12 months, so filling up there would save about £2.88 a
+    tank." The tank is *Cheapest near me*'s usual fill (labelled
+    "assumed" when it is); the trip there is not counted, and the banner
+    says so ("Not counting the trip there."). No fill-ups of the grade in
+    12 months: no banner.
+  - The attribution and the latest sync sit under the list, as on
+    *Cheapest near me*.
+- **Fill-up form prefill** (Phase 33.4): `?station={id}` on the new
+  fill-up form chooses that station when the `stations` module is on and
+  the station exists and is not merged (a merged one resolves to the
+  station it went into); anything else is ignored.
 - **Station page** (`/stations/{id}`; a merged station's page redirects to
   the station it became):
   - details, *Favourite*, *Edit*, *Merge*, and *Open in maps* (a `geo:`
@@ -7481,6 +7639,17 @@ task breakdowns live in the per-phase files; this is the map.
   stats and *Copy for insurance quote*; tyres' *Current tyres* (§6, §7.1,
   §7.2, §7.8, §7.17, §7.22, §7.29, §7.32, §8). One migration. No release
   of its own: ships with 33.4 as v3.0.0.
+- **Phase 33.4 — Cost of ownership, Ask and Fuel stations + v3.0
+  release.** The Ownership report's screen as the prototype's *Cost of
+  ownership* (four summary cards per currency, a card per vehicle with
+  §7.35's parts as a stacked bar; since bought only; print and CSV
+  unchanged) and a vehicle *Cost of ownership* tab; the Ask page as the
+  prototype's *Ask Logbook* card, Ask kept in the navigation; an Insights
+  page with *Ask* above every computed insight and the daily AI insights;
+  *Fuel stations* with *Prices nearby* (area average, saving banner,
+  favourite, OpenStreetMap directions, *Log fill-up here*) above *Your
+  stations*; tyres back to "Fitted {month}" from the first fitting (§7.1,
+  §7.7, §7.17, §7.26, §7.33). Releases **v3.0.0** with Phases 33.1–33.3.
 ---
 
 ## 14. Definition of done

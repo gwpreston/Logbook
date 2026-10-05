@@ -58,7 +58,9 @@ found while starting it) were answered on 2026-10-05, before it was
 built. Phase 33.1's (#157–#165, four of them found while starting
 it) were answered on 2026-10-05, before it was built. Phase 33.3's
 (#173–#185, eight of them found by its prototype audit) were answered
-on 2026-10-05, before it was built.
+on 2026-10-05, before it was built. Phase 33.4's (#186–#197, seven of
+them found by its prototype audit, and #185's pending wording) were
+answered on 2026-10-05, before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -246,7 +248,19 @@ on 2026-10-05, before it was built.
 | 182 | [33.3](phase-33.3.md) | Finance *Purchase* card: seller and mileage when bought not stored (found by the audit) | Decided | Stored: seller, and the odometer when bought as a dated reading (spec §6 Vehicle, §7.1, §7.32). | 2026-10-05 |
 | 183 | [33.3](phase-33.3.md) | PCP end note wording (found by the audit) | Decided | Kept as a neutral list of the options (spec §7.32). | 2026-10-05 |
 | 184 | [33.3](phase-33.3.md) | Tyre bar scale (found by the audit) | Decided | From the tyre's first measured depth to the legal minimum; no bar until two measurements (spec §7.17). | 2026-10-05 |
-| 185 | [33.3](phase-33.3.md) | Other prototype extras: *Breakdown* type, *Copy for insurance quote*, period picker, "Fitted {month}", thresholds note (found by the audit) | Decided | Build *Copy for insurance quote*, *Fitted {month}*, the thresholds note from the user's settings and a *Breakdown* incident type; the period picker is parked (spec §12). Changed by the design review (pending the owner's confirmation): a move or rotation reads "Moved {month}", the distance is the tyre's whole distance, and "since {date}" only for a tyre recorded as already on and not fitted or moved since (spec §7.17). | 2026-10-05 |
+| 185 | [33.3](phase-33.3.md) | Other prototype extras: *Breakdown* type, *Copy for insurance quote*, period picker, "Fitted {month}", thresholds note (found by the audit) | Decided | Build *Copy for insurance quote*, *Fitted {month}*, the thresholds note from the user's settings and a *Breakdown* incident type; the period picker is parked (spec §12). The design review's "Moved {month}" was reverted by the owner (#197): "Fitted {month}" is the first fitting (spec §7.17). | 2026-10-05 |
+| 186 | [33.4](phase-33.4.md) | Finance interest: so far, or the whole cost of credit? | Decided | The HP, PCP and loan lines the ledger counts so far (interest, fees, the end adjustment); leases left out (spec §7.7 *Cost of ownership page*). | 2026-10-05 |
+| 187 | [33.4](phase-33.4.md) | Per month for the fleet | Decided | The active vehicles' own rates added up, as the prototype; sold vehicles count in *Total cost* only (spec §7.7). | 2026-10-05 |
+| 188 | [33.4](phase-33.4.md) | Station maps | Obsolete | The prototype has no map; its *Directions* link is #196. | 2026-10-05 |
+| 189 | [33.4](phase-33.4.md) | Cost bar: §7.35's five parts or the prototype's seven? (found by the audit) | Decided | §7.35's five; finance stays in *Other* and has its own summary card (spec §7.7). | 2026-10-05 |
+| 190 | [33.4](phase-33.4.md) | A period picker on the Cost of ownership page? (found by the audit) | Decided | No: since bought only, as today and the prototype; the draft's wording corrected (spec §7.7). | 2026-10-05 |
+| 191 | [33.4](phase-33.4.md) | The prototype's vehicle *Cost of ownership* tab (found by the audit) | Decided | Build it after Expenses, from the overview card's figures (spec §7.1). | 2026-10-05 |
+| 192 | [33.4](phase-33.4.md) | Ask has no page in the prototype: where does `/ask` go? (found by the audit) | Decided | Ask keeps its navigation entry and page; the Insights page also has the Ask box (spec §7.26 *Ask and the Insights page*). | 2026-10-05 |
+| 193 | [33.4](phase-33.4.md) | What the Insights Ask box does (found by the audit) | Decided | Always opens the new thread on `/ask` (spec §7.26). | 2026-10-05 |
+| 194 | [33.4](phase-33.4.md) | Ask features the existing tools can't support | Obsolete | None: the prototype's Ask uses only what Ask has (spec §7.26). | 2026-10-05 |
+| 195 | [33.4](phase-33.4.md) | Fuel stations: one price list, or your stations too? (found by the audit) | Decided | *Prices nearby* on top when a provider is on, *Your stations* below (spec §7.33 *Fuel stations page*). | 2026-10-05 |
+| 196 | [33.4](phase-33.4.md) | Fuel stations features: build or not now | Decided | All built: area average, saving banner, favourite (adding an unlinked station), OpenStreetMap directions, *Log fill-up here* with a `?station=` prefill (spec §7.33). | 2026-10-05 |
+| 197 | [33.4](phase-33.4.md) | Tyres: keep the design review's "Moved {month}"? (carried from #185) | Decided | No: "Fitted {month}" is the tyre's first fitting to the vehicle, with its distance since (spec §7.17). | 2026-10-05 |
 
 ## Other loose ends found in the review
 
