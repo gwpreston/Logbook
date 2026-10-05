@@ -3216,7 +3216,7 @@ return [
     // The profile page (spec.md §8 *Profile page*, Phase 33.2).
     'profile' => [
         'title' => 'Profile',
-        'link_hint' => 'Your email address, picture, password and sign-in',
+        'link_hint' => 'Your email, picture and password, and your units, language and look',
     ],
     'settings' => [
         'group' => [

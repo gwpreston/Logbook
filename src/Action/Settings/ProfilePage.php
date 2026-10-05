@@ -11,17 +11,28 @@ use Logbook\Service\Ai\AiStatus;
 use Logbook\Service\Auth\SignInMethods;
 use Logbook\Service\User\AvatarService;
 use Logbook\Service\User\EmailAddresses;
+use Logbook\Service\User\ProfileForm;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Display\Accent;
+use Logbook\Support\Display\Theme;
 use Logbook\Support\Http\RequestContext;
+use Logbook\Support\I18n\AvailableLocales;
+use Logbook\Support\Units\ConsumptionUnit;
+use Logbook\Support\Units\DepthUnit;
+use Logbook\Support\Units\DistanceUnit;
+use Logbook\Support\Units\UnitPreset;
+use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
+use Logbook\Support\View\FormOptions;
 use Logbook\Support\View\View;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Renders the profile page, the signed-in user's own account (spec.md §8
- * *Profile page*, Phase 33.2): shared by its GET and by the email, picture
- * and password forms, so a form with errors is shown in place.
+ * Renders the profile page, the signed-in user's own account and
+ * preferences (spec.md §8 *Profile page*, Phase 33.2): shared by its GET
+ * and by every form on it, so a form with errors is shown in place.
  */
 final readonly class ProfilePage
 {
@@ -32,11 +43,14 @@ final readonly class ProfilePage
         private AiStatus $ai,
         private AiPreferences $aiPreferences,
         private EmailAddresses $emails,
+        private AvailableLocales $locales,
+        private ClockInterface $clock,
     ) {
     }
 
     /**
      * @param array<string, string>|null $emailValues the email form as posted; null = the user's address
+     * @param array<string, string>|null $values      preference form values; null = the saved ones
      */
     public function render(
         ServerRequestInterface $request,
@@ -46,10 +60,30 @@ final readonly class ProfilePage
         ?ValidationErrors $emailErrors = null,
         ?array $emailValues = null,
         ?ValidationErrors $avatarErrors = null,
+        ?array $values = null,
+        ?ValidationErrors $preferenceErrors = null,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
+        $values ??= ProfileForm::values($user);
 
         return $this->view->render($request, $response, 'profile/index.twig', [
+            // Preferences (spec.md §8 *Profile page*, #172).
+            'values' => $values,
+            'errors' => $preferenceErrors?->all() ?? [],
+            'themes' => Theme::cases(),
+            'accents' => Accent::cases(),
+            'distance_units' => DistanceUnit::cases(),
+            'volume_units' => VolumeUnit::cases(),
+            'consumption_units' => ConsumptionUnit::cases(),
+            'depth_units' => DepthUnit::cases(),
+            'unit_presets' => UnitPreset::cases(),
+            // The preset the units match, shown pressed (spec.md §8 *Unit presets*).
+            'unit_preset' => UnitPreset::matchingValues($values),
+            'locale_options' => FormOptions::locales($this->locales),
+            'timezone_options' => FormOptions::timezones(),
+            'currency_options' => FormOptions::currencies(RequestContext::locale($request)),
+            // Sample values so the effect of each preference is visible.
+            'now' => $this->clock->now(),
             'password_errors' => $passwordErrors?->all() ?? [],
             // Email and avatar (spec.md §7.9, Phase 33.1).
             'email_values' => $emailValues ?? ['email' => $user->emailPending ?? $user->email ?? ''],

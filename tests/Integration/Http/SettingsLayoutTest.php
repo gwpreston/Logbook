@@ -12,9 +12,7 @@ use Logbook\Tests\Support\AppTestCase;
  */
 final class SettingsLayoutTest extends AppTestCase
 {
-    private const array GROUPS = [
-        'account', 'preferences', 'reminders', 'driving', 'data', 'developers', 'admin', 'installation',
-    ];
+    private const array GROUPS = ['account', 'reminders', 'driving', 'data', 'developers', 'admin', 'installation'];
 
     public function testAnAdminSeesEveryGroupInOrderEachAnAnchor(): void
     {
@@ -25,10 +23,9 @@ final class SettingsLayoutTest extends AppTestCase
         foreach (['/settings/users', '/settings/modules', '/settings/backup', '/settings/jobs', '/settings/api-keys'] as $link) {
             self::assertStringContainsString('href="' . $link . '"', $html, $link);
         }
-        // *Account* is one row to the profile page (#172); its forms are there.
+        // *Account* is one row to the profile page (#172); the forms are there.
         self::assertStringContainsString('href="/profile"', self::group($html, 'account'));
-        $moved = ['data-account-card', 'action="/settings/email"', 'action="/settings/avatar"', 'action="/settings/password"'];
-        foreach ($moved as $gone) {
+        foreach (['data-account-card', 'action="/settings/email"', 'action="/settings/preferences"'] as $gone) {
             self::assertStringNotContainsString($gone, $html, $gone);
         }
     }
@@ -39,10 +36,11 @@ final class SettingsLayoutTest extends AppTestCase
 
         self::assertStringContainsString('<title>Profile · Logbook</title>', $html);
         self::assertMatchesRegularExpression('~data-account-card>.*?Pat Owner.*?action="/logout"~s', $html);
-        foreach (['action="/settings/email"', 'action="/settings/avatar"', 'action="/settings/password"'] as $form) {
-            self::assertStringContainsString($form, $html, $form);
+        self::assertSame(['account', 'preferences'], self::groupIds($html));
+        foreach (['email', 'avatar', 'password', 'preferences'] as $form) {
+            self::assertStringContainsString('action="/settings/' . $form . '"', $html, $form);
         }
-        self::assertStringNotContainsString('name="distance_unit"', $html, 'preferences stay on Settings (#170)');
+        self::assertStringContainsString('name="display_name"', self::group($html, 'preferences'), 'the name with them (#170)');
         // Reached from the sidebar's name and the narrow top bar's avatar, both current here.
         self::assertMatchesRegularExpression('~<a class="sidebar__user" href="/profile" aria-current="page">~', $html);
         self::assertMatchesRegularExpression('~<a class="icon-btn topbar__profile" href="/profile" aria-current="page"~', $html);
@@ -120,7 +118,7 @@ final class SettingsLayoutTest extends AppTestCase
     public function testThePresetMatchingTheUnitsIsPressed(): void
     {
         $browser = $this->signedIn($this->createApp());
-        $html = self::body($browser->get('/settings'));
+        $html = self::body($browser->get('/profile'));
         $uk = ['metric' => 'false', 'uk' => 'true', 'us' => 'false'];
         self::assertSame($uk, self::presets($html), 'miles, litres, mpg (UK), mm');
 
@@ -135,7 +133,7 @@ final class SettingsLayoutTest extends AppTestCase
             'locale' => 'en_GB',
             'timezone' => 'Europe/London',
         ]);
-        $mixed = self::body($browser->get('/settings'));
+        $mixed = self::body($browser->get('/profile'));
         self::assertSame(['metric' => 'false', 'uk' => 'false', 'us' => 'false'], self::presets($mixed), 'km with mpg: none');
     }
 

@@ -231,7 +231,7 @@ it) were answered on 2026-10-05, before it was built.
 | 169 | [33.2](phase-33.2.md) | Keep any Settings link where it is? | Decided | No: the draft grouping as it stands (spec §8 *Settings layout*). | 2026-10-05 |
 | 170 | [33.2](phase-33.2.md) | Display name in *Account* or *Preferences*? (found while building) | Decided | *Preferences*: it is saved by that form; the *Account* card shows the name (spec §8 *Settings layout*). | 2026-10-05 |
 | 171 | [33.2](phase-33.2.md) | Fold the email, picture and password forms under the *Account* card? (found by the design review) | Obsolete | The forms moved to their own profile page (#172), where they stay open. | 2026-10-05 |
-| 172 | [33.2](phase-33.2.md) | A profile page from the sidebar's name and avatar? (asked by the owner) | Decided | `/profile` takes the *Account* group; *Preferences* stays on Settings; reached from the sidebar, the narrow top bar's avatar and a Settings row (spec §8 *Profile page*). | 2026-10-05 |
+| 172 | [33.2](phase-33.2.md) | A profile page from the sidebar's name and avatar? (asked by the owner) | Decided | `/profile` takes the *Account* and *Preferences* groups (revised the same day: preferences too); reached from the sidebar, the narrow top bar's avatar and a Settings row (spec §8 *Profile page*). | 2026-10-05 |
 
 ## Other loose ends found in the review
 

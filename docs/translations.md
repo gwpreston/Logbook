@@ -19,7 +19,7 @@ complete as the second language.
 2. Translate the **values**, never the keys. Keep every `{placeholder}`
    exactly as it is; you may move it within the sentence.
 
-3. That's it. The language appears in **Settings → Language and region**
+3. That's it. The language appears in **Profile → Language and region**
    (with each country variant ICU knows, e.g. *français (Belgique)*, which
    also sets date, number and currency formats), and visitors whose browser
    asks for it get it on the sign-in page.

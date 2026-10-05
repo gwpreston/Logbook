@@ -4,70 +4,30 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
-use Logbook\Service\User\ProfileForm;
 use Logbook\Support\Config\AppSettings;
-use Logbook\Support\Display\Accent;
-use Logbook\Support\Display\Theme;
-use Logbook\Support\Http\RequestContext;
-use Logbook\Support\I18n\AvailableLocales;
-use Logbook\Support\Units\ConsumptionUnit;
-use Logbook\Support\Units\DepthUnit;
-use Logbook\Support\Units\DistanceUnit;
-use Logbook\Support\Units\UnitPreset;
-use Logbook\Support\Units\VolumeUnit;
-use Logbook\Support\Validation\ValidationErrors;
-use Logbook\Support\View\FormOptions;
 use Logbook\Support\View\View;
-use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Renders the settings page (shared by its GET and POST Actions, so a form
- * with errors is shown in place with the submitted values).
+ * Renders the settings page (spec.md §8 *Settings layout*): links to the
+ * pages for reminders, driving, data, developers, admin and the
+ * installation. The user's own account and preferences are on the
+ * profile page (#172).
  */
 final readonly class SettingsPage
 {
     public function __construct(
         private View $view,
-        private AvailableLocales $locales,
-        private ClockInterface $clock,
         private AppSettings $settings,
     ) {
     }
 
-    /**
-     * @param array<string, string>|null $values preference form values; null = the saved ones
-     */
-    public function render(
-        ServerRequestInterface $request,
-        ResponseInterface $response,
-        ?array $values = null,
-        ?ValidationErrors $preferenceErrors = null,
-        int $status = 200,
-    ): ResponseInterface {
-        $user = RequestContext::requireUser($request);
-        $values ??= ProfileForm::values($user);
-
+    public function render(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
         return $this->view->render($request, $response, 'settings/index.twig', [
-            'values' => $values,
-            'errors' => $preferenceErrors?->all() ?? [],
-            'themes' => Theme::cases(),
-            'accents' => Accent::cases(),
-            'distance_units' => DistanceUnit::cases(),
-            'volume_units' => VolumeUnit::cases(),
-            'consumption_units' => ConsumptionUnit::cases(),
-            'depth_units' => DepthUnit::cases(),
-            'unit_presets' => UnitPreset::cases(),
-            // The preset the units match, shown pressed (spec.md §8 *Unit presets*).
-            'unit_preset' => UnitPreset::matchingValues($values),
-            'locale_options' => FormOptions::locales($this->locales),
-            'timezone_options' => FormOptions::timezones(),
-            'currency_options' => FormOptions::currencies(RequestContext::locale($request)),
-            // Sample values so the effect of each preference is visible.
-            'now' => $this->clock->now(),
             // AI (spec.md §7.25): the admin link while AI_ENABLED.
             'ai' => ['enabled' => $this->settings->ai->enabled],
-        ], $status);
+        ]);
     }
 }

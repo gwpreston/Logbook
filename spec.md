@@ -6504,7 +6504,7 @@ it replaces none of the other figures.
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
-- **Accent colour:** Settings → Appearance offers *Blue* (default), *Teal*,
+- **Accent colour:** Profile → Appearance offers *Blue* (default), *Teal*,
   *Indigo* and *Purple*, stored per user (`users.accent`). It is rendered
   server-side as `data-accent` on `<html>` (no flash; signed-out pages use
   blue) and switches only the accent tokens — primary, hover, pressed,
@@ -6547,11 +6547,7 @@ it replaces none of the other figures.
   to keeps its URL. Groups, in order, each card shown only to those who can
   use it:
   - **Account** (`#account`): one link row, *Profile*, to the profile
-    page (#172).
-  - **Preferences** (`#preferences`): one form with one *Save*: *Name*
-    (display name, saved with the rest as before, #170), appearance (the
-    theme as a segmented control, then the accent), units and currency
-    (a hairline between rows), region, preview.
+    page, which holds the user's account and preferences (#172).
   - **Reminders and notifications** (`#reminders`): the
     link to *Settings → Reminders* (lead times, channels, digest, calendar
     feed). Nothing else.
@@ -6570,15 +6566,21 @@ it replaces none of the other figures.
   list things); their controls are unchanged. Their *‹ Settings* back
   link lands on the group they belong to.
 - **Profile page** (Phase 33.2, #172): `/profile` (route `profile`) holds
-  the signed-in user's own account: who they are (avatar or initial,
-  display name, username, confirmed address) with *Sign out*, then the
-  cards *Email address*, *Picture*, *Password* (password sign-in on),
-  *Single sign-on* (when configured or linked) and *Use AI* (AI set up).
+  everything about the signed-in user, in the Settings card style under
+  two anchored groups, after who they are (avatar or initial, display
+  name, username, confirmed address) with *Sign out*:
+  - **Account** (`#account`): *Email address*, *Picture*, *Password*
+    (password sign-in on), *Single sign-on* (when configured or linked)
+    and *Use AI* (AI set up).
+  - **Preferences** (`#preferences`): one form with one *Save*: *Name*
+    (display name, #170), *Appearance* (the theme as a segmented control,
+    then the accent), *Units and currency* (a hairline between rows),
+    *Language and region*, *How things look* (the preview).
+
   The forms post to the same addresses as before and come back to
   `/profile` (with the form in place and its errors on a 422), as do an
   email-confirmation link opened while signed in and an SSO link. The
-  display name, appearance, units, region and preview stay on Settings →
-  *Preferences* (#170). The page is reached from the user's name and
+  page is reached from the user's name and
   avatar in the sidebar (a link, `aria-current` on the page), from their
   avatar in the narrow top bar beside the Settings icon, and from the
   *Profile* row at the top of Settings.

@@ -3213,7 +3213,7 @@ return [
     // Die Profilseite (spec.md §8 *Profile page*, Phase 33.2).
     'profile' => [
         'title' => 'Profil',
-        'link_hint' => 'Deine E-Mail-Adresse, dein Bild, dein Passwort und deine Anmeldung',
+        'link_hint' => 'Deine E-Mail-Adresse, dein Bild und dein Passwort sowie Einheiten, Sprache und Aussehen',
     ],
     'settings' => [
         'group' => [

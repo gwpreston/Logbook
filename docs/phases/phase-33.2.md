@@ -68,8 +68,9 @@ done the same way:
    below *Ask*.
 6. **Profile page** (added 2026-10-05, #172): the name and avatar in the
    sidebar open `/profile`, which holds the user's own account (email,
-   picture, password, single sign-on, *Use AI*, sign out). Settings'
-   *Account* group becomes one link row to it.
+   picture, password, single sign-on, *Use AI*, sign out) and their
+   preferences (name, appearance, units and currency, language and
+   region, preview). Settings' *Account* group becomes one link row to it.
 
 ## Not in scope
 
@@ -180,6 +181,9 @@ done the same way:
       row and the Account card goes.
 - [x] Tests: the page and its cards; each form returns to it; sidebar,
       top bar and Settings link to it; Settings no longer has the forms.
+- [x] *Preferences* moves to the profile page too (owner, 2026-10-05,
+      #172 revised): the preferences form saves back to `/profile`;
+      Settings keeps no user preferences.
 
 ### 33.2.6 Tests
 - [x] Sign-in pages render for: local only, SSO and local, SSO only,
@@ -389,6 +393,8 @@ audit and before any code, #170 while building
 - **A profile page** (asked by the owner while building): *Decided
   2026-10-05 (#172):* the sidebar's name and avatar open `/profile`, which
   takes the *Account* group (email, picture, password, SSO, *Use AI*,
-  sign out); *Preferences* stays on Settings (with the display name,
-  #170). On narrow screens an avatar in the top bar and a *Profile* row at
+  sign out). *Revised the same day by the owner:* the *Preferences* group
+  (name, appearance, units and currency, language and region, preview)
+  moves there too, so Settings holds no personal settings. On narrow
+  screens an avatar in the top bar and a *Profile* row at
   the top of Settings lead to it.
