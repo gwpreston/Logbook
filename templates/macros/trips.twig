@@ -57,8 +57,8 @@
             <p class="muted">{{ 'trip.split.no_readings'|trans }}</p>
         {% else %}
             <div class="stack-bar stack-bar--lg" aria-hidden="true">
-                <span class="stack-bar__part" style="--w: {{ business }}%"></span>
-                <span class="stack-bar__part" style="--w: {{ split.privatePercent() }}%; --swatch: var(--c-other)"></span>
+                {% if business > 0 %}<span class="stack-bar__part" style="--w: {{ business }}%"></span>{% endif %}
+                {% if business < 100 %}<span class="stack-bar__part" style="--w: {{ split.privatePercent() }}%; --swatch: var(--c-other)"></span>{% endif %}
             </div>
             <ul class="legend">
                 <li class="legend__item"><span class="swatch" style="--swatch: var(--accent)" aria-hidden="true"></span><span class="legend__label">{{ 'trip.business'|trans }}</span><span class="legend__value tabular">{{ 'trip.split.share'|trans({distance: split.businessKm|distance, percent: (business / 100)|percent}) }}</span></li>
