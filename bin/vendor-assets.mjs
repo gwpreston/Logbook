@@ -107,6 +107,7 @@ const icons = [
   'person_off',
   'person_remove',
   'picture_as_pdf',
+  'pin_drop',
   'price_check',
   'print',
   'public',

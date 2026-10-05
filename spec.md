@@ -6776,6 +6776,10 @@ task breakdowns live in the per-phase files; this is the map.
   from repeating costs, and source ids so a newer export adds only new
   rows (§6 Vehicle, FuelEntry, ImportSource; §7.3, §7.13). Release
   v2.15.0.
+- **Phase 31.2 — The Fuel stations module shows its icon + v2.15.1.**
+  The Fuel stations module's icon, missing from the bundled icon sprite
+  since v2.13.0, is added, with a test that every icon an enum names is in
+  the sprite; release v2.15.1.
 
 ---
 

@@ -6,6 +6,19 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [2.15.1] — 2026-10-04
+
+Phase 31.2: the Fuel stations module shows its icon.
+
+### Fixed
+- **Settings → Modules** showed a blank space instead of an icon beside
+  *Fuel stations* (since 2.13.0). It now shows its pin icon like every
+  other module.
+
+### Upgrade notes
+- None: no migrations, no configuration changes and no change to the backup
+  format.
+
 ## [2.15.0] — 2026-10-04
 
 Phase 31: **import from Fuelio**. Bring years of fill-ups, services,
