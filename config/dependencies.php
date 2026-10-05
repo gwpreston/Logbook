@@ -304,6 +304,7 @@ return [
         get(Tool\LastDone::class),
         get(Tool\Mileage::class),
         get(Tool\Ownership::class),
+        get(Tool\TrueCostTool::class),
         get(Tool\ComingUpTool::class),
         get(Tool\Documents::class),
         get(Tool\Tyres::class),

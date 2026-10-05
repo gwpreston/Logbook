@@ -56,11 +56,11 @@ final class SharedCostsTest extends AppTestCase
         ]);
         self::assertSame(303, $saved->getStatusCode(), 'forms still take costs');
 
-        $pages = ['/', '/garage', '/history', '/upcoming', '/reports', '/reports/ownership',
+        $pages = ['/', '/garage', '/history', '/upcoming', '/reports', '/reports/ownership', '/reports/true-cost',
             '/vehicles/' . $id, '/vehicles/' . $id . '/fuel', '/vehicles/' . $id . '/maintenance',
             '/vehicles/' . $id . '/documents', '/vehicles/' . $id . '/odometer', '/vehicles/' . $id . '/expenses',
             '/vehicles/' . $id . '/history', '/vehicles/' . $id . '/history/print?costs=1',
-            '/upcoming.csv', '/reports/export.csv', '/reports/ownership.csv'];
+            '/upcoming.csv', '/reports/export.csv', '/reports/ownership.csv', '/reports/true-cost.csv'];
         $seen = '';
         foreach ($pages as $page) {
             $response = $driver->get($page);
@@ -88,6 +88,7 @@ final class SharedCostsTest extends AppTestCase
         }
         self::assertStringContainsString('61.230', $apiBodies, 'the API shows their own fill-up\'s amount');
         self::assertSame(403, $api->get('/vehicles/' . $id . '/expenses')->getStatusCode());
+        self::assertSame(403, $api->get('/vehicles/' . $id . '/true-cost')->getStatusCode());
 
         // Control: the owner sees every amount.
         $all = implode("\n", array_map(static fn (string $page): string => self::body($owner->get($page)), $pages));

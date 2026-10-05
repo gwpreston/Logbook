@@ -135,6 +135,8 @@ final class RouteInventoryTest extends AppTestCase
         'reports.export',
         'reports.ownership',
         'reports.ownership.export',
+        'reports.true_cost',
+        'reports.true_cost.export',
         'api.vehicles',
         'api.upcoming',
         'api.reminders',

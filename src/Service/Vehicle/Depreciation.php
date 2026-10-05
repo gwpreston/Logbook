@@ -91,14 +91,13 @@ final readonly class Depreciation
         $perYear = null;
         $perKm = null;
         $purchased = $vehicle->data->purchaseDate;
-        if (
-            $change->isNegative()
-            && $purchased !== null
-            && LocalTime::daysBetween($purchased, $current->date) >= self::MIN_DAYS
-        ) {
-            $loss = ltrim($changeDecimal, '-');
-            $months = self::monthsBetween($purchased, $current->date);
-            $perYear = Decimal::divide(Decimal::multiply($loss, '12', 6), $months, self::MONEY_SCALE);
+        if ($purchased !== null && LocalTime::daysBetween($purchased, $current->date) >= self::MIN_DAYS) {
+            // The loss as a cost: a gain is negative (Phase 32, #154).
+            $loss = Decimal::subtract('0', $changeDecimal);
+            if ($change->isNegative()) {
+                $months = self::monthsBetween($purchased, $current->date);
+                $perYear = Decimal::divide(Decimal::multiply($loss, '12', 6), $months, self::MONEY_SCALE);
+            }
             $km = PeriodDistance::reachesBack($readings, $purchased, $zone)
                 ? PeriodDistance::km($readings, new ReportPeriod(ReportRange::Custom, $purchased, $current->date), $zone)
                 : null;

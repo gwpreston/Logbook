@@ -458,6 +458,30 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * A calendar day without its year, in the user's language: "14 Mar"
+     * ("Mar 14" in the US), for a label that already names the year.
+     */
+    public function dayMonth(?DateTimeInterface $date): string
+    {
+        if ($date === null) {
+            return '';
+        }
+
+        $pattern = IntlDatePatternGenerator::create($this->locale())?->getBestPattern('dMMM');
+        $formatter = new IntlDateFormatter(
+            $this->locale(),
+            IntlDateFormatter::NONE,
+            IntlDateFormatter::NONE,
+            'UTC',
+            null,
+            is_string($pattern) && $pattern !== '' ? $pattern : 'd MMM',
+        );
+        $formatted = $formatter->format($date);
+
+        return is_string($formatted) ? $formatted : $date->format('m-d');
+    }
+
+    /**
      * A month's name on its own in the user's language (ICU stand-alone
      * form): 1 → "January" / "Januar", or "Jan" short.
      */

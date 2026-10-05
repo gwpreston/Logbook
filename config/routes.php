@@ -35,6 +35,7 @@ use Logbook\Action\Settings\Jobs\JobUrlTokenAction;
 use Logbook\Action\Settings\Jobs\RunJobAction;
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
+use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
@@ -142,6 +143,8 @@ use Logbook\Action\Reminder\EditReminderAction;
 use Logbook\Action\Reminder\ReminderListAction;
 use Logbook\Action\Reminder\ReminderStatusAction;
 use Logbook\Action\Report\OwnershipExportAction;
+use Logbook\Action\Report\TrueCostExportAction;
+use Logbook\Action\Report\TrueCostReportAction;
 use Logbook\Action\Report\OwnershipReportAction;
 use Logbook\Action\Report\ReportAction;
 use Logbook\Action\Report\ReportExportAction;
@@ -318,6 +321,9 @@ return static function (App $app): void {
                 $keyed->post('/vehicles/{id:[0-9]+}/odometer', ApiLogReadingAction::class)->setName('api.odometer.create')
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/expenses', ApiExpensesAction::class)->setName('api.expenses.index')
+                    ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                // True cost (Phase 32, spec.md §7.35): core, costs only.
+                $keyed->get('/vehicles/{id:[0-9]+}/true-cost', ApiTrueCostAction::class)->setName('api.true_cost')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
                 // Phase 26.3: as the expense form, Log is enough to add one.
                 $keyed->post('/vehicles/{id:[0-9]+}/expenses', ApiLogExpenseAction::class)->setName('api.expenses.create')
@@ -715,6 +721,8 @@ return static function (App $app): void {
             $reports->get('/reports/export.csv', ReportExportAction::class)->setName('reports.export');
             $reports->get('/reports/ownership', OwnershipReportAction::class)->setName('reports.ownership');
             $reports->get('/reports/ownership.csv', OwnershipExportAction::class)->setName('reports.ownership.export');
+            $reports->get('/reports/true-cost', TrueCostReportAction::class)->setName('reports.true_cost');
+            $reports->get('/reports/true-cost.csv', TrueCostExportAction::class)->setName('reports.true_cost.export');
         })->add($module(Feature::Reports));
 
         $group->get('/settings', SettingsAction::class)->setName('settings');

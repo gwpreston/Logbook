@@ -362,6 +362,8 @@ final class DemoDataSeeder extends AbstractSeed
         ));
 
         $entries = [
+            // Phase 32: the Golf's earlier years, so its true cost trend has fuel in every year.
+            ...self::golfEarlierYears($ids['LB19 KTR'], $now),
             ...$golf,
             // The bike always takes super unleaded.
             ...$this->fillUps($ids['MT20 BKE'], '2026-03-15', 12, 18500.0, 230.0, 19.5, 1.529, 'petrol', 0, null, $now, grades: [
@@ -785,9 +787,10 @@ final class DemoDataSeeder extends AbstractSeed
     }
 
     /**
-     * Valuations (spec.md §7.1): the Golf has a part-exchange offer and an
-     * online valuation a year apart (the latest with a screenshot), so its
-     * *Ownership* card shows depreciation and a value chart; the sold Fiesta
+     * Valuations (spec.md §7.1): the Golf has one each spring since it was
+     * bought (Phase 32), a part-exchange offer and online valuations, the
+     * latest with a screenshot, so its *Ownership* card shows depreciation
+     * and a value chart and every year of its true cost has some; the sold Fiesta
      * has one valuation before its sale, which its sale price overrides.
      * The bike's only valuation is 18 months old: a stale value, on its
      * Ownership card and in *Needs attention* (Phase 24). The Corolla's is
@@ -811,6 +814,10 @@ final class DemoDataSeeder extends AbstractSeed
         ];
 
         $this->table('vehicle_valuations')->insert([
+            // Phase 32: one each spring, so every year of the true cost trend has depreciation.
+            $valuation($golf, '2022-03-19', '13000.000', 'Auto Trader valuation'),
+            $valuation($golf, '2023-03-11', '12300.000', 'Auto Trader valuation'),
+            $valuation($golf, '2024-03-09', '11900.000', 'Auto Trader valuation'),
             $valuation($golf, '2025-03-08', '11200.000', 'Part-exchange offer, Arnold Clark'),
             $valuation($golf, '2026-03-14', '9800.000', 'Auto Trader valuation', 'Online, private sale, good condition'),
             $valuation($fiesta, '2025-10-02', '2300.000', 'We Buy Any Car online valuation'),
@@ -1977,6 +1984,82 @@ final class DemoDataSeeder extends AbstractSeed
             if (!$partial) {
                 $burning = $grade;
             }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The Golf's fill-ups before September 2025 (Phase 32, spec.md §7.35):
+     * one full tank a month from April 2021, on the odometer readings it
+     * already has, the last at 61,155 km where the recent ones start, so no
+     * tank reads oddly. Deterministic (no mt_rand()), so every other demo
+     * figure stays put. The years differ on purpose, for *What changed*:
+     * 2024 is driven less (3,600 km to the end of September against 5,800
+     * from April to December 2023), costs about 5% more a litre and uses
+     * about 3% less fuel. Ungraded: they predate grades.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function golfEarlierYears(int $golf, string $now): array
+    {
+        // Odometer anchors: its existing readings, plus where 2023 ends (the year it was driven more).
+        $anchors = [
+            '2021-03-14' => 31200.0,
+            '2022-03-20' => 38900.0,
+            '2023-03-18' => 45600.0,
+            '2023-12-31' => 51400.0,
+            '2024-10-01' => 55000.0,
+            '2025-03-06' => 57800.0,
+            '2025-09-14' => 61155.0,
+        ];
+        // Price a litre and km a litre, by year.
+        $years = [2021 => [1.36, 15.4], 2022 => [1.62, 15.4], 2023 => [1.47, 15.2], 2024 => [1.54, 15.7], 2025 => [1.42, 15.9]];
+        $kmOn = static function (int $time) use ($anchors): float {
+            $previous = [0, 0.0];
+            foreach ($anchors as $date => $km) {
+                $at = (int) strtotime($date . ' 00:00 UTC');
+                if ($at >= $time && $previous[0] > 0) {
+                    return $previous[1] + ($km - $previous[1]) * ($time - $previous[0]) / ($at - $previous[0]);
+                }
+                $previous = [$at, $km];
+            }
+
+            return $previous[1];
+        };
+
+        $rows = [];
+        $last = 31200.0;
+        $dates = [];
+        $end = (int) strtotime('2025-09-01 UTC');
+        for ($month = (int) strtotime('2021-04-10 08:00 UTC'); $month < $end; $month = (int) strtotime('+1 month', $month)) {
+            $dates[] = $month;
+        }
+        $dates[] = (int) strtotime('2025-09-14 08:00 UTC');
+        foreach ($dates as $i => $time) {
+            $km = $kmOn((int) strtotime(gmdate('Y-m-d', $time) . ' 00:00 UTC'));
+            [$price, $kmPerLitre] = $years[(int) gmdate('Y', $time)];
+            // A little more fuel in winter, and a price that moves a little month to month.
+            $season = 1 + 0.05 * cos(2 * M_PI * ((int) gmdate('z', $time) - 14) / 365.25);
+            $volume = round(($km - $last) / $kmPerLitre * $season, 3);
+            $unitPrice = round($price + 0.02 * sin($i / 3), 3);
+            $rows[] = [
+                'vehicle_id' => $golf,
+                'filled_at' => gmdate('Y-m-d H:i:s', $time),
+                'odometer_km' => number_format($km, 3, '.', ''),
+                'fuel' => 'petrol',
+                'grade' => null,
+                'volume' => number_format($volume, 3, '.', ''),
+                'price_per_unit' => number_format($unitPrice, 6, '.', ''),
+                'total_cost' => number_format(round($volume * $unitPrice, 2), 3, '.', ''),
+                'is_partial' => false,
+                'is_missed_previous' => false,
+                'station' => self::STATION_ROTA[$i % count(self::STATION_ROTA)],
+                'notes' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+            $last = $km;
         }
 
         return $rows;

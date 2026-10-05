@@ -313,7 +313,10 @@ final class OwnershipCostTest extends AppTestCase
         self::assertStringNotContainsString('£16,900', $report);
         self::assertStringNotContainsString('£17,700', $report);
         $expenses = self::body($browser->get('/vehicles/' . $golf->id . '/expenses?range=all'));
-        self::assertStringNotContainsString('Depreciation', $expenses);
+        // The tab's own figures leave values out; the true cost card below them is Phase 32's.
+        $own = strstr($expenses, 'aria-labelledby="true-cost-heading"', true);
+        self::assertNotFalse($own);
+        self::assertStringNotContainsString('Depreciation', $own);
     }
 
     /**

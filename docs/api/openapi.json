@@ -808,6 +808,55 @@
         }
       }
     },
+    "/vehicles/{id}/true-cost": {
+      "get": {
+        "operationId": "showTrueCost",
+        "summary": "True cost per distance, its parts, each year and what changed",
+        "description": "Fuel, maintenance, documents, other and depreciation per km for the chosen period, each calendar year, and each year's change against the one before split exactly into causes, with translated sentences. Needs the vehicle's costs (403 without).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "last_12_months",
+                "since_bought"
+              ],
+              "default": "last_12_months"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrueCostResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/upcoming": {
       "get": {
         "operationId": "listUpcoming",
@@ -3467,7 +3516,8 @@
               "to",
               "total",
               "distance",
-              "cost_per_distance"
+              "cost_per_distance",
+              "true_cost_per_distance"
             ],
             "properties": {
               "currency": {
@@ -3488,6 +3538,10 @@
               },
               "cost_per_distance": {
                 "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "true_cost_per_distance": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "True cost per km over the last 12 months, depreciation included (Phase 32); null without a figure."
               }
             },
             "description": "Running costs over the last 12 months (as Reports counts them); left out without cost access."
@@ -3598,6 +3652,12 @@
                 ]
               },
               "cost_per_distance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "true_cost_per_distance": {
                 "type": [
                   "string",
                   "null"
@@ -6236,6 +6296,278 @@
               }
             ],
             "description": "The active agreement, else the latest ended one; null when the vehicle has none."
+          }
+        }
+      },
+      "TrueCostPart": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "amount",
+          "per_distance"
+        ],
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "In the vehicle's currency; a gain in value is negative; null when there is none to measure."
+          },
+          "per_distance": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Per km, 6 places; the parts and the payouts add up exactly to the period's per_distance."
+          }
+        }
+      },
+      "TrueCostPeriod": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "partial",
+          "distance",
+          "per_distance",
+          "why_not",
+          "running_costs_only",
+          "depreciation_to",
+          "parts",
+          "insurance_payouts",
+          "total",
+          "breakdown_display"
+        ],
+        "properties": {
+          "year": {
+            "type": "integer"
+          },
+          "label": {
+            "type": "string",
+            "description": "\"2024\", \"2026 so far\", \"2023 from 14 Mar\"."
+          },
+          "comparable": {
+            "type": "boolean",
+            "description": "At least 500 km: drawn on the chart and compared."
+          },
+          "from": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "partial": {
+            "type": "boolean"
+          },
+          "distance": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "per_distance": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Per km, 6 places; null with the reason in why_not."
+          },
+          "why_not": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "no_mileage",
+              "no_costs",
+              "too_short",
+              null
+            ]
+          },
+          "running_costs_only": {
+            "type": "boolean"
+          },
+          "depreciation_to": {
+            "$ref": "#/components/schemas/NullableDate",
+            "description": "Depreciation is measured only up to the latest value, on this date."
+          },
+          "parts": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fuel",
+              "maintenance",
+              "compliance",
+              "other",
+              "depreciation"
+            ],
+            "properties": {
+              "fuel": {
+                "$ref": "#/components/schemas/TrueCostPart"
+              },
+              "maintenance": {
+                "$ref": "#/components/schemas/TrueCostPart"
+              },
+              "compliance": {
+                "$ref": "#/components/schemas/TrueCostPart"
+              },
+              "other": {
+                "$ref": "#/components/schemas/TrueCostPart"
+              },
+              "depreciation": {
+                "$ref": "#/components/schemas/TrueCostPart"
+              }
+            }
+          },
+          "insurance_payouts": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TrueCostPart"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Received, so taken off: amount positive, per_distance negative."
+          },
+          "total": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "breakdown_display": {
+            "type": "string"
+          },
+          "what_changed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TrueCostChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TrueCostChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "against",
+          "per_distance",
+          "display",
+          "lines"
+        ],
+        "properties": {
+          "against": {
+            "type": "integer",
+            "description": "The year before."
+          },
+          "per_distance": {
+            "$ref": "#/components/schemas/Decimal",
+            "description": "The change per km: exactly the sum of the lines."
+          },
+          "display": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cause",
+                "part",
+                "energy",
+                "per_distance",
+                "sentence"
+              ],
+              "properties": {
+                "cause": {
+                  "type": "string",
+                  "enum": [
+                    "part",
+                    "amount",
+                    "distance",
+                    "price",
+                    "economy",
+                    "energy",
+                    "payouts",
+                    "small"
+                  ]
+                },
+                "part": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "energy": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "per_distance": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "sentence": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TrueCostResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicle_id",
+          "period",
+          "true_cost",
+          "years"
+        ],
+        "properties": {
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "last_12_months",
+              "since_bought"
+            ]
+          },
+          "true_cost": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TrueCostPeriod"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The chosen period; null when the vehicle was not owned in it or has no ownership period."
+          },
+          "change_against_previous_12_months": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrueCostPeriod"
+            }
+          },
+          "display": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "per_distance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "change_against_previous_12_months": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         }
       },

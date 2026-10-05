@@ -3,7 +3,7 @@
 *One number for what a car costs to run, what it is made of, and why it
 changed.*
 
-Status: 📋 planned · releases **v2.16.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.16.0** · file lives in `docs/phases/`
 
 Phase 14.2 already works out a vehicle's **cost of ownership per distance**:
 running costs plus depreciation, shown on the overview card and in the
@@ -56,6 +56,9 @@ driven), Phase 14.2's cost of ownership, Phase 29's finance lines, §7.8 and
 ---
 
 ## Spec additions
+
+*The draft below was settled while building: the decisions (#150–#156)
+and the details found then are in `spec.md` §7.35, which is the source.*
 
 ### §7.35 True cost (new)
 
@@ -169,56 +172,56 @@ driven), Phase 14.2's cost of ownership, Phase 29's finance lines, §7.8 and
 ## Tasks
 
 ### Spec and docs
-- [ ] §7.35 in `spec.md`; the depreciation-for-a-period rule in §7.1 beside
+- [x] §7.35 in `spec.md`; the depreciation-for-a-period rule in §7.1 beside
       Phase 14.2's; the widget in §7.8; the Phase 32 line in §13.
-- [ ] `docs/reports.md` (or the README's reports section): true cost, its
+- [x] `docs/reports.md` (or the README's reports section): true cost, its
       parts, periods, the trend and how *What changed* is worked out.
 
 ### Code
-- [ ] `Service\Report\ValueCurve` (value points, interpolation, the
+- [x] `Service\Report\ValueCurve` (value points, interpolation, the
       no-extrapolation rule, leases).
-- [ ] `Service\Report\TrueCost` (per period: parts, per distance,
+- [x] `Service\Report\TrueCost` (per period: parts, per distance,
       partial-period labels) on the existing ledger and distance services.
-- [ ] `Service\Report\CostChange` (per-part change, fuel price and economy
+- [x] `Service\Report\CostChange` (per-part change, fuel price and economy
       split, distance effect, exact sums with display rounding).
-- [ ] Overview card breakdown and period switch; the `true_cost` widget;
+- [x] Overview card breakdown and period switch; the `true_cost` widget;
       Reports *True cost* tab with charts, table, CSV and print; the
       Expenses tab card.
-- [ ] Ask tool and API endpoint.
-- [ ] Translations (en, de), with ICU plurals, units and currency.
+- [x] Ask tool and API endpoint.
+- [x] Translations (en, de), with ICU plurals, units and currency.
 
 ### Tests
-- [ ] **Breakdown:** the five parts add up exactly to Phase 14.2's lifetime
+- [x] **Breakdown:** the five parts add up exactly to Phase 14.2's lifetime
       total per distance for every demo vehicle; finance lines are under
       *Other*; tyre costs under *Maintenance*; module off removes its part.
-- [ ] **Value curve:** interpolation between two valuations; a period past
+- [x] **Value curve:** interpolation between two valuations; a period past
       the last point is labelled and stops there; a period wholly after it
       gives "—"; a sold vehicle is exact to the sale date; a lease has no
       depreciation; a gain is negative.
-- [ ] **Periods:** calendar years in the owner's time zone (a 31 Dec 23:30
+- [x] **Periods:** calendar years in the owner's time zone (a 31 Dec 23:30
       fill-up in the right year); partial-year labels; under 500 km only in
       the table.
-- [ ] **What changed:** the contributions sum exactly to the change for
+- [x] **What changed:** the contributions sum exactly to the change for
       worked examples (a price rise with better economy; a year with less
       driving and the same insurance); the fuel split sums to the fuel part;
       small contributions grouped; display rounding never alters the total.
-- [ ] **Widget:** ranked, grouped by currency, vehicles without distance
+- [x] **Widget:** ranked, grouped by currency, vehicles without distance
       last, change against the previous 12 months, follows the chip.
-- [ ] Access: no `ViewCosts` → none of it, in HTML, API or Ask.
-- [ ] Ask tool returns figures that pass the grounding check.
+- [x] Access: no `ViewCosts` → none of it, in HTML, API or Ask.
+- [x] Ask tool returns figures that pass the grounding check.
 - [ ] Integration suite green on every engine.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: the Golf gets valuations each spring, so its trend
+- [x] `DemoDataSeeder`: the Golf gets valuations each spring, so its trend
       shows four years with depreciation. One year has a fuel price rise and
       less driving, so *What changed* shows the price, economy and distance
       lines.
 
 ### Release
-- [ ] `CHANGELOG.md` **2.16.0**: true cost per mile, its breakdown, the
+- [x] `CHANGELOG.md` **2.16.0**: true cost per mile, its breakdown, the
       dashboard widget and the yearly trend. Upgrade notes: no migration; the
       widget is appended to existing dashboards.
-- [ ] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Bump `VERSION`, rebuild assets, update the README status.
 
 ---
 
@@ -237,9 +240,33 @@ driven), Phase 14.2's cost of ownership, Phase 29's finance lines, §7.8 and
 
 ## Open questions
 
-- **Tax years:** offer UK tax years beside calendar years for the trend?
-- **Depreciation as fixed or per mile:** the distance line treats
-  depreciation as time-based. Should high-mileage drivers be able to treat
-  it as mileage-based instead?
-- **Dashboard default period:** *Last 12 months* (drafted), or *Since
-  bought*?
+Answered on 2026-10-05, before the phase was built (the full text is in
+`spec.md` §7.1, §7.7, §7.8, §7.35 and §12):
+
+- **#150 Tax years.** *Decided 2026-10-05:* calendar years only. UK tax
+  years beside them are parked (spec §12).
+- **#151 Depreciation as fixed or per mile.** *Decided 2026-10-05:*
+  always time-based, so *What changed* gives it a distance line like
+  documents. A per-vehicle mileage-based option is parked (spec §12).
+- **#152 Dashboard default period.** *Decided 2026-10-05:* *Last 12
+  months*, with *Since bought* one link away.
+
+Found while starting this phase:
+
+- **#153 Documents in short periods.** *Decided 2026-10-05:* the ledger
+  dates a document on its start date, so *Last 12 months* could miss a
+  renewal paid 13 months ago and a year could hold two. For *Last 12
+  months* and the yearly trend, a document with a start and an expiry date
+  is spread evenly over its cover by day; *Since bought* stays on the
+  ledger date, exactly as Phase 14.2.
+- **#154 A gain per distance.** *Decided 2026-10-05:* Phase 14.2 showed no
+  depreciation per mile for a gain. It is now a negative part in every
+  period, *Since bought* included, which changes Phase 14.2's per-mile
+  figure only for vehicles that gained value (called out in the
+  changelog).
+- **#155 Plug-in hybrids in *What changed*.** *Decided 2026-10-05:* the
+  fuel split into price and economy is per energy (litres, kWh, kg), so a
+  plug-in hybrid gets a pair for each, still adding up exactly.
+- **#156 Insurance payouts.** *Answered:* spec §7.7 already shows them as
+  their own *Insurance payouts* line under the groups; the breakdown keeps
+  that line instead of folding payouts into a part.

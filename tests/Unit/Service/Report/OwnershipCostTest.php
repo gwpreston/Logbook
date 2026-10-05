@@ -294,7 +294,7 @@ final class OwnershipCostTest extends TestCase
         self::assertTrue($long->perMonthIsPartial);
     }
 
-    public function testAGainReducesTheTotalAndLeavesPerDistanceToRunningCosts(): void
+    public function testAGainReducesTheTotalAndIsANegativePartPerDistance(): void
     {
         $classic = self::vehicle(purchased: '2020-03-01', price: '12000.000');
         $readings = [self::reading(1, '1000', '2020-03-01T12:00:00Z'), self::reading(2, '11000', '2026-03-01T12:00:00Z')];
@@ -310,10 +310,10 @@ final class OwnershipCostTest extends TestCase
         self::assertNotNull($cost);
         self::assertSame('-1100.000', $cost->depreciationCost?->toDecimal(3), 'money back');
         self::assertSame('900.000', $cost->total?->toDecimal(3), '£2,000 − £1,100');
-        self::assertNull($cost->depreciationPerKm);
-        self::assertSame('0.200000', $cost->perKm, '£2,000 ÷ 10,000 km');
-        self::assertTrue($cost->perKmIsPartial);
-        self::assertTrue($cost->perMonthIsPartial);
+        self::assertSame('-0.110000', $cost->depreciationPerKm, 'a gain is a negative part (#154)');
+        self::assertSame('0.090000', $cost->perKm, '£2,000 ÷ 10,000 km − £1,100 ÷ 10,000 km');
+        self::assertFalse($cost->perKmIsPartial);
+        self::assertTrue($cost->perMonthIsPartial, 'no per year for a gain');
     }
 
     public function testWithoutMileageBackToTheStartThereIsNoDistanceOwned(): void

@@ -1285,8 +1285,17 @@ from fleet totals unless "include archived" is toggled.
     mileage series that reaches back to the purchase (a reading on or before
     the purchase date). Without one, a report's rule would start from the
     first reading and divide the whole loss by part of the distance, so the
-    figure is left out. For a gain neither is shown (a per-mile appreciation
-    means nothing).
+    figure is left out. For a gain no per year is shown; from Phase 32
+    (#154) per distance is shown as a negative figure ("−£0.02/mi"), so
+    every period of §7.35 treats a gain alike.
+  - **Depreciation for a period** (Phase 32, `Service\Report\ValueCurve`;
+    the lifetime figures above are unchanged): the value on any day
+    between two points of the value series is interpolated in a straight
+    line by day, and a period's depreciation is the value at its start
+    minus the value at its end (a gain is negative). Nothing is
+    extrapolated: a period is cut to the first and latest points and
+    labelled with the date it is measured to, and a period wholly outside
+    them has none (§7.35).
   - **Stale value:** when the vehicle is not sold and its latest valuation
     is more than 12 months old (from Phase 24, the vehicle owner's
     *Valuation is stale after* setting, default 12 months, §7.24, so the
@@ -1988,8 +1997,9 @@ currency and never converted.
     up); the totals still show.
   - Under 90 days owned: no per-distance or per-month figure (too short to
     mean anything); the totals still show.
-  - Depreciation per distance unknown (no price or value, a gain, no
-    purchase date, or the value under 90 days after the purchase, §7.1):
+  - Depreciation per distance unknown (no price or value, no purchase
+    date, or the value under 90 days after the purchase, §7.1; a gain is a
+    negative part from Phase 32):
     per distance is the running part alone,
     labelled "running costs only". Likewise per month when depreciation per
     year is unknown (a gain, no purchase date, under 90 days).
@@ -2039,8 +2049,9 @@ currency and never converted.
     group and in total, depreciation, depreciation to (date), total, per
     distance (running, depreciation, total) and per month (running,
     depreciation, total); a figure that cannot be worked out is empty.
-- Not on the dashboard yet: the pinned card's four tiles need a design look
-  before a fifth.
+- On the dashboard as its own widget from Phase 32 (`true_cost`, §7.35),
+  not as a fifth tile: the pinned card keeps its four. Phase 32 also
+  splits *Per distance* into its parts, by period and by year (§7.35).
 
 ### 7.8 Dashboard
 At-a-glance fleet overview built from rearrangeable widgets (drag via SortableJS,
@@ -2116,7 +2127,10 @@ toggles.
   default order applies: needs attention (Phase 24), upcoming reminders,
   coming up, spend this month, recent fuel, your vehicles, efficiency
   trend, compliance status, mileage, recent activity, business mileage,
-  finance, cheapest fuel.
+  finance, cheapest fuel, true cost.
+- **True cost** (id `true_cost`, Phase 32; core, vehicles the viewer may
+  see costs of; appended to saved layouts by the rule above): §7.35
+  *Dashboard widget*.
 - **Cheapest fuel** (id `cheapest_fuel`, Phase 30.2, listed only while a
   price provider is enabled; appended to saved layouts by the rule above):
   §7.34 *Dashboard widget*.
@@ -3707,7 +3721,7 @@ parameter answers 400 (`invalid_parameter`).
 |---|---|
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default active) |
 | `GET /vehicles/{id}` | one vehicle, as the edit form holds it (with `first_inspection_due_on`, Phase 21.2) |
-| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it), next due item (a *First MOT* item can be it, source `first_inspection`), open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
+| `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it) and, from Phase 32, the true cost per distance (§7.35), next due item (a *First MOT* item can be it, source `first_inspection`), open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with its segment economy when it closes one and its economy-check flag |
 | `GET /vehicles/{id}/odometer` | readings with source |
 | `GET /vehicles/{id}/maintenance` | service records |
@@ -3830,6 +3844,12 @@ the other party). Links to records and attachments are read-only here
 active agreement's summary and schedule (the latest ended one when none is
 active), with §7.32's access rules and without the agreement number; no
 writes. With `finance` off it answers 404.
+
+**True cost** (Phase 32, §7.35): `GET /api/v1/vehicles/{id}/true-cost`
+(`?period=last_12_months`, the default, or `since_bought`), the parts per
+km, the change against the 12 months before, each calendar year and its
+*What changed*; core, needs `ViewCosts` (403 without). The summary's
+`costs` carries `true_cost_per_distance`.
 
 **Not in this version:** editing or deleting through the API, writes
 beyond those above (valuations, schedules, tyre fitting and changes, trips'
@@ -6133,6 +6153,158 @@ third party.
   request is made, and no listed price, link offer, *Cheapest near me*,
   widget, alert, API route or Ask tool appears (the API route answers 404).
 
+### 7.35 True cost (Phase 32)
+One number for what a vehicle costs to run per mile or km, what it is made
+of, and why it changed. Derived on every read (`Service\Report\ValueCurve`,
+`TrueCost`, `CostChange`), never stored, in the vehicle's currency and never
+converted. It splits §7.7's *Cost of ownership* into parts and adds periods;
+it replaces none of the other figures.
+
+- **Parts:** *Fuel*, *Maintenance*, *Documents* and *Other* are the cost
+  ledger's groups (§7.7), read through the same ledger with its rules: tyre
+  costs under maintenance, Phase 29's finance lines under other, and
+  switched-off modules left out. *Depreciation* is the fifth part. Labels
+  and icons are fixed and translated (*Fuel*, *Maintenance*, *Insurance,
+  tax and MOT* for documents, *Other*, *Depreciation*). **Insurance
+  payouts** (Phase 27.1, `incidents` on) stay what §7.7 makes them: their
+  own *Insurance payouts* line under the parts, taken off the total, never
+  folded into a part.
+- **Periods:** *Since bought* (§7.7's ownership period, unchanged), *Last
+  12 months* (the reports' preset: this month and the 11 before, cut to the
+  ownership period; under 90 days, no per-distance figure, as §7.7), and
+  the 12 months before it for the change, and each **calendar year** in
+  the owner's time zone
+  (calendar years only; UK tax years are parked, #150). The current year
+  and the first year of ownership are partial and say so ("2026 so far",
+  "2023 from 14 Mar"); so is the year of a sale ("2026 to 12 Mar").
+- **Documents in the 12-month and yearly periods** (#153): a document with
+  both a start and an expiry date is **spread evenly over its cover by
+  day** (start to expiry, both inclusive), and each period takes the days
+  of cover inside it, so a renewal paid 13 months ago still counts in *Last
+  12 months* and a year never holds two renewals. The shares are worked
+  out in micro-units and the last day takes the remainder, so a document's
+  shares add up exactly to its cost. A document without both dates counts
+  on its ledger date. *Since bought* counts documents on their ledger date,
+  exactly as §7.7 does.
+- **Per distance** for a period = each part's amount ÷ the period's
+  distance driven (§7.7), the depreciation part ÷ the distance driven up to
+  the date it is measured to (below). Rates are kept per km to 6 places:
+  the running parts and the payouts are shared out (largest remainder) so
+  they add up exactly to the running rate, and the depreciation rate is
+  added to it, so the parts always add up exactly to the total. Shown in
+  the owner's unit as money per distance with the currency's places and
+  one more ("£0.34/mi", "£0.344/mi"); rounding is for display only, and a
+  negative part carries a minus sign ("−£0.02/mi"). Without distance in a
+  period, or without a mileage log reaching back to its start, no
+  per-distance figure is shown ("Not enough mileage logged"). *Since bought*
+  is §7.7's *Per distance*, split: its five parts and the payouts line add
+  up exactly to the card's figure.
+- **Depreciation for a period** (§7.1 *Depreciation for a period*;
+  `Service\Report\ValueCurve`):
+  - the vehicle's **value points** are §7.1's value series: the purchase
+    price on the purchase date, each valuation on its date, and the sale
+    price on the sale date (several on one day: the last one counts);
+  - the value on any day between two points is interpolated in a straight
+    line by day;
+  - a period's depreciation = value at its start − value at its end; a
+    gain is negative, as in §7.7, and is shown as a negative part in every
+    period, *Since bought* included (#154);
+  - **no extrapolation:** a period that starts before the first point is
+    measured from it; one that runs past the latest point is measured up to
+    it and labelled "depreciation to 1 Mar 2026"; a period entirely after
+    it (or entirely before the first) shows depreciation as "—" and the
+    total as *running costs only*, with §7.1's prompt to add a valuation.
+  - **A purchase price is needed**, as for §7.1's depreciation: without
+    one (a lease, typically) there is no depreciation in any period and the
+    rentals are the cost (§7.32). With a price but no purchase date, the
+    points are the valuations and the sale.
+- **Overview *Cost of ownership* card:** under *Per distance*, the
+  five-part breakdown as a stacked bar and a list (in a line, as the
+  widget, the API and Ask give it: "Fuel £0.14/mi · Maintenance £0.05/mi ·
+  Insurance, tax and MOT £0.04/mi · Other £0.02/mi · Depreciation £0.09/mi
+  = £0.34/mi"), with a switch between *Since bought* and *Last 12 months* (two links,
+  `?true_cost=last_12_months`, so it works without JS). §7.7's other figures are
+  unchanged. A negative part (a gain, payouts) is listed with its sign and
+  left out of the bar.
+- **Dashboard widget** `true_cost` (core, needs `ViewCosts`; appended to
+  saved layouts by §7.8's rule, last in the default order):
+  - one row per visible active vehicle: the headline per distance for the
+    chosen period (*Last 12 months* by default, #152, or *Since bought*:
+    two links in the widget's title row, `?true_cost=since_bought`, kept with the
+    vehicle chip and not saved), its stacked bar, and the change
+    against the previous 12 months ("↑ £0.03/mi", "↓ £0.01/mi", "No
+    change", or nothing when either period has no figure);
+  - ranked highest first, grouped by currency (the currency with most
+    vehicles first), with amounts never converted;
+  - vehicles without distance in the period are listed last, with "Not
+    enough mileage logged";
+  - it follows the vehicle chip. The pinned card's four tiles are
+    untouched.
+- **Trend** (a *True cost* tab in Reports, `/reports/true-cost`, part of
+  the `reports` module, with the reports' vehicle and *include archived*
+  filters; and a card on the vehicle's Expenses tab):
+  - cost per distance by calendar year, stacked by part, one chart per
+    vehicle (Chart.js, with the table as the no-JS and print fallback);
+  - partial years are drawn hatched and labelled;
+  - a year with under 500 km (311 mi) of distance driven is shown in the
+    table only, as too little to compare.
+  - Fleet view: one line per vehicle (total per distance by year) for
+    vehicles in the same currency.
+  - CSV export `/reports/true-cost.csv` with the same filters: vehicle,
+    year, partial (yes/no), distance (unit in the header), each part's
+    amount and per distance, insurance payouts, total and total per
+    distance.
+- **What changed** (under the trend, for each year against the one before,
+  both with at least 500 km): the change in total per distance is split
+  into contributions that **add up exactly** to it:
+  - **for each part,** its change per distance;
+  - **the fuel part is split further, per energy** (#155: petrol or diesel
+    in litres, electricity in kWh, CNG in kg, so a plug-in hybrid gets two
+    pairs) into *price* (the change in average price per unit × last year's
+    consumption) and *economy* (the change in consumption × this year's
+    average price). Average price = the energy's cost ÷ its units bought;
+    consumption = units bought ÷ distance driven, so price × consumption is
+    the energy's cost per distance and the pair sums exactly to its change.
+    An energy bought in only one of the two years is one line, its change
+    per distance;
+  - **distance:** for the fixed-cost parts (documents and depreciation,
+    always treated as time-based, #151), the change caused by driving a
+    different distance with the same amount, shown as its own line
+    ("Insurance, tax and MOT +£0.02/mi, because you drove 1,185 mi less").
+    This is the part's amount this year ÷ this year's distance − the same
+    amount ÷ last year's distance, with the rest of the part's change shown
+    as the change in the amount itself;
+  - payouts, when either year has some, are one line.
+  Each contribution is shown as a fixed, translated sentence, largest
+  first, with its sign: "Fuel +£0.003/mi: fuel cost 5% more per litre
+  (+£0.007/mi); economy improved by 3% (−£0.005/mi)"; a part's amount
+  line says how much more or less was spent ("£88.46 more spent";
+  depreciation: "lost £187.23 more in value"). Contributions under 0.2 of
+  the currency's smallest unit per distance unit (0.2p a mile) are grouped
+  as *Other small changes* ("Other changes too small to show" when they
+  round to nothing), and a fuel detail that small is left out of the fuel
+  sentence. The figures are never rounded so that they stop adding up: the
+  total line is the exact sum, and rounding is per line for display only.
+- **Ask Logbook** (§7.26): a `true_cost(vehicles?, period, by_year?)` tool
+  (`period` one of `since_bought`, `last_12_months`) returning the
+  breakdowns, the trend and the *What changed* contributions with their
+  sentences and display strings, so "Why has my BMW got more expensive?" is
+  answered from these figures, and the grounding check applies as usual.
+  Core (no module), offered to MCP clients with the other read tools
+  (§7.28).
+- **API** (§7.20): `GET /api/v1/vehicles/{id}/true-cost?period=` (the same
+  two periods, default `last_12_months`, plus `years` and their *What
+  changed*) with the same figures as decimal strings (money to 3 places,
+  rates per km to 6), sentences and `display` text; the vehicle summary's
+  `costs` gains `true_cost_per_distance` (per km, the last 12 months) and
+  its `display` the same, formatted.
+- **Access:** everything here needs `ViewCosts` (§5, Phase 19): without it
+  the card's breakdown, the widget's row, the report, the API route (403)
+  and the tool leave the vehicle out.
+- **Not in scope:** inflation adjustment (§7.7), forecasting cost per
+  mile, comparisons with other people's cars, a mileage-based depreciation
+  option (parked, #151).
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -6413,8 +6585,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   are Phase 25's economy drift, §7.24.)
 - Tread depth per zone (inner / centre / outer) (#12).
 - An insurance document's agreed value offered as a valuation (#19).
-- A cost-of-ownership tile or widget on the dashboard, after a design pass
-  (#21).
+- True cost (Phase 32): UK tax years beside calendar years on the trend
+  (#150); a per-vehicle option to treat depreciation as mileage-based, so
+  *What changed* gives it no distance line (#151).
 - Recurring expenses (road tax, permits) with a repeat interval, shown in
   *Coming up* (#24).
 - Trips (Phase 22): an *Employer* per trip with its own rates and mileage
@@ -6780,6 +6953,18 @@ task breakdowns live in the per-phase files; this is the map.
   The Fuel stations module's icon, missing from the bundled icon sprite
   since v2.13.0, is added, with a test that every icon an enum names is in
   the sprite; release v2.15.1.
+- **Phase 32 — True cost per mile, its breakdown and its trend + v2.16
+  release.** Cost of ownership per distance split into fuel, maintenance,
+  documents, other and depreciation for *Since bought*, *Last 12 months*
+  and each calendar year; depreciation for any period interpolated
+  between value points and never extrapolated; documents spread over
+  their cover in the 12-month and yearly periods; the overview card's
+  breakdown, the `true_cost` dashboard widget, the Reports *True cost*
+  tab with its chart, table and CSV and the Expenses tab card; *What
+  changed*, each year's change split exactly into parts, fuel price and
+  economy per energy, and distance; the `true_cost` Ask tool and API
+  endpoint (§7.1, §7.7, §7.8, §7.20, §7.26, §7.35). No migration. Release
+  v2.16.0.
 
 ---
 

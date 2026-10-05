@@ -106,7 +106,7 @@ user prefers, so automations can compare and chart them:
 | `GET /me` | the key's user and preferences, the key's name and scope, which modules are on |
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default `active`) |
 | `GET /vehicles/{id}` | one vehicle, as its edit form holds it |
-| `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months, what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
+| `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months and the true cost per km (depreciation included), what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with the economy of the tank it closes and its economy-check flag (paged) |
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
 | `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre) (paged) |
@@ -119,6 +119,7 @@ user prefers, so automations can compare and chart them:
 | `POST /vehicles/{id}/expenses` | add an expense (read and write key; cost access not needed) |
 | `GET /vehicles/{id}/tyres` | tyres: fitted, stored, retired, with tread and what is due |
 | `POST /vehicles/{id}/tyres/checks` | record a tread check (read and write key) |
+| `GET /vehicles/{id}/true-cost` | true cost per km for `?period=last_12_months` (default) or `since_bought`: each part (fuel, maintenance, compliance, other, depreciation) and insurance payouts, adding up exactly, the change against the 12 months before, each calendar year and what changed from the year before, with translated sentences (cost access, else `403`) |
 | `GET /vehicles/{id}/finance` | the active finance agreement's figures and schedule, else the latest ended one's; estimates marked as such, never the agreement number (Manage and cost access, else `404`; finance module) |
 | `POST /vehicles/{id}/reminders` | add a manual reminder (read and write key; Manage) |
 | `GET /upcoming` | *Coming up* over the next 12 months (`?vehicle=`) |

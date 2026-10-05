@@ -36,6 +36,9 @@ use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
+use Logbook\Service\Report\TrueCostRange;
+use Logbook\Service\Report\TrueCostService;
+use Logbook\Service\Report\TrueCostWidget;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Service\Vehicle\VehicleSnapshot;
 use Logbook\Service\Vehicle\VehicleSnapshots;
@@ -74,6 +77,7 @@ final readonly class DashboardService
         private FinanceService $financeService,
         private FuelPriceConfig $fuelPrices,
         private CheapestFuelWidgets $cheapestFuel,
+        private TrueCostService $trueCosts,
     ) {
     }
 
@@ -82,8 +86,11 @@ final readonly class DashboardService
      *
      * @param int|null $vehicleId the selected vehicle; unknown or archived means the fleet
      */
-    public function build(User $user, ?int $vehicleId = null): Dashboard
-    {
+    public function build(
+        User $user,
+        ?int $vehicleId = null,
+        TrueCostRange $trueCostRange = TrueCostRange::TwelveMonths,
+    ): Dashboard {
         $layout = $this->layouts->load($user->id);
         $enabled = $this->features->all();
         $available = array_values(array_filter(
@@ -158,6 +165,10 @@ final readonly class DashboardService
             attention: $show(DashboardWidget::NeedsAttention) ? $attention : null,
             finance: $show(DashboardWidget::Finance) ? $this->finance($user, $scope) : null,
             cheapestFuel: $show(DashboardWidget::CheapestFuel) ? $this->cheapestFuel->build($user, $selected) : null,
+            // Only vehicles whose costs the user may see (spec.md §7.35 *Access*).
+            trueCost: $show(DashboardWidget::TrueCost)
+                ? TrueCostWidget::of($this->trueCosts->forVehicles($user, $costly, $today), $trueCostRange)
+                : null,
         );
     }
 

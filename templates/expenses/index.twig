@@ -60,6 +60,24 @@
             </section>
         </div>
 
+        {# True cost by year (spec.md §7.35): the trend and what changed, as on the report. #}
+        {% if true_cost and true_cost.years is not empty %}
+            {% import 'macros/true_cost.twig' as tcm %}
+            <section class="card" aria-labelledby="true-cost-heading">
+                <div class="card__header">
+                    <h2 id="true-cost-heading" class="card__title">{{ 'true_cost.expenses_card'|trans }}</h2>
+                    {% if feature_enabled('reports') %}
+                        <a class="card__link" href="{{ url_for('reports.true_cost', {}, {vehicle: vehicle.id}) }}">{{ 'true_cost.report_title'|trans }}</a>
+                    {% endif %}
+                </div>
+                {% if true_cost_chart %}
+                    {{ ui.chart(true_cost_chart, true_cost_chart_label) }}
+                {% endif %}
+                {{ tcm.table(true_cost, true_cost_wording, true_cost_chart_label) }}
+                {{ tcm.changes(true_cost, true_cost_wording) }}
+            </section>
+        {% endif %}
+
         {% if finance_overlap|default([]) is not empty %}
             {# Phase 29.1 (spec.md §7.32 *Overlap warning*). #}
             <section class="alert alert--warning" role="status" aria-labelledby="finance-overlap">

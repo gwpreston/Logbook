@@ -50,6 +50,12 @@ final readonly class CostItem
         public ?int $createdBy = null,
         /** The incident the source record is part of (Phase 27.1, spec.md §7.29). */
         public ?int $incidentId = null,
+        /**
+         * A document's expiry when it has both a start and an expiry date
+         * on or after it: the last day of its cover, so the cost can be
+         * spread over it (spec.md §7.35, #153).
+         */
+        public ?DateTimeImmutable $coverTo = null,
     ) {
     }
 
@@ -129,6 +135,9 @@ final readonly class CostItem
             icon: $data->type->icon(),
             title: $data->title ?? $data->provider,
             createdBy: $document->createdBy,
+            coverTo: $data->startOn !== null && $data->expiryOn !== null && $data->expiryOn >= $data->startOn
+                ? $data->expiryOn
+                : null,
         );
     }
 
