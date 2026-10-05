@@ -80,7 +80,7 @@
     </div>
 </header>
 
-<nav class="tabs" aria-label="{{ 'vehicle.tab.label'|trans({name: vehicle.name()}) }}">
+<nav class="tabs" data-vehicle-tabs aria-label="{{ 'vehicle.tab.label'|trans({name: vehicle.name()}) }}">
     {% for tab in tabs %}
         <a class="tabs__link" href="{{ url_for(tab.route, {id: vehicle.id}) }}"{% if tab.key == active_tab %} aria-current="page"{% endif %}>{{ ui.icon(tab.icon) }}{{ tab.label|trans }}</a>
     {% endfor %}

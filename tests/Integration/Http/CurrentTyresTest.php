@@ -178,7 +178,7 @@ final class CurrentTyresTest extends AppTestCase
         self::assertStringContainsString('No tyre', self::card($html, 'spare'));
     }
 
-    public function testFittedIsTheLatestFittingOrMove(): void
+    public function testFittedOrMovedIsTheLatestFittingOrMove(): void
     {
         $this->carWithTyres();
         $fitted = $this->fitted($this->car);
@@ -192,13 +192,18 @@ final class CurrentTyresTest extends AppTestCase
         ]);
         $html = self::body($this->browser->get($this->base));
 
-        self::assertStringContainsString('Fitted Sept 2026 · 7,100 mi covered', self::card($html, 'rl'), 'moved');
+        self::assertStringContainsString('Moved Sept 2026 · 7,100 mi covered', self::card($html, 'rl'), 'a rotation is a move');
+        $fl = self::card($html, 'fl');
         self::assertStringContainsString(
-            'Fitted Sept 2026 · 8,100 mi covered since 3 Oct 2025',
-            self::card($html, 'fl'),
-            'moved after being recorded as already on: still counted since then',
+            'Moved Sept 2026 · 8,100 mi covered',
+            $fl,
+            'moved after being recorded as already on: its whole distance',
         );
-        self::assertStringContainsString('Fitted Jan 2026', self::card($html, 'fr'), 'not moved');
+        self::assertStringNotContainsString('since', $fl, 'one date on the line');
+        self::assertStringNotContainsString('Fitted ', $fl);
+        self::assertStringContainsString('Fitted Jan 2026 · 7,100 mi covered', self::card($html, 'fr'), 'not moved');
+        $rr = self::card($html, 'rr');
+        self::assertStringContainsString('8,100 mi covered since 3 Oct 2025', $rr, 'still where it was recorded');
     }
 
     public function testAMotorbikesFrontAndRear(): void

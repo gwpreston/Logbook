@@ -61,6 +61,8 @@ final readonly class TripListAction
             'split' => $this->split->forVehicle($user, $vehicle, $year->start, $until),
             'year_trips' => $this->trips->countVisible($user, $vehicle, $year->start, $until),
             'claim_totals' => ClaimTotals::byCurrency($claim->rows),
+            // No claim value: no business trips this year, or trips without a rate in effect.
+            'business_trips' => !$claim->isEmpty(),
             'sees_everyone' => $this->trips->seesEveryone($user, $vehicle),
         ]);
     }

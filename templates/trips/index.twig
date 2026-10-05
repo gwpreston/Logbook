@@ -21,7 +21,7 @@
         {# Log trip and Export CSV sit in the Business and private card's header. #}
         {% include 'vehicles/_list_toolbar.twig' with {title: 'trip.title'|trans, module: 'trips', add: null, export: false} %}
 
-        {{ trips_ui.split_stats(split, tax_year, claim_totals, year_trips) }}
+        {{ trips_ui.split_stats(split, tax_year, claim_totals, year_trips, business_trips) }}
 
         {{ trips_ui.split_card(vehicle, split, tax_year) }}
 

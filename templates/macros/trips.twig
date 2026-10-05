@@ -5,8 +5,9 @@
 {# The Trips tab's strip (spec.md §7.22): business and private for a period
    (or the distance driven only), the claim value (one tile per currency)
    and how many trips the viewer can see in it. split: SplitFigures;
-   totals: list<ClaimTotals>; count: int. #}
-{% macro split_stats(split, tax_year, totals, count) -%}
+   totals: list<ClaimTotals>; count: int; business_trips: whether the
+   viewer has business trips this year, so an empty claim says why. #}
+{% macro split_stats(split, tax_year, totals, count, business_trips = true) -%}
     {% import 'macros/ui.twig' as ui %}
     {% set dash = '—' %}
     <dl class="stats">
@@ -19,7 +20,7 @@
         {% for total in totals %}
             {{ ui.stat('trip.stat.claim'|trans, total.approvedAmount()|money(total.currency), 'trip.stat.claim_hint'|trans) }}
         {% else %}
-            {{ ui.stat('trip.stat.claim'|trans, dash, 'trip.stat.claim_none'|trans) }}
+            {{ ui.stat('trip.stat.claim'|trans, dash, (business_trips ? 'trip.stat.claim_none' : 'trip.stat.claim_no_trips')|trans) }}
         {% endfor %}
         {{ ui.stat('trip.stat.trips'|trans, count|number, 'trip.stat.tax_year'|trans({year: tax_year.label()})) }}
     </dl>

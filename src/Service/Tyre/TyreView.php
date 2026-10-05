@@ -35,6 +35,8 @@ final readonly class TyreView
          * the `existing` change, which $since already dates.
          */
         public ?DateTimeImmutable $fittedOn = null,
+        /** $fittedOn dates a move to another position (a rotation), not a fitting. */
+        public bool $moved = false,
     ) {
     }
 }

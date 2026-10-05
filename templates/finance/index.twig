@@ -8,7 +8,8 @@
  # /vehicles/{id}/finance/{agreement} (that one): the shared vehicle header,
  # the agreement in the prototype's cards with its schedule, extras and
  # quotes (finance/_agreement.twig), then the earlier agreements. With no
- # agreement to show, *How did you buy it?* and *Add finance*. Printed
+ # agreement to show, *How did you buy it?* and *Add finance* (a plain
+ # "No finance agreements" where none can be added). Printed
  # through the browser with its own header (Phase 17.2 conventions); the
  # vehicle header, forms and buttons stay off the paper. Figures, never
  # advice.
@@ -32,12 +33,9 @@
             <div class="btn-row list-toolbar__actions">
                 {% if view %}
                     {% set agreement = view.agreement %}
-                    {{ ui.print_button() }}
+                    {# End and Delete agreement sit in the agreement card, apart from the vehicle's Delete. #}
+                    {{ ui.print_button(false) }}
                     <a class="btn btn--ghost" href="{{ url_for('finance.schedule', {id: vehicle.id, agreement: agreement.id}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
-                    {% if page.open %}
-                        <a class="btn" href="{{ url_for('finance.end', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('stop_circle') }}{{ 'finance.end.title'|trans }}</a>
-                    {% endif %}
-                    <a class="btn btn--danger" href="{{ url_for('finance.delete', {id: vehicle.id, agreement: agreement.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                     {% if page.canAdd %}
                         <a class="btn btn--primary" href="{{ url_for('finance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'finance.add'|trans }}</a>
                     {% endif %}
@@ -51,12 +49,12 @@
         {% if view %}
             {% include 'finance/_agreement.twig' with {view: view, page: page} %}
         {% else %}
-            {# The prototype's empty card, worded to the app's scope (HP, PCP, loan, lease). #}
+            {# The prototype's empty card, worded to the app's scope (HP, PCP, loan, lease); a plain statement where none can be added (an archived vehicle). #}
             <section class="card finance-empty" aria-labelledby="finance-empty-heading">
                 <span class="finance-empty__icon">{{ ui.icon('account_balance') }}</span>
                 <div>
-                    <h2 id="finance-empty-heading" class="card__title">{{ 'finance.empty_title'|trans }}</h2>
-                    <p class="muted">{{ 'finance.empty_body'|trans }}</p>
+                    <h2 id="finance-empty-heading" class="card__title">{{ (page.canAdd ? 'finance.empty_title' : 'finance.none_title')|trans }}</h2>
+                    <p class="muted">{{ (page.canAdd ? 'finance.empty_body' : 'finance.none_body')|trans }}</p>
                 </div>
                 {% if page.canAdd %}
                     <a class="btn btn--soft" href="{{ url_for('finance.create', {id: vehicle.id}) }}">{{ ui.icon('add') }}{{ 'finance.add'|trans }}</a>

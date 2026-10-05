@@ -56,7 +56,7 @@
                 {% if incident.writeOff.isWrittenOff() %}
                     <div><dt>{{ 'incident.field.write_off'|trans }}</dt><dd>{{ incident.writeOff.labelKey()|trans }}</dd></div>
                 {% endif %}
-                <div><dt>{{ 'incident.field.status'|trans }}</dt><dd>{{ incident.status.labelKey()|trans }}{% if incident.closedOn %} · {{ 'incident.closed_on'|trans({date: incident.closedOn|local_date}) }}{% endif %}</dd></div>
+                <div><dt>{{ 'incident.field.status'|trans }}</dt><dd>{{ incident.closedOn and incident.status.value == 'closed' ? 'incident.closed_on'|trans({date: incident.closedOn|local_date}) : incident.status.labelKey()|trans }}</dd></div>
                 {% if odometer %}<div><dt>{{ 'incident.field.odometer'|trans }}</dt><dd class="tabular">{{ odometer|distance(0) }}</dd></div>{% endif %}
                 {% if incident.details %}
                     <div><dt>{{ 'incident.field.fault'|trans }}</dt><dd>{{ incident.fault.labelKey()|trans }}</dd></div>
@@ -80,7 +80,7 @@
                     {% if incident.claimUpdatedOn %}<div><dt>{{ 'incident.field.claim_updated_on'|trans }}</dt><dd>{{ incident.claimUpdatedOn|local_date }}</dd></div>{% endif %}
                 </dl>
                 {% if incident.otherPartyName or incident.otherPartyRegistration or incident.otherPartyInsurer or incident.policeReference %}
-                    <h3 class="section-title section-title--sm">{{ 'incident.section.other_party'|trans }}</h3>
+                    <h3 class="card__subtitle">{{ 'incident.section.other_party'|trans }}</h3>
                     <dl class="meta-grid">
                         {% if incident.otherPartyName %}<div><dt>{{ 'incident.field.other_party_name'|trans }}</dt><dd>{{ incident.otherPartyName }}</dd></div>{% endif %}
                         {% if incident.otherPartyRegistration %}<div><dt>{{ 'incident.field.other_party_registration'|trans }}</dt><dd>{{ incident.otherPartyRegistration }}</dd></div>{% endif %}

@@ -338,6 +338,7 @@ final readonly class TyreService
         }
         $retiredOn = [];
         $placedBy = [];
+        $moved = [];
         $ordered = $changes;
         usort($ordered, TyreChange::compare(...));
         foreach ($ordered as $change) {
@@ -346,6 +347,7 @@ final readonly class TyreService
             }
             foreach ([...$change->linesOf(TyreLineAction::On), ...$change->linesOf(TyreLineAction::Move)] as $line) {
                 $placedBy[$line->tyreId] = $change;
+                $moved[$line->tyreId] = $line->action === TyreLineAction::Move;
             }
         }
 
@@ -376,6 +378,7 @@ final readonly class TyreService
                 wear: $wear,
                 ageLimitOn: $tyre->isRetired() ? null : $thresholds->ageLimitOn($made),
                 fittedOn: self::fittedOn($tyre, $placedBy[$tyre->id] ?? null),
+                moved: $moved[$tyre->id] ?? false,
             );
         }
 

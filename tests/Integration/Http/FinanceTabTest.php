@@ -269,6 +269,67 @@ final class FinanceTabTest extends AppTestCase
         self::assertSame(200, $csv->getStatusCode());
     }
 
+    public function testTheAgreementsOwnActionsSitInItsCardAndDeleteStaysInTheTab(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $agreement = $this->add($app, $browser, $golf, self::pcp());
+        $url = '/vehicles/' . $golf->id . '/finance';
+        $delete = $url . '/' . $agreement->id . '/delete';
+        $document = Html::document(self::body($browser->get($url)));
+
+        // Edit, End agreement and Delete agreement in the agreement card, apart from the vehicle's Delete.
+        $card = $document->querySelector('section[aria-labelledby="finance-agreement-heading"]');
+        self::assertNotNull($card);
+        $link = $card->querySelector('a[href="' . $delete . '"]');
+        self::assertNotNull($link, 'Delete agreement in the card');
+        self::assertTrue($link->hasAttribute('data-modal'), 'in the modal, like End agreement');
+        self::assertSame('Delete agreement', trim((string) $link->textContent));
+        self::assertNotNull($card->querySelector('a[href="' . $url . '/' . $agreement->id . '/end"][data-modal]'));
+        $toolbar = $document->querySelector('.list-toolbar');
+        self::assertNotNull($toolbar);
+        self::assertNull($toolbar->querySelector('a[href="' . $delete . '"]'), 'not in the toolbar');
+        // Print is there, but not the page's main action.
+        $print = $toolbar->querySelector('[data-print]');
+        self::assertSame('btn', $print?->getAttribute('class'));
+        // Purchase and Value & equity beside the agreement card.
+        $aside = $document->querySelector('.finance-layout > .finance-layout__aside');
+        self::assertNotNull($aside);
+        self::assertNotNull($aside->querySelector('#finance-purchase-heading'));
+        self::assertNotNull($aside->querySelector('#finance-value-heading'));
+
+        // The confirmation page within the Finance tab; the modal has the question alone.
+        $page = Html::document(self::body($browser->get($delete)));
+        self::assertSame(1, $page->querySelectorAll('h1')->length);
+        self::assertSame('Delete this finance agreement?', trim((string) $page->querySelector('h1')?->textContent));
+        self::assertSame($url, $page->querySelector('nav.tabs [aria-current="page"]')?->getAttribute('href'));
+        $modal = self::body($browser->get($delete, ['X-Logbook-Modal' => '1']));
+        self::assertStringContainsString('data-modal-fragment', $modal);
+        self::assertStringNotContainsString('nav class="tabs"', $modal);
+        self::assertStringContainsString('action="' . $delete . '"', $modal);
+
+        $deleted = $browser->post($delete);
+        self::assertSame(303, $deleted->getStatusCode());
+        self::assertSame([], $this->service($app, FinanceAgreementRepository::class)->listForVehicle($golf->id));
+    }
+
+    public function testAnArchivedVehicleWithoutAgreementsIsNotAskedHowItWasBought(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        self::assertSame(303, $browser->post('/vehicles/' . $golf->id . '/archive')->getStatusCode());
+
+        $page = self::body($browser->get('/vehicles/' . $golf->id . '/finance'));
+        self::assertStringContainsString('No finance agreements', $page);
+        self::assertStringContainsString('No finance agreement was recorded for this vehicle.', $page);
+        self::assertStringNotContainsString('How did you buy it?', $page);
+        self::assertStringNotContainsString('/finance/new', $page);
+    }
+
     public function testTheEmptyCardAndEarlierAgreements(): void
     {
         $app = $this->createApp();

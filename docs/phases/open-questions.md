@@ -246,7 +246,7 @@ on 2026-10-05, before it was built.
 | 182 | [33.3](phase-33.3.md) | Finance *Purchase* card: seller and mileage when bought not stored (found by the audit) | Decided | Stored: seller, and the odometer when bought as a dated reading (spec §6 Vehicle, §7.1, §7.32). | 2026-10-05 |
 | 183 | [33.3](phase-33.3.md) | PCP end note wording (found by the audit) | Decided | Kept as a neutral list of the options (spec §7.32). | 2026-10-05 |
 | 184 | [33.3](phase-33.3.md) | Tyre bar scale (found by the audit) | Decided | From the tyre's first measured depth to the legal minimum; no bar until two measurements (spec §7.17). | 2026-10-05 |
-| 185 | [33.3](phase-33.3.md) | Other prototype extras: *Breakdown* type, *Copy for insurance quote*, period picker, "Fitted {month}", thresholds note (found by the audit) | Decided | Build *Copy for insurance quote*, *Fitted {month}*, the thresholds note from the user's settings and a *Breakdown* incident type; the period picker is parked (spec §12). | 2026-10-05 |
+| 185 | [33.3](phase-33.3.md) | Other prototype extras: *Breakdown* type, *Copy for insurance quote*, period picker, "Fitted {month}", thresholds note (found by the audit) | Decided | Build *Copy for insurance quote*, *Fitted {month}*, the thresholds note from the user's settings and a *Breakdown* incident type; the period picker is parked (spec §12). Amended by the owner after the design review: a move or rotation reads "Moved {month}", the distance is the tyre's whole distance, and "since {date}" only for a tyre recorded as already on and not fitted or moved since (spec §7.17). | 2026-10-05 |
 
 ## Other loose ends found in the review
 

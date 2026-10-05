@@ -161,6 +161,53 @@ final class IncidentLayoutTest extends AppTestCase
         self::assertStringContainsString('<dt>Net cost</dt><dd class="tabular">£400.00</dd>', $page);
     }
 
+    /**
+     * The card of the incident whose type link reads $type.
+     */
+    private static function cardOf(string $page, string $type): string
+    {
+        foreach (explode('<article class="incident-card">', $page) as $card) {
+            if (str_contains($card, '>' . $type . '</a>')) {
+                return (string) strstr($card, '</article>', true);
+            }
+        }
+        self::fail('no ' . $type . ' card');
+    }
+
+    public function testAnUnclaimedCardSaysNotClaimedRatherThanDashes(): void
+    {
+        [$app, $golf] = $this->golfWithIncidents();
+        $browser = $this->browserFor($app, 'owner');
+        $tab = '/vehicles/' . $golf->id . '/incidents';
+
+        $card = self::cardOf(self::body($browser->get($tab)), 'Pothole');
+        self::assertStringContainsString('<dt>Fault</dt>', $card);
+        self::assertStringContainsString('<dt>Insurance</dt><dd>Not claimed</dd>', $card);
+        self::assertStringNotContainsString('—', $card, 'no row of dashes');
+        self::assertStringNotContainsString('Insurer', $card);
+        self::assertStringNotContainsString('Net cost', $card, 'nothing linked yet');
+
+        $pothole = array_values(array_filter(
+            $this->incidents($app, $golf),
+            static fn (Incident $i): bool => $i->data->type === IncidentType::Pothole,
+        ))[0];
+        $repair = $this->maintenance($app, $golf, '2025-11-25', 'Wheel alignment', '85.00');
+        $this->service($app, IncidentRepository::class)->setLink(LinkKind::Maintenance, $golf->id, $repair->id, $pothole->id);
+        $card = self::cardOf(self::body($browser->get($tab)), 'Pothole');
+        self::assertStringContainsString('<dt>Net cost</dt><dd class="tabular">£85.00</dd>', $card);
+        self::assertStringNotContainsString('Insurer paid', $card);
+
+        // A claimed one keeps its insurer and payout.
+        self::assertStringContainsString('<dt>Insurer</dt>', self::cardOf(self::body($browser->get($tab)), 'Collision'));
+
+        // Without the details, whether it was claimed is not shown.
+        $viewer = $this->createMember($app, 'viewer');
+        $this->service($app, VehicleShareRepository::class)
+            ->insert($golf->id, $viewer->id, ShareLevel::View, true, false, new DateTimeImmutable(self::NOW));
+        $theirs = self::body($this->browserFor($app, 'viewer')->get($tab));
+        self::assertStringNotContainsString('Not claimed', $theirs);
+    }
+
     public function testAViewerWithoutDetailsGetsNoFaultAndOnlyLinkedCosts(): void
     {
         [$app, $golf] = $this->golfWithIncidents();

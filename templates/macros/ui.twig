@@ -374,10 +374,11 @@
 {# The Print button (History's print view, the sale pack, the report pages;
    spec.md §8 *Printing reports*): js/app.js shows it and calls
    window.print(); without JS it stays hidden and the browser's own Print
-   does the same. #}
-{% macro print_button() -%}
+   does the same. primary: false where printing isn't the page's main
+   action (the Finance tab). #}
+{% macro print_button(primary = true) -%}
     {% import _self as ui %}
-    <button type="button" class="btn btn--primary" data-print hidden>{{ ui.icon('print') }}{{ 'history.print'|trans }}</button>
+    <button type="button" class="btn{{ primary ? ' btn--primary' }}" data-print hidden>{{ ui.icon('print') }}{{ 'history.print'|trans }}</button>
 {%- endmacro %}
 
 {# Previous / next links for a Support\View\Pagination. `query` keeps other

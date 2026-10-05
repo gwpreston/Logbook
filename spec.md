@@ -3526,9 +3526,11 @@ the wear estimate and tyre reminders came with Phase 11.2 (below).
     measured depth down to the legal minimum, shown only once the tyre has
     two measurements (#184); brand and model with the season, size with
     the age from DOT; then "Fitted {Mon YYYY} · {distance} covered" (the
-    date of the tyre's latest fitting or move, derived from its changes,
-    #185; "since {date}" for a tyre already on the vehicle) and the wear
-    estimate as today, labelled as one. *Check tread* is a button beside
+    date of the tyre's latest fitting, derived from its changes, #185;
+    "Moved {Mon YYYY}" when its latest change was a move or rotation) with
+    the tyre's whole distance, or "{distance} covered since {date}" for a
+    tyre recorded as already on the vehicle and not fitted or moved since;
+    and the wear estimate as today, labelled as one. *Check tread* is a button beside
     *Fit tyres*. Under the cards, a note from the owner's own tyre
     settings (#185): "You replace at 3.0 mm; the legal minimum you set is
     1.6 mm." with "Legal minimums differ by country; check yours."
@@ -5407,7 +5409,9 @@ nothing is counted twice (§6 Incident).
     location", a pill from the claim status ("Claim open", "Claim
     settled", "No claim", …) beside the other badges, the description
     (clamped to three lines), damage and severity, and a two-column grid
-    of fault, insurer, insurer paid and net cost. Location, description,
+    of fault, insurer, insurer paid and net cost (for an incident never
+    claimed: fault, "Insurance: Not claimed" and the net cost when it has
+    linked costs, never empty dashes). Location, description,
     fault, insurer and payout are detail fields: shown only where the
     viewer may see details (below).
   - **Breakdown** (type `breakdown`, #185): a breakdown or recovery with no
@@ -5977,7 +5981,9 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
   button goes. The tab **is the active agreement's page**, laid out as the
   prototype's finance content:
   - an **agreement card**: the type as its title, "lender · agreement
-    number" under it, *Edit*; the regular payment large; a progress bar
+    number" under it, *Edit*, *End agreement* and *Delete agreement* (the
+    agreement's own actions, apart from the vehicle's *Delete*); the
+    regular payment large; a progress bar
     "Payment {k} of {n}" and "Ends {Mon YYYY}"; two tiles, *Paid so far*
     (`AgreementFigures::paidTotal`: deposits, payments made, extras,
     settlement and fees) and *Still to pay* (remaining to pay, with the
@@ -5987,19 +5993,22 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
     settlement); and for PCP the neutral end note (#183): "At the end you
     can pay the optional final payment and keep the vehicle, hand it back,
     or part-exchange it. Mileage and condition charges may apply.";
-  - a **Purchase** card: price, date, *Bought from*, *Mileage when bought*
-    (§7.1) and how it was paid (the agreement's type);
+  - beside the agreement card on a wide screen (under it on a phone and
+    on paper), a **Purchase** card: price, date, *Bought from*, *Mileage
+    when bought* (§7.1) and how it was paid (the agreement's type);
   - a **Value & equity** card (not for a lease): current value (§7.1),
     settlement (the estimate or quote, labelled), equity, or "Add a
     valuation to see your equity";
   - under them, the agreement page's own sections unchanged in content:
-    warnings, the schedule with its marks, extras, quotes, *End
-    agreement*, *Delete*, print and CSV;
+    warnings, the schedule with its marks, extras, quotes, print (a
+    secondary button) and CSV; the delete confirmation also sits within
+    the tab, and opens in the modal on desktop;
   - then *Earlier agreements* as a list, each linking to its agreement
     page, which opens in the same tab frame (`/vehicles/{id}/finance/
     {agreement}`, the same cards).
   With no agreement, one card: "How did you buy it?", a lead and *Add
-  finance*. With no active agreement but earlier ones, that card above
+  finance*; where none can be added (an archived vehicle), "No finance
+  agreements" instead. With no active agreement but earlier ones, that card above
   *Earlier agreements*. Every finance URL keeps answering; the add, edit,
   end and quote pages keep their URLs. The overview's finance card stays.
 - **Agreement page** (`/vehicles/{id}/finance/{agreement}`): the figures,

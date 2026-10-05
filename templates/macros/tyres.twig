@@ -128,8 +128,10 @@
             </div>
             <div class="tyre-card__foot">
                 <p class="tabular">
-                    {%- if view.fittedOn %}{{ 'tyre.fitted_on'|trans({month: view.fittedOn|local_month}) }} · {% endif -%}
-                    {%- if view.since -%}
+                    {#- "Fitted" or "Moved" with the tyre's whole distance; "since" only for a tyre recorded as already on and not placed since. -#}
+                    {%- if view.fittedOn -%}
+                        {{ (view.moved ? 'tyre.moved_on' : 'tyre.fitted_on')|trans({month: view.fittedOn|local_month}) }} · {{ 'tyre.covered'|trans({distance: view.distance.km|distance}) }}
+                    {%- elseif view.since -%}
                         {{ 'tyre.covered_since'|trans({distance: view.distance.km|distance, date: view.since|local_date}) }}
                     {%- else -%}
                         {{ 'tyre.covered'|trans({distance: view.distance.km|distance}) }}

@@ -15,7 +15,7 @@
         {% include 'vehicles/_header.twig' with {active_tab: 'incidents'} %}
 
         <div class="toolbar list-toolbar">
-            <h1 class="visually-hidden">{{ 'incident.title'|trans }}</h1>
+            <h1 id="incidents-heading" class="visually-hidden">{{ 'incident.title'|trans }}</h1>
             <div class="btn-row list-toolbar__actions">
                 <a class="btn btn--ghost" href="{{ url_for('incidents.history', {}, {vehicle: vehicle.id}) }}">{{ ui.icon('history') }}{{ 'incident.history.link'|trans }}</a>
                 {% if can_vehicle(vehicle, 'manage') %}
@@ -29,7 +29,6 @@
 
         {% if incidents is empty %}
             <section class="card" aria-labelledby="incidents-heading">
-                <h2 id="incidents-heading" class="visually-hidden">{{ 'incident.title'|trans }}</h2>
                 <div class="empty">
                     {{ ui.icon('car_crash') }}
                     <p class="empty__title">{{ 'incident.empty_title'|trans }}</p>
@@ -40,7 +39,6 @@
             {{ incidents_ui.stats(vehicle, stats) }}
 
             <section aria-labelledby="incidents-heading">
-                <h2 id="incidents-heading" class="visually-hidden">{{ 'incident.title'|trans }}</h2>
                 <ul class="incident-grid">
                     {% for incident in incidents %}
                         <li>{{ incidents_ui.card(vehicle, incident, attachment_counts.of('incident', incident.id)) }}</li>

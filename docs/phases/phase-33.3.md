@@ -143,6 +143,26 @@ the audit and the owner's decisions:
 - [ ] Integration suite green on every engine; design-reviewer clean of
       HIGH findings.
 
+### 33.3.9 Design review fixes
+- [x] Trips legend: the label keeps its width, the value wraps under it.
+- [x] Vehicle tabs: the current tab scrolled into view (app.js); edge
+      shadows and a thin scrollbar show the strip scrolls without JS;
+      focus ring inside the strip.
+- [x] Trips: Export CSV once (`export ?? true`); the empty claim tile says
+      "no business trips this tax year" or "no mileage rates yet".
+- [x] Finance: the agreement card beside a Purchase and Value & equity
+      column (one column below 72rem and on paper); wrapped values stay
+      right; *Edit*, *End agreement* and *Delete agreement* in the card;
+      Print secondary; the delete confirmation within the tab and in the
+      modal; "No finance agreements" where none can be added.
+- [x] Tyres: "Moved {month}" for a move (#185 amended); cards on
+      `--surface` so the pills pass AA.
+- [x] Incidents: "Insurance: Not claimed" and the net cost on an
+      unclaimed card; "Closed {date}"; *Other party* as a sub-heading;
+      no hidden `<h2>` under the tab's `<h1>`.
+- [x] Claims history title keeps one line at 375 px; Insights bodies
+      clamp at three lines (the prototype's two cut a qualifier).
+
 ---
 
 ## Prototype notes
@@ -381,4 +401,8 @@ Numbers are the log's ([`open-questions.md`](open-questions.md)).
 - **#185 Other prototype extras:** a *Breakdown* incident type, *Copy for
   insurance quote*, a period picker on *Business and private*, "Fitted
   {month}" on tyre cards, a tyre thresholds note. *Decided 2026-10-05:* build all four extras (*Breakdown*, *Copy for insurance quote*, *Fitted {month}*, the thresholds note); the period picker is parked (spec §12).
-  (found by the audit)
+  (found by the audit) *Amended 2026-10-05 (design review, owner's
+  decision):* a tyre whose latest change was a move or rotation reads
+  "Moved {month}" rather than "Fitted"; the distance is the tyre's whole
+  distance, with "since {date}" only for a tyre recorded as already on
+  the vehicle and not fitted or moved since (spec §7.17).

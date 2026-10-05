@@ -307,6 +307,7 @@ final class TripsTest extends AppTestCase
         self::assertStringNotContainsString('Belfast', $card);
         self::assertSame(1, substr_count($page, '>Log trip<'), 'not in the toolbar as well');
         self::assertStringContainsString('/vehicles/' . $golf->id . '/import/trips', $page, 'Import CSV stays');
+        self::assertSame(1, substr_count($page, '/vehicles/' . $golf->id . '/export/trips'), 'Export CSV once, in the card');
         self::assertMatchesRegularExpression('/Trips<\/dt>\s*<dd[^>]*>2</', $page, 'this tax year only');
 
         // Business over the log: the warning and the Mileage tab, no bar.
@@ -316,6 +317,36 @@ final class TripsTest extends AppTestCase
         self::assertStringContainsString('href="/vehicles/' . $golf->id . '/odometer"', $exceeds);
         self::assertStringNotContainsString('stack-bar', $exceeds);
         self::assertStringNotContainsString('%', $exceeds);
+    }
+
+    public function testAnEmptyClaimTileSaysWhy(): void
+    {
+        [$app, $browser, $golf] = $this->golf();
+        $tab = '/vehicles/' . $golf->id . '/trips';
+        $browser->get('/settings/trips');
+
+        // Rates but no business trips this tax year (a private one and last year's don't count).
+        $this->logTrip($browser, $golf, ['distance' => '50', 'is_business' => '0', 'purpose' => '']);
+        $this->logTrip($browser, $golf, ['distance' => '40', 'travelled_on' => '2026-03-01']);
+        $none = self::body($browser->get($tab));
+        self::assertStringContainsString('no business trips this tax year', $none);
+        self::assertStringNotContainsString('no mileage rates yet', $none);
+
+        // A business trip at the rates: the value, no hint.
+        $this->logTrip($browser, $golf, ['distance' => '100', 'travelled_on' => '2026-06-01']);
+        $valued = self::body($browser->get($tab));
+        self::assertStringContainsString('£55.00', $valued);
+        self::assertStringNotContainsString('no business trips this tax year', $valued);
+
+        // Business trips without a rate in effect: the rates are what's missing.
+        $rates = $this->service($app, MileageRateSetRepository::class);
+        foreach ($rates->listForUser($this->owner($app)->id) as $set) {
+            $browser->get('/settings/trips/rates/' . $set->id . '/delete');
+            $browser->post('/settings/trips/rates/' . $set->id . '/delete', []);
+        }
+        $unvalued = self::body($browser->get($tab));
+        self::assertStringContainsString('no mileage rates yet', $unvalued);
+        self::assertStringNotContainsString('no business trips this tax year', $unvalued);
     }
 
     public function testWithoutReadingsTheCardSaysSo(): void

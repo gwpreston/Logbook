@@ -787,6 +787,11 @@ pre {
     row-gap: var(--space-2);
 }
 
+/* The title keeps its own width: what follows it wraps first. */
+.card__header--wrap > .card__title {
+    flex: 1 1 auto;
+}
+
 .card__title {
     flex: 1;
     font-size: var(--fs-lg);
@@ -1976,6 +1981,8 @@ a.segmented__option {
 
 .details dd {
     margin: 0;
+    /* A value that wraps under its label stays on the right, like the rest. */
+    margin-inline-start: auto;
     font-weight: 600;
     text-align: right;
     overflow-wrap: anywhere;
@@ -2202,15 +2209,27 @@ a.segmented__option {
     position: absolute;
 }
 
-/* Vehicle tabs: one URL each, so they work without JS. */
+/* Vehicle tabs: one URL each, so they work without JS. When they don't
+ * fit, the strip scrolls sideways and says so without JS: a shadow at each
+ * edge with more tabs beyond it (the page-coloured covers scroll with the
+ * tabs and hide a shadow at the end), and a thin scrollbar a mouse can
+ * drag. The rule under the tabs scrolls with them too, so the scrollbar
+ * sits below it. app.js brings the current tab into view. */
 .tabs {
+    --tabs-shade: color-mix(in srgb, var(--text) 22%, transparent);
     display: flex;
     gap: 6px;
     overflow-x: auto;
     margin: 0 calc(-1 * var(--space-4));
     padding: 0 var(--space-4);
-    border-bottom: 1px solid var(--border);
-    scrollbar-width: none;
+    background:
+        linear-gradient(var(--border), var(--border)) left bottom / 100% 1px no-repeat local,
+        linear-gradient(to right, var(--bg) 40%, transparent) left / 2.5rem 100% no-repeat local,
+        linear-gradient(to left, var(--bg) 40%, transparent) right / 2.5rem 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, var(--tabs-shade), transparent) left / 0.875rem 100% no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, var(--tabs-shade), transparent) right / 0.875rem 100% no-repeat scroll;
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted) transparent;
 }
 
 .tabs__link {
@@ -2219,12 +2238,16 @@ a.segmented__option {
     align-items: center;
     gap: 6px;
     min-height: var(--control-h);
-    margin-bottom: -1px;
     padding: 0 var(--space-3);
     border-bottom: 2px solid transparent;
     color: var(--muted);
     font-weight: 700;
     white-space: nowrap;
+}
+
+/* Inside the strip: the strip clips anything outside it. */
+.tabs__link:focus-visible {
+    outline-offset: -2px;
 }
 
 .tabs__link:hover {
@@ -3321,13 +3344,15 @@ a.list__title:hover {
 
 .legend__item {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    column-gap: 0.5ch;
     min-width: 0;
 }
 
+/* The label keeps its own width; the value moves under it rather than over it. */
 .legend__label {
-    flex: 1;
-    min-width: 0;
+    flex: 1 0 auto;
     color: var(--muted);
 }
 
@@ -3672,6 +3697,8 @@ a.list__title:hover {
     font-weight: 700;
 }
 
+/* Three lines, not the prototype's two: at 375 px two cut an insight's
+   qualifier ("Running costs only."). */
 .insight__body {
     display: -webkit-box;
     overflow: hidden;
@@ -3679,8 +3706,8 @@ a.list__title:hover {
     font-size: var(--fs-sm);
     line-height: 1.45;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
 }
 
 .insights__empty {
@@ -4670,7 +4697,7 @@ a.list__title:hover {
     gap: var(--space-2);
     min-width: 0;
     padding: var(--space-4);
-    background: var(--surface-2);
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
 }
@@ -4738,10 +4765,10 @@ a.list__title:hover {
     font-size: var(--fs-sm);
 }
 
-/* First measured depth (full) down to the legal minimum (empty). */
+/* First measured depth (full) down to the legal minimum (empty), on the
+   bar's own track: the card is on --surface, as the prototype's is. */
 .tyre-card__bar {
     height: 0.5rem;
-    background: var(--surface);
 }
 
 .tyre-card__bar--valid {
@@ -5754,6 +5781,29 @@ p.stat__label {
     margin-top: 2px;
     color: var(--muted);
     font-size: var(--fs-xs);
+}
+
+/* The agreement card in the main column, Purchase and Value & equity
+   stacked beside it once the content area is wide enough for both (past
+   the sidebar); one column on a phone and on paper. */
+.finance-layout,
+.finance-layout__aside {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-card);
+    align-items: start;
+}
+
+@media (min-width: 72rem) {
+    .finance-layout {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+}
+
+@media print {
+    .finance-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .finance-empty {

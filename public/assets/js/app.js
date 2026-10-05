@@ -830,6 +830,22 @@
     }
 
     /*
+     * Vehicle tabs (spec.md §8 *Vehicle header*): when the strip scrolls,
+     * bring the current tab into view, centred where it can be. Only the
+     * strip scrolls, never the page; without JS the strip shows that it
+     * scrolls (app.css).
+     */
+    function enhanceTabs(strip) {
+        var current = strip.querySelector('[aria-current="page"]');
+        if (!current || strip.scrollWidth <= strip.clientWidth) {
+            return;
+        }
+        var box = strip.getBoundingClientRect();
+        var tab = current.getBoundingClientRect();
+        strip.scrollLeft += tab.left - box.left - (strip.clientWidth - tab.width) / 2;
+    }
+
+    /*
      * Desktop modal forms (spec.md §5). A link marked data-modal opens its
      * page in the <dialog> when the viewport is wide (the sidebar
      * breakpoint): the page is fetched with X-Logbook-Modal, and the server
@@ -1266,6 +1282,7 @@
         document.querySelectorAll('[data-print]').forEach(enhancePrint);
         document.querySelectorAll('[data-sale-pack-paperwork]').forEach(enhancePaperwork);
         document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
+        document.querySelectorAll('[data-vehicle-tabs]').forEach(enhanceTabs);
 
         drawCharts();
         window.addEventListener('beforeprint', beforePrint);

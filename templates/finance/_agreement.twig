@@ -42,7 +42,8 @@
     </section>
 {% endif %}
 
-<div class="card-grid">
+{# The agreement card in the main column; Purchase and Value & equity beside it on a wide screen, under it on a narrow one. #}
+<div class="finance-layout">
     {# The agreement: type, lender and number, the regular payment, the progress bar, the two tiles and the figures. #}
     <section class="card" aria-labelledby="finance-agreement-heading">
         <div class="card__header card__header--wrap">
@@ -53,9 +54,16 @@
                 </p>
             </div>
             {{ fin.status(agreement) }}
-            {% if not vehicle.isArchived() %}
-                <a class="btn no-print" href="{{ url_for('finance.edit', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
-            {% endif %}
+            {# The agreement's own actions, here rather than in the toolbar so they read as the agreement's, not the vehicle's. #}
+            <div class="btn-row no-print">
+                {% if not vehicle.isArchived() %}
+                    <a class="btn" href="{{ url_for('finance.edit', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                {% endif %}
+                {% if page.open %}
+                    <a class="btn" href="{{ url_for('finance.end', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('stop_circle') }}{{ 'finance.end.title'|trans }}</a>
+                {% endif %}
+                <a class="btn btn--danger" href="{{ url_for('finance.delete', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('delete') }}{{ 'finance.delete_agreement'|trans }}</a>
+            </div>
         </div>
 
         <div>
@@ -192,67 +200,69 @@
         <p class="field__hint">{{ 'finance.not_advice'|trans }}</p>
     </section>
 
-    {# Purchase (#182): the vehicle's own purchase fields and how it was paid. #}
-    {% set vdata = vehicle.data %}
-    {% set bought_at = page.purchaseReading %}
-    <section class="card" aria-labelledby="finance-purchase-heading">
-        <h2 id="finance-purchase-heading" class="card__title">{{ 'finance.purchase.title'|trans }}</h2>
-        <dl class="details">
-            {% if vdata.purchasePrice is not null %}
-                <div><dt>{{ 'vehicle.field.purchase_price'|trans }}</dt><dd class="tabular">{{ vdata.purchasePrice|money(currency) }}</dd></div>
+    <div class="finance-layout__aside">
+        {# Purchase (#182): the vehicle's own purchase fields and how it was paid. #}
+        {% set vdata = vehicle.data %}
+        {% set bought_at = page.purchaseReading %}
+        <section class="card" aria-labelledby="finance-purchase-heading">
+            <h2 id="finance-purchase-heading" class="card__title">{{ 'finance.purchase.title'|trans }}</h2>
+            <dl class="details">
+                {% if vdata.purchasePrice is not null %}
+                    <div><dt>{{ 'vehicle.field.purchase_price'|trans }}</dt><dd class="tabular">{{ vdata.purchasePrice|money(currency) }}</dd></div>
+                {% endif %}
+                {% if vdata.purchaseDate %}
+                    <div><dt>{{ 'vehicle.field.purchase_date'|trans }}</dt><dd>{{ vdata.purchaseDate|local_date }}</dd></div>
+                {% endif %}
+                {% if vdata.purchaseSeller %}
+                    <div><dt>{{ 'vehicle.field.purchase_seller'|trans }}</dt><dd>{{ vdata.purchaseSeller }}</dd></div>
+                {% endif %}
+                {% if bought_at %}
+                    <div><dt>{{ 'vehicle.field.purchase_odometer'|trans }}</dt><dd class="tabular">{{ bought_at.readingKm|distance }}</dd></div>
+                {% endif %}
+                <div><dt>{{ 'finance.purchase.how_paid'|trans }}</dt><dd>{{ agreement.type().labelKey()|trans }}</dd></div>
+            </dl>
+            {% if vdata.purchasePrice is null and not vdata.purchaseDate and not lease and can_vehicle(vehicle, 'manage') and not vehicle.isArchived() %}
+                <p class="field__hint no-print"><a href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal>{{ 'finance.purchase.add'|trans }}</a></p>
             {% endif %}
-            {% if vdata.purchaseDate %}
-                <div><dt>{{ 'vehicle.field.purchase_date'|trans }}</dt><dd>{{ vdata.purchaseDate|local_date }}</dd></div>
-            {% endif %}
-            {% if vdata.purchaseSeller %}
-                <div><dt>{{ 'vehicle.field.purchase_seller'|trans }}</dt><dd>{{ vdata.purchaseSeller }}</dd></div>
-            {% endif %}
-            {% if bought_at %}
-                <div><dt>{{ 'vehicle.field.purchase_odometer'|trans }}</dt><dd class="tabular">{{ bought_at.readingKm|distance }}</dd></div>
-            {% endif %}
-            <div><dt>{{ 'finance.purchase.how_paid'|trans }}</dt><dd>{{ agreement.type().labelKey()|trans }}</dd></div>
-        </dl>
-        {% if vdata.purchasePrice is null and not vdata.purchaseDate and not lease and can_vehicle(vehicle, 'manage') and not vehicle.isArchived() %}
-            <p class="field__hint no-print"><a href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal>{{ 'finance.purchase.add'|trans }}</a></p>
-        {% endif %}
-    </section>
-
-    {# Value & equity (not for a lease): the current value (§7.1), the settlement and the equity. #}
-    {% if not lease %}
-        {% set value = page.currentValue %}
-        <section class="card" aria-labelledby="finance-value-heading">
-            <h2 id="finance-value-heading" class="card__title">{{ 'finance.value.title'|trans }}</h2>
-            {% if value %}
-                <div>
-                    <p class="stat__label">{{ 'finance.value.current'|trans }}</p>
-                    <p class="figure tabular">{{ value.amount|money(currency) }}</p>
-                    <p class="muted">{{ (value.kind.value == 'sold' ? 'finance.value.sold_on' : 'finance.value.valued_on')|trans({date: value.date|local_date}) }}</p>
-                </div>
-            {% endif %}
-            {% if figures.settlement or figures.equity %}
-                <dl class="finance-tiles">
-                    {% if figures.settlement %}
-                        <div class="finance-tile">
-                            <dt>{{ (figures.settlement.isEstimate() ? 'finance.value.settlement_estimate' : 'finance.value.settlement_quoted')|trans }}</dt>
-                            <dd class="finance-tile__value tabular">{{ figures.settlement.amount|money }}</dd>
-                        </div>
-                    {% endif %}
-                    {% if figures.equity %}
-                        <div class="finance-tile">
-                            <dt>{{ 'finance.row.equity'|trans }}</dt>
-                            <dd class="finance-tile__value tabular{{ figures.equity.isPositive() ? '' : ' finance-tile__value--negative' }}">{{ fin.equity(figures.equity) }}</dd>
-                        </div>
-                    {% endif %}
-                </dl>
-            {% endif %}
-            {% if figures.equity %}
-                <p class="field__hint">{{ 'finance.equity_hint'|trans({value: figures.equity.valuation|money, date: figures.equity.valuedOn|local_date}) }}</p>
-            {% elseif figures.equityNeedsValuation or not value %}
-                <p class="no-print"><a href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ (figures.equityNeedsValuation ? 'finance.equity_needs_valuation' : 'finance.value.add')|trans }}</a></p>
-            {% endif %}
-            {% if figures.settlement %}<p class="field__hint">{{ 'finance.value.ask_lender'|trans }}</p>{% endif %}
         </section>
-    {% endif %}
+
+        {# Value & equity (not for a lease): the current value (§7.1), the settlement and the equity. #}
+        {% if not lease %}
+            {% set value = page.currentValue %}
+            <section class="card" aria-labelledby="finance-value-heading">
+                <h2 id="finance-value-heading" class="card__title">{{ 'finance.value.title'|trans }}</h2>
+                {% if value %}
+                    <div>
+                        <p class="stat__label">{{ 'finance.value.current'|trans }}</p>
+                        <p class="figure tabular">{{ value.amount|money(currency) }}</p>
+                        <p class="muted">{{ (value.kind.value == 'sold' ? 'finance.value.sold_on' : 'finance.value.valued_on')|trans({date: value.date|local_date}) }}</p>
+                    </div>
+                {% endif %}
+                {% if figures.settlement or figures.equity %}
+                    <dl class="finance-tiles">
+                        {% if figures.settlement %}
+                            <div class="finance-tile">
+                                <dt>{{ (figures.settlement.isEstimate() ? 'finance.value.settlement_estimate' : 'finance.value.settlement_quoted')|trans }}</dt>
+                                <dd class="finance-tile__value tabular">{{ figures.settlement.amount|money }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if figures.equity %}
+                            <div class="finance-tile">
+                                <dt>{{ 'finance.row.equity'|trans }}</dt>
+                                <dd class="finance-tile__value tabular{{ figures.equity.isPositive() ? '' : ' finance-tile__value--negative' }}">{{ fin.equity(figures.equity) }}</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                {% endif %}
+                {% if figures.equity %}
+                    <p class="field__hint">{{ 'finance.equity_hint'|trans({value: figures.equity.valuation|money, date: figures.equity.valuedOn|local_date}) }}</p>
+                {% elseif figures.equityNeedsValuation or not value %}
+                    <p class="no-print"><a href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ (figures.equityNeedsValuation ? 'finance.equity_needs_valuation' : 'finance.value.add')|trans }}</a></p>
+                {% endif %}
+                {% if figures.settlement %}<p class="field__hint">{{ 'finance.value.ask_lender'|trans }}</p>{% endif %}
+            </section>
+        {% endif %}
+    </div>
 </div>
 
 <section class="card" aria-labelledby="finance-schedule">

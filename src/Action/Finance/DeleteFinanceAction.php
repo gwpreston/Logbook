@@ -41,7 +41,7 @@ final readonly class DeleteFinanceAction
         ];
 
         if ($request->getMethod() !== 'POST') {
-            return $this->view->render($request, $response, 'entries/delete.twig', [
+            return $this->view->render($request, $response, 'finance/delete.twig', [
                 'vehicle' => $vehicle,
                 'title' => 'finance.delete_title',
                 'body' => 'finance.delete_body',

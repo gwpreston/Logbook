@@ -16,7 +16,7 @@
     <h1 class="visually-hidden">{{ title }}</h1>
     <div class="btn-row list-toolbar__actions">
         {% if print|default(false) %}{{ ui.print_button() }}{% endif %}
-        {% if export|default(true) %}{{ exp.export_link(vehicle, module) }}{% else %}{{ exp.import_csv(vehicle, module) }}{% endif %}
+        {% if export ?? true %}{{ exp.export_link(vehicle, module) }}{% else %}{{ exp.import_csv(vehicle, module) }}{% endif %}
         {% if add|default(null) and not vehicle.isArchived() and can_vehicle(vehicle, add.ability ?? 'log') %}
             <a class="btn btn--primary" href="{{ url_for(add.route, {id: vehicle.id}) }}" data-modal>{{ ui.icon(add.icon ?? 'add') }}{{ add.label }}</a>
         {% endif %}
