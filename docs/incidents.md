@@ -1,7 +1,7 @@
 # Incidents, damage and insurance claims
 
 Log what happened to a vehicle (a scrape in a car park, a break-in, a
-pothole) and keep the claim with it. Repairs, expenses and tyre changes stay
+pothole, a breakdown) and keep the claim with it. Repairs, expenses and tyre changes stay
 ordinary records that you **link** to the incident, so their cost is counted
 once, where it always was.
 
@@ -32,6 +32,9 @@ they are.
 ## Logging an incident
 
 **Log incident** is on each vehicle's **Incidents** tab and in *Log entry*.
+The tab shows a card per incident (open ones first) with a strip of totals
+above them: incidents, claims, what insurers paid and the net cost. Each
+card opens the incident's page.
 The form has four parts:
 
 - **What happened:** the date (not in the future), the time if you know
@@ -158,9 +161,16 @@ payout and no-claims effect. Insurers usually ask about the last 5 years,
 including incidents that weren't your fault and ones on vehicles you no
 longer own, so that is the default.
 
+Above the list are four tiles: the claims in the period and how many were
+your fault, the time since your last at-fault claim, what insurers paid and
+the excess (amounts only where you can see costs). **Copy for insurance
+quote** copies the rows you are looking at as plain text, one line each
+("12 Mar 2024 – Collision – Not at fault – Claim settled – £1,240.00 – 2019
+BMW 320d"), ready to paste into a quote form; it needs JavaScript.
+
 Filter by 3, 5 or 10 years or by dates, by vehicle or driver, by fault, or
-to claims only. It prints cleanly (black on white) and downloads as CSV. The
-other party is never included in either.
+to claims only. It prints cleanly (black on white, as a table) and downloads
+as CSV. The other party is never included in either.
 
 ## History, Reports and cost of ownership
 

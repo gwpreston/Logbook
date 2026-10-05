@@ -87,11 +87,21 @@
 {# "Export CSV" (and, unless the vehicle is archived, "Import CSV") links for
    one of a vehicle's lists (spec.md §7.7, §7.13). #}
 {% macro export_link(vehicle, module) -%}
+    {% import _self as self %}
+    {{ self.export_csv(vehicle, module) }}
+    {{ self.import_csv(vehicle, module) }}
+{%- endmacro %}
+
+{# CSV export and import are Manage (spec.md §7.21). #}
+{% macro export_csv(vehicle, module) -%}
     {% import 'macros/ui.twig' as ui %}
-    {# CSV export and import are Manage (spec.md §7.21). #}
     {% if can_vehicle(vehicle, 'manage') %}
     <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: module}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
     {% endif %}
+{%- endmacro %}
+
+{% macro import_csv(vehicle, module) -%}
+    {% import 'macros/ui.twig' as ui %}
     {% if not vehicle.isArchived() and can_vehicle(vehicle, 'manage') %}
         <a class="btn btn--ghost" href="{{ url_for('import.upload', {id: vehicle.id, module: module}) }}">{{ ui.icon('upload_file') }}{{ 'import.csv'|trans }}</a>
     {% endif %}

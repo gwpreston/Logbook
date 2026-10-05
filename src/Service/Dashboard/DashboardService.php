@@ -26,6 +26,7 @@ use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelHistory;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\History\ActivityFeed;
+use Logbook\Service\Insights\InsightsService;
 use Logbook\Service\Reminder\DueCounter;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderOverview;
@@ -55,6 +56,8 @@ final readonly class DashboardService
 {
     public const int RECENT_FILLS = 5;
     public const int EFFICIENCY_MONTHS = 12;
+    /** The Insights widget shows the first two, as the prototype (spec.md §7.8). */
+    public const int INSIGHTS = 2;
 
     public function __construct(
         private DashboardLayoutStore $layouts,
@@ -78,6 +81,7 @@ final readonly class DashboardService
         private FuelPriceConfig $fuelPrices,
         private CheapestFuelWidgets $cheapestFuel,
         private TrueCostService $trueCosts,
+        private InsightsService $insights,
     ) {
     }
 
@@ -138,6 +142,12 @@ final readonly class DashboardService
             ? $this->attention->forVehicles($user, $scope, sync: $overview === null, forecast: $comingUp)
             : null;
 
+        // Shared by their widgets and Insights, so each is worked out once.
+        $claim = $show(DashboardWidget::BusinessMileage)
+            ? $this->claims->thisYear($user, $today, $selected !== null ? [$selected->id] : [])
+            : null;
+        $finance = $show(DashboardWidget::Finance) ? $this->finance($user, $scope) : null;
+
         return new Dashboard(
             layout: $layout,
             available: $available,
@@ -159,15 +169,16 @@ final readonly class DashboardService
             mileage: $show(DashboardWidget::Mileage) ? $this->mileage($user, $scope, $today) : null,
             activity: $show(DashboardWidget::RecentActivity) ? $this->activity->latest($user, $scope) : [],
             comingUp: $comingUp,
-            businessMileage: $show(DashboardWidget::BusinessMileage)
-                ? $this->claims->thisYear($user, $today, $selected !== null ? [$selected->id] : [])
-                : null,
+            businessMileage: $claim,
             attention: $show(DashboardWidget::NeedsAttention) ? $attention : null,
-            finance: $show(DashboardWidget::Finance) ? $this->finance($user, $scope) : null,
+            finance: $finance,
             cheapestFuel: $show(DashboardWidget::CheapestFuel) ? $this->cheapestFuel->build($user, $selected) : null,
             // Only vehicles whose costs the user may see (spec.md §7.35 *Access*).
             trueCost: $show(DashboardWidget::TrueCost)
                 ? TrueCostWidget::of($this->trueCosts->forVehicles($user, $costly, $today), $trueCostRange)
+                : null,
+            insights: $show(DashboardWidget::Insights)
+                ? $this->insights->forVehicles($user, $scope, $selected === null, $today, self::INSIGHTS, $claim, $finance)
                 : null,
         );
     }

@@ -11,6 +11,7 @@ use Logbook\Service\Finance\AgreementView;
 use Logbook\Service\FuelPrices\CheapestFuelWidget;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\History\ActivityItem;
+use Logbook\Service\Insights\Insight;
 use Logbook\Service\Reminder\ReminderOverview;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Report\TrueCostWidget;
@@ -32,6 +33,7 @@ final readonly class Dashboard
      * @param list<VehicleCompliance> $compliance
      * @param list<ActivityItem> $activity newest first
      * @param list<AgreementView>|null $finance
+     * @param list<Insight>|null $insights
      */
     public function __construct(
         public DashboardLayout $layout,
@@ -60,6 +62,8 @@ final readonly class Dashboard
         public ?CheapestFuelWidget $cheapestFuel = null,
         /** Each vehicle's true cost, ranked (Phase 32); null while hidden. */
         public ?TrueCostWidget $trueCost = null,
+        /** The first insights (Phase 33.3, spec.md §7.8); null while hidden. */
+        public ?array $insights = null,
     ) {
     }
 

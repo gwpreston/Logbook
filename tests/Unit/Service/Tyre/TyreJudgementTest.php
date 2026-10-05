@@ -15,6 +15,7 @@ use Logbook\Domain\Tyre\TyreStatus;
 use Logbook\Service\Maintenance\DueStatus;
 use Logbook\Service\Reminder\ReminderGenerator;
 use Logbook\Service\Reminder\ReminderPreferences;
+use Logbook\Service\Tyre\TyreCardFlag;
 use Logbook\Service\Tyre\TyreDistanceFigure;
 use Logbook\Service\Tyre\TyreJudgement;
 use Logbook\Service\Tyre\TyreMeasurement;
@@ -237,5 +238,41 @@ final class TyreJudgementTest extends TestCase
 
         self::assertSame(DueStatus::Overdue, $verdict->status);
         self::assertEquals(self::day('2026-09-20'), $verdict->dueOn, 'due since the check that found it worn');
+    }
+
+    public function testTheCardFlagsMostSevereFirstWithTheOthersBelow(): void
+    {
+        $worn = self::wearing(1, P::FrontLeft, '2.900', dot: '0115');
+        $fine = self::wearing(2, P::FrontRight, '7.000');
+        $unknown = self::view(3, P::RearLeft);
+        $below = self::wearing(4, P::RearRight, '1.500');
+        $verdict = self::judge([$worn, $fine, $unknown, $below]);
+
+        $keys = static fn (TyreView $view): array => array_map(
+            static fn (TyreCardFlag $flag): string => $flag->key,
+            TyreCardFlag::of($verdict->standing($view->tyre->id), $view),
+        );
+        self::assertSame(['wear_overdue', 'age_overdue'], $keys($worn), 'worn and over the age limit: both shown');
+        self::assertSame(['good'], $keys($fine));
+        self::assertSame([], $keys($unknown), 'nothing judgeable: no pill, the card claims nothing');
+        self::assertSame(['legal_below', 'wear_overdue'], $keys($below), 'the legal minimum outranks the rest');
+
+        $flags = TyreCardFlag::of($verdict->standing($below->tyre->id), $below);
+        self::assertSame(['overdue', 'error'], [$flags[0]->tone, $flags[0]->icon]);
+        $good = TyreCardFlag::of($verdict->standing($fine->tyre->id), $fine);
+        self::assertSame(['valid', 'check_circle'], [$good[0]->tone, $good[0]->icon]);
+    }
+
+    public function testTheCardFlagsSoonBelowOverdue(): void
+    {
+        // 3.2 mm, 0.2 mm per 1,000 km: 1,000 km to replace-at, within the lead distance; the DOT
+        // (week 42 of 2020) reaches 6 years within the lead time.
+        $view = self::wearing(1, P::FrontLeft, '3.200', dot: '4220');
+        $verdict = self::judge([$view]);
+
+        $flags = TyreCardFlag::of($verdict->standing($view->tyre->id), $view);
+        self::assertSame(['wear_soon', 'age_soon'], array_map(static fn (TyreCardFlag $f): string => $f->key, $flags));
+        self::assertSame('soon', $flags[0]->tone);
+        self::assertSame('warning', $flags[0]->icon);
     }
 }

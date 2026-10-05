@@ -283,6 +283,108 @@ final class TripsTest extends AppTestCase
         self::assertStringContainsString('Add an odometer reading to fix it.', $sparse);
     }
 
+    public function testTheBusinessAndPrivateCardSplitsTheDistanceDriven(): void
+    {
+        [$app, $browser, $golf] = $this->golf();
+        // 12,400 mi driven this tax year (readings in km), 3,100 of them business.
+        $this->reading($app, $golf, '16093.440', '2026-04-10T09:00:00Z');
+        $this->reading($app, $golf, '36049.306', '2026-09-25T09:00:00Z');
+        $this->logTrip($browser, $golf, ['distance' => '3000', 'travelled_on' => '2026-06-01']);
+        $this->logTrip($browser, $golf, ['distance' => '100', 'travelled_on' => '2026-07-01']);
+        $this->logTrip($browser, $golf, ['distance' => '40', 'travelled_on' => '2026-03-01']);
+
+        $page = self::body($browser->get('/vehicles/' . $golf->id . '/trips'));
+        $card = self::card($page);
+        self::assertStringContainsString('Business and private', $card);
+        self::assertStringContainsString('Tax year 2026/27 · 12,400 mi driven', $card);
+        self::assertStringContainsString('3,100 mi · 25%', $card);
+        self::assertStringContainsString('9,300 mi · 75%', $card);
+        self::assertStringContainsString('class="stack-bar stack-bar--lg" aria-hidden="true"', $card);
+        self::assertStringContainsString('--w: 25%', $card);
+        self::assertStringContainsString('Log trip', $card, 'in the card header');
+        self::assertStringContainsString('/vehicles/' . $golf->id . '/export/trips', $card);
+        self::assertStringNotContainsString('Ballymena', $card, 'never a destination');
+        self::assertStringNotContainsString('Belfast', $card);
+        self::assertSame(1, substr_count($page, '>Log trip<'), 'not in the toolbar as well');
+        self::assertStringContainsString('/vehicles/' . $golf->id . '/import/trips', $page, 'Import CSV stays');
+        self::assertSame(1, substr_count($page, '/vehicles/' . $golf->id . '/export/trips'), 'Export CSV once, in the card');
+        self::assertMatchesRegularExpression('/Trips<\/dt>\s*<dd[^>]*>2</', $page, 'this tax year only');
+
+        // Business over the log: the warning and the Mileage tab, no bar.
+        $this->logTrip($browser, $golf, ['distance' => '9500', 'travelled_on' => '2026-08-01']);
+        $exceeds = self::card(self::body($browser->get('/vehicles/' . $golf->id . '/trips')));
+        self::assertStringContainsString('Add an odometer reading to fix it.', $exceeds);
+        self::assertStringContainsString('href="/vehicles/' . $golf->id . '/odometer"', $exceeds);
+        self::assertStringNotContainsString('stack-bar', $exceeds);
+        self::assertStringNotContainsString('%', $exceeds);
+    }
+
+    public function testAnEmptyClaimTileSaysWhy(): void
+    {
+        [$app, $browser, $golf] = $this->golf();
+        $tab = '/vehicles/' . $golf->id . '/trips';
+        $browser->get('/settings/trips');
+
+        // Rates but no business trips this tax year (a private one and last year's don't count).
+        $this->logTrip($browser, $golf, ['distance' => '50', 'is_business' => '0', 'purpose' => '']);
+        $this->logTrip($browser, $golf, ['distance' => '40', 'travelled_on' => '2026-03-01']);
+        $none = self::body($browser->get($tab));
+        self::assertStringContainsString('no business trips this tax year', $none);
+        self::assertStringNotContainsString('no mileage rates yet', $none);
+
+        // A business trip at the rates: the value, no hint.
+        $this->logTrip($browser, $golf, ['distance' => '100', 'travelled_on' => '2026-06-01']);
+        $valued = self::body($browser->get($tab));
+        self::assertStringContainsString('£55.00', $valued);
+        self::assertStringNotContainsString('no business trips this tax year', $valued);
+
+        // Business trips without a rate in effect: the rates are what's missing.
+        $rates = $this->service($app, MileageRateSetRepository::class);
+        foreach ($rates->listForUser($this->owner($app)->id) as $set) {
+            $browser->get('/settings/trips/rates/' . $set->id . '/delete');
+            $browser->post('/settings/trips/rates/' . $set->id . '/delete', []);
+        }
+        $unvalued = self::body($browser->get($tab));
+        self::assertStringContainsString('no mileage rates yet', $unvalued);
+        self::assertStringNotContainsString('no business trips this tax year', $unvalued);
+    }
+
+    public function testWithoutReadingsTheCardSaysSo(): void
+    {
+        [, $browser, $golf] = $this->golf();
+        $private = ['distance' => '50', 'travelled_on' => '2026-06-02', 'is_business' => '0', 'purpose' => ''];
+        $this->logTrip($browser, $golf, $private);
+
+        $card = self::card(self::body($browser->get('/vehicles/' . $golf->id . '/trips')));
+        self::assertStringContainsString('Not enough readings this year', $card);
+        self::assertStringNotContainsString('stack-bar', $card);
+        self::assertStringNotContainsString('Add an odometer reading', $card);
+    }
+
+    public function testAViewerWhoCannotSeeEveryTripGetsTheDistanceDrivenOnly(): void
+    {
+        [$app, $owner, $golf] = $this->golf();
+        $this->reading($app, $golf, '16093.440', '2026-04-10T09:00:00Z');
+        $this->reading($app, $golf, '17702.784', '2026-09-25T09:00:00Z');
+        $this->logTrip($owner, $golf, ['to_place' => 'Owners client', 'distance' => '200', 'travelled_on' => '2026-06-01']);
+        $driver = $this->shared($app, $golf, ShareLevel::Log, 'driver');
+        $this->logTrip($driver, $golf, ['to_place' => 'Drivers client', 'distance' => '30', 'travelled_on' => '2026-06-02']);
+        $base = '/vehicles/' . $golf->id . '/trips';
+
+        $page = self::body($driver->get($base));
+        $card = self::card($page);
+        self::assertStringContainsString('1,000 mi driven', $card);
+        self::assertStringContainsString('only the distance driven is shown', $card);
+        self::assertStringNotContainsString('stack-bar', $card);
+        self::assertStringNotContainsString('%', $card);
+        self::assertStringNotContainsString('client', $card);
+        self::assertStringContainsString('Log trip', $card, 'a driver logs trips');
+        self::assertStringNotContainsString('/export/trips', $card, 'export is Manage');
+        self::assertMatchesRegularExpression('/Trips<\/dt>\s*<dd[^>]*>1</', $page, 'only the trips they can see');
+
+        self::assertMatchesRegularExpression('/Trips<\/dt>\s*<dd[^>]*>2</', self::body($owner->get($base)));
+    }
+
     public function testDriversSeeTheirOwnTripsAndManagersEveryones(): void
     {
         [$app, $owner, $golf] = $this->golf();
@@ -620,6 +722,16 @@ final class TripsTest extends AppTestCase
         self::assertSame(200, $result->getStatusCode(), self::body($result));
 
         return self::body($result);
+    }
+
+    /**
+     * The *Business and private* card of a Trips tab.
+     */
+    private static function card(string $page): string
+    {
+        $document = Html::document($page);
+
+        return $document->saveHtml(Html::element($document, 'section[data-trip-split]'));
     }
 
     private function png(string $name): UploadedFile

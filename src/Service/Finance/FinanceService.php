@@ -29,6 +29,7 @@ use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Forecast\FinanceDue;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\User\UserDirectory;
+use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
@@ -150,6 +151,46 @@ final readonly class FinanceService
             overlap: FinanceLedger::overlapping($agreement, $schedule, $this->expenses->listForVehicle($vehicle->id)),
             currency: $currency,
             mileage: $mileage,
+        );
+    }
+
+    /**
+     * The Finance tab (spec.md §7.32 *Finance tab*): the given agreement, or
+     * without one the active agreement, in the prototype's cards; the
+     * purchase reading and current value for its Purchase and Value & equity
+     * cards; and the earlier agreements below.
+     *
+     * @throws FinanceAgreementNotFound for someone who may not see finance
+     */
+    public function page(User $user, Vehicle $vehicle, ?FinanceAgreement $agreement = null): FinancePage
+    {
+        $agreements = $this->forVehicle($user, $vehicle);
+        $active = array_find($agreements, static fn (FinanceAgreement $a): bool => $a->status->isActive());
+        $shown = $agreement ?? $active;
+        $view = $shown === null ? null : $this->view($user, $vehicle, $shown);
+        $earlier = [];
+        foreach ($agreements as $other) {
+            if (!$other->status->isActive() && $other->id !== $shown?->id) {
+                $earlier[] = $this->view($user, $vehicle, $other);
+            }
+        }
+        // Each missed mark by the date it concerns, for its *Undo*.
+        $marks = [];
+        foreach ($view === null ? [] : $view->events as $event) {
+            if ($event->kind === PaymentEventKind::Missed && $event->dueOn !== null) {
+                $marks[$event->dueOn->format('Y-m-d')] = $event->id;
+            }
+        }
+
+        return new FinancePage(
+            shown: $view,
+            earlier: $earlier,
+            canAdd: !$vehicle->isArchived() && $active === null,
+            purchaseReading: $this->odometer->purchaseReading($vehicle),
+            currentValue: Depreciation::currentValue($vehicle, $this->valuations->listForVehicle($vehicle->id)),
+            marks: $marks,
+            today: $this->ownerToday($user, $vehicle),
+            open: $shown !== null && self::isOpen($shown) && !$vehicle->isArchived(),
         );
     }
 

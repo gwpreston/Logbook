@@ -73,7 +73,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | ✅ |
 | [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 🚧 |
 | [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 🚧 |
-| [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 📋 |
+| [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 🚧 |
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | 📋 |
 
 *Update the status column as each phase lands.*
@@ -749,9 +749,11 @@ developing.*
 *Every tab of a vehicle looks like the same page.*
 
 - The vehicle's name the same size on every tab; Finance becomes a tab.
-- *Insights* on the overview from figures Logbook already computes.
-- Trips: *Business and personal* split and *Your vehicles* three to a row;
-  incidents and *Current tyres* to the prototype.
+- An *Insights* dashboard widget from figures Logbook already computes
+  (the Insights page and AI insights are 33.4's).
+- Trips: the *Business and private* card; the dashboard's *Your vehicles*
+  three to a row; incidents and *Current tyres* to the prototype; the
+  vehicle's seller and mileage when bought.
 
 → [`phase-33.3.md`](docs/phases/phase-33.3.md)
 

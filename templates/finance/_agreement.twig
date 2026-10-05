@@ -1,0 +1,412 @@
+{#
+ # One agreement on the Finance tab (spec.md §7.32 *Finance tab*, *Agreement
+ # page*): the consistency check and the overlap warning; the prototype's
+ # cards (the agreement, Purchase, and Value & equity but not for a lease);
+ # then the schedule with *Mark missed* and *Mark paid late*, extra payments
+ # and settlement quotes. Every estimate says it is one. Figures, never
+ # advice.
+ #
+ # Expects: vehicle, view (a Service\Finance\AgreementView), page (a
+ # Service\Finance\FinancePage).
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/finance.twig' as fin %}
+{% set agreement = view.agreement %}
+{% set figures = view.figures %}
+{% set schedule = figures.schedule %}
+{% set currency = view.currency %}
+{% set data = agreement.data %}
+{% set lease = data.type.value == 'lease' %}
+{% set pcp = data.type.value == 'pcp' %}
+{% set active = agreement.status.value == 'active' %}
+{% set open = page.open %}
+{% set today = page.today %}
+{% set marks = page.marks %}
+
+{% for check in view.checks %}
+    <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ ('finance.check.' ~ check.kind)|trans({computed: check.computed|money(currency), stated: check.stated|money(currency)}) }}</span></div>
+{% endfor %}
+
+{% if view.overlap is not empty %}
+    <section class="alert alert--warning" role="status" aria-labelledby="finance-overlap">
+        {{ ui.icon('warning') }}
+        <div>
+            <p id="finance-overlap">{{ 'finance.overlap'|trans }}</p>
+            <ul>
+                {% for entry in view.overlap %}
+                    <li><a href="{{ url_for('expenses.edit', {id: vehicle.id, entry: entry.id}) }}" data-modal>{{ entry.data.spentOn|local_date }} · {{ entry.data.note ?: ('expense.category.finance'|trans) }}</a> <span class="tabular">{{ entry.data.amount|money(currency) }}</span></li>
+                {% endfor %}
+            </ul>
+            <p class="field__hint">{{ 'finance.overlap_hint'|trans }}</p>
+        </div>
+    </section>
+{% endif %}
+
+{# The agreement card in the main column; Purchase and Value & equity beside it on a wide screen, under it on a narrow one. #}
+<div class="finance-layout">
+    {# The agreement: type, lender and number, the regular payment, the progress bar, the two tiles and the figures. #}
+    <section class="card" aria-labelledby="finance-agreement-heading">
+        <div class="card__header card__header--wrap">
+            <div class="finance-card__title">
+                <h2 id="finance-agreement-heading" class="card__title">{{ agreement.type().labelKey()|trans }}</h2>
+                <p class="muted">
+                    {{- data.lender }}{% if agreement.maskedNumber() %} · <span class="tabular">{{ agreement.maskedNumber() }}</span>{% endif -%}
+                </p>
+            </div>
+            {{ fin.status(agreement) }}
+            {# The agreement's own actions, here rather than in the toolbar so they read as the agreement's, not the vehicle's. #}
+            <div class="btn-row no-print">
+                {% if not vehicle.isArchived() %}
+                    <a class="btn" href="{{ url_for('finance.edit', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                {% endif %}
+                {% if page.open %}
+                    <a class="btn" href="{{ url_for('finance.end', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('stop_circle') }}{{ 'finance.end.title'|trans }}</a>
+                {% endif %}
+                <a class="btn btn--danger" href="{{ url_for('finance.delete', {id: vehicle.id, agreement: agreement.id}) }}" data-modal>{{ ui.icon('delete') }}{{ 'finance.delete_agreement'|trans }}</a>
+            </div>
+        </div>
+
+        <div>
+            <p class="stat__label">{{ (lease ? 'finance.field.regular_rental' : 'finance.field.regular_payment')|trans }}</p>
+            <p class="figure tabular">{{ data.regularPayment|money(currency) }}</p>
+        </div>
+
+        {% set made = schedule.made() %}
+        {% set total = schedule.numberOfPayments %}
+        <div class="finance-progress">
+            <span class="bar finance-progress__bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ total > 0 ? (made / total * 100)|round(1) : 0 }}%"></span></span>
+            <p class="finance-progress__labels">
+                <span>{{ 'finance.progress'|trans({made: made, total: total}) }}</span>
+                {% if figures.endsOn %}<span>{{ 'finance.ends_month'|trans({date: figures.endsOn|local_month}) }}</span>{% endif %}
+            </p>
+        </div>
+
+        <dl class="finance-tiles">
+            <div class="finance-tile">
+                <dt>{{ 'finance.paid_so_far'|trans }}</dt>
+                <dd class="finance-tile__value tabular">{{ figures.paidSoFar|money }}</dd>
+            </div>
+            {% if active %}
+                <div class="finance-tile">
+                    <dt>{{ 'finance.still_to_pay'|trans }}</dt>
+                    <dd class="finance-tile__value tabular">{{ figures.remainingToPay|money }}</dd>
+                    {% if figures.optionalFinal %}
+                        <dd class="finance-tile__sub">{{ 'finance.plus_optional_final'|trans({amount: figures.optionalFinal.amount|money(currency)}) }}</dd>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </dl>
+        {% if active %}<p class="field__hint">{{ 'finance.remaining_hint'|trans }}</p>{% endif %}
+
+        <dl class="details">
+            {% if active %}
+                <div><dt>{{ 'finance.row.payments'|trans }}</dt><dd>{{ fin.remaining(figures) }}</dd></div>
+                {% set next = schedule.next() %}
+                {% if next %}
+                    <div><dt>{{ 'finance.row.next'|trans }}</dt><dd>{{ next.dueOn|local_date }} · <span class="tabular">{{ next.amount|money(currency) }}</span></dd></div>
+                {% endif %}
+            {% else %}
+                <div><dt>{{ 'finance.row.payments_made'|trans }}</dt><dd>{{ 'finance.payments_made'|trans({made: made, total: total}) }}</dd></div>
+            {% endif %}
+            {% if figures.endsOn %}
+                <div><dt>{{ 'finance.row.ends'|trans }}</dt><dd>{{ figures.endsOn|local_date }}{% if agreement.endedOn %} <span class="muted">· {{ 'finance.ended_on'|trans({date: agreement.endedOn|local_date}) }}</span>{% endif %}</dd></div>
+            {% endif %}
+            {% if data.cashPrice is not null %}
+                <div><dt>{{ 'finance.field.cash_price'|trans }}</dt><dd class="tabular">{{ data.cashPrice|money(currency) }}</dd></div>
+            {% endif %}
+            {% if lease %}
+                {% if data.initialRental is not null %}
+                    <div><dt>{{ 'finance.field.initial_rental'|trans }}</dt><dd class="tabular">{{ data.initialRental|money(currency) }}</dd></div>
+                {% endif %}
+            {% elseif data.type.value != 'loan' %}
+                <div><dt>{{ 'finance.field.customer_deposit'|trans }}</dt><dd class="tabular">{{ data.customerDeposit|money(currency) }}</dd></div>
+                {% if data.dealerContribution > 0 %}
+                    <div><dt>{{ 'finance.field.dealer_contribution'|trans }}</dt><dd class="tabular">{{ data.dealerContribution|money(currency) }}</dd></div>
+                {% endif %}
+            {% endif %}
+            {% if figures.amountOfCredit %}
+                <div><dt>{{ 'finance.field.amount_of_credit'|trans }}</dt><dd class="tabular">{{ figures.amountOfCredit|money }}</dd></div>
+            {% endif %}
+            {% if not lease %}
+                <div><dt>{{ 'finance.field.apr'|trans }}</dt><dd class="tabular">{{ 'finance.apr_value'|trans({apr: data.apr}) }}</dd></div>
+            {% endif %}
+            <div><dt>{{ (lease ? 'finance.field.number_of_rentals' : 'finance.field.number_of_payments')|trans }}</dt><dd class="tabular">{{ total }}</dd></div>
+            {% if data.finalPayment is not null and not lease %}
+                <div><dt>{{ (pcp ? 'finance.field.optional_final_payment' : 'finance.field.final_payment')|trans }}</dt><dd class="tabular">{{ data.finalPayment|money(currency) }}</dd></div>
+            {% endif %}
+            {% if figures.costOfCredit %}
+                {% set credit = figures.costOfCredit %}
+                <div>
+                    <dt>{{ 'finance.row.cost_of_credit'|trans }}</dt>
+                    <dd>
+                        {% if credit.exact and credit.soFar %}
+                            <span class="tabular">{{ credit.soFar|money }}</span> <span class="muted">{{ 'finance.exact'|trans }}</span>
+                        {% else %}
+                            {% if credit.total %}<span class="tabular">{{ credit.total|money }}</span> <span class="muted">{{ 'finance.cost_of_credit_hint'|trans }}</span>{% endif %}
+                            {% if credit.soFar %}<br>{{ 'finance.interest_so_far'|trans({amount: credit.soFar|money}) }} <span class="pill pill--soon">{{ 'finance.estimate'|trans }}</span>{% endif %}
+                        {% endif %}
+                    </dd>
+                </div>
+            {% endif %}
+            <div>
+                <dt>{{ 'finance.row.total_amount_payable'|trans }}</dt>
+                <dd><span class="tabular">{{ figures.totalAmountPayable|money }}</span>{% if figures.totalDerived %} <span class="muted">{{ 'finance.worked_out'|trans }}</span>{% endif %}</dd>
+            </div>
+            {% if view.mileage %}
+                {% set mileage = view.mileage %}
+                <div>
+                    <dt>{{ 'finance.row.mileage'|trans }}</dt>
+                    <dd>
+                        {{ fin.mileage(mileage, currency) }}
+                        {% if mileage.distanceKm is not null and active %}
+                            <br><span class="muted">{{ 'finance.mileage.detail'|trans({distance: mileage.distanceKm|distance(0, mileage.unit), allowed: mileage.allowedToDateKm|distance(0, mileage.unit)}) }}</span>
+                        {% endif %}
+                        {% if mileage.projectedKm is not null and active %}
+                            <br><span class="pill pill--soon">{{ 'finance.estimate'|trans }}</span> <span class="muted">{{ 'finance.mileage.hint'|trans }}</span>
+                        {% endif %}
+                    </dd>
+                </div>
+            {% endif %}
+            {% if figures.halfPaid %}
+                {% set half = figures.halfPaid %}
+                <div>
+                    <dt>{{ 'finance.row.half_paid'|trans }}</dt>
+                    <dd>
+                        {%- if half.reached -%}
+                            {{ 'finance.half_paid_reached'|trans({date: half.on|local_date, amount: half.target|money}) }}
+                        {%- elseif half.on -%}
+                            {{ 'finance.half_paid_due'|trans({date: half.on|local_date, amount: half.stillNeeded|money}) }}
+                        {%- else -%}
+                            {{ 'finance.half_paid_needed'|trans({amount: half.stillNeeded|money}) }}
+                        {%- endif -%}
+                        <br><span class="muted">{{ 'finance.half_paid_hint'|trans }}</span>
+                    </dd>
+                </div>
+            {% endif %}
+            {% if figures.settlement %}
+                <div>
+                    <dt>{{ 'finance.row.settlement'|trans }}</dt>
+                    <dd>
+                        {{ fin.settlement(figures.settlement) }}
+                        {% if figures.settlement.isEstimate() %}<br><span class="muted">{{ 'finance.settlement_estimate_hint'|trans }}</span>{% endif %}
+                    </dd>
+                </div>
+            {% endif %}
+            <div><dt>{{ 'finance.row.costs'|trans }}</dt><dd>{{ (data.countInCosts ? (lease ? 'finance.counted_lease' : 'finance.counted_credit') : 'finance.not_counted')|trans }}</dd></div>
+            {% if data.notes %}<div><dt>{{ 'finance.field.notes'|trans }}</dt><dd>{{ data.notes|nl2br }}</dd></div>{% endif %}
+        </dl>
+        {# The neutral end note (#183): what the agreement allows, nothing recommended. #}
+        {% if pcp and active %}<p class="field__hint">{{ 'finance.pcp_end_note'|trans }}</p>{% endif %}
+        <p class="field__hint">{{ 'finance.not_advice'|trans }}</p>
+    </section>
+
+    <div class="finance-layout__aside">
+        {# Purchase (#182): the vehicle's own purchase fields and how it was paid. #}
+        {% set vdata = vehicle.data %}
+        {% set bought_at = page.purchaseReading %}
+        <section class="card" aria-labelledby="finance-purchase-heading">
+            <h2 id="finance-purchase-heading" class="card__title">{{ 'finance.purchase.title'|trans }}</h2>
+            <dl class="details">
+                {% if vdata.purchasePrice is not null %}
+                    <div><dt>{{ 'vehicle.field.purchase_price'|trans }}</dt><dd class="tabular">{{ vdata.purchasePrice|money(currency) }}</dd></div>
+                {% endif %}
+                {% if vdata.purchaseDate %}
+                    <div><dt>{{ 'vehicle.field.purchase_date'|trans }}</dt><dd>{{ vdata.purchaseDate|local_date }}</dd></div>
+                {% endif %}
+                {% if vdata.purchaseSeller %}
+                    <div><dt>{{ 'vehicle.field.purchase_seller'|trans }}</dt><dd>{{ vdata.purchaseSeller }}</dd></div>
+                {% endif %}
+                {% if bought_at %}
+                    <div><dt>{{ 'vehicle.field.purchase_odometer'|trans }}</dt><dd class="tabular">{{ bought_at.readingKm|distance }}</dd></div>
+                {% endif %}
+                <div><dt>{{ 'finance.purchase.how_paid'|trans }}</dt><dd>{{ agreement.type().labelKey()|trans }}</dd></div>
+            </dl>
+            {% if vdata.purchasePrice is null and not vdata.purchaseDate and not lease and can_vehicle(vehicle, 'manage') and not vehicle.isArchived() %}
+                <p class="field__hint no-print"><a href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal>{{ 'finance.purchase.add'|trans }}</a></p>
+            {% endif %}
+        </section>
+
+        {# Value & equity (not for a lease): the current value (§7.1), the settlement and the equity. #}
+        {% if not lease %}
+            {% set value = page.currentValue %}
+            <section class="card" aria-labelledby="finance-value-heading">
+                <h2 id="finance-value-heading" class="card__title">{{ 'finance.value.title'|trans }}</h2>
+                {% if value %}
+                    <div>
+                        <p class="stat__label">{{ 'finance.value.current'|trans }}</p>
+                        <p class="figure tabular">{{ value.amount|money(currency) }}</p>
+                        <p class="muted">{{ (value.kind.value == 'sold' ? 'finance.value.sold_on' : 'finance.value.valued_on')|trans({date: value.date|local_date}) }}</p>
+                    </div>
+                {% endif %}
+                {% if figures.settlement or figures.equity %}
+                    <dl class="finance-tiles">
+                        {% if figures.settlement %}
+                            <div class="finance-tile">
+                                <dt>{{ (figures.settlement.isEstimate() ? 'finance.value.settlement_estimate' : 'finance.value.settlement_quoted')|trans }}</dt>
+                                <dd class="finance-tile__value tabular">{{ figures.settlement.amount|money }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if figures.equity %}
+                            <div class="finance-tile">
+                                <dt>{{ 'finance.row.equity'|trans }}</dt>
+                                <dd class="finance-tile__value tabular{{ figures.equity.isPositive() ? '' : ' finance-tile__value--negative' }}">{{ fin.equity(figures.equity) }}</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                {% endif %}
+                {% if figures.equity %}
+                    <p class="field__hint">{{ 'finance.equity_hint'|trans({value: figures.equity.valuation|money, date: figures.equity.valuedOn|local_date}) }}</p>
+                {% elseif figures.equityNeedsValuation or not value %}
+                    <p class="no-print"><a href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ (figures.equityNeedsValuation ? 'finance.equity_needs_valuation' : 'finance.value.add')|trans }}</a></p>
+                {% endif %}
+                {% if figures.settlement %}<p class="field__hint">{{ 'finance.value.ask_lender'|trans }}</p>{% endif %}
+            </section>
+        {% endif %}
+    </div>
+</div>
+
+<section class="card" aria-labelledby="finance-schedule">
+    <h2 id="finance-schedule" class="card__title">{{ 'finance.section.schedule'|trans }}</h2>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'finance.column.due'|trans }}</th>
+                    <th scope="col">{{ 'finance.column.payment'|trans }}</th>
+                    <th scope="col" class="table__num">{{ 'export.column.amount'|trans }}</th>
+                    <th scope="col">{{ 'finance.column.status'|trans }}</th>
+                    {% if open %}<th scope="col" class="no-print"><span class="visually-hidden">{{ 'finance.column.actions'|trans }}</span></th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in schedule.payments %}
+                    {% set key = payment.dueOn|date('Y-m-d') %}
+                    <tr>
+                        <td>{{ payment.dueOn|local_date }}</td>
+                        <td>{{ ('finance.payment_kind.' ~ payment.kind.value)|trans({number: payment.number}) }}</td>
+                        <td class="table__num tabular">{{ payment.amount|money(currency) }}</td>
+                        <td>
+                            {{ payment.status.labelKey()|trans }}
+                            {%- if payment.paidOn %} <span class="muted">{{ payment.paidOn|local_date }}</span>{% endif -%}
+                        </td>
+                        {% if open %}
+                            <td class="no-print">
+                                {% if payment.status.value == 'paid' and payment.dueOn <= today %}
+                                    <form class="finance-mark" method="post" action="{{ url_for('finance.payments', {id: vehicle.id, agreement: agreement.id}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <input type="hidden" name="kind" value="missed">
+                                        <input type="hidden" name="due_on" value="{{ key }}">
+                                        <button type="submit" class="btn btn--ghost">{{ 'finance.mark_missed'|trans }}</button>
+                                    </form>
+                                {% elseif payment.status.value == 'missed' %}
+                                    <form class="finance-mark" method="post" action="{{ url_for('finance.payments', {id: vehicle.id, agreement: agreement.id}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <input type="hidden" name="kind" value="paid_late">
+                                        <input type="hidden" name="due_on" value="{{ key }}">
+                                        <label class="visually-hidden" for="paid-on-{{ key }}">{{ 'finance.field.paid_on'|trans }}</label>
+                                        <input class="input" type="date" id="paid-on-{{ key }}" name="paid_on" min="{{ key }}" max="{{ today|date('Y-m-d') }}">
+                                        <button type="submit" class="btn btn--ghost">{{ 'finance.mark_paid_late'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                                {% if marks[key] is defined %}
+                                    <form class="finance-mark" method="post" action="{{ url_for('finance.events.delete', {id: vehicle.id, agreement: agreement.id, event: marks[key]}) }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <button type="submit" class="btn btn--ghost">{{ 'finance.undo_mark'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card" aria-labelledby="finance-extras">
+    <h2 id="finance-extras" class="card__title">{{ 'finance.section.extras'|trans }}</h2>
+    {% set extras = schedule.extras %}
+    {% set settlement = schedule.settlement %}
+    {% if extras is empty and settlement is null %}
+        <p class="muted">{{ 'finance.no_extras'|trans }}</p>
+    {% else %}
+        <ul class="list">
+            {% for event in extras|merge(settlement ? [settlement] : []) %}
+                <li class="list__item">
+                    <span class="list__body">
+                        <span class="list__title">{{ event.kind.labelKey()|trans }}</span>
+                        <span class="list__meta">{{ event.paymentDate() ? event.paymentDate()|local_date : '' }}{% if event.notes %} · {{ event.notes }}{% endif %}</span>
+                    </span>
+                    <span class="list__end">
+                        <span class="list__amount tabular">{{ event.amount|money(currency) }}</span>
+                        {% if open and event.kind.value == 'extra' %}
+                            <form method="post" action="{{ url_for('finance.events.delete', {id: vehicle.id, agreement: agreement.id, event: event.id}) }}" class="no-print">
+                                {{ ui.csrf(csrf) }}
+                                <button type="submit" class="btn btn--ghost">{{ 'form.delete'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% if open %}
+        <details class="disclosure no-print">
+            <summary class="disclosure__summary">{{ 'finance.add_extra'|trans }}</summary>
+            <form class="form" method="post" action="{{ url_for('finance.payments', {id: vehicle.id, agreement: agreement.id}) }}">
+                {{ ui.csrf(csrf) }}
+                <input type="hidden" name="kind" value="extra">
+                <div class="form-row">
+                    {{ ui.input('amount', 'finance.field.amount'|trans, {}, {}, {type: 'number', step: '0.01', min: 0.01, inputmode: 'decimal', suffix: currency_symbol(currency), required: true}) }}
+                    {{ ui.input('paid_on', 'finance.field.paid_on'|trans, {paid_on: today|date('Y-m-d')}, {}, {type: 'date', required: true, max: today|date('Y-m-d')}) }}
+                </div>
+                {{ ui.input('notes', 'finance.field.notes'|trans, {}, {}, {maxlength: 500, optional: true}) }}
+                <button type="submit" class="btn">{{ ui.icon('add') }}{{ 'finance.add_extra'|trans }}</button>
+            </form>
+        </details>
+    {% endif %}
+</section>
+
+{% if data.type.isCredit() %}
+    <section class="card" aria-labelledby="finance-quotes">
+        <h2 id="finance-quotes" class="card__title">{{ 'finance.section.quotes'|trans }}</h2>
+        {% if view.quotes is empty %}
+            <p class="muted">{{ 'finance.no_quotes'|trans }}</p>
+        {% else %}
+            <ul class="list">
+                {% for quote in view.quotes %}
+                    <li class="list__item">
+                        <span class="list__body">
+                            <span class="list__title tabular">{{ quote.amount|money(currency) }}</span>
+                            <span class="list__meta">{{ 'finance.quote_dates'|trans({quoted: quote.quotedOn|local_date, until: quote.validUntil|local_date}) }}{% if quote.notes %} · {{ quote.notes }}{% endif %}</span>
+                        </span>
+                        <span class="list__end">
+                            {% if quote.isValidOn(today) %}<span class="pill pill--valid">{{ 'finance.quote_valid'|trans }}</span>{% else %}<span class="pill">{{ 'finance.quote_expired'|trans }}</span>{% endif %}
+                            {% if not vehicle.isArchived() %}
+                                <form method="post" action="{{ url_for('finance.quotes.delete', {id: vehicle.id, agreement: agreement.id, quote: quote.id}) }}" class="no-print">
+                                    {{ ui.csrf(csrf) }}
+                                    <button type="submit" class="btn btn--ghost">{{ 'form.delete'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if open %}
+            <details class="disclosure no-print">
+                <summary class="disclosure__summary">{{ 'finance.add_quote'|trans }}</summary>
+                <form class="form" method="post" action="{{ url_for('finance.quotes', {id: vehicle.id, agreement: agreement.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    {{ ui.input('quote_amount', 'finance.field.quote_amount'|trans, {}, {}, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), required: true}) }}
+                    <div class="form-row">
+                        {{ ui.input('quoted_on', 'finance.field.quoted_on'|trans, {quoted_on: today|date('Y-m-d')}, {}, {type: 'date', required: true}) }}
+                        {{ ui.input('valid_until', 'finance.field.valid_until'|trans, {}, {}, {type: 'date', required: true}) }}
+                    </div>
+                    {{ ui.input('quote_notes', 'finance.field.notes'|trans, {}, {}, {maxlength: 500, optional: true}) }}
+                    <button type="submit" class="btn">{{ ui.icon('add') }}{{ 'finance.add_quote'|trans }}</button>
+                </form>
+            </details>
+        {% endif %}
+    </section>
+{% endif %}

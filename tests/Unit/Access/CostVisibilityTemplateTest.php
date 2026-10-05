@@ -48,8 +48,7 @@ final class CostVisibilityTemplateTest extends TestCase
         'expenses/index.twig' => 'the Expenses tab with costs: without ViewCosts the Action renders expenses/without_costs.twig',
         'valuations/index.twig' => 'the Valuations page: its route needs ViewCosts',
         // Finance (Phase 29.1): every finance page answers 404 without Manage and ViewCosts (FinanceRoute).
-        'finance/index.twig' => 'the finance page: FinanceRoute needs Manage and ViewCosts',
-        'finance/show.twig' => 'the agreement page: FinanceRoute needs Manage and ViewCosts',
+        'finance/_agreement.twig' => 'the Finance tab’s agreement: FinanceRoute needs Manage and ViewCosts',
         'finance/form.twig' => 'the agreement form: FinanceRoute needs Manage and ViewCosts',
         'finance/_card.twig' => 'the overview card: FinanceService::activeView() is null without Manage and ViewCosts',
         'macros/finance.twig' => 'finance wording, called only from the finance pages and card above',
@@ -79,6 +78,11 @@ final class CostVisibilityTemplateTest extends TestCase
     private const array EXPRESSION_EXCEPTIONS = [
         'macros/expenses.twig' => [
             'total.amount|money' => 'breakdown(): a report section, from ReportService (vehicles without ViewCosts dropped)',
+        ],
+        'macros/incidents.twig' => [
+            'paid|money)' => 'claims_stats(): ClaimsStats sums only claims whose amounts the viewer may see '
+                . '(IncidentView::amounts, i.e. EntryAccess::canSeeAmount), and has none without them',
+            'excess|money)' => 'claims_stats(): as the paid tile',
         ],
         'vehicles/archive.twig' => [
             "(agreement.data.finalPayment ?? '0')|money(currency)" => 'the agreement block: ArchiveVehicleAction passes '

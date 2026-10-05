@@ -136,7 +136,8 @@ final class TyreTreadTest extends AppTestCase
         self::assertSame(TyreChangeKind::Fit, $change->kind);
         self::assertSame(['8.100', '8.100'], array_values(self::depths($change)));
         $html = self::body($this->browser->get($this->base));
-        self::assertStringContainsString('8.1 mm on 10 Jan 2026', $html, 'the card shows the latest depth and date');
+        self::assertStringContainsString('8.1 mm</span>', $html, 'the card shows the latest depth');
+        self::assertStringContainsString('Checked 10 Jan 2026', $html, 'and its date');
         self::assertStringContainsString('Fitted 2 × Michelin Primacy 4 (front) · 8.1 mm', $html, 'depths follow the summary');
     }
 

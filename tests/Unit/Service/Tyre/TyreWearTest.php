@@ -240,4 +240,29 @@ final class TyreWearTest extends TestCase
             new DateTimeImmutable('2026-01-01T00:00:00Z'),
         );
     }
+
+    public function testTheTreadBarRunsFromTheFirstMeasurementToTheLegalMinimum(): void
+    {
+        $one = self::estimate([self::point(1, '0', '8.000')], '500');
+        self::assertNull($one->barPercent(), 'one measurement: no bar, no assumed new depth');
+        self::assertSame(1, $one->count);
+
+        $half = self::estimate([self::point(1, '0', '8.000'), self::point(2, '10000', '4.800')], '10000');
+        self::assertSame('8.000', $half->first?->treadMm);
+        self::assertSame(50, $half->barPercent(), '(4.8 − 1.6) ÷ (8.0 − 1.6)');
+
+        $stored = self::estimate([self::point(1, '0', '8.000'), self::point(2, '10000', '4.800')], '10000', wearing: false);
+        self::assertSame(50, $stored->barPercent(), 'a stored tyre or the spare shows its bar too');
+
+        $deeper = self::estimate([self::point(1, '0', '6.000'), self::point(2, '100', '7.000')], '100');
+        self::assertSame(100, $deeper->barPercent(), 'a deeper reading is clamped full');
+
+        $under = self::estimate([self::point(1, '0', '6.000'), self::point(2, '9000', '1.200')], '9000');
+        self::assertSame(0, $under->barPercent(), 'under the legal minimum is clamped empty');
+
+        $startedLow = self::estimate([self::point(1, '0', '1.500'), self::point(2, '900', '1.400')], '900');
+        self::assertSame(0, $startedLow->barPercent(), 'first at or under the legal minimum: empty, no division');
+
+        self::assertNull(self::estimate([], '0')->barPercent());
+    }
 }

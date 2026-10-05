@@ -50,8 +50,10 @@ final class TyreWear
     ): TyreWearEstimate {
         $latest = $measurements === [] ? null : $measurements[array_key_last($measurements)];
         if ($latest === null) {
-            return new TyreWearEstimate(replaceAtMm: $replaceAtMm);
+            return new TyreWearEstimate(replaceAtMm: $replaceAtMm, legalMm: $legalMm);
         }
+        $first = $measurements[0];
+        $count = count($measurements);
         $measuredWorn = Decimal::compare($latest->treadMm, $replaceAtMm) <= 0;
         $measuredBelow = Decimal::compare($latest->treadMm, $legalMm) <= 0;
         $rate = $wearing ? self::rate($measurements) : null;
@@ -61,6 +63,9 @@ final class TyreWear
                 replaceAtMm: $replaceAtMm,
                 worn: $measuredWorn,
                 legal: $measuredBelow ? TyreLegalFlag::Below : null,
+                first: $first,
+                count: $count,
+                legalMm: $legalMm,
             );
         }
 
@@ -93,6 +98,9 @@ final class TyreWear
                 Decimal::compare($depthNow, $legalMm) <= 0 => TyreLegalFlag::MayBeBelow,
                 default => null,
             },
+            first: $first,
+            count: $count,
+            legalMm: $legalMm,
         );
     }
 

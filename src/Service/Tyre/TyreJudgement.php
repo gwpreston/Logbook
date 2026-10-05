@@ -42,7 +42,9 @@ final class TyreJudgement
             $age = self::age($view, $today, $leadDays);
             $known = array_values(array_filter([$wear, $age]));
             usort($known, self::compare(...));
-            $standings[$view->tyre->id] = $known[0] ?? new TyreStanding($view, DueStatus::Unknown);
+            $standings[$view->tyre->id] = isset($known[0])
+                ? $known[0]->withOthers(array_slice($known, 1))
+                : new TyreStanding($view, DueStatus::Unknown);
             array_push($candidates, ...$known);
         }
         if ($candidates === []) {

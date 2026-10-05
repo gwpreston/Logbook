@@ -1,28 +1,32 @@
 {#
- # Vehicle page header shared by the vehicle's tabs (spec.md §7.2): back
- # link and the Edit / Prepare for sale (§7.19) / Finance (§7.32) / Sharing (§7.21) / Archive
- # (Restore) / Delete actions, in the same place on every tab, each only for
- # those allowed it; the hero; and the tab bar. Each
+ # Vehicle page header shared by the vehicle's tabs (spec.md §7.2, §8
+ # *Vehicle header*): back link and the Edit / Prepare for sale (§7.19) /
+ # Sharing (§7.21) / Archive (Restore) / Delete actions, in the same place on
+ # every tab, each only for those allowed it; the hero; and the tab bar. Each
  # tab is its own URL, so tabs work without JS and survive a hard refresh.
+ # The name looks the same on every tab: the page's <h1> on Overview, a <p>
+ # elsewhere, where the tab's own <h1> is visually hidden.
  #
  # Expects: vehicle, active_tab ('overview' | 'history' | 'odometer' | 'trips' | 'fuel' |
- # 'maintenance' | 'tyres' | 'compliance' | 'expenses' | 'incidents').
+ # 'maintenance' | 'tyres' | 'compliance' | 'incidents' | 'finance' | 'expenses').
  #}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/vehicles.twig' as vehicle_ui %}
 {% set data = vehicle.data %}
+{# Finance (spec.md §7.32 *Finance tab*): Manage with costs, the module on. #}
 {% set tabs = [
-    {route: 'vehicles.show', key: 'overview', icon: 'space_dashboard', label: 'vehicle.tab.overview'},
+    {route: 'vehicles.show', key: 'overview', icon: 'dashboard', label: 'vehicle.tab.overview'},
     {route: 'history.vehicle', key: 'history', icon: 'history', label: 'vehicle.tab.history'},
     {route: 'odometer.index', key: 'odometer', icon: 'speed', label: 'vehicle.tab.odometer'},
     {route: 'trips.index', key: 'trips', icon: 'route', label: 'vehicle.tab.trips', feature: 'trips'},
     {route: 'fuel.index', key: 'fuel', icon: data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station', label: 'vehicle.tab.fuel', feature: 'fuel'},
     {route: 'maintenance.index', key: 'maintenance', icon: 'build', label: 'vehicle.tab.maintenance', feature: 'maintenance'},
     {route: 'tyres.index', key: 'tyres', icon: 'tire_repair', label: 'vehicle.tab.tyres', feature: 'tyres'},
-    {route: 'compliance.index', key: 'compliance', icon: 'verified_user', label: 'vehicle.tab.compliance', feature: 'compliance'},
-    {route: 'expenses.index', key: 'expenses', icon: 'payments', label: 'vehicle.tab.expenses'},
+    {route: 'compliance.index', key: 'compliance', icon: 'description', label: 'vehicle.tab.compliance', feature: 'compliance'},
     {route: 'incidents.index', key: 'incidents', icon: 'car_crash', label: 'vehicle.tab.incidents', feature: 'incidents'},
-]|filter(tab => tab.feature is not defined or feature_enabled(tab.feature)) %}
+    {route: 'finance.index', key: 'finance', icon: 'account_balance', label: 'vehicle.tab.finance', shown: finance_menu(vehicle) is not null},
+    {route: 'expenses.index', key: 'expenses', icon: 'payments', label: 'vehicle.tab.expenses'},
+]|filter(tab => (tab.feature is not defined or feature_enabled(tab.feature)) and (tab.shown ?? true)) %}
 
 <div class="toolbar">
     <a class="back-link" href="{{ url_for('garage', {}, vehicle.isArchived() ? {archived: '1'} : {}) }}">{{ ui.icon('chevron_left') }}{{ 'garage.title'|trans }}</a>
@@ -30,13 +34,6 @@
         {% if can_vehicle(vehicle, 'manage') %}
             <a class="btn" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
             <a class="btn" href="{{ url_for('sale_pack.show', {id: vehicle.id}) }}">{{ ui.icon('sell') }}{{ 'sale_pack.prepare'|trans }}</a>
-        {% endif %}
-        {# Finance (Phase 29.1, spec.md §7.32 *Module*): Manage with costs only. #}
-        {% set finance_link = finance_menu(vehicle) %}
-        {% if finance_link == 'view' %}
-            <a class="btn" href="{{ url_for('finance.index', {id: vehicle.id}) }}">{{ ui.icon('account_balance') }}{{ 'finance.title'|trans }}</a>
-        {% elseif finance_link == 'add' %}
-            <a class="btn" href="{{ url_for('finance.create', {id: vehicle.id}) }}">{{ ui.icon('account_balance') }}{{ 'finance.add'|trans }}</a>
         {% endif %}
         <a class="btn" href="{{ url_for('vehicles.sharing', {id: vehicle.id}) }}">{{ ui.icon('group') }}{{ 'sharing.menu'|trans }}</a>
         {% if not can_vehicle(vehicle, 'own') %}
@@ -75,7 +72,7 @@
             {% if written_off %}<span class="pill pill--overdue" title="{{ 'incident.field.write_off'|trans }}">{{ ui.icon('car_crash') }}{{ written_off.labelKey()|trans }}</span>{% endif %}
         </div>
         {% if active_tab == 'overview' %}
-            <h1>{{ vehicle.name() }}</h1>
+            <h1 class="vehicle-hero__name">{{ vehicle.name() }}</h1>
         {% else %}
             <p class="vehicle-hero__name">{{ vehicle.name() }}</p>
         {% endif %}
@@ -83,7 +80,7 @@
     </div>
 </header>
 
-<nav class="tabs" aria-label="{{ 'vehicle.tab.label'|trans({name: vehicle.name()}) }}">
+<nav class="tabs" data-vehicle-tabs aria-label="{{ 'vehicle.tab.label'|trans({name: vehicle.name()}) }}">
     {% for tab in tabs %}
         <a class="tabs__link" href="{{ url_for(tab.route, {id: vehicle.id}) }}"{% if tab.key == active_tab %} aria-current="page"{% endif %}>{{ ui.icon(tab.icon) }}{{ tab.label|trans }}</a>
     {% endfor %}

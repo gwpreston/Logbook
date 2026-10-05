@@ -7,6 +7,7 @@ namespace Logbook\Action\Odometer;
 use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Odometer\OdometerReading;
+use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
@@ -20,7 +21,8 @@ use Slim\Exception\HttpNotFoundException;
 /**
  * GET|POST /vehicles/{id}/odometer/{reading}/edit — edit a manual reading.
  * A reading that belongs to a fill-up or maintenance entry is changed by
- * editing that entry.
+ * editing that entry (or incident); the mileage when bought, on the vehicle
+ * form.
  */
 final readonly class EditOdometerReadingAction
 {
@@ -91,6 +93,14 @@ final readonly class EditOdometerReadingAction
             $reading->tyreChangeId !== null => $this->redirect->toRoute('tyres.changes.edit', [
                 'id' => (string) $vehicle->id,
                 'change' => (string) $reading->tyreChangeId,
+            ]),
+            $reading->incidentId !== null => $this->redirect->toRoute('incidents.edit', [
+                'id' => (string) $vehicle->id,
+                'incident' => (string) $reading->incidentId,
+            ]),
+            // Mileage when bought is set on the vehicle form (spec.md §6 OdometerReading).
+            $reading->source === OdometerSource::Purchase => $this->redirect->toRoute('vehicles.edit', [
+                'id' => (string) $vehicle->id,
             ]),
             default => throw new HttpNotFoundException($request),
         };

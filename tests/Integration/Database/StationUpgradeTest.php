@@ -77,13 +77,14 @@ final class StationUpgradeTest extends AppTestCase
             $preset->consumption(),
             'USD',
         ));
-        // Before the data migration: the column exists, nothing is linked. The users come
-        // first: today's code writes columns (Phase 33.1's) the older schema lacks.
-        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
+        // Before the data migration: the column exists, nothing is linked. The users and
+        // vehicles come first: today's code writes columns (Phase 33.1's, 33.3's) the older
+        // schema lacks.
         $vehicles = $this->service($app, VehicleRepository::class);
         $now = new DateTimeImmutable('2026-01-01T00:00:00Z');
         $golf = $vehicles->insert($owner->id, new VehicleData(VehicleType::Car, 'Volkswagen', 'Golf', FuelType::Petrol), $now);
         $kona = $vehicles->insert($member->id, new VehicleData(VehicleType::Car, 'Hyundai', 'Kona', FuelType::Electric), $now);
+        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
 
         $a = $this->fill($app, $kona, '2025-01-01T08:00:00Z', 'tesco antrim ');
         $b = $this->fill($app, $golf, '2025-02-01T08:00:00Z', 'Tesco Antrim');
@@ -140,14 +141,15 @@ final class StationUpgradeTest extends AppTestCase
     {
         $app = $this->createApp();
         $this->resetDatabase($app);
-        // The owner first: today's code writes columns (Phase 33.1's) the older schema lacks.
+        // The owner and vehicle first: today's code writes columns (Phase 33.1's, 33.3's) the
+        // older schema lacks.
         $owner = $this->createOwner($app);
-        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
         $golf = $this->service($app, VehicleRepository::class)->insert(
             $owner->id,
             new VehicleData(VehicleType::Car, 'Volkswagen', 'Golf', FuelType::Petrol),
             new DateTimeImmutable('2026-01-01T00:00:00Z'),
         );
+        Migrator::run('rollback', ['--target' => self::BEFORE_LINKS]);
         $this->fill($app, $golf, '2025-01-01T08:00:00Z', 'MAXOL');
         $this->fill($app, $golf, '2025-02-01T08:00:00Z', 'Maxol');
         $this->fill($app, $golf, '2025-03-01T08:00:00Z', 'Maxol');

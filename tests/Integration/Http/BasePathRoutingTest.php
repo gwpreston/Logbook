@@ -92,6 +92,44 @@ final class BasePathRoutingTest extends AppTestCase
         self::assertStringContainsString('href="/logbook/garage"', self::body($page));
     }
 
+    public function testPhase333PagesLinkWithThePrefix(): void
+    {
+        $app = $this->createApp(['APP_BASE_PATH' => '/logbook']);
+        $this->resetDatabase($app);
+        $this->createOwner($app);
+        $browser = new TestBrowser($app);
+        $browser->get('/logbook/login');
+        $browser->post('/logbook/login', ['username' => 'owner', 'password' => self::PASSWORD]);
+        $browser->get('/vehicles/new');
+        $created = $browser->post('/vehicles/new', [
+            'type' => 'car',
+            'make' => 'Toyota',
+            'model' => 'Yaris',
+            'fuel_type' => 'petrol',
+            'currency' => '',
+        ]);
+        self::assertSame(303, $created->getStatusCode(), self::body($created));
+        self::assertSame(1, preg_match('#^/logbook/vehicles/(\d+)#', $created->getHeaderLine('Location'), $m));
+        $id = $m[1] ?? '';
+
+        // The Finance tab (hard refresh, prefix stripped) and its tab strip.
+        $finance = $browser->get('/vehicles/' . $id . '/finance');
+        self::assertSame(200, $finance->getStatusCode());
+        $html = self::body($finance);
+        self::assertStringContainsString('href="/logbook/vehicles/' . $id . '/finance"', $html);
+        self::assertStringContainsString('href="/logbook/vehicles/' . $id . '/finance/new"', $html);
+        self::assertStringContainsString('href="/logbook/vehicles/' . $id . '/incidents"', $html);
+
+        // The claims history's script goes through the asset helper.
+        $history = self::body($browser->get('/incidents/history'));
+        self::assertStringContainsString('src="/logbook/assets/js/claims-history.js', $history);
+
+        // The dashboard (Insights and Your vehicles) keeps the prefix.
+        $dashboard = self::body($browser->get('/'));
+        self::assertStringContainsString('href="/logbook/vehicles/' . $id . '"', $dashboard);
+        self::assertStringNotContainsString('href="/vehicles/', $dashboard);
+    }
+
     public function testHealthAtASubpath(): void
     {
         $app = $this->createApp(['APP_BASE_PATH' => '/logbook']);

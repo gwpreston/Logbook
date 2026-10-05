@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Odometer;
 
 use Logbook\Domain\Odometer\OdometerReading;
+use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Support\Number\Decimal;
 
 /**
@@ -53,6 +54,20 @@ final readonly class OdometerHistory
     public function first(): ?OdometerReading
     {
         return $this->readings[0] ?? null;
+    }
+
+    /**
+     * The *Mileage when bought* reading (at most one per vehicle), if any.
+     */
+    public function purchase(): ?OdometerReading
+    {
+        foreach ($this->readings as $reading) {
+            if ($reading->source === OdometerSource::Purchase) {
+                return $reading;
+            }
+        }
+
+        return null;
     }
 
     public function warningFor(int $readingId): ?OdometerWarning

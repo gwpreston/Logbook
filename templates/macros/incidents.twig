@@ -4,13 +4,41 @@
  # Every macro takes an IncidentView, so a hidden field is simply null.
  #}
 
-{# The badges of a list row or header: fault, claim status and write-off,
-   each as text (never colour alone). #}
+{# The badges beside the claim pill: open and write-off, each as text
+   (never colour alone). The fault is in the details grid. #}
 {% macro badges(incident) -%}
     {% if incident.status.value == 'open' %}<span class="pill pill--soon">{{ 'incident.status.open'|trans }}</span>{% endif %}
-    {% if incident.fault %}<span class="pill{{ incident.fault.value == 'at_fault' ? ' pill--overdue' : (incident.fault.value == 'not_at_fault' ? ' pill--valid') }}">{{ incident.fault.labelKey()|trans }}</span>{% endif %}
-    {% if incident.claimStatus and incident.claimStatus.isClaim() %}<span class="pill pill--accent">{{ 'incident.claim_badge'|trans({status: incident.claimStatus.labelKey()|trans}) }}</span>{% endif %}
     {% if incident.writeOff.isWrittenOff() %}<span class="pill pill--overdue">{{ incident.writeOff.labelKey()|trans }}</span>{% endif %}
+{%- endmacro %}
+
+{# The claim status as the pill says it: "Claim open", "No claim", … (spec.md
+   §7.29 *Layout*). Empty when the claim is hidden. #}
+{% macro claim_label(incident) -%}
+    {% if incident.claimStatus %}{{ ('incident.claim_pill.' ~ incident.claimStatus.value)|trans }}{% endif %}
+{%- endmacro %}
+
+{# The claim pill: waiting for the insurer amber, settled green, the rest
+   neutral. Nothing when the claim is hidden. #}
+{% macro claim_pill(incident) -%}
+    {% import _self as self %}
+    {% if incident.claimStatus %}
+        {% set tone = incident.claimStatus.isAwaitingNews() ? ' pill--soon' : (incident.claimStatus.value == 'settled' ? ' pill--valid' : '') %}
+        <span class="pill{{ tone }}">{{ self.claim_label(incident) }}</span>
+    {% endif %}
+{%- endmacro %}
+
+{# The type's icon in a tile (spec.md §7.29 *Layout*). size: '' or 'lg'. #}
+{% macro tile(incident, size = '') -%}
+    {% import 'macros/ui.twig' as ui %}
+    <span class="incident-tile{{ size ? ' incident-tile--' ~ size }}">{{ ui.icon(incident.type.icon()) }}</span>
+{%- endmacro %}
+
+{# "14 Mar 2025 · Tesco car park": the date and, where it may be seen, the
+   location (with the time when `time`). #}
+{% macro when_where(incident, time = false) -%}
+    {{- incident.occurredOn|local_date -}}
+    {%- if time and incident.occurredAtTime %}, {{ incident.occurredAtTime }}{% endif -%}
+    {%- if incident.location %} · {{ incident.location }}{% endif -%}
 {%- endmacro %}
 
 {# "Rear, left" and the severity: the damage, which everyone may see. #}
@@ -22,4 +50,118 @@
 {# An incident's one-line name: "Parked damage, 14 Mar 2025". #}
 {% macro name(incident) -%}
     {{ 'incident.name'|trans({type: incident.type.labelKey()|trans, date: incident.occurredOn|local_date}) }}
+{%- endmacro %}
+
+{# The Incidents tab's strip (spec.md §7.29 *Layout*): incidents, claims
+   ("{n} at fault" only when every fault is visible), and with ViewCosts
+   what insurers paid and the net cost, one tile per currency (saying so
+   when some of it is linked costs whose payouts are hidden).
+   stats: Service\Incident\IncidentStats. #}
+{% macro stats(vehicle, stats) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set dash = '—' %}
+    <dl class="stats">
+        {{ ui.stat('incident.stat.incidents'|trans, stats.incidents|number) }}
+        {% if stats.claims is null %}
+            {{ ui.stat('incident.stat.claims'|trans, dash, 'incident.history.not_shared'|trans) }}
+        {% else %}
+            {{ ui.stat('incident.stat.claims'|trans, stats.claims|number, stats.atFault is null ? '' : 'incident.stat.at_fault'|trans({count: stats.atFault})) }}
+        {% endif %}
+        {% if can_see_costs(vehicle) %}
+            {% for paid in stats.insurerPaid %}
+                {{ ui.stat('incident.stat.insurer_paid'|trans, paid|money) }}
+            {% else %}
+                {{ ui.stat('incident.stat.insurer_paid'|trans, dash) }}
+            {% endfor %}
+            {% for net in stats.netCost %}
+                {{ ui.stat('incident.stat.net_cost'|trans, net|money, stats.payoutsHidden ? 'incident.stat.payouts_hidden'|trans : '') }}
+            {% else %}
+                {{ ui.stat('incident.stat.net_cost'|trans, dash) }}
+            {% endfor %}
+        {% endif %}
+    </dl>
+{%- endmacro %}
+
+{# An incident's card on the tab (spec.md §7.29 *Layout*): the type's tile,
+   the type (linking to the incident page; the whole card is its target)
+   over "date · location", the claim pill and the other badges, the
+   description, the damage, then fault, insurer, insurer paid and net cost
+   as far as the viewer may see them (fault, "Not claimed" and the net cost
+   for one never claimed). files: the attachment count. #}
+{% macro card(vehicle, incident, files) -%}
+    {% import _self as self %}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attachments.twig' as paperclip %}
+    {% set dash = '—' %}
+    {# The same check as IncidentAccess::seesAmounts(), which already left them out. #}
+    {% set own_amount = can_see_amount(vehicle, incident.createdBy) %}
+    {% set linked = own_amount ? incident.costs : null %}
+    {% set badges %}{{ self.badges(incident) }}{% endset %}
+    {% set damage %}{{ self.damage(incident) }}{% endset %}
+    <article class="incident-card">
+        <div class="incident-card__head">
+            {{ self.tile(incident) }}
+            <div class="incident-card__title">
+                <h3><a class="incident-card__link" href="{{ url_for('incidents.show', {id: vehicle.id, incident: incident.id}) }}">{{ incident.type.labelKey()|trans }}</a></h3>
+                <p>{{ self.when_where(incident) }}</p>
+            </div>
+            {{ self.claim_pill(incident) }}
+        </div>
+        {% if badges|trim %}<p class="incident-card__badges">{{ badges }}</p>{% endif %}
+        {% if incident.description %}<p class="incident-card__description">{{ incident.description }}</p>{% endif %}
+        {% if damage|trim %}<p class="incident-card__damage">{{ damage }}</p>{% endif %}
+        {# Not claimed (only known with the details): "Insurance: Not claimed" and the net cost when there is one, never a row of dashes. #}
+        {% set unclaimed = incident.details and incident.claimStatus and not incident.claimStatus.isClaim() %}
+        {% if incident.details or linked %}
+            <dl class="meta-grid meta-grid--clip">
+                {% if incident.details %}
+                    <div><dt>{{ 'incident.field.fault'|trans }}</dt><dd>{{ incident.fault.labelKey()|trans }}</dd></div>
+                {% endif %}
+                {% if unclaimed %}
+                    <div><dt>{{ 'incident.section.insurance'|trans }}</dt><dd>{{ incident.claimStatus.labelKey()|trans }}</dd></div>
+                    {% if own_amount and linked and linked.count > 0 %}
+                        <div><dt>{{ 'incident.stat.net_cost'|trans }}</dt><dd class="tabular">{{ linked.net|money }}</dd></div>
+                    {% endif %}
+                {% elseif incident.details %}
+                    <div><dt>{{ 'incident.field.insurer'|trans }}</dt><dd>{{ incident.insurer ?: dash }}</dd></div>
+                {% endif %}
+                {% if unclaimed %}
+                    {# The net cost is above. #}
+                {% elseif own_amount and linked and incident.showsPayouts() %}
+                    <div><dt>{{ 'incident.stat.insurer_paid'|trans }}</dt><dd class="tabular">{{ incident.payout is null ? dash : linked.payouts|money }}</dd></div>
+                    <div><dt>{{ 'incident.stat.net_cost'|trans }}</dt><dd class="tabular">{{ linked.count > 0 ? linked.net|money : dash }}</dd></div>
+                {% elseif own_amount and linked %}
+                    <div><dt>{{ 'incident.costs.linked'|trans }}</dt><dd class="tabular">{{ linked.count > 0 ? linked.linked|money : dash }}</dd></div>
+                {% endif %}
+            </dl>
+        {% endif %}
+        {% set by %}{{ ui.added_by(vehicle, incident.createdBy) }}{% endset %}
+        {% set clip %}{{ paperclip.count(files) }}{% endset %}
+        {% if by|trim or clip|trim %}<div class="incident-card__foot">{{ by }}{{ clip }}</div>{% endif %}
+    </article>
+{%- endmacro %}
+
+{# The tiles (spec.md §7.29 *Claims history*): claims in view and how many
+   at fault, the time since the latest fault claim, and what insurers paid
+   and the excess per currency, counting only what the viewer may see.
+   stats: Service\Incident\ClaimsStats. #}
+{% macro claims_stats(stats) -%}
+    {% import 'macros/ui.twig' as ui %}
+    <dl class="stats no-print">
+        {{ ui.stat('incident.history.stat.claims'|trans, stats.claims|number, 'incident.stat.at_fault'|trans({count: stats.atFault})) }}
+        {% if stats.lastFault %}
+            {{ ui.stat('incident.history.stat.since_fault'|trans, 'incident.history.stat.years'|trans({count: stats.yearsSinceFault}), stats.lastFault|local_date) }}
+        {% elseif stats.hidden > 0 %}
+            {# Some rows' faults are hidden: "None" would claim more than the viewer knows. #}
+            {{ ui.stat('incident.history.stat.since_fault'|trans, '—', 'incident.history.not_shared'|trans) }}
+        {% else %}
+            {{ ui.stat('incident.history.stat.since_fault'|trans, 'incident.history.stat.none'|trans, 'incident.history.stat.no_fault'|trans) }}
+        {% endif %}
+        {% for paid in stats.paid ?? [] %}
+            {{ ui.stat('incident.history.stat.paid'|trans, paid|money) }}
+        {% endfor %}
+        {% for excess in stats.excess ?? [] %}
+            {{ ui.stat('incident.history.stat.excess'|trans, excess|money) }}
+        {% endfor %}
+    </dl>
 {%- endmacro %}

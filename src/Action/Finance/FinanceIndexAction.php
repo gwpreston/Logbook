@@ -11,9 +11,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * GET /vehicles/{id}/finance — the vehicle's agreements (spec.md §7.32
- * *Finance page*): the active one first, then earlier ones, and *Add
- * finance* while none is active.
+ * GET /vehicles/{id}/finance — the vehicle's Finance tab (spec.md §7.32
+ * *Finance tab*): the active agreement's page in the prototype's cards,
+ * then the earlier agreements; with no active one, *How did you buy it?*
+ * and *Add finance*.
  */
 final readonly class FinanceIndexAction
 {
@@ -31,13 +32,10 @@ final readonly class FinanceIndexAction
         $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         FinanceRoute::guard($this->finance, $user, $vehicle, $request);
-        $agreements = $this->finance->forVehicle($user, $vehicle);
-        $views = array_map(fn ($agreement) => $this->finance->view($user, $vehicle, $agreement), $agreements);
 
         return $this->view->render($request, $response, 'finance/index.twig', [
             'vehicle' => $vehicle,
-            'agreements' => $views,
-            'can_add' => !$vehicle->isArchived() && $this->finance->active($vehicle) === null,
+            'page' => $this->finance->page($user, $vehicle),
         ]);
     }
 }

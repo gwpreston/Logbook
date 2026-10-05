@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Disposal;
@@ -22,8 +23,10 @@ use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\StoredFile;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
@@ -40,6 +43,8 @@ use Psr\Http\Message\UploadedFileInterface;
 final readonly class VehicleService
 {
     private const string PHOTO_DIRECTORY = 'vehicles';
+    /** Local time of day for the date-only `purchase` reading. */
+    private const string READING_TIME = 'T12:00';
 
     public function __construct(
         private VehicleRepository $vehicles,
@@ -116,20 +121,24 @@ final readonly class VehicleService
      * Add a vehicle; with a starting reading, also its first manual reading
      * (at now when it was read today, else at local noon on its date,
      * StartingReading), through the odometer service like any other
-     * reading; with purchase or sale paperwork, those files. The files are
-     * written first, then the vehicle, the reading and the files' rows in
-     * one transaction, so a failure leaves nothing behind (spec.md §7.1,
-     * §7.12).
+     * reading; with a *Mileage when bought* ($purchaseKm, canonical km), its
+     * `purchase` reading; with purchase or sale paperwork, those files. The
+     * files are written first, then the vehicle, the readings and the
+     * files' rows in one transaction, so a failure leaves nothing behind
+     * (spec.md §7.1, §7.12).
      *
      * @throws PaperworkNeedsDate when paperwork is given without its date
+     * @throws PurchaseMileageNeedsDate when the mileage when bought is given without the purchase date
      */
     public function create(
         User $user,
         VehicleData $data,
         ?StartingReading $starting = null,
         OwnershipFiles $files = new OwnershipFiles(),
+        ?string $purchaseKm = null,
     ): Vehicle {
-        $refusal = PaperworkNeedsDate::check($data, 0, count($files->purchase), 0, count($files->sale));
+        $refusal = PaperworkNeedsDate::check($data, 0, count($files->purchase), 0, count($files->sale))
+            ?? PurchaseMileageNeedsDate::check($data->purchaseDate, false, new PurchaseMileage($purchaseKm));
         if ($refusal !== null) {
             throw $refusal;
         }
@@ -139,6 +148,7 @@ final readonly class VehicleService
             $data,
             $starting,
             $files,
+            $purchaseKm,
         ): Vehicle {
             $now = $this->clock->now();
             $id = $this->vehicles->insert($user->id, $data, $now);
@@ -149,6 +159,9 @@ final readonly class VehicleService
                 $at = $starting->recordedAt($now, $user->preferences->timeZone());
                 $this->odometer->create($vehicle, new OdometerReadingData($starting->km, $at));
             }
+            if ($purchaseKm !== null) {
+                $this->recordPurchaseMileage($user, $vehicle, $data, $purchaseKm);
+            }
             $this->recordPaperwork($vehicle, $files, $stored);
 
             return $vehicle;
@@ -157,13 +170,21 @@ final readonly class VehicleService
 
     /**
      * Save the vehicle's details with any new purchase or sale paperwork,
-     * all or nothing, as create() does.
+     * all or nothing, as create() does. With a PurchaseMileage (the vehicle
+     * form), the `purchase` reading is written, moved or removed to match;
+     * without one, a stored reading is kept and moved to the purchase date.
      *
      * @throws TyresBlockTypeChange when the new type lacks a position a tyre is fitted at
      * @throws PaperworkNeedsDate when paperwork would be left without its date
+     * @throws PurchaseMileageNeedsDate when the mileage when bought would be left without the purchase date
      */
-    public function update(User $user, Vehicle $vehicle, VehicleData $data, OwnershipFiles $files = new OwnershipFiles()): Vehicle
-    {
+    public function update(
+        User $user,
+        Vehicle $vehicle,
+        VehicleData $data,
+        OwnershipFiles $files = new OwnershipFiles(),
+        ?PurchaseMileage $purchaseMileage = null,
+    ): Vehicle {
         if ($data->type !== $vehicle->data->type) {
             $positions = $data->type->tyrePositions();
             foreach ($this->tyres->listTyres($vehicle->id) as $tyre) {
@@ -179,14 +200,24 @@ final readonly class VehicleService
             count($this->attachments->forOwner($vehicle, AttachmentOwner::Sale, $vehicle->id)),
             count($files->sale),
         );
+        $reading = $this->odometer->purchaseReading($vehicle);
+        $refusal ??= PurchaseMileageNeedsDate::check($data->purchaseDate, $reading !== null, $purchaseMileage);
         if ($refusal !== null) {
             throw $refusal;
         }
+        $purchaseKm = $purchaseMileage === null ? $reading?->readingKm : $purchaseMileage->km;
 
-        $this->attachments->saveWithFiles($files->all(), function (array $stored) use ($vehicle, $data, $files): void {
+        $this->attachments->saveWithFiles($files->all(), function (array $stored) use (
+            $user,
+            $vehicle,
+            $data,
+            $files,
+            $purchaseKm,
+        ): void {
             $this->vehicles->update($vehicle->userId, $vehicle->id, $data, $this->clock->now());
             // A sale date makes it sold; clearing it clears `sold` (#105). Written off stays.
             $this->vehicles->setSold($vehicle->userId, $vehicle->id, $data->saleDate !== null);
+            $this->recordPurchaseMileage($user, $vehicle, $data, $purchaseKm);
             $this->recordPaperwork($vehicle, $files, $stored);
         });
 
@@ -286,6 +317,42 @@ final readonly class VehicleService
         }
 
         return $this->files->absolutePath($vehicle->photoPath);
+    }
+
+    /**
+     * The vehicle's *Mileage when bought* reading, if any (the edit form
+     * shows it).
+     */
+    public function purchaseReading(Vehicle $vehicle): ?OdometerReading
+    {
+        return $this->odometer->purchaseReading($vehicle);
+    }
+
+    /**
+     * Plausibility warning for the *Mileage when bought* after a save.
+     */
+    public function purchaseWarning(Vehicle $vehicle): ?OdometerWarning
+    {
+        return $this->odometer->purchaseWarning($vehicle);
+    }
+
+    /**
+     * Write, move or remove the `purchase` reading: at local noon on the
+     * purchase date in the saving user's time zone, like the other
+     * date-only readings (spec.md §6 OdometerReading). Without the date
+     * there is none (the refusal came first).
+     */
+    private function recordPurchaseMileage(User $user, Vehicle $vehicle, VehicleData $data, ?string $km): void
+    {
+        $on = $data->purchaseDate;
+        if ($km === null || $on === null) {
+            $this->odometer->recordPurchase($vehicle, null, $this->clock->now());
+
+            return;
+        }
+        $at = LocalTime::toUtc($on->format('Y-m-d') . self::READING_TIME, $user->preferences->timeZone())
+            ?? DateTimeImmutable::createFromInterface($on);
+        $this->odometer->recordPurchase($vehicle, $km, $at);
     }
 
     /**

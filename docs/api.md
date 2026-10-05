@@ -109,7 +109,7 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months and the true cost per km (depreciation included), what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with the economy of the tank it closes and its economy-check flag (paged) |
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
-| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre) (paged) |
+| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase) (paged) |
 | `POST /vehicles/{id}/odometer` | add a reading (read and write key) |
 | `GET /vehicles/{id}/maintenance` | service records (paged) |
 | `POST /vehicles/{id}/maintenance` | add a service record (read and write key) |

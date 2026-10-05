@@ -272,6 +272,7 @@ final class TyreReminderTest extends ReminderTestCase
         self::assertMatchesRegularExpression('~data-testid="tyre-verdict"[^>]*>.*Tyres due soon~s', $html);
         self::assertStringContainsString('Replace soon', $html, 'and the front right card says so');
         self::assertStringContainsString('about 3.3 mm now', $html);
-        self::assertStringContainsString('3.5 mm on 1 Sept 2026', $html, 'the latest measurement with its date');
+        self::assertStringContainsString('3.5 mm</span>', $html, 'the latest measurement');
+        self::assertStringContainsString('Checked 1 Sept 2026', $html, 'with its date');
     }
 }

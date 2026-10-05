@@ -84,6 +84,32 @@ final readonly class TripRepository
         return array_values(array_map($this->hydrate(...), $rows));
     }
 
+    /**
+     * How many trips a vehicle has between two calendar dates.
+     *
+     * @param DateTimeImmutable $from inclusive
+     * @param DateTimeImmutable $until exclusive
+     * @param int|null $onlyBy only this user's trips; null = everyone's
+     */
+    public function countForVehicleBetween(
+        int $vehicleId,
+        DateTimeImmutable $from,
+        DateTimeImmutable $until,
+        ?int $onlyBy = null,
+    ): int {
+        $query = $this->connection->createQueryBuilder()
+            ->select('COUNT(*)')
+            ->from(self::TABLE)
+            ->where('vehicle_id = :vehicle', 'travelled_on >= :from', 'travelled_on < :until')
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->setParameter('from', $from->format('Y-m-d'))
+            ->setParameter('until', $until->format('Y-m-d'));
+        self::narrow($query, $onlyBy);
+        $count = $query->fetchOne();
+
+        return is_numeric($count) ? (int) $count : 0;
+    }
+
     public function find(int $vehicleId, int $id): ?Trip
     {
         $row = $this->select()

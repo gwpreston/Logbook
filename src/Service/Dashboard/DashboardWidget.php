@@ -15,6 +15,8 @@ enum DashboardWidget: string
     /** Phase 24: what is wrong now (spec.md §7.24); core, first in new layouts. */
     case NeedsAttention = 'needs_attention';
     case Reminders = 'reminders';
+    /** Phase 33.3: observations from existing figures (spec.md §7.8 *Insights*); core. */
+    case Insights = 'insights';
     /** Phase 15: the 12-month forecast (spec.md §7.18); core. */
     case ComingUp = 'coming_up';
     case Spend = 'spend';
@@ -39,7 +41,8 @@ enum DashboardWidget: string
     public function feature(): ?Feature
     {
         return match ($this) {
-            self::Fleet, self::Mileage, self::RecentActivity, self::ComingUp, self::NeedsAttention, self::TrueCost => null,
+            self::Fleet, self::Mileage, self::RecentActivity, self::ComingUp, self::NeedsAttention, self::TrueCost,
+                self::Insights => null,
             self::Reminders => Feature::Reminders,
             self::Spend => Feature::Reports,
             self::RecentFuel, self::Efficiency => Feature::Fuel,
@@ -56,6 +59,7 @@ enum DashboardWidget: string
             self::Fleet => 'garage',
             self::NeedsAttention => 'fact_check',
             self::Reminders => 'notifications',
+            self::Insights => 'lightbulb',
             self::ComingUp => 'event_upcoming',
             self::Spend => 'payments',
             self::RecentFuel => 'local_gas_station',

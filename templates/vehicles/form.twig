@@ -185,6 +185,11 @@
                     {{ ui.input('purchase_date', 'vehicle.field.purchase_date'|trans, values, errors, {type: 'date', optional: true}) }}
                     {{ ui.input('purchase_price', 'vehicle.field.purchase_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal'}) }}
                 </div>
+                {# Mileage when bought is the vehicle's `purchase` reading, dated by the purchase date (spec.md §7.1). #}
+                <div class="form-row">
+                    {{ ui.input('purchase_seller', 'vehicle.field.purchase_seller'|trans, values, errors, {optional: true, maxlength: 100, hint: 'vehicle.hint.purchase_seller'|trans}) }}
+                    {{ ui.input('purchase_odometer', 'vehicle.field.purchase_odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: ('units.symbol.' ~ prefs().distanceUnit.value)|trans, hint: 'vehicle.hint.purchase_odometer'|trans}) }}
+                </div>
                 {# Paperwork belongs to the purchase and the sale, and shows on
                    their milestones, so it needs their dates (spec.md §7.12).
                    Both inputs share one limit per save. #}

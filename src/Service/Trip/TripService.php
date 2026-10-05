@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Trip;
 
+use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Attachment\AttachmentOwner;
@@ -54,6 +55,19 @@ final readonly class TripService
     public function visible(User $user, Vehicle $vehicle): array
     {
         return $this->trips->listForVehicle($vehicle->id, $this->seesEveryone($user, $vehicle) ? null : $user->id);
+    }
+
+    /**
+     * How many of the trips this user may see on the vehicle fall in a period.
+     *
+     * @param DateTimeImmutable $from first day, inclusive
+     * @param DateTimeImmutable $to last day, inclusive
+     */
+    public function countVisible(User $user, Vehicle $vehicle, DateTimeImmutable $from, DateTimeImmutable $to): int
+    {
+        $onlyBy = $this->seesEveryone($user, $vehicle) ? null : $user->id;
+
+        return $this->trips->countForVehicleBetween($vehicle->id, $from, $to->modify('+1 day'), $onlyBy);
     }
 
     /**

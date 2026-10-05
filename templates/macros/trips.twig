@@ -2,9 +2,12 @@
  # Trips (spec.md §7.22, §7.23).
  #}
 
-{# The business and private split for a period, with the claim value
-   (one stat per currency). split: SplitFigures; totals: list<ClaimTotals>. #}
-{% macro split_stats(split, tax_year, totals) -%}
+{# The Trips tab's strip (spec.md §7.22): business and private for a period
+   (or the distance driven only), the claim value (one tile per currency)
+   and how many trips the viewer can see in it. split: SplitFigures;
+   totals: list<ClaimTotals>; count: int; business_trips: whether the
+   viewer has business trips this year, so an empty claim says why. #}
+{% macro split_stats(split, tax_year, totals, count, business_trips = true) -%}
     {% import 'macros/ui.twig' as ui %}
     {% set dash = '—' %}
     <dl class="stats">
@@ -17,12 +20,53 @@
         {% for total in totals %}
             {{ ui.stat('trip.stat.claim'|trans, total.approvedAmount()|money(total.currency), 'trip.stat.claim_hint'|trans) }}
         {% else %}
-            {{ ui.stat('trip.stat.claim'|trans, dash, 'trip.stat.claim_none'|trans) }}
+            {{ ui.stat('trip.stat.claim'|trans, dash, (business_trips ? 'trip.stat.claim_none' : 'trip.stat.claim_no_trips')|trans) }}
         {% endfor %}
+        {{ ui.stat('trip.stat.trips'|trans, count|number, 'trip.stat.tax_year'|trans({year: tax_year.label()})) }}
     </dl>
-    {% if split.exceeds and not split.totalOnly %}
-        <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'trip.split.exceeds'|trans }}</span></p>
-    {% endif %}
+{%- endmacro %}
+
+{# The *Business and private* card (spec.md §7.22): the split of the
+   distance driven as a two-part bar (decorative) and a legend with the
+   distances and whole percents. Business over the total gets the warning
+   and a link to the Mileage tab; a viewer who can't see every driver's
+   trips gets the distance driven only. Never a destination.
+   vehicle; split: SplitFigures; tax_year: TaxYear. #}
+{% macro split_card(vehicle, split, tax_year) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/expenses.twig' as exp %}
+    {% set business = split.businessPercent() %}
+    <section class="card" aria-labelledby="trip-split-heading" data-trip-split>
+        <div class="card__header card__header--wrap">
+            <h2 id="trip-split-heading" class="card__title">{{ 'trip.split.title'|trans }}</h2>
+            <div class="btn-row">
+                {{ exp.export_csv(vehicle, 'trips') }}
+                {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+                    <a class="btn btn--primary" href="{{ url_for('trips.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'trip.add'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+        <p class="muted">
+            {{- 'trip.claim.tax_year'|trans({year: tax_year.label()}) -}}
+            {%- if split.totalKm is not null and (split.totalOnly or not split.exceeds) %} · {{ 'trip.split.driven'|trans({total: split.totalKm|distance}) }}{% endif -%}
+        </p>
+        {% if split.totalOnly %}
+            <p>{{ split.totalKm is null ? 'trip.split.no_readings'|trans : 'trip.split.total_only'|trans }}</p>
+        {% elseif split.exceeds %}
+            <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'trip.split.exceeds'|trans }} <a href="{{ url_for('odometer.index', {id: vehicle.id}) }}">{{ 'trip.split.mileage_link'|trans }}</a></span></p>
+        {% elseif business is null %}
+            <p class="muted">{{ 'trip.split.no_readings'|trans }}</p>
+        {% else %}
+            <div class="stack-bar stack-bar--lg" aria-hidden="true">
+                {% if business > 0 %}<span class="stack-bar__part" style="--w: {{ business }}%"></span>{% endif %}
+                {% if business < 100 %}<span class="stack-bar__part" style="--w: {{ split.privatePercent() }}%; --swatch: var(--c-other)"></span>{% endif %}
+            </div>
+            <ul class="legend">
+                <li class="legend__item"><span class="swatch" style="--swatch: var(--accent)" aria-hidden="true"></span><span class="legend__label">{{ 'trip.business'|trans }}</span><span class="legend__value tabular">{{ 'trip.split.share'|trans({distance: split.businessKm|distance, percent: (business / 100)|percent}) }}</span></li>
+                <li class="legend__item"><span class="swatch" aria-hidden="true"></span><span class="legend__label">{{ 'trip.private'|trans }}</span><span class="legend__value tabular">{{ 'trip.split.share'|trans({distance: split.privateKm|distance, percent: (split.privatePercent() / 100)|percent}) }}</span></li>
+            </ul>
+        {% endif %}
+    </section>
 {%- endmacro %}
 
 {# A per-unit rate: "55p per mile"-style, from the rate set's currency and unit. #}

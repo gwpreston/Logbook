@@ -154,6 +154,17 @@ final readonly class Depreciation
         return $points;
     }
 
+    /**
+     * The vehicle's current value (spec.md §7.1): the sale once sold, else
+     * the latest valuation; null without either.
+     *
+     * @param list<VehicleValuation> $valuations the vehicle's, any order
+     */
+    public static function currentValue(Vehicle $vehicle, array $valuations): ?ValuePoint
+    {
+        return self::current(self::series($vehicle, $valuations));
+    }
+
     public function isGain(): bool
     {
         return $this->change !== null && Decimal::compare($this->change, '0') > 0;

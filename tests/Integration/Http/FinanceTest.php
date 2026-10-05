@@ -135,7 +135,9 @@ final class FinanceTest extends AppTestCase
         $yaris = $this->vehicle($app, 'Toyota', 'Yaris');
 
         $header = self::body($browser->get('/vehicles/' . $yaris->id));
-        self::assertStringContainsString('/vehicles/' . $yaris->id . '/finance/new', $header, 'Add finance in the header');
+        $finance = '/vehicles/' . $yaris->id . '/finance';
+        self::assertStringContainsString($finance . '"', $header, 'the Finance tab before any agreement');
+        self::assertStringNotContainsString($finance . '/new', $header, 'no Add finance in the header (Phase 33.3)');
         self::assertStringNotContainsString('finance-card-heading', $header, 'no card until there is an agreement');
 
         $form = self::body($browser->get('/vehicles/' . $yaris->id . '/finance/new?type=pcp'));
@@ -164,7 +166,7 @@ final class FinanceTest extends AppTestCase
         self::assertStringContainsString('finance-card-heading', $overview);
         self::assertStringContainsString('18 of 36 remaining', $overview);
         $financePage = '/vehicles/' . $yaris->id . '/finance"';
-        self::assertStringContainsString($financePage, $overview, 'the header links to the finance page');
+        self::assertStringContainsString($financePage, $overview, 'the Finance tab');
     }
 
     public function testALendersQuoteReplacesTheEstimateUntilItExpires(): void

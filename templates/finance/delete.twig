@@ -1,0 +1,13 @@
+{% extends 'entries/delete.twig' %}
+{#
+ # Deleting a finance agreement (spec.md §7.32): the shared confirmation,
+ # within the Finance tab like the other finance pages; the modal shows the
+ # question alone. Expects what entries/delete.twig does.
+ #}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'finance'} %}
+        {{ parent() }}
+    </div>
+{% endblock %}

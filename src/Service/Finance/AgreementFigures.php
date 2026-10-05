@@ -89,6 +89,7 @@ final class AgreementFigures
         return new FinanceFigures(
             schedule: $schedule,
             remainingToPay: $money($remaining),
+            paidSoFar: $money(self::paidTotal($agreement, $schedule)),
             optionalFinal: $optionalFinal,
             totalAmountPayable: $money($total),
             totalDerived: $data->totalAmountPayable === null,

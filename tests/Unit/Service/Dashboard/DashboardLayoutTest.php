@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 final class DashboardLayoutTest extends TestCase
 {
     private const array DEFAULT = [
-        'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet',
+        'needs_attention', 'reminders', 'insights', 'coming_up', 'spend', 'recent_fuel', 'fleet',
         'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel', 'true_cost',
     ];
 
@@ -34,7 +34,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'compliance', 'spend', 'needs_attention', 'reminders', 'coming_up', 'recent_fuel',
+                'compliance', 'spend', 'needs_attention', 'reminders', 'insights', 'coming_up', 'recent_fuel',
                 'fleet', 'efficiency', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel', 'true_cost',
             ],
             $layout->toArray()['order'],
@@ -51,7 +51,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'needs_attention', 'reminders', 'spend', 'coming_up', 'recent_fuel', 'fleet',
+                'needs_attention', 'reminders', 'insights', 'spend', 'coming_up', 'recent_fuel', 'fleet',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel',
                 'true_cost',
             ],
@@ -59,7 +59,7 @@ final class DashboardLayoutTest extends TestCase
         );
         self::assertSame(
             [
-                'needs_attention', 'reminders', 'coming_up', 'recent_fuel', 'spend', 'fleet',
+                'needs_attention', 'reminders', 'insights', 'coming_up', 'recent_fuel', 'spend', 'fleet',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel',
                 'true_cost',
             ],
@@ -77,7 +77,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'spend', 'fleet', 'needs_attention', 'reminders', 'coming_up', 'recent_fuel',
+                'spend', 'fleet', 'needs_attention', 'reminders', 'insights', 'coming_up', 'recent_fuel',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel',
                 'true_cost',
             ],

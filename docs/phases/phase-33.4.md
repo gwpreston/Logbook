@@ -30,9 +30,13 @@ released (its breakdown is the bar).
    vehicle with its multicolour bar, from existing figures only.
 2. **Ask** laid out as, and doing what, the prototype's Ask does, within
    Ask's existing rules.
-3. **Fuel stations** with whichever of the prototype's features the
+3. **Insights page and AI insights** (decided in Phase 33.3, #174,
+   #178): the prototype's Insights page (`auto_awesome` in the sidebar)
+   with *Ask* above every insight card, and AI insights (spec §7.26 *AI
+   insights*) when AI is on; the dashboard widget's title links to it.
+4. **Fuel stations** with whichever of the prototype's features the
    owner picks after the audit.
-4. Release **v3.0.0** (Phases 33.1–33.4).
+5. Release **v3.0.0** (Phases 33.1–33.4).
 
 ## Not in scope
 
@@ -115,6 +119,14 @@ released (its breakdown is the bar).
 
 ### 33.4.3 Ask
 - [ ] Page to the prototype within §7.26.
+
+### 33.4.3a Insights page and AI insights
+- [ ] Insights page (`/insights`, sidebar `auto_awesome`) with *Ask*
+      above the insight cards; the widget's *All insights* link.
+- [ ] AI insights (spec §7.26 *AI insights*): daily per user, cached,
+      *Refresh*, grounding check, marked as AI; only with AI on.
+- [ ] Tests: nothing generated or shown with AI off; grounding
+      highlights an unmatched number; the cache serves the day.
 
 ### 33.4.4 Fuel stations
 - [ ] The features marked *build*.

@@ -147,6 +147,48 @@ final readonly class OdometerService
     }
 
     /**
+     * The vehicle's *Mileage when bought* (spec.md §6 OdometerReading), if
+     * it has one.
+     */
+    public function purchaseReading(Vehicle $vehicle): ?OdometerReading
+    {
+        return $this->readings->findPurchase($vehicle->id);
+    }
+
+    /**
+     * Create or move the vehicle's `purchase` reading; with no mileage ($km
+     * null) remove it. Call inside the vehicle's transaction.
+     */
+    public function recordPurchase(Vehicle $vehicle, ?string $km, DateTimeImmutable $at): void
+    {
+        $existing = $this->readings->findPurchase($vehicle->id);
+        if ($km === null) {
+            if ($existing !== null) {
+                $this->readings->delete($vehicle->id, $existing->id);
+            }
+
+            return;
+        }
+
+        $data = new OdometerReadingData($km, $at);
+        if ($existing === null) {
+            $this->readings->insert($vehicle->id, $data, OdometerSource::Purchase, null, $this->clock->now());
+        } else {
+            $this->readings->update($vehicle->id, $existing->id, $data, $this->clock->now());
+        }
+    }
+
+    /**
+     * Plausibility warning for the vehicle's `purchase` reading, if it has one.
+     */
+    public function purchaseWarning(Vehicle $vehicle): ?OdometerWarning
+    {
+        $reading = $this->purchaseReading($vehicle);
+
+        return $reading === null ? null : $this->warningFor($vehicle, $reading->id);
+    }
+
+    /**
      * Plausibility warning for one reading within the vehicle's series.
      */
     public function warningFor(Vehicle $vehicle, int $readingId): ?OdometerWarning
@@ -156,8 +198,8 @@ final readonly class OdometerService
 
     private static function assertOwned(OdometerSource $source): void
     {
-        if ($source === OdometerSource::Manual) {
-            throw new LogicException('Manual readings are not owned by an entry.');
+        if ($source === OdometerSource::Manual || $source === OdometerSource::Purchase) {
+            throw new LogicException(sprintf('%s readings are not owned by an entry.', ucfirst($source->value)));
         }
     }
 

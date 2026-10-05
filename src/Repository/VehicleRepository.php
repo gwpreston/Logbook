@@ -275,6 +275,7 @@ final readonly class VehicleRepository
                 'photo_mime',
                 'purchase_date',
                 'purchase_price',
+                'purchase_seller',
                 'sale_date',
                 'sale_price',
                 'status',
@@ -309,6 +310,7 @@ final readonly class VehicleRepository
             'currency' => $data->currency,
             'purchase_date' => $data->purchaseDate?->format('Y-m-d'),
             'purchase_price' => $data->purchasePrice,
+            'purchase_seller' => $data->purchaseSeller,
             'sale_date' => $data->saleDate?->format('Y-m-d'),
             'sale_price' => $data->salePrice,
         ];
@@ -356,6 +358,7 @@ final readonly class VehicleRepository
                 variant: Row::nullableString($row, 'variant'),
                 firstRegisteredOn: Row::nullableDate($row, 'first_registered_on'),
                 firstInspectionDueOn: Row::nullableDate($row, 'first_inspection_due_on'),
+                purchaseSeller: Row::nullableString($row, 'purchase_seller'),
             ),
             status: VehicleStatus::from(Row::string($row, 'status')),
             photoPath: Row::nullableString($row, 'photo_path'),

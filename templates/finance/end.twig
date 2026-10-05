@@ -16,56 +16,60 @@
 {% block title %}{{ heading }} · {{ fin.name(agreement) }} · {{ parent() }}{% endblock %}
 
 {% block content %}
-    <div class="page__stack page__stack--narrow">
-        <a class="back-link" href="{{ url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) }}">{{ ui.icon('chevron_left') }}{{ fin.name(agreement) }}</a>
+    <div class="page__stack">
+        {# Within the Finance tab (spec.md §7.32 *Finance tab*); the modal shows the form alone. #}
+        {% include 'vehicles/_header.twig' with {active_tab: 'finance'} %}
 
-        <header class="page-header">
-            <div>
-                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
-                <h1 class="page-header__title">{{ heading }}</h1>
-                <p class="page-header__lead">{{ 'finance.end.lead'|trans }}</p>
-            </div>
-        </header>
+        <div class="page__stack page__stack--narrow">
+            <a class="back-link" href="{{ url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) }}">{{ ui.icon('chevron_left') }}{{ fin.name(agreement) }}</a>
 
-        {% block modal_body %}
-        {% if modal %}<p class="modal-fragment__context">{{ fin.name(agreement) }}</p>{% endif %}
-        {% if errors is not empty %}
-            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
-        {% endif %}
+            <header class="page-header">
+                <div>
+                    <h1 class="page-header__title">{{ heading }}</h1>
+                    <p class="page-header__lead">{{ 'finance.end.lead'|trans }}</p>
+                </div>
+            </header>
 
-        <form class="form finance-end" method="post" action="{{ url_for('finance.end', {id: vehicle.id, agreement: agreement.id}) }}">
-            {{ ui.csrf(csrf) }}
-            <section class="card">
-                {% set options = [] %}
-                {% for outcome in outcomes %}
-                    {% set options = options|merge([{value: outcome.value, label: ('finance.end.outcome.' ~ outcome.value)|trans}]) %}
-                {% endfor %}
-                {{ ui.chips('outcome', 'finance.end.outcome_legend'|trans, values, errors, options) }}
-                <ul class="field__hint finance-end__hints">
+            {% block modal_body %}
+            {% if modal %}<p class="modal-fragment__context">{{ fin.name(agreement) }}</p>{% endif %}
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+
+            <form class="form finance-end" method="post" action="{{ url_for('finance.end', {id: vehicle.id, agreement: agreement.id}) }}">
+                {{ ui.csrf(csrf) }}
+                <section class="card">
+                    {% set options = [] %}
                     {% for outcome in outcomes %}
-                        <li data-for="{{ outcome.value }}">{{ ('finance.end.outcome_hint.' ~ outcome.value)|trans }}</li>
+                        {% set options = options|merge([{value: outcome.value, label: ('finance.end.outcome.' ~ outcome.value)|trans}]) %}
                     {% endfor %}
-                </ul>
-                {{ ui.input('ended_on', 'finance.end.field.ended_on'|trans, values, errors, {type: 'date', hint: 'finance.end.hint.ended_on'|trans}) }}
-                {% if 'settled' in outcomes|map(o => o.value) %}
-                    <div data-for="settled">
-                        {{ ui.input('settlement', 'finance.end.field.settlement'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.settlement'|trans}) }}
-                    </div>
-                {% endif %}
-                {% if 'handed_back' in outcomes|map(o => o.value) or 'ended' in outcomes|map(o => o.value) %}
-                    <div class="form-row" data-for="handed_back ended">
-                        {{ ui.input('excess_charge', 'finance.end.field.excess_charge'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.excess_charge'|trans}) }}
-                        {{ ui.input('damage_charge', 'finance.end.field.damage_charge'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.damage_charge'|trans}) }}
-                    </div>
-                {% endif %}
-                <p class="field__hint">{{ 'finance.not_advice'|trans }}</p>
-            </section>
+                    {{ ui.chips('outcome', 'finance.end.outcome_legend'|trans, values, errors, options) }}
+                    <ul class="field__hint finance-end__hints">
+                        {% for outcome in outcomes %}
+                            <li data-for="{{ outcome.value }}">{{ ('finance.end.outcome_hint.' ~ outcome.value)|trans }}</li>
+                        {% endfor %}
+                    </ul>
+                    {{ ui.input('ended_on', 'finance.end.field.ended_on'|trans, values, errors, {type: 'date', hint: 'finance.end.hint.ended_on'|trans}) }}
+                    {% if 'settled' in outcomes|map(o => o.value) %}
+                        <div data-for="settled">
+                            {{ ui.input('settlement', 'finance.end.field.settlement'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.settlement'|trans}) }}
+                        </div>
+                    {% endif %}
+                    {% if 'handed_back' in outcomes|map(o => o.value) or 'ended' in outcomes|map(o => o.value) %}
+                        <div class="form-row" data-for="handed_back ended">
+                            {{ ui.input('excess_charge', 'finance.end.field.excess_charge'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.excess_charge'|trans}) }}
+                            {{ ui.input('damage_charge', 'finance.end.field.damage_charge'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.damage_charge'|trans}) }}
+                        </div>
+                    {% endif %}
+                    <p class="field__hint">{{ 'finance.not_advice'|trans }}</p>
+                </section>
 
-            <div class="btn-row">
-                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check') }}{{ 'finance.end.submit'|trans }}</button>
-                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) }}">{{ 'form.cancel'|trans }}</a>
-            </div>
-        </form>
-        {% endblock %}
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check') }}{{ 'finance.end.submit'|trans }}</button>
+                    <a data-modal-cancel class="btn btn--lg" href="{{ url_for('finance.show', {id: vehicle.id, agreement: agreement.id}) }}">{{ 'form.cancel'|trans }}</a>
+                </div>
+            </form>
+            {% endblock %}
+        </div>
     </div>
 {% endblock %}

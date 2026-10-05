@@ -44,9 +44,9 @@ final class DraftIncident extends DraftTool
 
     protected function description(): string
     {
-        return 'Draft an incident (a collision, parked damage, theft, break-in, vandalism, weather, glass, pothole, '
-            . 'animal or fire) for the user to add: what happened, where the vehicle was damaged and anything '
-            . 'about the insurance claim. Repairs are separate records the user links afterwards.';
+        return 'Draft an incident (' . self::typeList() . ') for the user to add: what happened, where the '
+            . 'vehicle was damaged and anything about the insurance claim. Repairs are separate records the user '
+            . 'links afterwards.';
     }
 
     protected function properties(): array
@@ -106,6 +106,18 @@ final class DraftIncident extends DraftTool
     private static function types(): array
     {
         return array_map(static fn (IncidentType $type): string => $type->value, IncidentType::cases());
+    }
+
+    /**
+     * The types in words, from the enum so a new one is never left out:
+     * "a collision, parked damage, …, fire, breakdown or other".
+     */
+    private static function typeList(): string
+    {
+        $words = array_map(static fn (string $type): string => str_replace('_', ' ', $type), self::types());
+        $last = array_pop($words);
+
+        return 'a ' . implode(', ', $words) . ' or ' . $last;
     }
 
     /**

@@ -81,8 +81,10 @@
             <span class="vehicle-tile__sub truncate" title="{{ vehicle.description() }}">{{ vehicle.description() }}</span>
             <span class="vehicle-tile__meta">
                 <span class="tabular">{{ snapshot.latest ? snapshot.latest.readingKm|distance : 'dashboard.fleet.no_odometer'|trans }}</span>
-                {{ ui.due_badge(snapshot.due, 'due-badge--text') }}
-                {{ attention_ui.marker(snapshot.attention, 'attention-marker--text') }}
+                <span class="vehicle-tile__status">
+                    {{- ui.due_badge(snapshot.due, 'due-badge--text') }}
+                    {{ attention_ui.marker(snapshot.attention, 'attention-marker--text') -}}
+                </span>
             </span>
         </span>
     </a>

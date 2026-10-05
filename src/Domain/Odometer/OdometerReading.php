@@ -56,6 +56,8 @@ final readonly class OdometerReading
             $this->maintenanceEntryId !== null => [AttachmentOwner::Maintenance, $this->maintenanceEntryId],
             $this->complianceDocumentId !== null => [AttachmentOwner::Compliance, $this->complianceDocumentId],
             $this->incidentId !== null => [AttachmentOwner::Incident, $this->incidentId],
+            // Mileage when bought: the purchase paperwork is its receipt.
+            $this->source === OdometerSource::Purchase => [AttachmentOwner::Purchase, $this->vehicleId],
             default => [AttachmentOwner::Odometer, $this->id],
         };
     }

@@ -60,6 +60,7 @@ const icons = [
   'contrast',
   'credit_card',
   'dark_mode',
+  'dashboard',
   'delete',
   'description',
   'directions_car',
@@ -87,7 +88,9 @@ const icons = [
   'key',
   'key_off',
   'lan',
+  'leaderboard',
   'light_mode',
+  'lightbulb',
   'link',
   'local_car_wash',
   'local_gas_station',
@@ -157,6 +160,15 @@ const icons = [
   // Phase 33.2 (signed-out pages).
   'mark_email_read',
   'radio_button_unchecked',
+  // Incident types (Phase 33.3, IncidentType::icon()).
+  'lock_open',
+  'door_open',
+  'report',
+  'thunderstorm',
+  'window',
+  'pets',
+  'local_fire_department',
+  'minor_crash',
 ];
 
 mkdirSync(join(outDir, 'fonts'), { recursive: true });
