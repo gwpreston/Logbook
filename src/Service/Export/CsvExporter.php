@@ -314,7 +314,10 @@ final readonly class CsvExporter
                 'export.column.calendar_year',
                 'export.column.partial_year',
                 ['export.column.distance_driven', $unitName],
-                ...array_map(fn (TruePart $p): array => ['export.column.part_amount', ['part' => $partName($p)]], TruePart::cases()),
+                ...array_map(
+                    fn (TruePart $p): array => ['export.column.part_amount', ['part' => $partName($p)]],
+                    TruePart::cases(),
+                ),
                 ...array_map(fn (TruePart $p): array => [
                     'export.column.part_per_distance',
                     ['part' => $partName($p), 'unit' => $perUnit],

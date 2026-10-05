@@ -44,7 +44,8 @@ final class TrueCostTest extends TestCase
         ];
         $payouts = [new InsurancePayout(self::date('2024-06-01'), Money::of('400.004', 'GBP'), 5)];
 
-        $ownership = self::ownership($golf, $items, $readings, [self::valuation('2026-03-01', '9800.000')], '2026-09-01', $payouts);
+        $valuations = [self::valuation('2026-03-01', '9800.000')];
+        $ownership = self::ownership($golf, $items, $readings, $valuations, '2026-09-01', $payouts);
         $true = TrueCost::sinceBought($ownership, $items);
 
         self::assertNotNull($ownership->perKm);
@@ -141,8 +142,11 @@ final class TrueCostTest extends TestCase
 
         [$y2025, $y2026] = TrueCostPeriod::years(self::date('2025-01-01'), self::date('2026-09-01'));
 
-        self::assertSame('50.000', self::period($car, $y2025, [$late, $early], [])->amount(TruePart::Fuel)?->toDecimal(3), '23:30 on 31 Dec in London');
-        self::assertSame('60.000', self::period($car, $y2026, [$late, $early], [])->amount(TruePart::Fuel)?->toDecimal(3));
+        $first = self::period($car, $y2025, [$late, $early], []);
+        $second = self::period($car, $y2026, [$late, $early], []);
+
+        self::assertSame('50.000', $first->amount(TruePart::Fuel)?->toDecimal(3), '23:30 on 31 Dec in London');
+        self::assertSame('60.000', $second->amount(TruePart::Fuel)?->toDecimal(3));
     }
 
     public function testPartialYearsSaySo(): void
@@ -160,7 +164,8 @@ final class TrueCostTest extends TestCase
     public function testTwelveMonthsAreTheReportsPresetCutToOwnership(): void
     {
         $last = TrueCostPeriod::twelveMonths(self::date('2026-10-05'), self::date('2026-01-20'), self::date('2026-10-05'));
-        $before = TrueCostPeriod::twelveMonths(self::date('2026-10-05'), self::date('2024-01-01'), self::date('2026-10-05'), true);
+        $today = self::date('2026-10-05');
+        $before = TrueCostPeriod::twelveMonths($today, self::date('2024-01-01'), $today, true);
 
         self::assertNotNull($last);
         self::assertSame('2026-01-20', $last->from->format('Y-m-d'), 'bought part-way: from the purchase');
@@ -181,8 +186,9 @@ final class TrueCostTest extends TestCase
         $items = [self::fill($car, '2025-06-01T12:00:00Z', '50.000')];
 
         [$y2025] = TrueCostPeriod::years(self::date('2025-01-01'), self::date('2026-09-01'));
-        $short = self::period($car, $y2025, $items, [self::reading(1, '1000', '2025-01-01T12:00:00Z'), self::reading(2, '1499.9', '2025-12-01T12:00:00Z')]);
-        $enough = self::period($car, $y2025, $items, [self::reading(1, '1000', '2025-01-01T12:00:00Z'), self::reading(2, '1500', '2025-12-01T12:00:00Z')]);
+        $start = self::reading(1, '1000', '2025-01-01T12:00:00Z');
+        $short = self::period($car, $y2025, $items, [$start, self::reading(2, '1499.9', '2025-12-01T12:00:00Z')]);
+        $enough = self::period($car, $y2025, $items, [$start, self::reading(2, '1500', '2025-12-01T12:00:00Z')]);
 
         self::assertNotNull($short->perKm, 'still in the table');
         self::assertFalse($short->isComparable());
@@ -210,7 +216,8 @@ final class TrueCostTest extends TestCase
         $car = self::vehicle('2025-01-01', '10000.000');
 
         [$y2025] = TrueCostPeriod::years(self::date('2025-01-01'), self::date('2026-09-01'));
-        $true = self::period($car, $y2025, [], [self::reading(1, '1000', '2025-01-01T12:00:00Z'), self::reading(2, '9000', '2025-12-01T12:00:00Z')]);
+        $readings = [self::reading(1, '1000', '2025-01-01T12:00:00Z'), self::reading(2, '9000', '2025-12-01T12:00:00Z')];
+        $true = self::period($car, $y2025, [], $readings);
 
         self::assertNull($true->perKm);
         self::assertSame(TrueCostGap::NoCosts, $true->gap);
@@ -222,7 +229,8 @@ final class TrueCostTest extends TestCase
         $readings = [self::reading(1, '1000', '2023-01-01T12:00:00Z'), self::reading(2, '40000', '2026-09-01T12:00:00Z')];
 
         $year = TrueCostPeriod::years(self::date('2023-01-01'), self::date('2026-09-01'))[3];
-        $true = self::period($car, $year, [self::fill($car, '2026-04-01T12:00:00Z', '60.000')], $readings, [self::valuation('2025-12-01', '9000.000')]);
+        $fill = self::fill($car, '2026-04-01T12:00:00Z', '60.000');
+        $true = self::period($car, $year, [$fill], $readings, [self::valuation('2025-12-01', '9000.000')]);
 
         self::assertNull($true->depreciation, 'shown as "—"');
         self::assertTrue($true->isRunningOnly());
@@ -232,7 +240,10 @@ final class TrueCostTest extends TestCase
     {
         $classic = self::vehicle('2020-01-01', '12000.000');
         $readings = [self::reading(1, '1000', '2020-01-01T12:00:00Z'), self::reading(2, '21000', '2025-12-31T12:00:00Z')];
-        $items = [self::fill($classic, '2025-06-01T12:00:00Z', '1000.000'), self::maintenance($classic, '2025-07-01', '1000.000')];
+        $items = [
+            self::fill($classic, '2025-06-01T12:00:00Z', '1000.000'),
+            self::maintenance($classic, '2025-07-01', '1000.000'),
+        ];
 
         $true = self::period(
             $classic,

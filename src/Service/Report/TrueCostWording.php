@@ -47,7 +47,10 @@ final readonly class TrueCostWording
         $sold = $sale !== null && $period->to == $sale;
 
         return match (true) {
-            $period->partialStart && $period->partialEnd && $sold => $this->translator->trans('true_cost.year.between', ['year' => $year, 'from' => $from, 'to' => $to]),
+            $period->partialStart && $period->partialEnd && $sold => $this->translator->trans(
+                'true_cost.year.between',
+                ['year' => $year, 'from' => $from, 'to' => $to],
+            ),
             $period->partialStart => $this->translator->trans('true_cost.year.from', ['year' => $year, 'from' => $from]),
             $period->partialEnd && $sold => $this->translator->trans('true_cost.year.to', ['year' => $year, 'to' => $to]),
             $period->partialEnd => $this->translator->trans('true_cost.year.so_far', ['year' => $year]),
@@ -145,19 +148,19 @@ final readonly class TrueCostWording
                     'part' => $part,
                     'amount' => $amount,
                     'direction' => $this->direction($line),
-                    'money' => $line->amountChange === null ? '' : $this->format->money(ltrim($line->amountChange->toDecimal(3), '-'), $currency),
+                    'money' => $this->moneyChange($line, $currency),
                 ]),
             ChangeCause::Amount => $line->part === TruePart::Depreciation
                 ? $this->translator->trans('true_cost.change.depreciation', [
                     'amount' => $amount,
                     'direction' => $this->direction($line),
-                    'money' => $line->amountChange === null ? '' : $this->format->money(ltrim($line->amountChange->toDecimal(3), '-'), $currency),
+                    'money' => $this->moneyChange($line, $currency),
                 ])
                 : $this->translator->trans('true_cost.change.spent', [
                     'part' => $part,
                     'amount' => $amount,
                     'direction' => $this->direction($line),
-                    'money' => $line->amountChange === null ? '' : $this->format->money(ltrim($line->amountChange->toDecimal(3), '-'), $currency),
+                    'money' => $this->moneyChange($line, $currency),
                 ]),
             ChangeCause::Distance => $this->translator->trans('true_cost.change.distance', [
                 'part' => $part,
@@ -168,9 +171,11 @@ final readonly class TrueCostWording
             ChangeCause::Payouts => $this->translator->trans('true_cost.change.payouts', [
                 'amount' => $amount,
                 'direction' => $line->amountChange !== null && $line->amountChange->isNegative() ? 'less' : 'more',
-                'money' => $line->amountChange === null ? '' : $this->format->money(ltrim($line->amountChange->toDecimal(3), '-'), $currency),
+                'money' => $this->moneyChange($line, $currency),
             ]),
-            ChangeCause::Small => $this->translator->trans('true_cost.change.small', ['amount' => $amount]),
+            ChangeCause::Small => $this->rate(ltrim($line->perKm, '-'), $currency) === $this->rate('0', $currency)
+                ? $this->translator->trans('true_cost.change.small_none')
+                : $this->translator->trans('true_cost.change.small', ['amount' => $amount]),
             ChangeCause::Price, ChangeCause::Economy, ChangeCause::Energy => $this->detail($line, $currency),
         };
     }
@@ -224,6 +229,16 @@ final readonly class TrueCostWording
             $line->details,
             static fn (ChangeLine $d): bool => Decimal::compare(ltrim($d->perKm, '-'), $small) >= 0,
         ));
+    }
+
+    /**
+     * How much more or less was spent, without its sign: "£120.00".
+     */
+    private function moneyChange(ChangeLine $line, string $currency): string
+    {
+        return $line->amountChange === null
+            ? ''
+            : $this->format->money(ltrim($line->amountChange->toDecimal(3), '-'), $currency);
     }
 
     private function direction(ChangeLine $line): string

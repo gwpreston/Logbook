@@ -107,8 +107,10 @@ final class CostChangeTest extends TestCase
         self::assertAddsUp($change);
         self::assertSame('0.300000', $change->before->rate(TruePart::Depreciation), '£3,000 ÷ 10,000 km');
         self::assertSame('0.300000', $change->after->rate(TruePart::Depreciation), '£2,400 ÷ 8,000 km');
-        self::assertSame('0.060000', self::line($change, ChangeCause::Distance, TruePart::Depreciation)->perKm, '£2,400 ÷ 8,000 − £2,400 ÷ 10,000');
-        self::assertSame('-0.060000', self::line($change, ChangeCause::Amount, TruePart::Depreciation)->perKm, '£600 less ÷ 10,000');
+        $byDistance = self::line($change, ChangeCause::Distance, TruePart::Depreciation);
+        $byAmount = self::line($change, ChangeCause::Amount, TruePart::Depreciation);
+        self::assertSame('0.060000', $byDistance->perKm, '£2,400 ÷ 8,000 − £2,400 ÷ 10,000');
+        self::assertSame('-0.060000', $byAmount->perKm, '£600 less ÷ 10,000');
     }
 
     public function testAPlugInHybridIsSplitPerEnergy(): void
@@ -160,7 +162,8 @@ final class CostChangeTest extends TestCase
             self::expense($car, '2025-05-01', '33.000'),
         ];
 
-        $change = self::change($car, $items, ['5000', '15000', '25000'], small: TrueCostService::smallPerKm('GBP', DistanceUnit::Mile));
+        $small = TrueCostService::smallPerKm('GBP', DistanceUnit::Mile);
+        $change = self::change($car, $items, ['5000', '15000', '25000'], small: $small);
 
         self::assertNotNull($change);
         self::assertAddsUp($change);
@@ -187,7 +190,7 @@ final class CostChangeTest extends TestCase
     {
         self::assertSame('0.002000', TrueCostService::smallPerKm('GBP', DistanceUnit::Kilometre));
         self::assertSame('0.001242742', TrueCostService::smallPerKm('GBP', DistanceUnit::Mile), '0.2p a mile');
-        self::assertSame('0.200000', TrueCostService::smallPerKm('JPY', DistanceUnit::Kilometre), 'a currency without minor units');
+        self::assertSame('0.200000', TrueCostService::smallPerKm('JPY', DistanceUnit::Kilometre), 'no minor units');
     }
 
     /**

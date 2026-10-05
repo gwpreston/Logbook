@@ -45,7 +45,8 @@ final class ValueCurveTest extends TestCase
     public function testAdjacentYearsAddUpToTheWholeLoss(): void
     {
         $golf = self::vehicle('2023-03-01', '15000.000');
-        $curve = ValueCurve::of($golf, [self::valuation('2024-03-01', '12000.000'), self::valuation('2026-03-01', '9800.000', 2)]);
+        $valuations = [self::valuation('2024-03-01', '12000.000'), self::valuation('2026-03-01', '9800.000', 2)];
+        $curve = ValueCurve::of($golf, $valuations);
 
         $sum = '0';
         foreach (['2023', '2024', '2025', '2026'] as $year) {
@@ -75,8 +76,10 @@ final class ValueCurveTest extends TestCase
         $curve = ValueCurve::of(self::vehicle('2023-03-01', '15000.000'), [self::valuation('2026-03-01', '9800.000')]);
 
         self::assertNull($curve->depreciation(self::date('2026-03-02'), self::date('2026-12-31'), 'GBP'));
-        self::assertNull($curve->depreciation(self::date('2026-03-01'), self::date('2026-12-31'), 'GBP'), 'one day on the point measures nothing after it');
-        self::assertNotNull($curve->depreciation(self::date('2026-01-01'), self::date('2026-02-28'), 'GBP'), 'up to the eve of the point: not cut');
+        $onThePoint = $curve->depreciation(self::date('2026-03-01'), self::date('2026-12-31'), 'GBP');
+        self::assertNull($onThePoint, 'one day on the point measures nothing after it');
+        $toTheEve = $curve->depreciation(self::date('2026-01-01'), self::date('2026-02-28'), 'GBP');
+        self::assertNotNull($toTheEve, 'up to the eve of the point: not cut');
     }
 
     public function testAPeriodStartingBeforeThePurchaseStartsAtIt(): void
@@ -106,7 +109,8 @@ final class ValueCurveTest extends TestCase
     {
         $lease = self::vehicle('2024-01-01', null);
 
-        $curve = ValueCurve::of($lease, [self::valuation('2024-06-01', '20000.000'), self::valuation('2025-06-01', '17000.000', 2)]);
+        $valuations = [self::valuation('2024-06-01', '20000.000'), self::valuation('2025-06-01', '17000.000', 2)];
+        $curve = ValueCurve::of($lease, $valuations);
 
         self::assertNull($curve->first());
         self::assertNull($curve->depreciation(self::date('2024-01-01'), self::date('2025-12-31'), 'GBP'));
@@ -127,7 +131,8 @@ final class ValueCurveTest extends TestCase
     {
         $car = self::vehicle('2023-03-01', '15000.000');
 
-        $curve = ValueCurve::of($car, [self::valuation('2024-03-01', '12500.000'), self::valuation('2024-03-01', '12000.000', 2)]);
+        $valuations = [self::valuation('2024-03-01', '12500.000'), self::valuation('2024-03-01', '12000.000', 2)];
+        $curve = ValueCurve::of($car, $valuations);
 
         self::assertCount(2, $curve->points);
         self::assertSame('12000.000', self::value($curve, self::date('2024-03-01')));

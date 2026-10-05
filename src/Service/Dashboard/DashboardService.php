@@ -86,8 +86,11 @@ final readonly class DashboardService
      *
      * @param int|null $vehicleId the selected vehicle; unknown or archived means the fleet
      */
-    public function build(User $user, ?int $vehicleId = null, TrueCostRange $trueCostRange = TrueCostRange::TwelveMonths): Dashboard
-    {
+    public function build(
+        User $user,
+        ?int $vehicleId = null,
+        TrueCostRange $trueCostRange = TrueCostRange::TwelveMonths,
+    ): Dashboard {
         $layout = $this->layouts->load($user->id);
         $enabled = $this->features->all();
         $available = array_values(array_filter(

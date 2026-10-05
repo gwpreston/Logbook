@@ -85,8 +85,12 @@ trait TrueCostFixtures
         return new OdometerReading($id, 1, $km, $at, OdometerSource::Manual, null, null, $at, $at);
     }
 
-    private static function expense(Vehicle $vehicle, string $date, string $amount, ExpenseCategory $category = ExpenseCategory::Parking): CostItem
-    {
+    private static function expense(
+        Vehicle $vehicle,
+        string $date,
+        string $amount,
+        ExpenseCategory $category = ExpenseCategory::Parking,
+    ): CostItem {
         $data = new ExpenseEntryData(self::date($date), $category, $amount);
         $entry = new ExpenseEntry(1, $vehicle->id, $data, self::date($date), self::date($date));
 

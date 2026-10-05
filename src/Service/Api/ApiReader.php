@@ -43,6 +43,7 @@ use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
+use Logbook\Service\Report\TrueCostService;
 use Logbook\Service\Trip\ClaimFilter;
 use Logbook\Service\Trip\ClaimReportService;
 use Logbook\Service\Trip\TripService;
@@ -85,6 +86,7 @@ final readonly class ApiReader
         private ReportService $reports,
         private DisplayFormatter $format,
         private ClockInterface $clock,
+        private TrueCostService $trueCosts,
     ) {
     }
 
@@ -501,6 +503,10 @@ final readonly class ApiReader
                 'cost_per_distance' => $perKm === null ? null : Decimal::round($perKm, Serializer::PER_KM_SCALE),
             ];
             $display['cost_per_distance'] = $perKm === null ? null : $this->format->perDistance($perKm, $currency);
+            // Phase 32 (spec.md §7.35): the true cost headline for the last 12 months, depreciation included.
+            $trueCost = $this->trueCosts->forVehicle($user, $vehicle, $today)?->lastTwelveMonths?->perKm;
+            $summary['costs']['true_cost_per_distance'] = Serializer::dec($trueCost, Serializer::PER_KM_SCALE);
+            $display['true_cost_per_distance'] = $trueCost === null ? null : $this->format->perDistance($trueCost, $currency);
         }
 
         $next = $vehicle->isArchived() ? null : ($this->comingUp->forecast($user, [$vehicle])->next(1)[0] ?? null);

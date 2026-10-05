@@ -152,7 +152,10 @@ final readonly class ShowVehicleAction
             'ownership_cost' => $this->ownership->forVehicle($user, $vehicle, $odometer->readings, $depreciation, $today),
             // True cost (spec.md §7.35): the card's breakdown, since bought by default.
             'true_cost' => $this->trueCosts->forVehicle($user, $vehicle, $today),
-            'true_cost_range' => TrueCostRange::chosen($request->getQueryParams()['true_cost'] ?? null, TrueCostRange::SinceBought),
+            'true_cost_range' => TrueCostRange::chosen(
+                $request->getQueryParams()['true_cost'] ?? null,
+                TrueCostRange::SinceBought,
+            ),
             'true_cost_wording' => $this->trueCostWording,
             'coming_up' => $comingUp,
             'attention' => $comingUp === null ? [] : $this->attention->forVehicles($user, [$vehicle], forecast: $comingUp)->items,

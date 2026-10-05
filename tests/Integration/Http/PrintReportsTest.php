@@ -65,6 +65,7 @@ final class PrintReportsTest extends AppTestCase
             '/reports?vehicle=' . $id => ['Expenses & reports', $golf, 'Period 1 Oct 2025 – 27 Sept 2026'],
             '/reports/ownership' => ['Cost of ownership', $fleet, 'Period Each vehicle from purchase to sale or today'],
             '/reports/ownership?vehicle=' . $id => ['Cost of ownership', $golf, 'Period Each vehicle'],
+            '/reports/true-cost?vehicle=' . $id => ['True cost', $golf, 'Period Each vehicle'],
             '/upcoming' => ['Coming up', $fleet, 'Period Sept 2026 – Aug 2027'],
             '/upcoming?vehicle=' . $id => ['Coming up', $golf, 'Period Sept 2026 – Aug 2027'],
             '/vehicles/' . $id . '/fuel' => ['Fuel', $golf, 'Period 1 Sept 2026 – 20 Sept 2026'],
@@ -156,6 +157,7 @@ final class PrintReportsTest extends AppTestCase
         $settings->save(FeatureToggles::SETTING, ['reports' => false], SettingScope::Global);
         self::assertSame(404, $this->browser->get('/reports')->getStatusCode());
         self::assertSame(404, $this->browser->get('/reports/ownership')->getStatusCode());
+        self::assertSame(404, $this->browser->get('/reports/true-cost')->getStatusCode());
     }
 
     public function testAnArchivedVehiclePrintsItsTabs(): void

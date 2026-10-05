@@ -232,6 +232,8 @@ final class AccessPolicyTest extends AppTestCase
             '/reports/export.csv',
             '/reports/ownership',
             '/reports/ownership.csv',
+            '/reports/true-cost',
+            '/reports/true-cost.csv',
             '/reminders',
         ];
     }

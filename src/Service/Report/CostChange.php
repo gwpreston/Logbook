@@ -125,7 +125,13 @@ final readonly class CostChange
             return null;
         }
 
-        return new ChangeLine(ChangeCause::Part, $change, TruePart::Fuel, amountChange: self::amountChange(TruePart::Fuel, $before, $after), details: $details);
+        return new ChangeLine(
+            ChangeCause::Part,
+            $change,
+            TruePart::Fuel,
+            amountChange: self::amountChange(TruePart::Fuel, $before, $after),
+            details: $details,
+        );
     }
 
     /**
