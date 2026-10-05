@@ -222,6 +222,7 @@ and the details found then are in `spec.md` §7.35, which is the source.*
       dashboard widget and the yearly trend. Upgrade notes: no migration; the
       widget is appended to existing dashboards.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
+- [x] Tag `v2.16.0` once merged.
 
 ---
 
