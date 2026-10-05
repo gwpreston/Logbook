@@ -2,7 +2,7 @@
 
 *Settings → Modules shows the Fuel stations icon again.*
 
-Status: ✅ complete · releases **v2.15.1** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v2.15.1** · file lives in `docs/phases/`
 
 **Goal:** on Settings → Modules, every module's title has an icon except
 **Fuel stations**, which shows a blank space where its icon should be. It
@@ -63,7 +63,7 @@ sprite.
 - [x] `CHANGELOG.md` **2.15.1**: *Fixed* — the Fuel stations module's
       icon; no migrations, no config changes, no backup format change.
 - [x] Bump `VERSION`, rebuild assets, update the README status.
-- [ ] Tag `v2.15.1` once merged.
+- [x] Tag `v2.15.1` once merged.
 
 ---
 
