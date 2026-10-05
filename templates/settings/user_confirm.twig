@@ -18,7 +18,7 @@
         <section class="card" aria-labelledby="confirm-heading">
             <h1 id="confirm-heading" class="card__title card__title--lg">{{ heading }}</h1>
             {% if action == 'disable' and self %}
-                <p>{{ 'users.refused.yourself'|trans }}</p>
+                <p>{{ 'users.confirm.revoke_body_self'|trans }}</p>
             {% else %}
                 <p>{{ ('users.confirm.' ~ key ~ (self ? '_body_self' : '_body'))|trans({name: target.displayName}) }}</p>
                 <form class="form" method="post" action="{{ url_for('settings.users.confirm', {member: target.id, action: action}) }}">

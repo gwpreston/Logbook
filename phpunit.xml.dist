@@ -30,6 +30,8 @@
         <!-- The suite always uses the TEST_DB_* database (default: SQLite in var/). -->
         <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_DEBUG" value="false"/>
+        <!-- The dev stack points the app at Mailpit; tests that want email set it themselves. -->
+        <env name="MAIL_HOST" value="" force="true"/>
         <env name="LOG_PATH" value="var/log/testing.log"/>
         <ini name="error_reporting" value="-1"/>
         <!-- The suite builds an app per test; the CLI default of 128M is close to its peak. -->

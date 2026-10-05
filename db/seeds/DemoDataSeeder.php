@@ -14,6 +14,7 @@ use Logbook\Service\Tyre\TyreReplay;
 use Logbook\Service\Tyre\TyreReplayResult;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
+use Logbook\Support\Security\PasswordHasher;
 use Phinx\Seed\AbstractSeed;
 
 /**
@@ -26,9 +27,14 @@ use Phinx\Seed\AbstractSeed;
  *   ./bin/dev-setup.sh --with-sample-data
  *   vendor/bin/phinx seed:run -e development -s DemoDataSeeder
  *
- * Sign in as `demo` / `logbook-demo`, or `partner` / `logbook-demo`. Refuses
- * to run in production, and on a database that already has an account:
- * reset first with `./bin/dev-setup.sh --reset`.
+ * The passwords are new on every run (Phase 33.1): bin/dev-setup.sh passes
+ * DEMO_PASSWORD and PARTNER_PASSWORD and prints them; run directly, the
+ * seeder makes them up and prints them. On a database that already has the
+ * sample users it only sets the new passwords (their sessions end, as any
+ * password change); on one with other accounts it adds nothing (reset first
+ * with `./bin/dev-setup.sh --reset`). Both users have confirmed addresses
+ * (`demo@example.test`, `partner@example.test`), so a forgotten-password
+ * email can be tried in Mailpit. Refuses to run in production.
  */
 final class DemoDataSeeder extends AbstractSeed
 {
@@ -38,13 +44,47 @@ final class DemoDataSeeder extends AbstractSeed
     ];
 
     public const string USERNAME = 'demo';
-    public const string PASSWORD = 'logbook-demo';
     public const string PARTNER = 'partner';
+    public const string EMAIL = 'demo@example.test';
+    public const string PARTNER_EMAIL = 'partner@example.test';
+    /** No 0/O, 1/l/I: easy to read off a terminal. */
+    private const string ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    private const int PASSWORD_LENGTH = 20;
+
+    private string $password = '';
+    private string $partnerPassword = '';
 
     public function run(): void
     {
         if (Kernel::settings()->isProduction()) {
             throw new RuntimeException('DemoDataSeeder is for development only (APP_ENV=production).');
+        }
+
+        $this->password = self::passwordFrom('DEMO_PASSWORD');
+        $this->partnerPassword = self::passwordFrom('PARTNER_PASSWORD');
+        $hasher = new PasswordHasher();
+
+        if ($this->sampleUsersExist()) {
+            $now = gmdate('Y-m-d H:i:s');
+            foreach ([self::USERNAME => $this->password, self::PARTNER => $this->partnerPassword] as $username => $password) {
+                $this->execute(
+                    'UPDATE users SET password_hash = ?, updated_at = ? WHERE username = ?',
+                    [$hasher->hash($password), $now, $username],
+                );
+                $this->execute(
+                    'DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE username = ?)',
+                    [$username],
+                );
+            }
+            $this->getOutput()->writeln(sprintf(
+                '<info>The sample users exist; new passwords set. Sign in as "%s" with "%s" (or "%s" with "%s").</info>',
+                self::USERNAME,
+                $this->password,
+                self::PARTNER,
+                $this->partnerPassword,
+            ));
+
+            return;
         }
 
         $existing = $this->fetchRow('SELECT COUNT(*) AS n FROM users');
@@ -61,7 +101,8 @@ final class DemoDataSeeder extends AbstractSeed
 
         $this->table('users')->insert([
             'username' => self::USERNAME,
-            'password_hash' => password_hash(self::PASSWORD, PASSWORD_ARGON2ID),
+            'password_hash' => $hasher->hash($this->password),
+            'email' => self::EMAIL,
             'display_name' => 'Demo Driver',
             'locale' => 'en_GB',
             'timezone' => 'Europe/London',
@@ -172,10 +213,11 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedFuelPrices($now, $userId);
 
         $this->getOutput()->writeln(sprintf(
-            '<info>Sample data added. Sign in as "%s" (or "%s") with password "%s".</info>',
+            '<info>Sample data added. Sign in as "%s" with "%s" (or "%s" with "%s").</info>',
             self::USERNAME,
+            $this->password,
             self::PARTNER,
-            self::PASSWORD,
+            $this->partnerPassword,
         ));
     }
 
@@ -205,7 +247,8 @@ final class DemoDataSeeder extends AbstractSeed
 
         $this->table('users')->insert([
             'username' => self::PARTNER,
-            'password_hash' => password_hash(self::PASSWORD, PASSWORD_ARGON2ID),
+            'password_hash' => (new PasswordHasher())->hash($this->partnerPassword),
+            'email' => self::PARTNER_EMAIL,
             'display_name' => 'Sam Partner',
             'locale' => 'en_GB',
             'timezone' => 'Europe/London',
@@ -2149,6 +2192,34 @@ final class DemoDataSeeder extends AbstractSeed
     private static function stringValue(mixed $value): string
     {
         return is_string($value) ? $value : throw new LogicException('Expected a string.');
+    }
+
+    private function sampleUsersExist(): bool
+    {
+        $row = $this->fetchRow(
+            "SELECT COUNT(*) AS n FROM users WHERE username IN ('" . self::USERNAME . "', '" . self::PARTNER . "')",
+        );
+
+        return is_array($row) && self::intValue($row['n'] ?? $row[0] ?? 0) > 0;
+    }
+
+    /**
+     * The password in $variable (bin/dev-setup.sh sets it), or a new random
+     * one: 20 characters from an unambiguous alphabet.
+     */
+    private static function passwordFrom(string $variable): string
+    {
+        $given = getenv($variable);
+        if (is_string($given) && $given !== '') {
+            return $given;
+        }
+        $password = '';
+        $last = strlen(self::ALPHABET) - 1;
+        for ($i = 0; $i < self::PASSWORD_LENGTH; $i++) {
+            $password .= self::ALPHABET[random_int(0, $last)];
+        }
+
+        return $password;
     }
 
     private static function intValue(mixed $value): int

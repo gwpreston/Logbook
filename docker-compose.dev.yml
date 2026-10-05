@@ -1,5 +1,6 @@
 # Development stack: source bind-mounted (PHP + Twig changes apply on reload),
-# plus PostgreSQL, MySQL and MariaDB for cross-engine testing.
+# plus PostgreSQL, MySQL and MariaDB for cross-engine testing, and Mailpit,
+# which catches every email the app sends (http://localhost:8025).
 #
 # Day to day, use ./bin/dev-setup.sh (start/stop, switch database, sample data).
 #
@@ -34,10 +35,25 @@ services:
       DB_PASSWORD: logbook
       # Per engine under bin/dev-setup.sh, so each database keeps its own photos.
       UPLOAD_PATH: ${DEV_UPLOAD_PATH:-/data/uploads}
+      # Every email goes to Mailpit (spec.md §10 *Development stack*, Phase 33.1).
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_ENCRYPTION: none
+      MAIL_FROM: logbook@localhost
     volumes:
       - .:/var/www/html
       - vendor:/var/www/html/vendor
       - dev_data:/data
+
+  # Development only: never in docker-compose.yml or docker-compose.mysql.yml.
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      retries: 20
 
   pgsql:
     image: postgres:17-alpine

@@ -181,7 +181,7 @@ start if something else already holds the app port. On Windows run it from
 
 ```bash
 ./bin/dev-setup.sh                     # set up and start on PostgreSQL → http://localhost:8090
-./bin/dev-setup.sh --with-sample-data  # ...and add sample data (sign in as demo / logbook-demo, or partner / logbook-demo)
+./bin/dev-setup.sh --with-sample-data  # ...and add sample data (fresh passwords for demo and partner, printed at the end)
 ./bin/dev-setup.sh --mysql             # use MySQL instead (or --mariadb, --sqlite)
 ./bin/dev-setup.sh --port 8081         # serve on another port
 ./bin/dev-setup.sh --reset             # start over from an empty database
@@ -191,7 +191,7 @@ start if something else already holds the app port. On Windows run it from
 
 | Option | What it does |
 |---|---|
-| `--with-sample-data` | Add sample data: a demo owner (`demo` / `logbook-demo`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (the Golf's going back to 2021, one a month, with a valuation each spring, for its true cost trend; including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since; and a member (`partner` / `logbook-demo`) with Log access to the self-charging hybrid without costs, whose recent fill-ups they logged, and View access to the Golf. Skipped if an account already exists. |
+| `--with-sample-data` | Add sample data: a demo owner (`demo`, an admin, `demo@example.test`, UK units, GBP) and six vehicles — five active (petrol, self-charging hybrid, plug-in hybrid, electric, a motorbike) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (the Golf's going back to 2021, one a month, with a valuation each spring, for its true cost trend; including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since; and a member (`partner`, `partner@example.test`) with Log access to the self-charging hybrid without costs, whose recent fill-ups they logged, and View access to the Golf. Both get **new random passwords on every run**, printed in the summary and kept in `var/dev-credentials` (mode 600, git-ignored; `--status` prints it). On a database that already has them, only the passwords change; on one with other accounts nothing is added. |
 | `--postgres`, `--mysql`, `--mariadb`, `--sqlite` | Which database engine to run. PostgreSQL is the default. Each engine keeps its own data and photos, so you can switch back and forth. |
 | `--reset` | Empty the chosen engine's database (full rollback + migrate) and delete its uploads. With `--stop`, delete every dev database, the uploads and the `vendor/` volume instead. Asks first unless `--yes`. |
 | `--stop`, `--down` | Stop the containers instead of starting them. |
@@ -199,6 +199,11 @@ start if something else already holds the app port. On Windows run it from
 | `--logs` | Follow the app log (errors, failed sign-ins). |
 | `--port <number>` | Serve the app on this port (default 8090). Also accepted as `--port=<number>` or `APP_PORT=<number>`. 8080 is refused: it belongs to the production stack. |
 | `-y`, `--yes` | Do not prompt before anything destructive. |
+
+Every email the app sends in development (password resets, invitations,
+reminders, digests) is caught by **Mailpit**: open `http://localhost:8025`
+(`MAILPIT_PORT` to move it). Try *Forgotten your password?* as `demo` and the
+email appears there.
 
 Migrations are applied automatically whenever the app starts. The dev stack
 runs on port 8090 so it never collides with the production stack on 8080 (the
@@ -208,7 +213,10 @@ script refuses 8080). If 8090 is taken, pick another for the run:
 The sample data comes from a Phinx seed
 ([`db/seeds/DemoDataSeeder.php`](db/seeds/DemoDataSeeder.php)); it refuses to
 run when `APP_ENV=production`. Without Docker, run it with
-`vendor/bin/phinx seed:run -e development -s DemoDataSeeder`.
+`vendor/bin/phinx seed:run -e development -s DemoDataSeeder`; it then makes
+up the passwords and prints them (or set `DEMO_PASSWORD` and
+`PARTNER_PASSWORD`). `bin/tools/dev-sample-passwords-test.sh` checks the
+whole round trip against the Docker stack.
 
 Other tasks run inside the app container:
 

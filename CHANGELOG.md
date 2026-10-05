@@ -6,6 +6,42 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 33.1 (ships with 33.4 as **v3.0.0**): **accounts**. See
+[docs/users-and-sharing.md](docs/users-and-sharing.md).
+
+### Added
+- **Forgotten your password?** on the sign-in page, when email is set up:
+  type a username or email address and a 60-minute link is emailed to the
+  account's confirmed address. The answer and its timing are the same
+  whatever was typed; requests are limited per address and emails per
+  account. Setting the new password signs you in and signs out every other
+  session, and a notice goes to your address. `PASSWORD_RESET_ENABLED=false`
+  turns it off.
+- **One email address per account**, on Settings → Account, confirmed by a
+  24-hour link before it is used; changing it needs your current password
+  and tells the old address. **Sign in with it** instead of your username
+  (when only one account has it).
+- **Admin controls** on Settings → Users: *Send reset email*, *Sign out
+  everywhere*, and *Add user*, which makes the account at once and emails a
+  link to choose a password.
+- **Pictures**: upload one on Settings → Account; it is cropped square and
+  saved without its metadata, and shown in the sidebar, on Settings →
+  Users, sharing lists, "added by" and Ask. In backups and user exports.
+- **Mailpit** in the development stack catches every email the app sends
+  (`http://localhost:8025`).
+
+### Changed
+- The reminder email address moved from Settings → Reminders to Settings →
+  Account. The upgrade moves everyone's address across, counted as
+  confirmed; nothing to do.
+- *Disable* and *Enable* on Settings → Users are now **Revoke access** and
+  **Restore access**, with a confirmation page. They do the same as before.
+- A user created by single sign-on keeps the provider's email address
+  (confirmed when the provider says `email_verified`).
+- `./bin/dev-setup.sh --with-sample-data` makes **new random passwords** for
+  `demo` and `partner` on every run (printed, and kept in
+  `var/dev-credentials`); there is no fixed demo password any more.
+
 ## [2.16.0] — 2026-10-05
 
 Phase 32: **true cost per mile or km**. What each vehicle really costs to

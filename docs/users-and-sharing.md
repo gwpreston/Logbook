@@ -32,18 +32,29 @@ in: the last one cannot be demoted or disabled. Admins are not owners: they
 see their own vehicles and those shared with them, like anyone else (a
 backup is how an admin sees everything).
 
-**Settings → Users** (admins only) lists everyone with their role, when they
-last signed in and whether they are active, and has:
+**Settings → Users** (admins only) lists everyone with their picture, role,
+email address, when they last signed in and whether they have access, and
+has:
 
-- **Invite**: see below.
+- **Invite** and **Add user**: see below.
 - **Make admin** / **Remove admin**.
-- **Disable**: they are signed out everywhere at once, cannot sign in (they
-  are told their password is wrong), and their API keys and calendar feed
-  stop working. **Enable** undoes it. You cannot disable yourself.
-- **Reset password**: a one-time link (7 days) that asks for a new
-  password. Their sessions end when you make it. There is no "forgot my
-  password" email: ask an admin.
+- **Send reset email** (or **Reset password** when they have no confirmed
+  address, or email isn't set up): a one-time link (7 days) that asks for a
+  new password. With an address it is emailed to them, in their language;
+  otherwise it is shown to you once, to pass on. Never both. Their sessions
+  end when you make it.
+- **Sign out everywhere**: every session of theirs ends, on every device.
+  It doesn't stop them signing back in (a sign-in proxy does that on its
+  own); you can do it to yourself.
+- **Revoke access**: they are signed out everywhere at once, cannot sign in
+  (they are told their password is wrong), and their API keys and calendar
+  feed stop working. Nothing of theirs is deleted. **Restore access** undoes
+  it, keys included. You cannot revoke your own access, nor the last
+  admin's. (Before 3.0 these were called *Disable* and *Enable*.)
 - **Delete**: see [below](#leaving-transferring-and-deleting).
+
+Members never see these, and every one of their addresses answers 403 to a
+member.
 
 ## Inviting someone
 
@@ -56,6 +67,42 @@ address is not kept). Open links are listed with *Revoke*.
 Opening the link asks for a password and for how they like figures shown
 (units, currency, language, time zone), then signs them in. A used, expired
 or revoked link answers "not found".
+
+**Add user** (when email is set up) makes the account straight away instead:
+username, name, their email address and *Admin*. They get an email with a
+link to choose their password (7 days); using it confirms the address. As
+the account exists at once, you can share or transfer vehicles to it before
+they ever sign in. Without email, use an invitation.
+
+## Email addresses
+
+Everyone has one email address, on **Settings → Account**. It is where
+reset links and reminder email go, and you can sign in with it instead of
+your username. A new address is used for nothing until you confirm it: a
+link (24 hours) goes to it, and the old address is told about the change.
+Changing or removing it asks for your current password. Several people may
+share an address (a household inbox); they then sign in by username, and a
+reset request for the address emails each of them their own link.
+
+## Forgotten passwords
+
+When email is set up, the sign-in page has **Forgotten your password?**.
+Type your username or email address; if it matches an account with a
+confirmed address and a password, a link (60 minutes, once) is emailed to
+it. The page answers the same whatever you type, so it never tells anyone
+which accounts exist. Requests are limited to 5 per address every 15
+minutes and 3 emails per account an hour. Opening the link asks for a new
+password; setting it signs you in and signs out every other session (API
+keys keep working). An account that signs in only through single sign-on
+gets no email. `PASSWORD_RESET_ENABLED=false` turns it off.
+
+## Pictures
+
+Each person can add a picture (JPEG, PNG or WebP, up to 5 MB) on Settings →
+Account. It is cropped square and saved again without its metadata, so a
+phone photo's location never reaches anyone. Without one, your initials are
+shown. Pictures are shown to everyone signed in, are in backups and in
+`bin/export-user.php`, and go when the person is deleted.
 
 ## Sharing a vehicle
 
@@ -110,8 +157,9 @@ owner's lead times, so everyone agrees on what is due.
 
 Channels are per person (Settings → Reminders):
 
-- **Email** goes to your own address. `MAIL_TO` is the admins' default only,
-  so a member without an address gets no email.
+- **Email** goes to your confirmed address (Settings → Account). `MAIL_TO`
+  is the admins' default only, so a member without an address gets no
+  email.
 - **ntfy** and **Gotify**: set your own topic URL or application token.
   Without one, only admins receive through the instance's topic or token,
   so a household topic is never flooded by everyone's cars.
