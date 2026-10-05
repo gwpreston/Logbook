@@ -1,0 +1,100 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/ownership.twig' as own %}
+
+{#
+ # The vehicle's Cost of ownership tab (spec.md §7.1, Phase 33.4, #191): the
+ # overview card's figures (§7.7) as tiles, a row per §7.35 part with its
+ # share, and how they are worked out. Needs ViewCosts (the route's).
+ #}
+{% set active_nav = 'garage' %}
+{% set dash = '—' %}
+
+{% block title %}{{ 'vehicle.tab.ownership'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'ownership'} %}
+        <h1 class="visually-hidden">{{ 'vehicle.tab.ownership'|trans }}</h1>
+
+        {% if card is null %}
+            <div class="card empty">
+                {{ ui.icon('savings') }}
+                <p class="empty__title">{{ 'ownership.empty_title'|trans }}</p>
+                <p>{{ 'ownership.empty_body'|trans }}</p>
+            </div>
+        {% else %}
+            {% set cost = card.cost() %}
+            {% set unit = user.preferences.distanceUnit.value %}
+            <dl class="stats">
+                {{ ui.stat('ownership.page.total'|trans, card.total()|money, (cost.start.value == 'purchase' ? 'ownership.tab.since_purchase' : 'ownership.tab.logged')|trans) }}
+                {{ ui.stat('ownership.page.per_month'|trans, cost.perMonth ? cost.perMonth|money : dash, cost.perMonth ? (cost.perMonthIsPartial ? 'ownership.running_only' : 'ownership.tab.all_in')|trans : '') }}
+                {{ ui.stat(('ownership.tab.per_' ~ unit)|trans, cost.perKm is not null ? cost.perKm|per_distance(cost.currency) : dash,
+                    cost.distanceKm is not null ? 'ownership.tab.driven'|trans({distance: cost.distanceKm|distance}) : '') }}
+                {{ ui.stat('ownership.tab.owned'|trans, cost.ownedFor.labelKey()|trans({years: cost.ownedFor.years, months: cost.ownedFor.months}), 'ownership.tab.since'|trans({month: cost.period.from|local_month})) }}
+            </dl>
+
+            <div class="split">
+                <section class="card" aria-labelledby="own-parts-heading">
+                    <div class="card__header">
+                        <h2 id="own-parts-heading" class="card__title">{{ 'ownership.tab.made_of'|trans }}</h2>
+                    </div>
+                    <p class="ownership-tab__total">
+                        <strong class="figure tabular">{{ card.total()|money }}</strong>
+                        <span class="muted">
+                            {%- if vehicle.isArchived() -%}
+                                {{ 'ownership.tab.over_owned'|trans({count: cost.months}) }}
+                            {%- elseif cost.start.value == 'purchase' -%}
+                                {{ 'ownership.tab.over_since'|trans({count: cost.months, date: cost.period.from|local_date}) }}
+                            {%- else -%}
+                                {{ 'ownership.tab.over_records'|trans({count: cost.months}) }}
+                            {%- endif -%}
+                            {%- if card.isRunningOnly() %} ({{ 'ownership.running_only'|trans }}){% endif -%}
+                        </span>
+                    </p>
+                    {% set segments = card.segments() %}
+                    {% set largest = segments is empty ? 0 : segments|first.amount.micros %}
+                    <ul class="breakdown" data-ownership-parts>
+                        {% for segment in segments %}
+                            <li class="breakdown__row">
+                                <span class="breakdown__label"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span>{{ segment.part.labelKey()|trans }}</span>
+                                <span class="breakdown__share tabular">{{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}</span>
+                                <span class="breakdown__amount tabular">{{ segment.amount|money }}</span>
+                                <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ (segment.amount.micros / largest * 100)|round(1) }}%; --swatch: var(--{{ segment.part.color() }})"></span></span>
+                            </li>
+                        {% endfor %}
+                        {% for line in card.negatives() %}
+                            <li class="breakdown__row">
+                                <span class="breakdown__label">{{ line.labelKey|trans }}</span>
+                                <span class="breakdown__share"></span>
+                                <span class="breakdown__amount tabular">{{ line.amount|money }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if segments is empty and card.negatives() is empty %}
+                        <p class="muted">{{ 'expense.none_in_period'|trans }}</p>
+                    {% endif %}
+                </section>
+
+                <section class="card" aria-labelledby="own-how-heading">
+                    <div class="card__header">
+                        <h2 id="own-how-heading" class="card__title">{{ 'ownership.tab.how'|trans }}</h2>
+                    </div>
+                    <p class="muted">
+                        {{- (cost.depreciation.isSold() ? 'ownership.tab.how_depreciation_sold' : 'ownership.tab.how_depreciation')|trans }}
+                        {{ 'ownership.tab.how_finance'|trans }}
+                        {{ (vehicle.isArchived() ? 'ownership.tab.how_running_sold' : 'ownership.tab.how_running')|trans -}}
+                    </p>
+                    {% if vehicle.data.purchasePrice is null %}
+                        <div class="ownership-tab__prompt">
+                            <p>{{ 'ownership.tab.add_price_hint'|trans }}</p>
+                            {% if can_vehicle(vehicle, 'manage') %}
+                                <a class="btn" href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'ownership.tab.add_price'|trans }}</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </section>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

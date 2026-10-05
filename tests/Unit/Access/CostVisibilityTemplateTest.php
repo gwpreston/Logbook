@@ -47,6 +47,7 @@ final class CostVisibilityTemplateTest extends TestCase
         // Pages whose route itself needs ViewCosts (config/routes.php).
         'expenses/index.twig' => 'the Expenses tab with costs: without ViewCosts the Action renders expenses/without_costs.twig',
         'valuations/index.twig' => 'the Valuations page: its route needs ViewCosts',
+        'vehicles/ownership.twig' => 'the Cost of ownership tab: its route needs ViewCosts',
         // Finance (Phase 29.1): every finance page answers 404 without Manage and ViewCosts (FinanceRoute).
         'finance/_agreement.twig' => 'the Finance tab’s agreement: FinanceRoute needs Manage and ViewCosts',
         'finance/form.twig' => 'the agreement form: FinanceRoute needs Manage and ViewCosts',

@@ -10,6 +10,7 @@ use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Expense\CostItem;
+use Logbook\Service\Finance\FinanceLineKind;
 use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Service\Vehicle\DepreciationState;
 use Logbook\Service\Vehicle\VehicleAge;
@@ -72,6 +73,12 @@ final readonly class OwnershipCost
         public ?Money $payouts = null,
         /** A total loss's settlement was left out of the payouts: it is the sale price (Phase 27.2). */
         public bool $settlementIsSale = false,
+        /**
+         * The credit charges counted in the period (spec.md §7.7 *Cost of
+         * ownership page*, #186): the HP, PCP and loan lines (interest, fees,
+         * the end adjustment), never a lease rental; null with none.
+         */
+        public ?Money $financeCharges = null,
     ) {
     }
 
@@ -104,6 +111,7 @@ final readonly class OwnershipCost
         $zero = Money::zero($currency);
         $running = $zero;
         $count = 0;
+        $charges = null;
         /** @var array<string, Money> $byGroup */
         $byGroup = array_fill_keys(array_map(static fn (CostGroup $g): string => $g->value, CostGroup::cases()), $zero);
         foreach ($items as $item) {
@@ -113,6 +121,9 @@ final readonly class OwnershipCost
             $running = $running->add($item->amount);
             $byGroup[$item->group()->value] = $byGroup[$item->group()->value]->add($item->amount);
             $count++;
+            if ($item->financeKind !== null && $item->financeKind !== FinanceLineKind::Rental) {
+                $charges = ($charges ?? $zero)->add($item->amount);
+            }
         }
         $received = $zero;
         $settlementIsSale = false;
@@ -196,6 +207,7 @@ final readonly class OwnershipCost
             mileageStart: $readings === [] ? null : LocalTime::dateOf($readings[0]->recordedAt, $zone),
             payouts: $received->isZero() ? null : $received,
             settlementIsSale: $settlementIsSale,
+            financeCharges: $charges,
         );
     }
 

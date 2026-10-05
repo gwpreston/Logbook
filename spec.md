@@ -1410,8 +1410,8 @@ jumps, going backwards) without blocking.
   see it), and every tab looks the same at the top (§8 *Vehicle header*).
   From Phase 33.4 (#191) a **Cost of ownership** tab
   (`/vehicles/{id}/ownership`, icon `savings`) follows Expenses: core, like
-  Expenses, shown only to a viewer with `ViewCosts` and only when the
-  ownership period has a start (as the overview card). It shows four stat
+  Expenses, shown only to a viewer with `ViewCosts` (the route needs it);
+  without an ownership period it says so, as the report does. It shows four stat
   tiles (*Total cost* "since purchase" or "logged", *Per month* "all-in",
   *Per mile/km* with the distance owned, *Owned* "3.2 years" or "8
   months" with "since Mar 2023"); a card with the total "over 34 months
@@ -2118,7 +2118,7 @@ currency and never converted.
     depreciation, total); a figure that cannot be worked out is empty.
 - **Cost of ownership page** (Phase 33.4; the Ownership report's screen
   layout, decided 2026-10-05, #186–#191): `/reports/ownership` keeps its
-  URL, its filters (vehicle, *include archived*, shown as *Include sold*),
+  URL, its filters (vehicle, *include archived*),
   its CSV export and its print view (the table above, unchanged). The
   period is always the ownership period (*since bought*), as before: no
   period picker (#190; the periods are the *True cost* tab's, §7.35). On
@@ -2131,8 +2131,8 @@ currency and never converted.
       card says "2 of 3 with depreciation";
     - *Per month*: the **active** vehicles' own *per month* figures added
       up (each vehicle's total ÷ its own owned months, as the table),
-      "active vehicles combined"; sold vehicles count in *Total cost* but
-      not here (#187); "—" with no active vehicle;
+      "active vehicles combined"; sold or archived vehicles count in
+      *Total cost* but not here (#187); "—" with no active vehicle;
     - *Depreciation*: the sum of the vehicles' depreciation, "{n}% of
       total" (a net gain is shown negative and labelled "gain in value");
     - *Finance interest*: the HP, PCP and loan lines the finance ledger
@@ -2157,8 +2157,7 @@ currency and never converted.
     switched-off modules remove their part. At the foot: "£0.31/mi over
     18,240 mi" (the table's per distance and distance owned), or the
     table's reason when there is none. A vehicle without a total shows its
-    running costs, marked "running costs only", and the Ownership card's
-    prompt.
+    running costs, marked "running costs only"; its tab has the prompt.
   - Ordered by total, highest first (running costs for a vehicle without
     one), within each currency; one note under the cards: "Cost of
     ownership adds depreciation to everything logged since each vehicle

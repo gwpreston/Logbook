@@ -53,3 +53,88 @@
         {{ 'ownership.parts'|trans({running: cost.runningPerMonth|money, depreciation: cost.depreciationPerMonth|money}) }}
     {%- endif -%}
 {%- endmacro %}
+
+{# The Cost of ownership page's four summary cards for one currency
+   (spec.md §7.7 *Cost of ownership page*). summary: Service\Report\OwnershipSummary. #}
+{% macro summary(summary) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set dash = '—' %}
+    {% set count = summary.cards|length %}
+    <dl class="stats ownership-page__stats">
+        {{ ui.stat('ownership.page.total'|trans, summary.total|money, summary.completeCount < count
+            ? 'ownership.page.total_partial'|trans({count: summary.completeCount, total: count})
+            : 'ownership.page.total_sub'|trans({count: count})) }}
+        {{ ui.stat('ownership.page.per_month'|trans, summary.perMonth ? summary.perMonth|money : dash, 'ownership.page.per_month_sub'|trans) }}
+        {% if summary.depreciation is null %}
+            {{ ui.stat('ownership.page.depreciation'|trans, dash, 'ownership.page.no_depreciation'|trans) }}
+        {% elseif summary.depreciation.isNegative() %}
+            {{ ui.stat('ownership.page.depreciation'|trans, summary.depreciation|money, 'ownership.page.gain_in_value'|trans) }}
+        {% else %}
+            {% set share = summary.depreciationShare() %}
+            {{ ui.stat('ownership.page.depreciation'|trans, summary.depreciation|money, share is null ? '' : 'ownership.page.share_of_total'|trans({share: share})) }}
+        {% endif %}
+        {% if summary.financeCharges is null %}
+            {{ ui.stat('ownership.page.finance'|trans, 'ownership.page.no_finance'|trans) }}
+        {% else %}
+            {{ ui.stat('ownership.page.finance'|trans, summary.financeCharges|money, 'ownership.page.finance_sub'|trans) }}
+        {% endif %}
+    </dl>
+{%- endmacro %}
+
+{# A part's legend: dot, name, amount and share; the negatives under it. #}
+{% macro legend(card) -%}
+    {% set currency = card.cost().currency %}
+    <ul class="legend ownership-card__legend">
+        {% for segment in card.segments() %}
+            <li class="legend__item"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span><span class="legend__label">{{ segment.part.labelKey()|trans }}</span><span class="legend__value tabular">{{ segment.amount|money }} · {{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}</span></li>
+        {% endfor %}
+        {% for line in card.negatives() %}
+            <li class="legend__item"><span class="swatch swatch--none" aria-hidden="true"></span><span class="legend__label">{{ line.labelKey|trans }}</span><span class="legend__value tabular">{{ line.amount|money }}</span></li>
+        {% endfor %}
+    </ul>
+{%- endmacro %}
+
+{# One vehicle's card: photo, name, total, the stacked bar and its legend,
+   and the cost per distance; the name links to its Cost of ownership tab. #}
+{% macro card(card) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import _self as own %}
+    {% set vehicle = card.vehicle() %}
+    {% set cost = card.cost() %}
+    <article class="ownership-card" data-ownership-card="{{ vehicle.id }}">
+        <div class="ownership-card__head">
+            {{ ui.vehicle_photo(vehicle, 'ownership-card__photo') }}
+            <div class="ownership-card__id">
+                <h3 class="ownership-card__name"><a class="ownership-card__link" href="{{ url_for('vehicles.ownership', {id: vehicle.id}) }}">{{ vehicle.name() }}</a></h3>
+                <p class="ownership-card__meta">
+                    {%- if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span> {% endif -%}
+                    <span>
+                        {%- if card.agreementType %}{{ card.agreementType.labelKey()|trans }} · {% endif -%}
+                        {{- 'ownership.page.months'|trans({count: cost.months}) -}}
+                        {%- if not card.isActive() %} · {{ 'ownership.page.sold'|trans }}{% endif -%}
+                    </span>
+                </p>
+            </div>
+            <div class="ownership-card__total">
+                <span class="figure-sm tabular" data-ownership-total>{{ card.total()|money }}</span>
+                {% if card.isRunningOnly() %}
+                    <span class="muted">{{ 'ownership.running_only'|trans }}</span>
+                {% elseif cost.perMonth %}
+                    <span class="muted tabular">{{ 'ownership.page.a_month'|trans({amount: cost.perMonth|money}) }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {{ ui.cost_bar(card.segments(), 'stack-bar--lg') }}
+        {{ own.legend(card) }}
+        <p class="ownership-card__foot muted">
+            {%- if cost.perKm is not null and cost.distanceKm is not null -%}
+                {{ 'ownership.page.per_distance'|trans({rate: cost.perKm|per_distance(cost.currency), distance: cost.distanceKm|distance}) }}
+                {%- if cost.perKmIsPartial %} ({{ 'ownership.running_only'|trans }}){% endif -%}
+            {%- elseif cost.isTooShort() -%}
+                {{ 'ownership.hint.too_short'|trans }}
+            {%- else -%}
+                {{ 'ownership.hint.no_distance'|trans }}
+            {%- endif -%}
+        </p>
+    </article>
+{%- endmacro %}

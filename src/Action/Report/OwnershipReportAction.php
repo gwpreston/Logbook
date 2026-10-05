@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Report;
 
 use Logbook\Domain\Access\VehicleAbility;
+use Logbook\Service\Report\OwnershipOverviewService;
 use Logbook\Service\Report\OwnershipService;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Vehicle\VehicleService;
@@ -17,7 +18,8 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET /reports/ownership — cost of ownership per vehicle and across the
- * fleet (spec.md §7.7), by currency. The filters (vehicle, include
+ * fleet (spec.md §7.7), by currency: summary and vehicle cards on screen,
+ * the table in print. The filters (vehicle, include
  * archived) are GET parameters, so the view is a bookmarkable URL.
  */
 final readonly class OwnershipReportAction
@@ -25,6 +27,7 @@ final readonly class OwnershipReportAction
     public function __construct(
         private VehicleService $vehicles,
         private OwnershipService $ownership,
+        private OwnershipOverviewService $overview,
         private View $view,
         private ClockInterface $clock,
     ) {
@@ -38,6 +41,8 @@ final readonly class OwnershipReportAction
 
         return $this->view->render($request, $response, 'reports/ownership.twig', [
             'report' => $this->ownership->report($user, $filter, $today),
+            // The screen's cards (spec.md §7.7 *Cost of ownership page*); print keeps the table.
+            'overview' => $this->overview->overview($user, $filter, $today),
             'filter' => $filter,
             'all_vehicles' => $this->vehicles->listWith($user, VehicleAbility::ViewCosts, true),
             'filter_query' => self::query($filter),

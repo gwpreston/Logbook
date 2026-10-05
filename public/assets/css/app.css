@@ -3362,6 +3362,150 @@ a.list__title:hover {
     font-weight: 700;
 }
 
+/* Cost of ownership page (spec.md §7.7, Phase 33.4): summary tiles, then a card per vehicle. */
+.ownership-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.ownership-page__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.ownership-page__note {
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
+.ownership-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ownership-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    height: 100%;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.ownership-card:hover {
+    border-color: var(--accent);
+}
+
+.ownership-card:has(.ownership-card__link:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.ownership-card__head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.ownership-card__photo {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius-md);
+}
+
+.ownership-card__name {
+    margin: 0;
+    font-size: var(--fs-md);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.ownership-card__link {
+    color: var(--text);
+}
+
+.ownership-card__link:hover {
+    text-decoration: none;
+}
+
+.ownership-card__link:focus-visible {
+    outline: none;
+}
+
+/* The name's link covers the card. */
+.ownership-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.ownership-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.ownership-card__total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    font-size: var(--fs-sm);
+}
+
+.ownership-card__legend .legend__value {
+    margin-inline-start: auto;
+    padding-inline-start: var(--space-2);
+}
+
+.ownership-card__foot {
+    margin: auto 0 0;
+    font-size: var(--fs-sm);
+}
+
+.swatch--none {
+    background: transparent;
+    border: 1px dashed var(--border);
+}
+
+/* The vehicle's Cost of ownership tab (spec.md §7.1). */
+.ownership-tab__total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-4);
+}
+
+.ownership-tab__prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.ownership-tab__prompt p {
+    margin: 0;
+}
+
 /* True cost (spec.md §7.35): the overview breakdown, the widget's ranking, What changed. */
 .card__subtitle {
     margin: 0;

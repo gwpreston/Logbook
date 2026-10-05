@@ -243,6 +243,7 @@ use Logbook\Action\Vehicle\FirstInspectionPromptAction;
 use Logbook\Action\Vehicle\RestoreVehicleAction;
 use Logbook\Action\Vehicle\ShowVehicleAction;
 use Logbook\Action\Vehicle\VehiclePhotoAction;
+use Logbook\Action\Vehicle\VehicleOwnershipAction;
 use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
@@ -678,6 +679,10 @@ return static function (App $app): void {
             $vehicle->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/delete', DeleteExpenseAction::class)
                 ->setName('expenses.delete')
                 ->setArgument($ability, VehicleAbility::Log->value);
+
+            // Cost of ownership tab (spec.md §7.1, Phase 33.4): core, with costs only.
+            $vehicle->get('/ownership', VehicleOwnershipAction::class)->setName('vehicles.ownership')
+                ->setArgument($ability, VehicleAbility::ViewCosts->value);
 
             // Valuations (Phase 14.1) are core: no module toggle.
             $vehicle->get('/valuations', VehicleValuationsAction::class)->setName('valuations.index')
