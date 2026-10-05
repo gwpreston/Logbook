@@ -4,6 +4,8 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [Unreleased]
+
 ## [3.0.0] — 2026-10-05
 
 Phases 33.1–33.4: **the new design, and accounts that look after
@@ -2271,7 +2273,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v2.16.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/gwpreston16/Logbook/compare/v2.16.0...v3.0.0
 [2.16.0]: https://github.com/gwpreston16/Logbook/compare/v2.15.1...v2.16.0
 [2.15.1]: https://github.com/gwpreston16/Logbook/compare/v2.15.0...v2.15.1
 [2.15.0]: https://github.com/gwpreston16/Logbook/compare/v2.14.0...v2.15.0

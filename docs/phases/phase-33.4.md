@@ -3,7 +3,8 @@
 *What each car has really cost, in one look; and the last two pages
 brought into line with the design.*
 
-Status: ✅ complete · releases **v3.0.0** (Phases 33.1–33.4) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.0.0** (Phases 33.1–33.4) · file
+lives in `docs/phases/`
 
 The prototype in `design-import/` has a *Cost of ownership* page: a card
 per vehicle with a multicolour bar showing what its cost is made of, and
@@ -176,7 +177,7 @@ answers (#186–#197):
       reset, one email per user), and the app's navigation and Settings
       are reorganised. No API change: the API stays v1.
 - [x] Bump `VERSION`, rebuild assets, update README and ROADMAP status.
-- [ ] Tag `v3.0.0` once merged.
+- [x] Tag `v3.0.0` once merged.
 
 ---
 
