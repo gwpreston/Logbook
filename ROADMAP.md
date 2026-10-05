@@ -70,7 +70,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [30.2](docs/phases/phase-30.2.md) | Live fuel prices and cheapest near me + v2.14 release | ✅ |
 | [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | ✅ |
 | [31.2](docs/phases/phase-31.2.md) | The Fuel stations module shows its icon + v2.15.1 | ✅ |
-| [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 📋 |
+| [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | 🚧 |
 | [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 📋 |
 | [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 📋 |
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 📋 |

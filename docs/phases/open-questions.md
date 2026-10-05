@@ -53,7 +53,9 @@ three of them found while starting it) were answered on 2026-10-02,
 before it was built. Phase 30.2's (#136–#144, six of them found while
 starting it) were answered on 2026-10-03, before it was built. Phase
 31's (#145–#149, two of them found while starting it) were answered on
-2026-10-04, before it was built.
+2026-10-04, before it was built. Phase 32's (#150–#156, four of them
+found while starting it) were answered on 2026-10-05, before it was
+built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -77,7 +79,7 @@ starting it) were answered on 2026-10-03, before it was built. Phase
 | 18 | [13](phase-13.md) | Detect a sudden, sustained change | Scheduled | Built in [Phase 25](phase-25.md): economy drift, recent tanks against the 12-month baseline (spec §7.24 item 7). Was parked in spec §12. | 2026-10-01 |
 | 19 | [14.1](phase-14.1.md) | Insurer's agreed value as a valuation | Parked | spec §12. Until then, log it as a valuation with the source "Insurer". | 2026-09-30 |
 | 20 | [14.1](phase-14.1.md) | A valuation's mileage as context | Decided | No: valuations keep no mileage, so there is one mileage series. | 2026-09-30 |
-| 21 | [14.2](phase-14.2.md) | Dashboard tile or widget for cost of ownership | Parked | spec §12, pending a design pass for a fifth tile. | 2026-09-30 |
+| 21 | [14.2](phase-14.2.md) | Dashboard tile or widget for cost of ownership | Scheduled | [Phase 32](phase-32.md): a `true_cost` widget, not a fifth tile (spec §7.35). Was parked in spec §12. | 2026-10-05 |
 | 22 | [14.2](phase-14.2.md) | Business mileage | Scheduled | [Phase 22](phase-22.md) adds trips, claim reports and a *Business mileage* widget, and now cost per business mile (#23). | 2026-09-30 |
 | 23 | [14.2](phase-14.2.md) | Cost per business mile, once trips exist | Scheduled | Added to [Phase 22](phase-22.md): cost of ownership per distance beside the claim value per business mile. | 2026-09-30 |
 | 24 | [15](phase-15.md) | Recurring expenses (road tax, permits) in *Coming up* | Parked | spec §12. It would need its own phase. | 2026-09-30 |
@@ -206,6 +208,13 @@ starting it) were answered on 2026-10-03, before it was built. Phase
 | 147 | [31](phase-31.md) | Fuelio GPS trips: skip, or import as private trips? | Parked | Import as private trips with "Fuelio trip" as the places, once an export with trips exists to build against; the sample has none (spec §12). | 2026-10-04 |
 | 148 | [31](phase-31.md) | A 213 MB backup against `MAX_UPLOAD_MB` of 10 (found while starting) | Decided | The web page takes the CSV only; backup ZIPs import with `bin/import-app.php` (spec §7.13). | 2026-10-04 |
 | 149 | [31](phase-31.md) | The backup's photos are a nested ZIP, `pictures.data` (found while starting) | Decided | Allowed as the one nested archive, by that exact name, one level deep, under the same limits (spec §7.13 *ZIP safety*). | 2026-10-04 |
+| 150 | [32](phase-32.md) | UK tax years beside calendar years on the trend? | Parked | Calendar years only for now; tax years in spec §12. | 2026-10-05 |
+| 151 | [32](phase-32.md) | Depreciation as time-based or mileage-based? | Decided | Always time-based: *What changed* gives it a distance line (spec §7.35); a per-vehicle option is parked (spec §12). | 2026-10-05 |
+| 152 | [32](phase-32.md) | The `true_cost` widget's default period | Decided | *Last 12 months*, with *Since bought* one link away (spec §7.35). | 2026-10-05 |
+| 153 | [32](phase-32.md) | Documents dated on one day swing short periods (found while starting) | Decided | Spread over their cover by day for *Last 12 months* and calendar years; *Since bought* unchanged (spec §7.35). | 2026-10-05 |
+| 154 | [32](phase-32.md) | A value gain per distance (found while starting) | Decided | A negative part in every period, *Since bought* included; Phase 14.2's per-distance figure changes for gains only (spec §7.1, §7.35). | 2026-10-05 |
+| 155 | [32](phase-32.md) | Price and economy split for plug-in hybrids (found while starting) | Decided | Per energy: a price and an economy line for each (spec §7.35). | 2026-10-05 |
+| 156 | [32](phase-32.md) | Where insurance payouts go in the breakdown (found while starting) | Answered | Their own *Insurance payouts* line, as spec §7.7 already shows them (spec §7.35). | 2026-10-05 |
 
 ## Other loose ends found in the review
 

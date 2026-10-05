@@ -3,7 +3,7 @@
 *One number for what a car costs to run, what it is made of, and why it
 changed.*
 
-Status: 📋 planned · releases **v2.16.0** · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v2.16.0** · file lives in `docs/phases/`
 
 Phase 14.2 already works out a vehicle's **cost of ownership per distance**:
 running costs plus depreciation, shown on the overview card and in the
@@ -237,9 +237,33 @@ driven), Phase 14.2's cost of ownership, Phase 29's finance lines, §7.8 and
 
 ## Open questions
 
-- **Tax years:** offer UK tax years beside calendar years for the trend?
-- **Depreciation as fixed or per mile:** the distance line treats
-  depreciation as time-based. Should high-mileage drivers be able to treat
-  it as mileage-based instead?
-- **Dashboard default period:** *Last 12 months* (drafted), or *Since
-  bought*?
+Answered on 2026-10-05, before the phase was built (the full text is in
+`spec.md` §7.1, §7.7, §7.8, §7.35 and §12):
+
+- **#150 Tax years.** *Decided 2026-10-05:* calendar years only. UK tax
+  years beside them are parked (spec §12).
+- **#151 Depreciation as fixed or per mile.** *Decided 2026-10-05:*
+  always time-based, so *What changed* gives it a distance line like
+  documents. A per-vehicle mileage-based option is parked (spec §12).
+- **#152 Dashboard default period.** *Decided 2026-10-05:* *Last 12
+  months*, with *Since bought* one link away.
+
+Found while starting this phase:
+
+- **#153 Documents in short periods.** *Decided 2026-10-05:* the ledger
+  dates a document on its start date, so *Last 12 months* could miss a
+  renewal paid 13 months ago and a year could hold two. For *Last 12
+  months* and the yearly trend, a document with a start and an expiry date
+  is spread evenly over its cover by day; *Since bought* stays on the
+  ledger date, exactly as Phase 14.2.
+- **#154 A gain per distance.** *Decided 2026-10-05:* Phase 14.2 showed no
+  depreciation per mile for a gain. It is now a negative part in every
+  period, *Since bought* included, which changes Phase 14.2's per-mile
+  figure only for vehicles that gained value (called out in the
+  changelog).
+- **#155 Plug-in hybrids in *What changed*.** *Decided 2026-10-05:* the
+  fuel split into price and economy is per energy (litres, kWh, kg), so a
+  plug-in hybrid gets a pair for each, still adding up exactly.
+- **#156 Insurance payouts.** *Answered:* spec §7.7 already shows them as
+  their own *Insurance payouts* line under the groups; the breakdown keeps
+  that line instead of folding payouts into a part.
