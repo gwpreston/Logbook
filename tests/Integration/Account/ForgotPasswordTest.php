@@ -65,6 +65,9 @@ final class ForgotPasswordTest extends AccountTestCase
             'If that matches an account with an email address, we’ve sent it a link.',
             $reference['body'],
         );
+        $answer = $answers['owner'];
+        self::assertSame('close', $answer->getHeaderLine('Connection'), 'complete before the email is sent (mod_php)');
+        self::assertSame((string) strlen((string) $answer->getBody()), $answer->getHeaderLine('Content-Length'));
         self::assertSame(array_fill(0, 8, 1.5), $this->sleeper->slept, 'every answer padded to the same floor');
 
         self::assertSame([], $this->mail->sent, 'nothing is sent before the response has gone');
@@ -215,7 +218,7 @@ final class ForgotPasswordTest extends AccountTestCase
         $body = str_replace('value="' . htmlspecialchars($typed, ENT_QUOTES) . '"', 'value="…"', self::body($response));
         $body = (string) preg_replace('/name="csrf_value" value="[^"]+"/', '', $body);
         $headers = [];
-        foreach (['Content-Type', 'Cache-Control', 'Set-Cookie', 'Location'] as $name) {
+        foreach (['Content-Type', 'Cache-Control', 'Set-Cookie', 'Location', 'Connection'] as $name) {
             $headers[$name] = $response->getHeaderLine($name);
         }
 

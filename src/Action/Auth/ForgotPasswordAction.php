@@ -6,6 +6,7 @@ namespace Logbook\Action\Auth;
 
 use Logbook\Service\Auth\PasswordResets;
 use Logbook\Support\Clock\Sleeper;
+use Logbook\Support\Http\AfterResponse;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
 use Psr\Clock\ClockInterface;
@@ -53,6 +54,7 @@ final readonly class ForgotPasswordAction
 
         $answer = $this->view->render($request, $response, 'auth/forgot_password.twig', ['sent' => true, 'typed' => $typed])
             ->withHeader('Cache-Control', 'no-store');
+        $answer = AfterResponse::completeBeforeWork($answer);
         $elapsed = (float) $this->clock->now()->format('U.u') - $started;
         $this->sleeper->sleep(max(0.0, self::FLOOR_SECONDS - $elapsed));
 

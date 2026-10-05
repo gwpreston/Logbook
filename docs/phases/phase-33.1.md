@@ -207,7 +207,13 @@ spec.md §6, §7.9, §7.11, §9 and §10 are the current text.
   runs Apache with mod_php, where `fastcgi_finish_request()` doesn't exist.
   Every *Forgotten password* answer is padded to 1.5 s, and its emails are
   queued in `AfterResponse`, which the front controller runs after the
-  response is emitted (closing the connection first under PHP-FPM).
+  response is emitted. Under PHP-FPM it closes the connection first. Under
+  mod_php the answer carries its exact `Content-Length` and `Connection:
+  close`, is kept out of mod_deflate (`no-gzip`), and is flushed before the
+  queue runs. Measured on the Docker image with an unreachable SMTP host:
+  without this, a real account's answer took 61.6 s against 1.5 s for an
+  unknown one; with it, both took 1.5 s, and the send failed afterwards in
+  the log.
 - **The answer echoes what was typed**, in a hidden field, so *Send it
   again* re-posts it; the enumeration test compares answers with that value
   taken out.
