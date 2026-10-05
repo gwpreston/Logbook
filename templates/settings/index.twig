@@ -122,7 +122,7 @@
          # waits for its link; changing it needs the current password.
          #}
         <section class="card" id="email" aria-labelledby="email-heading">
-            <h2 id="email-heading" class="card__title">{{ ui.icon('mail') }}{{ 'account.email.heading'|trans }}</h2>
+            <h2 id="email-heading" class="card__title">{{ 'account.email.heading'|trans }}</h2>
             {% if email_errors is not empty %}
                 <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
             {% endif %}
@@ -159,7 +159,7 @@
 
         {# Avatar (spec.md §7.9 *Avatars*): re-encoded square, shown wherever a person is. #}
         <section class="card" id="avatar" aria-labelledby="avatar-heading">
-            <h2 id="avatar-heading" class="card__title">{{ ui.icon('image') }}{{ 'account.avatar.heading'|trans }}</h2>
+            <h2 id="avatar-heading" class="card__title">{{ 'account.avatar.heading'|trans }}</h2>
             {% if avatar_errors is not empty %}
                 <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
             {% endif %}
