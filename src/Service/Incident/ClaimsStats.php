@@ -30,6 +30,8 @@ final readonly class ClaimsStats
         public ?int $yearsSinceFault,
         public ?array $paid,
         public ?array $excess,
+        /** Rows in view whose details are hidden from the viewer. */
+        public int $hidden = 0,
     ) {
     }
 
@@ -46,9 +48,14 @@ final readonly class ClaimsStats
         $paid = null;
         /** @var array<string, Money>|null $excess */
         $excess = null;
+        $hidden = 0;
         foreach ($rows as $row) {
             $incident = $row->incident;
-            if (!$incident->details || !($incident->claimStatus?->isClaim() ?? false)) {
+            if (!$incident->details) {
+                ++$hidden;
+                continue;
+            }
+            if (!($incident->claimStatus?->isClaim() ?? false)) {
                 continue;
             }
             ++$claims;
@@ -71,6 +78,7 @@ final readonly class ClaimsStats
             $lastFault === null ? null : max(0, $lastFault->diff($today)->y),
             $paid === null ? null : array_values($paid),
             $excess === null ? null : array_values($excess),
+            $hidden,
         );
     }
 

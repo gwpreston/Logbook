@@ -171,7 +171,8 @@ final class IncidentLayoutTest extends AppTestCase
 
         // No claim, fault or payout is visible, so the net cost is what is linked.
         self::assertSame(
-            'Incidents 3 | Claims — Not shared with you | Insurer paid — | Net cost £1,400.00 |',
+            'Incidents 3 | Claims — Not shared with you | Insurer paid —'
+            . ' | Net cost £1,400.00 Before payouts not shared with you |',
             self::strip($page),
         );
         self::assertStringNotContainsString('at fault', $page);
@@ -336,7 +337,11 @@ final class IncidentLayoutTest extends AppTestCase
         $page = self::body($this->browserFor($app, 'viewer')->get('/incidents/history'));
 
         self::assertStringContainsString('Claims in this period', $page);
-        self::assertStringContainsString('No fault claims in this period', $page);
+        self::assertSame(
+            'Claims in this period 0 none at fault | Since last fault claim — Not shared with you |',
+            self::strip($page, '<dl class="stats no-print">'),
+            'no "None" for faults the viewer can\'t see, and no amounts',
+        );
         self::assertStringNotContainsString('Paid by insurers', $page);
         self::assertStringNotContainsString('Excess paid', $page);
         self::assertStringContainsString(

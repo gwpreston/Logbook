@@ -1940,6 +1940,7 @@ return [
             'at_fault' => '{count, plural, =0 {none at fault} other {# at fault}}',
             'insurer_paid' => 'Insurer paid',
             'net_cost' => 'Net cost',
+            'payouts_hidden' => 'Before payouts not shared with you',
         ],
         'closed_on' => 'closed {date}',
         'details_hidden' => 'The fault, driver, claim and other party are visible to those who manage the vehicle and to whoever logged it.',

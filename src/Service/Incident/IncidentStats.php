@@ -29,6 +29,8 @@ final readonly class IncidentStats
         public ?int $atFault,
         public array $insurerPaid,
         public array $netCost,
+        /** Some of the net cost is linked costs only: their payouts are hidden. */
+        public bool $payoutsHidden = false,
     ) {
     }
 
@@ -44,6 +46,7 @@ final readonly class IncidentStats
         $paid = [];
         /** @var array<string, Money> $net */
         $net = [];
+        $payoutsHidden = false;
         foreach ($incidents as $incident) {
             if ($incident->details) {
                 ++$visible;
@@ -63,6 +66,7 @@ final readonly class IncidentStats
                 $net = self::add($net, $costs->net);
             } else {
                 $net = self::add($net, $costs->linked);
+                $payoutsHidden = true;
             }
         }
         $count = count($incidents);
@@ -73,6 +77,7 @@ final readonly class IncidentStats
             $visible === $count ? $atFault : null,
             array_values($paid),
             array_values($net),
+            $payoutsHidden,
         );
     }
 

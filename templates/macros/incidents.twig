@@ -54,7 +54,8 @@
 
 {# The Incidents tab's strip (spec.md §7.29 *Layout*): incidents, claims
    ("{n} at fault" only when every fault is visible), and with ViewCosts
-   what insurers paid and the net cost, one tile per currency.
+   what insurers paid and the net cost, one tile per currency (saying so
+   when some of it is linked costs whose payouts are hidden).
    stats: Service\Incident\IncidentStats. #}
 {% macro stats(vehicle, stats) -%}
     {% import 'macros/ui.twig' as ui %}
@@ -73,7 +74,7 @@
                 {{ ui.stat('incident.stat.insurer_paid'|trans, dash) }}
             {% endfor %}
             {% for net in stats.netCost %}
-                {{ ui.stat('incident.stat.net_cost'|trans, net|money) }}
+                {{ ui.stat('incident.stat.net_cost'|trans, net|money, stats.payoutsHidden ? 'incident.stat.payouts_hidden'|trans : '') }}
             {% else %}
                 {{ ui.stat('incident.stat.net_cost'|trans, dash) }}
             {% endfor %}
@@ -138,6 +139,9 @@
         {{ ui.stat('incident.history.stat.claims'|trans, stats.claims|number, 'incident.stat.at_fault'|trans({count: stats.atFault})) }}
         {% if stats.lastFault %}
             {{ ui.stat('incident.history.stat.since_fault'|trans, 'incident.history.stat.years'|trans({count: stats.yearsSinceFault}), stats.lastFault|local_date) }}
+        {% elseif stats.hidden > 0 %}
+            {# Some rows' faults are hidden: "None" would claim more than the viewer knows. #}
+            {{ ui.stat('incident.history.stat.since_fault'|trans, '—', 'incident.history.not_shared'|trans) }}
         {% else %}
             {{ ui.stat('incident.history.stat.since_fault'|trans, 'incident.history.stat.none'|trans, 'incident.history.stat.no_fault'|trans) }}
         {% endif %}

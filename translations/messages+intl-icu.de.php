@@ -1938,6 +1938,7 @@ return [
             'at_fault' => '{count, plural, =0 {keiner selbst verschuldet} one {# selbst verschuldet} other {# selbst verschuldet}}',
             'insurer_paid' => 'Von der Versicherung gezahlt',
             'net_cost' => 'Kosten netto',
+            'payouts_hidden' => 'Vor Zahlungen, die nicht mit dir geteilt sind',
         ],
         'closed_on' => 'abgeschlossen am {date}',
         'details_hidden' => 'Schuld, Fahrer, Versicherungsfall und Unfallgegner sehen nur, wer das Fahrzeug verwaltet, und wer den Schaden erfasst hat.',

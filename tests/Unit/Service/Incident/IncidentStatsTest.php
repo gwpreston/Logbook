@@ -96,6 +96,9 @@ final class IncidentStatsTest extends TestCase
         self::assertSame([], $hidden->insurerPaid, 'the payout is a detail');
         self::assertCount(1, $hidden->netCost);
         self::assertTrue($hidden->netCost[0]->isZero(), 'the linked costs, never net of a hidden payout');
+        self::assertTrue($hidden->payoutsHidden);
+        $shown = IncidentView::of($theirs, true, true, IncidentCosts::of(2, [], '500', 'GBP'));
+        self::assertFalse(IncidentStats::of([$shown])->payoutsHidden);
     }
 
     public function testTheClaimsTilesCountVisibleClaimsPerCurrency(): void
@@ -112,6 +115,7 @@ final class IncidentStatsTest extends TestCase
         $stats = ClaimsStats::of($rows, new DateTimeImmutable('2026-09-29'));
 
         self::assertSame(3, $stats->claims, 'a hidden row and an unclaimed one are left out');
+        self::assertSame(1, $stats->hidden);
         self::assertSame(2, $stats->atFault);
         self::assertSame('2026-06-02', $stats->lastFault?->format('Y-m-d'));
         self::assertSame(0, $stats->yearsSinceFault);
@@ -122,6 +126,9 @@ final class IncidentStatsTest extends TestCase
 
         $older = ClaimsStats::of([$rows[2]], new DateTimeImmutable('2026-09-29'));
         self::assertSame(3, $older->yearsSinceFault);
+        // Calendar dates on both sides: the anniversary itself is a whole year.
+        self::assertSame(3, ClaimsStats::of([$rows[2]], new DateTimeImmutable('2026-05-02'))->yearsSinceFault);
+        self::assertSame(2, ClaimsStats::of([$rows[2]], new DateTimeImmutable('2026-05-01'))->yearsSinceFault);
     }
 
     public function testWithoutAmountsOrFaultClaimsTheTilesSayNothing(): void
