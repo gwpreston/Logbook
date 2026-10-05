@@ -34,7 +34,10 @@ final class AdminControlsTest extends AccountTestCase
         $member = $this->browserFor($app, 'partner');
 
         self::assertSame(403, $member->get('/settings/users/add')->getStatusCode());
-        self::assertSame(403, $member->post('/settings/users/add', ['username' => 'x', 'email' => 'x@example.com'])->getStatusCode());
+        self::assertSame(
+            403,
+            $member->post('/settings/users/add', ['username' => 'x', 'email' => 'x@example.com'])->getStatusCode(),
+        );
         foreach (['disable', 'sign-out'] as $action) {
             $path = '/settings/users/' . $owner->id . '/' . $action;
             self::assertSame(403, $member->get($path)->getStatusCode(), $action);
@@ -42,7 +45,10 @@ final class AdminControlsTest extends AccountTestCase
         }
         self::assertSame(403, $member->post('/settings/users/' . $owner->id . '/reset')->getStatusCode());
         self::assertSame([], $this->mail->sent);
-        self::assertNotNull($this->service($app, SessionRepository::class)->lastActivityByUser()[$owner->id] ?? null, 'nobody signed out');
+        self::assertNotNull(
+            $this->service($app, SessionRepository::class)->lastActivityByUser()[$owner->id] ?? null,
+            'nobody signed out',
+        );
     }
 
     public function testSendResetEmailMailsTheLinkOrShowsItButNeverBoth(): void
@@ -56,13 +62,19 @@ final class AdminControlsTest extends AccountTestCase
         self::assertStringContainsString('Send reset email', self::body($admin->get('/settings/users')));
         $emailed = $admin->post('/settings/users/' . $partner->id . '/reset');
         self::assertSame(303, $emailed->getStatusCode(), 'emailed, so not shown');
-        self::assertStringContainsString('A reset link went to Sam Partner at sam@example.com.', self::body($admin->follow($emailed)));
+        self::assertStringContainsString(
+            'A reset link went to Sam Partner at sam@example.com.',
+            self::body($admin->follow($emailed)),
+        );
         $sent = $this->mailTo('sam@example.com');
         self::assertCount(1, $sent);
         self::assertStringContainsString('7 days', (string) $sent[0]->getTextBody());
         $path = self::linkIn($sent[0]);
         $guest = new TestBrowser($app);
-        self::assertSame(303, $guest->post($path, ['password' => self::NEW_PASSWORD, 'password_confirm' => self::NEW_PASSWORD])->getStatusCode());
+        self::assertSame(
+            303,
+            $guest->post($path, ['password' => self::NEW_PASSWORD, 'password_confirm' => self::NEW_PASSWORD])->getStatusCode(),
+        );
 
         $shown = $admin->post('/settings/users/' . $nobody->id . '/reset');
         self::assertSame(200, $shown->getStatusCode(), 'no address: the link is shown once');
@@ -106,7 +118,10 @@ final class AdminControlsTest extends AccountTestCase
 
         $page = self::body($admin->get('/settings/users'));
         self::assertStringContainsString('Revoke access', $page);
-        self::assertStringContainsString('Revoke Sam Partner’s access?', self::body($admin->get('/settings/users/' . $partner->id . '/disable')));
+        self::assertStringContainsString(
+            'Revoke Sam Partner’s access?',
+            self::body($admin->get('/settings/users/' . $partner->id . '/disable')),
+        );
         $admin->post('/settings/users/' . $partner->id . '/disable');
         self::assertFalse($this->fresh($app, $partner->id)->isActive());
         self::assertStringContainsString('/login', $session->get('/garage')->getHeaderLine('Location'));
@@ -117,7 +132,10 @@ final class AdminControlsTest extends AccountTestCase
         self::assertSame(200, $this->get($app, '/api/v1/me', $bearer)->getStatusCode(), 'as Enable: the key works again (#158)');
 
         $owner = $this->owner($app);
-        self::assertStringContainsString('You cannot revoke your own access.', self::body($admin->get('/settings/users/' . $owner->id . '/disable')));
+        self::assertStringContainsString(
+            'You cannot revoke your own access.',
+            self::body($admin->get('/settings/users/' . $owner->id . '/disable')),
+        );
         $admin->post('/settings/users/' . $owner->id . '/disable');
         self::assertTrue($this->fresh($app, $owner->id)->isActive(), 'never oneself, never the last admin');
     }
@@ -155,7 +173,10 @@ final class AdminControlsTest extends AccountTestCase
         self::assertSame('Pat Owner added you to Logbook', $sent[0]->getSubject());
         $guest = new TestBrowser($app);
         $path = self::linkIn($sent[0]);
-        self::assertSame(303, $guest->post($path, ['password' => self::NEW_PASSWORD, 'password_confirm' => self::NEW_PASSWORD])->getStatusCode());
+        self::assertSame(
+            303,
+            $guest->post($path, ['password' => self::NEW_PASSWORD, 'password_confirm' => self::NEW_PASSWORD])->getStatusCode(),
+        );
         $robin = $this->fresh($app, $robin->id);
         self::assertTrue($robin->hasPassword());
         self::assertSame('robin@example.com', $robin->email, 'using the link confirmed it (#165)');
@@ -168,7 +189,10 @@ final class AdminControlsTest extends AccountTestCase
         $app = $this->accountApp(['MAIL_HOST' => '']);
         $admin = $this->signedIn($app);
         self::assertStringContainsString('Use an invitation link instead.', self::body($admin->get('/settings/users/add')));
-        self::assertSame(422, $admin->post('/settings/users/add', ['username' => 'robin', 'email' => 'robin@example.com'])->getStatusCode());
+        self::assertSame(
+            422,
+            $admin->post('/settings/users/add', ['username' => 'robin', 'email' => 'robin@example.com'])->getStatusCode(),
+        );
         self::assertNull($this->service($app, UserRepository::class)->findByUsername('robin'));
     }
 

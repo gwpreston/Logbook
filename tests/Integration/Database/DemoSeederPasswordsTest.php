@@ -46,20 +46,28 @@ final class DemoSeederPasswordsTest extends AppTestCase
 
         $signedIn = new TestBrowser($app);
         $signedIn->get('/login');
-        self::assertSame(303, $signedIn->post('/login', ['username' => 'demo', 'password' => 'first-demo-password-1'])->getStatusCode());
-        $vehicles = (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles');
+        self::assertSame(
+            303,
+            $signedIn->post('/login', ['username' => 'demo', 'password' => 'first-demo-password-1'])->getStatusCode(),
+        );
+        $vehicles = self::numberOf($this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
 
         putenv('DEMO_PASSWORD=second-demo-password');
         putenv('PARTNER_PASSWORD=second-partner-pass');
         $again = Migrator::run('seed:run', ['--seed' => ['DemoDataSeeder']]);
         self::assertStringContainsString('new passwords set', $again);
-        self::assertSame($vehicles, (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'), 'no second garage');
+        $after = self::numberOf($this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
+        self::assertSame($vehicles, $after, 'no second garage');
 
         $demo = $users->findByUsername('demo');
         self::assertNotNull($demo);
         self::assertTrue($hasher->verify('second-demo-password', (string) $demo->passwordHash));
-        self::assertTrue($hasher->verify('second-partner-pass', (string) $users->findByUsername('partner')?->passwordHash));
-        self::assertArrayNotHasKey($demo->id, $this->service($app, SessionRepository::class)->lastActivityByUser(), 'sessions end');
+        self::assertTrue($hasher->verify('second-partner-pass', (string) $users->findByUsername('partner')->passwordHash));
+        self::assertArrayNotHasKey(
+            $demo->id,
+            $this->service($app, SessionRepository::class)->lastActivityByUser(),
+            'sessions end',
+        );
         self::assertStringContainsString('/login', $signedIn->get('/garage')->getHeaderLine('Location'));
     }
 
@@ -73,5 +81,12 @@ final class DemoSeederPasswordsTest extends AppTestCase
         self::assertDoesNotMatchRegularExpression('/[0O1lI]/', $m[1] ?? '', 'an unambiguous alphabet');
         $demo = $this->service($app, UserRepository::class)->findByUsername('demo');
         self::assertTrue((new PasswordHasher())->verify($m[1] ?? '', (string) $demo?->passwordHash));
+    }
+
+    private static function numberOf(mixed $value): int
+    {
+        self::assertIsNumeric($value);
+
+        return (int) $value;
     }
 }

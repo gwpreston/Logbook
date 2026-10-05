@@ -69,8 +69,16 @@ final class AvatarTest extends AppTestCase
         $guest = (new TestBrowser($app))->get('/users/' . $owner->id . '/avatar');
         self::assertSame(303, $guest->getStatusCode(), 'signed-out: to sign-in, not the picture');
         self::assertStringContainsString('/login', $guest->getHeaderLine('Location'));
-        self::assertSame(404, $partner->get('/users/' . $this->user($app, 'partner')->id . '/avatar')->getStatusCode(), 'none yet');
-        self::assertStringContainsString('class="avatar avatar--sm avatar--tone-', self::body($partner->get('/settings')), 'initials instead');
+        self::assertSame(
+            404,
+            $partner->get('/users/' . $this->user($app, 'partner')->id . '/avatar')->getStatusCode(),
+            'none yet',
+        );
+        self::assertStringContainsString(
+            'class="avatar avatar--sm avatar--tone-',
+            self::body($partner->get('/settings')),
+            'initials instead',
+        );
 
         $old = $owner->avatarPath;
         $browser->post('/settings/avatar', [], ['avatar' => $this->upload(self::png(50, 80), 'new.png')]);
@@ -92,16 +100,22 @@ final class AvatarTest extends AppTestCase
             'SVG' => $this->upload('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>', 'me.svg', 'image/svg+xml'),
             'over 5 MB' => $this->upload(self::png(10, 10) . str_repeat("\0", 6 * 1024 * 1024), 'big.png'),
             'a decompression bomb' => $this->upload(self::hugePng(), 'bomb.png'),
-            'nothing chosen' => new UploadedFile((string) tempnam(sys_get_temp_dir(), 'none'), '', 'application/octet-stream', 0, UPLOAD_ERR_NO_FILE),
+            'nothing chosen' => new UploadedFile(
+                (string) tempnam(sys_get_temp_dir(), 'none'),
+                '',
+                'application/octet-stream',
+                0,
+                UPLOAD_ERR_NO_FILE,
+            ),
         ];
         foreach ($cases as $case => $file) {
             $answer = $browser->post('/settings/avatar', [], ['avatar' => $file]);
             self::assertSame(422, $answer->getStatusCode(), $case);
             self::assertNull($this->user($app, 'owner')->avatarPath, $case);
         }
-        self::assertStringContainsString('The file is too large (maximum 5 MB).', self::body(
-            $browser->post('/settings/avatar', [], ['avatar' => $this->upload(self::png(10, 10) . str_repeat("\0", 6 * 1024 * 1024), 'big.png')]),
-        ));
+        $big = $this->upload(self::png(10, 10) . str_repeat("\0", 6 * 1024 * 1024), 'big.png');
+        $answer = $browser->post('/settings/avatar', [], ['avatar' => $big]);
+        self::assertStringContainsString('The file is too large (maximum 5 MB).', self::body($answer));
     }
 
     public function testItGoesWithTheUserAndComesBackWithABackup(): void

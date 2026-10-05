@@ -34,7 +34,8 @@ final class ForgotPasswordTest extends AccountTestCase
         $this->signedIn($app);
         $this->withEmail($app, $this->owner($app), 'pat@example.com');
         $disabled = $this->withEmail($app, $this->createMember($app, 'gone'), 'gone@example.com');
-        $this->service($app, UserRepository::class)->setDisabledAt($disabled->id, new DateTimeImmutable(self::NOW), new DateTimeImmutable(self::NOW));
+        $now = new DateTimeImmutable(self::NOW);
+        $this->service($app, UserRepository::class)->setDisabledAt($disabled->id, $now, $now);
         $this->createMember($app, 'noaddress');
         $sso = $this->service($app, UserRepository::class)->insert(
             'sso-only',
@@ -49,7 +50,10 @@ final class ForgotPasswordTest extends AccountTestCase
         $browser = new TestBrowser($app);
         $browser->get('/forgot-password');
         $answers = [];
-        foreach (['nobody', 'nobody@example.com', 'gone', 'gone@example.com', 'noaddress', 'sso-only', 'sso@example.com', 'owner'] as $i => $typed) {
+        $typedIn = [
+            'nobody', 'nobody@example.com', 'gone', 'gone@example.com', 'noaddress', 'sso-only', 'sso@example.com', 'owner',
+        ];
+        foreach ($typedIn as $i => $typed) {
             $answers[$typed] = $browser->from('198.51.100.' . $i)->post('/forgot-password', ['login' => $typed]);
         }
 
@@ -57,7 +61,10 @@ final class ForgotPasswordTest extends AccountTestCase
         foreach ($answers as $typed => $answer) {
             self::assertSame($reference, self::normalised($answer, $typed), 'the same answer for ' . $typed);
         }
-        self::assertStringContainsString('If that matches an account with an email address, we’ve sent it a link.', $reference['body']);
+        self::assertStringContainsString(
+            'If that matches an account with an email address, we’ve sent it a link.',
+            $reference['body'],
+        );
         self::assertSame(array_fill(0, 8, 1.5), $this->sleeper->slept, 'every answer padded to the same floor');
 
         self::assertSame([], $this->mail->sent, 'nothing is sent before the response has gone');
@@ -149,11 +156,19 @@ final class ForgotPasswordTest extends AccountTestCase
         $changed = $this->mailTo('pat@example.com');
         self::assertCount(1, $changed);
         self::assertSame('Your Logbook password was changed', $changed[0]->getSubject());
-        self::assertSame(200, $this->get($app, '/api/v1/me', ['Authorization' => 'Bearer ' . $token])->getStatusCode(), 'API keys are not passwords');
+        self::assertSame(
+            200,
+            $this->get($app, '/api/v1/me', ['Authorization' => 'Bearer ' . $token])->getStatusCode(),
+            'API keys are not passwords',
+        );
 
         $login = new TestBrowser($app);
         $login->get('/login');
-        self::assertSame(422, $login->post('/login', ['username' => 'owner', 'password' => self::PASSWORD])->getStatusCode(), 'the old password is gone');
+        self::assertSame(
+            422,
+            $login->post('/login', ['username' => 'owner', 'password' => self::PASSWORD])->getStatusCode(),
+            'the old password is gone',
+        );
         self::assertSame(303, $login->post('/login', ['username' => 'owner', 'password' => self::NEW_PASSWORD])->getStatusCode());
 
         $late = $this->linkFor($app, 'owner');

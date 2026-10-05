@@ -51,7 +51,12 @@ final class AccountEmailMigrationTest extends AppTestCase
         self::assertTrue($stored['digest'] ?? null, 'the rest is kept');
 
         // An older version's preferences, as an upgrade finds them.
-        $settings->save('notifications', ['channels' => ['email'], 'email' => ' Sam@Example.com ', 'digest' => false], SettingScope::User, $partner->id);
+        $settings->save(
+            'notifications',
+            ['channels' => ['email'], 'email' => ' Sam@Example.com ', 'digest' => false],
+            SettingScope::User,
+            $partner->id,
+        );
         $settings->save('notifications', ['email' => '', 'digest' => true], SettingScope::User, $quiet->id);
 
         Migrator::run('migrate');

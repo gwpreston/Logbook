@@ -19,6 +19,7 @@ use SplFileInfo;
 final class PasswordHashingTest extends TestCase
 {
     private const string HASHER = 'src/Support/Security/PasswordHasher.php';
+    private const string FORBIDDEN = '/\b(password_hash|password_verify|password_needs_rehash|crypt|md5|sha1)\s*\(/';
 
     public function testOnlyPasswordHasherHashesPasswords(): void
     {
@@ -28,7 +29,7 @@ final class PasswordHashingTest extends TestCase
                 if ($relative === self::HASHER) {
                     continue;
                 }
-                if (preg_match('/\b(password_hash|password_verify|password_needs_rehash|crypt|md5|sha1)\s*\(/', $code, $m) === 1) {
+                if (preg_match(self::FORBIDDEN, $code, $m) === 1) {
                     $offenders[] = $relative . ': ' . $m[1] . '()';
                 }
             }
