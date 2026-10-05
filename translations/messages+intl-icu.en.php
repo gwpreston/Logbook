@@ -1153,7 +1153,6 @@ return [
         'checked' => 'Checked {date}',
         'not_measured' => 'Not measured yet',
         'fitted_on' => 'Fitted {month}',
-        'moved_on' => 'Moved {month}',
         'covered' => '{distance} covered',
         'covered_since' => '{distance} covered since {date}',
         'thresholds_note' => 'You replace at {replace}; the legal minimum you set is {legal}.',

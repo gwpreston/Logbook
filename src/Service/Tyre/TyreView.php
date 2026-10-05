@@ -30,13 +30,11 @@ final readonly class TyreView
         /** When it reaches the owner's age limit; null without a DOT date, with the limit off, or retired. */
         public ?DateTimeImmutable $ageLimitOn = null,
         /**
-         * While fitted: the date of the change that put it where it is now,
-         * its latest fitting or move (Phase 33.3, #185); null when that was
-         * the `existing` change, which $since already dates.
+         * While fitted: the date it was first fitted to the vehicle (#185,
+         * #197), unchanged by a move; null when recorded as already on,
+         * which $since dates.
          */
         public ?DateTimeImmutable $fittedOn = null,
-        /** $fittedOn dates a move to another position (a rotation), not a fitting. */
-        public bool $moved = false,
     ) {
     }
 }

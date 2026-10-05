@@ -1151,7 +1151,6 @@ return [
         'checked' => 'Geprüft am {date}',
         'not_measured' => 'Noch nicht gemessen',
         'fitted_on' => 'Montiert im {month}',
-        'moved_on' => 'Umgesetzt im {month}',
         'covered' => '{distance} gefahren',
         'covered_since' => '{distance} gefahren seit {date}',
         'thresholds_note' => 'Du ersetzt bei {replace}; als gesetzliche Mindestprofiltiefe hast du {legal} eingestellt.',
