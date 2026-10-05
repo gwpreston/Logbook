@@ -145,6 +145,7 @@ answers (#186–#197):
       reset, one email per user), and the app's navigation and Settings
       are reorganised. No API change: the API stays v1.
 - [ ] Bump `VERSION`, rebuild assets, update README and ROADMAP status.
+- [ ] Tag `v3.0.0` once merged.
 
 ---
 

@@ -4,9 +4,78 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
-## [Unreleased]
+## [3.0.0] — 2026-10-05
 
-Phase 33.1 (ships with 33.4 as **v3.0.0**): **accounts**. See
+Phases 33.1–33.4: **the new design, and accounts that look after
+themselves**. Forgotten passwords by email, one confirmed email address
+per account, pictures and admin controls; the sign-in pages, Settings,
+the vehicle pages, Cost of ownership, Ask, a new Insights page and Fuel
+stations redrawn to the new design.
+
+**Why 3.0:** the sign-in flow and the account model change (self-service
+password reset, one email address per user, sign-in by email), and the
+app's navigation and Settings are reorganised, so links and habits from
+2.x move. There is **no API change**: the API stays v1, and every page
+keeps its address.
+
+### Upgrade notes (from 2.16)
+- **Three migrations**, applied on start as usual: the account's email
+  address and picture columns (reminder email addresses move from
+  Settings → Reminders onto the account, counted as confirmed, so every
+  user keeps theirs), `vehicles.purchase_seller`, and the AI insights
+  cache (`ai_insights`, never backed up). All three roll back.
+- A **Forgotten your password?** link appears on the sign-in page once
+  email is configured. Set `PASSWORD_RESET_ENABLED=false` to hide it.
+- **Stations** is now **Fuel stations**; its addresses are unchanged.
+- **Settings links have moved** into groups (and your own settings onto
+  `/profile`); every page Settings links to keeps its address.
+- The sample users of `./bin/dev-setup.sh --with-sample-data` no longer
+  have fixed passwords: new ones are printed on every run.
+- With AI set up, a new hourly job, `ai_insights`, makes each recent
+  user's AI insights once a day. It never runs while Ask isn't set up.
+
+Phase 33.4: **Cost of ownership, Ask, Insights and Fuel stations**. See
+[docs/reports.md](docs/reports.md) and [docs/ai.md](docs/ai.md).
+
+### Added
+- **Cost of ownership** (Reports) is four summary cards (*Total cost*,
+  *Per month* for the vehicles you still own, *Depreciation* with its
+  share, and *Finance interest*: the interest and fees of HP, PCP and loan
+  agreements paid so far) and a card per vehicle with a coloured bar of
+  what its cost is made of (fuel, maintenance, insurance tax and MOT,
+  other, depreciation), largest first. Vehicles in another currency get
+  their own cards. Print and CSV are the table, as before.
+- A **Cost of ownership tab** on each vehicle, after Expenses, for those
+  who can see its costs: the total, per month, per mile or km and how long
+  you have owned it, a row per part with its share, and how it is worked
+  out.
+- An **Insights page** (`/insights`, *Insights* in the sidebar): *Ask
+  Logbook* at the top, then every insight, not just the dashboard's two.
+  The dashboard widget's title links to it.
+- **AI insights**, with AI set up: once a day the model looks through your
+  records with Ask's read-only tools and writes up to four short
+  observations, each marked *AI*, with its sources and the model that
+  wrote it. Every figure goes through Ask's check, and one Logbook didn't
+  provide is highlighted. Cached for the day, with *Refresh*. Nothing is
+  made with AI off, and nothing is ever drafted.
+- **Fuel stations** opens with **Prices nearby** when a price provider is
+  on: the stations around your first place (or your location), by grade,
+  cheapest or nearest first, each price against the area's average, and
+  how much a tank would save against what you've paid lately. Each station
+  has a favourite star, *Directions* (OpenStreetMap, or your phone's maps
+  app) and *Log fill-up here*, which opens the fill-up form with the
+  station chosen. A station not yet in Logbook is added when you star it
+  or fill up there. *Your stations* follows, as before.
+
+### Changed
+- **Ask** is laid out as the new *Ask Logbook* card: a shorter box beside
+  *Ask* (Enter sends, Shift+Enter starts a new line) and four new
+  suggestions. Conversations, sources, drafts and feedback are unchanged,
+  and Ask keeps its place in the menu.
+- Tyres say **Fitted {month}** from when a tyre first went on the vehicle;
+  a move or rotation no longer changes it.
+
+Phase 33.1: **accounts**. See
 [docs/users-and-sharing.md](docs/users-and-sharing.md).
 
 ### Added
@@ -42,8 +111,7 @@ Phase 33.1 (ships with 33.4 as **v3.0.0**): **accounts**. See
   `demo` and `partner` on every run (printed, and kept in
   `var/dev-credentials`); there is no fixed demo password any more.
 
-Phase 33.2 (ships with 33.4 as **v3.0.0**): **sign-in and Settings to the
-new design**.
+Phase 33.2: **sign-in and Settings to the new design**.
 
 ### Changed
 - **Signed-out pages** (sign in, forgotten and reset password, setup,
@@ -69,8 +137,7 @@ new design**.
   addresses (`/stations`) are unchanged.
 - **Settings** sits below **Ask** in the sidebar.
 
-Phase 33.3 (ships with 33.4 as **v3.0.0**): **the vehicle pages to the new
-design**. See [docs/finance.md](docs/finance.md) and
+Phase 33.3: **the vehicle pages to the new design**. See [docs/finance.md](docs/finance.md) and
 [docs/incidents.md](docs/incidents.md).
 
 ### Added
@@ -93,8 +160,8 @@ design**. See [docs/finance.md](docs/finance.md) and
 - A **Breakdown** incident type, and **Copy for insurance quote** on the
   claims history.
 - **Current tyres** shows each tyre's depth with a tread bar (once it has
-  been measured twice), when it was fitted or moved, and a note with your
-  own replace-at and legal-minimum settings. *Check tread* is a button.
+  been measured twice), when it was fitted, and a note with your own
+  replace-at and legal-minimum settings. *Check tread* is a button.
 
 ### Changed
 - The vehicle's name is the same size on every tab, and the tabs follow
@@ -110,9 +177,6 @@ design**. See [docs/finance.md](docs/finance.md) and
   page.
 - The trips tab said "no rates" when there were simply no business trips
   this tax year.
-
-### Upgrade notes
-- One migration (`vehicles.purchase_seller`). Nothing to do.
 
 ## [2.16.0] — 2026-10-05
 

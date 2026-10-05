@@ -78,6 +78,20 @@ valuation is enough) and every year of the trend includes depreciation.
   beside it, *What changed*, a fleet chart with one line per vehicle, CSV
   export and a printout.
 - **The vehicle's Expenses tab**: the same trend and *What changed*.
+- **Reports → Cost of ownership** (`/reports/ownership`): four summary
+  cards for the vehicles shown (*Total cost*; *Per month*, the vehicles you
+  still own added up; *Depreciation*; *Finance interest*, the interest and
+  fees of HP, PCP and loan agreements paid so far, never lease rentals),
+  then a card per vehicle, highest total first, with the five *Since
+  bought* parts as a bar and a legend with each amount and its share. A
+  gain in value and insurance payouts are listed under the bar, not drawn.
+  Vehicles in another currency get their own set; nothing is converted.
+  It always covers the time since each vehicle was bought. Print and CSV
+  give the table.
+- **The vehicle's Cost of ownership tab** (`/vehicles/{id}/ownership`): the
+  same figures for one vehicle as tiles (total, per month, per mile or km,
+  how long you have owned it), a row per part with its share, and how it
+  is worked out.
 - **Ask Logbook** ("Why has my car got more expensive?") and the [REST
   API](api.md) (`GET /api/v1/vehicles/{id}/true-cost`).
 

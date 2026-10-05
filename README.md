@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v2.16.0.** First-run setup, secure sign-in (with a password, single
+> **Status: v3.0.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -55,7 +55,7 @@ your own server.
 > (off until an admin connects one): *Ask Logbook* answers questions in plain
 > words from your own records, through read-only tools, with a source and a
 > link for every figure and a check that flags any number Logbook didn't
-> provide, and drafts fill-ups, readings, services, documents, expenses, tread
+> provide, and an *Insights* page of patterns worked out from your figures and, with AI on, a few the model finds each day; it drafts fill-ups, readings, services, documents, expenses, tread
 > checks and reminders from a sentence as cards you check and add, and reads a
 > photo or PDF of an invoice, receipt or certificate into the right form for you
 > to check, with the file attached (photos are always stored without their
@@ -78,9 +78,9 @@ your own server.
 > distances from your own private places, and duplicates to merge; live
 > listed fuel prices from the UK's Fuel Finder feed once an admin switches
 > it on (downloaded to your server, so your location never leaves it), with
-> *Cheapest near me* ranked by what the trip really costs, *Was it worth
+> *Prices nearby* on the Fuel stations page (each against the area's average, with what a tank would save and directions), *Cheapest near me* ranked by what the trip really costs, *Was it worth
 > it?* after a fill-up, the listed price on the fill-up form and price
-> alerts on favourite stations; in English and German. Coming from 1.x? 2.0.0 is a major version: read its upgrade notes in
+> alerts on favourite stations; in English and German. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 

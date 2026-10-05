@@ -219,6 +219,23 @@ on the Golf?", "Which car costs me the most per mile?". It shows once the
 where the answer comes from ("Answered by Ollama on the desktop on your
 network").
 
+The **Insights page** (`/insights`) has the same *Ask Logbook* box at the
+top, with four suggestions; a question asked there opens its conversation
+on the Ask page.
+
+### AI insights
+
+With Ask set up, the Insights page also shows **AI insights**: up to four
+short observations the model finds in your records, made once a day (by
+the hourly `ai_insights` job, or on your first visit of the day) and kept
+for that day. *Refresh* makes them again now. The model uses only Ask's
+read-only tools, as you, and must name the results each observation came
+from; every figure goes through the same check as an answer, and one
+Logbook didn't provide is highlighted. Each is marked *AI*, with its
+sources and the model that wrote it, and up to two join the dashboard's
+*Insights* widget. Nothing is made for you while your *Use AI features* is
+off, or if you haven't signed in for 30 days, and nothing is ever drafted.
+
 **What it can answer.** Anything Logbook already shows: costs by period,
 category, month or vehicle; running cost per mile or km; fuel economy,
 volumes, prices and grades; maintenance records and when something was
