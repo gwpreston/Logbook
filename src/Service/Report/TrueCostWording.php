@@ -186,22 +186,22 @@ final readonly class TrueCostWording
     private function detail(ChangeLine $line, string $currency): string
     {
         $amount = $this->signed($line->perKm, $currency);
-        $energy = ($line->energy ?? EnergyKind::Liquid)->value;
+        $kind = ($line->energy ?? EnergyKind::Liquid)->value;
+        $energy = $this->translator->trans('true_cost.energy.' . $kind);
         $percent = $this->format->percent(ltrim($line->fraction ?? '0', '-'));
         $up = $line->fraction !== null && Decimal::compare($line->fraction, '0') > 0;
+        $unit = $kind === EnergyKind::Liquid->value ? $this->context->preferences()->volumeUnit->value : $kind;
 
         return match ($line->cause) {
             ChangeCause::Price => $this->translator->trans('true_cost.change.price', [
                 'energy' => $energy,
                 'percent' => $percent,
                 'direction' => $up ? 'more' : 'less',
-                'unit' => $line->energy === EnergyKind::Liquid || $line->energy === null
-                    ? $this->context->preferences()->volumeUnit->value
-                    : $energy,
+                'unit' => $this->translator->trans('true_cost.unit.' . $unit),
                 'amount' => $amount,
             ]),
             ChangeCause::Economy => $this->translator->trans('true_cost.change.economy', [
-                'energy' => $energy,
+                'economy' => $this->translator->trans('true_cost.economy.' . $kind),
                 'percent' => $percent,
                 // More used per distance is worse economy.
                 'direction' => $up ? 'worse' : 'better',

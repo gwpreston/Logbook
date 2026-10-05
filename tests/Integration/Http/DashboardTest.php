@@ -28,7 +28,7 @@ final class DashboardTest extends AppTestCase
     private const string NOW = '2026-09-27T10:00:00Z';
     private const array DEFAULT_ORDER = [
         'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage',
-        'recent_activity',
+        'recent_activity', 'true_cost',
     ];
 
     public function testWidgetsShowTheActiveFleetInTheDefaultOrder(): void
@@ -97,6 +97,7 @@ final class DashboardTest extends AppTestCase
             'order' => [
                 'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel',
                 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance', 'cheapest_fuel',
+                'true_cost',
             ],
             'hidden' => ['efficiency'],
         ], $stored->value);
@@ -104,7 +105,7 @@ final class DashboardTest extends AppTestCase
         $html = self::body($browser->get('/'));
         $arranged = [
             'spend', 'needs_attention', 'reminders', 'coming_up', 'fleet', 'recent_fuel', 'compliance', 'mileage',
-            'recent_activity',
+            'recent_activity', 'true_cost',
         ];
         self::assertSame($arranged, self::widgetOrder($html), 'hidden: not shown');
         // Customise mode still lists it, folded, so it can be shown again.
@@ -138,7 +139,7 @@ final class DashboardTest extends AppTestCase
         self::assertSame(
             [
                 'compliance', 'efficiency', 'fleet', 'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel',
-                'mileage', 'recent_activity',
+                'mileage', 'recent_activity', 'true_cost',
             ],
             self::widgetOrder(self::body($browser->get('/'))),
             'unknown ids dropped, the rest appended',
@@ -170,7 +171,7 @@ final class DashboardTest extends AppTestCase
         self::assertSame(
             [
                 'needs_attention', 'reminders', 'coming_up', 'spend', 'recent_fuel', 'fleet', 'efficiency', 'mileage',
-                'recent_activity',
+                'recent_activity', 'true_cost',
             ],
             self::widgetOrder($html),
         );
@@ -183,7 +184,10 @@ final class DashboardTest extends AppTestCase
         $html = self::body($browser->get('/?customise=1'));
         self::assertSame(
             // Customising lists the finance widget, which the dashboard leaves out until there is an agreement.
-            ['needs_attention', 'reminders', 'coming_up', 'fleet', 'compliance', 'mileage', 'recent_activity', 'finance'],
+            [
+                'needs_attention', 'reminders', 'coming_up', 'fleet', 'compliance', 'mileage', 'recent_activity', 'finance',
+                'true_cost',
+            ],
             self::widgetOrder($html),
             'the stored setting wins',
         );
