@@ -71,7 +71,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [31](docs/phases/phase-31.md) | Import from Fuelio + v2.15 release | ✅ |
 | [31.2](docs/phases/phase-31.2.md) | The Fuel stations module shows its icon + v2.15.1 | ✅ |
 | [32](docs/phases/phase-32.md) | True cost per mile, its breakdown and its trend + v2.16 release | ✅ |
-| [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 📋 |
+| [33.1](docs/phases/phase-33.1.md) | Accounts: forgotten password, admin controls, avatars, dev mail | 🚧 |
 | [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | 📋 |
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | 📋 |
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | 📋 |
@@ -723,10 +723,11 @@ developing.*
 
 - *Forgotten your password?* on sign-in: a 60-minute link by email, with
   no account enumeration, throttled; supersedes #36.
-- One email address per user (reset links and reminders); changing it
-  needs the current password.
-- Admins: send a reset email, sign a user out everywhere, revoke access,
-  add a user. Avatars for everyone, re-encoded and served privately.
+- One confirmed email address per user (reset links, sign-in by email,
+  reminders); changing it needs the current password and a confirmation
+  link.
+- Admins: send a reset email, sign a user out everywhere, revoke access
+  (the renamed *Disable*), add a user. Avatars for everyone, re-encoded and served privately.
 - Mailpit in the dev stack; fresh random sample passwords on every
   `--with-sample-data` run. Ships with 33.4 as **v3.0.0**.
 

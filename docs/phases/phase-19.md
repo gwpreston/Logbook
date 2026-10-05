@@ -290,6 +290,8 @@ deleted user stop working at once.
   of View. A *Can see documents* flag can come later if a household asks.
 - **No self-service password reset by email.** The admin's one-time reset
   link is enough for a household, and email stays optional in Logbook.
+  *Reversed 2026-10-04 (#36):* a 60-minute link by email from the sign-in
+  page, built in [Phase 33.1](phase-33.1.md).
 
 ---
 

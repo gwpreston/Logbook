@@ -742,6 +742,19 @@ MySQL only.
   (there is one). Rolling the migration back is refused while more than
   one user exists, with a message naming `bin/export-user.php`, which
   exports one user's vehicles first.
+- **Email address** (Phase 33.1, §7.9 *Email addresses*): `email`
+  (nullable, up to 254 characters, stored trimmed and lower-cased,
+  indexed, **not** unique: a household may share an address) is the
+  user's **confirmed** address, used for reset links, email sign-in and
+  reminder email. `email_pending` (nullable, same rules) is an address
+  waiting for its confirmation link, used for nothing else. Upgrading to
+  3.0.0 moves each user's notification-preferences `email` to
+  `users.email`, counted as confirmed (they already received reminders
+  there), and removes it from the preferences; rollback moves it back and
+  drops `email_pending`. Applies and rolls back on every engine.
+- **Avatar** (Phase 33.1, §7.9 *Avatars*): `avatar_path` (nullable: the
+  stored file's path relative to `UPLOAD_PATH/avatars`) and
+  `avatar_updated_at` (nullable, UTC), used to bust caches.
 - **Trip settings** (Phase 22), stored as a user-scope setting `trips`:
   tax year start (`MM-DD`; default `04-06` when the user's locale region is
   GB, else `01-01`) and the claim report's declaration text (optional).
@@ -764,6 +777,13 @@ MySQL only.
   Phase 23.1 adds the kind `login`: the break-glass sign-in link from
   `bin/auth.php login-link` (user_id and created_by both that user, 10
   minutes).
+  Phase 33.1: kind `reset` gains a second origin. `created_by` = the user
+  themselves marks a **self-service** reset (60 minutes); an admin's stays
+  7 days, as does *Add user*'s set-password link. Creating any `reset`
+  revokes the user's other open `reset` links. New kind `email`: the
+  confirmation link for an address (user_id the user, created_by whoever
+  set the address, 24 hours), with the address in a new nullable `email`
+  column (up to 254); a newer one revokes the user's older ones.
 
 **UserIdentity** (Phase 23.1, §7.9)
 - id, user_id (`ON DELETE CASCADE`), provider (`oidc`; `proxy` from Phase
@@ -802,7 +822,8 @@ MySQL only.
   token itself is never stored), user_id (optional), data (JSON), created_at,
   last_activity_at (UTC). Expires after 30 days without activity.
   Disabling or deleting a user, or an admin's password reset, deletes
-  their sessions (Phase 19). A session started through single sign-on
+  their sessions (Phase 19), as do *Sign out everywhere* and using a reset
+  link (Phase 33.1). A session started through single sign-on
   remembers that (and, only with `OIDC_LOGOUT`, the ID token for the
   provider's sign-out) (Phase 23.1).
 
@@ -2191,10 +2212,14 @@ First-run setup creates the initial account. CSRF on all forms.
     admin (refused with a message). *Disable* sets disabled_at, deletes
     their sessions and blocks sign-in; their API keys stop working at once
     (verification checks the user). *Enable* clears it. An admin cannot
-    disable or delete themselves.
+    disable or delete themselves. From Phase 33.1 they are labelled
+    *Revoke access* and *Restore access* (#158), with a confirmation page
+    for *Revoke access*; the behaviour is unchanged.
   - *Reset password*: a one-time link of the same kind (`reset`), 7 days,
     that deletes the user's sessions when created. Opening it asks for the
-    new password only. There is no self-service reset by email.
+    new password only. From Phase 33.1 a user can also ask for one
+    themselves by email (*Forgotten password* below), and an admin can
+    email it (*Admin controls* below).
   - *Revoke* an open link.
   - *Delete* (with a confirmation page): refused while the user owns
     vehicles, listing them, each with a transfer form for the admin
@@ -2215,6 +2240,142 @@ First-run setup creates the initial account. CSRF on all forms.
   message as a wrong one. The auth guard and the current-user middleware
   treat a disabled user's session as signed out. Last sign-in is shown
   from sessions; nothing else is recorded.
+
+**Email addresses** (Phase 33.1, decided 2026-10-05, #157, #162–#165)
+
+- Each user has one address (§6 User `email`), **confirmed** before it is
+  used for anything: reset links, email sign-in and reminder email.
+- Settings → Account → *Profile* has **Email**. Changing or removing it
+  needs the current password when the user has one. A new address is
+  stored as `email_pending` and a confirmation link (kind `email`, 24
+  hours, `{APP_URL}{APP_BASE_PATH}/confirm-email/{token}`) is sent to it;
+  until it is used the old confirmed address (or none) stays in use. The
+  profile shows the pending address with *Send the link again* and
+  *Cancel*. Opening the link (GET) shows a *Confirm {address}* button and
+  spends nothing, so a mail scanner's preview cannot confirm; the POST
+  moves the pending address to `email`, whether or not the user is signed
+  in in that browser. A notice goes to the **old** confirmed address when
+  the change is requested ("Someone asked to change your Logbook email
+  address to …; it changes only when the new address confirms") and when
+  it is removed. Without email configured the field is shown but a new
+  address cannot be confirmed, which the form says.
+- **Counted as confirmed without a link:** addresses moved from the
+  notification preferences on upgrade (#163); an *Add user* address once
+  its set-password link is used (#165); an OIDC `email` claim when the
+  `email_verified` claim is `true`; the proxy's email header or claim
+  (that proxy is already trusted for identity); the sample users'
+  addresses. An OIDC address without `email_verified` is stored as
+  pending, with a confirmation link sent when email is configured. These
+  addresses are set only when a user is created, as today.
+- Settings → Reminders shows the confirmed address with a link to
+  Account; it no longer has its own field. `MAIL_TO` remains the fallback
+  for **reminders** to admins without a confirmed address, never for
+  reset links or notices.
+
+**Sign-in by username or email** (Phase 33.1, decided 2026-10-05, #162)
+
+- The sign-in field is *Username or email*. What was typed is lower-cased
+  and trimmed, then matched as a **username** first. Only when no user has
+  that username and it contains `@` is it matched as a **confirmed email
+  address**, and then only when exactly one active user with a password
+  has it. Several users sharing the address sign in by username; for them
+  an email is refused with the same message as a wrong password, and the
+  attempt counts against the sign-in throttle as any other.
+- Everything else about sign-in (throttle, messages, disabled users,
+  session regeneration) is unchanged.
+
+**Forgotten password** (Phase 33.1, decided 2026-10-04, superseding #36)
+
+- Shown only when email is configured (`MAIL_HOST`), local sign-in is on
+  and `PASSWORD_RESET_ENABLED` is not `false`. Otherwise the sign-in
+  page has no link and the routes answer 404.
+- `GET /forgot-password` asks for **username or email address**. `POST`
+  always answers with the same page and wording, whatever was typed: "If
+  that matches an account with an email address, we've sent it a link. It
+  works for 60 minutes." No account, a disabled account, an account
+  without a confirmed address, an account with no password (SSO-only,
+  #160): same answer, nothing sent. *Send it again* re-posts what was
+  typed; the newer link revokes the older and the throttle below applies.
+- **Matching:** as sign-in, a username first; otherwise an address
+  matches every active user with a password and that confirmed address,
+  each getting their own email (one link each, naming the username).
+- **Equal timing:** the answer must not be measurably faster when nothing
+  is sent. The mail is handed to the mailer after the response is flushed
+  (`fastcgi_finish_request()` where available); otherwise the request is
+  padded to a fixed floor (1.5 s). Tested with a fake clock and a fake
+  mailer, not wall time.
+- **Throttle:** at most 5 requests per client address per 15 minutes and
+  3 emails per account per hour; over either, the same answer and nothing
+  sent. Logged at notice level with the address, never the typed text.
+- **The email** is in the user's language: who asked (the client address
+  the request came from), the link
+  (`{APP_URL}{APP_BASE_PATH}/reset/{token}`), that it expires in 60
+  minutes (#159), and "If this wasn't you, ignore this email. Your
+  password hasn't changed." Plain text and HTML, no remote images.
+  Requesting a link changes nothing else: the user's sessions stay.
+- **Using the link:** the existing reset page (new password and
+  confirmation). Opening it (GET) uses nothing up; the POST does. Success
+  sets the password through `PasswordHasher`, deletes all the user's
+  sessions, revokes their other reset links, signs them in (session
+  regenerated, CSRF rotated) and sends a short "Your Logbook password was
+  changed" email to their confirmed address. API keys are untouched (they
+  are not passwords). An admin's 7-day link works the same way.
+- A used, expired, revoked or unknown link answers 404 as today.
+- **Hashing:** every password is hashed by `PasswordHasher`
+  (`password_hash()` with `PASSWORD_ARGON2ID`) and checked with
+  `password_verify()`, re-hashed on sign-in when needed; an architecture
+  test keeps any other hashing of passwords out of `src/`, `db/` and
+  `bin/`.
+
+**Admin controls** (Phase 33.1) on Settings → Users (`ManageUsers`, admins
+only; each a plain POST with CSRF, refused on the last active admin where
+it would lock everyone out, as today):
+
+- *Send reset email*: creates the 7-day reset link and emails it to the
+  user's confirmed address, in their language. Without one, or without
+  email configured, the link is shown once as today. The link is never
+  both emailed and shown.
+- *Sign out everywhere* (with a confirmation page): deletes every session
+  of that user (any device, any method). It does not disable them; a
+  header-based session will sign straight back in, which the confirmation
+  says. An admin may do this to themselves (their current session
+  included, so they land on sign-in).
+- *Revoke access* / *Restore access*: the existing *Disable* / *Enable*
+  (#158).
+- *Add user* (beside *Invite*): username, display name, email, *Admin*.
+  Creates the account now, with no password and the address pending, and
+  emails a 7-day set-password link (kind `reset`) to it; using the link
+  confirms the address. Needs email configured; otherwise the form says to
+  use *Invite* instead. Unlike an invitation the account exists at once,
+  so vehicles can be shared or transferred to it before first sign-in.
+  The account then has no password and no sign-in method until the link
+  is used; *Send reset email* sends a new one (to the pending address,
+  for this account only, until it is confirmed).
+- Self-service reset links appear in the open links list as "Requested by
+  them" and can be revoked like the others.
+- Members never see these controls, and every route under
+  `/settings/users` asks `ManageUsers`. Signing out another user is
+  admin-only; a member signs out only themselves.
+
+**Avatars** (Phase 33.1)
+
+- Settings → Account → *Profile*: upload (JPEG, PNG or WebP, up to 5 MB,
+  by type sniffing, not extension), replace, remove. Drag and drop as
+  every file input (Phase 21.1).
+- Processed with GD as vehicle photos are: turned upright from EXIF, then
+  **re-encoded** to a 256 × 256 centre-cropped WebP (JPEG where GD lacks
+  WebP), which drops all metadata. Images over 40 megapixels are refused
+  before decoding. The original is not kept.
+- Stored under `UPLOAD_PATH/avatars/`, never in the web root. Served by
+  `GET /users/{id}/avatar?v={avatar_updated_at}` to signed-in users only;
+  any signed-in user may see any avatar (#161). Sent with
+  `Cache-Control: private, max-age=31536000, immutable` and
+  `X-Content-Type-Options: nosniff`; a user without one answers 404.
+- Without one: initials on a colour taken from the user id, as today's
+  placeholder. Shown in the sidebar footer, Settings → Users, sharing
+  lists, "added by" on entries and the Ask conversation.
+- Included in backup and restore, in `bin/export-user.php`, and deleted
+  with the user.
 
 **Single sign-on with OpenID Connect** (Phase 23.1)
 
@@ -2275,7 +2436,9 @@ can see. Guide: `docs/sso.md`.
   3. Else, with `OIDC_AUTO_CREATE=true`: a new member is created (username
      from the claim, sanitised to the username rules, suffixed if taken;
      display name from `name`; locale from `locale` when supported, else
-     `APP_LOCALE`; no password). They land once on a short welcome form
+     `APP_LOCALE`; no password; from Phase 33.1 the `email` claim as a
+     confirmed address when `email_verified` is `true`, else as a pending
+     one, §7.9 *Email addresses*). They land once on a short welcome form
      (`/welcome`: language, time zone, unit preset, currency, or *Skip*),
      as invitations ask, then go on to the page asked for.
   4. Else: "Your {name} account isn't linked to Logbook. Ask an admin to
@@ -2381,7 +2544,7 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
      identity yet is linked;
   3. else, with `AUTH_PROXY_AUTO_CREATE=true`: a new member (display name
      and email from the name and email header or claims when present;
-     the email becomes their reminder email address), sent once to the
+     the email becomes their confirmed address, §7.9 *Email addresses*), sent once to the
      welcome form;
   4. else nobody: "Your sign-in proxy's account {name} isn't linked to
      Logbook. Ask an admin to invite you, then link it while signed in."
@@ -2529,7 +2692,9 @@ Extensible channel interface so more can be added.
   (a reminder carries none today; *Coming up* costs are not sent).
 - **Channels per user** (Phase 19): email goes to the user's own address
   (Settings → Reminders; `MAIL_TO` is the default for admins only, so a
-  member without an address gets no email). ntfy and Gotify take a
+  member without an address gets no email). From Phase 33.1 that is the
+  user's confirmed address (§6 User `email`, set on Settings → Account),
+  no longer a preference. ntfy and Gotify take a
   personal topic URL / application token there, which replaces the
   instance's for that user; without one, only admins receive through the
   instance topic or token, so a household topic is never flooded by
@@ -3931,7 +4096,8 @@ part of View.
 
 **Not in this version:** groups or households as an entity, per-entry
 permissions, public share links, approval flows, SSO and proxy sign-in,
-public sign-up, self-service password reset by email.
+public sign-up. (Self-service password reset by email arrived in Phase
+33.1, §7.9.)
 
 ### 7.22 Trips (Phase 22)
 
@@ -6473,7 +6639,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   `MAIL_PORT` (default 587), `MAIL_USERNAME`, `MAIL_PASSWORD`,
   `MAIL_ENCRYPTION` (`tls` = STARTTLS required, `ssl` = implicit TLS,
   `none`; default `tls`), `MAIL_FROM` (default `logbook@localhost`),
-  `MAIL_TO` (the admins' default recipient; each user can set their own);
+  `MAIL_TO` (the admins' default recipient for reminders; each user's
+  confirmed address takes precedence, and it is never used for reset
+  links); `PASSWORD_RESET_ENABLED` (Phase 33.1, default `true`: `false`
+  hides *Forgotten password* even with email configured, §7.9);
   `NTFY_URL` (topic URL; admins' default, members need their own topic),
   `NTFY_TOKEN`; `GOTIFY_URL` (server URL), `GOTIFY_TOKEN` (application
   token; admins' default, a user can set their own), `GOTIFY_PRIORITY` (0–10, default 5; overdue
@@ -6548,6 +6717,23 @@ Real environment variables override `.env`; an empty value counts as unset.
   overlapping), and Nginx/Apache
   vhost + reverse-proxy examples. From Phase 28.1 a host without cron can
   use the *On page visits* or *External URL* trigger instead (§7.30).
+- **Development stack** (Phase 33.1): `docker-compose.dev.yml` runs
+  **Mailpit** (`axllent/mailpit`, pinned tag, multi-arch) as `mailpit`,
+  and the app's dev environment points at it: `MAIL_HOST=mailpit`,
+  `MAIL_PORT=1025`, `MAIL_ENCRYPTION=none`, `MAIL_FROM=logbook@localhost`.
+  Its UI is on `http://localhost:${MAILPIT_PORT:-8025}` (`MAILPIT_PORT`,
+  development only). Mailpit is never in `docker-compose.yml` or
+  `docker-compose.mysql.yml`. `bin/dev-setup.sh --with-sample-data`
+  generates a new random password for each sample user on **every** run
+  (20 characters from an unambiguous alphabet, from `/dev/urandom`): on a
+  fresh database the seeder creates the users with them; on one that
+  already has the sample users, it sets the new passwords on `demo` and
+  `partner` only (their other sessions end, as any password change
+  does). The sample users get confirmed addresses `demo@example.test` and
+  `partner@example.test`. The passwords are printed in the summary and
+  written to `var/dev-credentials` (mode 600, git-ignored), which
+  `--status` prints. The seeder refuses to run with `APP_ENV=production`,
+  as today.
 - **Health check:** `/health` endpoint (app + DB connectivity, the app
   version and, from Phase 28.1, the scheduler's last pass) for monitoring.
 
@@ -6965,6 +7151,16 @@ task breakdowns live in the per-phase files; this is the map.
   economy per energy, and distance; the `true_cost` Ask tool and API
   endpoint (§7.1, §7.7, §7.8, §7.20, §7.26, §7.35). No migration. Release
   v2.16.0.
+- **Phase 33.1 — Accounts: forgotten password, admin controls, avatars
+  and dev mail.** One confirmed email address per user (moved from the
+  notification preferences), confirmed by link; sign-in by username or
+  email; *Forgotten password* by email (60 minutes, no account
+  enumeration, throttled); admin *Send reset email*, *Sign out
+  everywhere*, *Revoke access* (renamed *Disable*) and *Add user*;
+  avatars; one password-hashing path with an architecture test; Mailpit
+  in the dev stack and fresh sample passwords on every
+  `--with-sample-data` run (§6 User, Invitation, §7.9, §7.11, §9, §10).
+  No release of its own: ships with 33.4 as v3.0.0.
 
 ---
 
