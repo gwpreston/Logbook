@@ -4693,6 +4693,14 @@ a.list__title:hover {
     gap: var(--space-2);
 }
 
+/* Two cards to a row at 375 px leave little room: long flags wrap. */
+.tyre-card .pill {
+    height: auto;
+    min-height: 1.5rem;
+    padding-block: 2px;
+    white-space: normal;
+}
+
 /* The latest measured depth, large, coloured by the pill's status. */
 .tyre-card__depth {
     display: flex;
@@ -4808,10 +4816,6 @@ a.list__title:hover {
 }
 
 .tyre-card__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
     margin: 0;
     color: var(--muted);
     font-size: var(--fs-sm);

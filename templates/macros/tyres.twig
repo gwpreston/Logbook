@@ -107,7 +107,7 @@
                 </p>
                 {% set fill = wear.barPercent() %}
                 {% if fill is not null %}
-                    <span class="bar tyre-card__bar{{ tone ? ' tyre-card__bar--' ~ tone }}" aria-hidden="true" data-testid="tyre-bar"><span class="bar__fill" style="--w: {{ fill }}%"></span></span>
+                    <span class="bar tyre-card__bar{{ tone ? ' tyre-card__bar--' ~ tone }}" aria-hidden="true" data-testid="tyre-bar">{% if fill > 0 %}<span class="bar__fill" style="--w: {{ fill }}%"></span>{% endif %}</span>
                 {% endif %}
             {% else %}
                 <p class="tyre-card__depth tyre-card__depth--none muted">{{ 'tyre.not_measured'|trans }}</p>
