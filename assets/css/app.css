@@ -3603,7 +3603,7 @@ a.list__title:hover {
 
 /* An even legend, as the prototype's: dot, name, amount on one line, the name wrapping. */
 .ownership-card__legend {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
 }
 
 .ownership-card__legend .legend__item {
