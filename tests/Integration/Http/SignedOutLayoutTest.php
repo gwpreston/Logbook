@@ -79,7 +79,7 @@ final class SignedOutLayoutTest extends AppTestCase
 
     public function testSignedInTheCardsBrandGivesWayToTheSidebar(): void
     {
-        $html = self::body($this->signedIn($this->createApp())->get('/settings'));
+        $html = self::body($this->signedIn($this->createApp())->get('/profile'));
 
         self::assertStringNotContainsString('class="auth__brand"', $html);
         self::assertStringContainsString(

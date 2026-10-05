@@ -370,7 +370,7 @@ final class HeaderSignInTest extends AppTestCase
         self::assertStringContainsString('Your proxy account pat is linked.', self::body($browser->follow($response)));
         self::assertSame('pat', $this->identities($app)->forUser($owner->id)[0]->subject ?? null);
         self::assertStringNotContainsString('data-proxy-link-offer', self::body($browser->get('/garage')));
-        $settings = self::body($browser->get('/settings'));
+        $settings = self::body($browser->get('/profile'));
         self::assertStringContainsString('Proxy account pat linked', $settings);
 
         // From now on the proxy alone signs them in.

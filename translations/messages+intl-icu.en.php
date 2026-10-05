@@ -3213,6 +3213,11 @@ return [
             'unexpected_file' => 'This backup contains a file that does not belong in it ({name}), so it was not restored.',
         ],
     ],
+    // The profile page (spec.md §8 *Profile page*, Phase 33.2).
+    'profile' => [
+        'title' => 'Profile',
+        'link_hint' => 'Your email address, picture, password and sign-in',
+    ],
     'settings' => [
         'group' => [
             'account' => 'Account',
@@ -3223,9 +3228,8 @@ return [
             'developers' => 'Developers',
             'admin' => 'Administration',
         ],
-        'signed_in_as' => 'Signed in as',
         'title' => 'Settings',
-        'profile' => 'Profile',
+        'profile' => 'Name',
         'appearance' => 'Appearance',
         'units' => 'Units and currency',
         'quick_setup' => 'Quick setup',

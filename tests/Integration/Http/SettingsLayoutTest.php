@@ -25,8 +25,43 @@ final class SettingsLayoutTest extends AppTestCase
         foreach (['/settings/users', '/settings/modules', '/settings/backup', '/settings/jobs', '/settings/api-keys'] as $link) {
             self::assertStringContainsString('href="' . $link . '"', $html, $link);
         }
-        // Who is signed in, with *Sign out*, at the top of *Account*.
+        // *Account* is one row to the profile page (#172); its forms are there.
+        self::assertStringContainsString('href="/profile"', self::group($html, 'account'));
+        $moved = ['data-account-card', 'action="/settings/email"', 'action="/settings/avatar"', 'action="/settings/password"'];
+        foreach ($moved as $gone) {
+            self::assertStringNotContainsString($gone, $html, $gone);
+        }
+    }
+
+    public function testTheProfilePageHoldsTheUsersOwnAccount(): void
+    {
+        $html = self::body($this->signedIn($this->createApp())->get('/profile'));
+
+        self::assertStringContainsString('<title>Profile · Logbook</title>', $html);
         self::assertMatchesRegularExpression('~data-account-card>.*?Pat Owner.*?action="/logout"~s', $html);
+        foreach (['action="/settings/email"', 'action="/settings/avatar"', 'action="/settings/password"'] as $form) {
+            self::assertStringContainsString($form, $html, $form);
+        }
+        self::assertStringNotContainsString('name="distance_unit"', $html, 'preferences stay on Settings (#170)');
+        // Reached from the sidebar's name and the narrow top bar's avatar, both current here.
+        self::assertMatchesRegularExpression('~<a class="sidebar__user" href="/profile" aria-current="page">~', $html);
+        self::assertMatchesRegularExpression('~<a class="icon-btn topbar__profile" href="/profile" aria-current="page"~', $html);
+    }
+
+    public function testAccountFormsComeBackToTheProfile(): void
+    {
+        $browser = $this->signedIn($this->createApp());
+        $browser->get('/profile');
+
+        $saved = $browser->post('/settings/avatar/remove');
+        self::assertSame('/profile', $saved->getHeaderLine('Location'));
+        $wrong = $browser->post('/settings/password', [
+            'current_password' => 'not it',
+            'new_password' => 'a brand new passphrase',
+            'new_password_confirm' => 'a brand new passphrase',
+        ]);
+        self::assertSame(422, $wrong->getStatusCode());
+        self::assertStringContainsString('<title>Profile · Logbook</title>', self::body($wrong));
     }
 
     public function testRemindersAndNotificationsHoldsOnlyReminders(): void

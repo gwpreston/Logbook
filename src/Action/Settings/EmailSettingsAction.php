@@ -25,7 +25,7 @@ final readonly class EmailSettingsAction
     public function __construct(
         private EmailAddresses $emails,
         private AuthService $auth,
-        private SettingsPage $page,
+        private ProfilePage $page,
         private Redirector $redirect,
     ) {
     }
@@ -44,13 +44,13 @@ final readonly class EmailSettingsAction
                 'address' => $user->emailPending ?? '',
             ]);
 
-            return $this->redirect->toRoute('settings');
+            return $this->redirect->toRoute('profile');
         }
         if (($args['action'] ?? '') === 'cancel') {
             $this->emails->cancel($user);
             $session->flash('success', 'account.email.cancelled');
 
-            return $this->redirect->toRoute('settings');
+            return $this->redirect->toRoute('profile');
         }
 
         $input = RequestContext::form($request);
@@ -75,6 +75,6 @@ final readonly class EmailSettingsAction
             'address' => $address,
         ]);
 
-        return $this->redirect->toRoute('settings');
+        return $this->redirect->toRoute('profile');
     }
 }

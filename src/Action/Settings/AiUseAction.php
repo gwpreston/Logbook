@@ -34,6 +34,6 @@ final readonly class AiUseAction
         $this->preferences->set(RequestContext::requireUser($request)->id, $on);
         RequestContext::session($request)->flash('success', $on ? 'ai.use.on' : 'ai.use.off');
 
-        return $this->redirect->toRoute('settings');
+        return $this->redirect->toRoute('profile');
     }
 }

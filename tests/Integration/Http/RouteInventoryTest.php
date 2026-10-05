@@ -74,6 +74,7 @@ final class RouteInventoryTest extends AppTestCase
         'log.chooser',
         'vehicles.create',
         'settings',
+        'profile',
         'settings.reminders',
         'settings.reminders.test',
         'settings.reminders.calendar',

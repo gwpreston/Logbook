@@ -93,7 +93,7 @@ final class EmailAddressTest extends AccountTestCase
         self::assertCount(1, $this->mailTo('new@example.com'), 'the old address hears it was removed');
     }
 
-    public function testSignedInTheLinkGoesBackToSettings(): void
+    public function testSignedInTheLinkGoesBackToTheProfile(): void
     {
         $app = $this->accountApp();
         $this->pinClock($app, self::NOW);
@@ -103,7 +103,7 @@ final class EmailAddressTest extends AccountTestCase
 
         $browser->get($path);
         $done = $browser->post($path);
-        self::assertStringEndsWith('/settings', $done->getHeaderLine('Location'));
+        self::assertStringEndsWith('/profile', $done->getHeaderLine('Location'));
         self::assertStringContainsString('pat@example.com is confirmed.', self::body($browser->follow($done)));
     }
 
@@ -111,7 +111,7 @@ final class EmailAddressTest extends AccountTestCase
     {
         $app = $this->accountApp(['MAIL_HOST' => '']);
         $browser = $this->signedIn($app);
-        $page = self::body($browser->get('/settings'));
+        $page = self::body($browser->get('/profile'));
         self::assertStringContainsString('so a new address can’t be confirmed yet', $page);
 
         $saved = $browser->post('/settings/email', ['email' => 'pat@example.com', 'email_password' => self::PASSWORD]);

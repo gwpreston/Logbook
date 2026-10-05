@@ -31,7 +31,7 @@ final readonly class SavePreferencesAction
     {
         $profile = ProfileForm::parse(RequestContext::form($request), RequestContext::locale($request), $this->locales);
         if ($profile instanceof ValidationErrors) {
-            return $this->page->render($request, $response, RequestContext::formValues($request), $profile, null, 422);
+            return $this->page->render($request, $response, RequestContext::formValues($request), $profile, 422);
         }
 
         $this->users->updateProfile(RequestContext::requireUser($request), $profile);

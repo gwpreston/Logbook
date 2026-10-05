@@ -37,7 +37,7 @@ final readonly class OidcLinkAction
         if ($url === null) {
             $session->flash('error', 'sso.link_failed', ['name' => $this->settings->oidc->providerName]);
 
-            return $this->redirect->toRoute('settings');
+            return $this->redirect->toRoute('profile');
         }
 
         return $this->redirect->external($url);

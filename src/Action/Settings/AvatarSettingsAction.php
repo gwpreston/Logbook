@@ -21,7 +21,7 @@ final readonly class AvatarSettingsAction
 {
     public function __construct(
         private AvatarService $avatars,
-        private SettingsPage $page,
+        private ProfilePage $page,
         private Redirector $redirect,
     ) {
     }
@@ -38,7 +38,7 @@ final readonly class AvatarSettingsAction
             $this->avatars->remove($user);
             $session->flash('success', 'account.avatar.removed');
 
-            return $this->redirect->toRoute('settings');
+            return $this->redirect->toRoute('profile');
         }
 
         $file = $request->getUploadedFiles()['avatar'] ?? null;
@@ -54,6 +54,6 @@ final readonly class AvatarSettingsAction
         }
         $session->flash('success', 'account.avatar.saved');
 
-        return $this->redirect->toRoute('settings');
+        return $this->redirect->toRoute('profile');
     }
 }

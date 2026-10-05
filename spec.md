@@ -6548,7 +6548,7 @@ it replaces none of the other figures.
   use it:
   - **Account** (`#account`): one link row, *Profile*, to the profile
     page (#172).
-  - **Preferences** (`#preferences`): one form with one *Save*: profile
+  - **Preferences** (`#preferences`): one form with one *Save*: *Name*
     (display name, saved with the rest as before, #170), appearance (the
     theme as a segmented control, then the accent), units and currency
     (a hairline between rows), region, preview.

@@ -2004,6 +2004,25 @@ a.segmented__option {
     color: var(--muted);
     font-weight: 600;
     overflow-wrap: anywhere;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+}
+
+/* The name and avatar open the profile (spec.md §8 *Profile page*). */
+.sidebar__user:hover {
+    background: var(--surface-2);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.sidebar__user[aria-current="page"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.topbar__profile .avatar {
+    width: 1.75rem;
+    height: 1.75rem;
 }
 
 /* Avatars (spec.md §7.9, Phase 33.1): a picture, or initials on a tone from the user id.
@@ -2127,25 +2146,24 @@ a.segmented__option {
     text-align: center;
 }
 
-/* Who is signed in: avatar, name, and *Sign out* (the prototype's Account card). */
-.account-card {
-    flex-direction: row;
+/* The profile page's header: avatar, name and *Sign out* (spec.md §8 *Profile page*). */
+.profile-header {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
 }
 
-.account-card__who {
+.profile-header__who {
     flex: 1 1 12rem;
     min-width: 0;
 }
 
-.account-card__name,
-.account-card__meta {
+.profile-header__who p {
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: var(--fs-sm);
 }
 
 .account-card__name {

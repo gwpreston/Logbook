@@ -57,6 +57,6 @@ final readonly class ConfirmEmailAction
         $session->flash('success', 'account.email.confirmed', ['address' => $invitation->email]);
         $signedIn = RequestContext::user($request);
 
-        return $this->redirect->toRoute($signedIn !== null && $signedIn->id === $user->id ? 'settings' : 'login');
+        return $this->redirect->toRoute($signedIn !== null && $signedIn->id === $user->id ? 'profile' : 'login');
     }
 }

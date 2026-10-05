@@ -20,7 +20,7 @@ final readonly class ChangePasswordAction
 {
     public function __construct(
         private AuthService $auth,
-        private SettingsPage $page,
+        private ProfilePage $page,
         private Redirector $redirect,
     ) {
     }
@@ -36,7 +36,7 @@ final readonly class ChangePasswordAction
             $this->auth,
         );
         if ($newPassword instanceof ValidationErrors) {
-            return $this->page->render($request, $response, null, null, $newPassword, 422);
+            return $this->page->render($request, $response, 422, passwordErrors: $newPassword);
         }
 
         $this->auth->changePassword($user, $newPassword);
@@ -45,6 +45,6 @@ final readonly class ChangePasswordAction
         $session->regenerate();
         $session->flash('success', 'settings.password_changed');
 
-        return $this->redirect->toRoute('settings');
+        return $this->redirect->toRoute('profile');
     }
 }

@@ -51,7 +51,7 @@ final readonly class OidcCallbackAction
             };
             $session->flash($type, $key, $name);
 
-            return $this->redirect->toRoute('settings');
+            return $this->redirect->toRoute('profile');
         }
 
         if (!$result->signsIn() || $result->user === null) {

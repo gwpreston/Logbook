@@ -41,6 +41,6 @@ final readonly class OidcUnlinkAction
             ['name' => $this->settings->oidc->providerName],
         );
 
-        return $this->redirect->toRoute('settings');
+        return $this->redirect->toRoute('profile');
     }
 }

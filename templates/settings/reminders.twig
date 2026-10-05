@@ -82,7 +82,7 @@
                     <span class="field__label">{{ 'reminders.settings.email'|trans }}</span>
                     <p>
                         {%- if user.email %}<strong>{{ user.email }}</strong>{% else %}{{ (is_admin ? 'reminders.settings.email_none_admin' : 'reminders.settings.email_none')|trans }}{% endif %}
-                        · <a href="{{ url_for('settings') }}#email">{{ 'reminders.settings.email_change'|trans }}</a>
+                        · <a href="{{ url_for('profile') }}#email">{{ 'reminders.settings.email_change'|trans }}</a>
                     </p>
                 </div>
                 {{ ui.input('ntfy_url', 'reminders.settings.ntfy_url'|trans, values, errors, {type: 'url', optional: true, maxlength: 500, autocomplete: 'off', placeholder: 'https://ntfy.sh/my-topic', hint: (is_admin ? 'reminders.settings.ntfy_url_hint' : 'reminders.settings.ntfy_url_hint_member')|trans}) }}

@@ -293,7 +293,7 @@ final class AiSettingsTest extends AiTestCase
         $member = $this->createMember($app);
         $browser = $this->browserFor($app, 'partner');
 
-        $html = self::body($browser->get('/settings'));
+        $html = self::body($browser->get('/profile'));
         self::assertStringContainsString('data-ai-use', $html);
         self::assertStringContainsString('name="use_ai" value="1" checked', $html, 'on by default (#67)');
         $browser->post('/settings/ai-use', ['use_ai' => '0']);

@@ -3210,6 +3210,11 @@ return [
             'unexpected_file' => 'Diese Sicherung enthält eine Datei, die nicht hineingehört ({name}), und wurde daher nicht wiederhergestellt.',
         ],
     ],
+    // Die Profilseite (spec.md §8 *Profile page*, Phase 33.2).
+    'profile' => [
+        'title' => 'Profil',
+        'link_hint' => 'Deine E-Mail-Adresse, dein Bild, dein Passwort und deine Anmeldung',
+    ],
     'settings' => [
         'group' => [
             'account' => 'Konto',
@@ -3220,9 +3225,8 @@ return [
             'developers' => 'Entwickler',
             'admin' => 'Verwaltung',
         ],
-        'signed_in_as' => 'Angemeldet als',
         'title' => 'Einstellungen',
-        'profile' => 'Profil',
+        'profile' => 'Name',
         'appearance' => 'Darstellung',
         'units' => 'Einheiten und Währung',
         'quick_setup' => 'Schnelleinstellung',

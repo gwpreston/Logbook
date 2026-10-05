@@ -166,19 +166,19 @@ done the same way:
 - [x] *Settings* below *Ask* in the sidebar.
 
 ### 33.2.7 Profile page (added 2026-10-05, #172)
-- [ ] `spec.md` §8 *Profile page*; §8 *Settings layout* (*Account* is one
+- [x] `spec.md` §8 *Profile page*; §8 *Settings layout* (*Account* is one
       row); §7.9 and the docs say *Profile* where they said *Settings →
       Account*.
-- [ ] `GET /profile` (`ProfileAction`, `ProfilePage`): identity and *Sign
+- [x] `GET /profile` (`ProfileAction`, `ProfilePage`): identity and *Sign
       out*, then the email, picture, password, SSO and *Use AI* cards,
       moved from Settings.
-- [ ] Email, picture, password, SSO link / unlink, *Use AI*, the OIDC
+- [x] Email, picture, password, SSO link / unlink, *Use AI*, the OIDC
       link callback and a signed-in email confirmation come back to
       `/profile`; errors re-render it.
-- [ ] Sidebar name and avatar link to it; the narrow top bar has the
+- [x] Sidebar name and avatar link to it; the narrow top bar has the
       avatar beside Settings; Settings' *Account* group is one *Profile*
       row and the Account card goes.
-- [ ] Tests: the page and its cards; each form returns to it; sidebar,
+- [x] Tests: the page and its cards; each form returns to it; sidebar,
       top bar and Settings link to it; Settings no longer has the forms.
 
 ### 33.2.6 Tests
