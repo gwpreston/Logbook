@@ -63,7 +63,7 @@ final class DepreciationTest extends TestCase
         self::assertNull($result->staleMonths, 'a sold vehicle is never stale');
     }
 
-    public function testAGainHasNoPerYearOrPerDistanceFigure(): void
+    public function testAGainHasNoPerYearButANegativePerDistance(): void
     {
         $vehicle = self::vehicle(purchased: '2020-03-01', price: '12000.000');
         $readings = [self::reading(1, '1000', '2020-03-01T12:00:00Z'), self::reading(2, '30000', '2026-03-01T12:00:00Z')];
@@ -74,7 +74,7 @@ final class DepreciationTest extends TestCase
         self::assertSame('1100.000', $result->change);
         self::assertSame('0.091667', $result->fraction, '+9%');
         self::assertNull($result->perYear);
-        self::assertNull($result->perKm);
+        self::assertSame('-0.037931', $result->perKm, '£1,100 gained over 29,000 km (#154)');
     }
 
     public function testPerYearAndPerDistanceNeedNinetyDays(): void

@@ -6210,14 +6210,14 @@ it replaces none of the other figures.
   five-part breakdown as a stacked bar and a list ("Fuel 14p · Maintenance
   5p · Insurance, tax and MOT 4p · Other 2p · Depreciation 9p = 34p"),
   with a switch between *Since bought* and *Last 12 months* (two links,
-  `?true_cost=12m`, so it works without JS). §7.7's other figures are
+  `?true_cost=last_12_months`, so it works without JS). §7.7's other figures are
   unchanged. A negative part (a gain, payouts) is listed with its sign and
   left out of the bar.
 - **Dashboard widget** `true_cost` (core, needs `ViewCosts`; appended to
   saved layouts by §7.8's rule, last in the default order):
   - one row per visible active vehicle: the headline per distance for the
     chosen period (*Last 12 months* by default, #152, or *Since bought*:
-    two links in the widget's title row, `?true_cost=since`, kept with the
+    two links in the widget's title row, `?true_cost=since_bought`, kept with the
     vehicle chip and not saved), its stacked bar, and the change
     against the previous 12 months ("↑ 3p", "↓ 1p", or nothing when either
     period has no figure);
