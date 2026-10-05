@@ -229,6 +229,7 @@ it) were answered on 2026-10-05, before it was built.
 | 167 | [33.2](phase-33.2.md) | User management pages the prototype doesn't draw (found by the audit) | Decided | Restyled with the shared card, list-row and button styles; controls unchanged (spec §8). | 2026-10-05 |
 | 168 | [33.2](phase-33.2.md) | New things in the prototype's Settings and sign-in | Parked | Webhook formats, *Send at*, *Frequency*, *Reset dashboard layout*, a Settings expenses export, a self-service *Reset password*, a letter-and-number rule (spec §12). | 2026-10-05 |
 | 169 | [33.2](phase-33.2.md) | Keep any Settings link where it is? | Decided | No: the draft grouping as it stands (spec §8 *Settings layout*). | 2026-10-05 |
+| 170 | [33.2](phase-33.2.md) | Display name in *Account* or *Preferences*? (found while building) | Decided | *Preferences*: it is saved by that form; the *Account* card shows the name (spec §8 *Settings layout*). | 2026-10-05 |
 
 ## Other loose ends found in the review
 

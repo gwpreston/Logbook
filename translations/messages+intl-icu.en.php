@@ -2837,7 +2837,7 @@ return [
             'template' => 'A cost template, not a cost.',
             'category_skipped' => 'Its category is set to Don’t import.',
             'maintenance_off' => 'Maintenance is switched off.',
-            'stations_off' => 'Stations are switched off.',
+            'stations_off' => 'Fuel stations are switched off.',
             'photos_web' => 'Photos come with the backup ZIP, on the command line.',
             'photo_type' => 'A photo of something other than a fill-up.',
             'photo_missing' => 'Not in the backup.',
@@ -3081,7 +3081,7 @@ return [
             ],
             'stations' => [
                 'title' => 'Fuel stations',
-                'hint' => 'Stations as records: what you paid where, favourites, your places and distances. Part of Fuel.',
+                'hint' => 'Fuel stations as records: what you paid where, favourites, your places and distances. Part of Fuel.',
             ],
             // AI (spec.md §7.25): listed only while AI is set up.
             'ai_ask' => [

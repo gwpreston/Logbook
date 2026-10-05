@@ -243,9 +243,10 @@
     {% set current = values[name] ?? '' %}
     <fieldset class="field fieldset"{% if errors[name] ?? null %} aria-describedby="f-{{ name }}-error"{% endif %}>
         <legend class="field__label">{{ legend }}</legend>
-        <div class="chip-row">
+        {# `segmented`: one control of a few options (System / Light / Dark), as the prototype draws the theme. #}
+        <div class="{{ (opts.segmented ?? false) ? 'segmented' : 'chip-row' }}">
             {% for option in options %}
-                <label class="chip">
+                <label class="{{ (opts.segmented ?? false) ? 'segmented__option' : 'chip' }}">
                     <input type="radio" name="{{ name }}" value="{{ option.value }}"{% if option.value == current %} checked{% endif %}{% if opts.required ?? false %} required{% endif %}{% if opts.data ?? null %} {{ opts.data }}{% endif %}>
                     {% if option.icon ?? null %}{{ ui.icon(option.icon) }}{% endif %}
                     <span>{{ option.label }}</span>

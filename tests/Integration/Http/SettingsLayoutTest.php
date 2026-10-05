@@ -57,6 +57,16 @@ final class SettingsLayoutTest extends AppTestCase
             self::assertStringNotContainsString('href="' . $link . '"', $html, $link);
         }
         self::assertStringContainsString('href="/settings/api-keys"', $html);
+        self::assertStringNotContainsString('href="/settings/ai"', $html);
+    }
+
+    public function testWithAiOffThereIsNoAiLinkOrSwitch(): void
+    {
+        $html = self::body($this->signedIn($this->createApp(['AI_ENABLED' => 'false']))->get('/settings'));
+
+        self::assertStringNotContainsString('href="/settings/ai"', $html);
+        self::assertStringNotContainsString('data-ai-use', $html);
+        self::assertStringContainsString('href="/settings/users"', self::group($html, 'admin'));
     }
 
     public function testModulesThatAreOffTakeTheirCardsWithThem(): void
@@ -67,8 +77,9 @@ final class SettingsLayoutTest extends AppTestCase
         $html = self::body($browser->get('/settings'));
 
         self::assertNotContains('driving', self::groupIds($html), 'tyres, trips and fuel stations off');
+        self::assertNotContains('data', self::groupIds($html), 'fuel off: nothing to import');
         self::assertStringNotContainsString('href="/settings/import-app"', $html, 'fuel off');
-        self::assertStringContainsString('href="/settings/backup"', self::group($html, 'data'), 'still an admin');
+        self::assertStringContainsString('href="/settings/backup"', self::group($html, 'admin'));
     }
 
     public function testThePresetMatchingTheUnitsIsPressed(): void

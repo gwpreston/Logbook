@@ -337,8 +337,9 @@ another app, API keys, and every admin and installation link.
 
 ## Open questions
 
-All decided by the owner on 2026-10-05, after the prototype audit and
-before any code ([`open-questions.md`](open-questions.md) #166–#169).
+All decided by the owner on 2026-10-05: #166–#169 after the prototype
+audit and before any code, #170 while building
+([`open-questions.md`](open-questions.md)).
 
 - **Settings structure** (found by the audit: the prototype draws one
   page with no section navigation): *Decided 2026-10-05 (#166):* one
@@ -353,6 +354,8 @@ before any code ([`open-questions.md`](open-questions.md) #166–#169).
   dashboard layout*, *Export expenses (CSV)* on Settings, a self-service
   *Reset password* button, a "letter and a number" password rule.
 - **Settings grouping:** *Decided 2026-10-05 (#169):* the draft grouping
-  as it stands; no link kept where it is today. The display name stays in
-  the preferences form it is saved with; backup and restore sits under
-  *Your data* (spec §8).
+  as it stands; no link kept where it is today (spec §8).
+- **Display name** (found while building: the draft puts the profile in
+  *Account*, but the display name is saved by the preferences form):
+  *Decided 2026-10-05 (#170):* it stays in *Preferences*, one form and one
+  *Save*; the *Account* card at the top shows the name.

@@ -48,8 +48,8 @@
      # *Settings layout*, Phase 33.2). Every page linked from here keeps its URL.
      #}
     {% set driving = feature_enabled('tyres') or feature_enabled('trips') or feature_enabled('stations') %}
-    {% set your_data = feature_enabled('fuel') or can_instance('backup') %}
-    {% set admin = can_instance('manage_users') or can_instance('manage_modules') or (ai.enabled and can_instance('manage_ai')) or (fuel_prices_available() and can_instance('manage_fuel_prices')) %}
+    {% set your_data = feature_enabled('fuel') %}
+    {% set admin = can_instance('manage_users') or can_instance('manage_modules') or can_instance('backup') or (ai.enabled and can_instance('manage_ai')) or (fuel_prices_available() and can_instance('manage_fuel_prices')) %}
     <div class="page__stack page__stack--narrow settings">
         <header class="page-header">
             <h1 class="page-header__title">{{ 'settings.title'|trans }}</h1>
@@ -255,7 +255,7 @@
 
                 <section class="card" aria-labelledby="appearance-heading">
                     <h3 id="appearance-heading" class="card__title">{{ 'settings.appearance'|trans }}</h3>
-                    {{ ui.chips('theme', 'prefs.theme'|trans, values, errors, theme_options, {required: true}) }}
+                    {{ ui.chips('theme', 'prefs.theme'|trans, values, errors, theme_options, {required: true, segmented: true}) }}
                     <fieldset class="field fieldset"{% if errors.accent ?? null %} aria-describedby="f-accent-error"{% endif %}>
                         <legend class="field__label">{{ 'prefs.accent'|trans }}</legend>
                         <div class="chip-row">
@@ -272,7 +272,7 @@
                     </fieldset>
                 </section>
 
-                <section class="card" aria-labelledby="units-heading">
+                <section class="card card--rows" aria-labelledby="units-heading">
                     <h3 id="units-heading" class="card__title">{{ 'settings.units'|trans }}</h3>
 
                     <div class="field" data-unit-presets hidden>
@@ -356,9 +356,6 @@
                     {% if feature_enabled('fuel') %}
                         {{ settings.row(url_for('import_app.upload'), 'upload_file', 'import_app.link'|trans, 'import_app.link_hint'|trans) }}
                     {% endif %}
-                    {% if can_instance('backup') %}
-                        {{ settings.row(url_for('backup.index'), 'backup', 'backup.link'|trans, 'backup.link_hint'|trans) }}
-                    {% endif %}
                 </ul>
             </div>
         </section>
@@ -389,6 +386,9 @@
                     {% endif %}
                     {% if fuel_prices_available() and can_instance('manage_fuel_prices') %}
                         {{ settings.row(url_for('settings.fuel_prices'), 'price_check', 'fuel_prices.settings.title'|trans, (fuel_prices_enabled() ? 'fuel_prices.settings.link_hint_on' : 'fuel_prices.settings.link_hint_off')|trans) }}
+                    {% endif %}
+                    {% if can_instance('backup') %}
+                        {{ settings.row(url_for('backup.index'), 'backup', 'backup.link'|trans, 'backup.link_hint'|trans) }}
                     {% endif %}
                 </ul>
             </div>

@@ -6550,25 +6550,26 @@ it replaces none of the other figures.
     username, confirmed address) with *Sign out*; email address; avatar;
     password; single sign-on; *Use AI*.
   - **Preferences** (`#preferences`): one form with one *Save*: profile
-    (display name, saved with the rest as before), appearance, units and
-    currency, region, preview.
+    (display name, saved with the rest as before, #170), appearance (the
+    theme as a segmented control, then the accent), units and currency
+    (a hairline between rows), region, preview.
   - **Reminders and notifications** (`#reminders`): the
     link to *Settings → Reminders* (lead times, channels, digest, calendar
     feed). Nothing else.
   - **Vehicles and driving** (`#driving`): tyre thresholds (tyres on),
     trips and mileage claims (trips on), places (fuel stations on); absent
     when none is on.
-  - **Your data** (`#data`): import from another app (fuel on), backup
-    and restore (admins).
+  - **Your data** (`#data`, fuel on): import from another app.
   - **Developers** (`#developers`): API keys (and MCP, which uses them).
   - **Administration** (`#admin`, admins): users, modules, AI
-    connections, fuel prices.
+    connections, fuel prices, backup and restore.
   - **Installation** (`#installation`): version, health, scheduled jobs
     and updates (admins), deep-link check.
 
   The user management pages, *Settings → Reminders* and the other linked
-  pages use the same card, list-row (icon tile, title, hint) and button
-  styles; their controls are unchanged.
+  pages use the same card and button styles (and list rows where they
+  list things); their controls are unchanged. Their *‹ Settings* back
+  link lands on the group they belong to.
 - **Unit presets** (Phase 33.2): each *Quick setup* preset (Metric, UK,
   US) is `aria-pressed="true"` when the four unit fields match it exactly
   (`UnitPreset::matching()`, on the server for the first render, and again
