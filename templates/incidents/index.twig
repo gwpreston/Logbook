@@ -1,11 +1,10 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
-{% import 'macros/attachments.twig' as paperclip %}
 {% import 'macros/incidents.twig' as incidents_ui %}
 
 {#
- # The Incidents tab (spec.md §7.29): open incidents first, then newest
- # first, each with its badges, damage and net cost (with costs).
+ # The Incidents tab (spec.md §7.29 *Layout*): the strip, then a card per
+ # incident linking to its page, open ones first, then newest first.
  #}
 {% set active_nav = 'garage' %}
 
@@ -28,42 +27,27 @@
             </div>
         </div>
 
-        <section class="card" aria-labelledby="incidents-heading">
-            <h2 id="incidents-heading" class="visually-hidden">{{ 'incident.title'|trans }}</h2>
-            {% if incidents is empty %}
+        {% if incidents is empty %}
+            <section class="card" aria-labelledby="incidents-heading">
+                <h2 id="incidents-heading" class="visually-hidden">{{ 'incident.title'|trans }}</h2>
                 <div class="empty">
                     {{ ui.icon('car_crash') }}
                     <p class="empty__title">{{ 'incident.empty_title'|trans }}</p>
                     <p>{{ 'incident.empty_body'|trans }}</p>
                 </div>
-            {% else %}
-                <ul class="list">
+            </section>
+        {% else %}
+            {{ incidents_ui.stats(vehicle, stats) }}
+
+            <section aria-labelledby="incidents-heading">
+                <h2 id="incidents-heading" class="visually-hidden">{{ 'incident.title'|trans }}</h2>
+                <ul class="incident-grid">
                     {% for incident in incidents %}
-                        {% set own_amount = can_see_amount(vehicle, incident.createdBy) %}
-                        <li class="list__item">
-                            <span class="list__icon">{{ ui.icon('car_crash') }}</span>
-                            <span class="list__body">
-                                <span class="list__title">
-                                    <a href="{{ url_for('incidents.show', {id: vehicle.id, incident: incident.id}) }}">{{ incident.type.labelKey()|trans }}</a>
-                                </span>
-                                <span class="list__meta truncate">
-                                    {{- incident.occurredOn|local_date }}
-                                    {%- set damage = incidents_ui.damage(incident)|trim %}{% if damage %} · {{ damage }}{% endif -%}
-                                </span>
-                                <span class="list__meta">{{ incidents_ui.badges(incident) }}</span>
-                                {{ ui.added_by(vehicle, incident.createdBy) }}
-                            </span>
-                            <span class="list__end">
-                                {{ paperclip.count(attachment_counts.of('incident', incident.id)) }}
-                                {% if own_amount and incident.costs and incident.costs.count > 0 %}
-                                    <span class="list__amount tabular">{{ (incident.showsPayouts() ? incident.costs.net : incident.costs.linked)|money }}</span>
-                                {% endif %}
-                            </span>
-                        </li>
+                        <li>{{ incidents_ui.card(vehicle, incident, attachment_counts.of('incident', incident.id)) }}</li>
                     {% endfor %}
                 </ul>
                 {{ ui.pagination(pagination, 'incidents.index', {id: vehicle.id}) }}
-            {% endif %}
-        </section>
+            </section>
+        {% endif %}
     </div>
 {% endblock %}

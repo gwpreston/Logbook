@@ -27,4 +27,25 @@ enum IncidentType: string
     {
         return 'incident.type.' . $this->value;
     }
+
+    /**
+     * Its Material Symbols icon (spec.md §7.29 *Layout*): the incident cards,
+     * the incident page and the claims history.
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::Collision => 'car_crash',
+            self::ParkedDamage => 'local_parking',
+            self::Theft => 'lock_open',
+            self::BreakIn => 'door_open',
+            self::Weather => 'thunderstorm',
+            self::Glass => 'window',
+            self::Pothole => 'warning',
+            self::Animal => 'pets',
+            self::Fire => 'local_fire_department',
+            self::Breakdown => 'minor_crash',
+            self::Vandalism, self::Other => 'report',
+        };
+    }
 }

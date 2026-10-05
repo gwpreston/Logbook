@@ -1,10 +1,13 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
+{% import 'macros/incidents.twig' as incidents_ui %}
 
 {#
  # The claims history (spec.md §7.29): every incident on every vehicle the
- # user can see, archived and sold ones included, newest first. Printed
- # through the browser with its own header (§8 *Printing reports*). The
+ # user can see, archived and sold ones included, newest first. On screen
+ # the tiles and the rows as a list, with *Copy for insurance quote*
+ # (assets/js/claims-history.js; absent without JS); printed through the
+ # browser as the table, with its own header (§8 *Printing reports*). The
  # other party is never shown; a row whose details the user may not see
  # says so.
  #}
@@ -16,6 +19,8 @@
     : 'incident.history.last_years'|trans({count: filter.years}) %}
 
 {% block title %}{{ 'incident.history.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block head %}<script defer src="{{ asset('js/claims-history.js') }}"></script>{% endblock %}
 
 {% block content %}
     <div class="page__stack print-report">
@@ -110,9 +115,54 @@
                 </div>
             </section>
         {% else %}
+            {{ incidents_ui.claims_stats(stats) }}
+
             <section class="card" aria-labelledby="claims-rows">
-                <h2 id="claims-rows" class="card__title">{{ 'incident.history.count'|trans({count: report.rows|length}) }}</h2>
-                <div class="table-wrap">
+                <div class="card__header card__header--wrap">
+                    <h2 id="claims-rows" class="card__title">{{ 'incident.history.count'|trans({count: report.rows|length}) }}</h2>
+                    <button type="button" class="btn btn--ghost no-print" data-claims-copy hidden>{{ ui.icon('content_copy') }}<span>{{ 'incident.history.copy'|trans }}</span></button>
+                </div>
+                <p class="visually-hidden" role="status" data-claims-copied="{{ 'incident.history.copied'|trans }}"></p>
+                <ul class="list claims-list no-print">
+                    {% for row in report.rows %}
+                        {% set incident = row.incident %}
+                        {% set own_amount = can_see_amount(row.vehicle, incident.createdBy) %}
+                        {% set payout = '' %}
+                        {% if own_amount and incident.details and incident.payout is not null %}{% set payout = incident.payout|money(row.currency) %}{% endif %}
+                        {% set line = incident.details
+                            ? [incident.occurredOn|local_date, incident.type.labelKey()|trans, incident.fault.labelKey()|trans, incidents_ui.claim_label(incident)|trim, payout, row.vehicle.description()]
+                            : [incident.occurredOn|local_date, incident.type.labelKey()|trans, hidden, row.vehicle.description()] %}
+                        <li class="list__item" data-claims-line="{{ line|json_encode }}">
+                            {{ incidents_ui.tile(incident) }}
+                            <span class="list__body">
+                                <a class="list__title" href="{{ url_for('incidents.show', {id: row.vehicle.id, incident: incident.id}) }}">
+                                    {{- 'incident.history.row_title'|trans({type: incident.type.labelKey()|trans, vehicle: row.vehicle.name()}) -}}
+                                </a>
+                                <span class="list__meta">
+                                    {{- incident.occurredOn|local_date -}}
+                                    {%- if incident.details -%}
+                                        {%- if incident.insurer %} · {{ incident.insurer }}{% endif -%}
+                                        {%- if incident.claimNumber %} · {{ incident.claimNumber }}{% endif -%}
+                                    {%- else %} · {{ hidden }}{% endif -%}
+                                    {%- if row.vehicle.data.registration %} · {{ row.vehicle.data.registration }}{% endif -%}
+                                    {%- if incident.writeOff.isWrittenOff() %} · {{ incident.writeOff.labelKey()|trans }}{% endif -%}
+                                    {%- if row.vehicle.isArchived() %} ({{ 'incident.history.archived'|trans }}){% endif -%}
+                                </span>
+                            </span>
+                            {% if incident.details %}
+                                <span class="list__end claims-list__end">
+                                    <span class="pill{{ incident.fault.value == 'at_fault' ? ' pill--overdue' : (incident.fault.value == 'not_at_fault' ? ' pill--valid') }}">{{ incident.fault.labelKey()|trans }}</span>
+                                    <span class="claims-list__claim">
+                                        {% if payout %}<span class="list__amount tabular">{{ payout }}</span>{% endif %}
+                                        <span class="list__meta">{{ incidents_ui.claim_label(incident) }}</span>
+                                    </span>
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {# Print keeps the table (spec.md §7.29). #}
+                <div class="table-wrap print-only">
                     <table class="table">
                         <thead>
                             <tr>

@@ -4,9 +4,11 @@
 {% import 'macros/incidents.twig' as incidents_ui %}
 
 {#
- # The incident page (spec.md §7.29): the details as the viewer may see
- # them (IncidentView: a hidden field is null), the photos as a grid, the
- # linked records with their costs, *Link a record* and the add buttons.
+ # The incident page (spec.md §7.29), in the prototype's card style: a
+ # header with the type's tile, "date · location" and the claim pill; the
+ # description first, the details as a two-column grid, as the viewer may
+ # see them (IncidentView: a hidden field is null); the photos as a grid,
+ # the linked records with their costs, *Link a record* and the add buttons.
  #}
 {% set active_nav = 'garage' %}
 {% set dash = '—' %}
@@ -22,12 +24,15 @@
     <div class="page__stack">
         <a class="back-link" href="{{ url_for('incidents.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'incident.title'|trans }} · {{ vehicle.name() }}</a>
 
-        <header class="page-header">
-            <div>
-                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
-                <h1 class="page-header__title">{{ incident.type.labelKey()|trans }}</h1>
-                <p class="page-header__lead">{{ incident.occurredOn|local_date }}{% if incident.occurredAtTime %}, {{ incident.occurredAtTime }}{% endif %}{% if incident.location %} · {{ incident.location }}{% endif %}</p>
-                <p>{{ incidents_ui.badges(incident) }}</p>
+        <header class="page-header incident-header">
+            <div class="incident-header__main">
+                {{ incidents_ui.tile(incident, 'lg') }}
+                <div class="incident-header__text">
+                    <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                    <h1 class="page-header__title">{{ incident.type.labelKey()|trans }}</h1>
+                    <p class="page-header__lead">{{ incidents_ui.when_where(incident, true) }}</p>
+                    <p class="incident-header__badges">{{ incidents_ui.claim_pill(incident) }}{{ incidents_ui.badges(incident) }}</p>
+                </div>
             </div>
             {% if can_change %}
                 <div class="btn-row">
@@ -45,7 +50,8 @@
 
         <section class="card" aria-labelledby="incident-details">
             <h2 id="incident-details" class="card__title">{{ 'incident.section.what'|trans }}</h2>
-            <dl class="details">
+            {% if incident.description %}<p class="incident-description">{{ incident.description|nl2br }}</p>{% endif %}
+            <dl class="meta-grid">
                 <div><dt>{{ 'incident.field.damage_areas'|trans }}</dt><dd>{{ incidents_ui.damage(incident)|trim ?: dash }}</dd></div>
                 {% if incident.writeOff.isWrittenOff() %}
                     <div><dt>{{ 'incident.field.write_off'|trans }}</dt><dd>{{ incident.writeOff.labelKey()|trans }}</dd></div>
@@ -55,8 +61,7 @@
                 {% if incident.details %}
                     <div><dt>{{ 'incident.field.fault'|trans }}</dt><dd>{{ incident.fault.labelKey()|trans }}</dd></div>
                     <div><dt>{{ 'incident.field.driver'|trans }}</dt><dd>{{ driver ?: dash }}</dd></div>
-                    {% if incident.description %}<div><dt>{{ 'incident.field.description'|trans }}</dt><dd>{{ incident.description|nl2br }}</dd></div>{% endif %}
-                    {% if incident.notes %}<div><dt>{{ 'incident.field.notes'|trans }}</dt><dd>{{ incident.notes|nl2br }}</dd></div>{% endif %}
+                    {% if incident.notes %}<div class="meta-grid__wide"><dt>{{ 'incident.field.notes'|trans }}</dt><dd>{{ incident.notes|nl2br }}</dd></div>{% endif %}
                 {% endif %}
             </dl>
             {% if not incident.details %}<p class="field__hint">{{ 'incident.details_hidden'|trans }}</p>{% endif %}
@@ -65,7 +70,7 @@
         {% if incident.details %}
             <section class="card" aria-labelledby="incident-claim">
                 <h2 id="incident-claim" class="card__title">{{ 'incident.section.insurance'|trans }}</h2>
-                <dl class="details">
+                <dl class="meta-grid">
                     <div><dt>{{ 'incident.field.claim_status'|trans }}</dt><dd>{{ incident.claimStatus.labelKey()|trans }}</dd></div>
                     {% if incident.insurer %}<div><dt>{{ 'incident.field.insurer'|trans }}</dt><dd>{{ incident.insurer }}</dd></div>{% endif %}
                     {% if incident.claimNumber %}<div><dt>{{ 'incident.field.claim_number'|trans }}</dt><dd>{{ incident.claimNumber }}</dd></div>{% endif %}
@@ -76,7 +81,7 @@
                 </dl>
                 {% if incident.otherPartyName or incident.otherPartyRegistration or incident.otherPartyInsurer or incident.policeReference %}
                     <h3 class="section-title section-title--sm">{{ 'incident.section.other_party'|trans }}</h3>
-                    <dl class="details">
+                    <dl class="meta-grid">
                         {% if incident.otherPartyName %}<div><dt>{{ 'incident.field.other_party_name'|trans }}</dt><dd>{{ incident.otherPartyName }}</dd></div>{% endif %}
                         {% if incident.otherPartyRegistration %}<div><dt>{{ 'incident.field.other_party_registration'|trans }}</dt><dd>{{ incident.otherPartyRegistration }}</dd></div>{% endif %}
                         {% if incident.otherPartyInsurer %}<div><dt>{{ 'incident.field.other_party_insurer'|trans }}</dt><dd>{{ incident.otherPartyInsurer }}</dd></div>{% endif %}
@@ -89,7 +94,7 @@
         {% if own_amount and incident.costs %}
             <section class="card" aria-labelledby="incident-costs">
                 <h2 id="incident-costs" class="card__title">{{ 'incident.costs.title'|trans }}</h2>
-                <dl class="details">
+                <dl class="meta-grid">
                     <div><dt>{{ 'incident.costs.linked'|trans }}</dt><dd class="tabular">{{ incident.costs.linked|money }}</dd></div>
                     {% if incident.showsPayouts() %}
                         <div><dt>{{ 'incident.costs.payouts'|trans }}</dt><dd class="tabular">{{ incident.costs.payouts|money }}</dd></div>

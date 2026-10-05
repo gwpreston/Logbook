@@ -79,6 +79,11 @@ final class CostVisibilityTemplateTest extends TestCase
         'macros/expenses.twig' => [
             'total.amount|money' => 'breakdown(): a report section, from ReportService (vehicles without ViewCosts dropped)',
         ],
+        'macros/incidents.twig' => [
+            'paid|money)' => 'claims_stats(): ClaimsStats sums only claims whose amounts the viewer may see '
+                . '(IncidentView::amounts, i.e. EntryAccess::canSeeAmount), and has none without them',
+            'excess|money)' => 'claims_stats(): as the paid tile',
+        ],
         'vehicles/archive.twig' => [
             "(agreement.data.finalPayment ?? '0')|money(currency)" => 'the agreement block: ArchiveVehicleAction passes '
                 . 'finance only from FinanceService::archiveAgreement(), null without Manage and ViewCosts',

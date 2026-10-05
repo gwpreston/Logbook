@@ -118,7 +118,7 @@ the audit and the owner's decisions:
 - [x] *Your vehicles* widget tiles 3 / 2 / 1 per row.
 
 ### 33.3.6 Incidents
-- [ ] Tab as cards with the stat strip; incident page layout; `breakdown`
+- [x] Tab as cards with the stat strip; incident page layout; `breakdown`
       type; claims history stats, list and *Copy for insurance quote*.
 
 ### 33.3.7 Tyres
@@ -139,7 +139,7 @@ the audit and the owner's decisions:
       nothing when there's nothing to say.
 - [ ] *Current tyres* shows each fitted position with estimate labels, car
       and motorbike; the bar only with two measurements.
-- [ ] Incidents: breakdown type; stats respect detail and cost access.
+- [x] Incidents: breakdown type; stats respect detail and cost access.
 - [ ] Integration suite green on every engine; design-reviewer clean of
       HIGH findings.
 

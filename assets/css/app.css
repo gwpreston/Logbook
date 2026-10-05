@@ -2759,6 +2759,235 @@ a.list__title:hover {
     image-orientation: from-image;
 }
 
+/* Incidents (Phase 33.3, spec.md §7.29 *Layout*): a grid of cards, each a
+   whole-card link through its title, with the type's icon in a tile and a
+   two-column grid of key/values, shared with the incident page. */
+.incident-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.incident-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    height: 100%;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.incident-card:hover {
+    border-color: var(--accent);
+}
+
+.incident-card:has(.incident-card__link:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.incident-card__head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.incident-card__title {
+    flex: 1;
+    min-width: 0;
+}
+
+.incident-card__title h3 {
+    margin: 0;
+    font-size: var(--fs-md);
+    font-weight: 700;
+}
+
+.incident-card__title p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+}
+
+.incident-card__link {
+    color: var(--text);
+}
+
+.incident-card__link:hover {
+    text-decoration: none;
+}
+
+.incident-card__link:focus-visible {
+    outline: none;
+}
+
+/* The title's link covers the card. */
+.incident-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.incident-card__badges,
+.incident-header__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+}
+
+.incident-card__description {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font-size: var(--fs-base);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+}
+
+.incident-card__damage {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.incident-card__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-top: auto;
+    color: var(--muted);
+}
+
+.incident-card .meta-grid {
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+}
+
+.incident-tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-md);
+    background: var(--red-soft);
+    color: var(--red);
+}
+
+.incident-tile .icon {
+    width: 1.3125rem;
+    height: 1.3125rem;
+}
+
+.incident-tile--lg {
+    width: 3rem;
+    height: 3rem;
+}
+
+.incident-tile--lg .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.incident-header__main {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.incident-header__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.incident-description {
+    margin: 0;
+    font-size: var(--fs-md);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* Key/value pairs two to a row (the incident card and page). */
+.meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-4);
+    margin: 0;
+}
+
+.meta-grid > div {
+    min-width: 0;
+}
+
+.meta-grid dt {
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.meta-grid dd {
+    margin: 2px 0 0;
+    font-size: var(--fs-base);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.meta-grid__wide {
+    grid-column: 1 / -1;
+}
+
+.meta-grid__wide dd {
+    font-weight: 400;
+}
+
+.meta-grid--clip dd {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The claims history's rows on screen: the fault pill, then the payout
+   over the claim status. */
+.claims-list .list__item {
+    flex-wrap: wrap;
+}
+
+.claims-list .list__body {
+    flex: 1 1 12rem;
+}
+
+.claims-list__end {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+    margin-left: auto;
+}
+
+.claims-list__claim {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 4.5rem;
+    text-align: right;
+}
+
 .attachment-list {
     display: flex;
     flex-direction: column;

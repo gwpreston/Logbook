@@ -10,6 +10,7 @@ use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Incident\IncidentType;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Tyre\TyreChangeKind;
@@ -35,6 +36,7 @@ final class IconSpriteTest extends TestCase
             ExpenseCategory::class, Feature::class, MaintenanceCategory::class,
             OdometerSource::class, TyreChangeKind::class, VehicleType::class,
             DashboardWidget::class, HistoryChip::class, Milestone::class, InsightKind::class,
+            IncidentType::class,
         ];
         foreach ($enums as $enum) {
             foreach ($enum::cases() as $case) {

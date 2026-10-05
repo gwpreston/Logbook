@@ -1923,7 +1923,22 @@ return [
         'empty_title' => 'Keine Schäden erfasst',
         'empty_body' => 'Ein Kratzer, ein Einbruch oder ein Schlagloch: Erfasse, was passiert ist, verknüpfe die Reparaturen und behalte den Versicherungsfall an einem Ort.',
         'name' => '{type}, {date}',
-        'claim_badge' => 'Versicherung: {status}',
+        // Phase 33.3: the claim pill, the tab's strip (spec.md §7.29 *Layout*).
+        'claim_pill' => [
+            'not_claimed' => 'Nicht gemeldet',
+            'notified' => 'Versicherung informiert',
+            'open' => 'Fall in Bearbeitung',
+            'settled' => 'Fall reguliert',
+            'declined' => 'Fall abgelehnt',
+            'withdrawn' => 'Fall zurückgezogen',
+        ],
+        'stat' => [
+            'incidents' => 'Schäden',
+            'claims' => 'Versicherungsfälle',
+            'at_fault' => '{count, plural, =0 {keiner selbst verschuldet} one {# selbst verschuldet} other {# selbst verschuldet}}',
+            'insurer_paid' => 'Von der Versicherung gezahlt',
+            'net_cost' => 'Kosten netto',
+        ],
         'closed_on' => 'abgeschlossen am {date}',
         'details_hidden' => 'Schuld, Fahrer, Versicherungsfall und Unfallgegner sehen nur, wer das Fahrzeug verwaltet, und wer den Schaden erfasst hat.',
         'choose_type' => 'Auswählen …',
@@ -2131,6 +2146,19 @@ return [
             'not_shared' => 'Nicht mit dir geteilt',
             'empty_title' => 'Keine Schäden',
             'empty_body' => 'Für {period} ist nichts erfasst.',
+            // Phase 33.3: die Kacheln, die Liste und „Für Versicherungsangebot kopieren“.
+            'row_title' => '{type} · {vehicle}',
+            'copy' => 'Für Versicherungsangebot kopieren',
+            'copied' => 'Kopiert',
+            'stat' => [
+                'claims' => 'Versicherungsfälle im Zeitraum',
+                'since_fault' => 'Seit dem letzten selbst verschuldeten Fall',
+                'years' => '{count, plural, =0 {Unter 1 Jahr} one {# Jahr} other {# Jahre}}',
+                'none' => 'Keiner',
+                'no_fault' => 'Keine selbst verschuldeten Fälle im Zeitraum',
+                'paid' => 'Von Versicherern gezahlt',
+                'excess' => 'Gezahlte Selbstbeteiligung',
+            ],
             'field' => [
                 'years' => 'Zeitraum',
                 'range' => 'Stattdessen Daten wählen',

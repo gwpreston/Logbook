@@ -1925,7 +1925,22 @@ return [
         'empty_title' => 'No incidents logged',
         'empty_body' => 'A scrape, a break-in or a pothole: log what happened, link its repairs, and keep the claim in one place.',
         'name' => '{type}, {date}',
-        'claim_badge' => 'Claim: {status}',
+        // Phase 33.3: the claim pill, the tab's strip (spec.md §7.29 *Layout*).
+        'claim_pill' => [
+            'not_claimed' => 'No claim',
+            'notified' => 'Insurer told',
+            'open' => 'Claim open',
+            'settled' => 'Claim settled',
+            'declined' => 'Claim declined',
+            'withdrawn' => 'Claim withdrawn',
+        ],
+        'stat' => [
+            'incidents' => 'Incidents',
+            'claims' => 'Claims',
+            'at_fault' => '{count, plural, =0 {none at fault} other {# at fault}}',
+            'insurer_paid' => 'Insurer paid',
+            'net_cost' => 'Net cost',
+        ],
         'closed_on' => 'closed {date}',
         'details_hidden' => 'The fault, driver, claim and other party are visible to those who manage the vehicle and to whoever logged it.',
         'choose_type' => 'Choose…',
@@ -2133,6 +2148,19 @@ return [
             'not_shared' => 'Not shared with you',
             'empty_title' => 'No incidents',
             'empty_body' => 'Nothing logged for {period}.',
+            // Phase 33.3: the tiles, the list and Copy for insurance quote.
+            'row_title' => '{type} · {vehicle}',
+            'copy' => 'Copy for insurance quote',
+            'copied' => 'Copied',
+            'stat' => [
+                'claims' => 'Claims in this period',
+                'since_fault' => 'Since last fault claim',
+                'years' => '{count, plural, =0 {Under 1 yr} one {# yr} other {# yrs}}',
+                'none' => 'None',
+                'no_fault' => 'No fault claims in this period',
+                'paid' => 'Paid by insurers',
+                'excess' => 'Excess paid',
+            ],
             'field' => [
                 'years' => 'Period',
                 'range' => 'Choose dates instead',
