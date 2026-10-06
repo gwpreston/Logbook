@@ -198,7 +198,7 @@ gains a sentence on the exception.
       other engines run in CI.)*
 
 ### 36.1.7 Checks
-- [ ] `design-reviewer` agent on the page at 375, 768 and 1280 px, light and
+- [x] `design-reviewer` agent on the page at 375, 768 and 1280 px, light and
       dark; keyboard only; the *Saved / Replace / Remove* secret field with
       a screen reader.
 
