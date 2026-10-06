@@ -63,10 +63,11 @@ them found by its prototype audit, and #185's pending wording) were
 answered on 2026-10-05, before it was built. Phase 34.1's (#198–#202,
 two of them found while starting it) were answered on 2026-10-06,
 before it was built. Phase 34.2's (#203–#206) were answered on
-2026-10-06, before it was built; one found by its design review (#242)
-is still open. Those of Phases 34.3–36.3 (#207–#241)
-were added on 2026-10-06 when those phases were written and are still
-open; each
+2026-10-06, before it was built, and the one found by its design review
+(#242) on the same day, before Phase 34.3. Phase 34.3's (#207–#211, and
+#243–#244 found while starting it) were answered on 2026-10-06, before
+it was built. Those of Phases 35.1–36.3 (#212–#241) were added on
+2026-10-06 when those phases were written and are still open; each
 row gives the answer the phase file drafts. #222, Phase 36.1's
 `SESSION_SECRET` question, must be answered before any of Phase 36 is
 built.
@@ -279,11 +280,11 @@ built.
 | 204 | [34.2](phase-34.2.md) | Periods offered on the breakdown | Decided | *This month*, *Last 12 months* (default) and *This year*, as drafted (spec §7.8 *Expense breakdown*). | 2026-10-06 |
 | 205 | [34.2](phase-34.2.md) | A *By vehicle* option on the fleet breakdown | Decided | No: Reports has *Spend per vehicle* (spec §7.8 *Expense breakdown*). | 2026-10-06 |
 | 206 | [34.2](phase-34.2.md) | Clicking a bar in *Monthly spend* | Decided | Each month links to Reports for that calendar month: the table's month names and, with JS, the bars (spec §7.8 *Monthly spend*). | 2026-10-06 |
-| 207 | [34.3](phase-34.3.md) | Show projected *Coming up* items on the calendar? | Needs a decision | Drafted: no; reminders only. | — |
-| 208 | [34.3](phase-34.3.md) | Closed reminders: hidden unless `closed=1`, or shown muted? | Needs a decision | Drafted: hidden. | — |
-| 209 | [34.3](phase-34.3.md) | *Add reminder* link from a day | Needs a decision | Drafted: keep it (prefilled date). | — |
-| 210 | [34.3](phase-34.3.md) | Dashboard widget: small month or a list of the next days? | Needs a decision | Drafted: small month; *Upcoming reminders* is already the list. | — |
-| 211 | [34.3](phase-34.3.md) | Week numbers on the grid | Needs a decision | Drafted: not built. | — |
+| 207 | [34.3](phase-34.3.md) | Show projected *Coming up* items on the calendar? | Decided | No: reminders only; *Coming up* stays its own page (spec §7.6 *Calendar view*). | 2026-10-06 |
+| 208 | [34.3](phase-34.3.md) | Closed reminders: hidden unless `closed=1`, or shown muted? | Decided | Shown muted by default; `closed=0` hides them (#243) (spec §7.6 *Calendar view*). | 2026-10-06 |
+| 209 | [34.3](phase-34.3.md) | *Add reminder* link from a day | Decided | Kept: the day panel links to the manual-reminder form with `?due=` filled in (spec §7.6 *Calendar view*). | 2026-10-06 |
+| 210 | [34.3](phase-34.3.md) | Dashboard widget: small month or a list of the next days? | Decided | A small month, as drafted (spec §7.8 *Calendar*). | 2026-10-06 |
+| 211 | [34.3](phase-34.3.md) | Week numbers on the grid | Decided | Built: the month is a list of weeks, each with its number from ICU in the viewer's locale (found while starting: week numbers need rows; locale rules so a Sunday-first week is never split); not on the widget (spec §7.6 *Calendar view*). | 2026-10-06 |
 | 212 | [35.1](phase-35.1.md) | Demo owner: admin or member? | Needs a decision | Drafted: admin, so visitors see Modules and other admin screens. | — |
 | 213 | [35.1](phase-35.1.md) | Reset interval | Needs a decision | Drafted: 24 hours (`DEMO_RESET_HOURS`). | — |
 | 214 | [35.1](phase-35.1.md) | Visitor uploads: allowed or blocked? | Needs a decision | Drafted: allowed at 2 MB, deleted at reset. | — |
@@ -314,7 +315,9 @@ built.
 | 239 | [36.3](phase-36.3.md) | Mattermost optional *Channel* override | Needs a decision | Drafted: offered. | — |
 | 240 | [36.3](phase-36.3.md) | Wording of the third-party notice on Telegram, Discord and Pushover | Needs a decision | Needs the owner's wording. | — |
 | 241 | [36.3](phase-36.3.md) | More services (Slack, Matrix, Signal, Apprise) | Needs a decision | Drafted: not now; or note one in spec §12? | — |
-| 242 | [34.2](phase-34.2.md) | Light-theme *Tax* and *Other* colours below 3:1 as graphics (found by the design review) | Needs a decision | Today: kept; every segment has a text label beside it. Alternative: darken `--c-tax` and `--c-other` in the light theme. | — |
+| 242 | [34.2](phase-34.2.md) | Light-theme *Tax* and *Other* colours below 3:1 as graphics (found by the design review) | Decided | Darken `--c-tax` and `--c-other` in the light theme to at least 3:1 against the card, built in Phase 34.3 (spec §7.8 *Expense breakdown*). | 2026-10-06 |
+| 243 | [34.3](phase-34.3.md) | With closed reminders shown by default, a way to hide them? (found while starting) | Decided | Yes: *Hide done and dismissed* links to `closed=0`; a URL choice, not a setting (spec §7.6 *Calendar view*). | 2026-10-06 |
+| 244 | [34.3](phase-34.3.md) | Does the widget count closed reminders? (found while starting) | Decided | No: open reminders only; closed ones are on the page (spec §7.8 *Calendar*). | 2026-10-06 |
 
 ## Other loose ends found in the review
 

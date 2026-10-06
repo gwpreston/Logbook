@@ -77,7 +77,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | ✅ |
 | [34.1](docs/phases/phase-34.1.md) | Registration plates | ✅ |
 | [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | ✅ |
-| [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | 📋 |
+| [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | 🚧 |
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | 📋 |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |
 | [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 📋 |
@@ -815,6 +815,26 @@ the dashboard.*
   v3.1.0.
 
 → [`phase-34.2.md`](docs/phases/phase-34.2.md)
+
+---
+
+## Phase 34.3 — Reminders calendar and dashboard widget + v3.1 release
+*See what is due as a month, not only as a list.*
+
+- **Calendar view** of Reminders (`/reminders/calendar`), switchable with
+  the list: the same reminders, sources and access, a month at a time as
+  a list of weeks laid out as a grid, with week numbers and the first day
+  of the week from the locale (#211), and an agenda on a phone.
+- An overdue strip, the reminders with no date under the grid, a day
+  panel with every item's actions and *Add reminder* with the date filled
+  in (#209); done and dismissed shown muted unless hidden (#208, #243);
+  no projected *Coming up* items (#207).
+- **Calendar** dashboard widget: a small month of open reminders (#210,
+  #244), each marked day linking to the calendar page.
+- The light-theme *Tax* and *Other* chart colours darkened to 3:1 (#242).
+- Releases **v3.1.0** with Phases 34.1 and 34.2.
+
+→ [`phase-34.3.md`](docs/phases/phase-34.3.md)
 
 ---
 
