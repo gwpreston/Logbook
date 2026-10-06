@@ -60,8 +60,8 @@ offer Debian 12, which is fine for the Docker route; for the native route see
 
 ## Route 1: Docker in an unprivileged container
 
-**A caveat first.** Proxmox's own documentation recommends a virtual
-machine for application containers: *"for use cases demanding maximum
+**A caveat first.** Proxmox's own documentation prefers a virtual machine
+for Docker-style containers when isolation matters: *"for use cases demanding maximum
 isolation and the ability to live-migrate, nesting containers inside a
 Proxmox QEMU VM remains a recommended practice"*
 ([Proxmox VE: Linux Container](https://pve.proxmox.com/wiki/Linux_Container)).
@@ -131,21 +131,27 @@ directory storage, or use a VM.
 git clone https://github.com/gwpreston16/Logbook.git /opt/logbook
 cd /opt/logbook
 git checkout v3.2.0          # or the newest release
-cp .env.example .env
 ```
 
-Edit `.env` (`nano .env`). The compose file sets the database variables
-itself; what matters here:
+Create `.env` next to `docker-compose.yml` (`nano .env`) with only what you
+change; the compose file passes these on and sets the rest itself:
 
 ```dotenv
 DB_PASSWORD=a-long-random-password
 SESSION_SECRET=paste-the-output-of: openssl rand -hex 32
-APP_URL=https://logbook.example.com
+APP_URL=http://192.168.1.50:8080
 APP_TIMEZONE=Europe/London
 ```
 
-`APP_URL` is the address people will use, through your proxy
-([below](#putting-it-behind-your-proxy)). Then:
+```bash
+chmod 600 .env
+```
+
+`APP_URL` is the container's own address **for now**, over plain HTTP. Once
+the proxy is in front you change it to the `https://` address
+([below](#putting-it-behind-your-proxy)). Start with the `https://` one and
+the first-run page can't keep you signed in: the session cookie is then
+`Secure`, and a browser won't send it back over plain HTTP. Then:
 
 ```bash
 docker compose up -d
@@ -154,7 +160,8 @@ docker compose ps            # app and db "healthy" after a minute or two
 
 The first start builds the image, which takes a few minutes. Open
 `http://<container address>:8080/` and create the first account straight
-away (until then, anyone who can reach the page can).
+away: until then, anyone who can reach the page can. Do it from your own
+network, not over the internet: the password crosses it unencrypted.
 
 The data lives in Docker volumes on the container's own disk
 (`/var/lib/docker/volumes/logbook_*`), so a Proxmox backup of the container
@@ -232,7 +239,7 @@ cp .env.example .env
 In `.env`, for SQLite:
 
 ```dotenv
-APP_URL=https://logbook.example.com
+APP_URL=http://192.168.1.50
 APP_TIMEZONE=Europe/London
 DB_DRIVER=sqlite
 DB_NAME=var/logbook.sqlite
@@ -241,7 +248,9 @@ LOG_PATH=var/log/logbook.log
 ```
 
 or for PostgreSQL, `DB_DRIVER=pgsql`, `DB_HOST=127.0.0.1`, `DB_NAME=logbook`,
-`DB_USER=logbook` and the password you chose. Uploads and backups stay in
+`DB_USER=logbook` and the password you chose. As on the Docker route,
+`APP_URL` is the container's plain-HTTP address until the proxy is in front.
+Uploads and backups stay in
 `var/uploads` and `var/backups` (outside the web root). Then:
 
 ```bash
@@ -275,7 +284,7 @@ nginx -t && systemctl reload nginx php8.4-fpm
 ```
 
 Open `http://<container address>/` and create the first account straight
-away.
+away, from your own network.
 
 ### 5. Scheduled tasks
 
@@ -303,10 +312,11 @@ Logbook in the container speaks plain HTTP: on port 8080 (Docker route) or 80
   Traefik example as it is ([reverse-proxies.md](reverse-proxies.md#caddy)),
   which also keeps the app's own port closed.
 
-Whichever you choose, set `APP_URL` (and `APP_BASE_PATH` at a subpath) as
-[reverse-proxies.md](reverse-proxies.md#what-to-set-on-logbook) says, and
-restart (`docker compose up -d`, or nothing on the native route: `.env` is
-read on each request). Logbook sees every request coming from the proxy's
+Whichever you choose, change `APP_URL` in `.env` to the `https://` address
+people will use (and set `APP_BASE_PATH` at a subpath) as
+[reverse-proxies.md](reverse-proxies.md#what-to-set-on-logbook) says, then
+apply it: `docker compose up -d` on the Docker route, `systemctl reload
+php8.4-fpm` on the native one. Logbook sees every request coming from the proxy's
 address; the guide says what that means.
 
 With the proxy elsewhere, only it should reach the container's port. Proxmox's

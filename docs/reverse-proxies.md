@@ -69,7 +69,11 @@ Less than many apps do. This is what the code does today:
   address is trusted: the user header is read only from a connection whose
   `REMOTE_ADDR` is in `AUTH_PROXY_TRUSTED`, which should be the proxy's
   address on the app's network. Forwarding headers are never consulted for
-  it.
+  it. **The examples here are plain proxies**: they pass on whatever
+  headers the client sends, `Remote-User` included. Never set
+  `AUTH_PROXY_TRUSTED` to their address as they are; header sign-in needs a
+  proxy that removes the client's own header and sets it after forward auth,
+  as in [sso.md's examples](sso.md#header-sign-in).
 - **HTTPS** is known only from `APP_URL` (above). Redirects Logbook sends
   are relative (`Location: /logbook/garage`), so they keep the scheme and
   host the browser used.
