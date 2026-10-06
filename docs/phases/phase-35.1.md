@@ -2,7 +2,7 @@
 
 *A public demo that resets itself and cannot hurt anyone, including you.*
 
-Status: 📋 planned · no release of its own (ships with Phase 35.2 as
+Status: 🚧 in progress · no release of its own (ships with Phase 35.2 as
 **v3.2.0**) · file lives in `docs/phases/`
 
 Logbook has sample data (`DemoDataSeeder`, loaded by
@@ -44,6 +44,7 @@ passwords) first.
 - A separate sandbox per visitor. One shared demo account, reset together.
 - Hosting a demo for the project, analytics or tracking of any kind.
 - A *Reset now* button for visitors (it would be a way to disrupt others).
+- A second demo account (#217).
 - Anything that overwrites data from an environment variable alone (see
   *Decisions*).
 
@@ -129,12 +130,12 @@ passwords) first.
 > - creating a calendar feed.
 >
 > Everything else works, so a visitor can add fill-ups, tyres, documents,
-> reminders and expenses, rearrange the dashboard and switch modules.
+> reminders and expenses (without files), rearrange the dashboard and switch modules.
 >
-> **Uploads** are allowed but capped at 2 MB per file whatever
-> `MAX_UPLOAD_MB` says, and the upload field says: "This is a public demo.
-> Anything you upload is visible to others and is deleted at the next
-> reset."
+> **Uploads are blocked** (decided #214, replacing the draft's 2 MB cap):
+> file fields are not offered and a request carrying a file is refused with
+> the *Not available in the demo* page. Records with an optional file work
+> without one.
 >
 > **Banner** on every signed-in page: "This is a demo. It resets {in 3
 > hours | at 02:00} and nothing here is private." The time is in the
@@ -183,7 +184,7 @@ passwords) first.
 ## Tasks
 
 ### 35.1.0 Spec first
-- [ ] `spec.md` §7.36, §7.30, §8 route inventory, §9; §13 entry;
+- [x] `spec.md` §7.36, §7.30, §8 route inventory, §9; §13 entry;
       `ROADMAP.md` row and section; `CLAUDE.md` §10 is unchanged (the
       variables are documented in `.env.example` as usual).
 
@@ -208,7 +209,7 @@ passwords) first.
 - [ ] `DemoResetter`, the `demo_reset` job, `bin/demo-reset.php`.
 - [ ] Middleware: refuse blocked routes with the *Not available in the
       demo* page; `X-Robots-Tag`; the banner; the sign-in text; uploads
-      capped at 2 MB; `/setup` 404.
+      blocked (no file fields, a file in a request refused); `/setup` 404.
 - [ ] Short-circuit outbound sending (notifications, mail, calendar feed
       creation, update check, AI, API) behind `DemoMode::blocks`.
 
@@ -222,8 +223,8 @@ passwords) first.
       to it.
 
 ### 35.1.4 Translations
-- [ ] English and German: the banner, the blocked page, the sign-in text,
-      the upload note, the admin refusal notices.
+- [ ] Every catalogue in `translations/`: the banner, the blocked page, the
+      sign-in text, the admin refusal notices.
 
 ### 35.1.5 Tests
 - [ ] Unit: the guard table, every row (empty/marker/no marker/flag off,
@@ -243,7 +244,7 @@ passwords) first.
       and is absent from navigation; allowed routes work; a fake HTTP
       client and a fake mailer record **zero** outbound calls through a
       full reminder run, a test notification and an update check.
-- [ ] Integration: banner, sign-in text, `X-Robots-Tag`, 2 MB upload cap,
+- [ ] Integration: banner, sign-in text, `X-Robots-Tag`, uploads refused,
       `DEMO_PASSWORD` never logged or shown in a job's output (it contains
       "PASSWORD", so the redaction rule covers it; prove it).
 - [ ] Integration: the marker is absent from a backup and an export; the
@@ -282,14 +283,19 @@ and the route classification.)*
 
 ## Open questions
 
-- **Admin or member?** The demo owner is an admin (drafted) so visitors can
-  see Modules and other admin screens. The alternative is a member, which
-  hides them.
-- **Interval.** 24 hours (drafted), or shorter for a busy demo?
-- **Uploads.** Allowed at 2 MB (drafted), or blocked altogether?
-- **Credentials on the sign-in page.** Shown (drafted), or only in the
-  docs?
-- **Shifting the seeded history.** Every date relative to the run
-  (drafted), or keep the fixed history and shift only the recent year?
-- **Second demo user.** One account (drafted), or two so sharing (Phase 19)
-  can be tried?
+All decided by the owner on 2026-10-06, before the phase was built
+([`open-questions.md`](open-questions.md) #212–#217). #245 and #246,
+left open by Phase 34.3, were decided the same day: keep as they are.
+
+- **Admin or member?** *Decided 2026-10-06 (#212):* admin, so visitors see
+  Modules and the other admin screens.
+- **Interval.** *Decided 2026-10-06 (#213):* 24 hours by default
+  (`DEMO_RESET_HOURS`).
+- **Uploads.** *Decided 2026-10-06 (#214):* **blocked altogether**, not
+  capped at 2 MB as drafted. File fields are not offered and a request
+  with a file is refused; records with an optional file work without one.
+- **Credentials on the sign-in page.** *Decided 2026-10-06 (#215):* shown,
+  with a *Fill in* button.
+- **Shifting the seeded history.** *Decided 2026-10-06 (#216):* every date
+  relative to the run.
+- **Second demo user.** *Decided 2026-10-06 (#217):* one account.
