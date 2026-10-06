@@ -2,7 +2,7 @@
 
 *The server's email, set up in the app by the person who runs it.*
 
-Status: 📋 planned · no release of its own (ships with Phase 36.3 as
+Status: 🚧 in progress · no release of its own (ships with Phase 36.3 as
 **v3.3.0**) · file lives in `docs/phases/`
 
 Phase 36 is **Notifications**, built last, after Phases 33 to 35 are
@@ -39,16 +39,24 @@ password, development mail) first.
    `InstanceAbility::ManageNotifications`) with an **Email server** card:
    host, port, encryption, username, password, From address and name, and
    **Send test email**.
-2. **One effective configuration:** what is saved in Settings, else the
-   `MAIL_*` variables exactly as today. Every email the app sends (reminder
-   email, the digest, invitations, resets, tests) is built from it, in one
-   place.
+2. **Settings are the only source** (decided 2026-10-06, #223): the
+   `MAIL_*` variables are removed and never read. Every email the app
+   sends (reminder email, the digest, invitations, resets, address
+   confirmations, tests) is built from the saved settings, in one place.
 3. **The password is a secret**, stored the way AI secrets are: encrypted,
-   never shown again, redacted from errors and logs, left out of backups.
-4. **Nothing breaks on upgrade.** An install configured by environment
-   keeps working until an admin saves settings.
+   never shown again, redacted from errors and job output, left out of
+   backups.
+4. **Upgrading is explained, not automatic.** Nothing is imported from
+   `MAIL_*` (#223): an install that used them has email off until an
+   admin fills in the page, and the release notes, the upgrade notes and
+   the page itself (while a `MAIL_*` variable is still set) say so.
 5. "Is email set up?" (the forgotten-password link, invitations by email,
-   the Email channel) reads the effective configuration.
+   address confirmations, the Email channel) reads the saved settings at
+   once, with no restart.
+6. **A fresh Docker volume gets a `SESSION_SECRET`** (#222), so the
+   password can be sealed out of the box.
+
+---
 
 ## Not in scope
 
@@ -60,199 +68,133 @@ password, development mail) first.
   relay works today.
 - DKIM signing, bounce handling, editing email templates, a `sendmail` or
   PHP `mail()` transport.
-- Removing the `MAIL_*` variables. They stay as defaults.
+- Importing the `MAIL_*` values into Settings (#223: no import).
 
 ---
 
 ## Spec additions
 
-### §6 Data model (changed)
-
-> **NotificationSecret** (new): id, owner_user_id (nullable, `ON DELETE
-> CASCADE`; null = the installation), name (up to 64: `smtp_password`, and
-> from 36.2 `ntfy_token`, `gotify_token`, and so on), value (`v1:` +
-> base64 of the `secretbox` nonce and ciphertext, as AI secrets; for
-> installation rows only, a reference `env:NAME`), created_at, updated_at.
-> Unique `(owner_user_id, name)`. **Never** in backups, exports, the API or
-> any page.
->
-> **Setting** `email.smtp` (scope global): `host`, `port`, `encryption`
-> (`tls` | `ssl` | `none`), `username`, `from_address`, `from_name`,
-> `updated_at`, `updated_by`. The password is a NotificationSecret
-> (`smtp_password`).
-
-### §7.11 Notifications (changed): the email server
-
-> - **Effective email configuration.** If an admin has saved settings
->   (`email.smtp` exists), they are used **entirely**; the `MAIL_*`
->   variables are then ignored. Otherwise the variables are used as
->   before. `MailConfig::effective()` returns one or the other and says
->   which (`settings` | `environment` | `none`). Email is **configured**
->   when the effective configuration has a host.
-> - **One transport.** `MailerFactory` is the only place a mail transport
->   is built, from `MailConfig::effective()`. Reminder email, the digest,
->   invitations, password resets (Phase 33.1), the test email and
->   anything later use it. An architecture test fails if anything else
->   builds one.
-> - **Settings → Delivery → Email server.** Fields: *Server* (host),
->   *Port* (default by encryption: 587 for `tls`, 465 for `ssl`, 25 for
->   `none`), *Encryption* (`tls` = STARTTLS required, `ssl` = implicit TLS,
->   `none`), *Username*, *Password*, *From address*, *From name* (default
->   "Logbook"). Validation: a host (no scheme, no path), a port 1 to 65535,
->   a valid From address, a name up to 100 characters; CR and LF are
->   rejected in every field (header injection). With `none` and a username,
->   a warning: "Your password would be sent unencrypted." The page also
->   says which source is in use: "These settings come from the
->   environment (`MAIL_HOST`). Saving here replaces them." and offers
->   **Use the environment instead** (deletes the saved settings and the
->   saved password).
-> - **The password** is stored as a NotificationSecret:
->   - an `env:NAME` reference (a valid variable name) stores only the
->     reference and reads the variable when sending, for those who keep it
->     in a Docker secret. Only admins can save this page, so the reference
->     is safe here (it is **not** allowed for members' secrets, §36.2);
->   - anything else is encrypted with libsodium `secretbox`, key from
->     `SESSION_SECRET` by HKDF-SHA256, info `logbook-notify`;
->   - without a usable key only `env:` references can be saved, and the
->     form says so (see the open question on `SESSION_SECRET`);
->   - it is never shown again, not even masked: *Saved* with *Replace* and
->     *Remove*; an empty field keeps it; a form re-shown after an error
->     never puts it back;
->   - if the key has changed it says *Re-enter the password*, and nothing
->     is sent with it; an `env:` variable that is unset says *Set {NAME}*.
-> - **Send test email** sends one message to the **admin's own address**
->   (`users.email`, Phase 33.1; without one the button asks for it), using
->   the **saved or typed** values without saving them, so a typo is found
->   before it replaces a working setup. It reports success, or the stage
->   that failed (connection, encryption, sign-in, send) with the server's
->   reply, redacted. Timeouts: 10 seconds to connect, 30 in all; no retry.
-> - **Redaction.** Every `notification_secrets` value, and the value of an
->   `env:` reference, is added to the log redaction (§7.30), as AI secrets
->   are. Error text from the transport is redacted before it reaches a
->   page, a job's output or the log.
-> - **Backups.** `email.smtp` is in backups; `notification_secrets` is not.
->   A restored install says *Re-enter the password* on the Delivery page,
->   and the restore page says so.
-> - **Changes are logged** at notice level with the admin's id and the
->   fields changed, never the values.
-> - **Demo mode** (Phase 35.1) blocks this page and every send.
-
-### §7.9 Authentication (changed)
-
-> "Shown only when email is configured (`MAIL_HOST`)" becomes "shown only
-> when the server's email is configured (§7.11)", for the forgotten-password
-> link and routes, and for invitations and resets sent by email.
-
-### §9 Configuration (changed)
-
-> `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,
-> `MAIL_ENCRYPTION`, `MAIL_FROM` are **defaults**: used while nothing is
-> saved in Settings → Delivery. `MAIL_TO` stays an admin's default
-> recipient (Phase 19). The development stack's Mailpit (Phase 33.1)
-> keeps working through them.
-
-### §8 Settings layout (changed)
-
-> **Administration** gains **Delivery** (admins). The installation-wide
-> places notifications leave the server from are set there. Personal
-> channels are in Account (36.2).
+Written into [`spec.md`](../../spec.md) on 2026-10-06, after the open
+questions were decided: §6 *NotificationSecret* and the `email.smtp`
+setting; §7.9 (*Forgotten password* and the default recipient for
+admins); §7.11 *The email server*; §8 *Settings layout* (Administration →
+Delivery); §9 (`SESSION_SECRET_FILE`, the `MAIL_*` variables removed,
+the development Mailpit); §12 (OAuth 2 for SMTP); §13. `CLAUDE.md` §10
+gains a sentence on the exception.
 
 ---
 
 ## Decisions (and why)
 
-- **Saved settings replace the environment, whole.** Merging field by field
-  makes it impossible to tell where a value came from. One source is in
-  use, and the page names it.
-- **The environment stays as the default.** Nothing breaks on upgrade, the
-  development stack keeps its Mailpit variables, and anyone who prefers
-  configuration in files keeps it. `CLAUDE.md` §10 says everything a
-  self-hoster needs is an environment variable; this phase makes SMTP
-  settable in either place, and §10 gets one sentence saying so.
-- **The AI secret rules, reused.** Encrypted at rest, shown once, redacted,
-  never backed up. People already meet them on *Settings → AI*, and the
-  code and the tests exist.
+- **Settings are the only source; the variables go** (owner, 2026-10-06,
+  #223). One place to edit, so there is never a question of which value is
+  in use. No import: the owner accepted that an environment-configured
+  install has email off until it is set up again, and the release says so.
+- **The default recipient for admins moves into Settings** (#225): kept
+  as the fallback for admins' reminders, now a field on the card instead
+  of `MAIL_TO`.
+- **A secret only on a fresh volume** (#222). An empty `SESSION_SECRET`
+  still keys session, API-key, feed and invitation hashes today, so
+  generating one for an existing install would sign everyone out and
+  break those links. The app reads it from `SESSION_SECRET_FILE`, so
+  `docker exec … php bin/…` sees the same key as Apache.
+- **A new `notification_secrets` table, the AI sealing code** (#224). The
+  same shape as `fuel_price_secrets`. `SecretBox` takes its HKDF info
+  string, so these are sealed with `logbook-notify` and nothing that
+  exists is re-encrypted.
 - **Test with typed values, unsaved.** A wrong password should not replace
   a working one.
-- **One mail transport.** Several places building their own is how one of
-  them ends up ignoring the settings.
+- **One mail transport, built per send.** Several places building their
+  own is how one of them ends up ignoring the settings; building it once
+  per process is how a long scheduler run misses a change.
+- **OAuth 2 for SMTP is parked** (#226, spec §12).
 
 ---
 
 ## Tasks
 
 ### 36.1.0 Spec first
-- [ ] `spec.md` §6, §7.9, §7.11, §8, §9; `CLAUDE.md` §10 sentence; §13
-      entry; `ROADMAP.md` row and section.
+- [x] `spec.md` §6, §7.9, §7.11, §8, §9, §12, §13; `CLAUDE.md` §10
+      sentence; `ROADMAP.md` row and section.
 
 ### 36.1.1 Audit
-- [ ] Find every place that reads `MAIL_*` or builds a transport or sends
-      mail (reminders, digest, invitations, resets, tests, the dev stack).
-      Record under *Audit*.
-- [ ] **Does the Docker entrypoint generate and keep a `SESSION_SECRET`
-      when none is set?** If not, a default install has no key, and neither
-      this password nor members' tokens (36.2) can be saved from the app.
-      Record the answer and take the decision to the owner (see the open
-      questions) before building the form.
-- [ ] How does AI-secret storage (`AiSecret`) work in code: can its
-      encryption and redaction be reused as they are, or should they be
-      generalised into one `SecretBox` both use?
+- [x] Every place that reads `MAIL_*`, builds a transport or sends mail.
+      Recorded under *Audit*.
+- [x] Does the Docker entrypoint generate a `SESSION_SECRET`? No (see
+      *Audit*); decided #222.
+- [x] `SecretBox` reuse: reused, with its HKDF info as a parameter.
 
 ### 36.1.2 Migration (every engine, reversible)
-- [ ] `notification_secrets` table as above. Rolling back drops it (the SMTP
+- [ ] `notification_secrets` table. Rolling back drops it (the SMTP
       password is lost; the settings row is kept).
 
 ### 36.1.3 Code
-- [ ] `MailConfig` (`effective()`, `source()`), `MailerFactory`, and the
-      secret storage (reuse or generalise, per the audit).
-- [ ] Settings → Delivery action, template, validation, test action, *Use
-      the environment instead*; routes declare
-      `InstanceAbility::ManageNotifications`.
-- [ ] Replace every place that read `MAIL_*` or built a transport. Gate the
-      forgotten-password link and the Email channel on
-      `MailConfig::effective()`.
-- [ ] Add the secrets to the log redaction processor.
-- [ ] Exclude `notification_secrets` from backups and exports; the restore
-      page notes it.
+- [ ] `SecretBox` takes its HKDF info (`logbook-ai` stays the default);
+      `SecretUnreadable` names the secret without saying "AI".
+- [ ] `NotificationSecretRepository`, `NotificationSecrets` (store, open,
+      state: saved / re-enter / set {NAME}).
+- [ ] `MailConfig` (`effective()`, `source()`, built from the setting and
+      the secret on every call), `MailerFactory` (the only transport
+      builder; demo guard around it; 10 s connect timeout, 30 s overall),
+      replacing `EmailConfig::fromEnv()` and the DI singleton transport.
+- [ ] `EmailChannel`, `InvitationMailer`, `AccountMailer`, `UsersPage`,
+      `PasswordResets` and `EmailAddresses` read `MailConfig` per call;
+      the admins' default recipient comes from the setting.
+- [ ] Settings → Delivery: action, template, validation, *Send test
+      email*, *Remove email server*, the `MAIL_*`-still-set notice, a
+      Settings card under Administration; routes declare
+      `InstanceAbility::ManageNotifications` (hidden: 404), demo
+      `blocked`.
+- [ ] `notification_secrets` in `OutputRedactor`; transport error text
+      redacted (`Redactor`) before a page, job output or the log.
+- [ ] Exclude `notification_secrets` from backups and demo resets; the
+      restore page notes it.
+- [ ] `SESSION_SECRET_FILE` in `AppSettings`; `bin/session-secret.php`
+      (fresh database only) run by the entrypoint after migrating;
+      `ENV SESSION_SECRET_FILE=/data/session-secret` in the image.
+- [ ] Remove `MAIL_*` from compose files, the dev compose (Mailpit stays),
+      `.env.example`.
 
 ### 36.1.4 Docs and configuration
-- [ ] `.env.example` and `docs/configuration.md`: the `MAIL_*` variables are
-      described as defaults, with a pointer to Settings → Delivery.
+- [ ] `.env.example` and `docs/configuration.md`: `MAIL_*` gone, a pointer
+      to Settings → Delivery; `SESSION_SECRET_FILE`.
 - [ ] `docs/notification-channels.md`: an *Email* section: where it is
-      configured, which source wins, the test button.
-- [ ] README *Configuration* paragraph; `docs/deployment.md` mention.
+      configured, the password rules, the test button.
+- [ ] README *Configuration* paragraph and the dev Mailpit steps;
+      `docs/deployment.md`; `CHANGELOG.md` *Unreleased* with the upgrade
+      warning.
 
 ### 36.1.5 Translations
 - [ ] English and German strings for the page, hints, warnings and errors.
 
 ### 36.1.6 Tests
-- [ ] Unit: `MailConfig` (nothing saved uses the environment; saved settings
-      use settings entirely, even for fields the environment has; *Use the
-      environment instead* returns to it; nothing anywhere gives `none`).
-- [ ] Unit: validation (host with scheme or path, ports, CR/LF in each
-      field, From address, encryption values, `none` with a username warns).
-- [ ] Unit: the secret rules, shared with AI: round trip, a changed key says
-      *Re-enter*, an unset `env:` variable says *Set {NAME}*, no key means
-      only `env:` can be saved.
+- [ ] Unit: `MailConfig` (nothing saved is `none` whatever `MAIL_*` holds;
+      saved settings are used; removing returns to `none`).
+- [ ] Unit: validation (host with scheme, path or port, ports, CR/LF in
+      each field, From address, recipient, encryption values, `none` with
+      a username warns).
+- [ ] Unit: the secret rules: round trip, sealed with `logbook-notify` (an
+      AI-info box can't open it), a changed key says *Re-enter*, an unset
+      `env:` variable says *Set {NAME}*, no key means only `env:`.
+- [ ] Unit: `bin/session-secret.php`'s service: writes only on an empty
+      database, never overwrites, never with `SESSION_SECRET` set;
+      `AppSettings` reads the file.
 - [ ] Integration: the page is admin only (a member, a disabled user and a
       signed-out visitor are refused; the route inventory classifies it);
       the saved password never appears in any response, including after a
-      validation error; secrets are redacted from a failing test's message,
-      a job's output and the log.
+      validation error; secrets are redacted from a failing test's message
+      and a job's output.
 - [ ] Integration: **Send test email** uses typed values without saving
-      them, goes to the admin's address, and reports each failing stage
-      (a fake transport for each).
+      them, goes to the admin's address, and reports each failing stage.
 - [ ] Integration: the forgotten-password link and invitations appear
-      exactly when the effective configuration has a host, and follow a
-      change at once.
-- [ ] Architecture: nothing but `MailerFactory` builds a transport.
-- [ ] Integration: `notification_secrets` is absent from a backup and an
-      export; restoring leaves *Re-enter the password*; the restore page
-      says so.
+      exactly when a server is saved, and follow a change at once.
+- [ ] Architecture: nothing in `src/` but `MailerFactory` builds a
+      transport.
+- [ ] Integration: `notification_secrets` is absent from a backup;
+      restoring leaves *Re-enter the password*; the restore page says so.
 - [ ] Integration: demo mode refuses the page and sends nothing.
 - [ ] Migration applies and rolls back on every engine; the suite passes on
-      SQLite, PostgreSQL, MySQL and MariaDB. The dev stack still delivers
-      to Mailpit through `MAIL_*`.
+      SQLite, PostgreSQL, MySQL and MariaDB.
 
 ### 36.1.7 Checks
 - [ ] `design-reviewer` agent on the page at 375, 768 and 1280 px, light and
@@ -263,7 +205,7 @@ password, development mail) first.
 - [ ] None. Demo mode blocks the page.
 
 ### Release
-- [ ] Ships with Phase 36.3 as **v3.3.0**.
+- [ ] Ships with Phase 36.3 as **v3.3.0**, with the upgrade warning.
 
 ---
 
@@ -271,30 +213,63 @@ password, development mail) first.
 
 - An admin can set up, test and change the email server in Settings without
   touching the server's environment, and a member cannot see the page.
-- An install configured only by `MAIL_*` sends exactly as before.
-- The password cannot be read back from any page, backup, log or error.
+- The `MAIL_*` variables are not read anywhere, and an upgraded install
+  that used them is told what to do.
+- The password cannot be read back from any page, backup, job output or
+  error.
 - Forgotten password, invitations, reminders and the digest all use the
-  effective configuration.
+  saved settings, and follow a change without a restart.
+- A fresh Docker volume can seal the password without the admin setting
+  `SESSION_SECRET`.
 
 ## Audit
 
-*(Filled in by 36.1.1: every mail path, the `SESSION_SECRET` answer, and the
-secret-storage reuse decision.)*
+Done on 2026-10-06, before any code.
+
+**Mail paths.** `Service\Notification\Channel\EmailConfig::fromEnv()` is
+the only reader of `MAIL_*`, called from five places, each in a
+constructor: `EmailChannel` (reminders, the digest, price alerts, the
+reminder test), `User\InvitationMailer` (invitations), `User\AccountMailer`
+(password resets and address confirmations, Phase 33.1, used by
+`Auth\PasswordResets` and `User\EmailAddresses`), `Action\Settings\UsersPage`
+(*mail configured* for Users and Add user) and `config/dependencies.php`,
+which builds **one** transport per process (`EsmtpTransport`, wrapped by
+`Demo\DemoGuardedTransport`). Gates on "configured":
+`PasswordResets::available()`, `EmailAddresses`, `UsersPage` /
+`AddUserAction`, `ReminderSettingsPage`, `EmailChannel::isConfigured()`,
+`InvitationMailer`. The compose files pass every `MAIL_*`;
+`docker-compose.dev.yml` sets Mailpit's. Tests inject
+`tests/Support/RecordingMailTransport`.
+
+**`SESSION_SECRET`.** The entrypoint never generates one, and
+`docker-compose.yml` / `docker-compose.mysql.yml` default it to empty. An
+empty secret still keys the HMACs of session ids, API keys, calendar-feed
+tokens and invitation links, so a default install works, but cannot seal
+a secret (only `env:` references). Decided #222: a fresh volume only.
+
+**Secret storage.** `Service\Ai\SecretBox` (seal / open / `env:`) is used
+as it is by AI connections (`ai_secrets`) and fuel prices
+(`fuel_price_secrets`, Phase 30.2), both with the HKDF info `logbook-ai`.
+Reused, with the info as a parameter. Redaction: `Jobs\OutputRedactor`
+masks job output (environment variables named like secrets, AI and fuel
+price secrets); there is no log-wide processor, so error text is redacted
+where it is produced (`Ai\Redactor`), as AI errors are. Backups exclude
+`ai_secrets` and `fuel_price_secrets` (`BackupRepository`), and demo
+resets clear them (`DemoResetter`): `notification_secrets` joins both.
 
 ## Open questions
 
-- **A default install's `SESSION_SECRET`.** If the Docker entrypoint does
-  not make one, should it generate a random secret on first start and keep
-  it in `/data` (readable only by the app), so the encrypted password and
-  members' tokens work out of the box? Recommendation: yes. Without it,
-  Settings → Delivery can only save an `env:` reference on a default
-  install. (Changing a secret later still invalidates what it encrypted, as
-  today.)
-- **Environment after saving.** Ignored entirely (drafted), or merged field
-  by field?
-- **Secret storage.** A new `notification_secrets` table (drafted), a
-  generalised table shared with AI secrets, or encrypted columns?
-- **`MAIL_TO`.** Stays an admin's default recipient (drafted), or retired
-  now that each user's address is on their account (Phase 33.1)?
-- **OAuth 2 for SMTP.** Parked (drafted), or wanted for Microsoft 365 and
-  Gmail?
+All decided on 2026-10-06, before any code (log #222–#226).
+
+- **A default install's `SESSION_SECRET`.** *Decided (#222):* generated
+  only on a fresh volume (no users yet), kept in `/data/session-secret`
+  and read through `SESSION_SECRET_FILE`; existing installs are told to
+  set one.
+- **Environment after saving.** *Decided (#223):* Settings are the only
+  source; the `MAIL_*` variables are removed, nothing is imported, and the
+  development Mailpit is set up by hand.
+- **Secret storage.** *Decided (#224):* a new `notification_secrets`
+  table.
+- **`MAIL_TO`.** *Decided (#225):* kept as the admins' default recipient,
+  moved into Settings → Delivery as a field.
+- **OAuth 2 for SMTP.** *Decided (#226):* parked (spec §12).

@@ -80,7 +80,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | ✅ |
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | ✅ |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | ✅ |
-| [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 📋 |
+| [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 🚧 |
 | [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 📋 |
 | [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover and Mattermost + v3.3 release | 📋 |
 
@@ -871,6 +871,26 @@ use.*
 - Releases **v3.2.0** with Phase 35.1.
 
 → [`phase-35.2.md`](docs/phases/phase-35.2.md)
+
+---
+
+## Phase 36.1 — Email server settings (admin)
+*The server's email, set up in the app by the person who runs it.*
+
+- Settings → Delivery → *Email server*, admins only: server, port,
+  encryption, username, password, From address and name, and the default
+  recipient for admins; *Send test email* with the typed values, unsaved.
+- Settings are the only source: the `MAIL_*` variables are removed, with
+  nothing imported (#223, #225).
+- The password is a secret, sealed as AI secrets are, in a new
+  `notification_secrets` table, never shown, redacted and never backed up
+  (#224).
+- One `MailerFactory` builds every mail transport.
+- The Docker image writes a `SESSION_SECRET` to `/data` on a fresh volume
+  (#222). OAuth 2 for SMTP is parked (#226).
+- No release of its own; ships with Phase 36.3 as v3.3.0.
+
+→ [`phase-36.1.md`](docs/phases/phase-36.1.md)
 
 ---
 
