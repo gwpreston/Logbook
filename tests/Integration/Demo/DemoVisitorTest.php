@@ -21,6 +21,8 @@ use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 use Slim\Psr7\UploadedFile;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\Mailer\Exception\TransportException as MailTransportException;
 use Symfony\Component\Mailer\Transport\TransportInterface as MailTransport;
 use Symfony\Component\Mime\Email;
@@ -308,6 +310,24 @@ final class DemoVisitorTest extends DemoTestCase
         // A hard refresh on a deep link also works with the prefix stripped.
         self::assertSame(403, $browser->get('/settings/users')->getStatusCode());
         self::assertSame(404, $browser->get('/logbook/setup')->getStatusCode());
+    }
+
+    public function testOutsideADemoTheGuardsPassEverythingThrough(): void
+    {
+        $app = $this->createRecordingApp(self::CHANNELS);
+        $mode = $this->service($app, DemoMode::class);
+        self::assertFalse($mode->isActive());
+
+        $client = new DemoGuardedHttpClient(new MockHttpClient(new MockResponse('fine')), $mode);
+        self::assertSame('fine', $client->request('GET', 'https://example.test/')->getContent());
+        self::assertInstanceOf(DemoGuardedHttpClient::class, $client->withOptions(['timeout' => 5]));
+        self::assertSame([], iterator_to_array($client->stream([])));
+
+        $transport = new DemoGuardedTransport($this->mail, $mode);
+        $email = (new Email())->from('a@example.test')->to('b@example.test')->subject('x')->text('x');
+        $transport->send($email);
+        self::assertCount(1, $this->mail->sent);
+        self::assertSame('recording://', (string) $transport);
     }
 
     public function testTheRealWiringGuardsTheTransports(): void

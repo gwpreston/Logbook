@@ -138,6 +138,8 @@ with its link left out of the navigation:
   proxy, and do not reuse its password.
 - `DEMO_PASSWORD` is shown to visitors on the sign-in page by design, and the
   job output masks it like any variable with *PASSWORD* in its name.
+- Leave password sign-in on (`AUTH_LOCAL_LOGIN`, the default): the demo has
+  no other way in.
 - Run the scheduler. Without it the reset never happens. Docker's entrypoint
   runs one by default (`SCHEDULER_ENABLED`).
 

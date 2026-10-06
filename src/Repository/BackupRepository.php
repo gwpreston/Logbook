@@ -246,14 +246,17 @@ final readonly class BackupRepository
             $connection->createQueryBuilder()->delete('job_runs')->executeStatement();
 
             $later = [];
+            // The demo marker a restore keeps (spec.md §7.36), whose id a restored setting must not take.
+            $kept = $connection->createQueryBuilder()->select('id')->from('settings')->fetchOne();
+            $keptMarkerId = is_scalar($kept) ? (string) $kept : null;
             foreach (self::TABLES as $table) {
                 foreach ($data[$table] ?? [] as $row) {
                     $isMarker = ($row['name'] ?? null) === DemoMarker::SETTING && ($row['scope'] ?? 'global') === 'global';
                     if ($table === 'settings' && $isMarker) {
                         continue;
                     }
-                    if ($table === 'settings') {
-                        // Nothing refers to a setting's id, and the kept marker may hold the same one.
+                    if ($table === 'settings' && isset($row['id']) && $row['id'] === $keptMarkerId) {
+                        // Nothing refers to a setting's id; the kept marker holds this one.
                         unset($row['id']);
                     }
                     // A link back to a later table is set once that table is filled.

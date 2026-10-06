@@ -14,6 +14,7 @@ use Logbook\Service\Demo\DemoMode;
 use Logbook\Service\Demo\DemoRefusal;
 use Logbook\Service\Demo\DemoRestriction;
 use Logbook\Service\Demo\DemoState;
+use Logbook\Service\Jobs\JobLocks;
 use Logbook\Tests\Support\RecordingLogger;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
@@ -148,6 +149,39 @@ final class DemoGuardTest extends DemoTestCase
         self::assertSame(200, $browser->get('/settings/users')->getStatusCode());
     }
 
+    public function testAVisitorWaitsAMomentWhileAnotherRequestIsSeeding(): void
+    {
+        $app = $this->demoApp();
+        $this->resetDatabase($app);
+        $locks = $this->service($app, JobLocks::class);
+        $lock = $locks->acquire('demo_seed');
+        self::assertNotNull($lock);
+
+        try {
+            $response = $this->get($app, '/login');
+            self::assertSame(503, $response->getStatusCode());
+            self::assertSame('10', $response->getHeaderLine('Retry-After'));
+            self::assertFalse($this->service($app, UserRepository::class)->exists(), 'nothing is seeded twice');
+        } finally {
+            $locks->release($lock);
+        }
+
+        self::assertSame(200, $this->get($app, '/login')->getStatusCode());
+        self::assertTrue($this->service($app, UserRepository::class)->exists());
+    }
+
+    public function testTheRefusedNoticeCanBeDismissedForADay(): void
+    {
+        $app = $this->demoApp();
+        $browser = $this->signedIn($app);
+        self::assertStringContainsString('holds real data', self::body($browser->get('/')));
+
+        $dismissed = $browser->post('/notices/demo_refused/dismiss');
+
+        self::assertSame(303, $dismissed->getStatusCode());
+        self::assertStringNotContainsString('holds real data', self::body($browser->get('/')));
+    }
+
     public function testAPasswordThatIsMissingOrTooShortRefusesTheDemo(): void
     {
         foreach (['' => 'unset', 'short' => 'short'] as $password => $why) {
@@ -185,8 +219,14 @@ final class DemoGuardTest extends DemoTestCase
             'created_at' => '2026-01-01 00:00:00', 'updated_at' => '2026-01-01 00:00:00',
         ];
         $kept = $this->service($app, DemoMarkers::class)->find();
+        // One restored setting even carries the id the kept marker holds.
+        $markerId = $this->connection($app)->fetchOne('SELECT id FROM settings WHERE name = ?', [DemoMarker::SETTING]);
+        self::assertIsScalar($markerId);
+        $rows[0]['id'] = (string) $markerId;
+        $restored = count($rows) - 1;
         $repository->replaceAll(['settings' => $rows]);
         self::assertEquals($kept, $this->service($app, DemoMarkers::class)->find(), 'the instance\'s own marker is kept');
+        self::assertCount($restored, $repository->rows('settings'), 'and every other setting is restored');
 
         // And a backup of a plain instance restored onto a plain one leaves it without one.
         $plain = $this->createApp();
