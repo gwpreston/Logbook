@@ -46,6 +46,8 @@
             </form>
         </header>
 
+        {# The demo has no account to change (spec.md §7.36). #}
+        {% if not demo_blocked('settings.password') %}
         <section class="settings-group" id="account" aria-labelledby="account-heading">
             <h2 id="account-heading" class="settings-group__title">{{ 'settings.group.account'|trans }}</h2>
             {#
@@ -210,6 +212,7 @@
                 </form>
             {% endif %}
         </section>
+        {% endif %}
 
         <section class="settings-group" id="preferences" aria-labelledby="preferences-heading">
             <h2 id="preferences-heading" class="settings-group__title">{{ 'settings.group.preferences'|trans }}</h2>

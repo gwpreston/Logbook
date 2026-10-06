@@ -102,7 +102,7 @@
 
 {% macro import_csv(vehicle, module) -%}
     {% import 'macros/ui.twig' as ui %}
-    {% if not vehicle.isArchived() and can_vehicle(vehicle, 'manage') %}
+    {% if not vehicle.isArchived() and can_vehicle(vehicle, 'manage') and not demo_blocked('import.upload') %}
         <a class="btn btn--ghost" href="{{ url_for('import.upload', {id: vehicle.id, module: module}) }}">{{ ui.icon('upload_file') }}{{ 'import.csv'|trans }}</a>
     {% endif %}
 {%- endmacro %}

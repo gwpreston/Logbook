@@ -2,7 +2,7 @@
 
 *A public demo that resets itself and cannot hurt anyone, including you.*
 
-Status: 📋 planned · no release of its own (ships with Phase 35.2 as
+Status: ✅ complete · no release of its own (ships with Phase 35.2 as
 **v3.2.0**) · file lives in `docs/phases/`
 
 Logbook has sample data (`DemoDataSeeder`, loaded by
@@ -44,6 +44,7 @@ passwords) first.
 - A separate sandbox per visitor. One shared demo account, reset together.
 - Hosting a demo for the project, analytics or tracking of any kind.
 - A *Reset now* button for visitors (it would be a way to disrupt others).
+- A second demo account (#217).
 - Anything that overwrites data from an environment variable alone (see
   *Decisions*).
 
@@ -129,12 +130,12 @@ passwords) first.
 > - creating a calendar feed.
 >
 > Everything else works, so a visitor can add fill-ups, tyres, documents,
-> reminders and expenses, rearrange the dashboard and switch modules.
+> reminders and expenses (without files), rearrange the dashboard and switch modules.
 >
-> **Uploads** are allowed but capped at 2 MB per file whatever
-> `MAX_UPLOAD_MB` says, and the upload field says: "This is a public demo.
-> Anything you upload is visible to others and is deleted at the next
-> reset."
+> **Uploads are blocked** (decided #214, replacing the draft's 2 MB cap):
+> file fields are not offered and a request carrying a file is refused with
+> the *Not available in the demo* page. Records with an optional file work
+> without one.
 >
 > **Banner** on every signed-in page: "This is a demo. It resets {in 3
 > hours | at 02:00} and nothing here is private." The time is in the
@@ -183,80 +184,85 @@ passwords) first.
 ## Tasks
 
 ### 35.1.0 Spec first
-- [ ] `spec.md` §7.36, §7.30, §8 route inventory, §9; §13 entry;
+- [x] `spec.md` §7.36, §7.30, §8 route inventory, §9; §13 entry;
       `ROADMAP.md` row and section; `CLAUDE.md` §10 is unchanged (the
       variables are documented in `.env.example` as usual).
 
 ### 35.1.1 Audit
-- [ ] How does `DemoDataSeeder` date its rows (fixed dates, or relative to
+- [x] How does `DemoDataSeeder` date its rows (fixed dates, or relative to
       the run)? Record under *Audit*. If fixed, list what has to move.
-- [ ] What does the restore routine clear and in what order? Can it be
+- [x] What does the restore routine clear and in what order? Can it be
       called inside a transaction on every engine? Record it.
-- [ ] List every route and classify it `allowed` or `blocked` (the
+- [x] List every route and classify it `allowed` or `blocked` (the
       inventory test enforces this later).
 
 ### 35.1.2 Code
-- [ ] `Service\Demo\DemoMode` (`isActive()`, `blocks(DemoRestriction)`,
+- [x] `Service\Demo\DemoMode` (`isActive()`, `blocks(DemoRestriction)`,
       `state()` returning the table above) and the startup check that logs
       and raises the admin notice.
-- [ ] `DemoDataSeeder` takes a clock: every seeded date is relative to it.
+- [x] `DemoDataSeeder` takes a clock: every seeded date is relative to it.
       `bin/dev-setup.sh --with-sample-data` still works and still prints
       fresh random passwords (Phase 33.1); only `DEMO_MODE` uses
       `DEMO_PASSWORD`.
-- [ ] Seed-on-empty in the Docker entrypoint and the web start path, after
+- [x] Seed-on-empty in the Docker entrypoint and the web start path, after
       migrations, writing the marker last.
-- [ ] `DemoResetter`, the `demo_reset` job, `bin/demo-reset.php`.
-- [ ] Middleware: refuse blocked routes with the *Not available in the
+- [x] `DemoResetter`, the `demo_reset` job, `bin/demo-reset.php`.
+- [x] Middleware: refuse blocked routes with the *Not available in the
       demo* page; `X-Robots-Tag`; the banner; the sign-in text; uploads
-      capped at 2 MB; `/setup` 404.
-- [ ] Short-circuit outbound sending (notifications, mail, calendar feed
+      blocked (no file fields, a file in a request refused); `/setup` 404.
+- [x] Short-circuit outbound sending (notifications, mail, calendar feed
       creation, update check, AI, API) behind `DemoMode::blocks`.
 
 ### 35.1.3 Docs and configuration
-- [ ] `.env.example` and `docs/configuration.md`: the three variables.
-- [ ] `docs/demo-mode.md`: how to run a public demo (compose example,
+- [x] `.env.example` and `docs/configuration.md`: the three variables (and the compose files pass them on).
+- [x] `docs/demo-mode.md`: how to run a public demo (compose example,
       `DEMO_MODE`, `DEMO_PASSWORD`, reset interval, what visitors can and
       cannot do, the guard table, how to stop being a demo: remove the
       variable, or empty the database and start again). README docs table.
-- [ ] `docs/deployment.md`: a short *Running a public demo* section linking
+- [x] `docs/deployment.md`: a short *Running a public demo* section linking
       to it.
 
 ### 35.1.4 Translations
-- [ ] English and German: the banner, the blocked page, the sign-in text,
-      the upload note, the admin refusal notices.
+- [x] Every catalogue in `translations/`: the banner, the blocked page, the
+      sign-in text, the admin refusal notices.
 
 ### 35.1.5 Tests
-- [ ] Unit: the guard table, every row (empty/marker/no marker/flag off,
+- [x] Unit: the guard table, every row (empty/marker/no marker/flag off,
       missing and short password).
-- [ ] Integration: starting with `DEMO_MODE` on and a database that has
+- [x] Integration: starting with `DEMO_MODE` on and a database that has
       users and no marker deletes **nothing**, shows the admin notice and
       logs the error. The same start on an empty database seeds and marks.
-- [ ] Integration: a reset replaces the data, deletes uploaded files and
+- [x] Integration: a reset replaces the data, deletes uploaded files and
       avatars, ends sessions, keeps the marker and updates `last_reset_at`;
       a failure part-way (a seeder that throws) leaves the old data intact.
-- [ ] Integration: the schema test (every table cleared or on the
+- [x] Integration: the schema test (every table cleared or on the
       keep-list).
-- [ ] Integration: dates. Seeding at two different "today" values gives
+- [x] Integration: dates. Seeding at two different "today" values gives
       the same shapes relative to each (last 12 months populated, a due and
       an overdue reminder, economy checks present).
-- [ ] Integration: every blocked route answers 403 with the friendly page
+- [x] Integration: every blocked route answers 403 with the friendly page
       and is absent from navigation; allowed routes work; a fake HTTP
       client and a fake mailer record **zero** outbound calls through a
       full reminder run, a test notification and an update check.
-- [ ] Integration: banner, sign-in text, `X-Robots-Tag`, 2 MB upload cap,
+- [x] Integration: banner, sign-in text, `X-Robots-Tag`, uploads refused,
       `DEMO_PASSWORD` never logged or shown in a job's output (it contains
       "PASSWORD", so the redaction rule covers it; prove it).
-- [ ] Integration: the marker is absent from a backup and an export; the
+- [x] Integration: the marker is absent from a backup and an export; the
       route inventory fails for a route with no `demo:` declaration.
-- [ ] Integration: `demo_reset` is not triggered by a page visit; the CLI
+- [x] Integration: `demo_reset` is not triggered by a page visit; the CLI
       refuses without the marker.
-- [ ] Every test on SQLite, PostgreSQL, MySQL and MariaDB.
+- [x] Every test on SQLite, PostgreSQL, MySQL and MariaDB (`bin/test-all-dbs.sh`).
 
 ### 35.1.6 Checks
-- [ ] A smoke test: start the production image with `DEMO_MODE=true`, sign
-      in as `demo`, reset by CLI, sign in again.
-- [ ] `design-reviewer` agent on the banner, the sign-in page and the
-      blocked page at 375, 768 and 1280 px, light and dark.
+- [x] A smoke test: start the production image with `DEMO_MODE=true`, sign
+      in as `demo`, reset by CLI, sign in again. `bin/smoke-test.sh demo`
+      (and a CI step); on the owner's Windows machine the script's shared
+      `expect` helper stops at its first request whatever the variant, so the
+      same flow was run by hand against the production image on PostgreSQL:
+      `/setup` 404, sign in, banner, `/settings/users` 403, API 403, reset by
+      CLI, signed out with the reset notice, signed in again.
+- [x] `design-reviewer` agent on the banner, the sign-in page and the
+      blocked page at 375, 768 and 1280 px, light and dark (below).
 
 ### Release
 - [ ] Ships with Phase 35.2 as **v3.2.0**.
@@ -277,19 +283,82 @@ passwords) first.
 
 ## Audit
 
-*(Filled in by 35.1.1: how the seeder dates its rows, what restore clears,
-and the route classification.)*
+*Filled in by 35.1.1, 2026-10-06.*
+
+**How the seeder dated its rows.** Fixed: about 110 literal dates (`'2026-03-15'`)
+and a few `strtotime()` bases in `db/seeds/DemoDataSeeder.php`, written for
+2026-10-06, plus a year-keyed price table for the Golf's earlier years. Only
+`created_at` / `updated_at`, the sample price history and the paperwork
+files use the real "now". Every literal now goes through `DemoDataSeeder::day()`,
+which moves it by the whole weeks between the anchor (`ANCHOR`, 2026-10-06) and
+the day given to `forDemo()`; outside the demo the shift is 0, so
+`bin/dev-setup.sh` and the existing tests see the same data as before. Whole
+weeks, because the commute trips are generated on weekdays. The year-keyed table
+is read by the year each row was authored for. The sample's partner account is
+folded into the owner after seeding (one account, #217).
+
+**What restore clears.** `BackupRepository::replaceAll()`: `invitations`, then
+`BackupRepository::TABLES` back to front (children first), then `sessions`,
+`pending_uploads` and `job_runs`, in one DBAL transaction: plain `DELETE`s, so it
+runs on all four engines. The reset reuses it as `DemoResetter::clearOrder()`:
+the tables restore leaves out of a backup (`EXCLUDED`, children first), then
+`TABLES` back to front, then any table nobody ordered; the schema, not a list,
+decides what is cleared, and only `phinxlog` and `job_runs` are kept. The
+seeder runs inside the same transaction: Phinx's adapter is given the app's PDO
+(`connection` option), so a failure rolls back the clearing and the seeding
+together.
+
+**Route classification.** 256 routes: 151 allowed, 105 blocked (`DemoRoutes::BLOCKED`
+and the REST API). Blocked: users, invitations and every one-time link; single
+sign-on and header sign-in; the password, email and avatar; API keys, MCP and
+every API route but its description; every AI route (settings, Ask, scan,
+insights refresh, drafts); fuel price providers; backup and restore;
+CSV and app imports; jobs and the update check; a test notification and the
+calendar feed. The declaration is the blocked list plus the inventory test's
+`DEMO_ALLOWED` (a route in neither fails `RouteInventoryTest`), rather than an
+argument on every route.
+
+## Design review (2026-10-06)
+
+Checked at 375, 768 and 1280 px, light and dark, with JavaScript on and off:
+the sign-in page, dashboard, settings, profile, reminders settings, the
+blocked page and the vehicle form. No overflow anywhere; the banner wraps
+cleanly; *Fill in* appears only with JavaScript and the credentials stay as
+text without it. No HIGH or MEDIUM items. LOW, left as they are: the
+Settings *Profile* row still says "email, picture and password" in the demo;
+the profile page's first group is *Preferences*; Modules stays reachable
+(decided, #212). The blocked page shows the stack trace only because the
+dev stack runs with debug on.
+
+## Review
+
+The four review agents (bug, security, performance, design) found no
+CRITICAL or HIGH item. Fixed: a restore onto an instance holding the marker
+puts it back whatever the setting ids; the reset notice is shown only to a
+visitor whose session the reset ended; a freshly seeded demo is not reset by
+the first scheduler pass (the job is due when the marker's reset time plus
+the interval has passed); `bin/demo-reset.php` takes the job's lock; a
+failed first seeding is a logged 503; the reset reads the schema before its
+transaction, so SQLite never has to upgrade a read lock. Not done: hashing the
+two sample passwords before the transaction (about 0.3 s of a 0.7 s reset);
+the dashboard's 847 queries on the sample garage are on master and belong
+to a performance phase.
 
 ## Open questions
 
-- **Admin or member?** The demo owner is an admin (drafted) so visitors can
-  see Modules and other admin screens. The alternative is a member, which
-  hides them.
-- **Interval.** 24 hours (drafted), or shorter for a busy demo?
-- **Uploads.** Allowed at 2 MB (drafted), or blocked altogether?
-- **Credentials on the sign-in page.** Shown (drafted), or only in the
-  docs?
-- **Shifting the seeded history.** Every date relative to the run
-  (drafted), or keep the fixed history and shift only the recent year?
-- **Second demo user.** One account (drafted), or two so sharing (Phase 19)
-  can be tried?
+All decided by the owner on 2026-10-06, before the phase was built
+([`open-questions.md`](open-questions.md) #212–#217). #245 and #246,
+left open by Phase 34.3, were decided the same day: keep as they are.
+
+- **Admin or member?** *Decided 2026-10-06 (#212):* admin, so visitors see
+  Modules and the other admin screens.
+- **Interval.** *Decided 2026-10-06 (#213):* 24 hours by default
+  (`DEMO_RESET_HOURS`).
+- **Uploads.** *Decided 2026-10-06 (#214):* **blocked altogether**, not
+  capped at 2 MB as drafted. File fields are not offered and a request
+  with a file is refused; records with an optional file work without one.
+- **Credentials on the sign-in page.** *Decided 2026-10-06 (#215):* shown,
+  with a *Fill in* button.
+- **Shifting the seeded history.** *Decided 2026-10-06 (#216):* every date
+  relative to the run.
+- **Second demo user.** *Decided 2026-10-06 (#217):* one account.

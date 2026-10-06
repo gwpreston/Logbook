@@ -73,6 +73,8 @@ final readonly class AppSettings
         public bool $docker = false,
         /** Days of tracked stations' listed price changes kept (Phase 30.2, §7.34; at least 30). */
         public int $priceHistoryDays = 1095,
+        /** Demo mode (Phase 35.1, §7.36): the environment's switch; the guard decides what it means. */
+        public DemoConfig $demo = new DemoConfig(),
     ) {
     }
 
@@ -125,6 +127,7 @@ final readonly class AppSettings
             updateCheckAllowed: $env->bool('UPDATE_CHECK_ALLOWED', true),
             docker: $env->bool('LOGBOOK_DOCKER', false),
             priceHistoryDays: max(30, $env->int('PRICE_HISTORY_DAYS', 1095)),
+            demo: DemoConfig::fromEnv($env),
         );
     }
 

@@ -208,7 +208,10 @@ disagree):
 - **Route inventory.** A test loads every route and classifies it as
   public, signed-in (personal), fleet (policy-filtered lists), instance
   (an `InstanceAbility`), or vehicle (a declared `VehicleAbility`). An
-  unclassified route fails the build and names itself.
+  unclassified route fails the build and names itself. Every route also
+  is either blocked in the demo (`Service\Demo\DemoRoutes::BLOCKED`, and
+  the REST API) or listed as allowed by the inventory test (§7.36); a route
+  that is neither fails the build the same way.
 - **Base path:** Slim's router is configured with `APP_BASE_PATH`; the
   base-path middleware restores the prefix when a reverse proxy has stripped
   it, so both proxy styles route identically. All URLs come from `url_for()`,
@@ -324,6 +327,7 @@ disagree):
     | `update_check` | daily at the install's own minute, while *Check for updates* is on (Phase 28.2, §7.31) | asks GitHub for the latest release; registered only while `UPDATE_CHECK_ALLOWED` is on |
     | `fuel_prices` | every 30, 60 or 120 minutes while a price provider is enabled; never otherwise (Phase 30.2, §7.34) | syncs provider stations and listed prices, records tracked stations' price changes, refreshes linked stations and checks price alerts |
     | `ai_insights` | hourly while Ask is set up; never otherwise (Phase 33.4, §7.26 *AI insights*) | makes the day's AI insights for each active user with AI on, with a session in the last 30 days and no set for their today yet; up to 300 seconds a run, the rest left for the next; a user whose AI is busy waits for the next run |
+    | `demo_reset` | every `DEMO_RESET_HOURS` (default 24), listed only while the demo is active; never run from a page visit (Phase 35.1, §7.36) | puts the sample data back |
 
     A job is due when its interval is `0`, or when its last finished run
     (any status but `skipped_locked`) started at least its interval ago.
@@ -5960,6 +5964,9 @@ able to run without cron.
     they closed (decided 2026-10-02, #109); open ones are never touched.
   - `backup`: "Wrote logbook-scheduled-20261002-031500.zip (4.2 MB);
     deleted 1 old backup".
+  - `demo_reset` (Phase 35.1, §7.36): "Reset the demo: 7 vehicles, 226 fill-ups".
+    Listed only while the demo is active, and **excluded from the
+    page-visit trigger**.
   - A job that throws is `failed`, with the message as its summary.
   - Summaries are written in the language of whoever ran the job (the
     admin for *Run now*, the visitor for a page visit, `APP_LOCALE` for
@@ -6842,8 +6849,8 @@ third party.
   which needs `lat` and `lng` from the client (an MCP client may send
   them; Ask's page sends none, so the answer asks for a place). Omitted,
   it is the user's first place. Positions are used and never saved. Only while a provider is enabled.
-- **Sample data:** outside production a *Sample prices (demo)* provider is
-  also offered: eleven made-up stations near the demo places, with prices
+- **Sample data:** outside production, and in a demo (§7.36), a *Sample
+  prices (demo)* provider is also offered: eleven made-up stations near the demo places, with prices
   that move a little each hour, fetched from nowhere. `DemoDataSeeder`
   enables it and links three of the demo's stations, with a year of listed
   prices and an alert, so every price feature can be tried offline.
@@ -7011,6 +7018,108 @@ it replaces none of the other figures.
 - **Not in scope:** inflation adjustment (§7.7), forecasting cost per
   mile, comparisons with other people's cars, a mileage-based depreciation
   option (parked, #151).
+
+### 7.36 Demo mode (Phase 35.1)
+
+A public demo that resets itself and cannot hurt anyone, including its
+owner. Decided 2026-10-06 (#212–#217).
+
+- **The guard.** A demo is recognised by a marker, the global setting
+  `demo.instance` (JSON: `created_at`, `last_reset_at`, `seeded_by`), which
+  only the demo seeding path writes. It is **not in backups or exports**,
+  so restoring a backup can neither create nor remove it.
+
+  | State at start | What happens |
+  |---|---|
+  | `DEMO_MODE` off, no marker | A normal instance. |
+  | `DEMO_MODE` off, marker present | Demo features are inert: no reset, no banner, no restrictions. Data is untouched. Turning `DEMO_MODE` back on resumes the demo. |
+  | `DEMO_MODE` on, database empty (no users) | Seed the sample data, write the marker, create the demo owner. `/setup` answers 404. |
+  | `DEMO_MODE` on, marker present | The demo is active. |
+  | `DEMO_MODE` on, users exist, **no marker** | **Demo mode is refused.** The app runs as a normal instance. A line at error level is logged at every start, and every admin sees a notice: "DEMO_MODE is set, but this database holds real data. Demo mode is off and nothing was changed. Remove the setting." Nothing is deleted. |
+  | `DEMO_MODE` on, `DEMO_PASSWORD` missing or too short | Demo mode is refused the same way, with that reason. |
+
+  The only code path that deletes data is the reset, and it runs only with
+  the marker present *and* `DEMO_MODE` on.
+- **The demo owner** (#212, #217) is `demo`, an **admin** (so the visitor
+  sees the admin screens), with the sample garage (seven vehicles, one of them archived), UK units
+  and GBP, and `DEMO_PASSWORD` as its password. It is created by the
+  seeder; there is no other account.
+- **Sample data and dates** (#216). The seeder takes "today" as a
+  parameter and places **every** seeded date relative to it, so *Last 12
+  months*, *Coming up*, reminders, the calendar and the economy checks
+  always have something to show, however long the demo has been running.
+  Every date the sample was written with moves on by the whole weeks
+  between the day it was written (`DemoDataSeeder::ANCHOR`) and today, so
+  weekday patterns (commutes) keep their shape. Outside the demo the
+  seeder keeps its own dates. The sample's second account (a partner, who
+  logs some of the hybrid's fill-ups) is folded into the owner: its
+  fill-ups become the owner's and the account and its shares are not kept.
+  `bin/dev-setup.sh --with-sample-data` still prints fresh random
+  passwords (§7.9); only `DEMO_MODE` uses `DEMO_PASSWORD`.
+- **Reset** (`Service\Demo\DemoResetter`):
+  1. Take the job's lock. Refuse unless the guard allows it.
+  2. In **one transaction**: clear every table the way a restore clears
+     them (so it works on every engine), keeping an explicit keep-list
+     (the migration history `phinxlog`, the job runs `job_runs` (the run
+     doing the reset is one of them), and the marker); run the seeder with
+     today's date; update `last_reset_at`. A failure rolls back and leaves
+     the old data.
+  3. After the commit, delete the uploaded files and avatars.
+  4. Every session ends. A visitor is signed out and sees "The demo was
+     reset. Sign in again."
+
+  A test lists every table in the schema and fails when one is neither
+  cleared nor on the keep-list, so a table added later cannot silently
+  survive a reset.
+- **The job** `demo_reset` (§7.30): interval `DEMO_RESET_HOURS` (#213,
+  24 by default), due when the marker's reset time plus the interval has passed (so a freshly seeded demo is not reset by its first pass), listed only while the demo is active. It is **excluded
+  from the page-visit trigger**, so a visitor's request never waits for a
+  reset: it runs from cron, the Docker scheduler or the external URL.
+  `php bin/demo-reset.php [--yes]` runs the same service by hand and
+  refuses without the marker. `php bin/demo-seed.php` is the start path
+  (the Docker entrypoint runs it after the migrations when `DEMO_MODE` is
+  on); a bare-PHP install's first request does the same, under a lock.
+- **What a visitor cannot do** (answered with a friendly *Not available in
+  the demo* page, status 403, never a bare error; the link to it is hidden
+  from navigation):
+  - users, invitations, sign-in providers, header sign-in, API keys and
+    MCP, AI connections and every AI feature, fuel-price providers other
+    than the built-in *Sample prices (demo)* one, backup, restore,
+    export-everything, import from another app, running or editing jobs,
+    the update check, and `/setup`;
+  - changing the password, the email address or the avatar, and linking
+    single sign-on;
+  - sending anything **out**: reminder and digest notifications, test
+    notifications, email and every channel are switched off (the reminder
+    job records "demo: not sent"), and the app makes no outbound request
+    except to the sample provider's own generator;
+  - creating a calendar feed;
+  - **uploading a file** (#214): the file fields are not offered and a
+    request that carries a file is refused with the same page. Records
+    that take an optional file (documents, receipts, vehicle photos)
+    work without one. Nothing a visitor adds can be seen by the next
+    visitor except text.
+
+  Everything else works, so a visitor can add fill-ups, tyres, documents,
+  reminders and expenses (without files), rearrange the dashboard and
+  switch modules.
+- **Banner** on every signed-in page: "This is a demo. It resets {in 3
+  hours | at 02:00} and nothing here is private." The time is in the
+  viewer's time zone.
+- **Sign-in page** (#215): "Try it: username `demo`, password
+  `{DEMO_PASSWORD}`", as text, with a *Fill in* button when JavaScript is
+  on.
+- **Robots:** every response carries `X-Robots-Tag: noindex, nofollow`.
+- **Route inventory** (§5): every route is either blocked (`DemoRoutes::BLOCKED`,
+  or a REST API route but the OpenAPI description) or on the inventory
+  test's `DEMO_ALLOWED` list; a route in neither fails the build, so a route
+  added later must choose.
+- **For later phases:** anything that sends data out, accepts a file or
+  accepts a secret from a visitor asks `DemoMode::blocks(DemoRestriction)`
+  first. Phase 36 (notifications) must do so.
+- **Not in scope:** a sandbox per visitor, a *Reset now* button for
+  visitors, a second demo account (#217), anything that overwrites data
+  from an environment variable alone, hosting or analytics.
 
 ---
 
@@ -7256,6 +7365,11 @@ Real environment variables override `.env`; an empty value counts as unset.
 - `MCP_ENABLED` (the MCP server, §7.28; default `true`; `false`, or
   `API_ENABLED=false`, makes `/mcp` a 404)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
+- `DEMO_MODE` (default `false`; §7.36). `DEMO_PASSWORD` (no default;
+  required when `DEMO_MODE` is true; 8 to 1024 characters): the demo
+  owner's password, shown to visitors on the sign-in page by design.
+  `DEMO_RESET_HOURS` (default `24`; 1 to 168): how often the demo is put
+  back.
 - Single sign-on (§7.9, Phase 23.1): `OIDC_ISSUER` (SSO is configured
   when set), `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_PROVIDER_NAME`
   (default `SSO`), `OIDC_SCOPES` (default `openid profile email`),
@@ -7888,8 +8002,9 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 35.1 — Demo mode.** `DEMO_MODE` seeds an empty database and marks
   it as a demo; a guard means only a seeded demo can ever be reset; a
   `demo_reset` job and `bin/demo-reset.php`; blocked actions, no outbound
-  sending, a banner and credentials on the sign-in page (§7.36, §7.30, §8,
-  §9). No migration. Ships with Phase 35.2 as v3.2.0.
+  sending, no uploads, a banner and credentials on the sign-in page
+  (§7.36, §7.30, §8, §9; #212–#217). No migration. Ships with Phase 35.2
+  as v3.2.0.
 - **Phase 35.2 — Proxmox LXC, Traefik and Caddy guides + v3.2 release.**
   Tested Traefik and Caddy recipes for the Docker image at the root and at
   a subpath, a Proxmox LXC guide (Docker in a container, or PHP 8.4

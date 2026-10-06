@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Service\Jobs;
 
 use Logbook\Domain\Feature\Feature;
+use Logbook\Service\Demo\DemoMode;
+use Logbook\Service\Demo\DemoRestriction;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Feature\FeatureToggles;
@@ -28,6 +30,7 @@ final readonly class RemindersJob implements Job
         private FeatureToggles $features,
         private VehicleAccess $access,
         private TranslatorInterface $translator,
+        private ?DemoMode $demo = null,
     ) {
     }
 
@@ -85,6 +88,11 @@ final readonly class RemindersJob implements Job
 
         $counts = ['users' => $users, 'sent' => $sent, 'failures' => $failures];
         $summary = $this->translator->trans('jobs.summary.reminders', $counts);
+        if ($this->demo?->blocks(DemoRestriction::Outbound) === true) {
+            // Nothing leaves a demo (spec.md §7.36); the run says so.
+            $context->logger->info('demo: not sent');
+            $summary .= '; ' . $this->translator->trans('jobs.summary.demo_not_sent');
+        }
 
         return $failures === 0 ? JobResult::ok($summary, $counts) : JobResult::partial($summary, $counts);
     }

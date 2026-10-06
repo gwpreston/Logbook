@@ -4,6 +4,7 @@
 #   bin/smoke-test.sh pgsql     # docker-compose.yml, app at /logbook behind nginx
 #   bin/smoke-test.sh mysql     # docker-compose.mysql.yml, app at /
 #   bin/smoke-test.sh header    # docker-compose.yml, /logbook behind nginx forward auth (header sign-in)
+#   bin/smoke-test.sh demo      # docker-compose.yml with DEMO_MODE: seeded, signed in, reset by CLI, signed in again
 #
 # Assumes the image logbook:local exists (docker build -t logbook:local .).
 set -eu
@@ -130,7 +131,45 @@ case "$variant" in
         expect "$base/" 303
         expect "$base/" 200 'Hello, smoke'
         ;;
-    *) echo "usage: $0 pgsql|mysql|header" >&2; exit 2 ;;
+    demo)
+        # Demo mode (Phase 35.1, spec.md §7.36) on the production image: an empty
+        # database is seeded at start, `demo` signs in, what a visitor must not do
+        # is refused, `bin/demo-reset.php` ends the session, and `demo` signs in
+        # again. Its own flow: the shared steps below expect the first-run account.
+        export DEMO_MODE=true DEMO_PASSWORD=smoke-demo-password
+        compose="docker compose -p logbook-smoke -f docker-compose.yml"
+        $compose up -d --wait --no-build || fail "stack did not become healthy"
+        base="http://localhost:$APP_PORT"
+        demo_sign_in() {
+            expect "$base/login" 200 'data-demo-try'
+            status="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code} %{redirect_url}' \
+                --data-urlencode "csrf_name=$(field csrf_name)" --data-urlencode "csrf_value=$(field csrf_value)" \
+                --data-urlencode 'username=demo' --data-urlencode "password=$DEMO_PASSWORD" "$base/login")"
+            case "$status" in "303 "*) echo "ok  303  POST $base/login (demo)" ;; *) fail "demo sign-in returned: $status" ;; esac
+        }
+        expect "$base/health" 200 '"database":"ok"'
+        expect "$base/setup" 404
+        demo_sign_in
+        expect "$base/" 200 'data-demo-banner'
+        expect "$base/garage" 200 'Volkswagen'
+        curl -s -D /tmp/smoke.head -o /dev/null "$base/" >/dev/null
+        grep -qi '^x-robots-tag: noindex, nofollow' /tmp/smoke.head || fail "no X-Robots-Tag on the demo"
+        echo "ok  X-Robots-Tag"
+        expect "$base/settings/users" 403 'Not available in the demo'
+        expect "$base/settings/backup" 403 'Not available in the demo'
+        expect "$base/api/v1/me" 403
+        # Put it back by hand: the session ends, the credentials still work.
+        $compose exec -T -u www-data app php bin/demo-reset.php --yes || fail "bin/demo-reset.php failed"
+        echo "ok  bin/demo-reset.php"
+        expect "$base/garage" 303
+        expect "$base/login?demo=reset" 200 'The demo was reset'
+        demo_sign_in
+        expect "$base/garage" 200 'Volkswagen'
+        $compose down -v >/dev/null
+        echo "smoke test ($variant) passed"
+        exit 0
+        ;;
+    *) echo "usage: $0 pgsql|mysql|header|demo" >&2; exit 2 ;;
 esac
 
 # Reminders: the page works, and the entrypoint's scheduler has run the task.

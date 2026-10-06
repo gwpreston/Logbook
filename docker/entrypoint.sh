@@ -40,6 +40,16 @@ if [ "${1:-}" = "apache2-foreground" ]; then
     # Migrations may have created the SQLite file as root.
     chown -R www-data:www-data "$DATA_DIR" var 2>/dev/null || true
 
+    # Demo mode (spec.md §7.36): an empty database is seeded with the sample
+    # data and marked as a demo. A database that holds real data is refused
+    # with a line in the log and left exactly as it is; the container starts
+    # either way.
+    case "$(printf '%s' "${DEMO_MODE:-}" | tr '[:upper:]' '[:lower:]')" in
+        1|true|yes|on)
+            setpriv --reuid=www-data --regid=www-data --init-groups php bin/demo-seed.php || true
+            ;;
+    esac
+
     # Scheduler passes (reminders, the digest, cleanup, scheduled backups),
     # so no host cron is needed: every SCHEDULER_INTERVAL seconds, as
     # www-data (it may write the SQLite database), for as long as the

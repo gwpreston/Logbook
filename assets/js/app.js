@@ -1179,6 +1179,27 @@
         }
     }
 
+    // Demo mode (spec.md §7.36): the sign-in page's *Fill in* button puts the
+    // demo's public credentials into the form. Without JS it stays hidden and
+    // the credentials are there as text to type.
+    function enhanceDemoFill(button) {
+        var form = button.closest('main') ? button.closest('main').querySelector('form[action$="/login"]') : null;
+        var user = form ? form.querySelector('input[name="username"]') : null;
+        var pass = form ? form.querySelector('input[name="password"]') : null;
+        if (!user || !pass) {
+            return;
+        }
+        button.hidden = false;
+        button.addEventListener('click', function () {
+            user.value = button.getAttribute('data-username') || '';
+            pass.value = button.getAttribute('data-password') || '';
+            var submit = form.querySelector('button[type="submit"]');
+            if (submit) {
+                submit.focus();
+            }
+        });
+    }
+
     // AI insights (spec.md §7.26): the Insights page's first view of the
     // day asks for them in the background, then shows them. Without JS
     // the form is a button; *Refresh* shows the same line while it posts.
@@ -1351,6 +1372,7 @@
         document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
         document.querySelectorAll('[data-vehicle-tabs]').forEach(enhanceTabs);
         document.querySelectorAll('form[data-ai-insights-form]').forEach(enhanceAiInsights);
+        document.querySelectorAll('[data-demo-fill]').forEach(enhanceDemoFill);
 
         drawCharts();
         window.addEventListener('beforeprint', beforePrint);

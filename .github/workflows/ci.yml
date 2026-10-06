@@ -154,6 +154,8 @@ jobs:
         run: bin/smoke-test.sh mysql
       - name: Smoke test — header sign-in behind nginx forward auth
         run: bin/smoke-test.sh header
+      - name: Smoke test — demo mode (seeded, reset by command line)
+        run: bin/smoke-test.sh demo
 
       - name: Image metadata
         id: meta

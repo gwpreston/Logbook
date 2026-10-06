@@ -11,6 +11,7 @@ use Logbook\Domain\Setting\SettingScope;
 use Logbook\Domain\User\User;
 use Logbook\Repository\JobRunRepository;
 use Logbook\Repository\SettingRepository;
+use Logbook\Service\Demo\DemoMode;
 use Logbook\Service\Access\InstanceAccess;
 use Logbook\Service\Updates\UpdateBanner;
 use Logbook\Service\Updates\UpdateSettings;
@@ -29,6 +30,7 @@ final readonly class AdminNotices
     public const string SETTING = 'notices.dismissed';
     public const int DISMISS_SECONDS = 86400;
     public const string SCHEDULER = 'scheduler';
+    public const string DEMO_REFUSED = 'demo_refused';
 
     public function __construct(
         private InstanceAccess $access,
@@ -39,6 +41,7 @@ final readonly class AdminNotices
         private ClockInterface $clock,
         private UpdateBanner $update,
         private UpdateSettings $updates,
+        private ?DemoMode $demo = null,
     ) {
     }
 
@@ -55,6 +58,19 @@ final readonly class AdminNotices
         $update = $this->update->for($user);
         if ($update !== null) {
             $notices[] = $update;
+        }
+        // DEMO_MODE set on a database that is not a demo (spec.md §7.36): nothing was changed.
+        $refusal = $this->demo?->status()->refusal;
+        if ($refusal !== null) {
+            $notices[] = new AdminNotice(
+                key: self::DEMO_REFUSED,
+                messageKey: 'notices.demo_refused.' . $refusal->value,
+                params: [],
+                linkRoute: null,
+                linkData: [],
+                linkLabelKey: '',
+                level: 'error',
+            );
         }
         if ($this->health->isStale()) {
             $notices[] = new AdminNotice(
@@ -106,7 +122,7 @@ final readonly class AdminNotices
 
             return;
         }
-        if (preg_match('/^(scheduler|job_failed\.[a-z_]+)$/D', $key) !== 1) {
+        if (preg_match('/^(scheduler|demo_refused|job_failed\.[a-z_]+)$/D', $key) !== 1) {
             return;
         }
         $stored = [];

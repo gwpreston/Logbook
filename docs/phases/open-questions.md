@@ -66,8 +66,11 @@ before it was built. Phase 34.2's (#203–#206) were answered on
 2026-10-06, before it was built, and the one found by its design review
 (#242) on the same day, before Phase 34.3. Phase 34.3's (#207–#211, and
 #243–#244 found while starting it) were answered on 2026-10-06, before
-it was built; two found by its design review (#245–#246) are still open.
-Those of Phases 35.1–36.3 (#212–#241) were added on
+it was built; the two found by its design review (#245–#246) were
+answered on 2026-10-06, before Phase 35.1 started: keep both as they are.
+Phase 35.1's (#212–#217) were answered on 2026-10-06, before it was built
+(uploads blocked rather than capped, #214).
+Those of Phases 35.2–36.3 (#218–#241) were added on
 2026-10-06 when those phases were written and are still open; each
 row gives the answer the phase file drafts. #222, Phase 36.1's
 `SESSION_SECRET` question, must be answered before any of Phase 36 is
@@ -286,12 +289,12 @@ built.
 | 209 | [34.3](phase-34.3.md) | *Add reminder* link from a day | Decided | Kept: the day panel links to the manual-reminder form with `?due=` filled in (spec §7.6 *Calendar view*). | 2026-10-06 |
 | 210 | [34.3](phase-34.3.md) | Dashboard widget: small month or a list of the next days? | Decided | A small month, as drafted (spec §7.8 *Calendar*). | 2026-10-06 |
 | 211 | [34.3](phase-34.3.md) | Week numbers on the grid | Decided | Built: the month is a list of weeks, each with its number from ICU in the viewer's locale (found while starting: week numbers need rows; locale rules so a Sunday-first week is never split); not on the widget (spec §7.6 *Calendar view*). | 2026-10-06 |
-| 212 | [35.1](phase-35.1.md) | Demo owner: admin or member? | Needs a decision | Drafted: admin, so visitors see Modules and other admin screens. | — |
-| 213 | [35.1](phase-35.1.md) | Reset interval | Needs a decision | Drafted: 24 hours (`DEMO_RESET_HOURS`). | — |
-| 214 | [35.1](phase-35.1.md) | Visitor uploads: allowed or blocked? | Needs a decision | Drafted: allowed at 2 MB, deleted at reset. | — |
-| 215 | [35.1](phase-35.1.md) | Show the demo credentials on the sign-in page, or only in the docs? | Needs a decision | Drafted: shown. | — |
-| 216 | [35.1](phase-35.1.md) | Seeded dates: all relative to the run, or keep fixed history and shift only the recent year? | Needs a decision | Drafted: all relative to the run. | — |
-| 217 | [35.1](phase-35.1.md) | One demo account or two (to try sharing, Phase 19)? | Needs a decision | Drafted: one. | — |
+| 212 | [35.1](phase-35.1.md) | Demo owner: admin or member? | Decided | Admin, so visitors see Modules and the other admin screens (spec §7.36). | 2026-10-06 |
+| 213 | [35.1](phase-35.1.md) | Reset interval | Decided | 24 hours by default; `DEMO_RESET_HOURS` takes 1 to 168 (spec §7.36, §9). | 2026-10-06 |
+| 214 | [35.1](phase-35.1.md) | Visitor uploads: allowed or blocked? | Decided | Blocked altogether, not capped at 2 MB as drafted: no file fields, a file in a request is refused; records with an optional file work without one (spec §7.36). | 2026-10-06 |
+| 215 | [35.1](phase-35.1.md) | Show the demo credentials on the sign-in page, or only in the docs? | Decided | Shown on the sign-in page as text, with a *Fill in* button when JavaScript is on (spec §7.36). | 2026-10-06 |
+| 216 | [35.1](phase-35.1.md) | Seeded dates: all relative to the run, or keep fixed history and shift only the recent year? | Decided | Every seeded date relative to the run (spec §7.36). | 2026-10-06 |
+| 217 | [35.1](phase-35.1.md) | One demo account or two (to try sharing, Phase 19)? | Decided | One account, `demo`, an admin (spec §7.36). | 2026-10-06 |
 | 218 | [35.2](phase-35.2.md) | An install script for the LXC, or docs only? | Needs a decision | Drafted: docs only. Recommendation: a script is more to maintain on every distribution release. | — |
 | 219 | [35.2](phase-35.2.md) | Which Proxmox route first: Docker in LXC or native PHP? | Needs a decision | Drafted: Docker in LXC first (matches the README quick start); native is lighter and Proxmox's own preference. | — |
 | 220 | [35.2](phase-35.2.md) | Where the Caddy and Traefik smoke tests run | Needs a decision | Drafted: the existing smoke job if it adds only a few minutes, else a scheduled workflow. | — |
@@ -319,8 +322,8 @@ built.
 | 242 | [34.2](phase-34.2.md) | Light-theme *Tax* and *Other* colours below 3:1 as graphics (found by the design review) | Decided | Darken `--c-tax` and `--c-other` in the light theme to at least 3:1 against the card, built in Phase 34.3 (spec §7.8 *Expense breakdown*). | 2026-10-06 |
 | 243 | [34.3](phase-34.3.md) | With closed reminders shown by default, a way to hide them? (found while starting) | Decided | Yes: *Hide done and dismissed* links to `closed=0`; a URL choice, not a setting (spec §7.6 *Calendar view*). | 2026-10-06 |
 | 244 | [34.3](phase-34.3.md) | Does the widget count closed reminders? (found while starting) | Decided | No: open reminders only; closed ones are on the page (spec §7.8 *Calendar*). | 2026-10-06 |
-| 245 | [34.3](phase-34.3.md) | *Open day* on every calendar day with an item, or only where items are hidden? (found by the design review) | Needs a decision | Today: on every day with an item (the only way to its actions from the grid). | — |
-| 246 | [34.3](phase-34.3.md) | The overdue strip, the sidebar badge and the widget count differently: align their wording? (found by the design review) | Needs a decision | Today: each as it is (all overdue; overdue and due soon; this month's). | — |
+| 245 | [34.3](phase-34.3.md) | *Open day* on every calendar day with an item, or only where items are hidden? (found by the design review) | Decided | Keep as it is: *Open day* on every day with an item, the only way to its actions from the grid. | 2026-10-06 |
+| 246 | [34.3](phase-34.3.md) | The overdue strip, the sidebar badge and the widget count differently: align their wording? (found by the design review) | Decided | Keep each as it is: all overdue; overdue and due soon; this month's. | 2026-10-06 |
 
 ## Other loose ends found in the review
 

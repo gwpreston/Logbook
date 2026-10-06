@@ -4,6 +4,27 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [Unreleased]
+
+### Added
+- **Demo mode** (Phase 35.1, [docs/demo-mode.md](docs/demo-mode.md)): a
+  public demo that resets itself. With `DEMO_MODE=true` and a
+  `DEMO_PASSWORD`, an **empty** database is seeded with the sample garage and
+  one admin account, `demo`; the `demo_reset` job (every `DEMO_RESET_HOURS`,
+  24 by default) and `bin/demo-reset.php` put it back, with every date moved
+  to today, in one transaction that keeps the old data if anything fails.
+  Only a database that was seeded as a demo (it carries a marker that is
+  never in a backup) can ever be reset: the same variable on a database
+  with real data changes nothing, logs an error and tells every admin.
+  Visitors cannot reach users, backup, jobs, API keys, AI or fuel price
+  providers, change the password, email address or avatar, upload a file, or
+  make the app send anything: mail and every outbound request are refused.
+  A banner on every page says when it resets, the sign-in page shows the
+  credentials with a *Fill in* button, and every response says `noindex`.
+  Every route is either blocked in the demo or listed as allowed, so a
+  route added later must choose. The compose files pass the three new
+  variables on. No migration.
+
 ## [3.1.0] — 2026-10-06
 
 Phases 34.1–34.3: **see it at a glance**. Registration plates that look

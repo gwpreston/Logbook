@@ -10,10 +10,13 @@
    dropped onto the input (ui.file_drop, js/file-drop.js). #}
 {% macro card(vehicle, attachments, errors, max_mb, max_files) -%}
     {% import _self as files %}
+    {# The demo takes no files (spec.md §7.36): the card stays only to show what is attached. #}
+    {% if attachments is not empty or not demo_no_uploads() %}
     <section class="card" aria-labelledby="attachments-heading">
         <h2 id="attachments-heading" class="card__title">{{ 'attachment.title'|trans }}</h2>
         {{ files.input(vehicle, attachments, errors, max_mb, max_files) }}
     </section>
+    {% endif %}
 {%- endmacro %}
 
 {# The files already attached and one input for more, without a card. Options:
@@ -32,6 +35,7 @@
             {% endfor %}
         </ul>
     {% endif %}
+    {% if not demo_no_uploads() %}
     <div class="field">
         <label class="field__label" for="f-{{ field }}">{{ opts.label ?? (attachments is empty ? 'attachment.field.add' : 'attachment.field.add_another')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
         {% set native %}<input class="input input--file" id="f-{{ field }}" name="{{ field }}[]" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-max-files="{{ max_files }}" data-max-files-message="{{ 'upload.too_many'|trans({max: max_files}) }}"{% if opts.group is defined %} data-max-files-group="{{ opts.group }}"{% endif %}{{ ui.described_by(field, errors, true) }}>{% endset %}
@@ -39,6 +43,7 @@
         <p class="field__hint" id="f-{{ field }}-hint">{{ opts.hint ?? 'attachment.hint'|trans({files: max_files, max: max_mb}) }}</p>
         {{ ui.field_error(errors, field) }}
     </div>
+    {% endif %}
 {%- endmacro %}
 
 {# One attached file: opens it (images in the browser, PDFs download), with

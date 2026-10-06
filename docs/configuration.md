@@ -218,6 +218,18 @@ choose; one typed in full is encrypted with a key derived from
 |---|---|---|
 | `PRICE_HISTORY_DAYS` | `1095` | Days of listed price history kept for stations someone has used or favourited (three years). At least `30`: a smaller value is treated as 30. The hourly `cleanup` job deletes older entries. |
 
+## Demo mode
+
+A public demo that resets itself ([demo-mode.md](demo-mode.md)). Off unless
+`DEMO_MODE` is set, and even then it only ever wipes a database that was
+seeded as a demo.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `DEMO_MODE` | `false` | Seed an **empty** database with the sample data and one account (`demo`, an admin), and run as a demo. On a database that already holds users and was not seeded as a demo, the setting is refused: nothing is deleted, an error is logged at every start and admins see a notice. |
+| `DEMO_PASSWORD` | none | The demo owner's password: **required** with `DEMO_MODE`, 8 to 1024 characters, no default. It is shown to every visitor on the sign-in page, so use one you would not use anywhere else. Without it (or too short) demo mode is refused the same way. |
+| `DEMO_RESET_HOURS` | `24` | How often the `demo_reset` job puts the sample data back, 1 to 168 (a value outside that is brought inside it). |
+
 ## Docker entrypoint only
 
 | Variable | Default | Meaning |

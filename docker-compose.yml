@@ -48,6 +48,10 @@ services:
       AI_ENABLED: ${AI_ENABLED:-true}
       AI_LOG_CONTENT: ${AI_LOG_CONTENT:-false}
       AI_ALLOW_INSECURE_TLS: ${AI_ALLOW_INSECURE_TLS:-true}
+      # A public demo that resets itself (docs/demo-mode.md); off unless DEMO_MODE=true.
+      DEMO_MODE: ${DEMO_MODE:-}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+      DEMO_RESET_HOURS: ${DEMO_RESET_HOURS:-}
     # Lets Logbook reach a model running on the Docker host itself, such as
     # Ollama installed there: http://host.docker.internal:11434
     extra_hosts:

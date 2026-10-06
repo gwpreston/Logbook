@@ -6,6 +6,7 @@ namespace Logbook\Action\Auth;
 
 use Logbook\Service\Auth\AuthService;
 use Logbook\Service\Auth\PasswordResets;
+use Logbook\Service\Demo\DemoMode;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -32,6 +33,7 @@ final readonly class LoginAction
         private AppSettings $settings,
         private LoggerInterface $logger,
         private PasswordResets $resets,
+        private DemoMode $demo,
     ) {
     }
 
@@ -52,7 +54,12 @@ final readonly class LoginAction
         }
 
         if ($request->getMethod() !== 'POST') {
-            return $this->view->render($request, $response, 'auth/login.twig', $this->page($next));
+            // A visitor whose session the demo's reset ended (spec.md §7.36).
+            $reset = $this->demo->isActive() && ($request->getQueryParams()['demo'] ?? null) === 'reset';
+
+            return $this->view->render($request, $response, 'auth/login.twig', $this->page($next) + [
+                'notice' => $reset ? 'demo.reset_notice' : null,
+            ]);
         }
         if (!$this->settings->localLogin) {
             $this->logger->notice('Password sign-in refused (AUTH_LOCAL_LOGIN=false) from {ip}', [
@@ -94,8 +101,11 @@ final readonly class LoginAction
             'next' => $next,
             'username' => '',
             'local_login' => $this->settings->localLogin,
-            'forgot_password' => $this->resets->isAvailable(),
-            'sso' => $this->settings->oidc->isConfigured() ? ['name' => $this->settings->oidc->providerName] : null,
+            // The demo has one account and no mail, and no other way in (spec.md §7.36).
+            'forgot_password' => !$this->demo->isActive() && $this->resets->isAvailable(),
+            'sso' => !$this->demo->isActive() && $this->settings->oidc->isConfigured()
+                ? ['name' => $this->settings->oidc->providerName]
+                : null,
         ];
     }
 

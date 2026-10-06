@@ -78,7 +78,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [34.1](docs/phases/phase-34.1.md) | Registration plates | ✅ |
 | [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | ✅ |
 | [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | ✅ |
-| [35.1](docs/phases/phase-35.1.md) | Demo mode | 📋 |
+| [35.1](docs/phases/phase-35.1.md) | Demo mode | ✅ |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |
 | [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 📋 |
 | [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 📋 |
@@ -835,6 +835,25 @@ the dashboard.*
 - Releases **v3.1.0** with Phases 34.1 and 34.2.
 
 → [`phase-34.3.md`](docs/phases/phase-34.3.md)
+
+---
+
+## Phase 35.1 — Demo mode
+*A public demo that resets itself and cannot hurt anyone, including you.*
+
+- `DEMO_MODE` seeds an empty database with the sample data and marks it as
+  a demo; `DEMO_PASSWORD` is the demo owner's, shown on the sign-in page
+  (#212, #215, #217).
+- A guard: only an instance seeded as a demo can ever be reset; the same
+  switch on a real instance changes nothing and tells the admin why.
+- A `demo_reset` job (24 hours by default) and `bin/demo-reset.php`, with
+  every seeded date relative to the run (#213, #216).
+- Visitors cannot reach administration, change credentials, send anything
+  out or upload files (#214); every route declares `demo: allowed` or
+  `blocked`. A banner on every page and no search indexing.
+- No release of its own; ships with Phase 35.2 as v3.2.0.
+
+→ [`phase-35.1.md`](docs/phases/phase-35.1.md)
 
 ---
 

@@ -30,6 +30,7 @@ final readonly class HtmlErrorRenderer implements ErrorRendererInterface
         $status = $exception instanceof HttpException ? $exception->getCode() : 500;
         $key = match (true) {
             $exception instanceof CsrfFailedException => 'csrf',
+            $exception instanceof DemoBlockedException => 'demo',
             $exception instanceof AccessDeniedException => 'access_denied',
             in_array($status, self::KNOWN_STATUSES, true) => (string) $status,
             default => $status < 500 ? '4xx' : '5xx',
