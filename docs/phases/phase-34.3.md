@@ -2,7 +2,7 @@
 
 *See what is due as a month, not only as a list.*
 
-Status: ✅ complete · releases **v3.1.0** with Phases 34.1 and 34.2 · file
+Status: ✅ complete · released as **v3.1.0** with Phases 34.1 and 34.2 · file
 lives in `docs/phases/`
 
 Reminders are a list (overdue, due, upcoming) and an optional iCal feed for
@@ -287,7 +287,7 @@ As written into `spec.md` with the owner's answers (#207–#211, #242–#244).
       *Customise*.
 - [x] Bump `VERSION`, rebuild assets, update the README status and
       `ROADMAP.md`.
-- [ ] Tag `v3.1.0` once merged.
+- [x] Tag `v3.1.0` once merged.
 
 ---
 
