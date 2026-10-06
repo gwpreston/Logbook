@@ -123,6 +123,28 @@ final class ReportPeriodTest extends TestCase
         self::assertNull(PeriodDistance::km([$readings[3], self::reading('10.000', '2026-04-30T13:00:00Z')], $period, $zone));
     }
 
+    /**
+     * A month of Monthly spend links to Reports for that month (spec.md §7.8, #206).
+     */
+    public function testAMonthIsACustomPeriodFromItsFirstToItsLastDay(): void
+    {
+        foreach (
+            [
+            ['2026-02-14', '2026-02-01', '2026-02-28'],
+            ['2024-02-01', '2024-02-01', '2024-02-29'],
+            ['2026-12-31', '2026-12-01', '2026-12-31'],
+            ['2026-03-01', '2026-03-01', '2026-03-31'],
+            ] as [$day, $from, $to]
+        ) {
+            $month = ReportPeriod::month(self::date($day));
+            self::assertSame(['range' => 'custom', 'from' => $from, 'to' => $to], $month->toQuery(), $day);
+            self::assertCount(1, $month->months());
+            // Reports reads the link back as the same month.
+            $read = ReportPeriod::fromQuery($month->toQuery(), self::date('2026-09-27'));
+            self::assertSame([$from, $to], [$read->from?->format('Y-m-d'), $read->to->format('Y-m-d')]);
+        }
+    }
+
     private static function date(string $date): DateTimeImmutable
     {
         $parsed = LocalTime::parseDate($date);

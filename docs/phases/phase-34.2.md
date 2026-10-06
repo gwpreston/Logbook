@@ -136,13 +136,13 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
       section.
 
 ### 34.2.1 Code
-- [ ] Register `expense_breakdown` and `monthly_expenses` where the other
+- [x] Register `expense_breakdown` and `monthly_expenses` where the other
       widgets are registered, with the default order above and the
       append-to-saved-layouts rule.
-- [ ] A dashboard service method for each, reading the report service once
+- [x] A dashboard service method for each, reading the report service once
       for the vehicle set (filtered by `ViewCosts` and archived status).
       Largest-remainder rounding in one small, tested helper.
-- [ ] The period map from `?expenses=` to Reports' presets in one place,
+- [x] The period map from `?expenses=` to Reports' presets in one place,
       used by the widget's links as well as its figures.
 
 ### 34.2.2 Templates, CSS, JavaScript

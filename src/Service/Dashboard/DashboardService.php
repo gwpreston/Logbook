@@ -96,6 +96,7 @@ final readonly class DashboardService
         User $user,
         ?int $vehicleId = null,
         TrueCostRange $trueCostRange = TrueCostRange::TwelveMonths,
+        ExpensePeriod $expensePeriod = ExpensePeriod::DEFAULT,
     ): Dashboard {
         $layout = $this->layouts->load($user->id);
         $enabled = $this->features->all();
@@ -119,14 +120,21 @@ final readonly class DashboardService
             ? self::only($this->reminders->overview($user), $selected)
             : null;
 
-        // Spend counts only the vehicles whose costs the user may see (spec.md §5 Costs).
+        // Spend counts only the vehicles whose costs the user may see (spec.md §5 Costs);
+        // with none, the spend widgets get no data (the breakdown and monthly spend then go).
         $costly = array_values(array_filter(
             $scope,
             fn (Vehicle $v): bool => $this->access->can($user, VehicleAbility::ViewCosts, $v),
         ));
-        [$thisMonth, $lastMonth] = $show(DashboardWidget::Spend) && $costly !== []
-            ? $this->spend($user, $costly, $today)
-            : [null, null];
+        $spend = $costly !== [] ? $this->spend(
+            $user,
+            $costly,
+            $today,
+            $selected?->id,
+            $show(DashboardWidget::Spend),
+            $show(DashboardWidget::ExpenseBreakdown) ? $expensePeriod : null,
+            $show(DashboardWidget::MonthlyExpenses),
+        ) : [];
 
         $fuel = $show(DashboardWidget::RecentFuel) || $show(DashboardWidget::Efficiency) || $selected !== null
             ? $this->fuelHistories($scope)
@@ -163,8 +171,12 @@ final readonly class DashboardService
                 ? $this->snapshots->of($active, $counts, $attention?->counts() ?? [])
                 : [],
             reminders: $show(DashboardWidget::Reminders) ? $overview : null,
-            spendThisMonth: $thisMonth,
-            spendLastMonth: $lastMonth,
+            spendThisMonth: $spend['this_month'] ?? null,
+            spendLastMonth: $spend['last_month'] ?? null,
+            expenseBreakdown: isset($spend['breakdown'])
+                ? ExpenseBreakdown::of($expensePeriod, $spend['breakdown'])
+                : null,
+            monthlySpend: isset($spend['monthly']) ? new MonthlySpend($spend['monthly']) : null,
             recentFuel: $show(DashboardWidget::RecentFuel) ? $this->recentFuel($user, $fuel) : [],
             efficiency: $show(DashboardWidget::Efficiency) ? $efficiency : [],
             compliance: $show(DashboardWidget::Compliance) ? $this->compliance($user, $scope, $today) : [],
@@ -279,27 +291,39 @@ final readonly class DashboardService
     }
 
     /**
-     * This month so far and the whole of last month.
+     * The spend widgets' reports, from one read of the ledger (spec.md §7.8
+     * *Both spend widgets*): this month so far and the whole of last month
+     * (*spend this month*), the breakdown's period and the last 12 months.
      *
      * @param list<Vehicle> $vehicles
-     * @return array{0: Report, 1: Report}
+     * @return array<'this_month'|'last_month'|'breakdown'|'monthly', Report> only those asked for
      */
-    private function spend(User $user, array $vehicles, DateTimeImmutable $today): array
-    {
-        $thisMonth = ReportPeriod::preset(ReportRange::ThisMonth, $today);
-        $firstOfThis = $thisMonth->from ?? $today;
-        $lastMonth = new ReportPeriod(
-            ReportRange::Custom,
-            LocalTime::addMonths($firstOfThis, -1),
-            $firstOfThis->modify('-1 day'),
-        );
+    private function spend(
+        User $user,
+        array $vehicles,
+        DateTimeImmutable $today,
+        ?int $vehicleId,
+        bool $thisMonth,
+        ?ExpensePeriod $breakdown,
+        bool $monthly,
+    ): array {
+        $filters = [];
+        if ($thisMonth) {
+            $current = ReportPeriod::preset(ReportRange::ThisMonth, $today);
+            $filters['this_month'] = new ReportFilter($current);
+            $filters['last_month'] = new ReportFilter(ReportPeriod::month(LocalTime::addMonths($current->from ?? $today, -1)));
+        }
+        if ($breakdown !== null) {
+            $filters['breakdown'] = new ReportFilter($breakdown->period($today), $vehicleId);
+        }
+        if ($monthly) {
+            $filters['monthly'] = new ReportFilter(ReportPeriod::preset(ReportRange::TwelveMonths, $today), $vehicleId);
+        }
+        if ($filters === []) {
+            return [];
+        }
 
-        [$current, $previous] = $this->reports->compare($user, $vehicles, [
-            new ReportFilter($thisMonth),
-            new ReportFilter($lastMonth),
-        ]);
-
-        return [$current, $previous];
+        return array_combine(array_keys($filters), $this->reports->compare($user, $vehicles, array_values($filters)));
     }
 
     /**
