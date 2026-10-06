@@ -15,6 +15,8 @@
             </div>
         </header>
 
+        {% include 'reminders/_switch.twig' with {view: 'list'} %}
+
         <div class="toolbar">
             <p class="section-title">{{ 'reminders.attention'|trans({count: overview.attentionCount()}) }}</p>
             <div class="btn-row">

@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 final class DashboardLayoutTest extends TestCase
 {
     private const array DEFAULT = [
-        'needs_attention', 'reminders', 'insights', 'coming_up', 'spend', 'expense_breakdown', 'monthly_expenses',
+        'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'spend', 'expense_breakdown', 'monthly_expenses',
         'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage', 'finance',
         'cheapest_fuel', 'true_cost',
     ];
@@ -35,7 +35,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'compliance', 'spend', 'needs_attention', 'reminders', 'insights', 'coming_up', 'expense_breakdown',
+                'compliance', 'spend', 'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'expense_breakdown',
                 'monthly_expenses', 'recent_fuel', 'fleet', 'efficiency', 'mileage', 'recent_activity', 'business_mileage',
                 'finance', 'cheapest_fuel', 'true_cost',
             ],
@@ -53,7 +53,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'needs_attention', 'reminders', 'insights', 'spend', 'coming_up', 'expense_breakdown',
+                'needs_attention', 'reminders', 'calendar', 'insights', 'spend', 'coming_up', 'expense_breakdown',
                 'monthly_expenses', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity',
                 'business_mileage', 'finance', 'cheapest_fuel',
                 'true_cost',
@@ -62,7 +62,7 @@ final class DashboardLayoutTest extends TestCase
         );
         self::assertSame(
             [
-                'needs_attention', 'reminders', 'insights', 'coming_up', 'expense_breakdown', 'spend',
+                'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'expense_breakdown', 'spend',
                 'monthly_expenses', 'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity',
                 'business_mileage', 'finance', 'cheapest_fuel',
                 'true_cost',
@@ -81,7 +81,7 @@ final class DashboardLayoutTest extends TestCase
 
         self::assertSame(
             [
-                'spend', 'fleet', 'needs_attention', 'reminders', 'insights', 'coming_up', 'expense_breakdown',
+                'spend', 'fleet', 'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'expense_breakdown',
                 'monthly_expenses', 'recent_fuel', 'efficiency', 'compliance', 'mileage', 'recent_activity',
                 'business_mileage', 'finance', 'cheapest_fuel', 'true_cost',
             ],

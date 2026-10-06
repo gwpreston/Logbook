@@ -142,6 +142,7 @@ use Logbook\Action\Reminder\CalendarFeedAction;
 use Logbook\Action\Reminder\CreateReminderAction;
 use Logbook\Action\Reminder\DeleteReminderAction;
 use Logbook\Action\Reminder\EditReminderAction;
+use Logbook\Action\Reminder\ReminderCalendarAction;
 use Logbook\Action\Reminder\ReminderListAction;
 use Logbook\Action\Reminder\ReminderStatusAction;
 use Logbook\Action\Report\OwnershipExportAction;
@@ -721,6 +722,7 @@ return static function (App $app): void {
 
         $group->group('', function (Group $reminders) use ($ability): void {
             $reminders->get('/reminders', ReminderListAction::class)->setName('reminders.index');
+            $reminders->get('/reminders/calendar', ReminderCalendarAction::class)->setName('reminders.calendar');
             $reminders->map(['GET', 'POST'], '/reminders/new', CreateReminderAction::class)->setName('reminders.create');
             $reminders->map(['GET', 'POST'], '/reminders/{reminder:[0-9]+}/edit', EditReminderAction::class)
                 ->setName('reminders.edit')

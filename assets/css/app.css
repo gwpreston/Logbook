@@ -82,8 +82,8 @@
     --c-fuel: var(--accent);
     --c-maint: #12946c;
     --c-ins: #6d5bd0;
-    --c-tax: #e3a21a;
-    --c-other: #9aa6b6;
+    --c-tax: #b07800;     /* 3.8:1 on white: a graphic needs 3:1 (#242) */
+    --c-other: #788496;   /* 3.8:1 on white (#242) */
 
     /* Typography. */
     --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -3264,6 +3264,439 @@ a.list__title:hover {
 
 .reminder__actions form {
     display: contents;
+}
+
+/* Reminders calendar (Phase 34.3, spec.md §7.6 *Calendar view*): a list of
+   weeks, each a list of days. An agenda on phones (only days with items),
+   a 7-column grid with a week-number column from 640 px. */
+.reminders-switch {
+    align-self: flex-start;
+}
+
+.segmented__option[aria-current="page"] {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.cal-overdue {
+    align-items: flex-start;
+}
+
+.cal-overdue__title {
+    margin: 0;
+    font-weight: 700;
+}
+
+.cal-overdue__list {
+    margin: var(--space-1) 0;
+    padding-left: var(--space-4);
+}
+
+.cal-overdue a {
+    color: inherit;
+    font-weight: 700;
+}
+
+.cal__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.cal__month {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+}
+
+.cal__nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.cal__closed {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.cal__closed .icon {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.cal__weekdays {
+    display: none;
+}
+
+.cal__weeks,
+.cal__days,
+.cal__items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cal__week + .cal__week {
+    margin-top: var(--space-3);
+}
+
+.cal__weeknum {
+    margin: 0 0 var(--space-1);
+    color: var(--muted);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* Phones: an agenda of the days that have something on them. */
+.cal__week--empty,
+.cal__day--empty,
+.cal__day--out {
+    display: none;
+}
+
+.cal__day {
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--border);
+}
+
+.cal__date {
+    margin: 0 0 var(--space-1);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.cal__day--today .cal__date {
+    color: var(--accent);
+}
+
+.cal__today {
+    display: inline-block;
+    margin-left: var(--space-1);
+    padding: 0 6px;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: var(--fs-2xs);
+}
+
+.cal__more,
+.cal__open {
+    display: inline-block;
+    margin-top: 2px;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+}
+
+.cal__none {
+    margin: 0 0 var(--space-2);
+}
+
+.cal-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0;
+    font-size: var(--fs-sm);
+}
+
+.cal-item__title {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+    font-weight: 700;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.cal-item__title a {
+    color: var(--text);
+}
+
+.cal-item__icon {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 2px;
+    color: var(--muted);
+}
+
+.cal-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    padding-left: calc(1rem + 6px);
+}
+
+.cal-item__vehicle {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+}
+
+.cal-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+}
+
+.cal-status .icon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.cal-status--overdue {
+    color: var(--red);
+}
+
+.cal-status--due {
+    color: var(--amber);
+}
+
+.cal-status--done {
+    color: var(--green);
+}
+
+/* Done and dismissed: muted, still in words. */
+.cal-item--closed .cal-item__title,
+.cal-item--closed .cal-item__title a {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.cal-item--closed .cal-item__title a {
+    text-decoration: line-through;
+}
+
+.cal-day__close {
+    display: inline-block;
+    margin-top: var(--space-3);
+    font-weight: 700;
+}
+
+@media (min-width: 640px) {
+    .cal__weekdays,
+    .cal__week {
+        display: grid;
+        grid-template-columns: 2.25rem minmax(0, 1fr);
+    }
+
+    .cal__weekdays {
+        grid-template-columns: 2.25rem repeat(7, minmax(0, 1fr));
+        padding-bottom: var(--space-1);
+        color: var(--muted);
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .cal__week + .cal__week {
+        margin-top: 0;
+    }
+
+    .cal__weeknum {
+        margin: 0;
+        padding-top: var(--space-2);
+        text-align: center;
+    }
+
+    .cal__days {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        border-left: 1px solid var(--border);
+    }
+
+    .cal__week:last-child .cal__days {
+        border-bottom: 1px solid var(--border);
+    }
+
+    .cal__day,
+    .cal__day--empty,
+    .cal__day--out {
+        display: block;
+        min-height: 6.5rem;
+        padding: var(--space-1) 6px;
+        border-top: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+    }
+
+    .cal__day--out {
+        background: var(--surface-2);
+        color: var(--muted);
+        opacity: 0.6;
+    }
+
+    .cal__day--today {
+        box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    /* The weekday and month are in the column heading and the title. */
+    .cal__weekday,
+    .cal__monthname {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .cal__today {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .cal__day--today .cal__daynum {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.5rem;
+        height: 1.5rem;
+        border-radius: var(--radius-pill);
+        background: var(--accent);
+        color: var(--on-accent);
+    }
+
+    .cal-item {
+        font-size: var(--fs-xs);
+    }
+
+    .cal-item__meta {
+        padding-left: 0;
+    }
+}
+
+/* A narrow grid (a tablet beside the sidebar): the plate gives way so the
+   title and its status in words keep the room. */
+.cal {
+    container-type: inline-size;
+}
+
+@media (min-width: 640px) {
+    @container (max-width: 819px) {
+        /* Hidden from sight only: a screen reader still hears the vehicle. */
+        .cal-item__meta .plate,
+        .cal-item__vehicle {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+        }
+    }
+}
+
+/* The Calendar widget (spec.md §7.8): a small month of open reminders. */
+.mini-cal__head {
+    display: grid;
+    grid-template-columns: 2.75rem 1fr 2.75rem;
+    align-items: center;
+    margin-bottom: var(--space-1);
+}
+
+.mini-cal__month {
+    margin: 0;
+    font-weight: 700;
+    text-align: center;
+}
+
+.mini-cal__weekdays,
+.mini-cal__days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    text-align: center;
+}
+
+.mini-cal__weekdays {
+    color: var(--muted);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+}
+
+.mini-cal__days {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mini-cal__day {
+    display: grid;
+    place-items: center;
+    min-height: 2.25rem;
+    font-size: var(--fs-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.mini-cal__link {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: 2.25rem;
+    border-radius: var(--radius-sm, 8px);
+    background: var(--surface-2);
+    color: var(--text);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.mini-cal__mark {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+.mini-cal__day--overdue .mini-cal__link {
+    background: var(--red-soft);
+    color: var(--red);
+}
+
+.mini-cal__day--due .mini-cal__link {
+    background: var(--amber-soft);
+    color: var(--amber);
+}
+
+.mini-cal__day--upcoming .mini-cal__link {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.mini-cal__day--today .mini-cal__num {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+.mini-cal__summary {
+    margin: var(--space-2) 0 0;
 }
 
 /* Needs attention (Phase 24, spec.md §7.24): the overview card and the widget. */

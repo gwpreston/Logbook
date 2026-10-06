@@ -1,0 +1,6 @@
+{# List / Calendar (spec.md §7.6 *Calendar view*): two links, the current one marked. `view` is 'list' or 'calendar'. #}
+{% import 'macros/ui.twig' as ui %}
+<nav class="segmented reminders-switch" aria-label="{{ 'reminders.month.switch'|trans }}">
+    <a class="segmented__option" href="{{ url_for('reminders.index') }}"{% if view == 'list' %} aria-current="page"{% endif %}>{{ ui.icon('notifications') }}{{ 'reminders.month.view_list'|trans }}</a>
+    <a class="segmented__option" href="{{ url_for('reminders.calendar') }}"{% if view == 'calendar' %} aria-current="page"{% endif %}>{{ ui.icon('calendar_month') }}{{ 'reminders.month.view_calendar'|trans }}</a>
+</nav>

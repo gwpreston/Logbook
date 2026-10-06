@@ -27,7 +27,7 @@ final class DashboardTest extends AppTestCase
 
     private const string NOW = '2026-09-27T10:00:00Z';
     private const array DEFAULT_ORDER = [
-        'needs_attention', 'reminders', 'insights', 'coming_up', 'spend', 'expense_breakdown', 'monthly_expenses',
+        'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'spend', 'expense_breakdown', 'monthly_expenses',
         'recent_fuel', 'fleet', 'efficiency', 'compliance', 'mileage', 'recent_activity', 'true_cost',
     ];
 
@@ -96,7 +96,8 @@ final class DashboardTest extends AppTestCase
         self::assertNotNull($stored, 'kept as a user-scoped settings row');
         self::assertSame([
             'order' => [
-                'spend', 'needs_attention', 'reminders', 'insights', 'coming_up', 'expense_breakdown', 'monthly_expenses',
+                'spend', 'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'expense_breakdown',
+                'monthly_expenses',
                 'fleet', 'recent_fuel', 'efficiency', 'compliance', 'mileage', 'recent_activity', 'business_mileage',
                 'finance', 'cheapest_fuel', 'true_cost',
             ],
@@ -105,7 +106,7 @@ final class DashboardTest extends AppTestCase
 
         $html = self::body($browser->get('/'));
         $arranged = [
-            'spend', 'needs_attention', 'reminders', 'insights', 'coming_up', 'expense_breakdown', 'monthly_expenses',
+            'spend', 'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'expense_breakdown', 'monthly_expenses',
             'fleet', 'recent_fuel', 'compliance', 'mileage', 'recent_activity', 'true_cost',
         ];
         self::assertSame($arranged, self::widgetOrder($html), 'hidden: not shown');
@@ -139,7 +140,7 @@ final class DashboardTest extends AppTestCase
 
         self::assertSame(
             [
-                'compliance', 'efficiency', 'fleet', 'needs_attention', 'reminders', 'insights', 'coming_up', 'spend',
+                'compliance', 'efficiency', 'fleet', 'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'spend',
                 'expense_breakdown', 'monthly_expenses', 'recent_fuel', 'mileage', 'recent_activity', 'true_cost',
             ],
             self::widgetOrder(self::body($browser->get('/'))),
@@ -171,7 +172,8 @@ final class DashboardTest extends AppTestCase
         $html = self::body($browser->get('/'));
         self::assertSame(
             [
-                'needs_attention', 'reminders', 'insights', 'coming_up', 'spend', 'expense_breakdown', 'monthly_expenses',
+                'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'spend', 'expense_breakdown',
+                'monthly_expenses',
                 'recent_fuel', 'fleet', 'efficiency', 'mileage', 'recent_activity', 'true_cost',
             ],
             self::widgetOrder($html),
@@ -186,7 +188,8 @@ final class DashboardTest extends AppTestCase
         self::assertSame(
             // Customising lists the finance widget, which the dashboard leaves out until there is an agreement.
             [
-                'needs_attention', 'reminders', 'insights', 'coming_up', 'fleet', 'compliance', 'mileage', 'recent_activity',
+                'needs_attention', 'reminders', 'calendar', 'insights', 'coming_up', 'fleet', 'compliance', 'mileage',
+                'recent_activity',
                 'finance', 'true_cost',
             ],
             self::widgetOrder($html),

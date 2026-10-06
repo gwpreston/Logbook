@@ -714,20 +714,37 @@ final class DemoDataSeeder extends AbstractSeed
     }
 
     /**
-     * A reminder of your own. Schedules and documents raise theirs on the
-     * first sync (opening Reminders, or the scheduled task).
+     * Reminders of your own: one coming up and one already done. Schedules
+     * and documents raise theirs on the first sync (opening Reminders, or
+     * the scheduled task), so with them the calendar (Phase 34.3) has an
+     * overdue service and a due insurance renewal in October, the brake
+     * fluid in November and the chain, by distance only, with no date.
      */
     private function seedReminders(string $now): void
     {
+        $golf = $this->vehicleIds()['LB19 KTR'];
         $this->table('reminders')->insert([
             [
-                'vehicle_id' => $this->vehicleIds()['LB19 KTR'],
+                'vehicle_id' => $golf,
                 'source' => 'manual',
                 'title' => 'Winter tyres on',
                 'notes' => 'Winter wheels are at Kwik Fit Southend, ref 4471.',
                 'due_on' => '2026-11-01',
                 'lead_time_days' => 14,
                 'status' => 'upcoming',
+                'closed_at' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'vehicle_id' => $golf,
+                'source' => 'manual',
+                'title' => 'Top up the screenwash',
+                'notes' => null,
+                'due_on' => '2026-10-03',
+                'lead_time_days' => 7,
+                'status' => 'done',
+                'closed_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
