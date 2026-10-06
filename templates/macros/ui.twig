@@ -300,6 +300,21 @@
     </div>
 {%- endmacro %}
 
+{# A registration as a number plate (spec.md §8 *Registration plate*): size
+   'sm' (lists, pickers, over a photo) or 'md' (cards, the vehicle header);
+   style 'gb' or 'neutral', the owner's, from plate_style(vehicle). Nothing
+   for a blank registration. The band is hidden from screen readers and
+   from copying, so both get the registration only. #}
+{% macro plate(registration, size = 'sm', style = 'neutral') -%}
+    {%- set text = plate_text(registration) -%}
+    {%- set style = style == 'gb' ? 'gb' : 'neutral' -%}
+    {%- if text != '' -%}
+        <span class="plate plate--{{ size == 'md' ? 'md' : 'sm' }} plate--{{ style }}"{% if text|length > 10 %} title="{{ text }}"{% endif %}>
+            {%- if style == 'gb' %}<span class="plate__band" aria-hidden="true">UK</span>{% endif -%}
+            <span class="plate__text">{{ text }}</span></span>
+    {%- endif -%}
+{%- endmacro %}
+
 {# What a vehicle's due count means, in words: "2 overdue, 1 due soon" or
    "All up to date". `count` is a Service\Reminder\VehicleDueCount. #}
 {% macro due_text(count) -%}

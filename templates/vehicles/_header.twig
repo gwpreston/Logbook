@@ -62,7 +62,7 @@
     {{ ui.vehicle_photo(vehicle, 'vehicle-photo--hero') }}
     <div class="vehicle-hero__text">
         <div class="vehicle-card__tags">
-            {% if data.registration %}<span class="plate">{{ data.registration }}</span>{% endif %}
+            {{ ui.plate(data.registration, 'md', plate_style(vehicle)) }}
             <span class="pill">{{ ('vehicle.fuel.' ~ data.fuelType.value)|trans }}</span>
             {% if vehicle.isArchived() and (vehicle.isWrittenOff() or vehicle.isReturned()) %}
                 <span class="pill pill--soon">{{ ui.icon(vehicle.isReturned() ? 'key_off' : 'car_crash') }}{{ vehicle_ui.disposal(vehicle) }}</span>

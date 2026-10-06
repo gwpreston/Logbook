@@ -6,6 +6,17 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Changed
+- **Registration plates** (Phase 34.1): a registration is drawn as a number
+  plate in its owner's style: a yellow UK plate with a blue "UK" band for
+  an owner whose locale is in GB, a white neutral plate for everyone else.
+  A shared car looks the same to everyone. Plates keep their colours in
+  both themes and every accent, keep a border in forced-colours mode, and
+  copy as the registration only. The sale pack cover keeps its plate;
+  every other print view, CSV, the API and Ask keep the text.
+- The sample data adds an off-road trail bike with no registration, and
+  the plug-in hybrid gets a personalised registration (`PHV 1`).
+
 ## [3.0.0] — 2026-10-05
 
 Phases 33.1–33.4: **the new design, and accounts that look after

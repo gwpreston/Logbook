@@ -9,6 +9,7 @@ use Logbook\Service\Access\AccessContext;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Sharing\AuthorLabels;
 use Logbook\Service\User\UserDirectory;
+use Logbook\Service\Vehicle\PlateStyleResolver;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -31,6 +32,7 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
         private AccessContext $context,
         private UserDirectory $directory,
         private AuthorLabels $authors,
+        private PlateStyleResolver $plates,
     ) {
     }
 
@@ -40,6 +42,7 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
         $this->access->forget();
         $this->directory->forget();
         $this->authors->forget();
+        $this->plates->forget();
         $session = RequestContext::session($request);
         $userId = $session->userId();
         $user = $userId === null ? null : $this->users->find($userId);

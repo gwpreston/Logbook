@@ -67,8 +67,14 @@
     --amber-soft: rgba(232, 150, 20, 0.16);
     --red: #c02c2c;       /* 4.5:1 on --red-soft (WCAG AA) */
     --red-soft: rgba(207, 52, 52, 0.1);
-    --plate: #f6cf3a;
-    --on-plate: #111111;
+    /* Registration plates (spec.md §8): objects, not surfaces, so the same
+       in both themes and never moved by the accent. */
+    --plate-bg-gb: #f6cf3a;
+    --plate-bg-neutral: #ffffff;
+    --plate-fg: #111111;
+    --plate-border: #111111;
+    --plate-band: #00309a;
+    --plate-band-fg: #ffffff;
     --overlay: rgba(10, 20, 35, 0.45);
     --shadow: 0 1px 2px rgba(14, 28, 46, 0.05), 0 10px 30px rgba(14, 28, 46, 0.08);
 
@@ -1319,20 +1325,88 @@ a.segmented__option {
     color: var(--accent);
 }
 
-/* Registration plate. */
+/* Registration plate (spec.md §8): one inline element that never wraps;
+   the GB plate has a band at the left, hidden from screen readers and
+   from copying. */
 .plate {
     display: inline-flex;
-    align-items: center;
+    align-items: stretch;
+    max-width: 100%;
     height: 1.5rem;
-    padding: 0 var(--space-2);
+    overflow: hidden;
+    border: 1px solid var(--plate-border);
     border-radius: var(--radius-xs);
-    background: var(--plate);
-    color: var(--on-plate);
+    background: var(--plate-bg-neutral);
+    color: var(--plate-fg);
     font-family: var(--font-display);
     font-size: var(--fs-sm);
     font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.plate--gb {
+    background: var(--plate-bg-gb);
+}
+
+.plate--sm {
+    height: 1.375rem;
+    font-size: var(--fs-xs);
+}
+
+.plate__text {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0 var(--space-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+}
+
+.plate--sm .plate__text {
+    padding: 0 0.4375rem;
+}
+
+.plate__band {
+    display: flex;
+    flex: none;
+    align-items: center;
+    padding: 0 var(--space-1);
+    background: var(--plate-band);
+    color: var(--plate-band-fg);
+    font-family: var(--font-sans);
+    font-size: 0.625rem;
+    letter-spacing: 0;
+    user-select: none;
+}
+
+.plate--sm .plate__band {
+    padding: 0 0.1875rem;
+    font-size: 0.5625rem;
+}
+
+/* Only the sale pack cover prints a plate: keep its colours even with the
+   browser's background graphics off, so the band's white "UK" stays legible. */
+@media print {
+    .plate,
+    .plate__band {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+@media (forced-colors: active) {
+    .plate,
+    .plate__band {
+        border-color: CanvasText;
+    }
+
+    .plate__band {
+        border-right: 1px solid CanvasText;
+    }
 }
 
 /* Forms */
@@ -4570,8 +4644,11 @@ a.list__title:hover {
 
 .vehicle-tile__plate {
     position: absolute;
+    right: var(--space-3);
     bottom: var(--space-2);
     left: var(--space-3);
+    display: flex;
+    pointer-events: none;
 }
 
 .vehicle-tile__body {

@@ -75,14 +75,14 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | ✅ |
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | ✅ |
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | ✅ |
-| [34.1](phase-34.1.md) | Registration plates | 📋 |
-| [34.2](phase-34.2.md) | Expense breakdown and monthly spend widgets | 📋 |
-| [34.3](phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | 📋 |
-| [35.1](phase-35.1.md) | Demo mode | 📋 |
-| [35.2](phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |
-| [36.1](phase-36.1.md) | Email server settings (admin) | 📋 |
-| [36.2](phase-36.2.md) | Personal notification channels | 📋 |
-| [36.3](phase-36.3.md) | Telegram, Discord, Pushover and Mattermost + v3.3 release | 📋 |
+| [34.1](docs/phases/phase-34.1.md) | Registration plates | ✅ |
+| [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | 📋 |
+| 34.3 (file not yet written) | Reminders calendar and dashboard widget + v3.1 release | 📋 |
+| [35.1](docs/phases/phase-35.1.md) | Demo mode | 📋 |
+| [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |
+| [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 📋 |
+| [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 📋 |
+| [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover and Mattermost + v3.3 release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -778,6 +778,23 @@ developing.*
 - Release **v3.0.0** (Phases 33.1–33.4).
 
 → [`phase-33.4.md`](docs/phases/phase-33.4.md)
+
+---
+
+## Phase 34.1 — Registration plates
+*A registration that looks like one.*
+
+- One `ui.plate()` macro: a yellow UK plate with a blue "UK" band for an
+  owner in GB, a neutral white plate for everyone else, chosen by the
+  **owner's** locale so a shared car looks the same to all.
+- On garage cards, the dashboard tiles and pinned card, the vehicle
+  header, the *Cost of ownership* cards, the pickers and the sale pack
+  cover; text everywhere else (#198–#202).
+- Fixed colours in both themes and every accent, a contrast test, a
+  forced-colours border, and copy-and-paste that gives the registration
+  only. Ships with Phase 34.3 as v3.1.0.
+
+→ [`phase-34.1.md`](docs/phases/phase-34.1.md)
 
 ---
 

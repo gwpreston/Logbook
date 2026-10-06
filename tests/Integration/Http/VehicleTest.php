@@ -55,7 +55,7 @@ final class VehicleTest extends AppTestCase
 
         $show = self::body($browser->follow($created));
         self::assertStringContainsString('Volkswagen Golf 1.5 TSI Life was added to your garage.', $show);
-        self::assertStringContainsString('<span class="plate">LB19 KTR</span>', $show);
+        self::assertStringContainsString('<span class="plate__text">LB19 KTR</span>', $show);
         // Owner uses UK units: 11 L stays litres; zero purchase price is valid and shown.
         self::assertStringContainsString('11 L', $show);
         self::assertStringContainsString('£0.00', $show);

@@ -190,8 +190,14 @@ final class DemoDataSeeder extends AbstractSeed
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Mitsubishi', 'model' => 'Outlander 2.4 PHEV', 'year' => 2021,
-                'registration' => 'YR21 PHV', 'fuel_type' => 'phev', 'default_grade' => 'e10_95', 'capacity' => '45.000',
+                'registration' => 'PHV 1', 'fuel_type' => 'phev', 'default_grade' => 'e10_95', 'capacity' => '45.000',
                 'purchase_date' => '2025-12-05', 'purchase_price' => '21450.000',
+            ]),
+            // An off-road trail bike: never road-registered, so no plate is drawn (Phase 34.1).
+            $vehicle([
+                'type' => 'bike', 'make' => 'Honda', 'model' => 'CRF250F', 'year' => 2022,
+                'fuel_type' => 'petrol', 'capacity' => '6.300',
+                'purchase_date' => '2025-08-09', 'purchase_price' => '3950.000',
             ]),
         ])->saveData();
 
@@ -427,7 +433,7 @@ final class DemoDataSeeder extends AbstractSeed
                 $now,
                 ['home', 'home', 'home', 'dc_rapid', 'home', 'home', 'ac', 'home'],
             ),
-            ...$this->plugInHybrid($ids['YR21 PHV'], $now),
+            ...$this->plugInHybrid($ids['PHV 1'], $now),
         ];
         $this->table('fuel_entries')->insert($entries)->saveData();
         $updated = $this->execute(

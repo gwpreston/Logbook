@@ -1151,7 +1151,8 @@ Add/edit/delete vehicles; upload a photo; set per-vehicle fuel type and currency
 from fleet totals unless "include archived" is toggled.
 
 - **Garage cards** (`/garage`): photo (or a striped placeholder with the
-  car / motorbike icon), plate, fuel type, name and the descriptive line. A due
+  car / motorbike icon), plate (the registration in the owner's style, §8
+  *Registration plate*), fuel type, name and the descriptive line. A due
   badge on the photo's top-right corner reads "N due" — the vehicle's open
   reminders that are *overdue* or *due* (§7.6) — red when any is overdue,
   amber otherwise, hidden at zero (and while the reminders module is off).
@@ -2186,7 +2187,7 @@ spend this month, efficiency trend, compliance status. Widgets respect feature
 toggles.
 
 - **Widgets** (`/`): *your vehicles* (id `fleet`: a tile per active vehicle —
-  photo or placeholder with the plate over its lower-left corner, name,
+  photo or placeholder with a `sm` plate (§8) over its lower-left corner, name,
   the descriptive line (§7.1), current odometer and "N due" as on the garage cards (§7.1); the title
   links to the garage; count of archived ones), *upcoming reminders* (the
   five most urgent open reminders), *recent fuel* (the last five fill-ups
@@ -2277,7 +2278,7 @@ toggles.
   can be bookmarked. An unknown or archived id falls back to *All vehicles*.
   With one vehicle selected every widget shows that vehicle only, *your
   vehicles* is hidden, and a **pinned vehicle card** appears under the chips:
-  photo, plate, fuel type, name, "descriptive line (§7.1) · current
+  photo, plate (§8), fuel type, name, "descriptive line (§7.1) · current
   odometer", and
   four tiles — *Economy* (average over the full-to-full segments that ended
   in the last 12 months, in the owner's unit), *Running cost* (all costs ÷
@@ -3878,8 +3879,8 @@ available for active and archived vehicles.
   shown the same on screen. The photo as large as fits the page
   (`object-fit: contain`, never cropped or stretched; a tall photo shrinks
   rather than pushing the text to another page), the vehicle's name, make,
-  model and variant, model year, registration, the title "Vehicle
-  history", and "Prepared {date}" in the owner's date format. A page break
+  model and variant, model year, registration (drawn as a plate in the
+  owner's style, §8 *Registration plate*), the title "Vehicle history", and "Prepared {date}" in the owner's date format. A page break
   follows, so the summary starts on page two.
 - **Summary** (the first printed page, or the second after a cover):
   - *Vehicle:* name, make, model and variant, model year, fuel type,
@@ -6890,8 +6891,8 @@ it replaces none of the other figures.
   blue) and switches only the accent tokens — primary, hover, pressed,
   subtle background, focus ring and the first chart series — each with a
   light and a dark value that meets WCAG AA for button text and focus rings.
-  Status colours (red overdue, amber due soon, green OK) and the yellow
-  number plate never change with the accent. Charts read the tokens when
+  Status colours (red overdue, amber due soon, green OK) and the number
+  plate (below) never change with the accent. Charts read the tokens when
   they draw.
 - **Fuel grade badges** (§7.3) follow the pump and charger labels: the
   EN 16942 circle for petrol grades (AKI grades too), a square for diesel, a
@@ -6899,6 +6900,50 @@ it replaces none of the other figures.
   EN 17186 hexagon for charging types. Each is a small outlined shape plus
   the short label in text (the full label as its accessible name), drawn in
   the text colour: never colour alone, and never the accent.
+- **Registration plate** (Phase 34.1, decided 2026-10-06, #198–#202):
+  - **Macro** `ui.plate(registration, size, style)` in
+    `templates/macros/ui.twig`. A blank registration renders **nothing**
+    (a registration is optional, §6 Vehicle): no placeholder dash.
+  - **Display text:** trimmed, upper-cased, and any run of whitespace
+    collapsed to one space (`plate_text()`). Never re-spaced or validated,
+    so `AB12CDE` stays `AB12CDE` and a personalised plate shows as typed.
+    The stored value is untouched.
+  - **Styles** (`SupportPlateStyle`): `gb`, a yellow plate with black
+    characters, a thin black border and a blue band at the left reading
+    "UK" in white, in the manner of a UK rear plate; `neutral`, a white
+    plate with black characters and a black border, no band.
+  - **Which style:** from the region of the **vehicle owner's** locale
+    (`GB` → `gb`; any other region, or a locale with no region such as
+    `en` or `de` → `neutral`), worked out in one place
+    (`ServiceVehiclePlateStyleResolver`, Twig `plate_style(vehicle)`),
+    as the first-MOT suggestion keys on the owner's region (§7.1). Each
+    owner's locale is read once per request. Everyone sees the same plate
+    for the same car, whoever is looking.
+  - **Sizes:** `sm` (a chip: lists, pickers, the overlay on a photo) and
+    `md` (cards, the vehicle header, the pinned card, the sale pack
+    cover). The characters use the display font, bold, letter-spaced, as
+    the prototype draws them (#202). The plate never wraps; a plate wider
+    than its box is cut with an ellipsis, and a registration over ten
+    characters carries the full text in a `title`.
+  - **Colours** are tokens (`--plate-bg-gb`, `--plate-bg-neutral`,
+    `--plate-fg`, `--plate-border`, `--plate-band`, `--plate-band-fg`),
+    **the same in light and dark** (a plate is an object, not a surface)
+    and never following the accent. The characters on each plate, and
+    "UK" on the band, meet 4.5:1, checked by the colour contrast test.
+  - **Accessibility:** one element. The band is `aria-hidden` and
+    `user-select: none`, so a screen reader and copy-and-paste get the
+    registration only. Yellow carries no meaning. Under
+    `@media (forced-colors: active)` the plate keeps a visible border in a
+    system colour.
+  - **Where:** garage cards, the *Your vehicles* tiles (over the photo's
+    lower-left corner), the pinned vehicle card, the vehicle header, the
+    *Cost of ownership* cards, the one-tap vehicle pickers, the delete
+    page and the sale pack cover (§7.19, #201). Everywhere else (page
+    eyebrows, `<select>` options, tables, History, every other print view,
+    the sale pack's running heads and summary, CSV, the API, Ask) keeps
+    the registration as text.
+  - No JavaScript, no image, no remote font. Other countries' plates are
+    parked (§12, #200).
 - **Sidebar:** the *Reminders* link carries a red badge with the number of
   open reminders that are *overdue* or *due* (hidden at zero). Below the
   navigation a *Vehicles* list shows every active vehicle with its car /
@@ -7274,6 +7319,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   password rule.
 - Trips (Phase 33.3, #185): a period picker on the *Business and private*
   card (it shows the current tax year).
+- Registration plates (Phase 34.1, #200): styles for other countries,
+  Germany's white plate with a blue EU band and "D" first. Every region
+  but GB gets the neutral plate meanwhile.
 
 ---
 
@@ -7676,7 +7724,8 @@ task breakdowns live in the per-phase files; this is the map.
   plate on garage cards, dashboard tiles, the pinned card, the vehicle
   header and the vehicle pickers: UK style for a GB-region owner,
   neutral otherwise; fixed colours in both themes, checked contrast, plain
-  text in print, exports and the API (§7.1, §7.8, §8). No migration.
+  text in exports, the API and every print view but the sale pack cover
+  (§7.1, §7.8, §7.19, §8). No migration.
   Ships with Phase 34.3 as v3.1.0.
 - **Phase 34.2 — Expense breakdown and monthly spend widgets.** Two
   dashboard widgets from Reports' own figures: where the period's money went

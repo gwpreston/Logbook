@@ -36,7 +36,9 @@ final class ColourContrastTest extends TestCase
         ['amber', ['surface', 'amber-soft']],
         ['red', ['surface']],
         ['red', ['surface', 'red-soft']],
-        ['on-plate', ['plate']],
+        ['plate-fg', ['plate-bg-gb']],
+        ['plate-fg', ['plate-bg-neutral']],
+        ['plate-band-fg', ['plate-band']],
     ];
 
     /**
@@ -147,6 +149,23 @@ final class ColourContrastTest extends TestCase
             : '/:root\[data-accent="' . $accent . '"\]\[data-theme="dark"\] \{(.*?)\}/s';
 
         return preg_match($pattern, self::css(), $m) === 1 ? self::declarations($m[1]) : [];
+    }
+
+    /**
+     * A plate is an object, not a surface (spec.md §8 *Registration plate*):
+     * the dark theme never redefines its colours.
+     */
+    public function testPlatesKeepTheirColoursInTheDarkTheme(): void
+    {
+        $css = self::css();
+        preg_match('/:root\[data-theme="dark"\] \{(.*?)\}/s', $css, $explicit);
+        preg_match('/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\) \{(.*?)\}/s', $css, $media);
+        $dark = array_keys(self::declarations(($explicit[1] ?? '') . ($media[1] ?? '')));
+        $plate = array_filter($dark, static fn (string $token): bool => str_starts_with($token, 'plate'));
+
+        self::assertNotSame([], $dark, 'the dark blocks were found');
+        self::assertSame([], array_values($plate));
+        self::assertArrayHasKey('plate-bg-gb', self::tokens('dark'));
     }
 
     public function testBothDarkThemeBlocksMatch(): void

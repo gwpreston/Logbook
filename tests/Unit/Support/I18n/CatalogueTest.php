@@ -29,8 +29,8 @@ final class CatalogueTest extends TestCase
         // Commands to type are not translated.
         'backup/index.twig' => ['php bin/backup.php create', 'php bin/backup.php restore logbook-backup.zip --yes'],
         'settings/jobs/index.twig' => ['php bin/run-job.php --list', 'php bin/run-job.php reminders'],
-        // A macro that prints attributes, not text.
-        'macros/ui.twig' => ['aria-describedby=', 'aria-invalid="true"'],
+        // A macro that prints attributes, not text; the UK plate's band is lettering on the plate, not translated.
+        'macros/ui.twig' => ['aria-describedby=', 'aria-invalid="true"', '>UK<'],
     ];
 
     /**

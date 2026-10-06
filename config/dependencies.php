@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Logbook\Service\Ai\Insights\AiInsightsJob;
 use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Incident\IncidentTwigExtension;
+use Logbook\Service\Vehicle\PlateTwigExtension;
 use Logbook\Service\Finance\FinanceTwigExtension;
 use Doctrine\DBAL\Connection;
 use Logbook\Service\Ai\Ask\AskTwigExtension;
@@ -274,6 +275,9 @@ return [
         $fuelPrices = $c->get(FuelPricesTwigExtension::class);
         assert($fuelPrices instanceof FuelPricesTwigExtension);
         $twig->addExtension($fuelPrices);
+        $plates = $c->get(PlateTwigExtension::class);
+        assert($plates instanceof PlateTwigExtension);
+        $twig->addExtension($plates);
 
         return $twig;
     },

@@ -14,7 +14,7 @@
     <div class="pinned__media">{{ ui.vehicle_photo(vehicle) }}</div>
     <div class="pinned__body">
         <div class="vehicle-card__tags">
-            {% if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span>{% endif %}
+            {{ ui.plate(vehicle.data.registration, 'md', plate_style(vehicle)) }}
             <span class="pill">{{ ('vehicle.fuel.' ~ vehicle.data.fuelType.value)|trans }}</span>
         </div>
         <div>
