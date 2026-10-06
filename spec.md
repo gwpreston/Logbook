@@ -7072,7 +7072,7 @@ owner. Decided 2026-10-06 (#212–#217).
   cleared nor on the keep-list, so a table added later cannot silently
   survive a reset.
 - **The job** `demo_reset` (§7.30): interval `DEMO_RESET_HOURS` (#213,
-  24 by default), listed only while the demo is active. It is **excluded
+  24 by default), due when the marker's reset time plus the interval has passed (so a freshly seeded demo is not reset by its first pass), listed only while the demo is active. It is **excluded
   from the page-visit trigger**, so a visitor's request never waits for a
   reset: it runs from cron, the Docker scheduler or the external URL.
   `php bin/demo-reset.php [--yes]` runs the same service by hand and

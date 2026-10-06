@@ -2,7 +2,7 @@
 
 *A public demo that resets itself and cannot hurt anyone, including you.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 35.2 as
+Status: ✅ complete · no release of its own (ships with Phase 35.2 as
 **v3.2.0**) · file lives in `docs/phases/`
 
 Logbook has sample data (`DemoDataSeeder`, loaded by
@@ -251,13 +251,18 @@ passwords) first.
       route inventory fails for a route with no `demo:` declaration.
 - [x] Integration: `demo_reset` is not triggered by a page visit; the CLI
       refuses without the marker.
-- [ ] Every test on SQLite, PostgreSQL, MySQL and MariaDB.
+- [x] Every test on SQLite, PostgreSQL, MySQL and MariaDB (`bin/test-all-dbs.sh`).
 
 ### 35.1.6 Checks
-- [ ] A smoke test: start the production image with `DEMO_MODE=true`, sign
-      in as `demo`, reset by CLI, sign in again.
-- [ ] `design-reviewer` agent on the banner, the sign-in page and the
-      blocked page at 375, 768 and 1280 px, light and dark.
+- [x] A smoke test: start the production image with `DEMO_MODE=true`, sign
+      in as `demo`, reset by CLI, sign in again. `bin/smoke-test.sh demo`
+      (and a CI step); on the owner's Windows machine the script's shared
+      `expect` helper stops at its first request whatever the variant, so the
+      same flow was run by hand against the production image on PostgreSQL:
+      `/setup` 404, sign in, banner, `/settings/users` 403, API 403, reset by
+      CLI, signed out with the reset notice, signed in again.
+- [x] `design-reviewer` agent on the banner, the sign-in page and the
+      blocked page at 375, 768 and 1280 px, light and dark (below).
 
 ### Release
 - [ ] Ships with Phase 35.2 as **v3.2.0**.
@@ -312,6 +317,32 @@ CSV and app imports; jobs and the update check; a test notification and the
 calendar feed. The declaration is the blocked list plus the inventory test's
 `DEMO_ALLOWED` (a route in neither fails `RouteInventoryTest`), rather than an
 argument on every route.
+
+## Design review (2026-10-06)
+
+Checked at 375, 768 and 1280 px, light and dark, with JavaScript on and off:
+the sign-in page, dashboard, settings, profile, reminders settings, the
+blocked page and the vehicle form. No overflow anywhere; the banner wraps
+cleanly; *Fill in* appears only with JavaScript and the credentials stay as
+text without it. No HIGH or MEDIUM items. LOW, left as they are: the
+Settings *Profile* row still says "email, picture and password" in the demo;
+the profile page's first group is *Preferences*; Modules stays reachable
+(decided, #212). The blocked page shows the stack trace only because the
+dev stack runs with debug on.
+
+## Review
+
+The four review agents (bug, security, performance, design) found no
+CRITICAL or HIGH item. Fixed: a restore onto an instance holding the marker
+puts it back whatever the setting ids; the reset notice is shown only to a
+visitor whose session the reset ended; a freshly seeded demo is not reset by
+the first scheduler pass (the job is due when the marker's reset time plus
+the interval has passed); `bin/demo-reset.php` takes the job's lock; a
+failed first seeding is a logged 503; the reset reads the schema before its
+transaction, so SQLite never has to upgrade a read lock. Not done: hashing the
+two sample passwords before the transaction (about 0.3 s of a 0.7 s reset);
+the dashboard's 847 queries on the sample garage are on master and belong
+to a performance phase.
 
 ## Open questions
 
