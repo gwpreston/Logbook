@@ -5,6 +5,7 @@
 {% set widget_links = {
     fleet: {route: 'garage', label: 'dashboard.link.garage'},
     reminders: {route: 'reminders.index', label: 'reminders.view_all'},
+    calendar: {route: 'reminders.calendar', label: 'dashboard.link.calendar'},
     coming_up: {route: 'upcoming', label: 'coming_up.view_all'},
     spend: {route: 'reports.index', label: 'dashboard.link.reports'},
     expense_breakdown: {route: 'reports.index', label: 'dashboard.link.reports'},
@@ -132,6 +133,9 @@
                                     {% set link_query = dashboard.expenseBreakdown.reportQuery() %}
                                 {% elseif widget.value == 'monthly_expenses' and dashboard.monthlySpend %}
                                     {% set link_query = dashboard.monthlySpend.reportQuery() %}
+                                {% elseif widget.value == 'calendar' and dashboard.calendar %}
+                                    {# The calendar page for the month shown, and the chosen vehicle (spec.md §7.8 *Calendar*). #}
+                                    {% set link_query = {month: dashboard.calendar.key()}|merge(selected ? {vehicle: selected.id} : {}) %}
                                 {% else %}
                                     {% set link_query = widget.value in ['recent_activity', 'coming_up'] and selected ? {vehicle: selected.id} : {} %}
                                 {% endif %}

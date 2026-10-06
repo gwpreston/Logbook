@@ -13,6 +13,7 @@ use Logbook\Service\FuelPrices\CheapestFuelWidget;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\History\ActivityItem;
 use Logbook\Service\Insights\Insight;
+use Logbook\Service\Reminder\CalendarMonth;
 use Logbook\Service\Reminder\ReminderOverview;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Report\TrueCostWidget;
@@ -45,6 +46,8 @@ final readonly class Dashboard
         public ?PinnedVehicle $pinned = null,
         public array $fleet = [],
         public ?ReminderOverview $reminders = null,
+        /** The Calendar widget's month of open reminders (Phase 34.3); null while hidden. */
+        public ?CalendarMonth $calendar = null,
         public ?Report $spendThisMonth = null,
         public ?Report $spendLastMonth = null,
         /** Phase 34.2; null while hidden or with no vehicle in view whose costs the viewer may see. */

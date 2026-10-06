@@ -52,12 +52,14 @@ final readonly class HomeAction
         $customise = ($query['customise'] ?? null) === '1';
         $vehicle = $query['vehicle'] ?? null;
         $vehicleId = !$customise && is_string($vehicle) && ctype_digit($vehicle) ? (int) $vehicle : null;
-        // The true cost and expense breakdown widgets' periods (spec.md §7.35, §7.8): links, not saved settings.
+        // The true cost and expense breakdown widgets' periods and the calendar's month (spec.md §7.35, §7.8):
+        // links, not saved settings.
         $dashboard = $this->dashboards->build(
             $user,
             $vehicleId,
             TrueCostRange::chosen($query['true_cost'] ?? null),
             ExpensePeriod::chosen($query['expenses'] ?? null),
+            $query['calendar'] ?? null,
         );
 
         return $this->view->render($request, $response, 'home.twig', [

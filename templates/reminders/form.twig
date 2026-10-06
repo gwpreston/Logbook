@@ -14,7 +14,7 @@
 
 {% block content %}
     <div class="page__stack page__stack--narrow">
-        <a class="back-link" href="{{ url_for('reminders.index') }}">{{ ui.icon('chevron_left') }}{{ 'reminders.title'|trans }}</a>
+        <a class="back-link" href="{{ return_to ?: url_for('reminders.index') }}">{{ ui.icon('chevron_left') }}{{ 'reminders.title'|trans }}</a>
 
         <header class="page-header">
             <h1 class="page-header__title">{{ heading }}</h1>
@@ -26,7 +26,7 @@
         {% endif %}
 
         <form class="form" method="post" action="{{ editing ? url_for('reminders.edit', {reminder: reminder.id}) : url_for('reminders.create') }}">
-            {{ ui.csrf(csrf) }}
+            {{ ui.csrf(csrf) }}{{ ui.return_field(return_to) }}
             {% include 'ask/_draft_notice.twig' %}
 
             <section class="card">
@@ -49,7 +49,7 @@
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'reminders.add_submit')|trans }}</button>
-                <a data-modal-cancel class="btn btn--lg" href="{{ url_for('reminders.index') }}">{{ 'form.cancel'|trans }}</a>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('reminders.index') }}">{{ 'form.cancel'|trans }}</a>
                 {% if editing %}
                     <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('reminders.delete', {reminder: reminder.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}

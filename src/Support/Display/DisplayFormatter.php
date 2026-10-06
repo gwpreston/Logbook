@@ -482,6 +482,37 @@ final readonly class DisplayFormatter
     }
 
     /**
+     * A calendar date by an ICU skeleton, in the user's language and order:
+     * `EEEEdMMMM` → "Monday 12 October" ("Monday, October 12" in the US),
+     * `ccccc` → "M" (a weekday initial), `cccc` → "Monday".
+     */
+    public function skeleton(?DateTimeInterface $date, string $skeleton): string
+    {
+        if ($date === null) {
+            return '';
+        }
+
+        // A calendar formats ~80 dates with a handful of skeletons: build each formatter once.
+        /** @var array<string, IntlDateFormatter> $formatters */
+        static $formatters = [];
+        $locale = $this->locale();
+        if (!isset($formatters[$locale . '|' . $skeleton])) {
+            $pattern = IntlDatePatternGenerator::create($locale)?->getBestPattern($skeleton);
+            $formatters[$locale . '|' . $skeleton] = new IntlDateFormatter(
+                $locale,
+                IntlDateFormatter::NONE,
+                IntlDateFormatter::NONE,
+                'UTC',
+                null,
+                is_string($pattern) && $pattern !== '' ? $pattern : 'yyyy-MM-dd',
+            );
+        }
+        $formatted = $formatters[$locale . '|' . $skeleton]->format($date);
+
+        return is_string($formatted) ? $formatted : $date->format('Y-m-d');
+    }
+
+    /**
      * A month's name on its own in the user's language (ICU stand-alone
      * form): 1 → "January" / "Januar", or "Jan" short.
      */

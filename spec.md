@@ -1880,6 +1880,73 @@ iCal/webcal feed so items appear in the user's calendar.
   in); an unknown or revoked token, or a disabled user's, gets a 404. It
   covers the user's recipient vehicles (their own and those shared with
   *Send me its reminders*; Phase 19).
+- **Calendar view** (Phase 34.3): the same reminders a month at a time.
+  - **Switch.** `/reminders` gets *List* and *Calendar* (two links; the
+    current one has `aria-current`). The calendar is
+    `/reminders/calendar?month=YYYY-MM`, with `&vehicle=`, `&closed=0`
+    and `&day=YYYY-MM-DD` (below). Without `month` it is the month of
+    `day`, else the current month in the viewer's time zone; an invalid
+    `month` falls back the same way. A `day` outside the month shown, or
+    not a real date, is ignored. Months more than five years either side
+    of today still render (empty), but *Previous* and *Next* stop there.
+    The sidebar and the mobile bottom navigation do not change: the
+    calendar is a view of Reminders, not a new destination.
+  - **What appears.** Exactly the reminders `/reminders` shows this
+    viewer: the same sources, module gates and access (Phase 19), no
+    archived vehicles, read through the same service and its sync on read
+    (one read per page, however many vehicles). Each is placed on its
+    `due_on`, a calendar date never shifted through a time zone. Projected
+    *Coming up* items are not shown (#207): *Coming up* stays its own page.
+  - **Closed reminders** (#208, #243): done and dismissed ones are shown
+    by default, muted, with their status in words. `closed=0` hides them;
+    the page offers *Hide done and dismissed* / *Show done and dismissed*
+    as links (a URL choice, not a stored setting).
+  - **Overdue strip.** Above the grid, a line with the number of overdue
+    reminders, links to the first three (most overdue first) and a link to
+    the list, so an old overdue item is found without paging back through
+    months. An overdue reminder also appears on its own date.
+  - **Not on the calendar yet.** Open reminders with no `due_on` (a
+    distance-only schedule or manual reminder, a tyre wear-out without a
+    date) are listed under the grid, as on the list.
+  - **Markup** (#211, found while starting: week numbers need rows). The
+    month is an ordered list of **weeks**; each week is a list item with
+    its week number ("Week 41", from ICU with the viewer's locale, so it
+    follows the same rules as the first day of the week: ISO-style in
+    `en_GB` and `de`, US-style in `en_US`) and an ordered list of its
+    seven days. On wide screens a week is a row of the grid with its
+    number in a narrow first column. Each day is a list item with an
+    anchor id (`day-YYYY-MM-DD`), its date as text (the weekday included,
+    visually hidden on wide screens) and its items. There is no ARIA
+    `grid` role: it would promise arrow-key behaviour the page does not
+    have. The first day of the week comes from the viewer's locale (ICU),
+    not a setting. Days of the neighbouring months fill the first and
+    last week, dimmed, with no items. Weekday names and month names come
+    from ICU.
+  - **Small screens:** while the month is under 720 px wide (a phone, or
+    a tablet beside the sidebar; measured on the month, not the window,
+    found by the design review), days without items and weeks with none
+    are hidden and the rest read as an agenda, today marked; each week
+    keeps its number as a small heading. Links there are 44 px touch
+    targets.
+  - **A day shows up to three items**, open ones first by urgency, then
+    closed ones, so a closed item never pushes an open one out; more
+    become a *+N more* link to `?day=` for that date. With a `day`, a
+    panel under the grid lists that day's items in full, each with its
+    actions as on the list (done, dismiss, reopen and edit return to the
+    same calendar page), and an *Add reminder* link (the manual-reminder
+    form with the date filled in, `/reminders/new?due=YYYY-MM-DD`; #209)
+    wherever the list offers *Add reminder*. This works without
+    JavaScript. The form ignores a `due` that is not a real date.
+  - **An item** shows its source icon, its title, a status in words and
+    an icon (*Overdue*, *Due*, *Upcoming*, *Done*, *Dismissed*: colour is
+    never the only cue) and its vehicle (the plate chip, §8). It links to
+    the same place the list links.
+  - **Vehicle filter:** the dashboard's chips (`?vehicle=`, §7.8), with
+    two or more active vehicles; the month links keep it.
+  - **Feed hint.** Under the grid: "See these in your own calendar app",
+    linking to the feed section of Settings → Reminders.
+  - **`reminders` off:** the calendar answers 404 and the *Calendar*
+    switch and widget are gone, as the list is.
 - **Tyre reminders** (Phase 11.2): source `tyre`, `source_id` = the
   vehicle's id, so one reminder per vehicle: four tyres wearing together
   are one nudge, not four pushes.
@@ -2288,8 +2355,10 @@ toggles.
     up to exactly 100%. Costs are never negative (§7.7), so neither is a
     group.
   - **A bar** of the groups' shares above the rows, drawn with CSS (no
-    chart library) in the groups' colour tokens. Every row carries its
-    label, amount and percentage as text, so colour is never the only cue.
+    chart library) in the groups' colour tokens, each at least 3:1
+    against the card in both themes (#242: the light theme's *Tax* and
+    *Other* darkened in Phase 34.3). Every row carries its label, amount
+    and percentage as text, so colour is never the only cue.
   - Each row links to Reports for the same vehicle selection, the matching
     period and that group (`group=`, §7.7 *Costs filter*); the title row
     links to Reports for the period.
@@ -2323,6 +2392,22 @@ toggles.
   **Cost:** the dashboard asks the report service once for every spend
   figure it shows (*spend this month*, the breakdown, the 12 months),
   reading the ledger once for the whole vehicle set, not per vehicle.
+- **Calendar** (id `calendar`, Phase 34.3; with `reminders` on; after
+  *upcoming reminders* in the default order, appended to saved layouts by
+  the rule above; #210): a small month, the viewer's current month in
+  their time zone: weekday initials from ICU in the viewer's first day of
+  the week, the days, today marked, no week numbers. It counts **open**
+  reminders only (#244). A day with reminders shows how many and its most
+  urgent status (overdue before due before upcoming) as an icon, with
+  the words in its `aria-label` ("12 October: 2 reminders, 1 overdue"),
+  and links to that day on the calendar page (`/reminders/calendar?month=
+  …&day=…`, keeping `?vehicle=`). Under the grid, one line: "N reminders
+  this month, M overdue". *Previous* and *Next* month are links
+  (`/?calendar=YYYY-MM`, keeping `?vehicle=`, the same five-year limit as
+  the page; an invalid value is the current month); the title links to
+  the calendar page for the month shown. It follows the vehicle chips; the
+  pinned vehicle shows that vehicle only. It shares the dashboard's one
+  read of the reminders with *Upcoming reminders*.
 - **Vehicle filter:** with two or more active vehicles, a row of chips under
   the greeting — *All vehicles* and one per active vehicle with its type
   icon. Each chip is a link (`/?vehicle={id}`; the current one has
@@ -2346,7 +2431,7 @@ toggles.
   ids are dropped and widgets added in later releases are appended, so an old
   saved layout never breaks. Without a saved layout (and without JS) the
   default order applies: needs attention (Phase 24), upcoming reminders,
-  insights (Phase 33.3), coming up, spend this month, expense breakdown and
+  calendar (Phase 34.3), insights (Phase 33.3), coming up, spend this month, expense breakdown and
   monthly spend (Phase 34.2), recent fuel, your vehicles, efficiency
   trend, compliance status, mileage, recent activity, business mileage,
   finance, cheapest fuel, true cost.
@@ -2848,8 +2933,10 @@ Disabled modules are removed from nav, routes, and dashboard.
     reminders are neither listed nor sent (kept, untouched, for when the
     module returns); maintenance costs leave reports.
   - `compliance` off: the same for documents and document reminders.
-  - `reminders` off: the reminder list, Settings → Reminders' notification
-    part, the calendar feed (404) and the scheduled notifications; lead
+  - `reminders` off: the reminder list, the calendar view (404) and the
+    *Calendar* widget (Phase 34.3; a saved layout keeps its place),
+    Settings → Reminders' notification part, the calendar feed (404) and
+    the scheduled notifications; lead
     times still drive the due badges on the vehicle tabs.
   - `reports` off: Reports, its CSV export, the ownership report and its
     CSV (Phase 14.2), and the spend widgets (*Spend this month*, and from
@@ -7793,8 +7880,11 @@ task breakdowns live in the per-phase files; this is the map.
   A month view of the reminders the list shows, with an overdue strip, a
   list of those with no date, a day panel and *Add reminder* from a day,
   built as an accessible list laid out as a grid and as an agenda on a
-  phone; a *Calendar* dashboard widget (§7.6, §7.8, §7.10). No migration.
-  Release v3.1.0.
+  phone, with week numbers from the locale and done and dismissed
+  reminders shown muted unless hidden; a *Calendar* dashboard widget of
+  open reminders (§7.6, §7.8, §7.10; #207–#211, #243, #244). The
+  light-theme *Tax* and *Other* chart colours darkened to 3:1 (#242). No
+  migration. Release v3.1.0.
 - **Phase 35.1 — Demo mode.** `DEMO_MODE` seeds an empty database and marks
   it as a demo; a guard means only a seeded demo can ever be reset; a
   `demo_reset` job and `bin/demo-reset.php`; blocked actions, no outbound

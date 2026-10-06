@@ -1,0 +1,164 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/reminders.twig' as rem %}
+
+{# The reminders calendar (spec.md §7.6 *Calendar view*): a list of weeks,
+   each a list of days, laid out as a grid on wide screens and read as an
+   agenda on a phone. Every control is a link, so it works without JS. #}
+
+{% set active_nav = 'reminders' %}
+{% set month_label = calendar.month|local_month(false) %}
+{% set here = keep|merge({month: calendar.key()}) %}
+
+{% block title %}{{ month_label }} · {{ 'reminders.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'reminders.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'reminders.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% include 'reminders/_switch.twig' with {view: 'calendar'} %}
+
+        {# The dashboard's vehicle chips (spec.md §7.8): plain links that keep the month. #}
+        {% if vehicles|length > 1 %}
+            <nav class="vehicle-filter" aria-label="{{ 'dashboard.filter.label'|trans }}">
+                <ul class="vehicle-filter__list">
+                    <li>
+                        <a class="chip vehicle-filter__chip" href="{{ url_for('reminders.calendar', {}, here|filter((v, k) => k != 'vehicle')) }}"{% if not selected %} aria-current="page"{% endif %}>{{ ui.icon('apps') }}<span>{{ 'dashboard.filter.all'|trans }}</span></a>
+                    </li>
+                    {% for vehicle in vehicles %}
+                        <li>
+                            <a class="chip vehicle-filter__chip" href="{{ url_for('reminders.calendar', {}, here|merge({vehicle: vehicle.id})) }}"{% if selected and selected.id == vehicle.id %} aria-current="page"{% endif %}>{{ ui.icon(vehicle.data.type.icon()) }}<span>{{ vehicle.name() }}</span></a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
+
+        {# Overdue strip: overdue items sit in the past, where a month view stops looking. #}
+        {% if calendar.overdue is not empty %}
+            <section class="alert alert--error cal-overdue" aria-labelledby="cal-overdue-title">
+                {{ ui.icon('warning') }}
+                <div>
+                    <p id="cal-overdue-title" class="cal-overdue__title">{{ 'reminders.month.overdue'|trans({count: calendar.overdue|length}) }}</p>
+                    <ul class="cal-overdue__list">
+                        {% for entry in calendar.overdueLinks() %}
+                            {% set due = entry.reminder.dueOn %}
+                            <li>
+                                {%- if due -%}
+                                    <a href="{{ url_for('reminders.calendar', {}, keep|merge({month: due|date('Y-m'), day: due|date('Y-m-d')})) }}#cal-day">{{ wording.name(entry.reminder) }}</a>
+                                {%- else -%}
+                                    <a href="{{ url_for('reminders.index') }}">{{ wording.name(entry.reminder) }}</a>
+                                {%- endif %}
+                                <span class="muted">· {{ entry.vehicle.name() }}{% if due %} · {{ due|local_date }}{% endif %}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <a class="cal-overdue__all" href="{{ url_for('reminders.index') }}">{{ 'reminders.month.overdue_list'|trans }}</a>
+                </div>
+            </section>
+        {% endif %}
+
+        <section class="card cal" aria-labelledby="cal-month">
+            <div class="cal__head">
+                <h2 class="cal__month" id="cal-month">{{ month_label }}</h2>
+                <nav class="cal__nav" aria-label="{{ 'reminders.month.months'|trans }}">
+                    {% if calendar.previous() %}
+                        <a class="icon-btn" href="{{ url_for('reminders.calendar', {}, keep|merge({month: calendar.previous()})) }}">{{ ui.icon('chevron_left') }}<span class="visually-hidden">{{ 'reminders.month.previous'|trans }}</span></a>
+                    {% endif %}
+                    <a class="btn btn--ghost" href="{{ url_for('reminders.calendar', {}, keep) }}">{{ 'reminders.month.this_month'|trans }}</a>
+                    {% if calendar.next() %}
+                        <a class="icon-btn" href="{{ url_for('reminders.calendar', {}, keep|merge({month: calendar.next()})) }}">{{ ui.icon('chevron_right') }}<span class="visually-hidden">{{ 'reminders.month.next'|trans }}</span></a>
+                    {% endif %}
+                </nav>
+                <a class="cal__closed" href="{{ url_for('reminders.calendar', {}, calendar.closed ? here|merge({closed: '0'}) : here|filter((v, k) => k != 'closed')) }}">
+                    {{- ui.icon(calendar.closed ? 'visibility_off' : 'visibility') }}{{ (calendar.closed ? 'reminders.month.hide_closed' : 'reminders.month.show_closed')|trans -}}
+                </a>
+            </div>
+
+            {# Weekday headings for the grid; each day also names its weekday, so these are hidden from screen readers. #}
+            <div class="cal__weekdays" aria-hidden="true">
+                <span class="cal__weeknum-head"></span>
+                {% for weekday in calendar.weekdays() %}<span>{{ weekday|date_skeleton('ccc') }}</span>{% endfor %}
+            </div>
+
+            {% if not calendar.hasItems() %}
+                <p class="muted cal__none">{{ 'reminders.month.empty_month'|trans }}</p>
+            {% endif %}
+
+            <ol class="cal__weeks">
+                {% for week in calendar.weeks %}
+                    <li class="cal__week{{ week.hasItems() ? '' : ' cal__week--empty' }}">
+                        <p class="cal__weeknum"><span class="visually-hidden">{{ 'reminders.month.week'|trans({number: week.number}) }}</span><span aria-hidden="true">{{ 'reminders.month.week_short'|trans({number: week.number}) }}</span></p>
+                        <ol class="cal__days">
+                            {% for d in week.days %}
+                                {% if d.inMonth %}
+                                    <li id="{{ d.anchor() }}" class="cal__day{{ d.hasItems() ? '' : ' cal__day--empty' }}{{ d.isToday ? ' cal__day--today' }}"{% if d.isToday %} aria-current="date"{% endif %}>
+                                        <p class="cal__date">
+                                            <time datetime="{{ d.key() }}"><span class="cal__weekday">{{ d.date|date_skeleton('cccc') }} </span><span class="cal__daynum">{{ d.date|date_skeleton('d') }}</span><span class="cal__monthname"> {{ d.date|date_skeleton('LLLL') }}</span></time>
+                                            {%- if d.isToday %} <span class="cal__today">{{ 'reminders.month.today'|trans }}</span>{% endif -%}
+                                        </p>
+                                        {% if d.hasItems() %}
+                                            <ul class="cal__items">
+                                                {% for entry in d.shown() %}{{ rem.calendar_item(entry, wording) }}{% endfor %}
+                                            </ul>
+                                            {% if d.more() > 0 %}
+                                                <a class="cal__more" href="{{ url_for('reminders.calendar', {}, here|merge({day: d.key()})) }}#cal-day">{{ 'reminders.month.more'|trans({count: d.more()}) }}<span class="visually-hidden"> {{ d.date|date_skeleton('dMMMM') }}</span></a>
+                                            {% elseif d.items|length > 0 %}
+                                                <a class="cal__open" href="{{ url_for('reminders.calendar', {}, here|merge({day: d.key()})) }}#cal-day">{{ 'reminders.month.open_day'|trans }}<span class="visually-hidden"> {{ d.date|date_skeleton('dMMMM') }}</span></a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </li>
+                                {% else %}
+                                    {# A neighbouring month's day: fills the row, dimmed, with nothing on it. #}
+                                    <li class="cal__day cal__day--out" aria-hidden="true"><p class="cal__date"><span class="cal__daynum">{{ d.date|date_skeleton('d') }}</span></p></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ol>
+                    </li>
+                {% endfor %}
+            </ol>
+        </section>
+
+        {# A day in full (spec.md §7.6): every item with its actions, and Add reminder with the date. #}
+        {% if day %}
+            {% set return_path = url_for('reminders.calendar', {}, here|merge({day: day.key()})) %}
+            <section class="card cal-day" id="cal-day" aria-labelledby="cal-day-title">
+                <div class="toolbar">
+                    <h2 class="card__title" id="cal-day-title">{{ day.date|date_skeleton('yMMMMEEEEd') }}</h2>
+                    {% if has_vehicles %}
+                        <a class="btn btn--primary" href="{{ url_for('reminders.create', {}, (selected ? {vehicle: selected.id} : {})|merge({due: day.key(), return: return_path})) }}" data-modal>{{ ui.icon('add') }}{{ 'reminders.add'|trans }}</a>
+                    {% endif %}
+                </div>
+                {% if day.items is empty %}
+                    <p class="muted">{{ 'reminders.month.day_empty'|trans }}</p>
+                {% else %}
+                    <ul class="list reminder-list">
+                        {% for entry in day.items %}
+                            {{ rem.row(entry, wording, calendar.today, csrf, return_path) }}
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <a class="cal-day__close" href="{{ url_for('reminders.calendar', {}, here) }}#{{ day.anchor() }}">{{ 'reminders.month.close_day'|trans }}</a>
+            </section>
+        {% endif %}
+
+        {% if calendar.undated is not empty %}
+            <section class="card" aria-labelledby="cal-undated">
+                <h2 class="card__title" id="cal-undated">{{ 'reminders.month.undated'|trans({count: calendar.undated|length}) }}</h2>
+                <p class="muted">{{ 'reminders.month.undated_lead'|trans }}</p>
+                <ul class="list reminder-list">
+                    {% for entry in calendar.undated %}
+                        {{ rem.row(entry, wording, calendar.today, csrf, url_for('reminders.calendar', {}, here)) }}
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        <p class="field__hint"><a href="{{ url_for('settings.reminders') }}#calendar">{{ 'reminders.month.feed_hint'|trans }}</a></p>
+    </div>
+{% endblock %}

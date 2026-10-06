@@ -4,9 +4,36 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
-## [Unreleased]
+## [3.1.0] — 2026-10-06
+
+Phases 34.1–34.3: **see it at a glance**. Registration plates that look
+like plates, where the money went on the dashboard, and what is due as a
+month.
+
+No migration, no configuration change and no change to backups: pull and
+restart.
+
+### Upgrade notes
+- The new dashboard widgets (*Calendar*, *Expense breakdown* and *Monthly
+  spend*) are added to the end of an existing dashboard. Move or hide them
+  under *Customise*; *Reset layout* puts them in their default places.
 
 ### Added
+- **Reminders calendar** (Phase 34.3): Reminders gets a *Calendar* view
+  beside the *List*, a month at a time. It shows exactly the reminders the
+  list shows you, on their due dates, with the week starting on the day
+  your language starts it and week numbers to match; an overdue line
+  above the month with links to the oldest; reminders with no date yet
+  under it; and done and dismissed ones muted (*Hide done and dismissed*
+  takes them away). A day with more than three opens in full under the
+  month with every action, and *Add reminder* with that date filled in.
+  On a phone the month reads as an agenda of the days that have
+  something on them. Every part works without JavaScript and follows the
+  dashboard's vehicle chips.
+- **Calendar widget** (Phase 34.3): a small month on the dashboard with
+  the days that have open reminders marked by how urgent they are; each
+  opens that day on the calendar. It follows the vehicle filter and goes
+  with the Reminders module.
 - **Expense breakdown and Monthly spend widgets** (Phase 34.2): two new
   dashboard widgets built from Reports' own figures. *Expense breakdown*
   shows where the money went by category, for *This month*, *Last 12
@@ -20,6 +47,8 @@ is called out explicitly.
   layout* puts them after *Spend this month*.
 
 ### Changed
+- The light theme's *Tax* and *Other* chart colours are darker, so every
+  category's bar and segment stands out from the card at 3:1 or better.
 - **Registration plates** (Phase 34.1): a registration is drawn as a number
   plate in its owner's style: a yellow UK plate with a blue "UK" band for
   an owner whose locale is in GB, a white neutral plate for everyone else.
@@ -2297,7 +2326,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/gwpreston16/Logbook/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/gwpreston16/Logbook/compare/v2.16.0...v3.0.0
 [2.16.0]: https://github.com/gwpreston16/Logbook/compare/v2.15.1...v2.16.0
 [2.15.1]: https://github.com/gwpreston16/Logbook/compare/v2.15.0...v2.15.1

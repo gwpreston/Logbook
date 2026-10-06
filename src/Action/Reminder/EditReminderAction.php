@@ -52,6 +52,7 @@ final readonly class EditReminderAction
         $saved = $this->reminders->updateManual($user, $reminder, $data);
         RequestContext::session($request)->flash('success', 'reminders.updated', ['title' => $saved->title]);
 
-        return $this->redirect->toRoute('reminders.index');
+        // Back to the calendar when it was opened from there (a validated `return`).
+        return $this->redirect->backOr($request, 'reminders.index');
     }
 }

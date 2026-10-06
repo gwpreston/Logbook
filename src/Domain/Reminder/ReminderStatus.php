@@ -61,4 +61,19 @@ enum ReminderStatus: string
             self::Upcoming, self::Dismissed => '',
         };
     }
+
+    /**
+     * Icon beside the status in words (the calendar, spec.md §7.6): colour
+     * is never the only cue.
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::Overdue => 'warning',
+            self::Due => 'notifications_active',
+            self::Upcoming => 'event_upcoming',
+            self::Done => 'check_circle',
+            self::Dismissed => 'block',
+        };
+    }
 }

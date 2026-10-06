@@ -1,0 +1,47 @@
+{# Calendar (spec.md §7.8): a small month of open reminders. Each marked day says how many and the
+   most urgent status in its label, and opens that day on the calendar page. #}
+{% import 'macros/ui.twig' as ui %}
+{% set cal = dashboard.calendar %}
+{% if cal %}
+    {% set keep = selected ? {vehicle: selected.id} : {} %}
+    <div class="mini-cal">
+        <div class="mini-cal__head">
+            {% if cal.previous() %}
+                <a class="icon-btn" href="{{ url_for('home', {}, keep|merge({calendar: cal.previous()})) }}#widget-calendar">{{ ui.icon('chevron_left') }}<span class="visually-hidden">{{ 'reminders.month.previous'|trans }}</span></a>
+            {% else %}<span></span>{% endif %}
+            <p class="mini-cal__month">{{ cal.month|local_month(false) }}</p>
+            {% if cal.next() %}
+                <a class="icon-btn" href="{{ url_for('home', {}, keep|merge({calendar: cal.next()})) }}#widget-calendar">{{ ui.icon('chevron_right') }}<span class="visually-hidden">{{ 'reminders.month.next'|trans }}</span></a>
+            {% else %}<span></span>{% endif %}
+        </div>
+        <div class="mini-cal__weekdays" aria-hidden="true">
+            {% for weekday in cal.weekdays() %}<span>{{ weekday|date_skeleton('ccccc') }}</span>{% endfor %}
+        </div>
+        <ol class="mini-cal__days" aria-label="{{ cal.month|local_month(false) }}">
+            {% for week in cal.weeks %}
+                {% for d in week.days %}
+                    {% if not d.inMonth %}
+                        <li class="mini-cal__day mini-cal__day--out" aria-hidden="true"></li>
+                    {% else %}
+                        {% set urgent = d.urgent() %}
+                        <li class="mini-cal__day{{ d.isToday ? ' mini-cal__day--today' }}{{ urgent ? ' mini-cal__day--' ~ urgent.value }}"{% if d.isToday %} aria-current="date"{% endif %}>
+                            {% if urgent %}
+                                {% set label = 'dashboard.calendar.day'|trans({
+                                    date: d.date|date_skeleton('dMMMM'),
+                                    count: d.items|length,
+                                    urgent: ('dashboard.calendar.urgent.' ~ urgent.value)|trans({count: d.count(urgent)}),
+                                }) %}
+                                <a class="mini-cal__link" href="{{ url_for('reminders.calendar', {}, keep|merge({month: cal.key(), day: d.key()})) }}#cal-day" aria-label="{{ label }}" title="{{ label }}">
+                                    <span class="mini-cal__num">{{ d.date|date_skeleton('d') }}</span>{{ ui.icon(urgent.icon(), 'mini-cal__mark') }}
+                                </a>
+                            {% else %}
+                                <span class="mini-cal__num">{{ d.date|date_skeleton('d') }}</span>
+                            {% endif %}
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </ol>
+        <p class="muted mini-cal__summary">{{ 'dashboard.calendar.summary'|trans({count: cal.openCount(), overdue: cal.overdueCount()}) }}</p>
+    </div>
+{% endif %}

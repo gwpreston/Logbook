@@ -6,6 +6,7 @@ namespace Logbook\Service\Reminder;
 
 use DateTimeImmutable;
 use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Domain\Vehicle\Vehicle;
 
 /**
  * An owner's reminders, grouped for the in-app list (and, from Phase 5, the
@@ -49,5 +50,22 @@ final readonly class ReminderOverview
     public function top(int $limit): array
     {
         return array_slice($this->open, 0, $limit);
+    }
+
+    /**
+     * Narrowed to one vehicle (the vehicle filter); unchanged for the fleet.
+     */
+    public function forVehicle(?Vehicle $vehicle): self
+    {
+        if ($vehicle === null) {
+            return $this;
+        }
+        $mine = static fn (ReminderEntry $e): bool => $e->vehicle->id === $vehicle->id;
+
+        return new self(
+            array_values(array_filter($this->open, $mine)),
+            array_values(array_filter($this->closed, $mine)),
+            $this->today,
+        );
     }
 }

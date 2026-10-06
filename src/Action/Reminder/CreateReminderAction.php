@@ -10,6 +10,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Reminder\ManualReminderForm;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
@@ -18,7 +19,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * GET|POST /reminders/new — add a manual reminder. `?vehicle=3` pre-selects
- * the vehicle.
+ * the vehicle; `?due=2026-10-12` fills in the date.
  */
 final readonly class CreateReminderAction
 {
@@ -47,6 +48,11 @@ final readonly class CreateReminderAction
             if (is_string($title) && trim($title) !== '' && mb_strlen($title) <= ManualReminderForm::TITLE_MAX) {
                 $defaults['title'] = trim($title);
             }
+            // A day's *Add reminder* on the calendar (spec.md §7.6 *Calendar view*): a real date only.
+            $due = $request->getQueryParams()['due'] ?? null;
+            if (is_string($due) && LocalTime::parseDate($due) !== null) {
+                $defaults['due_on'] = $due;
+            }
             $defaults = $this->prefill->values($request, DraftKind::Reminder, null, $defaults);
 
             return $this->page->render($request, $response, $defaults);
@@ -61,6 +67,7 @@ final readonly class CreateReminderAction
         $this->prefill->saved($request);
         RequestContext::session($request)->flash('success', 'reminders.created', ['title' => $reminder->title]);
 
-        return $this->redirect->toRoute('reminders.index');
+        // Back to the calendar when it was opened from there (a validated `return`).
+        return $this->redirect->backOr($request, 'reminders.index');
     }
 }

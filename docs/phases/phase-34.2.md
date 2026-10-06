@@ -246,7 +246,8 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 
 The first four were decided by the owner on 2026-10-06, before the phase
 was built ([`open-questions.md`](open-questions.md) #203–#206); the last,
-found by the design review, is carried in the log as #242.
+found by the design review, was decided on the same day before Phase
+34.3 (#242).
 
 - **Overlap with *Spend this month*.** *Decided 2026-10-06 (#203):* keep
   all three widgets; look again after a release.
@@ -260,5 +261,6 @@ found by the design review, is carried in the log as #242.
 - **Light-theme category colours** (found by the design review): *Tax*
   (`--c-tax`, 2.22:1) and *Other* (`--c-other`, 2.47:1) are below 3:1 as
   graphics on white, in every spend bar and chart. Darken them, or keep
-  them because every segment has a text label beside it? Carried to the
-  log as #242; nothing changed here.
+  them because every segment has a text label beside it? *Decided
+  2026-10-06 (#242):* darken both in the light theme to at least 3:1
+  against the card; built in [Phase 34.3](phase-34.3.md).

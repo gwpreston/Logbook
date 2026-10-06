@@ -29,7 +29,7 @@ use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\History\ActivityFeed;
 use Logbook\Service\Insights\InsightsService;
 use Logbook\Service\Reminder\DueCounter;
-use Logbook\Service\Reminder\ReminderEntry;
+use Logbook\Service\Reminder\CalendarMonth;
 use Logbook\Service\Reminder\ReminderOverview;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
@@ -91,12 +91,14 @@ final readonly class DashboardService
      * Hidden widgets get no data: customise mode shows them folded up.
      *
      * @param int|null $vehicleId the selected vehicle; unknown or archived means the fleet
+     * @param mixed $calendarMonth the Calendar widget's `?calendar=YYYY-MM`; anything else is this month
      */
     public function build(
         User $user,
         ?int $vehicleId = null,
         TrueCostRange $trueCostRange = TrueCostRange::TwelveMonths,
         ExpensePeriod $expensePeriod = ExpensePeriod::DEFAULT,
+        mixed $calendarMonth = null,
     ): Dashboard {
         $layout = $this->layouts->load($user->id);
         $enabled = $this->features->all();
@@ -116,8 +118,9 @@ final readonly class DashboardService
             && !($selected !== null && $w === DashboardWidget::Fleet);
 
         // Read (and so sync) the reminders before counting what is due.
-        $overview = $enabled['reminders'] && ($show(DashboardWidget::Reminders) || $selected !== null)
-            ? self::only($this->reminders->overview($user), $selected)
+        $overview = $enabled['reminders']
+            && ($show(DashboardWidget::Reminders) || $show(DashboardWidget::Calendar) || $selected !== null)
+            ? $this->reminders->overview($user)->forVehicle($selected)
             : null;
 
         // Spend counts only the vehicles whose costs the user may see (spec.md §5 Costs);
@@ -171,6 +174,15 @@ final readonly class DashboardService
                 ? $this->snapshots->of($active, $counts, $attention?->counts() ?? [])
                 : [],
             reminders: $show(DashboardWidget::Reminders) ? $overview : null,
+            // Open reminders only (spec.md §7.8 *Calendar*, #244); the same read as *Upcoming reminders*.
+            calendar: $show(DashboardWidget::Calendar) && $overview !== null
+                ? CalendarMonth::of(
+                    $overview,
+                    CalendarMonth::chosen($calendarMonth, null, $overview->today),
+                    $user->preferences->locale,
+                    false,
+                )
+                : null,
             spendThisMonth: $spend['this_month'] ?? null,
             spendLastMonth: $spend['last_month'] ?? null,
             expenseBreakdown: isset($spend['breakdown'])
@@ -226,23 +238,6 @@ final readonly class DashboardService
         }
 
         return null;
-    }
-
-    /**
-     * The overview narrowed to one vehicle (unchanged for the fleet).
-     */
-    private static function only(ReminderOverview $overview, ?Vehicle $vehicle): ReminderOverview
-    {
-        if ($vehicle === null) {
-            return $overview;
-        }
-        $mine = static fn (ReminderEntry $e): bool => $e->vehicle->id === $vehicle->id;
-
-        return new ReminderOverview(
-            array_values(array_filter($overview->open, $mine)),
-            array_values(array_filter($overview->closed, $mine)),
-            $overview->today,
-        );
     }
 
     /**

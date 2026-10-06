@@ -143,6 +143,7 @@ final class RouteInventoryTest extends AppTestCase
         'log.pick',
         'fuel.quick',
         'reminders.index',
+        'reminders.calendar',
         'reminders.create',
         'reports.index',
         'reports.export',
