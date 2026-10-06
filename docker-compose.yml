@@ -26,6 +26,7 @@ services:
       DB_USER: ${DB_USER:-logbook}
       DB_PASSWORD: ${DB_PASSWORD:-logbook}
       SESSION_SECRET: ${SESSION_SECRET:-}
+      SESSION_SECURE: ${SESSION_SECURE:-}
       UPLOAD_PATH: /data/uploads
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
       # Reminders and notifications (see .env.example); empty = channel off.

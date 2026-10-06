@@ -66,8 +66,9 @@ Less than many apps do. This is what the code does today:
     guessing keys also delays everyone's good keys for 10 minutes
     ([deployment.md](deployment.md#the-rest-api-behind-a-proxy)).
 - **Header sign-in** ([sso.md](sso.md#header-sign-in)) is the one place an
-  address is trusted: the user header is read only from a connection whose
-  `REMOTE_ADDR` is in `AUTH_PROXY_TRUSTED`, which should be the proxy's
+  address is trusted: a plain user header is read only from a connection
+  whose `REMOTE_ADDR` is in `AUTH_PROXY_TRUSTED` (Authentik's signed JWT
+  mode checks the signature instead), which should be the proxy's
   address on the app's network. Forwarding headers are never consulted for
   it. **The examples here are plain proxies**: they pass on whatever
   headers the client sends, `Remote-User` included. Never set
@@ -263,7 +264,7 @@ use them break: `<base>/api/`, `<base>/calendar/`, `<base>/health` and
 | Pages load at a subpath but have no styles; assets 404 | `APP_BASE_PATH` isn't set, or doesn't match the proxy's prefix. Set it to `/logbook` exactly (a leading slash, no trailing one). |
 | `/logbook/garage` works, but a hard refresh (F5) on a deep link gives the proxy's 404 | The proxy only matches `/logbook` or `/logbook/` exactly. Match the prefix and everything under it (`location /logbook/`, `handle /logbook/*`, `PathPrefix(`/logbook/`)`). Check with `<your URL>/diagnostics/deep/link` and F5. |
 | A redirect loop at the subpath | Usually the prefix is added twice: the proxy rewrites `/logbook/x` to `/logbook/logbook/x`, or an `APP_URL` was used as the proxy target. Forward the path as it is, or strip it, and nothing else. |
-| Signing in returns to the sign-in page | The session cookie was dropped. `APP_URL` says `https://` but the site is reached over plain HTTP (the browser won't send a `Secure` cookie back), or the proxy changes the path the cookie belongs to. Use HTTPS, or set `SESSION_SECURE=false` only for a trial on a private network. |
+| First-run setup or signing in answers *400* with "expired", or returns to the sign-in page | The session cookie was dropped. `APP_URL` says `https://` but the site is reached over plain HTTP (the browser won't send a `Secure` cookie back), or the proxy changes the path the cookie belongs to. Use HTTPS, or until the proxy is in front, an `http://` `APP_URL`. `SESSION_SECURE=false` also works, only for a trial on a private network. |
 | Every request goes to the wrong site, or Traefik answers 404 | `LOGBOOK_DOMAIN` doesn't match the name in the browser: the routers match on the host name. |
 | The browser warns about the certificate | The certificate couldn't be issued: DNS doesn't point here yet, or port 80/443 isn't reachable. Caddy and Traefik log why (`docker compose logs proxy`). Traefik serves its own default certificate until it has one. |
 | Restoring a backup fails with `413` | The proxy's body size limit (nginx's `client_max_body_size`). |

@@ -54,6 +54,11 @@ unless set.
   route added later must choose. The compose files pass the three new
   variables on. No migration.
 
+### Fixed
+- The compose files pass `SESSION_SECURE` on to the app, so setting it in
+  `.env` next to them now has an effect (empty, the default, still follows
+  `APP_URL`).
+
 ## [3.1.0] — 2026-10-06
 
 Phases 34.1–34.3: **see it at a glance**. Registration plates that look
