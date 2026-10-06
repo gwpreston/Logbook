@@ -1,0 +1,15 @@
+# Logbook at the root of its own domain, behind Caddy with automatic HTTPS.
+# Used by compose.yml next to this file (docs/reverse-proxies.md#caddy).
+# Tested with Caddy 2.11.
+#
+# LOGBOOK_DOMAIN is the public name, e.g. logbook.example.com. Its DNS must
+# point here and ports 80 and 443 must reach Caddy for the certificate.
+
+{$LOGBOOK_DOMAIN} {
+	# Caddy sets X-Forwarded-For/-Proto/-Host itself; Logbook reads none of
+	# them (see the guide). No request size limit by default, so restoring a
+	# large backup works.
+	reverse_proxy app:80 {
+		health_uri /health
+	}
+}

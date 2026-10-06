@@ -71,8 +71,10 @@ answered on 2026-10-06, before Phase 35.1 started: keep both as they are.
 Phase 35.1's (#212–#217) were answered on 2026-10-06, before it was built
 (uploads blocked rather than capped, #214).
 Those of Phases 35.2–36.3 (#218–#241) were added on
-2026-10-06 when those phases were written and are still open; each
-row gives the answer the phase file drafts. #222, Phase 36.1's
+2026-10-06 when those phases were written; each row still open gives the
+answer the phase file drafts. Phase 35.2's #218–#220 were answered on
+2026-10-06, before it was built; #221 (a third-party script collection)
+stays the owner's, outside the phase. #222, Phase 36.1's
 `SESSION_SECRET` question, must be answered before any of Phase 36 is
 built.
 
@@ -295,9 +297,9 @@ built.
 | 215 | [35.1](phase-35.1.md) | Show the demo credentials on the sign-in page, or only in the docs? | Decided | Shown on the sign-in page as text, with a *Fill in* button when JavaScript is on (spec §7.36). | 2026-10-06 |
 | 216 | [35.1](phase-35.1.md) | Seeded dates: all relative to the run, or keep fixed history and shift only the recent year? | Decided | Every seeded date relative to the run (spec §7.36). | 2026-10-06 |
 | 217 | [35.1](phase-35.1.md) | One demo account or two (to try sharing, Phase 19)? | Decided | One account, `demo`, an admin (spec §7.36). | 2026-10-06 |
-| 218 | [35.2](phase-35.2.md) | An install script for the LXC, or docs only? | Needs a decision | Drafted: docs only. Recommendation: a script is more to maintain on every distribution release. | — |
-| 219 | [35.2](phase-35.2.md) | Which Proxmox route first: Docker in LXC or native PHP? | Needs a decision | Drafted: Docker in LXC first (matches the README quick start); native is lighter and Proxmox's own preference. | — |
-| 220 | [35.2](phase-35.2.md) | Where the Caddy and Traefik smoke tests run | Needs a decision | Drafted: the existing smoke job if it adds only a few minutes, else a scheduled workflow. | — |
+| 218 | [35.2](phase-35.2.md) | An install script for the LXC, or docs only? | Decided | Docs only: `docs/proxmox-lxc.md`, no install script (spec §10 *Proxmox VE*). | 2026-10-06 |
+| 219 | [35.2](phase-35.2.md) | Which Proxmox route first: Docker in LXC or native PHP? | Decided | Docker in LXC first (matches the README quick start), native PHP second in the same guide (spec §10 *Proxmox VE*). | 2026-10-06 |
+| 220 | [35.2](phase-35.2.md) | Where the Caddy and Traefik smoke tests run | Decided | The existing smoke job if it adds only a few minutes, else a scheduled workflow on changes to `docker/` and `docs/`; the measured time is in Phase 35.2's *Audit*. | 2026-10-06 |
 | 221 | [35.2](phase-35.2.md) | Listing in a third-party script collection | Needs a decision | Outside this phase; the owner's separate decision. | — |
 | 222 | [36.1](phase-36.1.md) | Does a default Docker install have a `SESSION_SECRET`? Should the entrypoint generate one? | Needs a decision | **Answer needed before any 36.1 code.** Recommendation: yes, generated on first start and kept in `/data`. Without it, the SMTP password and members' tokens can't be saved from the app. | — |
 | 223 | [36.1](phase-36.1.md) | After saving SMTP settings, is the environment ignored entirely or merged field by field? | Needs a decision | Drafted: ignored entirely; the page names the source in use. | — |
@@ -328,6 +330,11 @@ built.
 ## Other loose ends found in the review
 
 These aren't questions, but they are unticked boxes in finished phases:
+
+- [Phase 35.2](phase-35.2.md): `docs/proxmox-lxc.md` was written from the
+  current documentation, not yet run on a real Proxmox host. The owner runs
+  both routes from a fresh container and fills in the *Tested on* line
+  before `v3.2.0` is tagged (decided 2026-10-06).
 
 - [Phase 7](phase-7.md) §7.12 and its acceptance list, and
   [Phase 17.2](phase-17.2.md)'s browser check list (Firefox, Safari,

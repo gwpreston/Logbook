@@ -5,6 +5,8 @@
 #   bin/smoke-test.sh mysql     # docker-compose.mysql.yml, app at /
 #   bin/smoke-test.sh header    # docker-compose.yml, /logbook behind nginx forward auth (header sign-in)
 #   bin/smoke-test.sh demo      # docker-compose.yml with DEMO_MODE: seeded, signed in, reset by CLI, signed in again
+#   bin/smoke-test.sh caddy | caddy-subpath | traefik | traefik-subpath
+#                               # docker/examples/ (Phase 35.2) unchanged, over HTTPS on localhost, at / or /logbook
 #
 # Assumes the image logbook:local exists (docker build -t logbook:local .).
 set -eu
@@ -12,13 +14,14 @@ set -eu
 cd "$(dirname "$0")/.."
 variant="${1:-pgsql}"
 export APP_PORT="${APP_PORT:-18080}" PROXY_PORT="${PROXY_PORT:-18081}"
+curl_opts="" # -k for the proxy examples' own certificates
 jar="$(mktemp)"
 trap 'rm -f "$jar" /tmp/smoke.body /tmp/smoke.head' EXIT
 
 fail() { echo "SMOKE FAIL: $*" >&2; $compose logs --no-color >&2 || true; $compose down -v >/dev/null 2>&1 || true; exit 1; }
 
 expect() { # expect <url> <status> [body-substring]
-    body="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code}' "$1")" || fail "request to $1 failed"
+    body="$(curl -s $curl_opts -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code}' "$1")" || fail "request to $1 failed"
     [ "$body" = "$2" ] || fail "$1 returned $body, expected $2"
     if [ -n "${3:-}" ]; then grep -q -- "$3" /tmp/smoke.body || fail "$1 body lacks: $3"; fi
     echo "ok  $2  $1"
@@ -32,7 +35,7 @@ field() { # field <name>: value of a hidden input on the last page
 setup_flow() { # setup_flow <base> <expected-redirect>
     expect "$1/" 303
     expect "$1/setup" 200 'Create your account'
-    status="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code} %{redirect_url}' \
+    status="$(curl -s $curl_opts -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code} %{redirect_url}' \
         --data-urlencode "csrf_name=$(field csrf_name)" --data-urlencode "csrf_value=$(field csrf_value)" \
         --data-urlencode 'username=smoke' --data-urlencode 'password=smoke test passphrase' \
         --data-urlencode 'password_confirm=smoke test passphrase' --data-urlencode 'units=uk' \
@@ -169,7 +172,56 @@ case "$variant" in
         echo "smoke test ($variant) passed"
         exit 0
         ;;
-    *) echo "usage: $0 pgsql|mysql|header|demo" >&2; exit 2 ;;
+    caddy|caddy-subpath|traefik|traefik-subpath)
+        # The reverse-proxy examples (Phase 35.2, docs/reverse-proxies.md) run
+        # unchanged on "localhost": Caddy issues its own certificate for it,
+        # Traefik serves its default one (its overlay only drops the resolver,
+        # so CI never asks Let's Encrypt). The checks nginx's case makes, over
+        # HTTPS, plus the redirect from HTTP and a Secure session cookie.
+        proxy="${variant%-subpath}"
+        file="compose.yml" prefix=""
+        [ "$variant" = "$proxy" ] || { file="compose.subpath.yml" prefix="/logbook"; }
+        export LOGBOOK_DOMAIN=localhost HTTP_PORT="${HTTP_PORT:-18082}" HTTPS_PORT="${HTTPS_PORT:-18443}"
+        compose="docker compose -p logbook-smoke -f docker-compose.yml -f docker/examples/$proxy/$file"
+        [ "$proxy" = caddy ] || compose="$compose -f docker/smoke/compose.$variant.yml"
+        curl_opts="-k"
+        $compose up -d --wait --no-build || fail "stack did not become healthy"
+        base="https://localhost:$HTTPS_PORT$prefix"
+        i=0 # the proxy has started; Traefik reads the labels, Caddy issues the certificate
+        until [ "$(curl -sk -o /dev/null -w '%{http_code}' "$base/health")" = 200 ]; do
+            i=$((i + 1)); [ "$i" -lt 30 ] || fail "$base/health never answered 200"; sleep 1
+        done
+        expect "$base/health" 200 '"database":"ok"'
+        status="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "http://localhost:$HTTP_PORT$prefix/garage")"
+        case "$status" in
+            30[178]" https://localhost"*"$prefix/garage") echo "ok  ${status%% *}  HTTP to HTTPS" ;;
+            *) fail "http://localhost:$HTTP_PORT$prefix/garage answered: $status" ;;
+        esac
+        expect "$base/diagnostics/deep/link" 200 "href=\"$prefix/\""
+        expect "$base/assets/css/app.css" 200
+        expect "$base/no/such/page" 404 'Page not found'
+        if [ -n "$prefix" ]; then
+            status="$(curl -sk -o /dev/null -w '%{http_code} %{redirect_url}' "https://localhost:$HTTPS_PORT/logbook")"
+            case "$status" in
+                30[178]" "*"/logbook/") echo "ok  ${status%% *}  /logbook to /logbook/" ;;
+                *) fail "/logbook answered: $status" ;;
+            esac
+            expect "https://localhost:$HTTPS_PORT/stripped/diagnostics/deep/link" 200 'Deep link works'
+            expect "https://localhost:$HTTPS_PORT/stripped/assets/css/app.css" 200
+        fi
+        setup_flow "$base" "$prefix/"
+        # APP_URL is https://, so the session cookie is Secure (SESSION_SECURE's default).
+        awk -F '\t' '$6 != "" && $4 == "TRUE" { found = 1 } END { exit !found }' "$jar" \
+            || { cat "$jar" >&2; fail "the session cookie is not Secure"; }
+        echo "ok  session cookie Secure"
+        # Hard refresh of a deep, signed-in link, and the installable app.
+        expect "$base/vehicles/new" 200 "action=\"$prefix/vehicles/new\""
+        expect "$base/manifest.webmanifest" 200 "\"start_url\": \"$prefix/\""
+        $compose down -v >/dev/null
+        echo "smoke test ($variant) passed"
+        exit 0
+        ;;
+    *) echo "usage: $0 pgsql|mysql|header|demo|caddy|caddy-subpath|traefik|traefik-subpath" >&2; exit 2 ;;
 esac
 
 # Reminders: the page works, and the entrypoint's scheduler has run the task.

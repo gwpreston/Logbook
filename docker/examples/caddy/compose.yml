@@ -1,0 +1,37 @@
+# Logbook + PostgreSQL behind Caddy, at the root of its own domain, over HTTPS.
+# Layered on top of the project's docker-compose.yml:
+#
+#   LOGBOOK_DOMAIN=logbook.example.com \
+#     docker compose -f docker-compose.yml -f docker/examples/caddy/compose.yml up -d
+#
+# (or put LOGBOOK_DOMAIN in .env). Guide: docs/reverse-proxies.md#caddy.
+# bin/smoke-test.sh caddy runs this file and the Caddyfile unchanged.
+
+services:
+  app:
+    # Only Caddy talks to the app: its own port is no longer published.
+    ports: !reset []
+    environment:
+      # The public address: absolute links, and Secure cookies (https://).
+      APP_URL: https://${LOGBOOK_DOMAIN:?set LOGBOOK_DOMAIN}
+
+  proxy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"   # HTTP/3
+    environment:
+      LOGBOOK_DOMAIN: ${LOGBOOK_DOMAIN}
+    volumes:
+      - ./docker/examples/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # certificates: keep this volume
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

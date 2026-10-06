@@ -1,0 +1,9 @@
+# Smoke test: the Traefik examples (docker/examples/traefik/) on localhost.
+# Layered after the example; the only change is no certificate resolver, so
+# CI never asks Let's Encrypt for "localhost" and Traefik serves its own
+# default certificate over HTTPS instead.
+
+services:
+  app:
+    labels:
+      traefik.http.routers.logbook.tls.certresolver: ""

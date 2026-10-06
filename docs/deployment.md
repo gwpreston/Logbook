@@ -7,6 +7,9 @@ an **ordinary PHP 8.4 web server**. Both use the same environment variables
 - [Docker](#docker)
 - [Bare PHP 8.4](#bare-php-84)
 - [Running at a subpath / behind a reverse proxy](#subpath-and-reverse-proxies)
+  — tested Caddy and Traefik recipes, and what Logbook trusts from a proxy:
+  [reverse-proxies.md](reverse-proxies.md)
+- Proxmox VE containers (Docker or native PHP): [proxmox-lxc.md](proxmox-lxc.md)
 - [Installing on a phone (PWA)](#installing-on-a-phone-pwa)
 - [Health check](#health-check)
 - [Backups](#backups)
@@ -284,6 +287,11 @@ one worker, the progress line waits until the answer.
 ---
 
 ## Subpath and reverse proxies
+
+**[reverse-proxies.md](reverse-proxies.md)** has tested Caddy and Traefik
+recipes (root and subpath, automatic HTTPS), what to set for each proxy,
+what Logbook trusts from one, and the common failures. Running on Proxmox?
+See [proxmox-lxc.md](proxmox-lxc.md).
 
 Set `APP_BASE_PATH` to the public prefix, e.g. `/logbook`. Every link and asset
 URL the app generates then carries the prefix, and deep links survive a hard

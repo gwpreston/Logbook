@@ -1,0 +1,8 @@
+# Smoke test: docker/examples/traefik/compose.subpath.yml on localhost, with no
+# certificate resolver on either router (see compose.traefik.yml).
+
+services:
+  app:
+    labels:
+      traefik.http.routers.logbook.tls.certresolver: ""
+      traefik.http.routers.logbook-stripped.tls.certresolver: ""
