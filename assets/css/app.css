@@ -4338,7 +4338,6 @@ a.list__title:hover {
 
 .expense-breakdown .breakdown__label {
     color: var(--text);
-    text-decoration: none;
 }
 
 .expense-breakdown .breakdown__label:hover {
@@ -4363,15 +4362,41 @@ a.list__title:hover {
     margin: 0;
 }
 
-/* The table's month links stay reachable from the keyboard: it shows while one has focus. */
-.js .monthly-spend__table .chart-table:focus-within {
+/* The table's month links stay reachable from the keyboard: it shows (scrolling
+   sideways on a phone) while one has focus, clear of the sticky bars. */
+.js .monthly-spend__table:focus-within {
     position: static;
-    width: 100%;
+    width: auto;
     height: auto;
-    margin: 0;
-    overflow: visible;
+    margin: 0 calc(-1 * var(--space-2));
+    overflow-x: auto;
     clip: auto;
     white-space: normal;
+}
+
+.monthly-spend__table a {
+    scroll-margin: 6rem 0;
+}
+
+/* Breakdown rows are links: a quiet underline says so before hover. */
+.expense-breakdown .breakdown__label {
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 0.2em;
+}
+
+/* Period chips: links, styled as the vehicle chips. */
+.expense-breakdown__switch .chip:hover {
+    text-decoration: none;
+}
+
+.expense-breakdown__switch .chip:not([aria-current]):hover {
+    border-color: var(--accent);
+}
+
+/* A hairline between segments, so neighbouring colours never merge (e.g. Fuel and Maintenance with the teal accent). */
+.stack-bar {
+    gap: 2px;
 }
 
 /* Fleet summary: one row per vehicle. */

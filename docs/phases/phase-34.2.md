@@ -187,13 +187,38 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 - [x] Without JavaScript: the table is present and the bar and rows render.
 
 ### 34.2.5 Checks
-- [ ] `design-reviewer` agent at 375, 768 and 1280 px, light and dark, all
-      four accents.
+- [x] `design-reviewer` agent at 375, 768 and 1280 px, light and dark, all
+      four accents. The agent could not sign in to the dev stack, so it
+      reviewed the code and computed the accents' contrast from the tokens.
+      The rendered checks were done in the browser instead: 375 px light,
+      768 px light, 1280 px light and dark (default accent), keyboard focus
+      in the month table, and a click on a bar. 0 HIGH, 3 MEDIUM, 4 LOW.
+
+### 34.2.6 Design review fixes
+- [x] At 375 px the month table widened the page even while hidden (a
+      table never shrinks to the 1px of `.chart-table`): the wrapper is
+      now what hides, so the page stays 375 px wide and the table scrolls
+      sideways inside the card. This also removes the trailing gap under
+      the chart.
+- [x] The month links show the table while one has keyboard focus, with
+      the focus ring visible and a scroll margin clear of the sticky bars.
+- [x] With the teal accent, *Fuel* (the accent) and *Maintenance* sat side
+      by side at 1.46:1: every stack bar gets a 2px gap between segments.
+- [x] Period chips: no underline on hover and the accent border on
+      hover, as the vehicle chips. Breakdown labels get a quiet underline
+      so they read as links before hover.
+- Left: the light theme's *Tax* and *Other* colours are below 3:1 as
+  graphics on white. The palette predates this phase and every row and
+  legend carries its label, so it goes to the log (#242). Chips are
+  38 px tall like every chip row in the app.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: confirm the demo owner has costs in every group
+- [x] `DemoDataSeeder`: confirm the demo owner has costs in every group
       Reports shows across the last 12 months. Add a few ad-hoc expenses if
       a group is empty, so both widgets show something worth looking at.
+      Confirmed on 2026-10-06: fuel, maintenance, documents and other all
+      have costs between November 2025 and October 2026, so nothing was
+      added.
 
 ### Release
 - [ ] Ships with Phase 34.3 as **v3.1.0**.
@@ -212,8 +237,9 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 
 ## Open questions
 
-All decided by the owner on 2026-10-06, before the phase was built
-([`open-questions.md`](open-questions.md) #203–#206).
+The first four were decided by the owner on 2026-10-06, before the phase
+was built ([`open-questions.md`](open-questions.md) #203–#206); the last,
+found by the design review, is carried in the log as #242.
 
 - **Overlap with *Spend this month*.** *Decided 2026-10-06 (#203):* keep
   all three widgets; look again after a release.
@@ -224,3 +250,8 @@ All decided by the owner on 2026-10-06, before the phase was built
 - **Clicking a bar.** *Decided 2026-10-06 (#206):* each month links to
   Reports for that calendar month, from the table's month names and, with
   JS, from the bars.
+- **Light-theme category colours** (found by the design review): *Tax*
+  (`--c-tax`, 2.22:1) and *Other* (`--c-other`, 2.47:1) are below 3:1 as
+  graphics on white, in every spend bar and chart. Darken them, or keep
+  them because every segment has a text label beside it? Carried to the
+  log as #242; nothing changed here.

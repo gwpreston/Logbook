@@ -63,7 +63,8 @@ them found by its prototype audit, and #185's pending wording) were
 answered on 2026-10-05, before it was built. Phase 34.1's (#198–#202,
 two of them found while starting it) were answered on 2026-10-06,
 before it was built. Phase 34.2's (#203–#206) were answered on
-2026-10-06, before it was built. Those of Phases 34.3–36.3 (#207–#241)
+2026-10-06, before it was built; one found by its design review (#242)
+is still open. Those of Phases 34.3–36.3 (#207–#241)
 were added on 2026-10-06 when those phases were written and are still
 open; each
 row gives the answer the phase file drafts. #222, Phase 36.1's
@@ -313,6 +314,7 @@ built.
 | 239 | [36.3](phase-36.3.md) | Mattermost optional *Channel* override | Needs a decision | Drafted: offered. | — |
 | 240 | [36.3](phase-36.3.md) | Wording of the third-party notice on Telegram, Discord and Pushover | Needs a decision | Needs the owner's wording. | — |
 | 241 | [36.3](phase-36.3.md) | More services (Slack, Matrix, Signal, Apprise) | Needs a decision | Drafted: not now; or note one in spec §12? | — |
+| 242 | [34.2](phase-34.2.md) | Light-theme *Tax* and *Other* colours below 3:1 as graphics (found by the design review) | Needs a decision | Today: kept; every segment has a text label beside it. Alternative: darken `--c-tax` and `--c-other` in the light theme. | — |
 
 ## Other loose ends found in the review
 

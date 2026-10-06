@@ -6,6 +6,19 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added
+- **Expense breakdown and Monthly spend widgets** (Phase 34.2): two new
+  dashboard widgets built from Reports' own figures. *Expense breakdown*
+  shows where the money went by category, for *This month*, *Last 12
+  months* or *This year* (a link, so it can be bookmarked), with a bar
+  and whole-percentage shares that add up to 100%; each category opens
+  Reports for it. *Monthly spend* shows the last 12 months as stacked
+  bars with the average per month, and a table without JavaScript; each
+  month opens Reports for that month. Both follow the vehicle filter,
+  count only vehicles whose costs you may see, keep currencies apart and
+  go with the Reports module. Saved layouts get them at the end; *Reset
+  layout* puts them after *Spend this month*.
+
 ### Changed
 - **Registration plates** (Phase 34.1): a registration is drawn as a number
   plate in its owner's style: a yellow UK plate with a blue "UK" band for

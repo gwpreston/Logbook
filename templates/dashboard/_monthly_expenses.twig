@@ -14,8 +14,9 @@
         <div class="monthly-spend">
             <p class="muted">{{ 'dashboard.spend.monthly_average'|trans({amount: section.averagePerMonth|money}) }}</p>
             {{ ui.chart(monthly_spend_charts[section.currency], label) }}
-            <div class="table-wrap monthly-spend__table">
-                <table class="table chart-table">
+            {# The wrapper, not the table, is what hides with JS: a table never shrinks to 1px, so it would widen the page. #}
+            <div class="table-wrap chart-table monthly-spend__table">
+                <table class="table">
                     <caption class="visually-hidden">{{ label }}</caption>
                     <thead>
                         <tr>
