@@ -43,8 +43,12 @@ final readonly class AuthGuardMiddleware implements MiddlewareInterface
         }
 
         $query = [];
-        // A session cookie the database no longer knows, in a demo: its reset ended the session (spec.md §7.36).
-        if ($this->demo->isActive() && isset($request->getCookieParams()[SessionMiddleware::COOKIE])) {
+        // A session cookie the database no longer knows (no session was resumed), in a demo: the reset ended it (§7.36).
+        if (
+            $this->demo->isActive()
+            && isset($request->getCookieParams()[SessionMiddleware::COOKIE])
+            && RequestContext::session($request)->token() === null
+        ) {
             $query['demo'] = 'reset';
         }
         if (in_array($request->getMethod(), ['GET', 'HEAD'], true)) {

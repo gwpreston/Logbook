@@ -149,6 +149,28 @@ final class DemoGuardTest extends DemoTestCase
         self::assertSame(200, $browser->get('/settings/users')->getStatusCode());
     }
 
+    public function testARestoreWithConsecutiveSettingIdsStillKeepsTheMarker(): void
+    {
+        $app = $this->demoApp();
+        $this->seedDemo($app);
+        $repository = $this->service($app, BackupRepository::class);
+        $found = $this->connection($app)->fetchOne('SELECT id FROM settings WHERE name = ?', [DemoMarker::SETTING]);
+        $markerId = is_numeric($found) ? (int) $found : 0;
+        $rows = [];
+        for ($i = 1; $i <= $markerId + 3; $i++) {
+            $rows[] = [
+                'id' => (string) $i, 'scope' => 'global', 'owner_id' => '0', 'name' => 'foreign.setting' . $i,
+                'value' => '"x"', 'created_at' => '2026-01-01 00:00:00', 'updated_at' => '2026-01-01 00:00:00',
+            ];
+        }
+        $kept = $this->service($app, DemoMarkers::class)->find();
+
+        $repository->replaceAll(['settings' => $rows]);
+
+        self::assertEquals($kept, $this->service($app, DemoMarkers::class)->find());
+        self::assertCount(count($rows), $repository->rows('settings'));
+    }
+
     public function testAVisitorWaitsAMomentWhileAnotherRequestIsSeeding(): void
     {
         $app = $this->demoApp();

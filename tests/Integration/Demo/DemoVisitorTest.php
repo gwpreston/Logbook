@@ -201,6 +201,20 @@ final class DemoVisitorTest extends DemoTestCase
         self::assertStringContainsString('It resets in 10 minutes', self::body($browser->get('/garage')));
     }
 
+    public function testAnAnonymousVisitorIsNotToldTheDemoWasReset(): void
+    {
+        $app = $this->demoApp();
+        $this->seedDemo($app);
+
+        $browser = new TestBrowser($app);
+        $browser->get('/login');
+        $response = $browser->get('/garage');
+
+        self::assertSame(303, $response->getStatusCode());
+        self::assertStringNotContainsString('demo=reset', $response->getHeaderLine('Location'));
+        self::assertStringNotContainsString('data-demo-reset-notice', self::body($browser->follow($response)));
+    }
+
     public function testTheSignInPageShowsTheCredentialsAsText(): void
     {
         $app = $this->demoApp();

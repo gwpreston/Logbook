@@ -19,7 +19,9 @@ declare(strict_types=1);
 use Logbook\Kernel;
 use Logbook\Service\Demo\DemoMode;
 use Logbook\Service\Demo\DemoResetRefused;
+use Logbook\Service\Demo\DemoResetJob;
 use Logbook\Service\Demo\DemoResetter;
+use Logbook\Service\Jobs\JobLocks;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -45,6 +47,15 @@ if (!in_array('--yes', $args, true)) {
         fwrite(STDERR, "Not confirmed. Nothing was changed.\n");
         exit(2);
     }
+}
+
+// The job's own lock: a reset by hand never overlaps the scheduled one.
+$locks = $container->get(JobLocks::class);
+assert($locks instanceof JobLocks);
+$lock = $locks->acquire(DemoResetJob::NAME);
+if ($lock === null) {
+    fwrite(STDERR, "Refused: a reset is already running.\n");
+    exit(1);
 }
 
 try {

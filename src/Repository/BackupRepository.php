@@ -131,6 +131,8 @@ final readonly class BackupRepository
 
     /** Every setting but the demo marker. */
     private const string NOT_MARKER = 'NOT (scope = \'global\' AND owner_id = 0 AND name = :marker)';
+    /** The demo marker alone. */
+    private const string IS_MARKER = 'scope = \'global\' AND owner_id = 0 AND name = :marker';
 
     public function __construct(private Connection $connection)
     {
@@ -231,13 +233,12 @@ final readonly class BackupRepository
         $this->connection->transactional(function (Connection $connection) use ($data): void {
             // Links point at the replaced accounts (and would block deleting them).
             $connection->createQueryBuilder()->delete('invitations')->executeStatement();
+            // The demo marker is neither created nor removed by a restore (spec.md §7.36): set it
+            // aside, and put it back, with its own id if the restored settings left it free.
+            $marker = $connection->createQueryBuilder()->select('*')->from('settings')
+                ->where(self::IS_MARKER)->setParameter('marker', DemoMarker::SETTING)->fetchAssociative();
             foreach (array_reverse(self::TABLES) as $table) {
-                $delete = $connection->createQueryBuilder()->delete($table);
-                if ($table === 'settings') {
-                    // Neither created nor removed by a restore: the demo marker (spec.md §7.36).
-                    $delete->where(self::NOT_MARKER)->setParameter('marker', DemoMarker::SETTING);
-                }
-                $delete->executeStatement();
+                $connection->createQueryBuilder()->delete($table)->executeStatement();
             }
             // Every session, and every scan waiting for an entry, belonged to the replaced accounts.
             $connection->createQueryBuilder()->delete('sessions')->executeStatement();
@@ -246,18 +247,11 @@ final readonly class BackupRepository
             $connection->createQueryBuilder()->delete('job_runs')->executeStatement();
 
             $later = [];
-            // The demo marker a restore keeps (spec.md §7.36), whose id a restored setting must not take.
-            $kept = $connection->createQueryBuilder()->select('id')->from('settings')->fetchOne();
-            $keptMarkerId = is_scalar($kept) ? (string) $kept : null;
             foreach (self::TABLES as $table) {
                 foreach ($data[$table] ?? [] as $row) {
                     $isMarker = ($row['name'] ?? null) === DemoMarker::SETTING && ($row['scope'] ?? 'global') === 'global';
                     if ($table === 'settings' && $isMarker) {
                         continue;
-                    }
-                    if ($table === 'settings' && isset($row['id']) && $row['id'] === $keptMarkerId) {
-                        // Nothing refers to a setting's id; the kept marker holds this one.
-                        unset($row['id']);
                     }
                     // A link back to a later table is set once that table is filled.
                     foreach (self::LINKS_BACK[$table] ?? [] as $column) {
@@ -268,6 +262,14 @@ final readonly class BackupRepository
                     }
                     $connection->insert($table, $row);
                 }
+            }
+            if (is_array($marker)) {
+                $taken = $connection->createQueryBuilder()->select('1')->from('settings')
+                    ->where('id = :id')->setParameter('id', $marker['id'])->fetchOne();
+                if ($taken !== false) {
+                    unset($marker['id']);
+                }
+                $connection->insert('settings', $marker);
             }
             foreach ($later as [$table, $column, $value, $id]) {
                 $connection->update($table, [$column => $value], ['id' => $id]);

@@ -223,6 +223,7 @@ final class DemoResetTest extends DemoTestCase
     public function testTheJobIsListedOnlyWhileTheDemoIsActiveAndNotRunByAPageVisit(): void
     {
         $app = $this->demoApp(['DEMO_RESET_HOURS' => '6']);
+        $clock = $this->pinClock($app, '2026-10-06T08:00:00Z');
         $this->resetDatabase($app);
         $registry = $this->service($app, JobRegistry::class);
         self::assertNull($registry->get('demo_reset'), 'not listed while there is no demo');
@@ -239,7 +240,11 @@ final class DemoResetTest extends DemoTestCase
         self::assertNotContains('demo_reset', $names, 'a visitor\'s request never waits for a reset');
 
         $names = array_map(static fn ($run): string => $run->job, $runner->pass(JobTrigger::Cron) ?? []);
-        self::assertContains('demo_reset', $names, 'cron, Docker and the URL run it');
+        self::assertNotContains('demo_reset', $names, 'a freshly seeded demo is not reset by the first pass');
+
+        $clock->set(new DateTimeImmutable('2026-10-06T14:01:00Z'));
+        $names = array_map(static fn ($run): string => $run->job, $runner->pass(JobTrigger::Cron) ?? []);
+        self::assertContains('demo_reset', $names, 'cron, Docker and the URL run it once the interval has passed');
         $run = $this->service($app, JobRunRepository::class)->latest('demo_reset');
         self::assertNotNull($run);
         self::assertSame(JobStatus::Ok, $run->status);

@@ -117,9 +117,15 @@ final readonly class DemoResetter
         $marker = $status->marker;
         // The files there are now (the seeding adds the sample paperwork under new names).
         $before = $this->storedFiles();
+        // Read before the transaction: its first statement must be a write, or SQLite refuses to
+        // upgrade a read lock when a visitor's request is writing at that moment.
+        $schema = array_map(
+            static fn (string $name): string => strtolower($name),
+            $this->connection->createSchemaManager()->listTableNames(),
+        );
         try {
-            $this->connection->transactional(function () use ($now, $marker): void {
-                $this->clear();
+            $this->connection->transactional(function () use ($now, $marker, $schema): void {
+                $this->clear($schema);
                 $this->seeder->seed($this->config->demo->password, $now);
                 $this->markers->write($marker->resetAt($now));
             });
@@ -138,12 +144,11 @@ final readonly class DemoResetter
         return $now;
     }
 
-    private function clear(): void
+    /**
+     * @param list<string> $schema every table in the database
+     */
+    private function clear(array $schema): void
     {
-        $schema = array_map(
-            static fn (string $name): string => strtolower($name),
-            $this->connection->createSchemaManager()->listTableNames(),
-        );
         foreach (self::clearOrder($schema) as $table) {
             if ($table === 'settings') {
                 // Everything but the proof that this is a demo.

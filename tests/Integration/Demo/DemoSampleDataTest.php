@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Demo;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ParameterType;
 use Logbook\Repository\BackupRepository;
 use Logbook\Service\Demo\DemoSeeder;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -81,7 +82,12 @@ final class DemoSampleDataTest extends DemoTestCase
     {
         $total = 0;
         $weekend = 0;
-        foreach ($this->connection($app)->fetchFirstColumn('SELECT travelled_on FROM trips WHERE is_business = 1') as $date) {
+        $dates = $this->connection($app)->fetchFirstColumn(
+            'SELECT travelled_on FROM trips WHERE is_business = ?',
+            [true],
+            [ParameterType::BOOLEAN],
+        );
+        foreach ($dates as $date) {
             $total++;
             $day = (new DateTimeImmutable(is_string($date) ? $date : 'now'))->format('N');
             $weekend += in_array($day, ['6', '7'], true) ? 1 : 0;
