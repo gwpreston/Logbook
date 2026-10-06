@@ -125,76 +125,77 @@ gains a sentence on the exception.
 - [x] `SecretBox` reuse: reused, with its HKDF info as a parameter.
 
 ### 36.1.2 Migration (every engine, reversible)
-- [ ] `notification_secrets` table. Rolling back drops it (the SMTP
+- [x] `notification_secrets` table. Rolling back drops it (the SMTP
       password is lost; the settings row is kept).
 
 ### 36.1.3 Code
-- [ ] `SecretBox` takes its HKDF info (`logbook-ai` stays the default);
+- [x] `SecretBox` takes its HKDF info (`logbook-ai` stays the default);
       `SecretUnreadable` names the secret without saying "AI".
-- [ ] `NotificationSecretRepository`, `NotificationSecrets` (store, open,
+- [x] `NotificationSecretRepository`, `NotificationSecrets` (store, open,
       state: saved / re-enter / set {NAME}).
-- [ ] `MailConfig` (`effective()`, `source()`, built from the setting and
+- [x] `MailConfig` (`effective()`, `source()`, built from the setting and
       the secret on every call), `MailerFactory` (the only transport
       builder; demo guard around it; 10 s connect timeout, 30 s overall),
       replacing `EmailConfig::fromEnv()` and the DI singleton transport.
-- [ ] `EmailChannel`, `InvitationMailer`, `AccountMailer`, `UsersPage`,
+- [x] `EmailChannel`, `InvitationMailer`, `AccountMailer`, `UsersPage`,
       `PasswordResets` and `EmailAddresses` read `MailConfig` per call;
       the admins' default recipient comes from the setting.
-- [ ] Settings → Delivery: action, template, validation, *Send test
+- [x] Settings → Delivery: action, template, validation, *Send test
       email*, *Remove email server*, the `MAIL_*`-still-set notice, a
       Settings card under Administration; routes declare
       `InstanceAbility::ManageNotifications` (hidden: 404), demo
       `blocked`.
-- [ ] `notification_secrets` in `OutputRedactor`; transport error text
+- [x] `notification_secrets` in `OutputRedactor`; transport error text
       redacted (`Redactor`) before a page, job output or the log.
-- [ ] Exclude `notification_secrets` from backups and demo resets; the
+- [x] Exclude `notification_secrets` from backups and demo resets; the
       restore page notes it.
-- [ ] `SESSION_SECRET_FILE` in `AppSettings`; `bin/session-secret.php`
+- [x] `SESSION_SECRET_FILE` in `AppSettings`; `bin/session-secret.php`
       (fresh database only) run by the entrypoint after migrating;
       `ENV SESSION_SECRET_FILE=/data/session-secret` in the image.
-- [ ] Remove `MAIL_*` from compose files, the dev compose (Mailpit stays),
+- [x] Remove `MAIL_*` from compose files, the dev compose (Mailpit stays),
       `.env.example`.
 
 ### 36.1.4 Docs and configuration
-- [ ] `.env.example` and `docs/configuration.md`: `MAIL_*` gone, a pointer
+- [x] `.env.example` and `docs/configuration.md`: `MAIL_*` gone, a pointer
       to Settings → Delivery; `SESSION_SECRET_FILE`.
-- [ ] `docs/notification-channels.md`: an *Email* section: where it is
+- [x] `docs/notification-channels.md`: an *Email* section: where it is
       configured, the password rules, the test button.
-- [ ] README *Configuration* paragraph and the dev Mailpit steps;
+- [x] README *Configuration* paragraph and the dev Mailpit steps;
       `docs/deployment.md`; `CHANGELOG.md` *Unreleased* with the upgrade
       warning.
 
 ### 36.1.5 Translations
-- [ ] English and German strings for the page, hints, warnings and errors.
+- [x] English and German strings for the page, hints, warnings and errors.
 
 ### 36.1.6 Tests
-- [ ] Unit: `MailConfig` (nothing saved is `none` whatever `MAIL_*` holds;
+- [x] Unit: `MailConfig` (nothing saved is `none` whatever `MAIL_*` holds;
       saved settings are used; removing returns to `none`).
-- [ ] Unit: validation (host with scheme, path or port, ports, CR/LF in
+- [x] Unit: validation (host with scheme, path or port, ports, CR/LF in
       each field, From address, recipient, encryption values, `none` with
       a username warns).
-- [ ] Unit: the secret rules: round trip, sealed with `logbook-notify` (an
+- [x] Unit: the secret rules: round trip, sealed with `logbook-notify` (an
       AI-info box can't open it), a changed key says *Re-enter*, an unset
       `env:` variable says *Set {NAME}*, no key means only `env:`.
-- [ ] Unit: `bin/session-secret.php`'s service: writes only on an empty
+- [x] Unit: `bin/session-secret.php`'s service: writes only on an empty
       database, never overwrites, never with `SESSION_SECRET` set;
       `AppSettings` reads the file.
-- [ ] Integration: the page is admin only (a member, a disabled user and a
+- [x] Integration: the page is admin only (a member, a disabled user and a
       signed-out visitor are refused; the route inventory classifies it);
       the saved password never appears in any response, including after a
       validation error; secrets are redacted from a failing test's message
       and a job's output.
-- [ ] Integration: **Send test email** uses typed values without saving
+- [x] Integration: **Send test email** uses typed values without saving
       them, goes to the admin's address, and reports each failing stage.
-- [ ] Integration: the forgotten-password link and invitations appear
+- [x] Integration: the forgotten-password link and invitations appear
       exactly when a server is saved, and follow a change at once.
-- [ ] Architecture: nothing in `src/` but `MailerFactory` builds a
+- [x] Architecture: nothing in `src/` but `MailerFactory` builds a
       transport.
-- [ ] Integration: `notification_secrets` is absent from a backup;
+- [x] Integration: `notification_secrets` is absent from a backup;
       restoring leaves *Re-enter the password*; the restore page says so.
-- [ ] Integration: demo mode refuses the page and sends nothing.
+- [x] Integration: demo mode refuses the page and sends nothing.
 - [ ] Migration applies and rolls back on every engine; the suite passes on
-      SQLite, PostgreSQL, MySQL and MariaDB.
+      SQLite, PostgreSQL, MySQL and MariaDB. *(SQLite done locally; the
+      other engines run in CI.)*
 
 ### 36.1.7 Checks
 - [ ] `design-reviewer` agent on the page at 375, 768 and 1280 px, light and
@@ -202,7 +203,7 @@ gains a sentence on the exception.
       a screen reader.
 
 ### Sample data
-- [ ] None. Demo mode blocks the page.
+- [x] None. Demo mode blocks the page.
 
 ### Release
 - [ ] Ships with Phase 36.3 as **v3.3.0**, with the upgrade warning.
