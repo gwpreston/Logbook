@@ -93,17 +93,13 @@ See [Background jobs](#background-jobs).
 ### Notifications
 
 Reminders always show in the app. To also have them sent when they come due,
-set one or more channels in the `.env` next to the compose file, then choose
-which to use in **Settings → Reminders** (where *Send a test* checks them):
+set up email in **Settings → Delivery** (admins: the SMTP server, with *Send
+test email*), set any other channels in the `.env` next to the compose file,
+then choose which to use in **Settings → Reminders** (where *Send a test*
+checks them):
 
 ```dotenv
 APP_URL=https://garage.example.com        # used for links in notifications and the calendar feed
-# Email (SMTP)
-MAIL_HOST=smtp.example.com
-MAIL_USERNAME=logbook@example.com
-MAIL_PASSWORD=app-password
-MAIL_FROM="Logbook <logbook@example.com>"
-MAIL_TO=you@example.com
 # ntfy
 NTFY_URL=https://ntfy.sh/a-long-unguessable-topic
 # Gotify
@@ -256,8 +252,8 @@ location = /logbook {
 ### Scheduled tasks (cron)
 
 Reminders are brought up to date and sent through the notification channels
-(see [Notifications](#notifications) above; the same `MAIL_*`, `NTFY_*`,
-`GOTIFY_*` and `WEBHOOK_URL` variables go in `.env`) by a runner that should be
+(see [Notifications](#notifications) above; the same `NTFY_*`, `GOTIFY_*` and
+`WEBHOOK_URL` variables go in `.env`, and email is set in Settings → Delivery) by a runner that should be
 called every 15 minutes, as the web server user. In `/etc/cron.d/logbook`:
 
 ```cron

@@ -8,19 +8,20 @@ owner and anyone it is shared with who ticked *Send me its reminders*
 
 | Key | Channel | Configured by |
 |---|---|---|
-| `email` | Email over SMTP (symfony/mailer) | `MAIL_HOST` (+ `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM`, `MAIL_TO`) |
+| `email` | Email over SMTP (symfony/mailer) | **Settings → Delivery** (admins; see [Email](#email)) |
 | `ntfy` | [ntfy](https://ntfy.sh) push | `NTFY_URL` (topic URL), `NTFY_TOKEN` (optional) |
 | `gotify` | [Gotify](https://gotify.net) push | `GOTIFY_URL`, `GOTIFY_TOKEN` (+ `GOTIFY_PRIORITY`) |
 | `webhook` | JSON `POST` to any URL | `WEBHOOK_URL` |
 
-A channel is **configured** when its environment variables are set, and
+A channel is **configured** when it is set up (email in Settings → Delivery,
+the others by their environment variables), and
 **enabled** per user in Settings → Reminders (until they choose, every
 configured channel is on). It is used for someone only when it is enabled
 and it **reaches** them:
 
 | Channel | Reaches an admin | Reaches a member |
 |---|---|---|
-| `email` | their own address, else `MAIL_TO` | their own address only |
+| `email` | their own address, else the *Default recipient for admins* | their own address only |
 | `ntfy` | their own topic URL, else `NTFY_URL` | their own topic URL only |
 | `gotify` | their own application token, else `GOTIFY_TOKEN` (on `GOTIFY_URL`) | their own token on `GOTIFY_URL` only |
 | `webhook` | always, when `WEBHOOK_URL` is set | always; the payload names the `user` |
@@ -29,6 +30,48 @@ So a household ntfy topic or a shared inbox gets the admins' reminders only,
 never everyone's cars. Each person sets their own address, topic and token in
 Settings → Reminders. *Send a test* checks the channels that reach you;
 failures are logged at `warning` level.
+
+## Email
+
+The email server is set up in the app, by an admin, in **Settings →
+Delivery → Email server**, and nowhere else (spec.md §7.11). Every email
+Logbook sends uses it: reminders, the monthly digest, invitations, password
+resets and address confirmations. A change applies at once, without a
+restart.
+
+- **Fields:** *Server* (a host name or IP address, no `smtp://`), *Port*
+  (empty: 587 with STARTTLS, 465 with TLS, 25 without), *Encryption*
+  (STARTTLS required, TLS from the start, or none), *Username*, *Password*,
+  *From address*, *From name* (default "Logbook") and *Default recipient
+  for admins* (where reminders go for an admin with no confirmed address;
+  never used for reset links). With no encryption and a username, the page
+  warns that the password would be sent unencrypted.
+- **The password** is never shown again, not even masked: the page says
+  *A password is saved*, a new one replaces it, an empty field keeps it,
+  and *Remove the saved password* removes it. It is encrypted with a key
+  from `SESSION_SECRET`. To keep it outside the app (a Docker secret, say),
+  type `env:NAME` instead and Logbook reads that variable when sending.
+  Without a `SESSION_SECRET` only `env:NAME` can be saved. If the key
+  changes, or a backup is restored (backups never hold it), the page says
+  *Re-enter the password* and nothing is sent until you do.
+- **Send test email** sends one message to your own confirmed address (or
+  one you type) with the values in the form, **without saving them**, so a
+  typo never replaces a working setup. A failure names the stage
+  (connection, encryption, sign-in or send) with the server's reply, with
+  any password taken out. It waits at most 10 seconds to connect and for
+  each reply, and never retries.
+- **Remove email server** turns email off.
+
+**Upgrading from 3.2 or earlier:** the `MAIL_HOST`, `MAIL_PORT`,
+`MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM` and
+`MAIL_TO` variables are no longer read, and nothing is copied from them.
+Email is off until an admin fills in Settings → Delivery; while any of them
+is still set, the page says so. Then remove them from your `.env` or compose
+file.
+
+**Development:** `docker-compose.dev.yml` runs Mailpit. Set it up once in
+Settings → Delivery as server `mailpit`, port `1025`, encryption *None*,
+From `logbook@localhost`; its inbox is at `http://localhost:8025`.
 
 ## How it fits together
 
