@@ -22,7 +22,7 @@ and restore), §9 (configuration), §10 (deployment) and
 [Phase 28.1](phase-28.1.md) (jobs) and [Phase 33.1](phase-33.1.md) (sample
 passwords) first.
 
-**Prerequisites:** [Phase 34.3](phase-34.3.md) released as v3.1.0.
+**Prerequisites:** Phase 34.3 (its file is not yet written) released as v3.1.0.
 
 ---
 

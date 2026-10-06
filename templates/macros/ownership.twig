@@ -107,7 +107,7 @@
             <div class="ownership-card__id">
                 <h3 class="ownership-card__name"><a class="ownership-card__link" href="{{ url_for('vehicles.ownership', {id: vehicle.id}) }}">{{ vehicle.name() }}</a></h3>
                 <p class="ownership-card__meta">
-                    {%- if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span> {% endif -%}
+                    {%- if vehicle.data.registration %}{{ ui.plate(vehicle.data.registration, 'sm', plate_style(vehicle)) }} {% endif -%}
                     <span>
                         {%- if card.agreementType %}{{ card.agreementType.labelKey()|trans }} · {% endif -%}
                         {{- 'ownership.page.months'|trans({count: cost.ownedFor.years * 12 + cost.ownedFor.months}) -}}

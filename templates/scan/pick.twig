@@ -22,7 +22,7 @@
                             {{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}
                             <span class="pick__body">
                                 <span class="pick__name">{{ vehicle.name() }}</span>
-                                <span class="pick__meta">{% if vehicle.data.registration %}<span class="plate">{{ vehicle.data.registration }}</span>{% endif %}</span>
+                                <span class="pick__meta">{{ ui.plate(vehicle.data.registration, 'sm', plate_style(vehicle)) }}</span>
                             </span>
                             {{ ui.icon('chevron_right', 'pick__chevron') }}
                         </a>

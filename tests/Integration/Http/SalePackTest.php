@@ -333,6 +333,8 @@ final class SalePackTest extends AppTestCase
         self::assertStringContainsString('Vehicle history', $section);
         self::assertStringContainsString('Volkswagen Golf', $section);
         self::assertStringContainsString('GO19 ABC', $section);
+        self::assertStringContainsString('class="plate plate--md plate--gb"', $section, 'the cover draws a plate (#201)');
+        self::assertSame(1, substr_count($html, 'class="plate '), 'every other line keeps the registration as text');
         self::assertStringContainsString('Prepared 27 Sept 2026', $section);
         self::assertStringContainsString('The photo may show your number plate, house or street.', $html);
         self::assertMatchesRegularExpression('#name="photo" value="1" checked>#', $html);

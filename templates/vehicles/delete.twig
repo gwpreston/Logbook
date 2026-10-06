@@ -11,7 +11,7 @@
 
         <section class="card" aria-labelledby="delete-heading">
             <h1 id="delete-heading" class="card__title card__title--lg">{{ 'vehicle.delete_title'|trans({name: vehicle.name()}) }}</h1>
-            <p class="muted">{{ vehicle.description() }}{% if vehicle.data.registration %} · <span class="plate">{{ vehicle.data.registration }}</span>{% endif %}</p>
+            <p class="muted">{{ vehicle.description() }}{% if vehicle.data.registration %} · {{ ui.plate(vehicle.data.registration, 'sm', plate_style(vehicle)) }}{% endif %}</p>
             <p>{{ 'vehicle.delete_body'|trans }}</p>
             {% if not vehicle.isArchived() %}
                 <div class="alert" role="note">{{ ui.icon('info') }}<span>{{ 'vehicle.delete_archive_hint'|trans }}</span></div>
