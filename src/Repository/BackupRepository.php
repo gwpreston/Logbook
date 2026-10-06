@@ -263,6 +263,12 @@ final readonly class BackupRepository
                     $connection->insert($table, $row);
                 }
             }
+            foreach ($later as [$table, $column, $value, $id]) {
+                $connection->update($table, [$column => $value], ['id' => $id]);
+            }
+
+            $this->resetSequences($connection);
+            // Last: PostgreSQL numbers a marker without its id from the (now moved) sequence.
             if (is_array($marker)) {
                 $taken = $connection->createQueryBuilder()->select('1')->from('settings')
                     ->where('id = :id')->setParameter('id', $marker['id'])->fetchOne();
@@ -270,12 +276,9 @@ final readonly class BackupRepository
                     unset($marker['id']);
                 }
                 $connection->insert('settings', $marker);
+                // The marker may hold an id past the sequence.
+                $this->resetSequences($connection);
             }
-            foreach ($later as [$table, $column, $value, $id]) {
-                $connection->update($table, [$column => $value], ['id' => $id]);
-            }
-
-            $this->resetSequences($connection);
         });
     }
 
