@@ -62,8 +62,10 @@ on 2026-10-05, before it was built. Phase 33.4's (#186–#197, seven of
 them found by its prototype audit, and #185's pending wording) were
 answered on 2026-10-05, before it was built. Phase 34.1's (#198–#202,
 two of them found while starting it) were answered on 2026-10-06,
-before it was built. Those of Phases 34.2–36.3 (#203–#241) were added
-on 2026-10-06 when those phases were written and are still open; each
+before it was built. Phase 34.2's (#203–#206) were answered on
+2026-10-06, before it was built. Those of Phases 34.3–36.3 (#207–#241)
+were added on 2026-10-06 when those phases were written and are still
+open; each
 row gives the answer the phase file drafts. #222, Phase 36.1's
 `SESSION_SECRET` question, must be answered before any of Phase 36 is
 built.
@@ -272,15 +274,15 @@ built.
 | 200 | [34.1](phase-34.1.md) | A style for another region (Germany first)? | Parked | Not now: everyone outside GB gets the neutral plate (spec §12). | 2026-10-06 |
 | 201 | [34.1](phase-34.1.md) | Plate on the sale pack cover? (the cover already drew the prototype's yellow plate, found while starting) | Decided | Kept, now in the owner's style; the running heads and every other print stay plain text (spec §7.19, §8). | 2026-10-06 |
 | 202 | [34.1](phase-34.1.md) | Plate typeface: the draft's monospace, or the display font the prototype and the existing chip use? (found while starting) | Decided | The display font, bold and letter-spaced, as the prototype (spec §8 *Registration plate*). | 2026-10-06 |
-| 203 | [34.2](phase-34.2.md) | Keep *Spend this month* beside the new breakdown? | Needs a decision | Drafted: keep all three. Recommendation: revisit after a release, since *This month* repeats it. | — |
-| 204 | [34.2](phase-34.2.md) | Periods offered on the breakdown | Needs a decision | Drafted: *This month*, *Last 12 months*, *This year*. Add *Last 3 months* or *All time*? | — |
-| 205 | [34.2](phase-34.2.md) | A *By vehicle* option on the fleet breakdown | Needs a decision | Drafted: no; Reports has *Spend per vehicle*. | — |
-| 206 | [34.2](phase-34.2.md) | Clicking a bar in *Monthly spend* | Needs a decision | Drafted: not built. | — |
-| 207 | 34.3 (file not yet written) | Show projected *Coming up* items on the calendar? | Needs a decision | Drafted: no; reminders only. | — |
-| 208 | 34.3 (file not yet written) | Closed reminders: hidden unless `closed=1`, or shown muted? | Needs a decision | Drafted: hidden. | — |
-| 209 | 34.3 (file not yet written) | *Add reminder* link from a day | Needs a decision | Drafted: keep it (prefilled date). | — |
-| 210 | 34.3 (file not yet written) | Dashboard widget: small month or a list of the next days? | Needs a decision | Drafted: small month; *Upcoming reminders* is already the list. | — |
-| 211 | 34.3 (file not yet written) | Week numbers on the grid | Needs a decision | Drafted: not built. | — |
+| 203 | [34.2](phase-34.2.md) | Keep *Spend this month* beside the new breakdown? | Decided | Keep all three widgets; look again after a release (spec §7.8 *Expense breakdown*). | 2026-10-06 |
+| 204 | [34.2](phase-34.2.md) | Periods offered on the breakdown | Decided | *This month*, *Last 12 months* (default) and *This year*, as drafted (spec §7.8 *Expense breakdown*). | 2026-10-06 |
+| 205 | [34.2](phase-34.2.md) | A *By vehicle* option on the fleet breakdown | Decided | No: Reports has *Spend per vehicle* (spec §7.8 *Expense breakdown*). | 2026-10-06 |
+| 206 | [34.2](phase-34.2.md) | Clicking a bar in *Monthly spend* | Decided | Each month links to Reports for that calendar month: the table's month names and, with JS, the bars (spec §7.8 *Monthly spend*). | 2026-10-06 |
+| 207 | [34.3](phase-34.3.md) | Show projected *Coming up* items on the calendar? | Needs a decision | Drafted: no; reminders only. | — |
+| 208 | [34.3](phase-34.3.md) | Closed reminders: hidden unless `closed=1`, or shown muted? | Needs a decision | Drafted: hidden. | — |
+| 209 | [34.3](phase-34.3.md) | *Add reminder* link from a day | Needs a decision | Drafted: keep it (prefilled date). | — |
+| 210 | [34.3](phase-34.3.md) | Dashboard widget: small month or a list of the next days? | Needs a decision | Drafted: small month; *Upcoming reminders* is already the list. | — |
+| 211 | [34.3](phase-34.3.md) | Week numbers on the grid | Needs a decision | Drafted: not built. | — |
 | 212 | [35.1](phase-35.1.md) | Demo owner: admin or member? | Needs a decision | Drafted: admin, so visitors see Modules and other admin screens. | — |
 | 213 | [35.1](phase-35.1.md) | Reset interval | Needs a decision | Drafted: 24 hours (`DEMO_RESET_HOURS`). | — |
 | 214 | [35.1](phase-35.1.md) | Visitor uploads: allowed or blocked? | Needs a decision | Drafted: allowed at 2 MB, deleted at reset. | — |

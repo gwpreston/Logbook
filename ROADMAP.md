@@ -76,8 +76,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | ✅ |
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | ✅ |
 | [34.1](docs/phases/phase-34.1.md) | Registration plates | ✅ |
-| [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | 📋 |
-| 34.3 (file not yet written) | Reminders calendar and dashboard widget + v3.1 release | 📋 |
+| [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | 🚧 |
+| [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | 📋 |
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | 📋 |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |
 | [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 📋 |
@@ -795,6 +795,26 @@ developing.*
   only. Ships with Phase 34.3 as v3.1.0.
 
 → [`phase-34.1.md`](docs/phases/phase-34.1.md)
+
+---
+
+## Phase 34.2 — Expense breakdown and monthly spend widgets
+*Where the money went, and how it moved month to month, without leaving
+the dashboard.*
+
+- **Expense breakdown:** the period's spend by Reports' groups, with
+  *This month*, *Last 12 months* and *This year* as links; a CSS bar,
+  whole percentages that add up to 100%, and every row linking to Reports
+  for that group (#204, #205).
+- **Monthly spend:** the last 12 months as the Expenses tab's stacked
+  bars, a table without JS, the average per month, and each month linking
+  to Reports for that month (#206).
+- Both follow the vehicle filter, count only vehicles whose costs the
+  viewer may see, never convert currencies and go with the `reports`
+  module; *Spend this month* stays (#203). Ships with Phase 34.3 as
+  v3.1.0.
+
+→ [`phase-34.2.md`](docs/phases/phase-34.2.md)
 
 ---
 

@@ -2271,6 +2271,58 @@ toggles.
   *Dashboard widget*. It stays off the dashboard until a vehicle in view
   has an active agreement the viewer may see (customising lists it, with
   "No active finance agreements on these vehicles").
+- **Expense breakdown** (id `expense_breakdown`, Phase 34.2; with `reports`
+  on; after *spend this month* in the default order, appended to saved
+  layouts by the rule above): where the period's money went, for the
+  vehicles in view that the viewer may see costs of.
+  - **Period switch:** *This month*, *Last 12 months* (default) and *This
+    year* (#204), as plain links (`?expenses=this_month|last_12_months|this_year`,
+    keeping `?vehicle=`), the same periods as Reports' presets of those
+    names (§7.7). It is a URL choice, not a stored setting, so it can be
+    bookmarked and works without JS. An unknown or repeated value falls
+    back to the default.
+  - **Per currency**, as Reports (amounts are never converted): the total,
+    then one row per group with spending in **Reports' own order and
+    labels** (§7.7), with its amount and its share of the total. Shares are
+    whole percentages rounded by the largest-remainder method, so they add
+    up to exactly 100%. Costs are never negative (§7.7), so neither is a
+    group.
+  - **A bar** of the groups' shares above the rows, drawn with CSS (no
+    chart library) in the groups' colour tokens. Every row carries its
+    label, amount and percentage as text, so colour is never the only cue.
+  - Each row links to Reports for the same vehicle selection, the matching
+    period and that group (`group=`, §7.7 *Costs filter*); the title row
+    links to Reports for the period.
+  - **Empty:** "No costs in this period." The widget keeps its place.
+  - No *By vehicle* option (#205): Reports has *Spend per vehicle*.
+    *Spend this month* stays beside it (#203), to be looked at again after
+    a release.
+- **Monthly spend** (id `monthly_expenses`, Phase 34.2; with `reports` on;
+  after *expense breakdown* in the default order, appended to saved
+  layouts): the last 12 calendar months in the viewer's time zone (this
+  month and the 11 before; Reports' *Last 12 months*), every month listed,
+  including those with nothing spent. Per currency: a stacked bar chart by
+  group (the Expenses tab's chart, §7.7: the same series, colours and
+  order) and the average per month, divided as Reports divides it (the
+  current month counts). Without JS the same figures are a table (months
+  as rows, newest first; the groups with spending and the total as
+  columns), as the *Mileage* widget does; with JS the table stays for
+  assistive technology. **Each month links to Reports** for that calendar
+  month (`range=custom`, its first and last day, the same vehicle
+  selection; #206): the table's month names are links, and clicking a bar
+  in the chart opens the same page. The title row links to Reports for
+  the last 12 months. With nothing spent in the 12 months: "No costs in
+  the last 12 months."
+- **Both spend widgets** (Phase 34.2): vehicle filter and pinned card as
+  every other widget (one vehicle selected shows that vehicle only).
+  Archived vehicles are left out. A viewer who may see costs of none of
+  the vehicles in view does not get them; *Customise* lists them with "No
+  vehicles whose costs you can see". Every figure comes from the report
+  service (§7.7), so the rules for fill-ups, maintenance, documents, tyres,
+  ad-hoc expenses and finance lines are the ledger's, not re-implemented.
+  **Cost:** the dashboard asks the report service once for every spend
+  figure it shows (*spend this month*, the breakdown, the 12 months),
+  reading the ledger once for the whole vehicle set, not per vehicle.
 - **Vehicle filter:** with two or more active vehicles, a row of chips under
   the greeting — *All vehicles* and one per active vehicle with its type
   icon. Each chip is a link (`/?vehicle={id}`; the current one has
@@ -2294,7 +2346,8 @@ toggles.
   ids are dropped and widgets added in later releases are appended, so an old
   saved layout never breaks. Without a saved layout (and without JS) the
   default order applies: needs attention (Phase 24), upcoming reminders,
-  insights (Phase 33.3), coming up, spend this month, recent fuel, your vehicles, efficiency
+  insights (Phase 33.3), coming up, spend this month, expense breakdown and
+  monthly spend (Phase 34.2), recent fuel, your vehicles, efficiency
   trend, compliance status, mileage, recent activity, business mileage,
   finance, cheapest fuel, true cost.
 - **True cost** (id `true_cost`, Phase 32; core, vehicles the viewer may
@@ -2799,7 +2852,9 @@ Disabled modules are removed from nav, routes, and dashboard.
     part, the calendar feed (404) and the scheduled notifications; lead
     times still drive the due badges on the vehicle tabs.
   - `reports` off: Reports, its CSV export, the ownership report and its
-    CSV (Phase 14.2), and the spend widget. The overview's *Cost of
+    CSV (Phase 14.2), and the spend widgets (*Spend this month*, and from
+    Phase 34.2 *Expense breakdown* and *Monthly spend*; a saved layout
+    keeps their places for when the module returns). The overview's *Cost of
     ownership* card stays: it is part of the garage.
   - `tyres` off: the Tyres tab and its pages (404), the overview's *Tyres*
     card, the chooser's *Tyre change*, the *Tyres* chip and tyre rows in
@@ -7730,9 +7785,10 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 34.2 — Expense breakdown and monthly spend widgets.** Two
   dashboard widgets from Reports' own figures: where the period's money went
   by group, with *This month*, *Last 12 months* and *This year*, and the
-  last 12 months as stacked bars with a table; vehicle filter, `ViewCosts`,
-  per-currency, gone with the `reports` module (§7.7, §7.8, §7.10). No
-  migration. Ships with Phase 34.3 as v3.1.0.
+  last 12 months as stacked bars with a table, each month linking to
+  Reports; vehicle filter, `ViewCosts`, per-currency, one report-service
+  call for every spend widget, gone with the `reports` module (§7.7, §7.8,
+  §7.10; #203–#206). No migration. Ships with Phase 34.3 as v3.1.0.
 - **Phase 34.3 — Reminders calendar and dashboard widget + v3.1 release.**
   A month view of the reminders the list shows, with an overdue strip, a
   list of those with no date, a day panel and *Add reminder* from a day,
