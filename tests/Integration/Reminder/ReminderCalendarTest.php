@@ -172,7 +172,8 @@ final class ReminderCalendarTest extends ReminderTestCase
 
         $panel = self::body($browser->get('/reminders/calendar?month=2026-10&day=2026-10-15'));
         self::assertStringContainsString('id="cal-day"', $panel);
-        self::assertStringContainsString('Thursday, 15 October 2026', $panel);
+        // The heading's punctuation is ICU's and varies by ICU version: check its parts.
+        self::assertMatchesRegularExpression('#id="cal-day-title">Thursday,? 15 October 2026</h2>#', $panel);
         foreach (['One', 'Two', 'Three', 'Four', 'Five'] as $title) {
             self::assertStringContainsString($title, self::section($panel, 'cal-day'));
         }
