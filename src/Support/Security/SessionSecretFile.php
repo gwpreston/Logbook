@@ -45,23 +45,26 @@ final readonly class SessionSecretFile
         if ($file === '') {
             return self::NO_FILE;
         }
-        if (file_exists($file)) {
+        // An empty file (a start killed mid-write) counts as none.
+        if (is_file($file) && trim((string) file_get_contents($file)) !== '') {
             return self::EXISTS;
         }
         if ($this->hasUsers()) {
             return self::EXISTING_INSTALL;
         }
 
+        // Written beside it and renamed into place, so the file is never seen half-written.
+        $temp = $file . '.' . bin2hex(random_bytes(4)) . '.tmp';
         $previous = umask(0077);
         try {
-            $written = file_put_contents($file, bin2hex(random_bytes(32)) . "\n", LOCK_EX);
+            $written = file_put_contents($temp, bin2hex(random_bytes(32)) . "\n");
         } finally {
             umask($previous);
         }
-        if ($written === false) {
+        if ($written === false || !chmod($temp, 0600) || !rename($temp, $file)) {
+            @unlink($temp);
             throw new RuntimeException(sprintf('Could not write %s.', $file));
         }
-        chmod($file, 0600);
 
         return self::GENERATED;
     }

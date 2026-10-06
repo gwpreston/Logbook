@@ -56,6 +56,17 @@ final readonly class NotificationSecrets
     }
 
     /**
+     * What a typed value means at send time: an `env:NAME` reference reads
+     * the variable now; anything else is the value itself.
+     *
+     * @throws SecretUnreadable an `env:` variable that is not set
+     */
+    public function resolve(string $name, #[SensitiveParameter] string $typed): string
+    {
+        return SecretBox::isReference($typed) ? $this->box->open($name, trim($typed)) : $typed;
+    }
+
+    /**
      * The value, or null when none is stored.
      *
      * @throws SecretUnreadable sealed with another key, or an unset `env:` variable

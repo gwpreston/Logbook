@@ -53,6 +53,14 @@ final class MailTestResultTest extends TestCase
         self::assertSame($stage, MailTestResult::stageOf($message));
     }
 
+    public function testTheHostNameDoesNotDecideTheStage(): void
+    {
+        $refused = 'Connection could not be established with host "crypto.example.com:587": stream_socket_client(): '
+            . 'Unable to connect to crypto.example.com:587 (Connection refused)';
+
+        self::assertSame(MailTestResult::CONNECTION, MailTestResult::stageOf($refused, 'crypto.example.com'));
+    }
+
     public function testResults(): void
     {
         self::assertTrue(MailTestResult::sent()->sent);

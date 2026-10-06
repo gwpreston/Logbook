@@ -35,7 +35,7 @@
                     {{ ui.icon('check_circle') }}<span>{{ 'delivery.email.test.sent'|trans({address: test_to ?? values.test_to}) }}</span>
                 </div>
             {% else %}
-                <div class="alert alert--error" role="alert" data-test-result="{{ test.stage }}">
+                <div class="alert alert--error alert--top" role="alert" data-test-result="{{ test.stage }}">
                     {{ ui.icon('error') }}
                     <span>
                         {{ ('delivery.email.test.failed.' ~ test.stage)|trans }}
@@ -94,7 +94,7 @@
                 {{ ui.input('admin_recipient', 'delivery.email.admin_recipient'|trans, values, errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'off', hint: 'delivery.email.admin_recipient_hint'|trans}) }}
 
                 {% if test_to is null %}
-                    {{ ui.input('test_to', 'delivery.email.test_to'|trans, values, errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'email', hint: 'delivery.email.test_to_hint'|trans}) }}
+                    {{ ui.input('test_to', 'delivery.email.test_to'|trans, values, errors, {type: 'email', maxlength: 254, autocomplete: 'email', hint: 'delivery.email.test_to_hint'|trans}) }}
                 {% else %}
                     <p class="muted">{{ 'delivery.email.test_goes_to'|trans({address: test_to}) }}</p>
                 {% endif %}

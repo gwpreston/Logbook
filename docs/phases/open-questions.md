@@ -308,7 +308,7 @@ stays the owner's, outside the phase. Phase 36.1's
 | 227 | [36.2](phase-36.2.md) | The `NTFY_*`, `GOTIFY_*` and `WEBHOOK_URL` variables: fallbacks, import once, or remove? | Needs a decision | Drafted: admin-only deprecated fallbacks. Recommendation: removal announced for a later major release. | — |
 | 228 | [36.2](phase-36.2.md) | The instance webhook (`WEBHOOK_URL`) still receives everyone's notifications? | Needs a decision | Drafted: yes while set. Alternative: retire it; the REST API serves integrations. | — |
 | 229 | [36.2](phase-36.2.md) | Default for where members' channels may send | Needs a decision | Drafted: *The internet and your network*. Alternative: *The internet only*. | — |
-| 230 | [36.2](phase-36.2.md) | Migration when there is no `SESSION_SECRET` | Needs a decision | Drafted: Gotify created as *Needs setup*, old value left in place. Disappears if 36.1's secret is generated. | — |
+| 230 | [36.2](phase-36.2.md) | Migration when there is no `SESSION_SECRET` | Needs a decision | Drafted: Gotify created as *Needs setup*, old value left in place. Still open: 36.1 (#222) generates a secret only on a fresh Docker volume, so existing installs without one and bare-PHP installs still hit it. | — |
 | 231 | [36.2](phase-36.2.md) | Channels under Account → Notifications (replaces Phase 33.2's draft) | Needs a decision | Drafted as the owner asked; confirm. | — |
 | 232 | [36.2](phase-36.2.md) | What admins can see of members' channels | Needs a decision | Drafted: nothing. Alternative: the kinds configured, for support. | — |
 | 233 | [36.2](phase-36.2.md) | Failing channels: show the last error, or switch off after repeated failures? | Needs a decision | Drafted: show the last error only. | — |

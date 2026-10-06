@@ -41,9 +41,10 @@ final readonly class MailTestResult
      *
      * @return self::CONNECTION|self::ENCRYPTION|self::SIGN_IN|self::SEND
      */
-    public static function stageOf(string $message): string
+    public static function stageOf(string $message, string $host = ''): string
     {
-        $message = strtolower($message);
+        // The host is in the message: a server called crypto.example.com must not read as encryption.
+        $message = strtolower($host === '' ? $message : str_ireplace($host, 'host', $message));
 
         // A certificate failure on implicit TLS also says the connection failed: encryption first.
         return match (true) {

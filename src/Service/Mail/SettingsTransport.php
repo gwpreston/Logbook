@@ -37,7 +37,7 @@ final readonly class SettingsTransport implements TransportInterface
             throw new TransportException('Email is not set up (Settings → Delivery).');
         }
         $password = null;
-        if ($server->hasPassword) {
+        if ($server->hasPassword && $server->username !== null) {
             try {
                 $password = $this->secrets->open(null, NotificationSecrets::SMTP_PASSWORD);
             } catch (SecretUnreadable $e) {

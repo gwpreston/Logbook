@@ -65,7 +65,8 @@ final readonly class EmailServerForm
             }
         }
 
-        $host = $values['host'];
+        // "[2001:db8::1]" is how an IPv6 server is often written: kept bare, bracketed when connecting.
+        $host = preg_match('/^\[([0-9a-f:.]+)\]$/i', $values['host'], $m) === 1 ? $m[1] : $values['host'];
         if (!isset($errors['host']) && !self::validHost($host)) {
             $errors['host'] = $host === '' ? 'delivery.email.error.host_required' : 'delivery.email.error.host';
         }

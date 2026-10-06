@@ -123,6 +123,12 @@ final class EmailServerFormTest extends TestCase
         self::assertFalse(EmailServerForm::validHost('-bad.example.com'));
     }
 
+    public function testABracketedIpv6AddressIsKeptBare(): void
+    {
+        self::assertSame('2001:db8::1', EmailServerForm::parse(['host' => '[2001:db8::1]'] + self::VALID)->server?->host);
+        self::assertNull(EmailServerForm::parse(['host' => '[smtp.example.com]'] + self::VALID)->server);
+    }
+
     public function testNoEncryptionWithAUsernameWarns(): void
     {
         self::assertSame(

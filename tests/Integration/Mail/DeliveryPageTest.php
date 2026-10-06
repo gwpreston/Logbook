@@ -138,6 +138,15 @@ final class DeliveryPageTest extends AppTestCase
         $this->sendAccountMail($app);
         self::assertSame('from-the-environment', $this->transports->built[0]['password']);
 
+        // A typed reference is read for the test too, unsaved.
+        $test = ['intent' => 'test', 'test_to' => 'me@example.com', 'password' => 'env:SMTP_SECRET_PASS'] + self::FORM;
+        $browser->post('/settings/delivery', $test);
+        self::assertCount(2, $this->transports->built);
+        self::assertSame('from-the-environment', array_column($this->transports->built, 'password')[1]);
+        $unset = self::body($browser->post('/settings/delivery', ['password' => 'env:SMTP_UNSET'] + $test));
+        self::assertStringContainsString('Set SMTP_UNSET', $unset);
+        self::assertCount(2, $this->transports->built, 'nothing sent');
+
         // A reference to a variable that is not set says which one.
         $browser->post('/settings/delivery', ['password' => 'env:SMTP_MISSING'] + self::FORM);
         self::assertStringContainsString('Set SMTP_MISSING', self::body($browser->get('/settings/delivery')));
@@ -154,7 +163,7 @@ final class DeliveryPageTest extends AppTestCase
         $response = $browser->post('/settings/delivery', ['intent' => 'test', 'host' => 'smtp.typed.example'] + self::FORM);
         self::assertSame(200, $response->getStatusCode());
         $page = self::body($response);
-        self::assertStringContainsString('Test email sent to pat@example.com. Nothing was saved.', $page);
+        self::assertStringContainsString('Test email sent to pat@example.com. Nothing was saved', $page);
         self::assertStringNotContainsString(self::PASSWORD_TYPED, $page);
 
         self::assertCount(1, $this->transports->built);
@@ -177,6 +186,14 @@ final class DeliveryPageTest extends AppTestCase
         $browser->post('/settings/delivery', ['intent' => 'test', 'password' => '', 'test_to' => 'me@example.com'] + self::FORM);
         self::assertSame(self::PASSWORD_TYPED, $this->transports->built[0]['password']);
         self::assertSame('me@example.com', $this->transports->mail->sent[0]->getTo()[0]->getAddress());
+
+        // Never to another server: that one needs its password typed.
+        $this->transports->built = [];
+        $other = ['intent' => 'test', 'password' => '', 'test_to' => 'me@example.com', 'host' => 'elsewhere.example'];
+        $other += self::FORM;
+        $page = self::body($browser->post('/settings/delivery', $other));
+        self::assertStringContainsString('Type the password to test another server', $page);
+        self::assertSame([], $this->transports->built);
     }
 
     public function testWithoutAnAddressTheTestAsksForOne(): void

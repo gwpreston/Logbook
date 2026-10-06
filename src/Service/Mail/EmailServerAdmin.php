@@ -121,6 +121,18 @@ final readonly class EmailServerAdmin
     }
 
     /**
+     * Whether a typed server is the saved one as far as the password goes:
+     * the same host, port and username.
+     */
+    private function sameServer(SmtpServer $typed): bool
+    {
+        $saved = $this->config->effective();
+
+        return $saved !== null && $saved->host === $typed->host && $saved->port === $typed->port
+            && $saved->username === $typed->username;
+    }
+
+    /**
      * Send one message to $to with the typed server, unsaved. An empty
      * password field uses the saved password (unless *Remove* is ticked).
      */
@@ -131,9 +143,19 @@ final readonly class EmailServerAdmin
         string $to,
         User $admin,
     ): MailTestResult {
-        if ($password === null && !$removePassword && $server->username !== null) {
+        // No username: no sign-in. A typed `env:NAME` reads the variable now, as saving would.
+        if ($server->username === null) {
+            $password = null;
+        } elseif ($password === null && !$this->sameServer($server)) {
+            // The saved password goes only to the saved server: another host has to be typed with its own.
+            $needed = $this->translator->trans('delivery.email.test.password_needed');
+
+            return MailTestResult::failed(MailTestResult::SIGN_IN, $needed);
+        } elseif ($password !== null || !$removePassword) {
             try {
-                $password = $this->secrets->open(null, NotificationSecrets::SMTP_PASSWORD);
+                $password = $password === null
+                    ? $this->secrets->open(null, NotificationSecrets::SMTP_PASSWORD)
+                    : $this->secrets->resolve(NotificationSecrets::SMTP_PASSWORD, $password);
             } catch (SecretUnreadable $e) {
                 return MailTestResult::failed(MailTestResult::SIGN_IN, $e->variable === null
                     ? $this->translator->trans('delivery.email.password_state.unreadable')
@@ -155,7 +177,7 @@ final readonly class EmailServerAdmin
             $reply = Redactor::redact($e->getMessage(), $secrets);
             $this->logger->warning('Test email from Settings → Delivery failed: {error}', ['error' => $reply]);
 
-            return MailTestResult::failed(MailTestResult::stageOf($e->getMessage()), $reply);
+            return MailTestResult::failed(MailTestResult::stageOf($e->getMessage(), $server->host), $reply);
         }
         $this->logger->info('Test email sent from Settings → Delivery by user {user}.', ['user' => $admin->id]);
 

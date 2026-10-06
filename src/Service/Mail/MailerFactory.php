@@ -31,8 +31,12 @@ final readonly class MailerFactory implements TransportFactory
 
     public function build(SmtpServer $server, #[SensitiveParameter] ?string $password): TransportInterface
     {
+        // An IPv6 address goes in brackets, or "host:port" is ambiguous.
+        $host = filter_var($server->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
+            ? '[' . $server->host . ']'
+            : $server->host;
         $transport = new EsmtpTransport(
-            $server->host,
+            $host,
             $server->port,
             $server->encryption === MailEncryption::Ssl,
             null,
