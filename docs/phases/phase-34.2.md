@@ -146,45 +146,45 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
       used by the widget's links as well as its figures.
 
 ### 34.2.2 Templates, CSS, JavaScript
-- [ ] Widget templates for both, with the *Customise* entries and empty
+- [x] Widget templates for both, with the *Customise* entries and empty
       states. The breakdown bar is CSS only.
-- [ ] Reuse the Expenses tab's chart code for *Monthly spend* rather than
+- [x] Reuse the Expenses tab's chart code for *Monthly spend* rather than
       writing a second stacked-bar configuration. The table is rendered
       server-side in the widget.
-- [ ] Month links (#206): the table's month names link to Reports for
+- [x] Month links (#206): the table's month names link to Reports for
       that month; the chart carries one link per bar and a click on a bar
       opens it (the bar chart code gains optional links, so other charts
       are unchanged). A keyboard user reaches the links in the table.
-- [ ] Segment colours come from tokens that read in both themes and all
+- [x] Segment colours come from tokens that read in both themes and all
       four accents (reuse the Reports palette).
 
 ### 34.2.3 Translations
-- [ ] English and German strings: widget titles, period labels, empty
+- [x] English and German strings: widget titles, period labels, empty
       state, the *Customise* note.
 
 ### 34.2.4 Tests
-- [ ] Unit: largest-remainder shares (totals 100 for awkward splits, zero
+- [x] Unit: largest-remainder shares (totals 100 for awkward splits, zero
       total, one group).
-- [ ] Unit: period parsing (valid values, unknown, repeated).
-- [ ] Integration: the breakdown matches Reports for the same vehicles and
+- [x] Unit: period parsing (valid values, unknown, repeated).
+- [x] Integration: the breakdown matches Reports for the same vehicles and
       period, group by group (assert equality with the report service, not
       hard-coded numbers); two currencies give two blocks, never summed;
       archived vehicles excluded; a vehicle the viewer may not see costs of
       is excluded and a viewer with none gets no widget; one vehicle
       selected shows that vehicle only; links carry the vehicle, period and
       group.
-- [ ] Integration: *Monthly spend* lists 12 months including empty ones;
+- [x] Integration: *Monthly spend* lists 12 months including empty ones;
       the table and the chart data agree; the average per month equals
       Reports'; the month boundary at local midnight in a time zone with
       daylight saving (a fill-up at 00:30 BST on 1 April counts in April).
-- [ ] Integration: `reports` off removes both widgets from the dashboard,
+- [x] Integration: `reports` off removes both widgets from the dashboard,
       *Customise* and saved layouts without losing the layout; turning it
       back on restores them in place.
-- [ ] Integration: an old saved layout gains both widgets at the end; an
+- [x] Integration: an old saved layout gains both widgets at the end; an
       unknown id is still dropped.
-- [ ] Query count: the dashboard makes no more than a fixed number of extra
+- [x] Query count: the dashboard makes no more than a fixed number of extra
       queries for the two widgets however many vehicles there are.
-- [ ] Without JavaScript: the table is present and the bar and rows render.
+- [x] Without JavaScript: the table is present and the bar and rows render.
 
 ### 34.2.5 Checks
 - [ ] `design-reviewer` agent at 375, 768 and 1280 px, light and dark, all

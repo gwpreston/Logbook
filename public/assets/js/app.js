@@ -294,6 +294,9 @@
         var muted = chartToken(spec, 'muted');
         var bars = 0;
         var lines = 0;
+        // Bars that link somewhere (e.g. a month of Monthly spend to Reports); the
+        // page's table carries the same links for the keyboard and without JS.
+        var links = !printing && Array.isArray(spec.links) && spec.links.length ? spec.links : null;
 
         return {
             type: 'bar',
@@ -362,6 +365,15 @@
                 animation: false,
                 devicePixelRatio: printing ? 2 : undefined,
                 interaction: { mode: 'index', intersect: false },
+                onClick: links ? function (event, elements) {
+                    var href = elements.length ? links[elements[0].index] : null;
+                    if (href) {
+                        window.location.href = href;
+                    }
+                } : undefined,
+                onHover: links ? function (event, elements) {
+                    event.native.target.style.cursor = elements.length ? 'pointer' : '';
+                } : undefined,
                 scales: {
                     x: { stacked: spec.stacked, ticks: { color: muted, maxRotation: 0, autoSkip: true }, grid: { display: false } },
                     y: {

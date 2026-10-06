@@ -4331,6 +4331,49 @@ a.list__title:hover {
     margin: 0;
 }
 
+/* Expense breakdown (Phase 34.2): the period chips above, linked rows below the bar. */
+.expense-breakdown__switch {
+    margin-bottom: var(--space-3);
+}
+
+.expense-breakdown .breakdown__label {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.expense-breakdown .breakdown__label:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+/* Monthly spend (Phase 34.2): one block per currency, chart then its table. */
+.monthly-spend {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.monthly-spend + .monthly-spend {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+}
+
+.monthly-spend p {
+    margin: 0;
+}
+
+/* The table's month links stay reachable from the keyboard: it shows while one has focus. */
+.js .monthly-spend__table .chart-table:focus-within {
+    position: static;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
 /* Fleet summary: one row per vehicle. */
 .fleet {
     display: grid;

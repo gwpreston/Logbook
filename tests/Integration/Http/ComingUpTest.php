@@ -295,7 +295,11 @@ final class ComingUpTest extends ReminderTestCase
 
         $html = self::body($this->browser->get('/'));
         preg_match_all('/data-widget="([a-z_]+)"/', $html, $matches);
-        self::assertSame(['coming_up', 'true_cost'], array_slice($matches[1], -2), 'widgets from later releases go last');
+        self::assertSame(
+            ['coming_up', 'expense_breakdown', 'monthly_expenses', 'true_cost'],
+            array_slice($matches[1], -4),
+            'widgets from later releases go last',
+        );
 
         $widget = self::sectionOf($html, 'widget-coming_up-title');
         self::assertStringContainsString('href="/upcoming"', $widget);
