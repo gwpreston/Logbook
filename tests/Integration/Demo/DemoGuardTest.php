@@ -14,12 +14,11 @@ use Logbook\Service\Demo\DemoMode;
 use Logbook\Service\Demo\DemoRefusal;
 use Logbook\Service\Demo\DemoRestriction;
 use Logbook\Service\Demo\DemoState;
+use Logbook\Tests\Support\RecordingLogger;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
-use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Slim\App;
-use Stringable;
 
 /**
  * The guard (spec.md §7.36): what `DEMO_MODE` means for the database it
@@ -136,7 +135,9 @@ final class DemoGuardTest extends DemoTestCase
         self::assertSame(1, count($this->service($app, UserRepository::class)->listAll()));
         self::assertNotEmpty(array_filter(
             $logger->records,
-            static fn (array $r): bool => $r[0] === 'error' && str_contains($r[1], 'holds real data') && str_contains($r[1], 'Remove the setting'),
+            static fn (array $r): bool => $r[0] === 'error'
+                && str_contains($r[1], 'holds real data')
+                && str_contains($r[1], 'Remove the setting'),
         ), 'a line at error level');
 
         // Every admin sees why, and the app is an ordinary one: no banner, no restriction.
@@ -226,19 +227,5 @@ final class DemoGuardTest extends DemoTestCase
         self::assertSame(303, $response->getStatusCode());
 
         return $browser;
-    }
-}
-
-/**
- * Keeps what was logged, as [level, message].
- */
-final class RecordingLogger extends AbstractLogger
-{
-    /** @var list<array{0: string, 1: string}> */
-    public array $records = [];
-
-    public function log($level, string|Stringable $message, array $context = []): void
-    {
-        $this->records[] = [(string) $level, (string) $message];
     }
 }

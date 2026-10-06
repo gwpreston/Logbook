@@ -266,8 +266,10 @@ DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
 " . implode("
 ", $neither));
         self::assertSame([], $both, 'Routes both blocked and allowed in the demo');
-        self::assertSame([], array_values(array_diff(self::DEMO_ALLOWED, $names)), 'DEMO_ALLOWED names a route that does not exist');
-        self::assertSame([], array_values(array_diff(DemoRoutes::BLOCKED, $names)), 'DemoRoutes::BLOCKED names a route that does not exist');
+        $stale = array_values(array_diff(self::DEMO_ALLOWED, $names));
+        self::assertSame([], $stale, 'DEMO_ALLOWED names a route that does not exist');
+        $stale = array_values(array_diff(DemoRoutes::BLOCKED, $names));
+        self::assertSame([], $stale, 'DemoRoutes::BLOCKED names a route that does not exist');
     }
 
     public function testTheListsNameOnlyRoutesThatExist(): void
