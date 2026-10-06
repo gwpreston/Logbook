@@ -103,7 +103,8 @@
             </div>
         </form>
 
-        {% if feature_enabled('reminders') %}
+        {# The demo sends nothing and makes no feeds (spec.md §7.36). #}
+        {% if feature_enabled('reminders') and not demo_blocked('settings.reminders.test') %}
         <section class="card" aria-labelledby="test-heading">
             <h2 id="test-heading" class="card__title">{{ 'reminders.settings.test_heading'|trans }}</h2>
             <p class="field__hint">{{ (any_active ? 'reminders.settings.test_intro' : 'reminders.settings.test_none')|trans }}</p>

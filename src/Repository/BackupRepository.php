@@ -7,6 +7,7 @@ namespace Logbook\Repository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use InvalidArgumentException;
+use Logbook\Service\Demo\DemoMarker;
 use UnexpectedValueException;
 
 /**
@@ -128,6 +129,9 @@ final readonly class BackupRepository
         'fuel_price_secrets',
     ];
 
+    /** Every setting but the demo marker. */
+    private const string NOT_MARKER = 'NOT (scope = \'global\' AND owner_id = 0 AND name = :marker)';
+
     public function __construct(private Connection $connection)
     {
     }
@@ -191,11 +195,15 @@ final readonly class BackupRepository
     {
         self::assertKnown($table);
 
-        $rows = $this->connection->createQueryBuilder()
+        $query = $this->connection->createQueryBuilder()
             ->select('*')
             ->from($table)
-            ->orderBy('id')
-            ->fetchAllAssociative();
+            ->orderBy('id');
+        if ($table === 'settings') {
+            // The demo marker is this install's own, never carried (spec.md §7.36).
+            $query->where(self::NOT_MARKER)->setParameter('marker', DemoMarker::SETTING);
+        }
+        $rows = $query->fetchAllAssociative();
 
         return array_values(array_map(static function (array $row): array {
             $values = [];
@@ -224,7 +232,12 @@ final readonly class BackupRepository
             // Links point at the replaced accounts (and would block deleting them).
             $connection->createQueryBuilder()->delete('invitations')->executeStatement();
             foreach (array_reverse(self::TABLES) as $table) {
-                $connection->createQueryBuilder()->delete($table)->executeStatement();
+                $delete = $connection->createQueryBuilder()->delete($table);
+                if ($table === 'settings') {
+                    // Neither created nor removed by a restore: the demo marker (spec.md §7.36).
+                    $delete->where(self::NOT_MARKER)->setParameter('marker', DemoMarker::SETTING);
+                }
+                $delete->executeStatement();
             }
             // Every session, and every scan waiting for an entry, belonged to the replaced accounts.
             $connection->createQueryBuilder()->delete('sessions')->executeStatement();
@@ -235,6 +248,14 @@ final readonly class BackupRepository
             $later = [];
             foreach (self::TABLES as $table) {
                 foreach ($data[$table] ?? [] as $row) {
+                    $isMarker = ($row['name'] ?? null) === DemoMarker::SETTING && ($row['scope'] ?? 'global') === 'global';
+                    if ($table === 'settings' && $isMarker) {
+                        continue;
+                    }
+                    if ($table === 'settings') {
+                        // Nothing refers to a setting's id, and the kept marker may hold the same one.
+                        unset($row['id']);
+                    }
                     // A link back to a later table is set once that table is filled.
                     foreach (self::LINKS_BACK[$table] ?? [] as $column) {
                         if (($row[$column] ?? null) !== null && isset($row['id'])) {

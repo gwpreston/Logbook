@@ -51,20 +51,83 @@ final class DemoDataSeeder extends AbstractSeed
     private const string ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     private const int PASSWORD_LENGTH = 20;
 
+    /**
+     * The day the sample dates were written for (every date below is
+     * relative to it, Phase 35.1): `forDemo()` moves them all by the whole
+     * weeks between it and the day given, so the history always ends just
+     * before today. Weeks, so the weekday patterns (commutes) keep their shape.
+     */
+    public const string ANCHOR = '2026-10-06';
+
+    /** Days every seeded date moves by (always 0 outside `forDemo()`). */
+    private static int $shiftDays = 0;
+
     private string $password = '';
     private string $partnerPassword = '';
+    private bool $demo = false;
+    private ?DateTimeImmutable $today = null;
+    private ?string $uploadPath = null;
+
+    /**
+     * Seed for Logbook's demo mode (spec.md §7.36), by the app and not by
+     * Phinx: the one account `demo` with this password, every date placed
+     * relative to $today, no output, and allowed in production.
+     */
+    public function forDemo(string $password, DateTimeImmutable $today, string $uploadPath): self
+    {
+        $this->demo = true;
+        $this->password = $password;
+        $this->today = $today;
+        $this->uploadPath = $uploadPath;
+
+        return $this;
+    }
+
+    /** Where the sample paperwork is written: the app's UPLOAD_PATH. */
+    private function uploadPath(): string
+    {
+        return $this->uploadPath ?? Kernel::settings()->uploadPath;
+    }
+
+    /**
+     * An ISO date as it falls relative to today: the sample's own date in
+     * the sample's own time, moved on by the shift (a no-op outside the demo).
+     */
+    private static function day(string $date): string
+    {
+        return self::$shiftDays === 0
+            ? $date
+            : gmdate('Y-m-d', (int) strtotime($date . ' UTC') + self::$shiftDays * 86400);
+    }
 
     public function run(): void
     {
-        if (Kernel::settings()->isProduction()) {
+        if (!$this->demo && Kernel::settings()->isProduction()) {
             throw new RuntimeException('DemoDataSeeder is for development only (APP_ENV=production).');
         }
 
-        $this->password = self::passwordFrom('DEMO_PASSWORD');
+        if ($this->demo && $this->today instanceof DateTimeImmutable) {
+            $days = intdiv(
+                (int) strtotime($this->today->format('Y-m-d') . ' UTC') - (int) strtotime(self::ANCHOR . ' UTC'),
+                86400,
+            );
+            self::$shiftDays = (int) floor($days / 7) * 7;
+        } else {
+            self::$shiftDays = 0;
+        }
+
         $this->partnerPassword = self::passwordFrom('PARTNER_PASSWORD');
+        if (!$this->demo) {
+            $this->password = self::passwordFrom('DEMO_PASSWORD');
+        }
         $hasher = new PasswordHasher();
 
-        if ($this->sampleUsersExist()) {
+        if ($this->demo) {
+            $existing = $this->fetchRow('SELECT COUNT(*) AS n FROM users');
+            if (is_array($existing) && self::intValue($existing['n'] ?? $existing[0] ?? 0) > 0) {
+                throw new RuntimeException('The demo is seeded into an empty database only.');
+            }
+        } elseif ($this->sampleUsersExist()) {
             $now = gmdate('Y-m-d H:i:s');
             foreach ([self::USERNAME => $this->password, self::PARTNER => $this->partnerPassword] as $username => $password) {
                 $this->execute(
@@ -157,18 +220,18 @@ final class DemoDataSeeder extends AbstractSeed
                 'type' => 'car', 'make' => 'Volkswagen', 'model' => 'Golf 1.5 TSI Life', 'year' => 2019,
                 'registration' => 'LB19 KTR', 'vin' => 'WVWZZZCDZKW123456', 'fuel_type' => 'petrol',
                 'default_grade' => 'e10_95', 'capacity' => '50.000',
-                'purchase_date' => '2021-03-14', 'purchase_price' => '14250.000',
+                'purchase_date' => self::day('2021-03-14'), 'purchase_price' => '14250.000',
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Toyota', 'model' => 'Corolla 1.8 Hybrid', 'year' => 2022,
                 'registration' => 'LK22 VXN', 'fuel_type' => 'hybrid', 'capacity' => '43.000',
                 // Bought nearly new on a 48-month PCP (Phase 29.2): the purchase price is its cash price.
-                'purchase_date' => '2024-04-01', 'purchase_price' => '22995.000',
+                'purchase_date' => self::day('2024-04-01'), 'purchase_price' => '22995.000',
             ]),
             $vehicle([
                 'type' => 'bike', 'nickname' => 'Street Triple', 'make' => 'Triumph', 'model' => 'Street Triple R',
                 'year' => 2020, 'registration' => 'MT20 BKE', 'fuel_type' => 'petrol', 'capacity' => '15.000',
-                'purchase_date' => '2023-04-22', 'purchase_price' => '7800.000',
+                'purchase_date' => self::day('2023-04-22'), 'purchase_price' => '7800.000',
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Kia', 'model' => 'EV6 GT-Line', 'year' => 2023,
@@ -176,28 +239,28 @@ final class DemoDataSeeder extends AbstractSeed
                 'capacity' => '77.400', 'currency' => 'EUR',
                 // Leased (a lease agreement, Phase 29.2): no purchase price, so its cost of ownership is its
                 // running costs, the rentals included.
-                'purchase_date' => '2024-02-10', 'purchase_price' => null,
+                'purchase_date' => self::day('2024-02-10'), 'purchase_price' => null,
                 // Leased new, so no MOT certificate yet: its first MOT is 3 years on (spec.md §7.1, Phase 21.2).
-                'first_registered_on' => '2024-02-09', 'first_inspection_due_on' => '2027-02-09',
+                'first_registered_on' => self::day('2024-02-09'), 'first_inspection_due_on' => self::day('2027-02-09'),
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Ford', 'model' => 'Fiesta 1.0 EcoBoost', 'year' => 2014,
                 'registration' => 'WR14 FNE', 'fuel_type' => 'petrol', 'capacity' => '42.000',
-                'purchase_date' => '2016-06-30', 'purchase_price' => '6500.000',
+                'purchase_date' => self::day('2016-06-30'), 'purchase_price' => '6500.000',
                 // Written off (Phase 27.2): the settlement is the sale; the incident is linked once it exists.
-                'sale_date' => '2025-11-20', 'sale_price' => '2100.000',
-                'status' => 'archived', 'archived_at' => '2025-11-20 12:00:00', 'disposal' => 'written_off',
+                'sale_date' => self::day('2025-11-20'), 'sale_price' => '2100.000',
+                'status' => 'archived', 'archived_at' => self::day('2025-11-20') . ' 12:00:00', 'disposal' => 'written_off',
             ]),
             $vehicle([
                 'type' => 'car', 'make' => 'Mitsubishi', 'model' => 'Outlander 2.4 PHEV', 'year' => 2021,
                 'registration' => 'PHV 1', 'fuel_type' => 'phev', 'default_grade' => 'e10_95', 'capacity' => '45.000',
-                'purchase_date' => '2025-12-05', 'purchase_price' => '21450.000',
+                'purchase_date' => self::day('2025-12-05'), 'purchase_price' => '21450.000',
             ]),
             // An off-road trail bike: never road-registered, so no plate is drawn (Phase 34.1).
             $vehicle([
                 'type' => 'bike', 'make' => 'Honda', 'model' => 'CRF250F', 'year' => 2022,
                 'fuel_type' => 'petrol', 'capacity' => '6.300',
-                'purchase_date' => '2025-08-09', 'purchase_price' => '3950.000',
+                'purchase_date' => self::day('2025-08-09'), 'purchase_price' => '3950.000',
             ]),
         ])->saveData();
 
@@ -218,6 +281,14 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedStations($now, $userId);
         $this->seedFuelPrices($now, $userId);
 
+        if ($this->demo) {
+            // One account (spec.md §7.36): the partner's fill-ups become the owner's.
+            $this->foldPartnerIntoOwner($userId);
+            self::$shiftDays = 0;
+
+            return;
+        }
+
         $this->getOutput()->writeln(sprintf(
             '<info>Sample data added. Sign in as "%s" with "%s" (or "%s" with "%s").</info>',
             self::USERNAME,
@@ -225,6 +296,29 @@ final class DemoDataSeeder extends AbstractSeed
             self::PARTNER,
             $this->partnerPassword,
         ));
+    }
+
+    /**
+     * The demo has one account (spec.md §7.36, #217): what the partner
+     * added belongs to the owner, and the partner and its shares go.
+     */
+    private function foldPartnerIntoOwner(int $ownerId): void
+    {
+        $partner = $this->fetchRow("SELECT id FROM users WHERE username = '" . self::PARTNER . "'");
+        if (!is_array($partner)) {
+            return;
+        }
+        $partnerId = self::intValue($partner['id'] ?? $partner[0] ?? null);
+        $authored = [
+            'fuel_entries', 'maintenance_entries', 'compliance_documents', 'expense_entries',
+            'tyre_changes', 'vehicle_valuations', 'odometer_readings',
+        ];
+        foreach ($authored as $table) {
+            $this->execute(sprintf('UPDATE %s SET created_by = %d WHERE created_by = %d', $table, $ownerId, $partnerId));
+        }
+        $this->execute(sprintf('UPDATE attachments SET uploaded_by = %d WHERE uploaded_by = %d', $ownerId, $partnerId));
+        $this->execute(sprintf('DELETE FROM vehicle_shares WHERE user_id = %d', $partnerId));
+        $this->execute(sprintf('DELETE FROM users WHERE id = %d', $partnerId));
     }
 
     /**
@@ -333,7 +427,7 @@ final class DemoDataSeeder extends AbstractSeed
                 $planned[] = [$at, $from + ($to - $from) * $share, $by, $i + $day];
             }
         }
-        $switch = '2026-07-10';
+        $switch = self::day('2026-07-10');
         $owners = [];
         $fills = [];
         $previous = null;
@@ -392,7 +486,7 @@ final class DemoDataSeeder extends AbstractSeed
         // (Economy by month).
         [$golf, $confirmed] = self::economyChecks($this->fillUps(
             $ids['LB19 KTR'],
-            '2025-09-20',
+            self::day('2025-09-20'),
             30,
             61155.0,
             540.0,
@@ -415,13 +509,26 @@ final class DemoDataSeeder extends AbstractSeed
             ...self::golfEarlierYears($ids['LB19 KTR'], $now),
             ...$golf,
             // The bike always takes super unleaded.
-            ...$this->fillUps($ids['MT20 BKE'], '2026-03-15', 12, 18500.0, 230.0, 19.5, 1.529, 'petrol', 0, null, $now, grades: [
-                'e5_98',
-            ]),
+            ...$this->fillUps(
+                $ids['MT20 BKE'],
+                self::day('2026-03-15'),
+                12,
+                18500.0,
+                230.0,
+                19.5,
+                1.529,
+                'petrol',
+                0,
+                null,
+                $now,
+                grades: [
+                    'e5_98',
+                ],
+            ),
             // EV6: charges in kWh, ~5.6 km/kWh, most of them partial; mostly at home, some rapid, one free.
             ...$this->fillUps(
                 $ids['EV23 KIA'],
-                '2026-01-05',
+                self::day('2026-01-05'),
                 24,
                 21000.0,
                 260.0,
@@ -502,7 +609,10 @@ final class DemoDataSeeder extends AbstractSeed
             $readings[] = [
                 'vehicle_id' => $ids['LK22 VXN'],
                 'reading_km' => number_format($km, 3, '.', ''),
-                'recorded_at' => gmdate('Y-m-d H:i:s', (int) strtotime(sprintf('2025-10-01 +%d months 09:00', $month))),
+                'recorded_at' => gmdate(
+                    'Y-m-d H:i:s',
+                    (int) strtotime(sprintf(self::day('2025-10-01') . ' +%d months 09:00', $month)),
+                ),
                 'source' => 'manual',
                 'note' => $month === 5 ? 'MOT' : null,
                 'fuel_entry_id' => null,
@@ -543,13 +653,14 @@ final class DemoDataSeeder extends AbstractSeed
             // Every 10,000 mi or 12 months; last done by the entry below.
             $schedule([
                 'title' => 'Annual service', 'interval_km' => '16093.440', 'interval_months' => 12,
-                'baseline_done_on' => '2024-10-01', 'baseline_done_km' => '55000.000',
-                'last_done_on' => '2025-10-02', 'last_done_km' => '62100.000',
-                'next_due_on' => '2026-10-02', 'next_due_km' => '78193.440',
+                'baseline_done_on' => self::day('2024-10-01'), 'baseline_done_km' => '55000.000',
+                'last_done_on' => self::day('2025-10-02'), 'last_done_km' => '62100.000',
+                'next_due_on' => self::day('2026-10-02'), 'next_due_km' => '78193.440',
             ]),
             $schedule([
                 'category' => 'brakes', 'title' => 'Brake fluid', 'interval_months' => 24,
-                'baseline_done_on' => '2024-11-15', 'last_done_on' => '2024-11-15', 'next_due_on' => '2026-11-15',
+                'baseline_done_on' => self::day('2024-11-15'), 'last_done_on' => self::day('2024-11-15'),
+                'next_due_on' => self::day('2026-11-15'),
             ]),
             // Every 500 mi, by distance only.
             $schedule([
@@ -559,7 +670,8 @@ final class DemoDataSeeder extends AbstractSeed
             // Phase 24: the bike's yearly service is overdue, so *Needs attention* has a Now item.
             $schedule([
                 'vehicle_id' => $bike, 'title' => 'Annual service', 'interval_months' => 12,
-                'baseline_done_on' => '2025-08-20', 'last_done_on' => '2025-08-20', 'next_due_on' => '2026-08-20',
+                'baseline_done_on' => self::day('2025-08-20'), 'last_done_on' => self::day('2025-08-20'),
+                'next_due_on' => self::day('2026-08-20'),
             ]),
         ])->saveData();
 
@@ -590,35 +702,35 @@ final class DemoDataSeeder extends AbstractSeed
         $this->table('maintenance_entries')->insert([
             // The Golf's service history since it was bought (the sale pack's *Service and repairs*).
             $entry([
-                'performed_on' => '2022-03-20', 'odometer_km' => '38900.000', 'title' => 'Annual service',
+                'performed_on' => self::day('2022-03-20'), 'odometer_km' => '38900.000', 'title' => 'Annual service',
                 'description' => 'Oil and filter, brake fluid.', 'cost' => '165.000', 'vendor' => 'Main Street Motors',
             ]),
             $entry([
-                'performed_on' => '2023-03-18', 'odometer_km' => '45600.000', 'title' => 'Annual service',
+                'performed_on' => self::day('2023-03-18'), 'odometer_km' => '45600.000', 'title' => 'Annual service',
                 'description' => 'Oil and filter, air filter, spark plugs.', 'cost' => '239.000',
                 'vendor' => 'Main Street Motors',
             ]),
             $entry([
-                'performed_on' => '2024-10-01', 'odometer_km' => '55000.000', 'title' => 'Annual service',
+                'performed_on' => self::day('2024-10-01'), 'odometer_km' => '55000.000', 'title' => 'Annual service',
                 'description' => 'Oil and filter, pollen filter.', 'cost' => '178.000', 'vendor' => 'Main Street Motors',
             ]),
             $entry([
-                'schedule_id' => $serviceId, 'performed_on' => '2025-10-02', 'odometer_km' => '62100.000',
+                'schedule_id' => $serviceId, 'performed_on' => self::day('2025-10-02'), 'odometer_km' => '62100.000',
                 'title' => 'Annual service', 'description' => 'Oil and filter, air filter, pollen filter.',
                 'cost' => '189.000', 'vendor' => 'Main Street Motors',
             ]),
-            $entry(['performed_on' => '2026-01-20', 'category' => 'other', 'title' => 'Wiper blades (DIY)']),
+            $entry(['performed_on' => self::day('2026-01-20'), 'category' => 'other', 'title' => 'Wiper blades (DIY)']),
             $entry([
-                'performed_on' => '2026-03-10', 'odometer_km' => '69800.000', 'category' => 'tyres',
+                'performed_on' => self::day('2026-03-10'), 'odometer_km' => '69800.000', 'category' => 'tyres',
                 'title' => 'Two front tyres', 'cost' => '176.000', 'vendor' => 'Kwik Fit',
             ]),
             $entry([
-                'performed_on' => '2026-06-18', 'odometer_km' => '74050.000', 'category' => 'brakes',
+                'performed_on' => self::day('2026-06-18'), 'odometer_km' => '74050.000', 'category' => 'brakes',
                 'title' => 'Front brake pads', 'cost' => '95.500', 'vendor' => 'Main Street Motors',
             ]),
             // Phase 25: £178 typed as £1,780, for the cost check.
             $entry([
-                'performed_on' => '2026-04-14', 'title' => 'Interim service',
+                'performed_on' => self::day('2026-04-14'), 'title' => 'Interim service',
                 'description' => 'Oil and filter.', 'cost' => '1780.000', 'vendor' => 'Main Street Motors',
             ]),
         ])->saveData();
@@ -667,30 +779,32 @@ final class DemoDataSeeder extends AbstractSeed
         ], $values);
         $this->table('compliance_documents')->insert([
             $document([
-                'provider' => 'Admiral', 'reference' => 'P-88213901', 'start_on' => '2024-10-10',
-                'expiry_on' => '2025-10-09', 'cost' => '389.000',
+                'provider' => 'Admiral', 'reference' => 'P-88213901', 'start_on' => self::day('2024-10-10'),
+                'expiry_on' => self::day('2025-10-09'), 'cost' => '389.000',
             ]),
             $document([
-                'provider' => 'Admiral', 'reference' => 'P-88213901', 'start_on' => '2025-10-10',
-                'expiry_on' => '2026-10-09', 'cost' => '412.500', 'notes' => 'Fully comprehensive, protected NCD.',
+                'provider' => 'Admiral', 'reference' => 'P-88213901', 'start_on' => self::day('2025-10-10'),
+                'expiry_on' => self::day('2026-10-09'), 'cost' => '412.500', 'notes' => 'Fully comprehensive, protected NCD.',
             ]),
             // Last year's MOT and this year's, each with the mileage on the certificate.
             $document([
                 'type' => 'inspection', 'provider' => 'Main Street Motors', 'reference' => '4403 1192 6650',
-                'start_on' => '2025-03-06', 'expiry_on' => '2026-03-05', 'cost' => '54.850', 'odometer_km' => '57800.000',
+                'start_on' => self::day('2025-03-06'), 'expiry_on' => self::day('2026-03-05'),
+                'cost' => '54.850', 'odometer_km' => '57800.000',
             ]),
             $document([
                 'type' => 'inspection', 'provider' => 'Main Street Motors', 'reference' => '5512 8830 1127',
-                'start_on' => '2026-03-05', 'expiry_on' => '2027-03-04', 'cost' => '54.850', 'odometer_km' => '69050.000',
+                'start_on' => self::day('2026-03-05'), 'expiry_on' => self::day('2027-03-04'),
+                'cost' => '54.850', 'odometer_km' => '69050.000',
             ]),
             $document(['type' => 'registration', 'title' => 'V5C logbook', 'reference' => 'DVLA 4421 90871']),
             $document([
-                'vehicle_id' => $ids['MT20 BKE'], 'provider' => 'Bennetts', 'start_on' => '2026-04-22',
-                'expiry_on' => '2027-04-21', 'cost' => '189.000',
+                'vehicle_id' => $ids['MT20 BKE'], 'provider' => 'Bennetts', 'start_on' => self::day('2026-04-22'),
+                'expiry_on' => self::day('2027-04-21'), 'cost' => '189.000',
             ]),
             $document([
-                'vehicle_id' => $ids['EV23 KIA'], 'provider' => 'Allianz', 'start_on' => '2026-02-10',
-                'expiry_on' => '2027-02-09', 'cost' => '640.000',
+                'vehicle_id' => $ids['EV23 KIA'], 'provider' => 'Allianz', 'start_on' => self::day('2026-02-10'),
+                'expiry_on' => self::day('2027-02-09'), 'cost' => '640.000',
             ]),
         ])->saveData();
 
@@ -729,7 +843,7 @@ final class DemoDataSeeder extends AbstractSeed
                 'source' => 'manual',
                 'title' => 'Winter tyres on',
                 'notes' => 'Winter wheels are at Kwik Fit Southend, ref 4471.',
-                'due_on' => '2026-11-01',
+                'due_on' => self::day('2026-11-01'),
                 'lead_time_days' => 14,
                 'status' => 'upcoming',
                 'closed_at' => null,
@@ -741,7 +855,7 @@ final class DemoDataSeeder extends AbstractSeed
                 'source' => 'manual',
                 'title' => 'Top up the screenwash',
                 'notes' => null,
-                'due_on' => '2026-10-03',
+                'due_on' => self::day('2026-10-03'),
                 'lead_time_days' => 7,
                 'status' => 'done',
                 'closed_at' => $now,
@@ -768,13 +882,13 @@ final class DemoDataSeeder extends AbstractSeed
         ];
 
         $this->table('expense_entries')->insert([
-            $expense('LB19 KTR', '2026-08-14', 'parking', '18.500', 'Leeds station'),
-            $expense('LB19 KTR', '2026-07-02', 'cleaning', '12.000', 'Car wash'),
-            $expense('LB19 KTR', '2026-04-01', 'tax', '190.000', 'Vehicle excise duty'),
-            $expense('LB19 KTR', '2025-12-20', 'tolls', '2.500', 'Dartford Crossing'),
-            $expense('LB19 KTR', '2026-09-06', 'parking', '0.000', 'Free after 6pm'),
-            $expense('MT20 BKE', '2026-05-11', 'accessories', '64.990', 'Tank bag'),
-            $expense('EV23 KIA', '2026-06-18', 'tolls', '9.800', 'Péage A26'),
+            $expense('LB19 KTR', self::day('2026-08-14'), 'parking', '18.500', 'Leeds station'),
+            $expense('LB19 KTR', self::day('2026-07-02'), 'cleaning', '12.000', 'Car wash'),
+            $expense('LB19 KTR', self::day('2026-04-01'), 'tax', '190.000', 'Vehicle excise duty'),
+            $expense('LB19 KTR', self::day('2025-12-20'), 'tolls', '2.500', 'Dartford Crossing'),
+            $expense('LB19 KTR', self::day('2026-09-06'), 'parking', '0.000', 'Free after 6pm'),
+            $expense('MT20 BKE', self::day('2026-05-11'), 'accessories', '64.990', 'Tank bag'),
+            $expense('EV23 KIA', self::day('2026-06-18'), 'tolls', '9.800', 'Péage A26'),
             // The Kia's rentals come from its lease agreement (seedFinance), never as expenses too.
         ])->saveData();
     }
@@ -802,8 +916,8 @@ final class DemoDataSeeder extends AbstractSeed
             'updated_at' => $now,
         ];
         $this->table('odometer_readings')->insert([
-            $reading('2016-06-30', '38400.000', 'Bought'),
-            $reading('2025-11-20', '131900.000', 'Written off'),
+            $reading(self::day('2016-06-30'), '38400.000', 'Bought'),
+            $reading(self::day('2025-11-20'), '131900.000', 'Written off'),
         ])->saveData();
 
         $services = [];
@@ -830,14 +944,14 @@ final class DemoDataSeeder extends AbstractSeed
             . "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
             . "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\n"
             . "trailer<</Root 1 0 R>>\n%%EOF\n";
-        $directory = Kernel::settings()->uploadPath . '/attachments';
+        $directory = $this->uploadPath() . '/attachments';
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
             $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample paperwork skipped.</comment>');
 
             return;
         }
         $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.pdf';
-        file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $pdf);
+        file_put_contents($this->uploadPath() . '/' . $stored, $pdf);
 
         $fiesta = $this->vehicleIds()['WR14 FNE'];
         $this->table('attachments')->insert([
@@ -881,14 +995,20 @@ final class DemoDataSeeder extends AbstractSeed
 
         $this->table('vehicle_valuations')->insert([
             // Phase 32: one each spring, so every year of the true cost trend has depreciation.
-            $valuation($golf, '2022-03-19', '13000.000', 'Auto Trader valuation'),
-            $valuation($golf, '2023-03-11', '12300.000', 'Auto Trader valuation'),
-            $valuation($golf, '2024-03-09', '11900.000', 'Auto Trader valuation'),
-            $valuation($golf, '2025-03-08', '11200.000', 'Part-exchange offer, Arnold Clark'),
-            $valuation($golf, '2026-03-14', '9800.000', 'Auto Trader valuation', 'Online, private sale, good condition'),
-            $valuation($fiesta, '2025-10-02', '2300.000', 'We Buy Any Car online valuation'),
-            $valuation($bike, '2025-03-28', '6400.000', 'Part-exchange offer, Triumph dealer'),
-            $valuation($corolla, '2026-08-20', '17800.000', 'Part-exchange offer, Toyota dealer'),
+            $valuation($golf, self::day('2022-03-19'), '13000.000', 'Auto Trader valuation'),
+            $valuation($golf, self::day('2023-03-11'), '12300.000', 'Auto Trader valuation'),
+            $valuation($golf, self::day('2024-03-09'), '11900.000', 'Auto Trader valuation'),
+            $valuation($golf, self::day('2025-03-08'), '11200.000', 'Part-exchange offer, Arnold Clark'),
+            $valuation(
+                $golf,
+                self::day('2026-03-14'),
+                '9800.000',
+                'Auto Trader valuation',
+                'Online, private sale, good condition',
+            ),
+            $valuation($fiesta, self::day('2025-10-02'), '2300.000', 'We Buy Any Car online valuation'),
+            $valuation($bike, self::day('2025-03-28'), '6400.000', 'Part-exchange offer, Triumph dealer'),
+            $valuation($corolla, self::day('2026-08-20'), '17800.000', 'Part-exchange offer, Toyota dealer'),
         ])->saveData();
 
         $latest = null;
@@ -897,7 +1017,7 @@ final class DemoDataSeeder extends AbstractSeed
                 is_array($row)
                 && self::intValue($row['vehicle_id'] ?? null) === $golf
                 && is_string($row['valued_on'] ?? null)
-                && str_starts_with($row['valued_on'], '2026-03-14')
+                && str_starts_with($row['valued_on'], self::day('2026-03-14'))
             ) {
                 $latest = self::intValue($row['id'] ?? null);
             }
@@ -910,14 +1030,14 @@ final class DemoDataSeeder extends AbstractSeed
         $png = (string) base64_decode(
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
         );
-        $directory = Kernel::settings()->uploadPath . '/attachments';
+        $directory = $this->uploadPath() . '/attachments';
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
             $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample valuation screenshot skipped.</comment>');
 
             return;
         }
         $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.png';
-        file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $png);
+        file_put_contents($this->uploadPath() . '/' . $stored, $png);
         $this->table('attachments')->insert([
             'vehicle_id' => $golf,
             'owner_type' => 'valuation',
@@ -1169,7 +1289,7 @@ final class DemoDataSeeder extends AbstractSeed
             $agreement([
                 'vehicle_id' => $ids['EV23 KIA'], 'type' => 'lease', 'lender' => 'Kia Lease (Ayvens)',
                 'agreement_number' => 'KL-2024-118734',
-                'started_on' => '2024-02-10', 'first_payment_on' => '2024-03-10',
+                'started_on' => self::day('2024-02-10'), 'first_payment_on' => self::day('2024-03-10'),
                 'number_of_payments' => 35, 'regular_payment' => '449.000', 'initial_rental' => '2694.000',
                 'documentation_fee' => '250.000',
                 'annual_mileage_allowance' => 16000, 'mileage_unit' => 'km', 'excess_mileage_charge' => '0.0800',
@@ -1179,18 +1299,18 @@ final class DemoDataSeeder extends AbstractSeed
             $agreement([
                 'vehicle_id' => $ids['LK22 VXN'], 'type' => 'pcp', 'lender' => 'Toyota Financial Services',
                 'agreement_number' => 'TFS-0045519203',
-                'started_on' => '2024-04-01', 'first_payment_on' => '2024-05-01',
+                'started_on' => self::day('2024-04-01'), 'first_payment_on' => self::day('2024-05-01'),
                 'number_of_payments' => 47, 'regular_payment' => '284.710',
                 'final_payment' => '10450.000',
                 'cash_price' => '22995.000', 'customer_deposit' => '2500.000', 'dealer_contribution' => '750.000',
                 'apr' => '6.900', 'option_to_purchase_fee' => '10.000',
                 'annual_mileage_allowance' => 8000, 'mileage_unit' => 'mi', 'excess_mileage_charge' => '0.0900',
-                'start_odometer_km' => $this->pcpStartOdometer($ids['LK22 VXN'], '2028-04-01', 8000 * 4 + 1200),
+                'start_odometer_km' => $this->pcpStartOdometer($ids['LK22 VXN'], self::day('2028-04-01'), 8000 * 4 + 1200),
             ]),
             $agreement([
                 'vehicle_id' => $ids['WR14 FNE'], 'type' => 'hp', 'lender' => 'Ford Credit',
-                'status' => 'settled', 'ended_on' => '2018-11-15',
-                'started_on' => '2016-06-30', 'first_payment_on' => '2016-07-30',
+                'status' => 'settled', 'ended_on' => self::day('2018-11-15'),
+                'started_on' => self::day('2016-06-30'), 'first_payment_on' => self::day('2016-07-30'),
                 'number_of_payments' => 48, 'regular_payment' => '133.310',
                 'cash_price' => '6500.000', 'customer_deposit' => '1000.000', 'apr' => '7.900',
                 'notes' => 'Settled early with a bonus from work.',
@@ -1205,12 +1325,13 @@ final class DemoDataSeeder extends AbstractSeed
             throw new RuntimeException('The demo Fiesta agreement was not created.');
         }
         $this->table('settlement_quotes')->insert([
-            'agreement_id' => $fiesta, 'quoted_on' => '2018-11-01', 'amount' => '2541.370', 'valid_until' => '2018-11-29',
+            'agreement_id' => $fiesta, 'quoted_on' => self::day('2018-11-01'), 'amount' => '2541.370',
+            'valid_until' => self::day('2018-11-29'),
             'notes' => 'Phoned Ford Credit', 'created_at' => $now,
         ])->saveData();
         $this->table('finance_payment_events')->insert([
             'agreement_id' => $fiesta, 'due_on' => null, 'kind' => 'settlement', 'amount' => '2541.370',
-            'paid_on' => '2018-11-15', 'notes' => null, 'created_at' => $now,
+            'paid_on' => self::day('2018-11-15'), 'notes' => null, 'created_at' => $now,
         ])->saveData();
     }
 
@@ -1300,7 +1421,10 @@ final class DemoDataSeeder extends AbstractSeed
             'created_at' => $now,
             'updated_at' => $now,
         ];
-        $this->table('mileage_rate_sets')->insert([$rates('2011-04-06', '0.4500'), $rates('2026-04-06', '0.5500')])->saveData();
+        $this->table('mileage_rate_sets')->insert([
+            $rates(self::day('2011-04-06'), '0.4500'),
+            $rates(self::day('2026-04-06'), '0.5500'),
+        ])->saveData();
 
         $journeys = [
             ['Office', 'Client site', 27.0, true, 'Site visit', true],
@@ -1325,8 +1449,8 @@ final class DemoDataSeeder extends AbstractSeed
         // Every nine days from 15 April 2025 to late September 2026.
         $purposes = ['Site visit', 'Client meeting', 'Supplier review', 'Site survey', 'Quarterly review'];
         $trips = [];
-        $day = new DateTimeImmutable('2025-04-15');
-        $last = new DateTimeImmutable('2026-09-25');
+        $day = new DateTimeImmutable(self::day('2025-04-15'));
+        $last = new DateTimeImmutable(self::day('2026-09-25'));
         for ($i = 0; $day <= $last; $i++, $day = $day->modify('+9 days')) {
             [$from, $to, $miles, $return] = match ($i % 3) {
                 0 => ['Office', 'Client site', 54.0, true],
@@ -1351,7 +1475,7 @@ final class DemoDataSeeder extends AbstractSeed
                 'updated_at' => $day->format('Y-m-d') . ' 18:00:00',
             ];
         }
-        foreach (['2025-08-02' => 'Portrush', '2026-07-18' => 'Newcastle'] as $on => $to) {
+        foreach ([self::day('2025-08-02') => 'Portrush', self::day('2026-07-18') => 'Newcastle'] as $on => $to) {
             $trips[] = [
                 'vehicle_id' => $golf, 'created_by' => $userId, 'travelled_on' => $on, 'from_place' => 'Home',
                 'to_place' => $to, 'is_return' => true, 'distance_km' => $km(70.0), 'odometer_start_km' => null,
@@ -1370,7 +1494,7 @@ final class DemoDataSeeder extends AbstractSeed
                 break;
             }
         }
-        $directory = Kernel::settings()->uploadPath . '/attachments';
+        $directory = $this->uploadPath() . '/attachments';
         if ($toll === null || (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory))) {
             $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample toll receipt skipped.</comment>');
 
@@ -1380,7 +1504,7 @@ final class DemoDataSeeder extends AbstractSeed
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
         );
         $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.png';
-        file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $png);
+        file_put_contents($this->uploadPath() . '/' . $stored, $png);
         $this->table('attachments')->insert([
             'vehicle_id' => $golf,
             'owner_type' => 'trip',
@@ -1403,7 +1527,7 @@ final class DemoDataSeeder extends AbstractSeed
     private function seedSalePack(string $now): void
     {
         $golf = $this->vehicleIds()['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
-        $directory = Kernel::settings()->uploadPath . '/attachments';
+        $directory = $this->uploadPath() . '/attachments';
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
             $this->getOutput()->writeln('<comment>UPLOAD_PATH is not writable; sample invoices skipped.</comment>');
 
@@ -1429,7 +1553,7 @@ final class DemoDataSeeder extends AbstractSeed
             &$attachments,
         ): void {
             $stored = 'attachments/' . bin2hex(random_bytes(16)) . ($mime === 'image/png' ? '.png' : '.pdf');
-            file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $contents);
+            file_put_contents($this->uploadPath() . '/' . $stored, $contents);
             $attachments[] = [
                 'vehicle_id' => $golf,
                 'owner_type' => $owner,
@@ -1464,7 +1588,7 @@ final class DemoDataSeeder extends AbstractSeed
         $photo = $this->insertRow('odometer_readings', [
             'vehicle_id' => $golf,
             'reading_km' => '31200.000',
-            'recorded_at' => self::localNoon('2021-03-14'),
+            'recorded_at' => self::localNoon(self::day('2021-03-14')),
             'source' => 'manual',
             'note' => 'On collection from the dealer',
             'created_at' => $now,
@@ -1493,7 +1617,7 @@ final class DemoDataSeeder extends AbstractSeed
         $fiesta = $ids['WR14 FNE'] ?? throw new RuntimeException('The demo Fiesta is missing.');
 
         $scrape = $this->incidentRow($golf, $now, $userId, [
-            'occurred_on' => '2024-06-12',
+            'occurred_on' => self::day('2024-06-12'),
             'occurred_at_time' => '17:40',
             'location' => 'Abbey Centre car park, Newtownabbey',
             'type' => 'parked_damage',
@@ -1504,20 +1628,20 @@ final class DemoDataSeeder extends AbstractSeed
             'other_party_name' => 'J. Morrow',
             'other_party_registration' => 'KX17 ABC',
             'other_party_insurer' => 'Admiral',
-            'closed_on' => '2024-07-30',
+            'closed_on' => self::day('2024-07-30'),
             'claim_status' => 'settled',
             'insurer' => 'Admiral',
             'claim_number' => 'ADM-2406-118734',
             'excess' => '0.000',
             'payout' => '640.000',
             'ncd_affected' => 'no',
-            'claim_updated_on' => '2024-07-30',
+            'claim_updated_on' => self::day('2024-07-30'),
             'repair_estimate' => '655.000',
             'notes' => 'Estimate from Smart Repair Belfast',
         ]);
         $this->insertRow('maintenance_entries', [
             'vehicle_id' => $golf,
-            'performed_on' => '2024-06-24',
+            'performed_on' => self::day('2024-06-24'),
             'category' => 'bodywork',
             'title' => 'Rear bumper and quarter panel repair',
             'description' => 'Bumper reshaped and painted, scuff on the left quarter blended.',
@@ -1531,26 +1655,26 @@ final class DemoDataSeeder extends AbstractSeed
         ]);
 
         $pothole = $this->incidentRow($golf, $now, $userId, [
-            'occurred_on' => '2026-08-21',
+            'occurred_on' => self::day('2026-08-21'),
             'location' => 'A6, near Antrim',
             'type' => 'pothole',
             'damage_areas' => '["wheels"]',
             'severity' => 'minor',
             'description' => 'Hit a pothole in the rain; the rear left tyre bulged.',
-            'closed_on' => '2026-08-22',
+            'closed_on' => self::day('2026-08-22'),
         ]);
         foreach ($this->fetchAll('SELECT id, vehicle_id, done_on, kind FROM tyre_changes') as $row) {
             if (
                 is_array($row)
                 && self::intValue($row['vehicle_id'] ?? null) === $golf
-                && substr(self::stringValue($row['done_on'] ?? ''), 0, 10) === '2026-08-22'
+                && substr(self::stringValue($row['done_on'] ?? ''), 0, 10) === self::day('2026-08-22')
             ) {
                 $this->execute('UPDATE tyre_changes SET incident_id = ? WHERE id = ?', [$pothole, self::intValue($row['id'])]);
             }
         }
 
         $totalLoss = $this->incidentRow($fiesta, $now, $userId, [
-            'occurred_on' => '2025-10-28',
+            'occurred_on' => self::day('2025-10-28'),
             'occurred_at_time' => '08:10',
             'location' => 'Doagh Road roundabout',
             'type' => 'collision',
@@ -1559,7 +1683,7 @@ final class DemoDataSeeder extends AbstractSeed
             'damage_areas' => '["front","underside"]',
             'severity' => 'major',
             'driver_user_id' => $userId,
-            'closed_on' => '2025-11-20',
+            'closed_on' => self::day('2025-11-20'),
             'write_off_category' => 'cat_s',
             'claim_status' => 'settled',
             'insurer' => 'Direct Line',
@@ -1567,7 +1691,7 @@ final class DemoDataSeeder extends AbstractSeed
             'excess' => '250.000',
             'payout' => '2100.000',
             'ncd_affected' => 'yes',
-            'claim_updated_on' => '2025-11-18',
+            'claim_updated_on' => self::day('2025-11-18'),
         ]);
         $this->execute('UPDATE vehicles SET disposal_incident_id = ? WHERE id = ?', [$totalLoss, $fiesta]);
 
@@ -1575,13 +1699,13 @@ final class DemoDataSeeder extends AbstractSeed
         $png = (string) base64_decode(
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
         );
-        $directory = Kernel::settings()->uploadPath . '/attachments';
+        $directory = $this->uploadPath() . '/attachments';
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
             return;
         }
         foreach (['Rear bumper.png', 'Left quarter.png'] as $name) {
             $stored = 'attachments/' . bin2hex(random_bytes(16)) . '.png';
-            file_put_contents(Kernel::settings()->uploadPath . '/' . $stored, $png);
+            file_put_contents($this->uploadPath() . '/' . $stored, $png);
             $this->insertRow('attachments', [
                 'vehicle_id' => $golf,
                 'owner_type' => 'incident',
@@ -1705,10 +1829,10 @@ final class DemoDataSeeder extends AbstractSeed
                 $record = self::intValue($row['id'] ?? null);
             }
         }
-        $repairOn = '2026-05-02';
+        $repairOn = self::day('2026-05-02');
         $repairKm = $this->odometerOn($golf, $repairOn);
         $repair = $this->serviceRecord($golf, $repairOn, $repairKm, 'Tyre repair, front right', '25.000', 'Kwik Fit', $now);
-        $bikeRearOn = '2026-08-10';
+        $bikeRearOn = self::day('2026-08-10');
         $bikeKm = $this->odometerOn($bike, $bikeRearOn);
         $bikeTitle = '1 × Michelin Road 6, rear';
         $bikeRecord = $this->serviceRecord($bike, $bikeRearOn, $bikeKm, $bikeTitle, '169.000', 'Rider Tyres, Leeds', $now);
@@ -1735,47 +1859,47 @@ final class DemoDataSeeder extends AbstractSeed
          * }> $plan
          */
         $plan = [
-            [$golf, TyreChangeKind::Existing, '2025-09-28', null, [
+            [$golf, TyreChangeKind::Existing, self::day('2025-09-28'), null, [
                 ...$depths(array_map($on, $s, $road), ['4.2', '4.1', '6.2', '6.2']),
             ], []],
-            [$golf, TyreChangeKind::Fit, '2025-11-08', null, [
+            [$golf, TyreChangeKind::Fit, self::day('2025-11-08'), null, [
                 ...$depths(array_map($off, $s, $road), ['4.0', '3.9', '6.0', '6.0']),
                 ...$depths(array_map($on, $w, $road), ['7.0', '7.0', '7.2', '7.1']),
             ], []],
-            [$golf, TyreChangeKind::Swap, '2026-03-08', null, [
+            [$golf, TyreChangeKind::Swap, self::day('2026-03-08'), null, [
                 ...$depths(array_map($off, $w, $road), ['6.2', '6.3', '6.6', '6.6']),
                 ...$depths(array_map($on, $s, $road), ['4.0', '3.9', '6.0', '6.0']),
             ], []],
-            [$golf, TyreChangeKind::Fit, '2026-03-10', $record, [
+            [$golf, TyreChangeKind::Fit, self::day('2026-03-10'), $record, [
                 $retire($s[0], $fl), $retire($s[1], $fr), ...$depths([$on($f[0], $fl), $on($f[1], $fr)], ['8.0', '8.0']),
             ], [$s[0] => 'worn', $s[1] => 'worn']],
-            [$golf, TyreChangeKind::Check, '2026-04-20', null, [
+            [$golf, TyreChangeKind::Check, self::day('2026-04-20'), null, [
                 $measure($f[0], $fl, '7.7'), $measure($f[1], $fr, '7.7'),
                 $measure($s[2], $rl, '5.5'), $measure($s[3], $rr, '5.6'),
             ], []],
             [$golf, TyreChangeKind::Repair, $repairOn, $repair, [new TyreChangeLine($f[1], TyreLineAction::Repair, $fr)], []],
-            [$golf, TyreChangeKind::Check, '2026-06-20', null, [
+            [$golf, TyreChangeKind::Check, self::day('2026-06-20'), null, [
                 $measure($f[0], $fl, '7.1'), $measure($f[1], $fr, '7.2'),
                 $measure($s[2], $rl, '4.7'), $measure($s[3], $rr, '4.8'),
             ], []],
-            [$golf, TyreChangeKind::Rotate, '2026-07-12', null, [
+            [$golf, TyreChangeKind::Rotate, self::day('2026-07-12'), null, [
                 $move($f[0], $rl), $move($f[1], $rr), $move($s[2], $fl), $move($s[3], $fr),
             ], []],
-            [$golf, TyreChangeKind::Fit, '2026-08-22', null, [
+            [$golf, TyreChangeKind::Fit, self::day('2026-08-22'), null, [
                 $retire($f[0], $rl)->withTread('6.4'), $on($f[2], $rl)->withTread('8.0'),
             ], [$f[0] => 'damaged']],
-            [$golf, TyreChangeKind::Check, '2026-09-20', null, [
+            [$golf, TyreChangeKind::Check, self::day('2026-09-20'), null, [
                 $measure($s[2], $fl, '3.3'), $measure($s[3], $fr, '3.5'),
                 $measure($f[2], $rl, '7.9'), $measure($f[1], $rr, '6.3'),
             ], [], '78700.000'],
-            [$bike, TyreChangeKind::Existing, '2026-03-20', null, [
+            [$bike, TyreChangeKind::Existing, self::day('2026-03-20'), null, [
                 $on($bikeFront, TyrePosition::Front)->withTread('3.1'), $on($bikeRear[0], TyrePosition::Rear)->withTread('2.4'),
             ], []],
             [$bike, TyreChangeKind::Fit, $bikeRearOn, $bikeRecord, [
                 $retire($bikeRear[0], TyrePosition::Rear)->withTread('1.6'),
                 $on($bikeRear[1], TyrePosition::Rear)->withTread('6.0'),
             ], [$bikeRear[0] => 'worn']],
-            [$bike, TyreChangeKind::Check, '2026-09-19', null, [
+            [$bike, TyreChangeKind::Check, self::day('2026-09-19'), null, [
                 $measure($bikeFront, TyrePosition::Front, '2.6'), $measure($bikeRear[1], TyrePosition::Rear, '5.4'),
             ], [], '22050.000'],
         ];
@@ -2071,13 +2195,13 @@ final class DemoDataSeeder extends AbstractSeed
     {
         // Odometer anchors: its existing readings, plus where 2023 ends (the year it was driven more).
         $anchors = [
-            '2021-03-14' => 31200.0,
-            '2022-03-20' => 38900.0,
-            '2023-03-18' => 45600.0,
-            '2023-12-31' => 51400.0,
-            '2024-10-01' => 55000.0,
-            '2025-03-06' => 57800.0,
-            '2025-09-14' => 61155.0,
+            self::day('2021-03-14') => 31200.0,
+            self::day('2022-03-20') => 38900.0,
+            self::day('2023-03-18') => 45600.0,
+            self::day('2023-12-31') => 51400.0,
+            self::day('2024-10-01') => 55000.0,
+            self::day('2025-03-06') => 57800.0,
+            self::day('2025-09-14') => 61155.0,
         ];
         // Price a litre and km a litre, by year.
         $years = [2021 => [1.36, 15.4], 2022 => [1.62, 15.4], 2023 => [1.47, 15.2], 2024 => [1.54, 15.7], 2025 => [1.42, 15.9]];
@@ -2097,14 +2221,17 @@ final class DemoDataSeeder extends AbstractSeed
         $rows = [];
         $last = 31200.0;
         $dates = [];
-        $end = (int) strtotime('2025-09-01 UTC');
-        for ($month = (int) strtotime('2021-04-10 08:00 UTC'); $month < $end; $month = (int) strtotime('+1 month', $month)) {
+        $end = (int) strtotime(self::day('2025-09-01') . ' UTC');
+        $first = (int) strtotime(self::day('2021-04-10') . ' 08:00 UTC');
+        for ($month = $first; $month < $end; $month = (int) strtotime('+1 month', $month)) {
             $dates[] = $month;
         }
-        $dates[] = (int) strtotime('2025-09-14 08:00 UTC');
+        $dates[] = (int) strtotime(self::day('2025-09-14') . ' 08:00 UTC');
         foreach ($dates as $i => $time) {
             $km = $kmOn((int) strtotime(gmdate('Y-m-d', $time) . ' 00:00 UTC'));
-            [$price, $kmPerLitre] = $years[(int) gmdate('Y', $time)];
+            // The year the row was authored for, not the (shifted) one it lands in.
+            $year = min(2025, max(2021, (int) gmdate('Y', $time - self::$shiftDays * 86400)));
+            [$price, $kmPerLitre] = $years[$year];
             // A little more fuel in winter, and a price that moves a little month to month.
             $season = 1 + 0.05 * cos(2 * M_PI * ((int) gmdate('z', $time) - 14) / 365.25);
             $volume = round(($km - $last) / $kmPerLitre * $season, 3);
@@ -2179,7 +2306,7 @@ final class DemoDataSeeder extends AbstractSeed
     {
         $rows = [];
         $km = 31200.0;
-        $start = (int) strtotime('2026-01-10 00:00 UTC');
+        $start = (int) strtotime(self::day('2026-01-10') . ' 00:00 UTC');
         for ($day = 1; $day <= 150; $day++) {
             $km += 38 + 12 * sin($day);
             $petrol = $day % 21 === 0;

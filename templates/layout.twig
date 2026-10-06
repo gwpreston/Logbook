@@ -166,6 +166,22 @@
             </header>
 
             <main id="main" class="page" tabindex="-1">
+                {% if signed_in and demo_active() %}
+                    {# Demo mode (spec.md §7.36): when it resets, in the viewer's time zone. #}
+                    {% set reset = demo_banner() %}
+                    <div class="alert alert--info demo-banner" role="note" data-demo-banner>
+                        {{ ui.icon('science') }}
+                        <span>
+                            {%- if reset.minutes < 60 -%}
+                                {{ 'demo.banner.minutes'|trans({minutes: reset.minutes}) }}
+                            {%- elseif reset.minutes < 360 -%}
+                                {{ 'demo.banner.hours'|trans({hours: ((reset.minutes + 59) // 60)}) }}
+                            {%- else -%}
+                                {{ 'demo.banner.at'|trans({time: reset.at|local_datetime}) }}
+                            {%- endif -%}
+                        </span>
+                    </div>
+                {% endif %}
                 {% if flashes is not empty %}
                     <div class="flashes">{{ ui.flashes(flashes) }}</div>
                 {% endif %}

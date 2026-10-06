@@ -155,6 +155,7 @@
                 {% endif %}
             </section>
 
+            {% if not demo_no_uploads() %}
             <section class="card" aria-labelledby="photo-heading">
                 <h2 id="photo-heading" class="card__title">{{ 'vehicle.section.photo'|trans }}</h2>
                 <div class="photo-field">
@@ -174,6 +175,7 @@
                     </label>
                 {% endif %}
             </section>
+            {% endif %}
 
             <section class="card" aria-labelledby="money-heading">
                 <h2 id="money-heading" class="card__title">{{ 'vehicle.section.ownership'|trans }}</h2>

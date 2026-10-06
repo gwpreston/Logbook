@@ -3,6 +3,14 @@
 declare(strict_types=1);
 
 use Logbook\Service\Ai\Insights\AiInsightsJob;
+use Logbook\Service\Demo\DemoGuardedHttpClient;
+use Logbook\Service\Demo\DemoInstanceAccess;
+use Logbook\Service\Demo\DemoGuardedTransport;
+use Logbook\Service\Demo\DemoMode;
+use Logbook\Service\Demo\DemoResetJob;
+use Logbook\Service\Demo\DemoSeeder;
+use Logbook\Service\Demo\SampleData;
+use Logbook\Service\Demo\DemoTwigExtension;
 use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Incident\IncidentTwigExtension;
 use Logbook\Service\Vehicle\PlateTwigExtension;
@@ -53,6 +61,7 @@ use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Processor\PsrLogMessageProcessor;
 use Psr\Clock\ClockInterface;
+use Logbook\Service\Jobs\AdminNotices;
 use Logbook\Service\Jobs\BackupJob;
 use Logbook\Service\Jobs\CleanupJob;
 use Logbook\Service\Jobs\DigestJob;
@@ -127,7 +136,9 @@ return [
 
     // Who may do what (spec.md §5 Access policy): owners, shares and admins (Phase 19).
     VehicleAccess::class => get(SharedVehicleAccess::class),
-    InstanceAccess::class => get(AdminInstanceAccess::class),
+    // The demo's sample garage (spec.md §7.36).
+    SampleData::class => get(DemoSeeder::class),
+    InstanceAccess::class => autowire(DemoInstanceAccess::class)->constructorParameter('inner', get(AdminInstanceAccess::class)),
     // Reading files (spec.md §7.27): Ghostscript, else Imagick, else none.
     PdfRenderer::class => get(PdfRenderers::class),
 
@@ -165,6 +176,8 @@ return [
             FuelPricesJob::class,
             // The day's AI insights for those with AI on (spec.md §7.26, Phase 33.4).
             AiInsightsJob::class,
+            // Listed only while the demo is active (spec.md §7.36).
+            ...($settingsOf($c)->demo->enabled ? [DemoResetJob::class] : []),
         ],
     )),
     // Live fuel price providers (Phase 30.2, spec.md §7.34); one adapter per country.
@@ -172,8 +185,8 @@ return [
         $ukFuelFinder = $c->get(FuelFinderProvider::class);
         assert($ukFuelFinder instanceof FuelFinderProvider);
         $providers = [$ukFuelFinder];
-        // Sample prices for the demo data, never in production (spec.md §7.34 *Sample data*).
-        if (!$settingsOf($c)->isProduction()) {
+        // Sample prices for the demo data, never in production unless it is a demo (spec.md §7.34, §7.36).
+        if (!$settingsOf($c)->isProduction() || $settingsOf($c)->demo->enabled) {
             $demo = $c->get(DemoPriceProvider::class);
             assert($demo instanceof DemoPriceProvider);
             $providers[] = $demo;
@@ -278,6 +291,9 @@ return [
         $plates = $c->get(PlateTwigExtension::class);
         assert($plates instanceof PlateTwigExtension);
         $twig->addExtension($plates);
+        $demo = $c->get(DemoTwigExtension::class);
+        assert($demo instanceof DemoTwigExtension);
+        $twig->addExtension($demo);
 
         return $twig;
     },
@@ -294,7 +310,12 @@ return [
         get(GotifyChannel::class),
         get(WebhookChannel::class),
     ],
-    ChannelRegistry::class => autowire()->constructorParameter('channels', get('notification.channels')),
+    // The demo's guard is named, not autowired: PHP-DI leaves an optional parameter at its default.
+    ChannelRegistry::class => autowire()
+        ->constructorParameter('channels', get('notification.channels'))
+        ->constructorParameter('demo', get(DemoMode::class)),
+    RemindersJob::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
+    AdminNotices::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
 
     // PHP drops files past max_file_uploads silently, so the attachment limit
     // is kept at or under it (spec.md §7.12). A system-level ini setting.
@@ -366,15 +387,23 @@ return [
     // AI hosts are classed by what they resolve to (spec.md §7.25).
     HostResolver::class => get(SystemHostResolver::class),
 
-    HttpClientInterface::class => static fn (): HttpClientInterface => HttpClient::create([
-        'timeout' => 15,
-        'max_redirects' => 3,
-        'headers' => ['User-Agent' => 'Logbook'],
-    ]),
+    // Every outbound request and every mail goes through the demo guard: an active demo sends nothing (spec.md §7.36).
+    HttpClientInterface::class => static function (ContainerInterface $c): HttpClientInterface {
+        $mode = $c->get(DemoMode::class);
+        assert($mode instanceof DemoMode);
+
+        return new DemoGuardedHttpClient(HttpClient::create([
+            'timeout' => 15,
+            'max_redirects' => 3,
+            'headers' => ['User-Agent' => 'Logbook'],
+        ]), $mode);
+    },
     MailTransport::class => static function (ContainerInterface $c) use ($settingsOf): MailTransport {
         $logger = $c->get(LoggerInterface::class);
         assert($logger instanceof LoggerInterface);
+        $mode = $c->get(DemoMode::class);
+        assert($mode instanceof DemoMode);
 
-        return EmailConfig::fromEnv($settingsOf($c)->env)->createTransport($logger);
+        return new DemoGuardedTransport(EmailConfig::fromEnv($settingsOf($c)->env)->createTransport($logger), $mode);
     },
 ];

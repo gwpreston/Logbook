@@ -3425,6 +3425,10 @@ return [
         '503' => ['title' => 'Vorübergehend nicht verfügbar', 'body' => 'Der Dienst ist vorübergehend nicht verfügbar. Bitte versuche es gleich noch einmal.'],
         '4xx' => ['title' => 'Problem mit der Anfrage', 'body' => 'Die Anfrage konnte nicht abgeschlossen werden.'],
         '5xx' => ['title' => 'Serverfehler', 'body' => 'Ein unerwarteter Fehler ist aufgetreten. Er wurde protokolliert; bitte versuche es erneut.'],
+        'demo' => [
+            'title' => 'In der Demo nicht verfügbar',
+            'body' => 'Das ist eine öffentliche Demo, daher ist dieser Teil von Logbook ausgeschaltet. Alles andere funktioniert, und die Demo wird jeden Tag auf ihre Beispieldaten zurückgesetzt. Installiere Logbook selbst, um alles zu nutzen.',
+        ],
         'csrf' => [
             'title' => 'Dieses Formular ist abgelaufen',
             'body' => 'Zu deiner Sicherheit konnte das Formular nicht angenommen werden – es war vielleicht zu lange geöffnet oder wurde von einer anderen Seite gesendet. Geh zurück, lade die Seite neu und versuche es erneut.',
@@ -4531,6 +4535,18 @@ return [
             'lead' => '{count, plural, one {Ein Assistent hat diesen Eintrag über den MCP-Server entworfen. Prüfe ihn und füge ihn hinzu, bearbeite oder verwirf ihn.} other {Ein Assistent hat diese # Einträge über den MCP-Server entworfen. Prüfe jeden und füge ihn hinzu, bearbeite oder verwirf ihn.}}',
         ],
     ],
+    'demo' => [
+        'try' => 'Probier es aus:',
+        'username' => 'Benutzername',
+        'password' => 'Passwort',
+        'fill_in' => 'Eintragen',
+        'reset_notice' => 'Die Demo wurde zurückgesetzt. Melde dich erneut an.',
+        'banner' => [
+            'minutes' => 'Das ist eine Demo. Sie wird {minutes, plural, =0 {gleich} one {in # Minute} other {in # Minuten}} zurückgesetzt, und nichts hier ist privat.',
+            'hours' => 'Das ist eine Demo. Sie wird {hours, plural, one {in # Stunde} other {in # Stunden}} zurückgesetzt, und nichts hier ist privat.',
+            'at' => 'Das ist eine Demo. Sie wird um {time} zurückgesetzt, und nichts hier ist privat.',
+        ],
+    ],
     'jobs' => [
         'title' => 'Aufgaben',
         'lead' => 'Was Logbook im Hintergrund erledigt: Erinnerungen und die Monatsübersicht senden, aufräumen und geplante Sicherungen. Sieh nach, wann jede zuletzt lief, oder starte sie jetzt.',
@@ -4583,6 +4599,10 @@ return [
                 'title' => 'Kraftstoffpreise',
                 'description' => 'Lädt gemeldete Kraftstoffpreise vom Anbieter unter Einstellungen → Kraftstoffpreise herunter, solange einer eingeschaltet ist.',
             ],
+            'demo_reset' => [
+                'title' => 'Demo zurücksetzen',
+                'description' => 'Setzt die Demo auf ihre Beispieldaten zurück, mit auf heute verschobenen Daten. Nur solange dies eine Demo ist.',
+            ],
             'ai_insights' => [
                 'title' => 'KI-Einblicke',
                 'description' => 'Erstellt die KI-Einblicke des Tages für alle mit eingeschalteter KI, die in den letzten 30 Tagen da waren, jeweils ein paar.',
@@ -4592,6 +4612,8 @@ return [
             'interrupted' => 'Abgebrochen: Der Prozess, der sie ausführte, endete vorher.',
             'locked' => 'Läuft bereits (Lauf #{run}, {trigger}).',
             'module_off' => 'Das Modul Erinnerungen ist aus; nichts zu senden.',
+            'demo_reset' => 'Demo zurückgesetzt: {vehicles, plural, one {# Fahrzeug} other {# Fahrzeuge}}, {fillups, plural, one {# Tankvorgang} other {# Tankvorgänge}}',
+            'demo_not_sent' => 'Demo: nichts gesendet',
             'reminders' => '{users, plural, one {# Konto geprüft} other {# Konten geprüft}}; {sent, plural, =0 {keine Erinnerungen gesendet} one {# Erinnerung gesendet} other {# Erinnerungen gesendet}}{failures, plural, =0 {} one {; # Konto fehlgeschlagen} other {; # Konten fehlgeschlagen}}',
             'digest' => '{users, plural, one {# Konto geprüft} other {# Konten geprüft}}; {sent, plural, =0 {keine Übersicht fällig} one {# Übersicht gesendet} other {# Übersichten gesendet}}{failures, plural, =0 {} one {; # Konto fehlgeschlagen} other {; # Konten fehlgeschlagen}}',
             'cleanup' => 'Gelöscht: {list}',
@@ -4710,6 +4732,10 @@ return [
         'job_failed' => [
             'message' => 'Die Aufgabe {job} ist zweimal hintereinander fehlgeschlagen.',
             'link' => 'Lauf ansehen',
+        ],
+        'demo_refused' => [
+            'real_data' => 'DEMO_MODE ist gesetzt, aber diese Datenbank enthält echte Daten. Der Demo-Modus ist aus und nichts wurde geändert. Entferne die Einstellung.',
+            'password' => 'DEMO_MODE ist gesetzt, aber DEMO_PASSWORD fehlt oder hat nicht 8 bis 1024 Zeichen. Der Demo-Modus ist aus und nichts wurde geändert.',
         ],
         'new_tab' => '(öffnet in einem neuen Tab)',
         'update' => [

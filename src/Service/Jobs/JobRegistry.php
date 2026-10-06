@@ -30,11 +30,18 @@ final readonly class JobRegistry
      */
     public function all(): array
     {
-        return array_values($this->jobs);
+        return array_values(array_filter($this->jobs, self::listed(...)));
     }
 
     public function get(string $name): ?Job
     {
-        return $this->jobs[$name] ?? null;
+        $job = $this->jobs[$name] ?? null;
+
+        return $job !== null && self::listed($job) ? $job : null;
+    }
+
+    private static function listed(Job $job): bool
+    {
+        return !$job instanceof ConditionalJob || $job->isListed();
     }
 }

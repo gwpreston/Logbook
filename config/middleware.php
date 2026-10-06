@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Logbook\Middleware\ApiCorsMiddleware;
 use Logbook\Middleware\BasePathMiddleware;
 use Logbook\Middleware\CurrentUserMiddleware;
+use Logbook\Middleware\DemoGuardMiddleware;
+use Logbook\Middleware\DemoMiddleware;
 use Logbook\Middleware\LocaleMiddleware;
 use Logbook\Middleware\ModalMiddleware;
 use Logbook\Middleware\SessionMiddleware;
@@ -20,7 +22,8 @@ use Slim\Middleware\ErrorMiddleware;
  * Global middleware. Slim runs the LAST added FIRST, so this list is written
  * inner → outer. Resulting order (outer → inner), per spec.md §5:
  *
- *   API CORS (API paths only) → error handling → base path → session
+ *   demo start path and robots header (DEMO_MODE only) → API CORS (API
+ *   paths only) → error handling → base path → session
  *   → current user → locale + display preferences → modal redirects
  *   → routing → body parsing
  *   → [route groups, config/routes.php: header sign-in → auth guard → CSRF
@@ -38,6 +41,8 @@ return static function (App $app): void {
     assert($logger instanceof LoggerInterface);
 
     $app->addBodyParsingMiddleware();
+    // Demo mode (spec.md §7.36): after routing, so it knows the route.
+    $app->add(DemoGuardMiddleware::class);
     $app->addRoutingMiddleware();
     $app->add(ModalMiddleware::class);
     $app->add(LocaleMiddleware::class);
@@ -60,4 +65,6 @@ return static function (App $app): void {
     $errorMiddleware->setDefaultErrorHandler($errorHandler);
     $app->add($errorMiddleware);
     $app->add(ApiCorsMiddleware::class);
+    // Outermost: the web start path of a demo, and the robots header on every response.
+    $app->add(DemoMiddleware::class);
 };

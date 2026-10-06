@@ -141,6 +141,9 @@ final readonly class JobRunner
             }
             $runs = [];
             foreach ($this->registry->all() as $job) {
+                if ($trigger === JobTrigger::PageVisit && $job instanceof NotOnPageVisits) {
+                    continue;
+                }
                 if ($this->isDue($job, $this->clock->now())) {
                     $runs[] = $this->run($job, $trigger, null, $sink);
                 }

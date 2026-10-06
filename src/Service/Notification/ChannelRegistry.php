@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Service\Notification;
 
 use InvalidArgumentException;
+use Logbook\Service\Demo\DemoMode;
+use Logbook\Service\Demo\DemoRestriction;
 
 /**
  * Every notification channel the app knows, as registered in the
@@ -19,7 +21,7 @@ final readonly class ChannelRegistry
     /**
      * @param iterable<NotificationChannel> $channels
      */
-    public function __construct(iterable $channels)
+    public function __construct(iterable $channels, private ?DemoMode $demo = null)
     {
         $byKey = [];
         foreach ($channels as $channel) {
@@ -75,6 +77,11 @@ final readonly class ChannelRegistry
      */
     public function active(NotificationPreferences $preferences, Recipient $recipient): array
     {
+        // Nothing is sent from a demo (spec.md §7.36): no channel reaches anyone.
+        if ($this->demo?->blocks(DemoRestriction::Outbound) === true) {
+            return [];
+        }
+
         return array_values(array_filter(
             $this->channels,
             static fn (NotificationChannel $c): bool => $preferences->isEnabled($c->key()) && $c->reaches($recipient),

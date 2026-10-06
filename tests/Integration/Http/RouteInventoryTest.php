@@ -8,6 +8,7 @@ use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Middleware\InstanceAccessMiddleware;
 use Logbook\Middleware\VehicleAccessMiddleware;
+use Logbook\Service\Demo\DemoRoutes;
 use Logbook\Tests\Support\AppTestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -188,6 +189,44 @@ final class RouteInventoryTest extends AppTestCase
         'import_app.map',
     ];
 
+    /**
+     * Every route a demo visitor may use (spec.md §7.36, Phase 35.1). The rest are blocked: they are
+     * DemoRoutes::BLOCKED, or the REST API (but its description). A new route must choose.
+     */
+    private const array DEMO_ALLOWED = [
+        'health', 'pwa.manifest', 'pwa.worker', 'pwa.offline', 'calendar.feed', 'scheduler.url', 'api.openapi',
+        'setup', 'login', 'diagnostics.deep-link', 'home', 'logout', 'dashboard.layout', 'dashboard.cheapest_fuel',
+        'log.chooser', 'log.pick', 'garage', 'vehicles.create', 'vehicles.show', 'vehicles.edit',
+        'vehicles.first_inspection', 'attention.hide', 'vehicles.delete', 'vehicles.archive', 'vehicles.restore',
+        'vehicles.photo', 'vehicles.sharing', 'vehicles.sharing.add', 'vehicles.sharing.change',
+        'vehicles.sharing.mine', 'vehicles.transfer', 'history.fleet', 'history.vehicle', 'history.print',
+        'sale_pack.show', 'sale_pack.paperwork', 'upcoming', 'upcoming.export', 'odometer.index',
+        'odometer.create', 'odometer.edit', 'odometer.delete', 'fuel.quick', 'fuel.index', 'fuel.create',
+        'fuel.edit', 'fuel.delete', 'fuel.economy', 'maintenance.index', 'maintenance.create', 'maintenance.edit',
+        'maintenance.delete', 'maintenance.schedules.create', 'maintenance.schedules.edit',
+        'maintenance.schedules.delete', 'tyres.index', 'tyres.change', 'tyres.changes.edit',
+        'tyres.changes.delete', 'tyres.sets.edit', 'tyres.sets.delete', 'tyres.edit', 'tyres.delete',
+        'trips.index', 'trips.create', 'trips.edit', 'trips.delete', 'incidents.index', 'incidents.create',
+        'incidents.show', 'incidents.edit', 'incidents.delete', 'incidents.links', 'finance.index',
+        'finance.create', 'finance.show', 'finance.edit', 'finance.delete', 'finance.payments',
+        'finance.events.delete', 'finance.quotes', 'finance.quotes.delete', 'finance.schedule', 'finance.end',
+        'compliance.index', 'compliance.create', 'compliance.edit', 'compliance.delete', 'expenses.index',
+        'expenses.create', 'expenses.edit', 'expenses.delete', 'vehicles.ownership', 'valuations.index',
+        'valuations.create', 'valuations.edit', 'valuations.delete', 'export.module', 'attachments.show',
+        'attachments.delete', 'reminders.index', 'reminders.calendar', 'reminders.create', 'reminders.edit',
+        'reminders.delete', 'reminders.status', 'reports.index', 'reports.export', 'reports.ownership',
+        'reports.ownership.export', 'reports.true_cost', 'reports.true_cost.export', 'settings', 'profile',
+        'settings.reminders', 'settings.modules', 'settings.tyres', 'stations.index', 'stations.search',
+        'stations.duplicates', 'stations.near', 'stations.near.add', 'stations.create', 'stations.show',
+        'stations.edit', 'stations.favourite', 'stations.merge', 'stations.link', 'stations.alerts',
+        'settings.places', 'settings.places.create', 'settings.places.edit', 'settings.places.delete',
+        'incidents.history', 'incidents.history.export', 'trips.claim', 'trips.claim.export', 'settings.trips',
+        'settings.trips.journeys.create', 'settings.trips.journeys.edit', 'settings.trips.journeys.delete',
+        'settings.trips.journeys.move', 'settings.trips.rates.create', 'settings.trips.rates.edit',
+        'settings.trips.rates.delete', 'notices.dismiss', 'scheduler.tick', 'settings.preferences', 'users.avatar',
+        'settings.theme', 'insights',
+    ];
+
     public function testEveryRouteIsClassified(): void
     {
         $routes = $this->routes($this->createApp());
@@ -202,6 +241,33 @@ final class RouteInventoryTest extends AppTestCase
 
         self::assertSame([], $unclassified, "Routes that declare no access (declare an ability in config/routes.php,\n"
             . "or add them to this test's lists):\n" . implode("\n", $unclassified));
+    }
+
+    public function testEveryRouteDeclaresItsPlaceInTheDemo(): void
+    {
+        $names = [];
+        $neither = [];
+        $both = [];
+        foreach ($this->routes($this->createApp()) as $route) {
+            $name = (string) $route->getName();
+            $names[] = $name;
+            $blocked = DemoRoutes::isBlocked($name);
+            $allowed = in_array($name, self::DEMO_ALLOWED, true);
+            if (!$blocked && !$allowed) {
+                $neither[] = sprintf('%s %s (%s)', implode('|', $route->getMethods()), $route->getPattern(), $name);
+            }
+            if ($blocked && $allowed) {
+                $both[] = $name;
+            }
+        }
+
+        self::assertSame([], $neither, "Routes that say nothing about the demo (spec.md §7.36): add them to
+DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
+" . implode("
+", $neither));
+        self::assertSame([], $both, 'Routes both blocked and allowed in the demo');
+        self::assertSame([], array_values(array_diff(self::DEMO_ALLOWED, $names)), 'DEMO_ALLOWED names a route that does not exist');
+        self::assertSame([], array_values(array_diff(DemoRoutes::BLOCKED, $names)), 'DemoRoutes::BLOCKED names a route that does not exist');
     }
 
     public function testTheListsNameOnlyRoutesThatExist(): void

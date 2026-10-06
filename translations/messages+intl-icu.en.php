@@ -3428,6 +3428,10 @@ return [
         '503' => ['title' => 'Temporarily unavailable', 'body' => 'The service is temporarily unavailable. Please try again shortly.'],
         '4xx' => ['title' => 'Request problem', 'body' => 'The request could not be completed.'],
         '5xx' => ['title' => 'Server error', 'body' => 'An unexpected error occurred. It has been logged; please try again.'],
+        'demo' => [
+            'title' => 'Not available in the demo',
+            'body' => 'This is a public demo, so this part of Logbook is switched off. Everything else works, and the demo is put back to its sample data every day. Install Logbook yourself to use all of it.',
+        ],
         'csrf' => [
             'title' => 'This form has expired',
             'body' => 'For your security the form could not be accepted — it may have been open too long, or sent from another site. Go back, reload the page and try again.',
@@ -4534,6 +4538,18 @@ return [
             'lead' => '{count, plural, one {An assistant drafted this entry through the MCP server. Check it, then add, edit or discard it.} other {An assistant drafted these # entries through the MCP server. Check each one, then add, edit or discard it.}}',
         ],
     ],
+    'demo' => [
+        'try' => 'Try it:',
+        'username' => 'username',
+        'password' => 'password',
+        'fill_in' => 'Fill in',
+        'reset_notice' => 'The demo was reset. Sign in again.',
+        'banner' => [
+            'minutes' => 'This is a demo. It resets {minutes, plural, =0 {in a moment} one {in # minute} other {in # minutes}} and nothing here is private.',
+            'hours' => 'This is a demo. It resets {hours, plural, one {in # hour} other {in # hours}} and nothing here is private.',
+            'at' => 'This is a demo. It resets at {time} and nothing here is private.',
+        ],
+    ],
     'jobs' => [
         'title' => 'Jobs',
         'lead' => 'The work Logbook does in the background: sending reminders and the monthly digest, cleaning up, and scheduled backups. See when each last ran, or run one now.',
@@ -4586,6 +4602,10 @@ return [
                 'title' => 'Fuel prices',
                 'description' => 'Downloads listed fuel prices from the provider on Settings → Fuel prices, while one is enabled.',
             ],
+            'demo_reset' => [
+                'title' => 'Demo reset',
+                'description' => 'Puts the demo back to its sample data, with its dates moved to today. Only while this is a demo.',
+            ],
             'ai_insights' => [
                 'title' => 'AI insights',
                 'description' => 'Makes the day’s AI insights for each person with AI on who has been here in the last 30 days, a few at a time.',
@@ -4595,6 +4615,8 @@ return [
             'interrupted' => 'Interrupted: the process running it stopped before it finished.',
             'locked' => 'Already running (run #{run}, {trigger}).',
             'module_off' => 'The reminders module is off; nothing to send.',
+            'demo_reset' => 'Reset the demo: {vehicles, plural, one {# vehicle} other {# vehicles}}, {fillups, plural, one {# fill-up} other {# fill-ups}}',
+            'demo_not_sent' => 'demo: not sent',
             'reminders' => '{users, plural, one {Checked # account} other {Checked # accounts}}; {sent, plural, =0 {sent no reminders} one {sent # reminder} other {sent # reminders}}{failures, plural, =0 {} one {; # account failed} other {; # accounts failed}}',
             'digest' => '{users, plural, one {Checked # account} other {Checked # accounts}}; {sent, plural, =0 {no digests due} one {sent # digest} other {sent # digests}}{failures, plural, =0 {} one {; # account failed} other {; # accounts failed}}',
             'cleanup' => 'Deleted {list}',
@@ -4713,6 +4735,10 @@ return [
         'job_failed' => [
             'message' => 'The {job} job failed twice in a row.',
             'link' => 'See the run',
+        ],
+        'demo_refused' => [
+            'real_data' => 'DEMO_MODE is set, but this database holds real data. Demo mode is off and nothing was changed. Remove the setting.',
+            'password' => 'DEMO_MODE is set, but DEMO_PASSWORD is missing or not 8 to 1024 characters. Demo mode is off and nothing was changed.',
         ],
         'new_tab' => '(opens in a new tab)',
         'update' => [

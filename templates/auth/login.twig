@@ -22,6 +22,20 @@
                 <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ error|trans }}</span></div>
             {% endif %}
 
+            {% if notice ?? null %}
+                <div class="alert alert--info" role="status" data-demo-reset-notice>{{ ui.icon('info') }}<span>{{ notice|trans }}</span></div>
+            {% endif %}
+
+            {% set demo = demo_credentials() %}
+            {% if demo %}
+                {# Demo mode (spec.md §7.36): the demo's credentials are public by design. *Fill in* needs JS. #}
+                <div class="alert alert--info demo-try" role="note" data-demo-try>
+                    {{ ui.icon('science') }}
+                    <span>{{ 'demo.try'|trans }} {{ 'demo.username'|trans }} <code>{{ demo.username }}</code>, {{ 'demo.password'|trans }} <code>{{ demo.password }}</code></span>
+                    <button type="button" class="btn btn--soft btn--sm" data-demo-fill data-username="{{ demo.username }}" data-password="{{ demo.password }}" hidden>{{ 'demo.fill_in'|trans }}</button>
+                </div>
+            {% endif %}
+
             {% if proxy and proxy.kind in ['missing', 'not_linked', 'refused'] %}
                 {# Header sign-in (spec.md §7.9 *Sign-in page*). #}
                 <div class="alert {{ proxy.kind == 'missing' ? 'alert--warning' : 'alert--error' }}" role="{{ proxy.kind == 'missing' ? 'status' : 'alert' }}" data-proxy-notice="{{ proxy.kind }}">{{ ui.icon(proxy.kind == 'missing' ? 'warning' : 'error') }}<span>{{ ('proxy.' ~ proxy.kind)|trans({name: proxy.name}) }}</span></div>
