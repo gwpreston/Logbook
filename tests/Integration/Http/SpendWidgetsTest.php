@@ -132,6 +132,18 @@ final class SpendWidgetsTest extends AppTestCase
         self::assertStringContainsString('£12.00', self::widget($html, 'monthly_expenses'));
     }
 
+    public function testCostsOfZeroAloneShowTheEmptyMessages(): void
+    {
+        $this->start();
+        $golf = $this->vehicle($this->app);
+        $this->expense($this->app, $golf, '2026-09-01', '0.00');
+
+        $html = self::body($this->browser->get('/'));
+        self::assertStringContainsString('No costs in this period.', self::widget($html, 'expense_breakdown'));
+        self::assertStringContainsString('No costs in the last 12 months.', self::widget($html, 'monthly_expenses'));
+        self::assertStringNotContainsString('<table', self::widget($html, 'monthly_expenses'));
+    }
+
     public function testTwoCurrenciesGiveTwoBlocksAndAreNeverAdded(): void
     {
         $this->start();

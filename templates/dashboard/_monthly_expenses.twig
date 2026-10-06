@@ -8,7 +8,7 @@
     {% if spend.isEmpty() %}
         <p class="muted">{{ 'dashboard.spend.monthly_empty'|trans }}</p>
     {% endif %}
-    {% for section in spend.report.currencies|filter(s => not s.isEmpty()) %}
+    {% for section in spend.sections() %}
         {% set label = 'dashboard.spend.monthly_chart'|trans({currency: section.currency}) %}
         {% set groups = section.spentGroups() %}
         <div class="monthly-spend">

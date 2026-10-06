@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Dashboard;
 
 use DateTimeImmutable;
+use Logbook\Service\Report\CurrencyReport;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
@@ -23,7 +24,20 @@ final readonly class MonthlySpend
 
     public function isEmpty(): bool
     {
-        return $this->report->isEmpty();
+        return $this->sections() === [];
+    }
+
+    /**
+     * The currencies with something spent (costs of 0 are valid but draw nothing).
+     *
+     * @return list<CurrencyReport>
+     */
+    public function sections(): array
+    {
+        return array_values(array_filter(
+            $this->report->currencies,
+            static fn (CurrencyReport $c): bool => $c->spentGroups() !== [],
+        ));
     }
 
     /**

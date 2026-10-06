@@ -194,7 +194,11 @@ final class BasePathRoutingTest extends AppTestCase
             $html,
             'a month of Monthly spend',
         );
-        self::assertStringContainsString('&quot;\/logbook\/reports?range=custom&amp;from=2026-09-01', $html, "the chart's bar links");
+        self::assertStringContainsString(
+            '&quot;\/logbook\/reports?range=custom&amp;from=2026-09-01',
+            $html,
+            "the chart's bar links",
+        );
         self::assertStringNotContainsString('href="/reports', $html);
     }
 

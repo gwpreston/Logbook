@@ -74,10 +74,7 @@ final readonly class DashboardCharts
             return [];
         }
         $charts = [];
-        foreach ($spend->report->currencies as $section) {
-            if ($section->isEmpty()) {
-                continue;
-            }
+        foreach ($spend->sections() as $section) {
             $charts[$section->currency] = $this->reportCharts->monthly($section)->links(array_map(
                 fn (MonthTotal $m): string => $this->redirect->urlFor('reports.index', [], $spend->monthQuery($m->month)),
                 $section->months,

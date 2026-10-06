@@ -372,7 +372,10 @@
                     }
                 } : undefined,
                 onHover: links ? function (event, elements) {
-                    event.native.target.style.cursor = elements.length ? 'pointer' : '';
+                    // Replayed events (a resize, an update) have no native event.
+                    if (event.native && event.native.target) {
+                        event.native.target.style.cursor = elements.length ? 'pointer' : '';
+                    }
                 } : undefined,
                 scales: {
                     x: { stacked: spec.stacked, ticks: { color: muted, maxRotation: 0, autoSkip: true }, grid: { display: false } },

@@ -32,7 +32,8 @@ final readonly class ExpenseBreakdown
     {
         $sections = [];
         foreach ($report->currencies as $currency) {
-            if (!$currency->isEmpty()) {
+            // Only costs of 0 (valid, but nothing spent) leave nothing to break down.
+            if ($currency->spentGroups() !== []) {
                 $sections[] = self::section($currency);
             }
         }
