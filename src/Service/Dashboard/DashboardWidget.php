@@ -20,6 +20,10 @@ enum DashboardWidget: string
     /** Phase 15: the 12-month forecast (spec.md §7.18); core. */
     case ComingUp = 'coming_up';
     case Spend = 'spend';
+    /** Phase 34.2: the period's spend by group (spec.md §7.8 *Expense breakdown*). */
+    case ExpenseBreakdown = 'expense_breakdown';
+    /** Phase 34.2: the last 12 months' spend, stacked by group (spec.md §7.8 *Monthly spend*). */
+    case MonthlyExpenses = 'monthly_expenses';
     case RecentFuel = 'recent_fuel';
     case Fleet = 'fleet';
     case Efficiency = 'efficiency';
@@ -44,7 +48,7 @@ enum DashboardWidget: string
             self::Fleet, self::Mileage, self::RecentActivity, self::ComingUp, self::NeedsAttention, self::TrueCost,
                 self::Insights => null,
             self::Reminders => Feature::Reminders,
-            self::Spend => Feature::Reports,
+            self::Spend, self::ExpenseBreakdown, self::MonthlyExpenses => Feature::Reports,
             self::RecentFuel, self::Efficiency => Feature::Fuel,
             self::Compliance => Feature::Compliance,
             self::BusinessMileage => Feature::Trips,
@@ -62,6 +66,8 @@ enum DashboardWidget: string
             self::Insights => 'lightbulb',
             self::ComingUp => 'event_upcoming',
             self::Spend => 'payments',
+            self::ExpenseBreakdown => 'receipt_long',
+            self::MonthlyExpenses => 'bar_chart',
             self::RecentFuel => 'local_gas_station',
             self::Efficiency => 'trending_up',
             self::Compliance => 'verified_user',

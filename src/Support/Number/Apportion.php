@@ -37,6 +37,29 @@ final class Apportion
     }
 
     /**
+     * Each part's share of their sum as whole percentages adding up to
+     * exactly 100 (spec.md §7.8 *Expense breakdown*); all zeros when the
+     * sum is zero. Parts are non-negative integers (e.g. money in micros).
+     *
+     * @param list<int> $parts
+     * @return list<int> in the order given
+     */
+    public static function percentages(array $parts): array
+    {
+        $sum = array_sum($parts);
+        if ($sum <= 0) {
+            return array_fill(0, count($parts), 0);
+        }
+
+        $shares = array_map(
+            static fn (int $part): BigRational => BigRational::ofFraction(BigInteger::of($part)->multipliedBy(100), $sum),
+            $parts,
+        );
+
+        return array_map('intval', self::toTarget($shares, '100', 0));
+    }
+
+    /**
      * The parts at $scale places, adding up to $target exactly. The target
      * may differ from the parts' exact sum by a few units (it was rounded
      * elsewhere): the difference goes to the parts with the largest

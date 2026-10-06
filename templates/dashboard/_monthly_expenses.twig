@@ -1,0 +1,47 @@
+{# Monthly spend (spec.md §7.8): the last 12 months per currency, stacked by group; a table without JS; each month links to Reports (#206). #}
+{% import 'macros/ui.twig' as ui %}
+{% set spend = dashboard.monthlySpend %}
+{% set dash = '—' %}
+{% if spend is null %}
+    <p class="muted">{{ 'dashboard.spend.no_vehicles'|trans }}</p>
+{% else %}
+    {% if spend.isEmpty() %}
+        <p class="muted">{{ 'dashboard.spend.monthly_empty'|trans }}</p>
+    {% endif %}
+    {% for section in spend.sections() %}
+        {% set label = 'dashboard.spend.monthly_chart'|trans({currency: section.currency}) %}
+        {% set groups = section.spentGroups() %}
+        <div class="monthly-spend">
+            <p class="muted">{{ 'dashboard.spend.monthly_average'|trans({amount: section.averagePerMonth|money}) }}</p>
+            {{ ui.chart(monthly_spend_charts[section.currency], label) }}
+            {# The wrapper, not the table, is what hides with JS: a table never shrinks to 1px, so it would widen the page. #}
+            <div class="table-wrap chart-table monthly-spend__table">
+                <table class="table">
+                    <caption class="visually-hidden">{{ label }}</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ 'report.column.month'|trans }}</th>
+                            {% for total in groups %}
+                                <th scope="col" class="table__num">{{ ('expense.group.' ~ total.group.value)|trans }}</th>
+                            {% endfor %}
+                            <th scope="col" class="table__num">{{ 'report.column.total'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month in section.months|reverse %}
+                            <tr>
+                                <th scope="row"><a href="{{ url_for('reports.index', {}, spend.monthQuery(month.month)) }}">{{ month.month|local_month }}</a></th>
+                                {% for total in groups %}
+                                    {% set amount = month.amount(total.group) %}
+                                    <td class="table__num tabular">{{ amount.isZero() ? dash : amount|money }}</td>
+                                {% endfor %}
+                                <td class="table__num tabular">{{ month.total.isZero() ? dash : month.total|money }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+    {{ ui.costs_excluded_note() }}
+{% endif %}

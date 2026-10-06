@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Http;
 
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\TestBrowser;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -14,6 +15,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 final class BasePathRoutingTest extends AppTestCase
 {
+    use CostFixtures;
+
     /**
      * @return iterable<string, array{string}>
      */
@@ -167,6 +170,36 @@ final class BasePathRoutingTest extends AppTestCase
         $stations = self::body($browser->get('/stations'));
         self::assertStringContainsString('action="/logbook/stations"', $stations);
         self::assertStringNotContainsString('href="/stations', $stations);
+    }
+
+    public function testPhase342SpendWidgetsLinkWithThePrefix(): void
+    {
+        $app = $this->createApp(['APP_BASE_PATH' => '/logbook']);
+        $this->pinClock($app, '2026-09-27T10:00:00Z');
+        $this->resetDatabase($app);
+        $this->createOwner($app);
+        $this->expense($app, $this->vehicle($app), '2026-09-20', '12.00');
+        $browser = new TestBrowser($app);
+        $browser->get('/logbook/login');
+        $browser->post('/logbook/login', ['username' => 'owner', 'password' => self::PASSWORD]);
+
+        // Hard refresh with a period chosen, prefix stripped by the proxy.
+        $response = $browser->get('/?expenses=this_year');
+        self::assertSame(200, $response->getStatusCode());
+        $html = self::body($response);
+        self::assertStringContainsString('href="/logbook/?expenses=this_month#widget-expense_breakdown"', $html);
+        self::assertStringContainsString('href="/logbook/reports?range=ytd&amp;group=other"', $html, 'a breakdown row');
+        self::assertStringContainsString(
+            'href="/logbook/reports?range=custom&amp;from=2026-09-01&amp;to=2026-09-30"',
+            $html,
+            'a month of Monthly spend',
+        );
+        self::assertStringContainsString(
+            '&quot;\/logbook\/reports?range=custom&amp;from=2026-09-01',
+            $html,
+            "the chart's bar links",
+        );
+        self::assertStringNotContainsString('href="/reports', $html);
     }
 
     public function testHealthAtASubpath(): void

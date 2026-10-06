@@ -3,7 +3,7 @@
 *Where the money went, and how it moved month to month, without leaving
 the dashboard.*
 
-Status: 📋 planned · no release of its own (ships with Phase 34.3 as
+Status: ✅ complete · no release of its own (ships with Phase 34.3 as
 **v3.1.0**) · file lives in `docs/phases/`
 
 Reports already answer two questions: *where did the money go* (the
@@ -33,6 +33,8 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
    away with the `reports` module.
 4. No new figure: every number is Reports' own.
 
+5. Each month of *Monthly spend* opens Reports for that month (#206).
+
 ## Not in scope
 
 - New ledger groups, new periods beyond those below, budgets or targets.
@@ -58,13 +60,15 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 >     it can be bookmarked and works without JavaScript. An unknown value
 >     falls back to the default.
 >   - **Per currency**, as Reports does (amounts are never converted): the
->     total, then one row per group in **Reports' own order and labels**
->     with its amount and its share of the total. Shares are rounded by
->     the largest-remainder method so they add to exactly 100%.
+>     total, then one row per group with spending in **Reports' own order
+>     and labels** with its amount and its share of the total. Shares are
+>     whole percentages rounded by the largest-remainder method so they add
+>     to exactly 100%. Costs are never negative (§7.7), so neither is a
+>     group (the draft's "negative group" case cannot happen; found while
+>     starting).
 >   - **A bar** of the groups' shares above the rows, drawn with CSS (no
 >     chart library) in design-token colours. Every row carries its label,
->     amount and percentage as text, so colour is never the only cue. A
->     group whose total is negative is left out of the bar and listed.
+>     amount and percentage as text, so colour is never the only cue.
 >   - Each row links to Reports for the same vehicle selection, the
 >     matching period and that group (`group=`, §7.7 *Costs filter*). The
 >     widget's title row links to Reports for the period.
@@ -77,24 +81,29 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 >   and the average per month, divided as Reports divides it (the current
 >   month counts). Without JavaScript, and for assistive technology, the
 >   same figures are a table (months as rows, groups as columns, as the
->   Mileage widget does); the chart is the enhancement and is hidden from
->   assistive technology. The title row links to Reports for the last 12
->   months.
+>   Mileage widget does); the chart is the enhancement and the table stays
+>   for assistive technology. **Each month links to Reports** for that
+>   calendar month (`range=custom`, its first and last day, the same
+>   vehicle selection; #206): the table's month names are links, and
+>   clicking a bar opens the same page. The title row links to Reports for
+>   the last 12 months.
 > - **Both widgets:** vehicle filter and pinned card as every other widget
 >   (one vehicle selected shows that vehicle only). Archived vehicles are
 >   left out. A viewer who may see costs on none of the vehicles in view
 >   does not get the widget; *Customise* lists it as "No vehicles whose
 >   costs you can see". Every figure comes from the report service (§7.7),
 >   so the rules for fill-ups, maintenance, documents, tyres, ad-hoc
->   expenses and incident payouts are the ledger's, not re-implemented
+>   expenses and finance lines are the ledger's, not re-implemented
 >   here.
 > - **Default order** (fresh dashboards and *Reset layout*): …, *spend this
 >   month*, **expense breakdown**, **monthly spend**, *recent fuel*, … (the
 >   rest unchanged). Saved layouts get both appended at the end, as every
 >   widget added in a later release does.
-> - **Cost:** each widget makes one call to the report service for the
->   whole vehicle set, not one per vehicle, and months are grouped in the
->   same pass that groups the ledger.
+> - **Cost:** the dashboard makes one call to the report service for every
+>   spend figure it shows (*spend this month*, the breakdown, the 12
+>   months), reading the ledger once for the whole vehicle set, not per
+>   vehicle, and months are grouped in the same pass that groups the
+>   ledger.
 
 ### §7.10 Feature toggles (changed)
 
@@ -123,67 +132,103 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 ## Tasks
 
 ### 34.2.0 Spec first
-- [ ] `spec.md` §7.8 and §7.10 as above; §13 entry; `ROADMAP.md` row and
+- [x] `spec.md` §7.8 and §7.10 as above; §13 entry; `ROADMAP.md` row and
       section.
 
 ### 34.2.1 Code
-- [ ] Register `expense_breakdown` and `monthly_expenses` where the other
+- [x] Register `expense_breakdown` and `monthly_expenses` where the other
       widgets are registered, with the default order above and the
       append-to-saved-layouts rule.
-- [ ] A dashboard service method for each, reading the report service once
+- [x] A dashboard service method for each, reading the report service once
       for the vehicle set (filtered by `ViewCosts` and archived status).
       Largest-remainder rounding in one small, tested helper.
-- [ ] The period map from `?expenses=` to Reports' presets in one place,
+- [x] The period map from `?expenses=` to Reports' presets in one place,
       used by the widget's links as well as its figures.
 
 ### 34.2.2 Templates, CSS, JavaScript
-- [ ] Widget templates for both, with the *Customise* entries and empty
+- [x] Widget templates for both, with the *Customise* entries and empty
       states. The breakdown bar is CSS only.
-- [ ] Reuse the Expenses tab's chart code for *Monthly spend* rather than
+- [x] Reuse the Expenses tab's chart code for *Monthly spend* rather than
       writing a second stacked-bar configuration. The table is rendered
       server-side in the widget.
-- [ ] Segment colours come from tokens that read in both themes and all
+- [x] Month links (#206): the table's month names link to Reports for
+      that month; the chart carries one link per bar and a click on a bar
+      opens it (the bar chart code gains optional links, so other charts
+      are unchanged). A keyboard user reaches the links in the table.
+- [x] Segment colours come from tokens that read in both themes and all
       four accents (reuse the Reports palette).
 
 ### 34.2.3 Translations
-- [ ] English and German strings: widget titles, period labels, empty
+- [x] English and German strings: widget titles, period labels, empty
       state, the *Customise* note.
 
 ### 34.2.4 Tests
-- [ ] Unit: largest-remainder shares (totals 100 for awkward splits, zero
+- [x] Unit: largest-remainder shares (totals 100 for awkward splits, zero
       total, one group).
-- [ ] Unit: period parsing (valid values, unknown, repeated).
-- [ ] Integration: the breakdown matches Reports for the same vehicles and
+- [x] Unit: period parsing (valid values, unknown, repeated).
+- [x] Integration: the breakdown matches Reports for the same vehicles and
       period, group by group (assert equality with the report service, not
       hard-coded numbers); two currencies give two blocks, never summed;
       archived vehicles excluded; a vehicle the viewer may not see costs of
       is excluded and a viewer with none gets no widget; one vehicle
       selected shows that vehicle only; links carry the vehicle, period and
       group.
-- [ ] Integration: *Monthly spend* lists 12 months including empty ones;
+- [x] Integration: *Monthly spend* lists 12 months including empty ones;
       the table and the chart data agree; the average per month equals
       Reports'; the month boundary at local midnight in a time zone with
       daylight saving (a fill-up at 00:30 BST on 1 April counts in April).
-- [ ] Integration: `reports` off removes both widgets from the dashboard,
+- [x] Integration: `reports` off removes both widgets from the dashboard,
       *Customise* and saved layouts without losing the layout; turning it
       back on restores them in place.
-- [ ] Integration: an old saved layout gains both widgets at the end; an
+- [x] Integration: an old saved layout gains both widgets at the end; an
       unknown id is still dropped.
-- [ ] Query count: the dashboard makes no more than a fixed number of extra
+- [x] Query count: the dashboard makes no more than a fixed number of extra
       queries for the two widgets however many vehicles there are.
-- [ ] Without JavaScript: the table is present and the bar and rows render.
+- [x] Without JavaScript: the table is present and the bar and rows render.
 
 ### 34.2.5 Checks
-- [ ] `design-reviewer` agent at 375, 768 and 1280 px, light and dark, all
-      four accents.
+- [x] `design-reviewer` agent at 375, 768 and 1280 px, light and dark, all
+      four accents. The agent could not sign in to the dev stack, so it
+      reviewed the code and computed the accents' contrast from the tokens.
+      The rendered checks were done in the browser instead: 375 px light,
+      768 px light, 1280 px light and dark (default accent), keyboard focus
+      in the month table, and a click on a bar. 0 HIGH, 3 MEDIUM, 4 LOW.
+
+### 34.2.6 Design review fixes
+- [x] At 375 px the month table widened the page even while hidden (a
+      table never shrinks to the 1px of `.chart-table`): the wrapper is
+      now what hides, so the page stays 375 px wide and the table scrolls
+      sideways inside the card. This also removes the trailing gap under
+      the chart.
+- [x] The month links show the table while one has keyboard focus, with
+      the focus ring visible and a scroll margin clear of the sticky bars.
+- [x] With the teal accent, *Fuel* (the accent) and *Maintenance* sat side
+      by side at 1.46:1: every stack bar gets a 2px gap between segments.
+- [x] Period chips: no underline on hover and the accent border on
+      hover, as the vehicle chips. Breakdown labels get a quiet underline
+      so they read as links before hover.
+- [x] Merge review (bug-hunter, security-scanner, performance-auditor):
+      a period whose only costs are 0 now shows the empty message instead
+      of a blank 0.00 block; the chart's hover handler ignores replayed
+      events. Security: nothing found. Performance: no regression in
+      queries (the widgets add a fixed number however many vehicles); the
+      readings query per vehicle in the report service predates this
+      phase.
+- Left: the light theme's *Tax* and *Other* colours are below 3:1 as
+  graphics on white. The palette predates this phase and every row and
+  legend carries its label, so it goes to the log (#242). Chips are
+  38 px tall like every chip row in the app.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: confirm the demo owner has costs in every group
+- [x] `DemoDataSeeder`: confirm the demo owner has costs in every group
       Reports shows across the last 12 months. Add a few ad-hoc expenses if
       a group is empty, so both widgets show something worth looking at.
+      Confirmed on 2026-10-06: fuel, maintenance, documents and other all
+      have costs between November 2025 and October 2026, so nothing was
+      added.
 
 ### Release
-- [ ] Ships with Phase 34.3 as **v3.1.0**.
+- [ ] Ships with Phase 34.3 as **v3.1.0**. Nothing to tag here.
 
 ---
 
@@ -199,13 +244,21 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 
 ## Open questions
 
-- **Overlap with *Spend this month*.** It already shows this month's spend
-  by group with last month beside it. The breakdown's *This month* option
-  repeats that. Keep all three (drafted: nothing the owner has arranged
-  breaks), or retire *Spend this month* once the breakdown has it?
-  Recommendation: keep all three for now and look again after a release.
-- **Periods offered.** *This month*, *Last 12 months*, *This year*
-  (drafted). Add *Last 3 months* or *All time* to match Reports' presets?
-- **Fleet view by vehicle.** A *By vehicle* option on the breakdown, or
-  leave that to Reports (drafted)?
-- **Clicking a bar.** To Reports for that month (drafted: not built).
+The first four were decided by the owner on 2026-10-06, before the phase
+was built ([`open-questions.md`](open-questions.md) #203–#206); the last,
+found by the design review, is carried in the log as #242.
+
+- **Overlap with *Spend this month*.** *Decided 2026-10-06 (#203):* keep
+  all three widgets; look again after a release.
+- **Periods offered.** *Decided 2026-10-06 (#204):* *This month*, *Last
+  12 months* (default) and *This year*, as drafted.
+- **Fleet view by vehicle.** *Decided 2026-10-06 (#205):* no; Reports has
+  *Spend per vehicle*.
+- **Clicking a bar.** *Decided 2026-10-06 (#206):* each month links to
+  Reports for that calendar month, from the table's month names and, with
+  JS, from the bars.
+- **Light-theme category colours** (found by the design review): *Tax*
+  (`--c-tax`, 2.22:1) and *Other* (`--c-other`, 2.47:1) are below 3:1 as
+  graphics on white, in every spend bar and chart. Darken them, or keep
+  them because every segment has a text label beside it? Carried to the
+  log as #242; nothing changed here.

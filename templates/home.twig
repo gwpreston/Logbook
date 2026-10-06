@@ -7,6 +7,8 @@
     reminders: {route: 'reminders.index', label: 'reminders.view_all'},
     coming_up: {route: 'upcoming', label: 'coming_up.view_all'},
     spend: {route: 'reports.index', label: 'dashboard.link.reports'},
+    expense_breakdown: {route: 'reports.index', label: 'dashboard.link.reports'},
+    monthly_expenses: {route: 'reports.index', label: 'dashboard.link.reports'},
     recent_activity: {route: 'history.fleet', label: 'history.view_all'},
     business_mileage: {route: 'trips.claim', label: 'dashboard.link.claim'},
     insights: {route: 'insights', label: 'insights.all'},
@@ -124,8 +126,16 @@
                                     <button type="submit" name="toggle" value="1" class="icon-btn" aria-pressed="{{ hidden ? 'false' : 'true' }}">{{ ui.icon(hidden ? 'visibility_off' : 'visibility') }}<span class="visually-hidden">{{ (hidden ? 'dashboard.show' : 'dashboard.hide')|trans({widget: title}) }}</span></button>
                                 </form>
                             {% elseif link and (widget.value != 'spend' or feature_enabled('reports')) %}
-                                {# The fleet history and Coming up keep the chosen vehicle (spec.md §7.8). #}
-                                <a class="card__link" href="{{ url_for(link.route, {}, widget.value in ['recent_activity', 'coming_up'] and selected ? {vehicle: selected.id} : {}) }}">{{ link.label|trans }}</a>
+                                {# The fleet history and Coming up keep the chosen vehicle; the spend widgets
+                                   open Reports for their vehicles and period (spec.md §7.8). #}
+                                {% if widget.value == 'expense_breakdown' and dashboard.expenseBreakdown %}
+                                    {% set link_query = dashboard.expenseBreakdown.reportQuery() %}
+                                {% elseif widget.value == 'monthly_expenses' and dashboard.monthlySpend %}
+                                    {% set link_query = dashboard.monthlySpend.reportQuery() %}
+                                {% else %}
+                                    {% set link_query = widget.value in ['recent_activity', 'coming_up'] and selected ? {vehicle: selected.id} : {} %}
+                                {% endif %}
+                                <a class="card__link" href="{{ url_for(link.route, {}, link_query) }}">{{ link.label|trans }}</a>
                             {% endif %}
                         </div>
                         {% if hidden %}

@@ -7,6 +7,7 @@ namespace Logbook\Tests\Unit\Support\Number;
 use Brick\Math\BigRational;
 use Logbook\Support\Number\Apportion;
 use Logbook\Support\Number\Decimal;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -52,6 +53,42 @@ final class ApportionTest extends TestCase
     public function testNoPartsGiveNothing(): void
     {
         self::assertSame([], Apportion::toTarget([], '0', 6));
+        self::assertSame([], Apportion::percentages([]));
+    }
+
+    /**
+     * @return iterable<string, array{0: list<int>, 1: list<int>}>
+     */
+    public static function awkwardSplits(): iterable
+    {
+        yield 'thirds' => [[1, 1, 1], [34, 33, 33]];
+        yield 'two-thirds and a third' => [[2, 1], [67, 33]];
+        yield 'sevenths' => [[1, 1, 1, 1, 1, 1, 1], [15, 15, 14, 14, 14, 14, 14]];
+        yield 'a tiny part' => [[999_000_000, 1_000_000], [100, 0]];
+        yield 'the largest remainder wins' => [[125, 125, 750], [13, 12, 75]];
+        yield 'one group' => [[42_500_000], [100]];
+        yield 'money in micros' => [[61_420_000, 18_330_000, 420_000_000, 2_500_000], [12, 4, 84, 0]];
+    }
+
+    /**
+     * Whole percentages for the expense breakdown (spec.md §7.8): always 100
+     * between them, whatever the split.
+     *
+     * @param list<int> $parts
+     * @param list<int> $expected
+     */
+    #[DataProvider('awkwardSplits')]
+    public function testPercentagesAddUpToExactlyOneHundred(array $parts, array $expected): void
+    {
+        $percents = Apportion::percentages($parts);
+
+        self::assertSame($expected, $percents);
+        self::assertSame(100, array_sum($percents));
+    }
+
+    public function testAZeroTotalGivesNoShares(): void
+    {
+        self::assertSame([0, 0, 0], Apportion::percentages([0, 0, 0]));
     }
 
     /**

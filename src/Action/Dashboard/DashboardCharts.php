@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Dashboard;
 
+use Logbook\Action\Report\ReportCharts;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Service\Dashboard\MileageSummary;
 use Logbook\Service\Dashboard\MonthDistance;
+use Logbook\Service\Dashboard\MonthlySpend;
 use Logbook\Service\Dashboard\VehicleEfficiency;
+use Logbook\Service\Report\MonthTotal;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
+use Logbook\Support\Http\Redirector;
 use Logbook\Support\Units\ElectricEfficiencyUnit;
 use Logbook\Support\View\BarChart;
 use Logbook\Support\View\LineChart;
@@ -29,6 +33,8 @@ final readonly class DashboardCharts
         private DisplayContext $display,
         private DisplayFormatter $formatter,
         private TranslatorInterface $translator,
+        private ReportCharts $reportCharts,
+        private Redirector $redirect,
     ) {
     }
 
@@ -53,6 +59,29 @@ final readonly class DashboardCharts
             array_map(static fn (MonthDistance $m): float => $unit->fromKm((float) ($m->km ?? '0')), $summary->months),
             'accent',
         );
+    }
+
+    /**
+     * Monthly spend (spec.md §7.8): the Expenses tab's stacked chart per
+     * currency with something spent, each bar linking to Reports for its
+     * month (#206).
+     *
+     * @return array<string, BarChart> keyed by currency code
+     */
+    public function monthlySpend(?MonthlySpend $spend): array
+    {
+        if ($spend === null) {
+            return [];
+        }
+        $charts = [];
+        foreach ($spend->sections() as $section) {
+            $charts[$section->currency] = $this->reportCharts->monthly($section)->links(array_map(
+                fn (MonthTotal $m): string => $this->redirect->urlFor('reports.index', [], $spend->monthQuery($m->month)),
+                $section->months,
+            ));
+        }
+
+        return $charts;
     }
 
     /**

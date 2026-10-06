@@ -46,6 +46,19 @@ final readonly class ReportPeriod
     }
 
     /**
+     * One whole calendar month as a custom period, for links to a month
+     * (spec.md §7.8 *Monthly spend*).
+     *
+     * @param DateTimeImmutable $day any calendar date in the month
+     */
+    public static function month(DateTimeImmutable $day): self
+    {
+        $first = $day->setDate((int) $day->format('Y'), (int) $day->format('n'), 1);
+
+        return new self(ReportRange::Custom, $first, LocalTime::addMonths($first, 1)->modify('-1 day'));
+    }
+
+    /**
      * From `?range=` (and `from` / `to` for a custom range). Anything
      * unreadable falls back to the default; a custom range typed backwards
      * is turned around, and a missing end means "until today" (a missing

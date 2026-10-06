@@ -3010,6 +3010,8 @@ return [
             'insights' => 'Einblicke',
             'coming_up' => 'Demnächst',
             'spend' => 'Ausgaben diesen Monat',
+            'expense_breakdown' => 'Kostenaufteilung',
+            'monthly_expenses' => 'Monatliche Ausgaben',
             'recent_fuel' => 'Letzte Tankfüllungen',
             'efficiency' => 'Verbrauchsverlauf',
             'compliance' => 'Dokumente',
@@ -3040,6 +3042,13 @@ return [
             'so_far' => '{month} bisher',
             'last_month' => 'Vormonat {amount}',
             'nothing' => 'In diesem Monat noch nichts ausgegeben.',
+            // Kostenaufteilung und Monatliche Ausgaben (spec.md §7.8, Phase 34.2).
+            'no_vehicles' => 'Keine Fahrzeuge, deren Kosten du sehen darfst.',
+            'breakdown_period' => 'Zeitraum der Aufteilung',
+            'breakdown_empty' => 'Keine Kosten in diesem Zeitraum.',
+            'monthly_empty' => 'Keine Kosten in den letzten 12 Monaten.',
+            'monthly_chart' => 'Ausgaben pro Monat in den letzten 12 Monaten in {currency}, nach Kategorie',
+            'monthly_average' => 'Durchschnittlich {amount} im Monat',
         ],
         'fuel' => [
             'empty' => 'Noch keine Tankfüllungen.',

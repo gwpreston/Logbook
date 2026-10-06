@@ -37,6 +37,8 @@ final class CostVisibilityTemplateTest extends TestCase
         'reports/ownership.twig' => 'Ownership report: OwnershipService drops vehicles without ViewCosts',
         'macros/ownership.twig' => 'cost-of-ownership wording, called only inside a costs check or from the reports',
         'dashboard/_spend.twig' => 'fleet spend: ReportService drops vehicles without ViewCosts',
+        'dashboard/_expense_breakdown.twig' => 'Phase 34.2: only the vehicles in view with ViewCosts',
+        'dashboard/_monthly_expenses.twig' => 'Phase 34.2: only the vehicles in view with ViewCosts',
         'forecast/index.twig' => 'Coming up: ComingUp leaves amounts out for vehicles without ViewCosts',
         'macros/forecast.twig' => 'Coming up rows: ComingUp leaves amounts out for vehicles without ViewCosts',
         // Not an amount of anyone's: the formatting preview.

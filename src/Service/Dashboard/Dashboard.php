@@ -47,6 +47,10 @@ final readonly class Dashboard
         public ?ReminderOverview $reminders = null,
         public ?Report $spendThisMonth = null,
         public ?Report $spendLastMonth = null,
+        /** Phase 34.2; null while hidden or with no vehicle in view whose costs the viewer may see. */
+        public ?ExpenseBreakdown $expenseBreakdown = null,
+        /** Phase 34.2; null as the breakdown. */
+        public ?MonthlySpend $monthlySpend = null,
         public array $recentFuel = [],
         public array $efficiency = [],
         public array $compliance = [],
@@ -83,7 +87,10 @@ final readonly class Dashboard
             fn (DashboardWidget $w): bool => !$this->layout->isHidden($w)
                 && !($this->selected !== null && $w === DashboardWidget::Fleet)
                 // Nothing about finance shows until a vehicle in view has an agreement (spec.md §7.32 *Module*).
-                && !($w === DashboardWidget::Finance && $this->finance === []),
+                && !($w === DashboardWidget::Finance && $this->finance === [])
+                // Gone when no vehicle in view has costs the viewer may see (spec.md §7.8 *Both spend widgets*).
+                && !($w === DashboardWidget::ExpenseBreakdown && $this->expenseBreakdown === null)
+                && !($w === DashboardWidget::MonthlyExpenses && $this->monthlySpend === null),
         ));
     }
 

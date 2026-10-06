@@ -1,0 +1,39 @@
+{# Expense breakdown (spec.md §7.8): the period's spend by Reports' groups, per currency, with a CSS bar and rows linking to Reports. #}
+{% import 'macros/expenses.twig' as exp %}
+{% import 'macros/ui.twig' as ui %}
+{% set breakdown = dashboard.expenseBreakdown %}
+{% if breakdown is null %}
+    <p class="muted">{{ 'dashboard.spend.no_vehicles'|trans }}</p>
+{% else %}
+    {# The period is a link, kept with the vehicle chip and the true cost switch (spec.md §7.8). #}
+    {% set keep = (selected ? {vehicle: selected.id} : {})|merge(dashboard.trueCost and dashboard.trueCost.range.value == 'since_bought' ? {true_cost: 'since_bought'} : {}) %}
+    <nav class="chip-row expense-breakdown__switch" aria-label="{{ 'dashboard.spend.breakdown_period'|trans }}">
+        {% for period in expense_periods %}
+            <a class="chip" href="{{ url_for('home', {}, keep|merge(period.toQuery())) }}#widget-expense_breakdown"{% if breakdown.period == period %} aria-current="true"{% endif %}>{{ ('report.range.' ~ period.range().value)|trans }}</a>
+        {% endfor %}
+    </nav>
+    {% if breakdown.isEmpty() %}
+        <p class="muted">{{ 'dashboard.spend.breakdown_empty'|trans }}</p>
+    {% else %}
+        {% for section in breakdown.sections %}
+            <div class="spend expense-breakdown">
+                <p class="figure tabular">{{ section.total|money }}</p>
+                <div class="stack-bar" aria-hidden="true">
+                    {% for row in section.rows %}
+                        <span class="stack-bar__part" style="--w: {{ row.percent }}%; --swatch: var(--{{ row.group.color() }})"></span>
+                    {% endfor %}
+                </div>
+                <ul class="breakdown">
+                    {% for row in section.rows %}
+                        <li class="breakdown__row">
+                            <a class="breakdown__label" href="{{ url_for('reports.index', {}, breakdown.reportQuery(row.group)) }}">{{ exp.swatch(row.group) }}{{ ('expense.group.' ~ row.group.value)|trans }}</a>
+                            <span class="breakdown__share tabular">{{ 'report.share'|trans({share: row.percent / 100}) }}</span>
+                            <span class="breakdown__amount tabular">{{ row.amount|money }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    {% endif %}
+    {{ ui.costs_excluded_note() }}
+{% endif %}

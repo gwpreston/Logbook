@@ -19,6 +19,8 @@ final class BarChart implements JsonSerializable
     private array $series = [];
     /** @var list<bool> bars drawn hatched (a partial period), one per label */
     private array $hatched = [];
+    /** @var list<string> where a click on each bar goes, one per label; none when empty */
+    private array $links = [];
 
     /**
      * @param list<string> $labels one per bar, e.g. localised month names
@@ -65,6 +67,19 @@ final class BarChart implements JsonSerializable
     }
 
     /**
+     * Make each bar a link (spec.md §7.8 *Monthly spend*). The page keeps
+     * the same links in its table, for the keyboard and without JS.
+     *
+     * @param list<string> $links one URL per label
+     */
+    public function links(array $links): self
+    {
+        $this->links = $links;
+
+        return $this;
+    }
+
+    /**
      * Worth drawing: some bar above zero.
      */
     public function hasData(): bool
@@ -95,6 +110,7 @@ final class BarChart implements JsonSerializable
             'unit' => $this->unit,
             'series' => $this->series,
             'hatched' => $this->hatched,
+            'links' => $this->links,
         ];
     }
 }

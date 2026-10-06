@@ -3013,6 +3013,8 @@ return [
             'insights' => 'Insights',
             'coming_up' => 'Coming up',
             'spend' => 'Spend this month',
+            'expense_breakdown' => 'Expense breakdown',
+            'monthly_expenses' => 'Monthly spend',
             'recent_fuel' => 'Recent fuel',
             'efficiency' => 'Efficiency trend',
             'compliance' => 'Documents',
@@ -3043,6 +3045,13 @@ return [
             'so_far' => '{month} so far',
             'last_month' => 'last month {amount}',
             'nothing' => 'Nothing spent yet this month.',
+            // Expense breakdown and Monthly spend (spec.md §7.8, Phase 34.2).
+            'no_vehicles' => 'No vehicles whose costs you can see.',
+            'breakdown_period' => 'Breakdown period',
+            'breakdown_empty' => 'No costs in this period.',
+            'monthly_empty' => 'No costs in the last 12 months.',
+            'monthly_chart' => 'Spend per month over the last 12 months in {currency}, by category',
+            'monthly_average' => '{amount} a month on average',
         ],
         'fuel' => [
             'empty' => 'No fill-ups yet.',

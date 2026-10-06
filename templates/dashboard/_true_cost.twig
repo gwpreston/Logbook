@@ -1,7 +1,8 @@
 {# True cost per distance (spec.md §7.35): each vehicle ranked by currency, highest first; no figure last. #}
 {% import 'macros/true_cost.twig' as tcm %}
 {% set widget_data = dashboard.trueCost %}
-{% set chip = selected ? {vehicle: selected.id} : {} %}
+{# The vehicle chip and the expense breakdown's period are kept. #}
+{% set chip = (selected ? {vehicle: selected.id} : {})|merge(dashboard.expenseBreakdown ? dashboard.expenseBreakdown.period.toQuery() : {}) %}
 {{ tcm.switch(
     widget_data.range,
     url_for('home', {}, chip|merge({true_cost: 'since_bought'})) ~ '#widget-true_cost',
