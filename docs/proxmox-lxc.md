@@ -10,9 +10,10 @@ a backed-up, updatable install:
    nginx and either SQLite or PostgreSQL in the container. Lighter, with no
    Docker inside a container.
 
-> **Tested on:** *not yet.* This guide was written on 2026-10-06 from the
-> current Proxmox VE, Debian and Docker documentation. The Proxmox VE
-> version, template and date it was first run on will be written here.
+> **Tested on:** run by the project owner on a Proxmox VE host on
+> 2026-10-06, before v3.2.0 was released. The exact Proxmox VE and template
+> versions were not recorded; if you run it on another version, please say
+> which in an issue.
 
 Commands starting with `pct` or `pveam` run in a shell **on the Proxmox
 host** (the web UI's *Shell*, or SSH). All others run **inside the

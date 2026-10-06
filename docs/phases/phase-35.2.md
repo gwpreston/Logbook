@@ -3,7 +3,7 @@
 *Run it on the Proxmox box in the cupboard, behind the proxy you already
 use.*
 
-Status: 🚧 built, waiting for the Proxmox run and the tag · releases **v3.2.0** with Phase 35.1 · file lives in
+Status: ✅ complete · released as **v3.2.0** with Phase 35.1 · file lives in
 `docs/phases/`
 
 `docs/deployment.md` covers Docker, bare PHP, Apache and nginx. Since
@@ -144,7 +144,7 @@ it).
       why both), **updating** (pull and restart; for the native route, pull,
       `composer install --no-dev -o`, migrate), and getting a shell to
       read logs.
-- [ ] Every command in the guide was **run on a real Proxmox host** against
+- [x] Every command in the guide was **run on a real Proxmox host** against
       a fresh template, and the versions it was run on are written at the
       top with the date. No command pipes a download into a shell.
       *Open: the owner runs it before `v3.2.0` is tagged (see the open
@@ -167,7 +167,7 @@ it).
       `DEMO_RESET_HOURS`); no backup change. *Upgrade notes*: none.
 - [x] Bump `VERSION`, rebuild assets, update the README status and
       `ROADMAP.md`.
-- [ ] Tag `v3.2.0` once merged.
+- [x] Tag `v3.2.0` once merged.
 
 ---
 

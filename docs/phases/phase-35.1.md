@@ -265,7 +265,7 @@ passwords) first.
       blocked page at 375, 768 and 1280 px, light and dark (below).
 
 ### Release
-- [ ] Ships with Phase 35.2 as **v3.2.0**.
+- [x] Ships with Phase 35.2 as **v3.2.0**.
 
 ---
 
