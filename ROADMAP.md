@@ -79,7 +79,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | ✅ |
 | [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | ✅ |
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | ✅ |
-| [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |
+| [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 🚧 |
 | [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 📋 |
 | [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 📋 |
 | [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover and Mattermost + v3.3 release | 📋 |
@@ -854,6 +854,23 @@ the dashboard.*
 - No release of its own; ships with Phase 35.2 as v3.2.0.
 
 → [`phase-35.1.md`](docs/phases/phase-35.1.md)
+
+---
+
+## Phase 35.2 — Proxmox LXC, Traefik and Caddy guides + v3.2 release
+*Run it on the Proxmox box in the cupboard, behind the proxy you already
+use.*
+
+- `docs/reverse-proxies.md`: nginx, Apache, Caddy and Traefik at the root
+  and at a subpath, with HTTPS, and exactly what Logbook trusts from a proxy.
+- Caddy and Traefik examples in `docker/examples/`, which CI runs unchanged
+  over HTTPS (#220: in the existing smoke job).
+- `docs/proxmox-lxc.md`: Docker in an unprivileged container first, PHP 8.4
+  natively second (#219); docs only, no script (#218). The owner runs it on a
+  real host before the tag.
+- Releases **v3.2.0** with Phase 35.1.
+
+→ [`phase-35.2.md`](docs/phases/phase-35.2.md)
 
 ---
 

@@ -7504,6 +7504,17 @@ Real environment variables override `.env`; an empty value counts as unset.
   as today.
 - **Health check:** `/health` endpoint (app + DB connectivity, the app
   version and, from Phase 28.1, the scheduler's last pass) for monitoring.
+- **Reverse proxies** (Phase 35.2) are documented, with tested examples,
+  for nginx, Apache, Traefik and Caddy, at the root and at a subpath
+  (`docs/reverse-proxies.md`, examples in `docker/examples/`), and for
+  Authelia and Authentik behind them (Phase 23.2). The guides state what
+  the app trusts from a proxy and no more: no forwarded header is read;
+  the client address is the connecting one (`REMOTE_ADDR`), and cookies
+  are `Secure` when `APP_URL` is `https://` (or `SESSION_SECURE` says so).
+- **Proxmox VE** (Phase 35.2): `docs/proxmox-lxc.md` describes running the
+  Docker image inside an LXC container (the route it leads with, #219) and
+  running PHP 8.4 natively in one, each with backups and updates. Docs
+  only: no install script (#218).
 
 ---
 
@@ -7512,6 +7523,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 - **Reverse proxy:** must work behind one, including at a **subpath**; deep-link
   **hard refresh (F5)** must not break (correct base-path handling and server
   routing — a known failure mode to avoid).
+  The production image is smoke-tested at the root and at a subpath behind
+  nginx, Caddy and Traefik (Phase 35.2): the health check, sign-in, a deep
+  link with a hard refresh, and an asset; Caddy and Traefik over HTTPS.
 - **Performance:** responsive on a Raspberry Pi with a few vehicles and years of
   history; paginate long lists; index common queries.
 - **Backups:** user-controllable; document the volume/DB to back up; in-app

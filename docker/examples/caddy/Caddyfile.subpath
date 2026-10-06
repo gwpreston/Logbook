@@ -1,0 +1,26 @@
+# Logbook at https://<domain>/logbook/ behind Caddy with automatic HTTPS.
+# Used by compose.subpath.yml next to this file (docs/reverse-proxies.md#caddy).
+# Tested with Caddy 2.11. Set APP_BASE_PATH=/logbook on the app.
+
+{$LOGBOOK_DOMAIN} {
+	# Visiting /logbook without the slash.
+	redir /logbook /logbook/ 308
+
+	# A) Forward the prefix unchanged (recommended): `handle` keeps the path.
+	handle /logbook/* {
+		reverse_proxy app:80 {
+			health_uri /health
+		}
+	}
+
+	# B) Strip the prefix: `handle_path` removes it. Also supported. Shown at
+	# /stripped so the smoke test can check both; use one or the other.
+	handle_path /stripped/* {
+		reverse_proxy app:80
+	}
+
+	# Anything else on this domain: your other sites, or nothing.
+	handle {
+		respond 404
+	}
+}

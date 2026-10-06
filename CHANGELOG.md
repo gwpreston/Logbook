@@ -6,7 +6,36 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.2.0] — 2026-10-06
+
+Phases 35.1 and 35.2: **show it, and run it where you already run
+things**. A public demo that puts itself back, and tested guides for Caddy,
+Traefik and Proxmox.
+
+No migration and no change to backups: pull and restart. New optional
+configuration: `DEMO_MODE`, `DEMO_PASSWORD` and `DEMO_RESET_HOURS`, all off
+unless set.
+
+### Upgrade notes
+- None.
+
 ### Added
+- **Reverse-proxy guide** (Phase 35.2,
+  [docs/reverse-proxies.md](docs/reverse-proxies.md)): nginx, Apache, Caddy
+  and Traefik in front of Logbook, at the root of a domain or at a subpath,
+  with HTTPS; what to set (`APP_URL`, `APP_BASE_PATH`, `SESSION_SECURE`),
+  exactly what Logbook trusts from a proxy (no forwarded header, the
+  connecting address only), the health check, forward-auth exemptions,
+  large uploads and timeouts, and the common failures. New examples for
+  Caddy and Traefik in `docker/examples/`, each layered on the project's
+  compose file, at the root and at a subpath, forwarding or stripping the
+  prefix. CI runs those files unchanged over HTTPS on every change.
+- **Proxmox VE guide** (Phase 35.2, [docs/proxmox-lxc.md](docs/proxmox-lxc.md)):
+  Logbook in an LXC container, either with Docker in an unprivileged
+  container (and Proxmox's own advice to prefer a VM, stated plainly) or with
+  Debian 13's PHP 8.4, nginx and SQLite or PostgreSQL natively; container
+  size, start at boot, putting it behind a proxy, a Proxmox backup *and*
+  Logbook's own backup and why both, updating, and logs.
 - **Demo mode** (Phase 35.1, [docs/demo-mode.md](docs/demo-mode.md)): a
   public demo that resets itself. With `DEMO_MODE=true` and a
   `DEMO_PASSWORD`, an **empty** database is seeded with the sample garage and
@@ -24,6 +53,11 @@ is called out explicitly.
   Every route is either blocked in the demo or listed as allowed, so a
   route added later must choose. The compose files pass the three new
   variables on. No migration.
+
+### Fixed
+- The compose files pass `SESSION_SECURE` on to the app, so setting it in
+  `.env` next to them now has an effect (empty, the default, still follows
+  `APP_URL`).
 
 ## [3.1.0] — 2026-10-06
 

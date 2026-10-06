@@ -156,6 +156,14 @@ jobs:
         run: bin/smoke-test.sh header
       - name: Smoke test — demo mode (seeded, reset by command line)
         run: bin/smoke-test.sh demo
+      - name: Smoke test — Caddy example at the root, over HTTPS
+        run: bin/smoke-test.sh caddy
+      - name: Smoke test — Caddy example at a subpath, over HTTPS
+        run: bin/smoke-test.sh caddy-subpath
+      - name: Smoke test — Traefik example at the root, over HTTPS
+        run: bin/smoke-test.sh traefik
+      - name: Smoke test — Traefik example at a subpath, over HTTPS
+        run: bin/smoke-test.sh traefik-subpath
 
       - name: Image metadata
         id: meta

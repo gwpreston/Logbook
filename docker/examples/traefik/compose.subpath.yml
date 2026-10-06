@@ -1,0 +1,72 @@
+# Logbook + PostgreSQL behind Traefik, at https://<domain>/logbook/, over
+# HTTPS from Let's Encrypt. Layered on top of the project's docker-compose.yml:
+#
+#   LOGBOOK_DOMAIN=logbook.example.com ACME_EMAIL=you@example.com \
+#     docker compose -f docker-compose.yml -f docker/examples/traefik/compose.subpath.yml up -d
+#
+# (or put both in .env). Guide: docs/reverse-proxies.md#traefik.
+# Tested with Traefik 3.7. bin/smoke-test.sh traefik-subpath runs this file unchanged.
+
+services:
+  app:
+    # Only Traefik talks to the app: its own port is no longer published.
+    ports: !reset []
+    environment:
+      # The public address: absolute links, and Secure cookies (https://).
+      APP_URL: https://${LOGBOOK_DOMAIN:?set LOGBOOK_DOMAIN}/logbook
+      APP_BASE_PATH: /logbook
+    labels:
+      traefik.enable: "true"
+      # A) Forward the prefix unchanged (recommended). `/logbook` alone is
+      # matched too, and sent on to `/logbook/` by the middleware below.
+      traefik.http.routers.logbook.rule: Host(`${LOGBOOK_DOMAIN}`) && (Path(`/logbook`) || PathPrefix(`/logbook/`))
+      traefik.http.routers.logbook.entrypoints: websecure
+      traefik.http.routers.logbook.tls: "true"
+      traefik.http.routers.logbook.tls.certresolver: letsencrypt
+      traefik.http.routers.logbook.middlewares: logbook-slash
+      traefik.http.middlewares.logbook-slash.redirectregex.regex: ^(https?://[^/]+/logbook)(\?.*)?$$
+      traefik.http.middlewares.logbook-slash.redirectregex.replacement: $${1}/$${2}
+      traefik.http.middlewares.logbook-slash.redirectregex.permanent: "true"
+      # B) Strip the prefix with stripPrefix. Also supported. Shown at
+      # /stripped so the smoke test can check both; use one or the other.
+      traefik.http.routers.logbook-stripped.rule: Host(`${LOGBOOK_DOMAIN}`) && PathPrefix(`/stripped/`)
+      traefik.http.routers.logbook-stripped.entrypoints: websecure
+      traefik.http.routers.logbook-stripped.tls: "true"
+      traefik.http.routers.logbook-stripped.tls.certresolver: letsencrypt
+      traefik.http.routers.logbook-stripped.middlewares: logbook-strip
+      traefik.http.middlewares.logbook-strip.stripprefix.prefixes: /stripped
+      traefik.http.routers.logbook-stripped.service: logbook
+      traefik.http.services.logbook.loadbalancer.server.port: "80"
+      traefik.http.services.logbook.loadbalancer.healthcheck.path: /health
+      traefik.http.services.logbook.loadbalancer.healthcheck.interval: 30s
+
+  proxy:
+    image: traefik:v3.7
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      # Traefik 3 stops reading a request body after 60 s by default; a large
+      # backup restored over a slow link needs longer.
+      - --entrypoints.websecure.transport.respondingtimeouts.readtimeout=600s
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # Read-only, but whoever controls Traefik can still read every
+      # container's settings: see the guide on the Docker socket.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt   # certificates: keep this volume
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  traefik_letsencrypt:

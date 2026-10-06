@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.1.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.2.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -81,7 +81,9 @@ your own server.
 > it on (downloaded to your server, so your location never leaves it), with
 > *Prices nearby* on the Fuel stations page (each against the area's average, with what a tank would save and directions), *Cheapest near me* ranked by what the trip really costs, *Was it worth
 > it?* after a fill-up, the listed price on the fill-up form and price
-> alerts on favourite stations; in English and German. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
+> alerts on favourite stations; a public demo mode that resets itself;
+> tested recipes for Caddy and Traefik and a guide for Proxmox containers;
+> in English and German. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 
@@ -114,6 +116,8 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | Guide | For |
 |---|---|
 | [docs/deployment.md](docs/deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, background jobs, backups, the update check, upgrading |
+| [docs/reverse-proxies.md](docs/reverse-proxies.md) | nginx, Apache, Caddy and Traefik in front of Logbook, at the root or a subpath, with HTTPS: tested examples, what to set, what Logbook trusts from a proxy, common failures |
+| [docs/proxmox-lxc.md](docs/proxmox-lxc.md) | Proxmox VE: Logbook in an LXC container, with Docker or PHP 8.4 natively; size, proxy, backups, updates |
 | [docs/configuration.md](docs/configuration.md) | Every environment variable and its default |
 | [docs/users-and-sharing.md](docs/users-and-sharing.md) | Several people on one install: admins, invitations, sharing a vehicle, costs, reminders per person, moving someone out |
 | [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message; reading receipts, documents and insurer letters |
