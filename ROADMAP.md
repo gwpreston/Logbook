@@ -76,7 +76,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | ✅ |
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | ✅ |
 | [34.1](docs/phases/phase-34.1.md) | Registration plates | ✅ |
-| [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | 🚧 |
+| [34.2](docs/phases/phase-34.2.md) | Expense breakdown and monthly spend widgets | ✅ |
 | [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | 📋 |
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | 📋 |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |

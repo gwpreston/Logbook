@@ -3,7 +3,7 @@
 *Where the money went, and how it moved month to month, without leaving
 the dashboard.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 34.3 as
+Status: ✅ complete · no release of its own (ships with Phase 34.3 as
 **v3.1.0**) · file lives in `docs/phases/`
 
 Reports already answer two questions: *where did the money go* (the
@@ -207,6 +207,13 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
 - [x] Period chips: no underline on hover and the accent border on
       hover, as the vehicle chips. Breakdown labels get a quiet underline
       so they read as links before hover.
+- [x] Merge review (bug-hunter, security-scanner, performance-auditor):
+      a period whose only costs are 0 now shows the empty message instead
+      of a blank 0.00 block; the chart's hover handler ignores replayed
+      events. Security: nothing found. Performance: no regression in
+      queries (the widgets add a fixed number however many vehicles); the
+      readings query per vehicle in the report service predates this
+      phase.
 - Left: the light theme's *Tax* and *Other* colours are below 3:1 as
   graphics on white. The palette predates this phase and every row and
   legend carries its label, so it goes to the log (#242). Chips are
@@ -221,7 +228,7 @@ removes), §7.35 (true cost, which has its own widget) and §8, and
       added.
 
 ### Release
-- [ ] Ships with Phase 34.3 as **v3.1.0**.
+- [ ] Ships with Phase 34.3 as **v3.1.0**. Nothing to tag here.
 
 ---
 
