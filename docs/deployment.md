@@ -10,6 +10,7 @@ an **ordinary PHP 8.4 web server**. Both use the same environment variables
 - [Installing on a phone (PWA)](#installing-on-a-phone-pwa)
 - [Health check](#health-check)
 - [Backups](#backups)
+- [Running a public demo](#running-a-public-demo)
 - [Upgrading](#upgrading)
 
 Every environment variable, with its default, is listed in
@@ -560,6 +561,15 @@ makes to a third party without being set up to:
 
 `UPDATE_CHECK_ALLOWED=false` removes the option entirely, for installs that
 must never call out. A fork sets `UPDATE_CHECK_REPO` to its own repository.
+
+## Running a public demo
+
+`DEMO_MODE=true` with a `DEMO_PASSWORD` turns an **empty** installation into a
+demo that puts itself back to its sample data every day, and keeps a stranger
+away from everything that could hurt the server or its owner: users, backups,
+jobs, API keys, AI, outbound mail and requests, and file uploads. It never
+touches a database that holds real data. How to run one, what visitors can and
+cannot do, and how to stop being a demo are in [demo-mode.md](demo-mode.md).
 
 ## Upgrading
 

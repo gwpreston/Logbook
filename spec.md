@@ -209,8 +209,9 @@ disagree):
   public, signed-in (personal), fleet (policy-filtered lists), instance
   (an `InstanceAbility`), or vehicle (a declared `VehicleAbility`). An
   unclassified route fails the build and names itself. Every route also
-  declares `demo: allowed` or `demo: blocked` (§7.36); a route with
-  neither fails the build the same way.
+  is either blocked in the demo (`Service\Demo\DemoRoutes::BLOCKED`, and
+  the REST API) or listed as allowed by the inventory test (§7.36); a route
+  that is neither fails the build the same way.
 - **Base path:** Slim's router is configured with `APP_BASE_PATH`; the
   base-path middleware restores the prefix when a reverse proxy has stripped
   it, so both proxy styles route identically. All URLs come from `url_for()`,
@@ -5963,8 +5964,8 @@ able to run without cron.
     they closed (decided 2026-10-02, #109); open ones are never touched.
   - `backup`: "Wrote logbook-scheduled-20261002-031500.zip (4.2 MB);
     deleted 1 old backup".
-  - `demo_reset` (Phase 35.1, §7.36): "Reset the demo: 6 vehicles, 412
-    entries". Listed only while the demo is active, and **excluded from the
+  - `demo_reset` (Phase 35.1, §7.36): "Reset the demo: 7 vehicles, 226 fill-ups".
+    Listed only while the demo is active, and **excluded from the
     page-visit trigger**.
   - A job that throws is `failed`, with the message as its summary.
   - Summaries are written in the language of whoever ran the job (the
@@ -6848,8 +6849,8 @@ third party.
   which needs `lat` and `lng` from the client (an MCP client may send
   them; Ask's page sends none, so the answer asks for a place). Omitted,
   it is the user's first place. Positions are used and never saved. Only while a provider is enabled.
-- **Sample data:** outside production a *Sample prices (demo)* provider is
-  also offered: eleven made-up stations near the demo places, with prices
+- **Sample data:** outside production, and in a demo (§7.36), a *Sample
+  prices (demo)* provider is also offered: eleven made-up stations near the demo places, with prices
   that move a little each hour, fetched from nowhere. `DemoDataSeeder`
   enables it and links three of the demo's stations, with a year of listed
   prices and an alert, so every price feature can be tried offline.
@@ -7040,20 +7041,27 @@ owner. Decided 2026-10-06 (#212–#217).
   The only code path that deletes data is the reset, and it runs only with
   the marker present *and* `DEMO_MODE` on.
 - **The demo owner** (#212, #217) is `demo`, an **admin** (so the visitor
-  sees the admin screens), with the sample data's six vehicles, UK units
+  sees the admin screens), with the sample garage (seven vehicles, one of them archived), UK units
   and GBP, and `DEMO_PASSWORD` as its password. It is created by the
   seeder; there is no other account.
 - **Sample data and dates** (#216). The seeder takes "today" as a
   parameter and places **every** seeded date relative to it, so *Last 12
   months*, *Coming up*, reminders, the calendar and the economy checks
   always have something to show, however long the demo has been running.
+  Every date the sample was written with moves on by the whole weeks
+  between the day it was written (`DemoDataSeeder::ANCHOR`) and today, so
+  weekday patterns (commutes) keep their shape. Outside the demo the
+  seeder keeps its own dates. The sample's second account (a partner, who
+  logs some of the hybrid's fill-ups) is folded into the owner: its
+  fill-ups become the owner's and the account and its shares are not kept.
   `bin/dev-setup.sh --with-sample-data` still prints fresh random
   passwords (§7.9); only `DEMO_MODE` uses `DEMO_PASSWORD`.
 - **Reset** (`Service\Demo\DemoResetter`):
   1. Take the job's lock. Refuse unless the guard allows it.
-  2. In **one transaction**: clear every data table the way a restore
-     clears them (so it works on every engine), keeping an explicit
-     keep-list (migration history, the marker); run the seeder with
+  2. In **one transaction**: clear every table the way a restore clears
+     them (so it works on every engine), keeping an explicit keep-list
+     (the migration history `phinxlog`, the job runs `job_runs` (the run
+     doing the reset is one of them), and the marker); run the seeder with
      today's date; update `last_reset_at`. A failure rolls back and leaves
      the old data.
   3. After the commit, delete the uploaded files and avatars.
@@ -7068,7 +7076,9 @@ owner. Decided 2026-10-06 (#212–#217).
   from the page-visit trigger**, so a visitor's request never waits for a
   reset: it runs from cron, the Docker scheduler or the external URL.
   `php bin/demo-reset.php [--yes]` runs the same service by hand and
-  refuses without the marker.
+  refuses without the marker. `php bin/demo-seed.php` is the start path
+  (the Docker entrypoint runs it after the migrations when `DEMO_MODE` is
+  on); a bare-PHP install's first request does the same, under a lock.
 - **What a visitor cannot do** (answered with a friendly *Not available in
   the demo* page, status 403, never a bare error; the link to it is hidden
   from navigation):
@@ -7100,9 +7110,10 @@ owner. Decided 2026-10-06 (#212–#217).
   `{DEMO_PASSWORD}`", as text, with a *Fill in* button when JavaScript is
   on.
 - **Robots:** every response carries `X-Robots-Tag: noindex, nofollow`.
-- **Route inventory** (§5): every route declares `demo: allowed` or
-  `demo: blocked`; a route with neither fails the build, so a route added
-  later must choose.
+- **Route inventory** (§5): every route is either blocked (`DemoRoutes::BLOCKED`,
+  or a REST API route but the OpenAPI description) or on the inventory
+  test's `DEMO_ALLOWED` list; a route in neither fails the build, so a route
+  added later must choose.
 - **For later phases:** anything that sends data out, accepts a file or
   accepts a secret from a visitor asks `DemoMode::blocks(DemoRestriction)`
   first. Phase 36 (notifications) must do so.
