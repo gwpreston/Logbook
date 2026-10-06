@@ -3135,7 +3135,8 @@ Extensible channel interface so more can be added.
   without saving them, so a typo is found before it replaces a working
   setup. It reports success, or the stage that failed (connection,
   encryption, sign-in, send) with the server's reply, redacted. Timeouts:
-  10 seconds to connect, 30 in all; no retry.
+  10 seconds to connect and 10 for each reply (symfony/mailer has no
+  overall limit); no retry.
 - **Redaction.** Every installation `notification_secrets` value, and the
   value of an `env:` reference, is added to the log and job-output
   redaction (§7.30), as AI secrets are. Error text from the transport is
@@ -3145,7 +3146,8 @@ Extensible channel interface so more can be added.
   and the restore page says so.
 - **Changes are logged** at notice level with the admin's id and the
   names of the fields changed, never the values.
-- **Demo mode** (§7.36) refuses the page (404) and every send.
+- **Demo mode** (§7.36) blocks the page (*Not available in the demo*)
+  and every send.
 - **Not built:** OAuth 2 sign-in to an SMTP provider (§12, #226), more
   than one server, per-user SMTP, DKIM, bounces, editable templates, a
   `sendmail` or `mail()` transport.

@@ -13,7 +13,7 @@ final class DemoRoutes
 {
     /**
      * Blocked: users, invitations, sign-in providers, header sign-in, API keys and MCP, AI,
-     * fuel price providers, backup and restore, importing, jobs, the update check, and changing
+     * fuel price providers, the email server, backup and restore, importing, jobs, the update check, and changing
      * the password, email address or avatar. They answer the *Not available in the demo* page.
      */
     public const array BLOCKED = [
@@ -36,6 +36,8 @@ final class DemoRoutes
         'scan', 'scan.result', 'scan.file', 'scan.reminders', 'scan.vehicle',
         // Fuel price providers (the demo's sample prices need no setting).
         'settings.fuel_prices',
+        // The email server (Phase 36.1).
+        'settings.delivery', 'settings.delivery.remove',
         // Backup, restore, importing, and everything-exports.
         'backup.index', 'backup.download', 'backup.restore', 'backup.restore.confirm', 'backup.file',
         'import.upload', 'import.map', 'import_app.upload', 'import_app.map',

@@ -24,12 +24,16 @@ use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Compliance\ComplianceService;
+use Logbook\Service\Mail\MailConfig;
+use Logbook\Service\Mail\MailEncryption;
+use Logbook\Service\Mail\SmtpServer;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 use Symfony\Component\Mailer\Transport\TransportInterface as MailTransport;
+use Symfony\Component\Mime\Address;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -38,12 +42,17 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 abstract class ReminderTestCase extends AppTestCase
 {
-    /** Every shipped channel configured (and APP_URL for absolute links). */
+    /**
+     * Every shipped channel configured (and APP_URL for absolute links). The
+     * email server is described by the test-only `TEST_MAIL_*` keys: it is
+     * saved as the `email.smtp` setting (spec.md §7.11), since the app reads
+     * no `MAIL_*` variables any more.
+     */
     protected const array CHANNELS = [
         'APP_URL' => 'https://garage.example',
-        'MAIL_HOST' => 'smtp.test',
-        'MAIL_FROM' => 'Logbook <logbook@garage.example>',
-        'MAIL_TO' => 'owner@example.com',
+        'TEST_MAIL_HOST' => 'smtp.test',
+        'TEST_MAIL_FROM' => 'Logbook <logbook@garage.example>',
+        'TEST_MAIL_TO' => 'owner@example.com',
         'NTFY_URL' => 'https://ntfy.test/garage',
         'NTFY_TOKEN' => 'tk_secret',
         'GOTIFY_URL' => 'https://gotify.test/',
@@ -54,7 +63,7 @@ abstract class ReminderTestCase extends AppTestCase
 
     /** No channel configured, whatever the environment says. */
     protected const array NO_CHANNELS = [
-        'MAIL_HOST' => '',
+        'TEST_MAIL_HOST' => '',
         'NTFY_URL' => '',
         'GOTIFY_URL' => '',
         'GOTIFY_TOKEN' => '',
@@ -62,6 +71,8 @@ abstract class ReminderTestCase extends AppTestCase
     ];
 
     protected RecordingMailTransport $mail;
+    /** The email server the recording app has (null: email off); saved again after a reset. */
+    protected ?SmtpServer $smtp = null;
     protected RecordingHttpClient $http;
 
     /**
@@ -72,7 +83,18 @@ abstract class ReminderTestCase extends AppTestCase
      */
     protected function createRecordingApp(array $env = self::CHANNELS): App
     {
-        $app = $this->createApp($env + self::NO_CHANNELS);
+        $env += self::NO_CHANNELS;
+        $app = $this->createApp($env);
+        $this->smtp = $env['TEST_MAIL_HOST'] === '' ? null : new SmtpServer(
+            host: $env['TEST_MAIL_HOST'],
+            port: 587,
+            encryption: MailEncryption::Tls,
+            username: null,
+            fromAddress: Address::create($env['TEST_MAIL_FROM'] ?? 'logbook@localhost')->getAddress(),
+            fromName: Address::create($env['TEST_MAIL_FROM'] ?? 'logbook@localhost')->getName() ?: 'Logbook',
+            adminRecipient: ($env['TEST_MAIL_TO'] ?? '') === '' ? null : $env['TEST_MAIL_TO'],
+        );
+        $this->saveSmtp($app);
         $this->mail = new RecordingMailTransport();
         $this->http = new RecordingHttpClient();
 
@@ -82,6 +104,29 @@ abstract class ReminderTestCase extends AppTestCase
         $container->set(HttpClientInterface::class, $this->http->client);
 
         return $app;
+    }
+
+    /**
+     * Empty the database, keeping the recording app's email server.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function resetDatabase(App $app): void
+    {
+        parent::resetDatabase($app);
+        $this->saveSmtp($app);
+    }
+
+    /**
+     * Save the test's email server as an admin would in Settings → Delivery.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function saveSmtp(App $app): void
+    {
+        if ($this->smtp !== null) {
+            $this->service($app, SettingRepository::class)->save(MailConfig::SETTING, $this->smtp->toStored(null, ''));
+        }
     }
 
     /**

@@ -189,7 +189,7 @@ final class ForgotPasswordTest extends AccountTestCase
 
         foreach (
             [
-                'no email' => ['MAIL_HOST' => ''],
+                'no email' => ['TEST_MAIL_HOST' => ''],
                 'password sign-in off' => ['AUTH_LOCAL_LOGIN' => 'false', 'OIDC_ISSUER' => ''],
                 'switched off' => ['PASSWORD_RESET_ENABLED' => 'false'],
             ] as $case => $env

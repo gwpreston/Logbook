@@ -38,7 +38,7 @@ final readonly class DemoResetter
     private const array EXCLUDED_ORDER = [
         'ai_feedback', 'ai_messages', 'ai_progress', 'ai_threads', 'ai_drafts', 'ai_insights', 'ai_busy',
         'ai_requests', 'ai_secrets', 'pending_uploads', 'sessions', 'invitations',
-        'provider_prices', 'provider_stations', 'fuel_price_secrets',
+        'provider_prices', 'provider_stations', 'fuel_price_secrets', 'notification_secrets',
     ];
 
     public function __construct(

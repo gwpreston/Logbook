@@ -28,7 +28,7 @@
      #}
     {% set driving = feature_enabled('tyres') or feature_enabled('trips') or feature_enabled('stations') %}
     {% set your_data = feature_enabled('fuel') and not demo_blocked('import_app.upload') %}
-    {% set admin = can_instance('manage_users') or can_instance('manage_modules') or can_instance('backup') or (ai.enabled and can_instance('manage_ai')) or (fuel_prices_available() and can_instance('manage_fuel_prices')) %}
+    {% set admin = can_instance('manage_users') or can_instance('manage_modules') or can_instance('manage_notifications') or can_instance('backup') or (ai.enabled and can_instance('manage_ai')) or (fuel_prices_available() and can_instance('manage_fuel_prices')) %}
     <div class="page__stack page__stack--narrow settings">
         <header class="page-header">
             <h1 class="page-header__title">{{ 'settings.title'|trans }}</h1>
@@ -112,6 +112,9 @@
                     {% endif %}
                     {% if fuel_prices_available() and can_instance('manage_fuel_prices') %}
                         {{ settings.row(url_for('settings.fuel_prices'), 'price_check', 'fuel_prices.settings.title'|trans, (fuel_prices_enabled() ? 'fuel_prices.settings.link_hint_on' : 'fuel_prices.settings.link_hint_off')|trans) }}
+                    {% endif %}
+                    {% if can_instance('manage_notifications') %}
+                        {{ settings.row(url_for('settings.delivery'), 'mail', 'delivery.title'|trans, (mail_configured ? 'delivery.link_hint_on' : 'delivery.link_hint_off')|trans) }}
                     {% endif %}
                     {% if can_instance('backup') %}
                         {{ settings.row(url_for('backup.index'), 'backup', 'backup.link'|trans, 'backup.link_hint'|trans) }}

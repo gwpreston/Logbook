@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\User;
 
 use Logbook\Domain\User\User;
-use Logbook\Service\Notification\Channel\EmailConfig;
-use Logbook\Support\Config\Env;
+use Logbook\Service\Mail\MailConfig;
 use Logbook\Support\Display\UserDisplayScope;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
@@ -22,28 +21,26 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class InvitationMailer
 {
-    private EmailConfig $config;
-
     public function __construct(
-        Env $env,
+        private MailConfig $config,
         private TransportInterface $transport,
         private TranslatorInterface $translator,
         private UserDisplayScope $scope,
         private LoggerInterface $logger,
     ) {
-        $this->config = EmailConfig::fromEnv($env);
     }
 
     public function send(CreatedLink $link, string $address, User $admin): bool
     {
-        if (!$this->config->isConfigured()) {
+        $server = $this->config->effective();
+        if ($server === null) {
             return false;
         }
 
-        return $this->scope->run($admin, function () use ($link, $address, $admin): bool {
+        return $this->scope->run($admin, function () use ($link, $address, $admin, $server): bool {
             $params = ['admin' => $admin->displayName, 'username' => $link->invitation->username];
             $email = (new Email())
-                ->from(Address::create($this->config->from))
+                ->from($server->from())
                 ->to(new Address($address, $link->invitation->displayName))
                 ->subject($this->translator->trans('users.email.subject', $params))
                 ->text($this->translator->trans('users.email.body', $params) . "\n\n" . $link->url . "\n");

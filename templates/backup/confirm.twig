@@ -36,6 +36,8 @@
             {% if manifest.rows('ai_connections') > 0 %}
                 <div class="alert alert--info" role="note">{{ ui.icon('info') }}<span>{{ 'backup.ai_notice'|trans }}</span></div>
             {% endif %}
+            {# Phase 36.1 (spec.md §7.11): notification secrets are never in a backup. #}
+            <div class="alert alert--info" role="note" data-mail-notice>{{ ui.icon('info') }}<span>{{ 'backup.mail_notice'|trans }}</span></div>
 
             <form class="form" method="post" action="{{ url_for('backup.restore.confirm', {token: token}) }}">
                 {{ ui.csrf(csrf) }}

@@ -109,7 +109,7 @@ final class EmailAddressTest extends AccountTestCase
 
     public function testWithoutEmailSetUpAnAddressStaysPending(): void
     {
-        $app = $this->accountApp(['MAIL_HOST' => '']);
+        $app = $this->accountApp(['TEST_MAIL_HOST' => '']);
         $browser = $this->signedIn($app);
         $page = self::body($browser->get('/profile'));
         self::assertStringContainsString('so a new address can’t be confirmed yet', $page);

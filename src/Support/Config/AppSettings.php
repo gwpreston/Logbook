@@ -103,7 +103,7 @@ final readonly class AppSettings
             locale: $env->string('APP_LOCALE', 'en'),
             currency: self::currency($env->string('APP_CURRENCY', 'GBP')),
             database: $database,
-            sessionSecret: $env->string('SESSION_SECRET'),
+            sessionSecret: self::sessionSecret($env),
             sessionSecure: $env->bool('SESSION_SECURE', str_starts_with($url, 'https://')),
             uploadPath: self::path($env->string('UPLOAD_PATH', 'var/uploads'), $rootDir),
             maxUploadMb: $env->int('MAX_UPLOAD_MB', 10),
@@ -142,6 +142,23 @@ final readonly class AppSettings
     public function isProduction(): bool
     {
         return $this->environment === AppEnvironment::Production;
+    }
+
+    /**
+     * `SESSION_SECRET`, else the contents of `SESSION_SECRET_FILE` (Phase
+     * 36.1, spec.md §9: the Docker image's generated `/data/session-secret`),
+     * else none. A file that is missing or unreadable counts as none.
+     */
+    private static function sessionSecret(Env $env): string
+    {
+        $secret = $env->string('SESSION_SECRET');
+        $file = $env->string('SESSION_SECRET_FILE');
+        if ($secret !== '' || $file === '' || !is_file($file) || !is_readable($file)) {
+            return $secret;
+        }
+        $contents = file_get_contents($file);
+
+        return $contents === false ? '' : trim($contents);
     }
 
     private static function repository(string $value): string

@@ -7,11 +7,10 @@ namespace Logbook\Action\Settings;
 use Logbook\Service\Auth\Oidc\OidcSignIn;
 use Logbook\Service\Auth\Oidc\OidcSignOut;
 use Logbook\Service\Auth\SignInMethods;
-use Logbook\Service\Notification\Channel\EmailConfig;
+use Logbook\Service\Mail\MailConfig;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Service\User\CreatedLink;
 use Logbook\Service\User\UserAdmin;
-use Logbook\Support\Config\Env;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
@@ -23,8 +22,6 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final readonly class UsersPage
 {
-    private bool $mailConfigured;
-
     public function __construct(
         private UserAdmin $admin,
         private View $view,
@@ -32,14 +29,13 @@ final readonly class UsersPage
         private OidcSignIn $oidc,
         private OidcSignOut $signOut,
         private AppSettings $settings,
-        Env $env,
+        private MailConfig $mail,
     ) {
-        $this->mailConfigured = EmailConfig::fromEnv($env)->isConfigured();
     }
 
     public function mailConfigured(): bool
     {
-        return $this->mailConfigured;
+        return $this->mail->isConfigured();
     }
 
     /**
@@ -59,7 +55,7 @@ final readonly class UsersPage
             'links' => $this->admin->openLinks(),
             'created' => $created,
             'emailed_to' => $emailedTo,
-            'mail_configured' => $this->mailConfigured,
+            'mail_configured' => $this->mailConfigured(),
             'values' => $values,
             'errors' => $errors?->all() ?? [],
             // Sign-in methods per user and the single sign-on setup (spec.md §7.9 *Admin view*).

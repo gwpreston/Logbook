@@ -127,6 +127,9 @@ final readonly class BackupRepository
         'provider_stations',
         'provider_prices',
         'fuel_price_secrets',
+        // Phase 36.1: the email server's password (its settings are in `settings`), never carried:
+        // the Delivery page asks for it again.
+        'notification_secrets',
     ];
 
     /** Every setting but the demo marker. */
@@ -245,6 +248,9 @@ final readonly class BackupRepository
             $connection->createQueryBuilder()->delete('pending_uploads')->executeStatement();
             // Job runs name the replaced accounts (spec.md §6 JobRun).
             $connection->createQueryBuilder()->delete('job_runs')->executeStatement();
+            // Phase 36.1: secrets belong to the replaced settings and accounts; the
+            // restored `email.smtp` asks for its password again.
+            $connection->createQueryBuilder()->delete('notification_secrets')->executeStatement();
 
             $later = [];
             foreach (self::TABLES as $table) {
