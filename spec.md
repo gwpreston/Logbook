@@ -1922,9 +1922,12 @@ iCal/webcal feed so items appear in the user's calendar.
     not a setting. Days of the neighbouring months fill the first and
     last week, dimmed, with no items. Weekday names and month names come
     from ICU.
-  - **Small screens** (under 640 px): days without items and weeks with
-    none are hidden and the rest read as an agenda, today marked; each
-    week keeps its number as a small heading.
+  - **Small screens:** while the month is under 720 px wide (a phone, or
+    a tablet beside the sidebar; measured on the month, not the window,
+    found by the design review), days without items and weeks with none
+    are hidden and the rest read as an agenda, today marked; each week
+    keeps its number as a small heading. Links there are 44 px touch
+    targets.
   - **A day shows up to three items**, open ones first by urgency, then
     closed ones, so a closed item never pushes an open one out; more
     become a *+N more* link to `?day=` for that date. With a `day`, a

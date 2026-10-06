@@ -492,16 +492,22 @@ final readonly class DisplayFormatter
             return '';
         }
 
-        $pattern = IntlDatePatternGenerator::create($this->locale())?->getBestPattern($skeleton);
-        $formatter = new IntlDateFormatter(
-            $this->locale(),
-            IntlDateFormatter::NONE,
-            IntlDateFormatter::NONE,
-            'UTC',
-            null,
-            is_string($pattern) && $pattern !== '' ? $pattern : 'yyyy-MM-dd',
-        );
-        $formatted = $formatter->format($date);
+        // A calendar formats ~80 dates with a handful of skeletons: build each formatter once.
+        /** @var array<string, IntlDateFormatter> $formatters */
+        static $formatters = [];
+        $locale = $this->locale();
+        if (!isset($formatters[$locale . '|' . $skeleton])) {
+            $pattern = IntlDatePatternGenerator::create($locale)?->getBestPattern($skeleton);
+            $formatters[$locale . '|' . $skeleton] = new IntlDateFormatter(
+                $locale,
+                IntlDateFormatter::NONE,
+                IntlDateFormatter::NONE,
+                'UTC',
+                null,
+                is_string($pattern) && $pattern !== '' ? $pattern : 'yyyy-MM-dd',
+            );
+        }
+        $formatted = $formatters[$locale . '|' . $skeleton]->format($date);
 
         return is_string($formatted) ? $formatted : $date->format('Y-m-d');
     }

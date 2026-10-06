@@ -66,7 +66,8 @@ before it was built. Phase 34.2's (#203–#206) were answered on
 2026-10-06, before it was built, and the one found by its design review
 (#242) on the same day, before Phase 34.3. Phase 34.3's (#207–#211, and
 #243–#244 found while starting it) were answered on 2026-10-06, before
-it was built. Those of Phases 35.1–36.3 (#212–#241) were added on
+it was built; two found by its design review (#245–#246) are still open.
+Those of Phases 35.1–36.3 (#212–#241) were added on
 2026-10-06 when those phases were written and are still open; each
 row gives the answer the phase file drafts. #222, Phase 36.1's
 `SESSION_SECRET` question, must be answered before any of Phase 36 is
@@ -318,6 +319,8 @@ built.
 | 242 | [34.2](phase-34.2.md) | Light-theme *Tax* and *Other* colours below 3:1 as graphics (found by the design review) | Decided | Darken `--c-tax` and `--c-other` in the light theme to at least 3:1 against the card, built in Phase 34.3 (spec §7.8 *Expense breakdown*). | 2026-10-06 |
 | 243 | [34.3](phase-34.3.md) | With closed reminders shown by default, a way to hide them? (found while starting) | Decided | Yes: *Hide done and dismissed* links to `closed=0`; a URL choice, not a setting (spec §7.6 *Calendar view*). | 2026-10-06 |
 | 244 | [34.3](phase-34.3.md) | Does the widget count closed reminders? (found while starting) | Decided | No: open reminders only; closed ones are on the page (spec §7.8 *Calendar*). | 2026-10-06 |
+| 245 | [34.3](phase-34.3.md) | *Open day* on every calendar day with an item, or only where items are hidden? (found by the design review) | Needs a decision | Today: on every day with an item (the only way to its actions from the grid). | — |
+| 246 | [34.3](phase-34.3.md) | The overdue strip, the sidebar badge and the widget count differently: align their wording? (found by the design review) | Needs a decision | Today: each as it is (all overdue; overdue and due soon; this month's). | — |
 
 ## Other loose ends found in the review
 

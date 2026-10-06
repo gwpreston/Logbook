@@ -3319,12 +3319,8 @@ a.list__title:hover {
 }
 
 .cal__closed {
-    display: inline-flex;
-    align-items: center;
     gap: 6px;
     margin-left: auto;
-    font-size: var(--fs-sm);
-    font-weight: 700;
 }
 
 .cal__closed .icon {
@@ -3390,11 +3386,20 @@ a.list__title:hover {
 }
 
 .cal__more,
-.cal__open {
-    display: inline-block;
-    margin-top: 2px;
-    font-size: var(--fs-xs);
+.cal__open,
+.cal__closed,
+.cal-day__close {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem; /* a 44 px touch target in the agenda */
+    font-size: var(--fs-sm);
     font-weight: 700;
+}
+
+.cal-overdue__list a,
+.cal-overdue__all {
+    display: inline-block;
+    padding: var(--space-2) 0;
 }
 
 .cal__none {
@@ -3416,7 +3421,6 @@ a.list__title:hover {
     min-width: 0;
     font-weight: 700;
     overflow-wrap: break-word;
-    hyphens: auto;
 }
 
 .cal-item__title a {
@@ -3482,12 +3486,12 @@ a.list__title:hover {
 }
 
 .cal-day__close {
-    display: inline-block;
-    margin-top: var(--space-3);
-    font-weight: 700;
+    margin-top: var(--space-2);
 }
 
-@media (min-width: 640px) {
+/* The grid needs room for seven readable columns: switch on the month's
+   own width, so a tablet beside the sidebar keeps the agenda. */
+@container (min-width: 720px) {
     .cal__weekdays,
     .cal__week {
         display: grid;
@@ -3582,6 +3586,14 @@ a.list__title:hover {
     .cal-item__meta {
         padding-left: 0;
     }
+
+    /* Inside a grid cell the links are text-sized; the cell is the target. */
+    .cal__more,
+    .cal__open {
+        min-height: 0;
+        margin-top: 2px;
+        font-size: var(--fs-xs);
+    }
 }
 
 /* A narrow grid (a tablet beside the sidebar): the plate gives way so the
@@ -3590,8 +3602,8 @@ a.list__title:hover {
     container-type: inline-size;
 }
 
-@media (min-width: 640px) {
-    @container (max-width: 819px) {
+@container (min-width: 720px) {
+    @container (max-width: 879px) {
         /* Hidden from sight only: a screen reader still hears the vehicle. */
         .cal-item__meta .plate,
         .cal-item__vehicle {
@@ -3643,7 +3655,7 @@ a.list__title:hover {
 .mini-cal__day {
     display: grid;
     place-items: center;
-    min-height: 2.25rem;
+    min-height: 2.75rem;
     font-size: var(--fs-sm);
     font-variant-numeric: tabular-nums;
 }
@@ -3654,7 +3666,7 @@ a.list__title:hover {
     place-items: center;
     width: 100%;
     height: 100%;
-    min-height: 2.25rem;
+    min-height: 2.75rem;
     border-radius: var(--radius-sm, 8px);
     background: var(--surface-2);
     color: var(--text);

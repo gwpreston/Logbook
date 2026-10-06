@@ -2,7 +2,7 @@
 
 *See what is due as a month, not only as a list.*
 
-Status: 🚧 in progress · releases **v3.1.0** with Phases 34.1 and 34.2 · file
+Status: ✅ complete · releases **v3.1.0** with Phases 34.1 and 34.2 · file
 lives in `docs/phases/`
 
 Reminders are a list (overdue, due, upcoming) and an optional iCal feed for
@@ -95,9 +95,12 @@ As written into `spec.md` with the owner's answers (#207–#211, #242–#244).
 >     not a setting. Days of the neighbouring months fill the first and
 >     last week, dimmed, with no items. Weekday names and month names come
 >     from ICU.
->   - **Small screens** (under 640 px): days without items and weeks with
->     none are hidden and the rest read as an agenda, today marked; each
->     week keeps its number as a small heading.
+>   - **Small screens:** while the month is under 720 px wide (a phone, or
+>     a tablet beside the sidebar; measured on the month, not the window,
+>     found by the design review), days without items and weeks with none
+>     are hidden and the rest read as an agenda, today marked; each week
+>     keeps its number as a small heading. Links there are 44 px touch
+>     targets.
 >   - **A day shows up to three items**, open ones first by urgency, then
 >     closed ones, so a closed item never pushes an open one out; more
 >     become a *+N more* link to `?day=` for that date. With a `day`, a
@@ -195,82 +198,94 @@ As written into `spec.md` with the owner's answers (#207–#211, #242–#244).
       and section.
 
 ### 34.3.1 Code
-- [ ] `Service\Reminders\CalendarMonth` (a value object built from the
+- [x] `Service\Reminder\CalendarMonth` (a value object built from the
       reminders the list service returns): its weeks (with their numbers)
       and days, their items (open first by urgency, then closed), the
       overdue summary, the *not on the calendar yet* list, the first day of
       the week (`IntlCalendar`, the viewer's locale). No second query path
       for reminders.
-- [ ] `ReminderCalendarAction` (`GET /reminders/calendar`) declaring the
+- [x] `ReminderCalendarAction` (`GET /reminders/calendar`) declaring the
       same ability as the list, so the route inventory sees it.
-- [ ] Dashboard service for the widget, reusing `CalendarMonth` with the
+- [x] Dashboard service for the widget, reusing `CalendarMonth` with the
       vehicle filter and `?calendar=`.
-- [ ] `?due=` prefill on the manual reminder form (a valid date only).
-- [ ] Day-panel actions return to the calendar page (the validated
+- [x] `?due=` prefill on the manual reminder form (a valid date only).
+- [x] Day-panel actions return to the calendar page (the validated
       `return` field the status forms already accept).
 
 ### 34.3.2 Templates, CSS
-- [ ] Calendar page and day panel; widget; the *List* / *Calendar* switch
+- [x] Calendar page and day panel; widget; the *List* / *Calendar* switch
       on `/reminders`.
-- [ ] CSS: the 7-column layout on wide screens; the agenda below 640 px;
+- [x] CSS: the 7-column layout on wide screens; the agenda while the month is under 720 px;
       status icons and words; dimmed neighbouring days; muted closed items;
       the week-number column; the focus style on every link.
-- [ ] #242: darken `--c-tax` and `--c-other` in the light theme to at
+- [x] #242: darken `--c-tax` and `--c-other` in the light theme to at
       least 3:1 against the card; check Reports, the Expenses tab and the
       spend widgets.
 
 ### 34.3.3 Translations
-- [ ] English and German strings. Month and weekday names come from ICU,
+- [x] English and German strings. Month and weekday names come from ICU,
       not hand-written lists.
 
 ### 34.3.4 Tests
-- [ ] Unit: month construction for 28-, 29-, 30- and 31-day months (February
+- [x] Unit: month construction for 28-, 29-, 30- and 31-day months (February
       2028), a month starting on each weekday, and weeks starting on
       Monday, Sunday and Saturday (`en_GB`, `en_US`, `ar_EG`).
-- [ ] Unit: "today" at a time-zone boundary (a viewer in `Europe/London`
+- [x] Unit: "today" at a time-zone boundary (a viewer in `Europe/London`
       across the clock change); `due_on` is a calendar date and is never
       shifted through a time zone.
-- [ ] Unit: week numbers by locale (December 2026 ends in week 53 under
+- [x] Unit: week numbers by locale (December 2026 ends in week 53 under
       `en_GB`, week 1 under `en_US`).
-- [ ] Integration: the calendar shows the same reminders as the list for
+- [x] Integration: the calendar shows the same reminders as the list for
       the same viewer, source by source; no archived vehicles; a View-share
       user sees what the list shows them and no more; a vehicle's
       reminders do not appear for a user with no access.
-- [ ] Integration: overdue strip counts and links; an overdue reminder
+- [x] Integration: overdue strip counts and links; an overdue reminder
       appears on its date and in the strip; reminders with no date appear
       under the grid; done and dismissed ones show muted by default and
       `closed=0` hides them; a closed item never pushes an open one into
       *+N more*.
-- [ ] Integration: more than three items give *+N more* and the `day`
+- [x] Integration: more than three items give *+N more* and the `day`
       panel lists them all with working actions and an *Add reminder* link
       with the date; an invalid `day`, `month` or `due` is ignored.
-- [ ] Integration: `reminders` off gives 404 for the page and removes the
+- [x] Integration: `reminders` off gives 404 for the page and removes the
       widget and links; layouts keep the widget's place.
-- [ ] Integration: the widget's marks and `aria-label`s are right for a
+- [x] Integration: the widget's marks and `aria-label`s are right for a
       day with several statuses; closed reminders are not counted;
       previous and next keep `?vehicle=`; an old saved layout gets the
       widget appended.
-- [ ] Without JavaScript every test above holds (these are plain pages).
-- [ ] Query count: one reminders read per page, however many vehicles.
+- [x] Without JavaScript every test above holds (these are plain pages).
+- [x] Query count: one reminders read per page, however many vehicles.
 
 ### 34.3.5 Checks
-- [ ] `design-reviewer` agent at 375, 768 and 1280 px, light and dark, all
+- [x] `design-reviewer` agent at 375, 768 and 1280 px, light and dark, all
       four accents, keyboard only, and with a screen reader reading one
-      month.
+      month. *2026-10-06:* no horizontal scroll at any width, AA contrast
+      in every theme and accent, status always in words with an icon, 45
+      tab stops in order with visible focus, a list of weeks and days for
+      a screen reader, works without JS; #242's tokens at 3.8:1. Fixed: the
+      grid crammed seven ~63 px columns beside the sidebar (640–1000 px), so
+      the agenda now switches on the month's own width (under 720 px) and
+      titles no longer hyphenate; links in the agenda and the widget's
+      days are 44 px touch targets. Carried to the log: *Open day* on every
+      day with an item (#245) and the three overdue counts' wording (#246).
+      German was not rendered by the reviewer.
+- [x] `bug-hunter`, `security-scanner` and `performance-auditor`: nothing
+      found but one LOW (ICU date formatters rebuilt per call), fixed by
+      caching one per locale and skeleton.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: reminders spread over at least two months, with an
+- [x] `DemoDataSeeder`: reminders spread over at least two months, with an
       overdue one, a due one, a manual one, a done one and a distance-only
       schedule with no date, so the calendar and the widget are not empty.
 
 ### Release (with Phases 34.1 and 34.2)
-- [ ] `CHANGELOG.md` **3.1.0**: *Added* — registration plates (34.1); the
+- [x] `CHANGELOG.md` **3.1.0**: *Added* — registration plates (34.1); the
       *Expense breakdown* and *Monthly spend* widgets (34.2); the Reminders
       calendar and *Calendar* widget (34.3). No migration, no configuration
       change, no backup change. *Upgrade notes*: the new widgets are added
       to the end of existing dashboards; move or hide them under
       *Customise*.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and
+- [x] Bump `VERSION`, rebuild assets, update the README status and
       `ROADMAP.md`.
 - [ ] Tag `v3.1.0` once merged.
 
@@ -307,3 +322,13 @@ while starting it).
 - **Week numbers.** *Decided 2026-10-06 (#211):* built, from the locale's
   week rules, on the page only (not the widget); the month becomes a
   list of weeks.
+
+Found by the design review, carried to the log (nothing changed for them):
+
+- **Open day on every day with an item** (#245). Each day with items has
+  an *Open day* link, the only way to its actions from the grid; on a
+  phone that repeats down the agenda. Keep it on every such day, or only
+  where items are hidden (and let the title link do the rest)?
+- **Three overdue counts** (#246). The strip counts every overdue
+  reminder, the sidebar badge counts overdue and due soon, and the widget
+  counts this month's. Align the wording, or leave each as it is?
