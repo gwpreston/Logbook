@@ -55,12 +55,13 @@ starting it) were answered on 2026-10-03, before it was built. Phase
 31's (#145–#149, two of them found while starting it) were answered on
 2026-10-04, before it was built. Phase 32's (#150–#156, four of them
 found while starting it) were answered on 2026-10-05, before it was
-built. Phase 33.1's (#157–#165, four of them found while starting
-it) were answered on 2026-10-05, before it was built. Phase 33.3's
-(#173–#185, eight of them found by its prototype audit) were answered
-on 2026-10-05, before it was built. Phase 33.4's (#186–#197, seven of
-them found by its prototype audit, and #185's pending wording) were
-answered on 2026-10-05, before it was built.
+built.
+Phases 33.1–33.4's questions (#157–#173) were logged on 2026-10-06 and
+are still open. So are those of Phases 34.1–36.3 (#174–#216), added the
+same day when those phases were written. Each row gives the answer the
+phase file drafts; none has been decided. #197, Phase 36.1's
+`SESSION_SECRET` question, must be answered before any of Phase 36 is
+built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -220,47 +221,66 @@ answered on 2026-10-05, before it was built.
 | 154 | [32](phase-32.md) | A value gain per distance (found while starting) | Decided | A negative part in every period, *Since bought* included; Phase 14.2's per-distance figure changes for gains only (spec §7.1, §7.35). | 2026-10-05 |
 | 155 | [32](phase-32.md) | Price and economy split for plug-in hybrids (found while starting) | Decided | Per energy: a price and an economy line for each (spec §7.35). | 2026-10-05 |
 | 156 | [32](phase-32.md) | Where insurance payouts go in the breakdown (found while starting) | Answered | Their own *Insurance payouts* line, as spec §7.7 already shows them (spec §7.35). | 2026-10-05 |
-| 157 | [33.1](phase-33.1.md) | Verify email addresses? | Decided | Yes: a new address is pending until its 24-hour link is used (spec §7.9 *Email addresses*); #51 stays parked. | 2026-10-05 |
-| 158 | [33.1](phase-33.1.md) | "Revoke the user": disable, delete or sign out? | Decided | *Disable* / *Enable* renamed *Revoke access* / *Restore access*; behaviour unchanged (spec §7.9). | 2026-10-05 |
-| 159 | [33.1](phase-33.1.md) | Self-service reset lifetime | Decided | 60 minutes; an admin's link stays 7 days (spec §6 Invitation, §7.9 *Forgotten password*). | 2026-10-05 |
-| 160 | [33.1](phase-33.1.md) | Reset for SSO-only users with local sign-in on? | Decided | No: nothing sent, the same answer (spec §7.9 *Forgotten password*). | 2026-10-05 |
-| 161 | [33.1](phase-33.1.md) | Avatar visibility | Decided | Any signed-in user (spec §7.9 *Avatars*). | 2026-10-05 |
-| 162 | [33.1](phase-33.1.md) | Sign in with username or email? (found while starting) | Decided | Either: a username first, else a confirmed address held by exactly one active user with a password (spec §7.9 *Sign-in by username or email*). | 2026-10-05 |
-| 163 | [33.1](phase-33.1.md) | Addresses already in the notification preferences: confirmed? (found while starting) | Decided | Yes, on upgrade (spec §6 User). | 2026-10-05 |
-| 164 | [33.1](phase-33.1.md) | What a pending address is used for (found while starting) | Decided | Nothing; the old confirmed address stays in use (spec §7.9 *Email addresses*). | 2026-10-05 |
-| 165 | [33.1](phase-33.1.md) | Addresses from outside the profile form (found while starting) | Decided | Confirmed without a link: *Add user* once its link is used, OIDC with `email_verified`, the proxy, the sample users (spec §7.9 *Email addresses*). | 2026-10-05 |
-| 166 | [33.2](phase-33.2.md) | Settings as sections with their own URLs? (found by the audit) | Decided | No: one page, regrouped, with in-page anchors, as the prototype draws it (spec §8 *Settings layout*). | 2026-10-05 |
-| 167 | [33.2](phase-33.2.md) | User management pages the prototype doesn't draw (found by the audit) | Decided | Restyled with the shared card, list-row and button styles; controls unchanged (spec §8). | 2026-10-05 |
-| 168 | [33.2](phase-33.2.md) | New things in the prototype's Settings and sign-in | Parked | Webhook formats, *Send at*, *Frequency*, *Reset dashboard layout*, a Settings expenses export, a self-service *Reset password*, a letter-and-number rule (spec §12). | 2026-10-05 |
-| 169 | [33.2](phase-33.2.md) | Keep any Settings link where it is? | Decided | No: the draft grouping as it stands (spec §8 *Settings layout*). | 2026-10-05 |
-| 170 | [33.2](phase-33.2.md) | Display name in *Account* or *Preferences*? (found while building) | Decided | *Preferences*: it is saved by that form; the *Account* card shows the name (spec §8 *Settings layout*). | 2026-10-05 |
-| 171 | [33.2](phase-33.2.md) | Fold the email, picture and password forms under the *Account* card? (found by the design review) | Obsolete | The forms moved to their own profile page (#172), where they stay open. | 2026-10-05 |
-| 172 | [33.2](phase-33.2.md) | A profile page from the sidebar's name and avatar? (asked by the owner) | Decided | `/profile` takes the *Account* and *Preferences* groups (revised the same day: preferences too); reached from the sidebar, the narrow top bar's avatar and a Settings row (spec §8 *Profile page*). | 2026-10-05 |
-| 173 | [33.3](phase-33.3.md) | Finance bullet: does the brief mean the prototype's finance content? | Decided | Yes: the prototype's Finance tab content (spec §7.32). | 2026-10-05 |
-| 174 | [33.3](phase-33.3.md) | Insights the app can't back (economy up, 3-month outlook, yearly fuel saving; draft sources with no example) | Decided | Built in [33.4](phase-33.4.md) as AI insights: the model finds them from the *Ask* tools, generated daily per user and cached, with *Refresh*; shown only when AI is on; grounding check as *Ask* (spec §7.26). | 2026-10-05 |
-| 175 | [33.3](phase-33.3.md) | Insights from AI? | Obsolete | The prototype's insights are computed; only *Ask* uses a model ([33.4](phase-33.4.md)). | 2026-10-05 |
-| 176 | [33.3](phase-33.3.md) | Business and personal period | Answered | The user's tax year start (spec §6 *Trip settings*, §7.23), which the trips tab uses; no picker in the prototype. | 2026-10-05 |
-| 177 | [33.3](phase-33.3.md) | "Your vehicles" on trips: which screen? | Decided | The dashboard *Your vehicles* widget, restyled to the prototype, 3 / 2 / 1 per row (spec §7.8). | 2026-10-05 |
-| 178 | [33.3](phase-33.3.md) | Where Insights lives (found by the audit) | Decided | A dashboard *Insights* widget now (computed); the Insights page with *Ask* in [33.4](phase-33.4.md). No overview card (spec §7.1, §7.8). | 2026-10-05 |
-| 179 | [33.3](phase-33.3.md) | Vehicle tab order with Finance (found by the audit) | Decided | The prototype's order: … Documents, Incidents, Finance, Expenses (spec §8). | 2026-10-05 |
-| 180 | [33.3](phase-33.3.md) | Vehicle name above each tab's title (found by the audit) | Decided | Each tab's title stays the `<h1>`, visually hidden; the name is the one visible heading (spec §8). | 2026-10-05 |
-| 181 | [33.3](phase-33.3.md) | Finance tab with several agreements; the overview card (found by the audit) | Decided | The tab is the active agreement's page in the prototype's cards, schedule, extras and quotes under them; earlier agreements listed below. The overview card stays (spec §7.32). | 2026-10-05 |
-| 182 | [33.3](phase-33.3.md) | Finance *Purchase* card: seller and mileage when bought not stored (found by the audit) | Decided | Stored: seller, and the odometer when bought as a dated reading (spec §6 Vehicle, §7.1, §7.32). | 2026-10-05 |
-| 183 | [33.3](phase-33.3.md) | PCP end note wording (found by the audit) | Decided | Kept as a neutral list of the options (spec §7.32). | 2026-10-05 |
-| 184 | [33.3](phase-33.3.md) | Tyre bar scale (found by the audit) | Decided | From the tyre's first measured depth to the legal minimum; no bar until two measurements (spec §7.17). | 2026-10-05 |
-| 185 | [33.3](phase-33.3.md) | Other prototype extras: *Breakdown* type, *Copy for insurance quote*, period picker, "Fitted {month}", thresholds note (found by the audit) | Decided | Build *Copy for insurance quote*, *Fitted {month}*, the thresholds note from the user's settings and a *Breakdown* incident type; the period picker is parked (spec §12). The design review's "Moved {month}" was reverted by the owner (#197): "Fitted {month}" is the first fitting (spec §7.17). | 2026-10-05 |
-| 186 | [33.4](phase-33.4.md) | Finance interest: so far, or the whole cost of credit? | Decided | The HP, PCP and loan lines the ledger counts so far (interest, fees, the end adjustment); leases left out (spec §7.7 *Cost of ownership page*). | 2026-10-05 |
-| 187 | [33.4](phase-33.4.md) | Per month for the fleet | Decided | The active vehicles' own rates added up, as the prototype; sold vehicles count in *Total cost* only (spec §7.7). | 2026-10-05 |
-| 188 | [33.4](phase-33.4.md) | Station maps | Obsolete | The prototype has no map; its *Directions* link is #196. | 2026-10-05 |
-| 189 | [33.4](phase-33.4.md) | Cost bar: §7.35's five parts or the prototype's seven? (found by the audit) | Decided | §7.35's five; finance stays in *Other* and has its own summary card (spec §7.7). | 2026-10-05 |
-| 190 | [33.4](phase-33.4.md) | A period picker on the Cost of ownership page? (found by the audit) | Decided | No: since bought only, as today and the prototype; the draft's wording corrected (spec §7.7). | 2026-10-05 |
-| 191 | [33.4](phase-33.4.md) | The prototype's vehicle *Cost of ownership* tab (found by the audit) | Decided | Build it after Expenses, from the overview card's figures (spec §7.1). | 2026-10-05 |
-| 192 | [33.4](phase-33.4.md) | Ask has no page in the prototype: where does `/ask` go? (found by the audit) | Decided | Ask keeps its navigation entry and page; the Insights page also has the Ask box (spec §7.26 *Ask and the Insights page*). | 2026-10-05 |
-| 193 | [33.4](phase-33.4.md) | What the Insights Ask box does (found by the audit) | Decided | Always opens the new thread on `/ask` (spec §7.26). | 2026-10-05 |
-| 194 | [33.4](phase-33.4.md) | Ask features the existing tools can't support | Obsolete | None: the prototype's Ask uses only what Ask has (spec §7.26). | 2026-10-05 |
-| 195 | [33.4](phase-33.4.md) | Fuel stations: one price list, or your stations too? (found by the audit) | Decided | *Prices nearby* on top when a provider is on, *Your stations* below (spec §7.33 *Fuel stations page*). | 2026-10-05 |
-| 196 | [33.4](phase-33.4.md) | Fuel stations features: build or not now | Decided | All built: area average, saving banner, favourite (adding an unlinked station), OpenStreetMap directions, *Log fill-up here* with a `?station=` prefill (spec §7.33). | 2026-10-05 |
-| 197 | [33.4](phase-33.4.md) | Tyres: keep the design review's "Moved {month}"? (carried from #185) | Decided | No: "Fitted {month}" is the tyre's first fitting to the vehicle, with its distance since (spec §7.17). | 2026-10-05 |
+| 157 | [33.1](phase-33.1.md) | Verify email addresses with a confirmation link? | Needs a decision | Drafted: not verified; a change needs the current password and notifies the old address. Would also let `OIDC_LINK=email` (#51) be reconsidered. | — |
+| 158 | [33.1](phase-33.1.md) | "Revoke the user": what does the prototype mean? | Needs a decision | Drafted: the existing *Disable* plus revoking links and API keys. Alternatives: deleting the account, or only *Sign out everywhere*. | — |
+| 159 | [33.1](phase-33.1.md) | Self-service reset link lifetime | Needs a decision | Drafted: 60 minutes (an admin's link stays 7 days). | — |
+| 160 | [33.1](phase-33.1.md) | Reset for SSO-only users while local sign-in is on | Needs a decision | Drafted: nothing sent. Alternative: allow it to set a first password. | — |
+| 161 | [33.1](phase-33.1.md) | Avatar visibility | Needs a decision | Drafted: any signed-in user. Alternative: only users who share a vehicle. | — |
+| 162 | [33.2](phase-33.2.md) | Settings grouping: keep any link where it is today? | Needs a decision | Drafted grouping in the phase; the prototype's names and order win where they differ. Superseded in part by Phase 36.2 (channels move to Account → Notifications). | — |
+| 163 | [33.2](phase-33.2.md) | New settings shown by the prototype that the app lacks | Needs a decision | Listed by task 33.2.1 for a decision; none is built until then. | — |
+| 164 | [33.3](phase-33.3.md) | Finance bullet wording in the brief repeats the incidents line | Needs a decision | Drafted as meaning the prototype's finance content. Needs confirming. | — |
+| 165 | [33.3](phase-33.3.md) | Prototype insights the app has no figure for | Needs a decision | Build the figure in a later phase, or leave it out? Listed by 33.3.1. | — |
+| 166 | [33.3](phase-33.3.md) | Insights written by a model (AI module)? | Needs a decision | Drafted: computed, not generated. A model-written version would sit behind §7.25 and its grounding check. | — |
+| 167 | [33.3](phase-33.3.md) | Business and personal period on trips | Needs a decision | Drafted: tax year for GB users, calendar year otherwise. Alternative: a period picker. | — |
+| 168 | [33.3](phase-33.3.md) | "Your vehicles" on trips: fleet page or a card on each vehicle's tab? | Needs a decision | Needs the owner's answer. | — |
+| 169 | [33.4](phase-33.4.md) | Finance interest: so far in the period, or the agreement's whole cost of credit? | Needs a decision | Drafted: interest counted so far in the period. | — |
+| 170 | [33.4](phase-33.4.md) | Per month for the fleet: each vehicle's own owned months, or the whole period? | Needs a decision | Drafted: each vehicle over its own owned months. | — |
+| 171 | [33.4](phase-33.4.md) | Station maps: tiles come from a third party, against keeping data local | Needs a decision | Options: a map behind an admin switch, a static distance list (today), or no map. | — |
+| 172 | [33.4](phase-33.4.md) | Ask features the existing tools can't support | Needs a decision | Listed by 33.4.1 for a decision. | — |
+| 173 | [33.4](phase-33.4.md) | Fuel stations features from the prototype | Needs a decision | The owner's *build* / *not now* list from 33.4.1. | — |
+| 174 | [34.1](phase-34.1.md) | Which UK plate: yellow (rear) or white (front)? | Needs a decision | Drafted: yellow. | — |
+| 175 | [34.1](phase-34.1.md) | "UK" or "GB" on the plate band? | Needs a decision | Drafted: "UK". | — |
+| 176 | [34.1](phase-34.1.md) | A style for another region (Germany first)? | Needs a decision | Drafted: not now; parked in spec §12. | — |
+| 177 | [34.1](phase-34.1.md) | Plate on the sale pack cover? | Needs a decision | Drafted: no, plain text like every print view. | — |
+| 178 | [34.2](phase-34.2.md) | Keep *Spend this month* beside the new breakdown? | Needs a decision | Drafted: keep all three. Recommendation: revisit after a release, since *This month* repeats it. | — |
+| 179 | [34.2](phase-34.2.md) | Periods offered on the breakdown | Needs a decision | Drafted: *This month*, *Last 12 months*, *This year*. Add *Last 3 months* or *All time*? | — |
+| 180 | [34.2](phase-34.2.md) | A *By vehicle* option on the fleet breakdown | Needs a decision | Drafted: no; Reports has *Spend per vehicle*. | — |
+| 181 | [34.2](phase-34.2.md) | Clicking a bar in *Monthly spend* | Needs a decision | Drafted: not built. | — |
+| 182 | [34.3](phase-34.3.md) | Show projected *Coming up* items on the calendar? | Needs a decision | Drafted: no; reminders only. | — |
+| 183 | [34.3](phase-34.3.md) | Closed reminders: hidden unless `closed=1`, or shown muted? | Needs a decision | Drafted: hidden. | — |
+| 184 | [34.3](phase-34.3.md) | *Add reminder* link from a day | Needs a decision | Drafted: keep it (prefilled date). | — |
+| 185 | [34.3](phase-34.3.md) | Dashboard widget: small month or a list of the next days? | Needs a decision | Drafted: small month; *Upcoming reminders* is already the list. | — |
+| 186 | [34.3](phase-34.3.md) | Week numbers on the grid | Needs a decision | Drafted: not built. | — |
+| 187 | [35.1](phase-35.1.md) | Demo owner: admin or member? | Needs a decision | Drafted: admin, so visitors see Modules and other admin screens. | — |
+| 188 | [35.1](phase-35.1.md) | Reset interval | Needs a decision | Drafted: 24 hours (`DEMO_RESET_HOURS`). | — |
+| 189 | [35.1](phase-35.1.md) | Visitor uploads: allowed or blocked? | Needs a decision | Drafted: allowed at 2 MB, deleted at reset. | — |
+| 190 | [35.1](phase-35.1.md) | Show the demo credentials on the sign-in page, or only in the docs? | Needs a decision | Drafted: shown. | — |
+| 191 | [35.1](phase-35.1.md) | Seeded dates: all relative to the run, or keep fixed history and shift only the recent year? | Needs a decision | Drafted: all relative to the run. | — |
+| 192 | [35.1](phase-35.1.md) | One demo account or two (to try sharing, Phase 19)? | Needs a decision | Drafted: one. | — |
+| 193 | [35.2](phase-35.2.md) | An install script for the LXC, or docs only? | Needs a decision | Drafted: docs only. Recommendation: a script is more to maintain on every distribution release. | — |
+| 194 | [35.2](phase-35.2.md) | Which Proxmox route first: Docker in LXC or native PHP? | Needs a decision | Drafted: Docker in LXC first (matches the README quick start); native is lighter and Proxmox's own preference. | — |
+| 195 | [35.2](phase-35.2.md) | Where the Caddy and Traefik smoke tests run | Needs a decision | Drafted: the existing smoke job if it adds only a few minutes, else a scheduled workflow. | — |
+| 196 | [35.2](phase-35.2.md) | Listing in a third-party script collection | Needs a decision | Outside this phase; the owner's separate decision. | — |
+| 197 | [36.1](phase-36.1.md) | Does a default Docker install have a `SESSION_SECRET`? Should the entrypoint generate one? | Needs a decision | **Answer needed before any 36.1 code.** Recommendation: yes, generated on first start and kept in `/data`. Without it, the SMTP password and members' tokens can't be saved from the app. | — |
+| 198 | [36.1](phase-36.1.md) | After saving SMTP settings, is the environment ignored entirely or merged field by field? | Needs a decision | Drafted: ignored entirely; the page names the source in use. | — |
+| 199 | [36.1](phase-36.1.md) | Where notification secrets live | Needs a decision | Drafted: a new `notification_secrets` table. Alternatives: generalise the AI secrets table, or encrypted columns. | — |
+| 200 | [36.1](phase-36.1.md) | `MAIL_TO`: keep as the admin's default recipient, or retire? | Needs a decision | Drafted: keep. | — |
+| 201 | [36.1](phase-36.1.md) | OAuth 2 for SMTP (Microsoft 365, Gmail)? | Needs a decision | Drafted: parked. | — |
+| 202 | [36.2](phase-36.2.md) | The `NTFY_*`, `GOTIFY_*` and `WEBHOOK_URL` variables: fallbacks, import once, or remove? | Needs a decision | Drafted: admin-only deprecated fallbacks. Recommendation: removal announced for a later major release. | — |
+| 203 | [36.2](phase-36.2.md) | The instance webhook (`WEBHOOK_URL`) still receives everyone's notifications? | Needs a decision | Drafted: yes while set. Alternative: retire it; the REST API serves integrations. | — |
+| 204 | [36.2](phase-36.2.md) | Default for where members' channels may send | Needs a decision | Drafted: *The internet and your network*. Alternative: *The internet only*. | — |
+| 205 | [36.2](phase-36.2.md) | Migration when there is no `SESSION_SECRET` | Needs a decision | Drafted: Gotify created as *Needs setup*, old value left in place. Disappears if 36.1's secret is generated. | — |
+| 206 | [36.2](phase-36.2.md) | Channels under Account → Notifications (replaces Phase 33.2's draft) | Needs a decision | Drafted as the owner asked; confirm. | — |
+| 207 | [36.2](phase-36.2.md) | What admins can see of members' channels | Needs a decision | Drafted: nothing. Alternative: the kinds configured, for support. | — |
+| 208 | [36.2](phase-36.2.md) | Failing channels: show the last error, or switch off after repeated failures? | Needs a decision | Drafted: show the last error only. | — |
+| 209 | [36.2](phase-36.2.md) | Per-channel choice of what to receive (due, overdue, digest, price alerts) and quiet hours | Needs a decision | Drafted: not built. Tracktor has per-provider categories; these would be new settings. | — |
+| 210 | [36.2](phase-36.2.md) | Anything the prototype's *Reminder delivery* shows that the app has no data for | Needs a decision | Added by task 36.2.1. | — |
+| 211 | [36.3](phase-36.3.md) | A shared bot or Pushover application provided by the admin? | Needs a decision | Drafted: each user brings their own. Recommendation: personal now; shared can be added later without changing what is stored. | — |
+| 212 | [36.3](phase-36.3.md) | Telegram *Find my chat* helper | Needs a decision | Drafted: build it (removes the hardest step). Alternative: docs only. | — |
+| 213 | [36.3](phase-36.3.md) | Monthly digest sent quietly (Telegram no sound, Pushover low priority) | Needs a decision | Drafted: yes. | — |
+| 214 | [36.3](phase-36.3.md) | Mattermost optional *Channel* override | Needs a decision | Drafted: offered. | — |
+| 215 | [36.3](phase-36.3.md) | Wording of the third-party notice on Telegram, Discord and Pushover | Needs a decision | Needs the owner's wording. | — |
+| 216 | [36.3](phase-36.3.md) | More services (Slack, Matrix, Signal, Apprise) | Needs a decision | Drafted: not now; or note one in spec §12? | — |
 
 ## Other loose ends found in the review
 

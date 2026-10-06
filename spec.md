@@ -7672,6 +7672,51 @@ task breakdowns live in the per-phase files; this is the map.
   favourite, OpenStreetMap directions, *Log fill-up here*) above *Your
   stations*; tyres back to "Fitted {month}" from the first fitting (§7.1,
   §7.7, §7.17, §7.26, §7.33). Releases **v3.0.0** with Phases 33.1–33.3.
+- **Phase 34.1 — Registration plates.** A registration drawn as a number
+  plate on garage cards, dashboard tiles, the pinned card, the vehicle
+  header and the vehicle pickers: UK style for a GB-region owner,
+  neutral otherwise; fixed colours in both themes, checked contrast, plain
+  text in print, exports and the API (§7.1, §7.8, §8). No migration.
+  Ships with Phase 34.3 as v3.1.0.
+- **Phase 34.2 — Expense breakdown and monthly spend widgets.** Two
+  dashboard widgets from Reports' own figures: where the period's money went
+  by group, with *This month*, *Last 12 months* and *This year*, and the
+  last 12 months as stacked bars with a table; vehicle filter, `ViewCosts`,
+  per-currency, gone with the `reports` module (§7.7, §7.8, §7.10). No
+  migration. Ships with Phase 34.3 as v3.1.0.
+- **Phase 34.3 — Reminders calendar and dashboard widget + v3.1 release.**
+  A month view of the reminders the list shows, with an overdue strip, a
+  list of those with no date, a day panel and *Add reminder* from a day,
+  built as an accessible list laid out as a grid and as an agenda on a
+  phone; a *Calendar* dashboard widget (§7.6, §7.8, §7.10). No migration.
+  Release v3.1.0.
+- **Phase 35.1 — Demo mode.** `DEMO_MODE` seeds an empty database and marks
+  it as a demo; a guard means only a seeded demo can ever be reset; a
+  `demo_reset` job and `bin/demo-reset.php`; blocked actions, no outbound
+  sending, a banner and credentials on the sign-in page (§7.36, §7.30, §8,
+  §9). No migration. Ships with Phase 35.2 as v3.2.0.
+- **Phase 35.2 — Proxmox LXC, Traefik and Caddy guides + v3.2 release.**
+  Tested Traefik and Caddy recipes for the Docker image at the root and at
+  a subpath, a Proxmox LXC guide (Docker in a container, or PHP 8.4
+  natively), and smoke tests that run the examples (§10, §11). No
+  migration. Release v3.2.0.
+- **Phase 36.1 — Email server settings (admin).** The SMTP server set in
+  Settings → Delivery by admins for the whole installation, with the
+  password stored as an encrypted secret, a test that sends with unsaved
+  values, one mail transport, and the `MAIL_*` variables kept as defaults
+  (§6, §7.9, §7.11, §8, §9). One migration. Ships with Phase 36.3 as v3.3.0.
+- **Phase 36.2 — Personal notification channels.** Account → Notifications:
+  a card per channel generated from a definition, with enable, test and
+  last result; Email, ntfy, Gotify and Webhook as personal channels;
+  existing personal settings migrated; the environment variables kept as
+  deprecated admin-only fallbacks; an admin policy for where members'
+  channels may send; no `env:` secrets for members; the prototype's
+  *Reminder delivery* design audited (§6, §7.11, §8). One migration. Ships
+  with Phase 36.3 as v3.3.0.
+- **Phase 36.3 — Telegram, Discord, Pushover and Mattermost + v3.3
+  release.** Four channels with per-service limits, no pings, no tokens in
+  errors, Telegram's *Find my chat*, and a third-party notice (§7.11).
+  Release v3.3.0 (Phases 36.1 to 36.3).
 ---
 
 ## 14. Definition of done

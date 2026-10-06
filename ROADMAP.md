@@ -75,6 +75,14 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [33.2](docs/phases/phase-33.2.md) | Sign-in and Settings to the prototype, and the sidebar | ✅ |
 | [33.3](docs/phases/phase-33.3.md) | Vehicle pages: Finance tab, Insights, trips, incidents, tyres | ✅ |
 | [33.4](docs/phases/phase-33.4.md) | Cost of ownership, Ask and Fuel stations + v3.0 release | ✅ |
+| [34.1](phase-34.1.md) | Registration plates | 📋 |
+| [34.2](phase-34.2.md) | Expense breakdown and monthly spend widgets | 📋 |
+| [34.3](phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | 📋 |
+| [35.1](phase-35.1.md) | Demo mode | 📋 |
+| [35.2](phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | 📋 |
+| [36.1](phase-36.1.md) | Email server settings (admin) | 📋 |
+| [36.2](phase-36.2.md) | Personal notification channels | 📋 |
+| [36.3](phase-36.3.md) | Telegram, Discord, Pushover and Mattermost + v3.3 release | 📋 |
 
 *Update the status column as each phase lands.*
 
