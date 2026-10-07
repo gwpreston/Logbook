@@ -4489,7 +4489,6 @@ return [
     ],
     'ask' => [
         'title' => 'Logbook fragen',
-        'lead' => 'Frag in eigenen Worten nach deinen Fahrzeugen. Die Antworten kommen aus deinen Einträgen, mit der Quelle jeder Zahl.',
         'nav' => 'Fragen',
         'card_lead' => 'KI-Antworten nur aus deinen erfassten Daten',
         'dashboard_link' => 'Logbook etwas fragen',
@@ -4520,7 +4519,6 @@ return [
         ],
         'placeholder' => 'z. B. Warum sind meine Kraftstoffkosten gestiegen?',
         'submit' => 'Fragen',
-        'new_thread' => 'Neue Frage',
         'hint' => 'Logbook kennt nur, was in deinen Einträgen steht. Es kann nichts hinzufügen oder ändern.',
         'examples' => [
             'heading' => 'Frag zum Beispiel',
@@ -4536,6 +4534,7 @@ return [
             'delete_all' => 'Alle löschen…',
             'delete_all_confirm' => '{count, plural, one {Dein Gespräch löschen? Das lässt sich nicht rückgängig machen.} other {Alle # Gespräche löschen? Das lässt sich nicht rückgängig machen.}}',
             'delete_all_button' => 'Alle löschen',
+            'show_all' => 'Alle anzeigen ({count})',
         ],
         'retention' => [
             'label' => 'Gespräche aufbewahren für',

@@ -11,8 +11,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * POST /ask/threads/{thread}/delete and POST /ask/threads/delete (every
- * thread) — the user's own threads only (spec.md §7.26 *Conversations*).
+ * POST /insights/questions/{thread}/delete and POST
+ * /insights/questions/delete (every thread) — the user's own threads only
+ * (spec.md §7.26 *Conversations*); back to *Your questions* on Insights.
  */
 final readonly class AskThreadDeleteAction
 {
@@ -38,6 +39,6 @@ final readonly class AskThreadDeleteAction
             RequestContext::session($request)->flash('success', 'ask.flash.deleted_all');
         }
 
-        return $this->redirect->toRoute('ask');
+        return $this->redirect->to($this->redirect->urlFor('insights') . '#your-questions');
     }
 }

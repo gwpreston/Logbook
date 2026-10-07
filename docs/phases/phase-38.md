@@ -2,7 +2,7 @@
 
 *One place for what Logbook has spotted and what you've asked it.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · open questions decided 2026-10-07 (#272–#276)
 
 Since Phase 33.4 the Insights page has the *Ask Logbook* card at the top,
 but asking there always opens the thread on `/ask` (#193), and Ask keeps
@@ -52,14 +52,16 @@ page*), §7.36 or wherever the MCP server's *Drafts to review* lives (the
 These follow from the owner's request. Anything not settled is under
 *Open questions* and is not built until decided.
 
-- **Insights page order:** *Ask Logbook* card; **Your questions**;
-  computed insights; AI insights (placement of *Your questions* is open
-  question A; this order is the recommendation).
+- **Insights page order** (#272): *Ask Logbook* card; MCP *Drafts to
+  review* (while there are any); **Your questions**; computed insights;
+  AI insights.
 - **Your questions** is the list `/ask` shows today, newest first: title
   (the first question), last activity, *Delete*, and *Delete all* with
-  its confirm. A long list shows the latest few with *Show all* (count
-  and paging as today's list; no new limit invented here). It shows only
-  when Ask is available (§7.26 *Where*); empty, it is left out.
+  its confirm. The latest 5 show; the rest (up to today's 50) sit under
+  *Show all (N)*, a `<details>` disclosure that works without JS (#276).
+  It shows only when Ask is available (§7.26 *Where*); with no threads it
+  says "Nothing asked yet." and keeps *Keep conversations for*, which is
+  always under the list (#275).
 - **Thread page:** a thread opens on its own page under Insights
   (`/insights/questions/{id}`), with everything the Ask page shows for a
   thread today: the conversation, sources, grounding marks, draft cards,
@@ -76,8 +78,8 @@ These follow from the owner's request. Anything not settled is under
   (`/insights/questions/progress/{token}`); the old path is removed, not
   redirected (it is JSON polled by the page's own script).
 - **Navigation:** the *Ask* sidebar entry (`forum`, `data-ask-entry`)
-  goes. *Insights* stays where it is. The top-bar button is open
-  question B.
+  goes. *Insights* stays where it is. The top-bar button stays and opens
+  `/insights#ask` with the box focused (#273).
 - **Other ways in:** the dashboard's Ask link and the phone app's quick
   action open Insights (with the box focused, `#ask`).
 - **MCP drafts:** *Drafts to review* moves from `/ask` to the Insights
@@ -85,10 +87,14 @@ These follow from the owner's request. Anything not settled is under
   dashboard; the MCP tools' \"{link} to add it\" points there. Their
   buttons still work without Ask, as now.
 - **Redirects:** `GET /ask` → `/insights` (301), keeping `?q=`;
-  `GET /ask?draft=…` and any thread URL under `/ask` → the matching
-  Insights URL (301). A `POST /ask` from an old open tab is answered
-  by redirecting to Insights with the question kept in the box, never
-  dropped silently and never asked twice.
+  `GET /ask/threads/{id}` → `/insights/questions/{id}` (301). (`?draft=`
+  was never an `/ask` parameter: *Edit* opens the entry form with
+  `?draft=`, unchanged.) A `POST /ask` from an old open tab answers 303
+  to the Insights box (or, with a `thread`, to that thread's page) with
+  the question filled in, never dropped silently and never asked. The
+  redirects are routed with AI off too; they land on Insights, which
+  then has no Ask parts. The other old POST paths (feedback, delete,
+  retention, Ask draft buttons) are removed, not redirected.
 - **When Ask isn't available:** Insights shows no Ask card, no *Your
   questions*, no MCP drafts list unless MCP drafts exist (as §7.36
   says today), and the thread pages answer 404 — the same rule `/ask`
@@ -119,44 +125,79 @@ Written into `spec.md` before any code:
 ## Tasks
 
 ### 38.0 Spec first
-- [ ] `spec.md` as *Spec changes*; open questions A–C decided first.
-- [ ] `ROADMAP.md` gains a Phase 38 row (📋); `open-questions.md` gains
-      A–C; #192 and #193 noted as replaced by Phase 38.
+- [x] `spec.md` as *Spec changes*; open questions A–E decided first.
+- [x] `ROADMAP.md` gains a Phase 38 row (📋); `open-questions.md` gains
+      A–E (#272–#276); #192 and #193 noted as replaced by Phase 38.
 
 ### 38.1 Audit
-- [ ] List every link, form action, redirect, script, template, test and
+- [x] List every link, form action, redirect, script, template, test and
       doc that names `/ask`, `AskPage`, `data-ask-entry` or
       `templates/ask/` (including `ask.js`, the PWA manifest's
       shortcuts, `docs/ai.md`, MCP tool messages, translations). Record
       it under this task; every item is moved, redirected or removed by
       38.2–38.5.
 
+  Found (2026-10-07):
+  - **Routes** (`config/routes.php`): `ask`, `ask.post`, `ask.progress`,
+    `ask.retention`, `ask.threads.delete`, `ask.thread`,
+    `ask.thread.delete`, `ask.feedback`, `ask.draft`.
+  - **Actions** (`src/Action/Ask/`): `AskAction`, `AskPostAction`
+    (redirects to `ask.thread`), `AskProgressAction` (`url` →
+    `ask.thread`), `AskThreadDeleteAction` and `AskRetentionAction`
+    (→ `ask`), `AskFeedbackAction` (`backOr(…, 'ask')`), `DraftAction`
+    (`BACK` map `'ask'`, → `ask` / `ask.thread`). `AskGuard`,
+    `DraftPrefill` stay.
+  - **Service:** `Service/Ai/Ask/AskPage` (the page's context).
+  - **Templates:** `layout.twig` (sidebar entry and top-bar button,
+    `data-ask-entry`, `current_nav == 'ask'`), `home.twig` (dashboard
+    link; `_review_drafts` with `back: 'home'`), `ask/index.twig`
+    (`active_nav = 'ask'`), `ask/_card_form.twig` (posts to `ask.post`,
+    `ask.progress`, suggestions to `ask?q=`), `ask/_review_drafts.twig`
+    and `ask/_draft_card.twig` (`back` 'home' | 'ask', `ask.draft`),
+    `insights/index.twig`. `ask/_card_head`, `_draft_notice` (entry
+    forms) stay shared.
+  - **JS:** `assets/js/ask.js` (comment names `/ask`; URLs come from data
+    attributes), `tests/js/ask.test.js`.
+  - **PWA:** `WebManifestAction` shortcut `/ask`.
+  - **MCP:** `McpToolbox::keep()` link `home#draft-{id}`.
+  - **Tests:** `AskPagesTest`, `DraftingTest`, `AiGatewayTest`,
+    `DemoVisitorTest`, `RouteInventoryTest`, `McpToolsTest`,
+    `tests/Support/AskTestCase`.
+  - **Docs:** `docs/ai.md` (*Ask* section, retention), `docs/deployment.md`
+    (proxy timeout `location <base>/ask` → `/insights/questions`),
+    `docs/mcp.md`, README.
+  - **Translations:** `ask.nav` stays (top-bar button label);
+    `ask.lead`, `ask.title` stay (card); new keys for the thread page's
+    back link and *Show all*.
+
 ### 38.2 Your questions on Insights
-- [ ] *Your questions* section on `/insights`: list, *Delete*, *Delete
+- [x] *Your questions* section on `/insights`: list, *Delete*, *Delete
       all* with confirm, *Show all*; only when Ask is available.
-- [ ] MCP *Drafts to review* on the Insights page.
+- [x] MCP *Drafts to review* on the Insights page.
 
 ### 38.3 Thread pages under Insights
-- [ ] `/insights/questions/{id}` with everything the Ask page shows for a
+- [x] `/insights/questions/{id}` with everything the Ask page shows for a
       thread; follow-ups post there.
-- [ ] New question from the Insights card opens its thread page; no-JS
+- [x] New question from the Insights card opens its thread page; no-JS
       POST path; progress endpoint moved; `ask.js` updated (Enter sends,
       Shift+Enter new line, progress lines).
-- [ ] `?q=` prefill on `/insights`; `?draft={id}` *Edit* flow unchanged.
+- [x] `?q=` prefill on `/insights`; `?draft={id}` *Edit* flow unchanged.
 
 ### 38.4 Remove the Ask page
-- [ ] Delete the `/ask` routes, page action, template and sidebar entry;
+- [x] Delete the `/ask` routes, page action, template and sidebar entry;
       the top-bar button as decided (B).
-- [ ] Redirects as in *Design decisions*.
-- [ ] Dashboard link, phone quick action, MCP \"{link} to add it\" point
+- [x] Redirects as in *Design decisions*.
+- [x] Dashboard link, phone quick action, MCP \"{link} to add it\" point
       at Insights.
-- [ ] Remove translations only `/ask` used; add the new ones in every
+- [x] Remove translations only `/ask` used; add the new ones in every
       shipped locale.
 
 ### 38.5 Docs
-- [ ] `docs/ai.md`, README and screenshots: Ask is on Insights.
-- [ ] Upgrade notes: the Ask page is gone; old links redirect; nothing to
-      migrate (threads keep their ids).
+- [x] `docs/ai.md`, README and screenshots: Ask is on Insights (no
+      screenshot showed Ask; `docs/mcp.md` and `docs/deployment.md`'s
+      proxy timeout path updated too).
+- [x] Upgrade notes: the Ask page is gone; old links redirect; nothing to
+      migrate (threads keep their ids). In `CHANGELOG.md`.
 
 ### 38.6 Tests
 - [ ] *Your questions* lists only the user's threads, newest first;
@@ -208,6 +249,9 @@ Written into `spec.md` before any code:
 
 Numbered in `open-questions.md` when logged. Not built until decided.
 
+*Decided 2026-10-07 by the owner: A (1), B (2), C (1) as recommended;
+D and E, found while starting, as below (#272–#276).*
+
 - **A. Where *Your questions* sits on Insights.** Options: (1) under the
   *Ask Logbook* card, before the insights; (2) after the AI insights, at
   the foot of the page; (3) a tab or toggle (*Insights* / *Your
@@ -222,3 +266,15 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   Insights page, replacing the list while open. *Recommendation:* (1):
   threads can be long, linked and bookmarked, and the Insights page stays
   short.
+- **D. Where *Keep conversations for* goes** (found while starting; it
+  was only on `/ask`). Options: (1) inside *Your questions*, hidden with
+  no threads; (2) always on Insights under the list; (3) Settings.
+  *Decided:* (2).
+- **E. How long *Your questions* is** (found while starting; `/ask`
+  showed up to 50, no paging). Options: (1) latest 5 + *Show all*
+  disclosure; (2) all of them; (3) latest 5 + a full-list page.
+  *Decided:* (1).
+- **Found by the reviews (2026-10-07):** #277 (the thread page's heading
+  is the thread's title) and #278 (with AI off a thread's old address is
+  302, not 301) built in this phase; #279 (cap MCP drafts) and #280 (an
+  Insights query budget) logged in `open-questions.md` for a decision.

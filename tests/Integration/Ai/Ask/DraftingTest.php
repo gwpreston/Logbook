@@ -74,7 +74,7 @@ final class DraftingTest extends AskTestCase
     private function draft(string $tool, array $arguments, string $question = 'Log it', ?TestBrowser $as = null): array
     {
         $this->provider->queue(Script::tools([$tool, $arguments]), Script::answer('Check the card and press Add.'));
-        $posted = ($as ?? $this->browser)->post('/ask', ['question' => $question]);
+        $posted = ($as ?? $this->browser)->post('/insights/questions', ['question' => $question]);
         self::assertSame(303, $posted->getStatusCode());
         $this->lastLocation = explode('#', $posted->getHeaderLine('Location'))[0];
         $replies = $this->toolReplies(count($this->provider->requests) - 1);
@@ -102,7 +102,7 @@ final class DraftingTest extends AskTestCase
     private function press(int $draft, string $action, ?TestBrowser $as = null): string
     {
         $browser = $as ?? $this->browser;
-        $response = $browser->post('/ask/drafts/' . $draft . '/' . $action, []);
+        $response = $browser->post('/insights/questions/drafts/' . $draft . '/' . $action, []);
         self::assertSame(303, $response->getStatusCode(), self::body($response));
 
         return (string) $browser->follow($response)->getBody();
@@ -178,12 +178,12 @@ final class DraftingTest extends AskTestCase
         self::assertStringContainsString('id="draft-' . $id . '"', $page);
         self::assertStringContainsString('51.00 L E10 95 at £1.390/L = £70.89', $page);
         self::assertStringContainsString('worked out by Logbook', $page, 'the total is marked as derived');
-        self::assertStringContainsString('/ask/drafts/' . $id . '/add', $page);
+        self::assertStringContainsString('/insights/questions/drafts/' . $id . '/add', $page);
         self::assertStringContainsString('/vehicles/' . $this->bmw->id . '/fuel/new?draft=' . $id, $page);
 
         $after = $this->press($id, 'add');
         self::assertStringContainsString('Fill-up added.', $after);
-        self::assertStringContainsString('/ask/drafts/' . $id . '/undo', $after);
+        self::assertStringContainsString('/insights/questions/drafts/' . $id . '/undo', $after);
         self::assertSame(1, $this->rows($this->app, 'fuel_entries'));
         self::assertSame(1, $this->rows($this->app, 'odometer_readings'), 'the fill-up writes its reading');
         $entries = $this->service($this->app, FuelService::class)->entries($this->bmw);
@@ -341,7 +341,7 @@ final class DraftingTest extends AskTestCase
             Script::tools(['draft_fill_up', $arguments], ['draft_fill_up', $arguments]),
             Script::answer('Two cards.'),
         );
-        $this->browser->post('/ask', ['question' => 'I filled up twice']);
+        $this->browser->post('/insights/questions', ['question' => 'I filled up twice']);
         $replies = $this->toolReplies(count($this->provider->requests) - 1);
         self::assertCount(2, $replies);
         foreach ($replies as $reply) {
@@ -359,15 +359,15 @@ final class DraftingTest extends AskTestCase
             Script::tools(['draft_reading', ['vehicle' => $bmw->id, 'odometer' => '72341']]),
             Script::answer('Check the card.'),
         );
-        $posted = $this->browser->post('/logbook/ask', ['question' => 'The BMW is on 72,341']);
+        $posted = $this->browser->post('/logbook/insights/questions', ['question' => 'The BMW is on 72,341']);
         $page = (string) $this->browser->follow($posted)->getBody();
-        self::assertMatchesRegularExpression('#action="/logbook/ask/drafts/(\d+)/add"#', $page);
-        preg_match('#/logbook/ask/drafts/(\d+)/add#', $page, $m);
+        self::assertMatchesRegularExpression('#action="/logbook/insights/questions/drafts/(\d+)/add"#', $page);
+        preg_match('#/logbook/insights/questions/drafts/(\d+)/add#', $page, $m);
         $id = $m[1] ?? self::fail('No Add on the card');
         self::assertStringContainsString('href="/logbook/vehicles/' . $bmw->id . '/odometer/new?draft=' . $id . '"', $page);
 
-        $added = $this->browser->post('/logbook/ask/drafts/' . $id . '/add', []);
-        self::assertStringStartsWith('/logbook/ask/threads/', $added->getHeaderLine('Location'));
+        $added = $this->browser->post('/logbook/insights/questions/drafts/' . $id . '/add', []);
+        self::assertStringStartsWith('/logbook/insights/questions/', $added->getHeaderLine('Location'));
         self::assertStringEndsWith('#draft-' . $id, $added->getHeaderLine('Location'));
         self::assertSame(1, $this->rows($this->app, 'odometer_readings'));
     }
@@ -462,7 +462,7 @@ final class DraftingTest extends AskTestCase
         $mini = $this->vehicle($this->app, 'Mini', 'Cooper');
         $gone = self::id($this->draft('draft_reading', ['vehicle' => $mini->id, 'odometer' => '1000']));
         $this->service($this->app, VehicleService::class)->delete($this->owner, $mini);
-        $response = $this->browser->post('/ask/drafts/' . $gone . '/add', []);
+        $response = $this->browser->post('/insights/questions/drafts/' . $gone . '/add', []);
         self::assertSame(404, $response->getStatusCode(), 'its draft went with it');
     }
 
@@ -479,7 +479,8 @@ final class DraftingTest extends AskTestCase
 
         $partner = $this->browserFor($this->app, 'partner');
         $id = self::id($this->draft('draft_reading', ['vehicle' => $this->bmw->id, 'odometer' => '72341'], 'Log it', $partner));
-        self::assertSame(404, $this->browser->post('/ask/drafts/' . $id . '/add', [])->getStatusCode(), 'another user\'s draft');
+        $theirs = $this->browser->post('/insights/questions/drafts/' . $id . '/add', []);
+        self::assertSame(404, $theirs->getStatusCode(), 'another user\'s draft');
 
         $this->connection($this->app)->update('vehicle_shares', ['level' => ShareLevel::View->value], ['user_id' => $member->id]);
         $refused = $this->press($id, 'add', $partner);
@@ -557,13 +558,14 @@ final class DraftingTest extends AskTestCase
             Script::tools(['maintenance', ['vehicle' => $this->bmw->id]]),
             Script::answer('Your last service was on 1 Sep 2026.'),
         );
-        $this->browser->post('/ask', ['question' => 'When was the last service?']);
+        $this->browser->post('/insights/questions', ['question' => 'When was the last service?']);
         self::assertSame(0, $this->rows($this->app, 'ai_drafts'), 'a stored note asking for a draft does nothing');
 
         // Even a model that drafts and then claims it saved leaves only a card.
         $id = self::id($this->draft('draft_reading', ['vehicle' => $this->bmw->id, 'odometer' => '72341']));
         self::assertSame(1, $this->rows($this->app, 'odometer_readings'), 'only the service record\'s own reading');
-        self::assertNotSame(303, $this->browser->get('/ask/drafts/' . $id . '/add')->getStatusCode(), 'a GET never applies');
+        $get = $this->browser->get('/insights/questions/drafts/' . $id . '/add');
+        self::assertNotSame(303, $get->getStatusCode(), 'a GET never applies');
         self::assertSame(1, $this->rows($this->app, 'odometer_readings'));
     }
 

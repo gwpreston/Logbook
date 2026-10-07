@@ -11,7 +11,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * GET /ask/progress/{token} — the progress lines of the user's running
+ * GET /insights/questions/progress/{token} — the progress lines of the user's running
  * question, as JSON, polled by the page about once a second (spec.md §7.26,
  * decided #73). An unknown token is "thinking", not an error: the
  * question may not have started yet. Once done, `url` is the thread the
@@ -45,7 +45,7 @@ final readonly class AskProgressAction
             'done' => $progress->done ?? false,
             // Once answered: where, so the page gets there even if a proxy
             // gave up on the POST that asked.
-            'url' => $threadId === null ? null : $this->redirect->urlFor('ask.thread', ['thread' => (string) $threadId]),
+            'url' => $threadId === null ? null : $this->redirect->urlFor('insights.question', ['thread' => (string) $threadId]),
             'line' => $lines === [] ? $this->translator->trans('ask.progress.thinking') : $lines[array_key_last($lines)],
             'lines' => $lines,
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));

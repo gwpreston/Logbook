@@ -65,13 +65,14 @@ final readonly class WebManifestAction
         if ($this->features->isEnabled(Feature::Trips)) {
             $shortcuts[] = ['name' => $this->translator->trans('nav.log_trip'), 'url' => $base . '/log/new/trip'];
         }
-        // Reading files (spec.md §7.27) and Ask Logbook (§7.26) once they are
-        // set up; the pages answer 404 to anyone they aren't available to.
+        // Reading files (spec.md §7.27) and Ask Logbook (§7.26, on Insights
+        // since Phase 38) once they are set up; /scan answers 404 to anyone
+        // it isn't available to, and Insights then has no Ask box.
         if ($this->scan->isSetUp()) {
             $shortcuts[] = ['name' => $this->translator->trans('scan.shortcut'), 'url' => $base . '/scan'];
         }
         if ($this->ask->isSetUp()) {
-            $shortcuts[] = ['name' => $this->translator->trans('ask.title'), 'url' => $base . '/ask'];
+            $shortcuts[] = ['name' => $this->translator->trans('ask.title'), 'url' => $base . '/insights#ask'];
         }
         if ($shortcuts !== []) {
             $manifest['shortcuts'] = $shortcuts;

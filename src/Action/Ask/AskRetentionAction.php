@@ -11,7 +11,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * POST /ask/retention — how long the user's threads are kept: 1, 7, 30 or
+ * POST /insights/questions/retention — how long the user's threads are kept: 1, 7, 30 or
  * 90 days (spec.md §7.26, decided #70).
  */
 final readonly class AskRetentionAction
@@ -32,6 +32,6 @@ final readonly class AskRetentionAction
             RequestContext::session($request)->flash('success', 'ask.flash.retention');
         }
 
-        return $this->redirect->toRoute('ask');
+        return $this->redirect->to($this->redirect->urlFor('insights') . '#your-questions');
     }
 }

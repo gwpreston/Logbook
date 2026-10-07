@@ -369,10 +369,10 @@ model calls after 240 seconds). Many proxies give up on a request after
 60 seconds. Logbook keeps working when they do: the page polls for
 progress and opens the answer once it is saved. Without JavaScript the
 browser shows the proxy's timeout page instead, so for slow models raise
-the timeouts for `<base>/ask`:
+the timeouts for `<base>/insights/questions` (until v3.4, `<base>/ask`):
 
 - **nginx** in front of Logbook: `proxy_read_timeout 600s;` (and with
-  php-fpm, `fastcgi_read_timeout 600s;`) in a `location <base>/ask` block,
+  php-fpm, `fastcgi_read_timeout 600s;`) in a `location <base>/insights/questions` block,
   or for the whole site.
 - **php-fpm:** `request_terminate_timeout` in the pool must be 0 (the
   default) or at least 600 s. Logbook raises PHP's own `max_execution_time`

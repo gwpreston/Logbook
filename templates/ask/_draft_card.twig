@@ -5,12 +5,12 @@
  # warnings, and Add / Edit / Discard. Once added: Added · View · Undo.
  # `item` comes from DraftCards::cards(). Plain forms; works without JS.
  # An MCP client's draft (spec.md §7.28) posts to /drafts, which needs no
- # Ask, and comes back to `back` ('home' or 'ask', the page listing it).
+ # Ask, and comes back to `back` ('home' or 'insights', the page listing it).
  #}
 {% set draft = item.draft %}
 {% set card = item.card %}
 {% set from_mcp = draft.source.value == 'mcp' %}
-{% set draft_route = from_mcp ? 'drafts.action' : 'ask.draft' %}
+{% set draft_route = from_mcp ? 'drafts.action' : 'insights.questions.draft' %}
 <section class="draft-card draft-card--{{ item.state }}" id="draft-{{ draft.id }}" aria-labelledby="draft-{{ draft.id }}-title" data-draft-card>
     <header class="draft-card__header">
         {% if item.vehicle %}{{ ui.vehicle_photo(item.vehicle, 'draft-card__photo') }}{% endif %}

@@ -1018,6 +1018,40 @@ a.list__item:hover {
     display: inline-flex;
 }
 
+/* The confirm under *Delete all…*, apart from its button and from what follows. */
+.ask-delete-all[open] > form {
+    display: grid;
+    gap: var(--space-2);
+    justify-items: start;
+    margin-top: var(--space-2);
+}
+
+.ask-delete-all[open] > form > p {
+    margin: 0;
+}
+
+/* A thread page's title is the user's own question: long ones wrap. */
+.ask-thread-title {
+    overflow-wrap: anywhere;
+}
+
+/* *Show all (N)* under *Your questions*: a 44 px touch target. */
+.ask-threads-more > .disclosure__summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--control-h);
+    font-size: var(--fs-base);
+}
+
+/* A suggestion is a sentence: it wraps rather than pushing the page wider
+   (German runs long at 375 px). */
+.ask-suggestions .chip {
+    max-width: 100%;
+    padding-block: var(--space-2);
+    white-space: normal;
+    text-align: start;
+}
+
 .ask-delete-all summary::-webkit-details-marker {
     display: none;
 }

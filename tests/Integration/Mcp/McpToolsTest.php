@@ -273,9 +273,9 @@ final class McpToolsTest extends AppTestCase
             'odometer' => '12000',
         ]]));
         self::assertSame('draft_saved', $saved->get('status'));
-        self::assertSame('https://cars.example/#draft-' . $saved->int('draft_id'), $saved->get('link'));
+        self::assertSame('https://cars.example/insights#draft-' . $saved->int('draft_id'), $saved->get('link'));
         self::assertSame(
-            'Draft saved. Open https://cars.example/#draft-' . $saved->int('draft_id') . ' to add it.',
+            'Draft saved. Open https://cars.example/insights#draft-' . $saved->int('draft_id') . ' to add it.',
             $saved->get('say'),
         );
         self::assertEquals(
@@ -321,7 +321,7 @@ final class McpToolsTest extends AppTestCase
         self::assertSame(2, $this->service($app, DraftStore::class)->deleteExpired());
     }
 
-    public function testDraftsAreReviewedWithoutAiAndAskDraftsStayOnAsk(): void
+    public function testDraftsAreReviewedOnInsightsWithoutAi(): void
     {
         $app = $this->createApp(['AI_ENABLED' => 'false']);
         $this->resetDatabase($app);
@@ -334,10 +334,18 @@ final class McpToolsTest extends AppTestCase
             'due' => '2026-12-01',
         ]]));
         $browser = $this->browserFor($app, 'owner');
+        // Phase 38: Insights lists them with AI off too, where the link in the tool's reply goes.
+        self::assertStringEndsWith('/insights#draft-' . $saved->int('draft_id'), $saved->string('link'));
+        $insights = (string) $browser->get('/insights')->getBody();
+        self::assertStringContainsString('id="drafts-to-review"', $insights);
+        self::assertStringContainsString('id="draft-' . $saved->int('draft_id') . '"', $insights);
+        self::assertStringContainsString('name="back" value="insights"', $insights);
 
-        $discarded = $browser->post('/drafts/' . $saved->int('draft_id') . '/discard', ['back' => 'ask']);
+        $discarded = $browser->post('/drafts/' . $saved->int('draft_id') . '/discard', ['back' => 'insights']);
         self::assertSame(303, $discarded->getStatusCode());
-        self::assertStringEndsWith('/#drafts-to-review', $discarded->getHeaderLine('Location'), 'no Ask: back to the dashboard');
+        $back = $discarded->getHeaderLine('Location');
+        self::assertStringEndsWith('/insights#drafts-to-review', $back, 'back to Insights, Ask or not');
+        self::assertStringNotContainsString('id="drafts-to-review"', (string) $browser->get('/insights')->getBody());
         self::assertEquals(0, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM reminders'));
 
         $this->createMember($app);

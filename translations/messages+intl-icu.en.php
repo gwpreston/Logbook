@@ -4492,7 +4492,6 @@ return [
     ],
     'ask' => [
         'title' => 'Ask Logbook',
-        'lead' => 'Ask about your vehicles in plain words. Answers come from your own records, with where each figure came from.',
         'nav' => 'Ask',
         'card_lead' => 'AI answers using only your logged data',
         'dashboard_link' => 'Ask Logbook a question',
@@ -4523,7 +4522,6 @@ return [
         ],
         'placeholder' => 'e.g. Why has my fuel spend gone up?',
         'submit' => 'Ask',
-        'new_thread' => 'New question',
         'hint' => 'Logbook only knows what is in your records. It can’t add or change anything.',
         'examples' => [
             'heading' => 'Try asking',
@@ -4539,6 +4537,7 @@ return [
             'delete_all' => 'Delete all…',
             'delete_all_confirm' => '{count, plural, one {Delete your conversation? This can’t be undone.} other {Delete all # conversations? This can’t be undone.}}',
             'delete_all_button' => 'Delete all',
+            'show_all' => 'Show all ({count})',
         ],
         'retention' => [
             'label' => 'Keep conversations for',

@@ -31,8 +31,9 @@ final class DemoRoutes
         'settings.ai', 'settings.ai.tasks', 'settings.ai.this_host', 'settings.ai.connections.create',
         'settings.ai.connections.show', 'settings.ai.connections.edit', 'settings.ai.connections.delete',
         'settings.ai.connections.acknowledge', 'settings.ai.connections.models', 'settings.ai.connections.test',
-        'settings.ai_use', 'ask', 'ask.post', 'ask.progress', 'ask.retention', 'ask.threads.delete', 'ask.thread',
-        'ask.thread.delete', 'ask.feedback', 'ask.draft', 'insights.refresh',
+        'settings.ai_use', 'insights.ask', 'insights.questions.progress', 'insights.questions.retention',
+        'insights.questions.delete', 'insights.question', 'insights.question.delete', 'insights.questions.feedback',
+        'insights.questions.draft', 'insights.refresh',
         'scan', 'scan.result', 'scan.file', 'scan.reminders', 'scan.vehicle',
         // Fuel price providers (the demo's sample prices need no setting).
         'settings.fuel_prices',

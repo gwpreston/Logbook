@@ -42,24 +42,37 @@ final readonly class RefreshAiInsightsAction
         ignore_user_abort(true);
         $error = null;
         $refused = null;
+        // What fills the message's {connection}, {model}, … (as AiFailure::messageParameters()).
+        $parameters = [];
         try {
-            $error = $this->insights->generate($user)->error?->messageKey();
+            $set = $this->insights->generate($user);
+            $error = $set->error?->messageKey();
+            $parameters = [
+                'connection' => $set->connectionName ?? '',
+                'model' => $set->model ?? '',
+                'seconds' => 0,
+                'variable' => '',
+            ];
         } catch (AiFailure $failure) {
             // Busy is another AI request of the user's, not "your last question".
             $error = $refused = $failure->error === ErrorCode::Busy ? 'ai_insights.busy' : $failure->messageKey();
+            $parameters = $failure->messageParameters();
         }
 
         if ($background) {
             // Kept (even as the day's failure): the page reloads. Not kept (busy): it says why and stops.
             $response->getBody()->write(json_encode(
-                ['saved' => $refused === null, 'error' => $refused === null ? null : $this->translator->trans($refused)],
+                [
+                    'saved' => $refused === null,
+                    'error' => $refused === null ? null : $this->translator->trans($refused, $parameters),
+                ],
                 JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
             ));
 
             return $response->withHeader('Content-Type', 'application/json');
         }
         if ($error !== null) {
-            RequestContext::session($request)->flash('error', $error);
+            RequestContext::session($request)->flash('error', $error, $parameters);
         }
 
         return $this->redirect->to($this->redirect->urlFor('insights') . '#ai-insights');

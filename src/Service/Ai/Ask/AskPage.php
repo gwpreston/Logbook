@@ -16,12 +16,15 @@ use Logbook\Service\Ai\AiPreferences;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * What the Ask page shows (spec.md §7.26 *Answer page*): the threads, the
- * open one as questions and answers with their sources, who answers, and
- * the retention setting.
+ * What Ask shows on the Insights page and a thread's page (spec.md §7.26,
+ * Phase 38): *Your questions* with the retention setting, and the open
+ * thread as questions and answers with their sources and who answers.
  */
 final readonly class AskPage
 {
+    /** *Your questions* shows this many; the rest sit under *Show all* (#276). */
+    public const int SHOWN = 5;
+
     public function __construct(
         private AiThreadRepository $threads,
         private AskAvailability $availability,
@@ -33,24 +36,34 @@ final readonly class AskPage
     }
 
     /**
+     * The Insights page's *Your questions* (#272, #275, #276).
+     *
      * @return array<string, mixed>
      */
-    public function context(User $user, ?AskThread $thread, ?string $question = null, ?string $error = null): array
+    public function questions(User $user): array
     {
-        $connection = $this->availability->connection();
-
         return [
-            'connection' => $connection,
             'threads' => $this->threads->forUser($user->id),
-            'thread' => $thread,
-            'turns' => $thread === null ? [] : $this->turns($user, $this->threads->messages($thread)),
+            'threads_shown' => self::SHOWN,
             'retention_days' => $this->preferences->retentionDays($user->id),
             'retention_choices' => AiPreferences::RETENTION_CHOICES,
+        ];
+    }
+
+    /**
+     * A thread's page (#274): the conversation and the follow-up box.
+     *
+     * @return array<string, mixed>
+     */
+    public function thread(User $user, AskThread $thread, ?string $question = null, ?string $error = null): array
+    {
+        return [
+            'connection' => $this->availability->connection(),
+            'thread' => $thread,
+            'turns' => $this->turns($user, $this->threads->messages($thread)),
             'question' => $question ?? '',
             'error' => $error,
             'progress_token' => bin2hex(random_bytes(16)),
-            // Drafts an MCP client left (spec.md §7.28 *Drafts to review*).
-            'review_drafts' => array_values($this->draftCards->cards($user, $this->drafts->toReview($user))),
         ];
     }
 

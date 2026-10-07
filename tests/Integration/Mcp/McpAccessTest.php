@@ -120,7 +120,7 @@ final class McpAccessTest extends AppTestCase
             'name' => 'draft_expense',
             'arguments' => ['vehicle' => $golf->id, 'category' => 'parking', 'amount' => '3.20'],
         ]));
-        self::assertSame('https://cars.example/logbook/#draft-' . $draft->int('draft_id'), $draft->get('link'));
+        self::assertSame('https://cars.example/logbook/insights#draft-' . $draft->int('draft_id'), $draft->get('link'));
         $browser = $this->browserFor($app, 'owner');
         $added = $browser->post('/logbook/drafts/' . $draft->int('draft_id') . '/add', ['back' => 'home']);
         self::assertSame('/logbook/#drafts-to-review', $added->getHeaderLine('Location'));

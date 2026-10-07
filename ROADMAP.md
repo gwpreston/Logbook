@@ -85,7 +85,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover, Mattermost and Slack | ✅ |
 | [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours + v3.3 release | ✅ |
 | [37](docs/phases/phase-37.md) | Space between the Fuel prices providers + patch release | ✅ |
-| [38](docs/phases/phase-38.md) | Ask lives on Insights; the Ask page goes + release | 📋 |
+| [38](docs/phases/phase-38.md) | Ask lives on Insights; the Ask page goes + release | 🚧 |
 
 *Update the status column as each phase lands.*
 
@@ -982,8 +982,8 @@ list of choices in Settings.*
   on its own page under Insights.
 - The `/ask` page and its sidebar entry go; old `/ask` links redirect to
   the matching Insights page. Reverses #192 and #193.
-- Open questions A–C (where *Your questions* sits, the top-bar button,
-  thread page or inline) are decided before it starts.
+- Open questions A–E (#272–#276: where *Your questions* sits, the top-bar button,
+  thread page or inline, retention, *Show all*) decided 2026-10-07.
 - Releases the next minor version.
 
 → [`phase-38.md`](docs/phases/phase-38.md)
