@@ -188,7 +188,10 @@ Everything a self-hoster needs is an environment variable, documented in
 `.env.example` and `spec.md` §Config. At minimum: DB driver/host/port/name/user/
 password, app URL, **base path** (for subpath reverse proxying), timezone,
 default locale, session secret, upload path, mail/notification settings.
-Sensible defaults so `docker compose up` works with zero edits.
+Sensible defaults so `docker compose up` works with zero edits. The one
+exception is the email server: from Phase 36.1 it is set only in Settings →
+Delivery (the `MAIL_*` variables were removed, spec §7.11), because the
+admin running the app is the one who changes it.
 
 ---
 

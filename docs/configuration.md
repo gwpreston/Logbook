@@ -41,7 +41,8 @@ which notification channels to use — are chosen in the app, not here. The
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SESSION_SECRET` | *(empty)* | Key for hashing session ids, calendar-feed tokens, API keys and invitation links at rest. Generate with `openssl rand -hex 32`. Changing it signs everyone out, disables calendar feed links, open invitation and reset links, and every API key. |
+| `SESSION_SECRET` | *(empty)* | Key for hashing session ids, calendar-feed tokens, API keys and invitation links at rest, and for encrypting saved passwords and keys (AI, fuel prices, the email server). Generate with `openssl rand -hex 32`. Changing it signs everyone out, disables calendar feed links, open invitation and reset links, and every API key, and saved passwords must be entered again. |
+| `SESSION_SECRET_FILE` | *(empty; Docker: `/data/session-secret`)* | A file to read the secret from when `SESSION_SECRET` is empty. On a **fresh** Docker volume (no users yet) the image writes a random secret there, readable only by the app; an install that already has users is never given one (it would sign everyone out), so set `SESSION_SECRET` yourself there. Keep the file with your backups. |
 | `SESSION_SECURE` | true when `APP_URL` is `https://` | Send the session cookie over HTTPS only. |
 
 ## Single sign-on
@@ -68,7 +69,7 @@ variable. The redirect URI to register is
 | `OIDC_ADMIN_GROUPS` | *(empty)* | Comma-separated: admin is set from these groups at every SSO sign-in, both ways. The last admin is never demoted. Empty: admin stays as set in the app. |
 | `OIDC_LOGOUT` | `false` | Also sign out at the provider. Register `{APP_URL}{APP_BASE_PATH}/login` there as the post-logout redirect URI. |
 | `AUTH_LOCAL_LOGIN` | `true` | Password sign-in. `false` leaves only SSO. First-run setup still creates a local admin, and `php bin/auth.php login-link <username>` still works. |
-| `PASSWORD_RESET_ENABLED` | `true` | *Forgotten your password?* on sign-in: a 60-minute reset link emailed to the account's confirmed address. Offered only when email (`MAIL_HOST`) is set up and password sign-in is on; `false` hides it anyway. See [users-and-sharing.md](users-and-sharing.md#forgotten-passwords). |
+| `PASSWORD_RESET_ENABLED` | `true` | *Forgotten your password?* on sign-in: a 60-minute reset link emailed to the account's confirmed address. Offered only when email (Settings → Delivery) is set up and password sign-in is on; `false` hides it anyway. See [users-and-sharing.md](users-and-sharing.md#forgotten-passwords). |
 
 ## Header sign-in
 
@@ -152,18 +153,21 @@ two upload limits (the Docker image sets 256M / 260M).
 
 ## Notifications
 
-Each channel is *configured* once its variables are set; each owner then picks
-which configured channels to use in **Settings → Reminders**. See
+Each channel is *configured* once it is set up; each owner then picks which
+configured channels to use in **Settings → Reminders**. See
 [notification-channels.md](notification-channels.md).
+
+**Email** is not an environment variable: an admin sets the server up in
+**Settings → Delivery** (server, port, encryption, username, password, From
+address and name, and the default recipient for admins), with *Send test
+email*. The password is stored encrypted with a key from `SESSION_SECRET`, or
+as `env:NAME` to read it from a variable such as a Docker secret. The
+`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION`,
+`MAIL_FROM` and `MAIL_TO` variables were **removed in v3.3.0** and are no
+longer read; see [notification-channels.md](notification-channels.md#email).
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `MAIL_HOST` | *(empty)* | SMTP server; email is configured when set. |
-| `MAIL_PORT` | `587` | |
-| `MAIL_USERNAME`, `MAIL_PASSWORD` | *(empty)* | SMTP credentials. |
-| `MAIL_ENCRYPTION` | `tls` | `tls` (STARTTLS, required), `ssl` (implicit TLS, usually port 465) or `none`. |
-| `MAIL_FROM` | `logbook@localhost` | Sender, `address` or `Name <address>`. |
-| `MAIL_TO` | *(empty)* | The admins' default recipient for reminders. Each user's confirmed address (their Profile) comes first, members get email only at their own, and it is never used for reset links. |
 | `MAILPIT_PORT` | `8025` | Development only (`docker-compose.dev.yml`): the Mailpit web UI on the host. Unset, `bin/dev-setup.sh` moves to the next free port when 8025 is taken. |
 | `NTFY_URL` | *(empty)* | ntfy topic URL, e.g. `https://ntfy.sh/my-garage`: the admins' reminders; each user can set their own topic. |
 | `NTFY_TOKEN` | *(empty)* | Access token for a protected topic. |

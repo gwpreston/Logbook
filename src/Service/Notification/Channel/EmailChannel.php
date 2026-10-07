@@ -8,23 +8,21 @@ use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
 use Logbook\Service\Notification\Recipient;
-use Logbook\Support\Config\Env;
+use Logbook\Service\Mail\MailConfig;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
 /**
- * Email over SMTP (symfony/mailer). Plain text: the subject is the
- * notification title, the body its message and a link to the app.
+ * Email over SMTP (symfony/mailer) to the server saved in Settings →
+ * Delivery (spec.md §7.11). Plain text: the subject is the notification
+ * title, the body its message and a link to the app.
  */
 final readonly class EmailChannel implements NotificationChannel
 {
-    private EmailConfig $config;
-
-    public function __construct(Env $env, private TransportInterface $transport)
+    public function __construct(private MailConfig $config, private TransportInterface $transport)
     {
-        $this->config = EmailConfig::fromEnv($env);
     }
 
     public function key(): string
@@ -51,11 +49,15 @@ final readonly class EmailChannel implements NotificationChannel
     {
         $to = $this->addressOf($recipient);
         if ($to === null) {
-            return DeliveryResult::failed($this->key(), 'No email address (set one in Settings, or MAIL_TO for admins).');
+            return DeliveryResult::failed($this->key(), 'No email address (set one on your profile).');
+        }
+        $server = $this->config->effective();
+        if ($server === null) {
+            return DeliveryResult::failed($this->key(), 'Email is not set up.');
         }
 
         $email = (new Email())
-            ->from(Address::create($this->config->from))
+            ->from($server->from())
             ->to(new Address($to, $recipient->name))
             ->subject($notification->title)
             ->text($notification->textWithLink());
@@ -70,9 +72,9 @@ final readonly class EmailChannel implements NotificationChannel
         return DeliveryResult::delivered($this->key());
     }
 
-    /** Their own address; MAIL_TO is an admin's default only (spec.md §7.11). */
+    /** Their own address; the default recipient for admins is an admin's only (spec.md §7.11). */
     private function addressOf(Recipient $recipient): ?string
     {
-        return $recipient->email ?? ($recipient->isAdmin ? $this->config->to : null);
+        return $recipient->email ?? ($recipient->isAdmin ? $this->config->adminRecipient() : null);
     }
 }

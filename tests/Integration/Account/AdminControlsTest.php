@@ -186,7 +186,7 @@ final class AdminControlsTest extends AccountTestCase
 
     public function testAddUserNeedsEmail(): void
     {
-        $app = $this->accountApp(['MAIL_HOST' => '']);
+        $app = $this->accountApp(['TEST_MAIL_HOST' => '']);
         $admin = $this->signedIn($app);
         self::assertStringContainsString('Use an invitation link instead.', self::body($admin->get('/settings/users/add')));
         self::assertSame(

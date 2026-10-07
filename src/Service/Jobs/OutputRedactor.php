@@ -8,6 +8,7 @@ use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiSecretRepository;
 use Logbook\Repository\FuelPriceSecretRepository;
 use Logbook\Service\Ai\SecretBox;
+use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Support\Config\AppSettings;
 use Throwable;
 
@@ -15,7 +16,9 @@ use Throwable;
  * Takes secrets out of a job's output before a line is stored or printed
  * (spec.md §5 *Jobs*, *Redaction*): the values of environment variables
  * whose names contain PASSWORD, SECRET, TOKEN or KEY, every stored AI
- * connection secret, and anything shaped like a Logbook API key.
+ * connection secret, fuel price credential and notification secret (the
+ * email server's password, Phase 36.1, and the value an `env:` reference
+ * reads), and anything shaped like a Logbook API key.
  */
 final class OutputRedactor
 {
@@ -40,6 +43,7 @@ final class OutputRedactor
         private readonly AiSecretRepository $aiSecrets,
         private readonly SecretBox $box,
         private readonly FuelPriceSecretRepository $fuelPriceSecrets,
+        private readonly NotificationSecrets $notificationSecrets,
     ) {
     }
 
@@ -90,6 +94,12 @@ final class OutputRedactor
                     // Unreadable here, so it cannot be printed either.
                 }
             }
+        } catch (Throwable) {
+            // No table yet (mid-upgrade).
+        }
+        try {
+            // Phase 36.1: the email server's password (spec.md §7.11).
+            array_push($values, ...$this->notificationSecrets->openAll());
         } catch (Throwable) {
             // No table yet (mid-upgrade).
         }

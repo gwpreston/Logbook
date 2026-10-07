@@ -9,6 +9,8 @@ use Logbook\Action\Scheduler\SchedulerUrlAction;
 use Logbook\Action\Settings\Updates\UpdatesAction;
 use Logbook\Action\Api\FuelPricesNearAction;
 use Logbook\Action\Dashboard\CheapestFuelPlaceAction;
+use Logbook\Action\Settings\Delivery\DeliveryAction;
+use Logbook\Action\Settings\Delivery\DeliveryRemoveAction;
 use Logbook\Action\Settings\FuelPrices\FuelPricesAction;
 use Logbook\Action\Station\CreateStationAction;
 use Logbook\Action\Station\DuplicatesAction as StationDuplicatesAction;
@@ -853,6 +855,12 @@ return static function (App $app): void {
             ->setArgument($instance, InstanceAbility::RunJobs->value);
         // *On page visits* (spec.md §7.30): any signed-in page's beacon; 404 while off.
         $group->post('/_scheduler/tick', SchedulerTickAction::class)->setName('scheduler.tick');
+        // Settings → Delivery (spec.md §7.11, Phase 36.1): the email server; admins only, 404 to anyone else.
+        $group->map(['GET', 'POST'], '/settings/delivery', DeliveryAction::class)->setName('settings.delivery')
+            ->setArgument($instance, InstanceAbility::ManageNotifications->value);
+        $group->map(['GET', 'POST'], '/settings/delivery/remove', DeliveryRemoveAction::class)
+            ->setName('settings.delivery.remove')
+            ->setArgument($instance, InstanceAbility::ManageNotifications->value);
         // Users and their one-time links (spec.md §7.9): admins only.
         $group->map(['GET', 'POST'], '/settings/users', UsersAction::class)->setName('settings.users')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);

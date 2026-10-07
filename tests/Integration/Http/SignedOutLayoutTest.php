@@ -19,7 +19,7 @@ final class SignedOutLayoutTest extends AppTestCase
 
     public function testSignInWithPasswordOnly(): void
     {
-        $app = $this->createApp(['MAIL_HOST' => '']);
+        $app = $this->createApp();
         $this->resetDatabase($app);
         $this->createOwner($app);
         $html = self::body((new TestBrowser($app))->get('/login'));

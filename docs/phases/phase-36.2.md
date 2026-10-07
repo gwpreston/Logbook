@@ -360,8 +360,9 @@ not.)*
   working after upgrade; the second is stricter.
 - **No key at migration.** The drafted behaviour (Gotify created as *Needs
   setup*, old value left in place) assumes a default install may have no
-  `SESSION_SECRET`. If 36.1's decision makes the entrypoint generate one,
-  this case disappears.
+  `SESSION_SECRET`. 36.1 (#222) generates one only on a fresh Docker
+  volume, so the case remains for existing installs without one and for
+  bare-PHP installs.
 - **Where in Settings.** Account → Notifications (the owner's request,
   drafted). This replaces Phase 33.2's draft grouping, which put channels
   on the Reminders card; confirm.

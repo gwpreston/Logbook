@@ -21,9 +21,9 @@ abstract class AccountTestCase extends ReminderTestCase
 {
     protected const array MAIL = [
         'APP_URL' => 'https://garage.example',
-        'MAIL_HOST' => 'smtp.test',
-        'MAIL_FROM' => 'Logbook <logbook@garage.example>',
-        'MAIL_TO' => '',
+        'TEST_MAIL_HOST' => 'smtp.test',
+        'TEST_MAIL_FROM' => 'Logbook <logbook@garage.example>',
+        'TEST_MAIL_TO' => '',
     ];
 
     protected RecordingSleeper $sleeper;

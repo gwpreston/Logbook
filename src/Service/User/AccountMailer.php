@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\User;
 
 use Logbook\Domain\User\User;
-use Logbook\Service\Notification\Channel\EmailConfig;
-use Logbook\Support\Config\Env;
+use Logbook\Service\Mail\MailConfig;
 use Logbook\Support\Display\UserDisplayScope;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
@@ -22,16 +21,13 @@ use Twig\Environment;
  */
 final readonly class AccountMailer
 {
-    private EmailConfig $config;
-
     public function __construct(
-        Env $env,
+        private MailConfig $config,
         private TransportInterface $transport,
         private UserDisplayScope $scope,
         private Environment $twig,
         private LoggerInterface $logger,
     ) {
-        $this->config = EmailConfig::fromEnv($env);
     }
 
     public function isConfigured(): bool
@@ -45,15 +41,16 @@ final readonly class AccountMailer
      */
     public function send(User $user, string $address, callable $compose): bool
     {
-        if (!$this->config->isConfigured()) {
+        $server = $this->config->effective();
+        if ($server === null) {
             return false;
         }
 
-        return $this->scope->run($user, function () use ($user, $address, $compose): bool {
+        return $this->scope->run($user, function () use ($user, $address, $compose, $server): bool {
             $mail = $compose();
             $context = ['mail' => $mail];
             $email = (new Email())
-                ->from(Address::create($this->config->from))
+                ->from($server->from())
                 ->to(new Address($address, $user->displayName))
                 ->subject($mail->subject)
                 ->text($this->twig->render('email/account.txt.twig', $context))

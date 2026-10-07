@@ -13,6 +13,7 @@ enum InstanceAbility: string
     case ManageModules = 'manage_modules';
     case Backup = 'backup';
     case Restore = 'restore';
+    /** Settings → Delivery: the email server (Phase 36.1). */
     case ManageNotifications = 'manage_notifications';
     /** Settings → Users: invitations, admins, disabling and deleting (Phase 19). */
     case ManageUsers = 'manage_users';
@@ -26,10 +27,11 @@ enum InstanceAbility: string
     /**
      * Whether a user without the ability gets 404 rather than 403, so the
      * page's existence is not revealed (Settings → AI, spec.md §7.25,
-     * Settings → Jobs, §7.30, and Settings → Fuel prices, §7.34).
+     * Settings → Jobs, §7.30, Settings → Fuel prices, §7.34, and Settings →
+     * Delivery, §7.11).
      */
     public function isHidden(): bool
     {
-        return $this === self::ManageAi || $this === self::RunJobs || $this === self::ManageFuelPrices;
+        return in_array($this, [self::ManageAi, self::RunJobs, self::ManageFuelPrices, self::ManageNotifications], true);
     }
 }

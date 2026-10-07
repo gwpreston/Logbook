@@ -170,6 +170,8 @@ abstract class AppTestCase extends TestCase
             'stations',
             'vehicles',
             'api_keys',
+            // Phase 36.1: the email server's password.
+            'notification_secrets',
             'users',
             'settings',
         ];

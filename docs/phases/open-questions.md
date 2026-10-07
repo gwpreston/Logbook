@@ -74,9 +74,8 @@ Those of Phases 35.2–36.3 (#218–#241) were added on
 2026-10-06 when those phases were written; each row still open gives the
 answer the phase file drafts. Phase 35.2's #218–#220 were answered on
 2026-10-06, before it was built; #221 (a third-party script collection)
-stays the owner's, outside the phase. #222, Phase 36.1's
-`SESSION_SECRET` question, must be answered before any of Phase 36 is
-built.
+stays the owner's, outside the phase. Phase 36.1's
+(#222–#226) were answered on 2026-10-06, before it was built.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -301,15 +300,15 @@ built.
 | 219 | [35.2](phase-35.2.md) | Which Proxmox route first: Docker in LXC or native PHP? | Decided | Docker in LXC first (matches the README quick start), native PHP second in the same guide (spec §10 *Proxmox VE*). | 2026-10-06 |
 | 220 | [35.2](phase-35.2.md) | Where the Caddy and Traefik smoke tests run | Decided | The existing smoke job if it adds only a few minutes, else a scheduled workflow on changes to `docker/` and `docs/`; the measured time is in Phase 35.2's *Audit*. | 2026-10-06 |
 | 221 | [35.2](phase-35.2.md) | Listing in a third-party script collection | Needs a decision | Outside this phase; the owner's separate decision. | — |
-| 222 | [36.1](phase-36.1.md) | Does a default Docker install have a `SESSION_SECRET`? Should the entrypoint generate one? | Needs a decision | **Answer needed before any 36.1 code.** Recommendation: yes, generated on first start and kept in `/data`. Without it, the SMTP password and members' tokens can't be saved from the app. | — |
-| 223 | [36.1](phase-36.1.md) | After saving SMTP settings, is the environment ignored entirely or merged field by field? | Needs a decision | Drafted: ignored entirely; the page names the source in use. | — |
-| 224 | [36.1](phase-36.1.md) | Where notification secrets live | Needs a decision | Drafted: a new `notification_secrets` table. Alternatives: generalise the AI secrets table, or encrypted columns. | — |
-| 225 | [36.1](phase-36.1.md) | `MAIL_TO`: keep as the admin's default recipient, or retire? | Needs a decision | Drafted: keep. | — |
-| 226 | [36.1](phase-36.1.md) | OAuth 2 for SMTP (Microsoft 365, Gmail)? | Needs a decision | Drafted: parked. | — |
+| 222 | [36.1](phase-36.1.md) | Does a default Docker install have a `SESSION_SECRET`? Should the entrypoint generate one? | Decided | No, it had none. Generated only on a fresh volume (no users yet) into `/data/session-secret`, read through `SESSION_SECRET_FILE`; an existing install is never given one (it would sign everyone out) and is told to set one. spec §9. | 2026-10-06 |
+| 223 | [36.1](phase-36.1.md) | After saving SMTP settings, is the environment ignored entirely or merged field by field? | Decided | Neither: Settings → Delivery is the only source. The `MAIL_*` variables are removed in v3.3.0, nothing is imported (email is off until set up; the release says so), and the dev Mailpit is set up by hand. spec §7.11, §9. | 2026-10-06 |
+| 224 | [36.1](phase-36.1.md) | Where notification secrets live | Decided | A new `notification_secrets` table, sealed by the AI `SecretBox` with the info `logbook-notify`. spec §6. | 2026-10-06 |
+| 225 | [36.1](phase-36.1.md) | `MAIL_TO`: keep as the admin's default recipient, or retire? | Decided | Kept as the admins' default recipient, moved into Settings → Delivery as *Default recipient for admins*. spec §7.11. | 2026-10-06 |
+| 226 | [36.1](phase-36.1.md) | OAuth 2 for SMTP (Microsoft 365, Gmail)? | Parked | spec §12. | 2026-10-06 |
 | 227 | [36.2](phase-36.2.md) | The `NTFY_*`, `GOTIFY_*` and `WEBHOOK_URL` variables: fallbacks, import once, or remove? | Needs a decision | Drafted: admin-only deprecated fallbacks. Recommendation: removal announced for a later major release. | — |
 | 228 | [36.2](phase-36.2.md) | The instance webhook (`WEBHOOK_URL`) still receives everyone's notifications? | Needs a decision | Drafted: yes while set. Alternative: retire it; the REST API serves integrations. | — |
 | 229 | [36.2](phase-36.2.md) | Default for where members' channels may send | Needs a decision | Drafted: *The internet and your network*. Alternative: *The internet only*. | — |
-| 230 | [36.2](phase-36.2.md) | Migration when there is no `SESSION_SECRET` | Needs a decision | Drafted: Gotify created as *Needs setup*, old value left in place. Disappears if 36.1's secret is generated. | — |
+| 230 | [36.2](phase-36.2.md) | Migration when there is no `SESSION_SECRET` | Needs a decision | Drafted: Gotify created as *Needs setup*, old value left in place. Still open: 36.1 (#222) generates a secret only on a fresh Docker volume, so existing installs without one and bare-PHP installs still hit it. | — |
 | 231 | [36.2](phase-36.2.md) | Channels under Account → Notifications (replaces Phase 33.2's draft) | Needs a decision | Drafted as the owner asked; confirm. | — |
 | 232 | [36.2](phase-36.2.md) | What admins can see of members' channels | Needs a decision | Drafted: nothing. Alternative: the kinds configured, for support. | — |
 | 233 | [36.2](phase-36.2.md) | Failing channels: show the last error, or switch off after repeated failures? | Needs a decision | Drafted: show the last error only. | — |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Service\Mail\MailConfig;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
@@ -20,6 +21,7 @@ final readonly class SettingsPage
     public function __construct(
         private View $view,
         private AppSettings $settings,
+        private MailConfig $mail,
     ) {
     }
 
@@ -28,6 +30,8 @@ final readonly class SettingsPage
         return $this->view->render($request, $response, 'settings/index.twig', [
             // AI (spec.md §7.25): the admin link while AI_ENABLED.
             'ai' => ['enabled' => $this->settings->ai->enabled],
+            // Delivery (spec.md §7.11): the row says whether the email server is set up.
+            'mail_configured' => $this->mail->isConfigured(),
         ]);
     }
 }

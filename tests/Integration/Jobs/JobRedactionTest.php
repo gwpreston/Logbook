@@ -10,19 +10,24 @@ use Logbook\Service\Jobs\Job;
 use Logbook\Service\Jobs\JobContext;
 use Logbook\Service\Jobs\JobResult;
 use Logbook\Service\Jobs\JobRunner;
+use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Tests\Support\AiTestCase;
 
 /**
  * No secret in a job's stored or printed output (spec.md §5 *Jobs*,
- * *Redaction*; acceptance criterion 4): an SMTP password from the
- * environment, a stored AI connection key and a Logbook API key.
+ * *Redaction*; acceptance criterion 4): the email server's saved password
+ * and the value an `env:` reference reads (Phase 36.1), a stored AI
+ * connection key and a Logbook API key.
  */
 final class JobRedactionTest extends AiTestCase
 {
     public function testSecretsAreMaskedInStoredAndPrintedLines(): void
     {
-        $app = $this->aiApp(['MAIL_PASSWORD' => 'smtp-hunter2-pass', 'APP_URL' => 'https://garage.example']);
+        $app = $this->aiApp(['RELAY_PASS' => 'relay-pass-from-env', 'APP_URL' => 'https://garage.example']);
         $this->resetDatabase($app);
+        $secrets = $this->service($app, NotificationSecrets::class);
+        $secrets->store(null, NotificationSecrets::SMTP_PASSWORD, 'smtp-hunter2-pass');
+        $secrets->store(null, 'relay_password', 'env:RELAY_PASS');
         $this->cloud($app, 'sk-proj-abcdefghijklmnop');
         $apiKey = 'lbk_Zx9aQ2wErTy-UiOp_1234567890abcdef';
         $job = new class ($apiKey) implements Job {
@@ -43,6 +48,7 @@ final class JobRedactionTest extends AiTestCase
             public function run(JobContext $context): JobResult
             {
                 $context->logger->info('SMTP login with smtp-hunter2-pass failed');
+                $context->logger->info('Relay said relay-pass-from-env is wrong');
                 $context->logger->warning('Provider said: key sk-proj-abcdefghijklmnop is invalid');
                 $context->logger->info('Called with {key}', ['key' => $this->apiKey]);
 
@@ -60,10 +66,11 @@ final class JobRedactionTest extends AiTestCase
 
         $texts = ['stored' => $stored->output . "\n" . $stored->summary, 'printed' => implode("\n", $printed)];
         foreach ($texts as $where => $text) {
-            foreach (['smtp-hunter2-pass', 'sk-proj-abcdefghijklmnop', $apiKey, 'lbk_'] as $secret) {
+            foreach (['smtp-hunter2-pass', 'relay-pass-from-env', 'sk-proj-abcdefghijklmnop', $apiKey, 'lbk_'] as $secret) {
                 self::assertStringNotContainsString($secret, $text, $where . ': ' . $secret);
             }
             self::assertStringContainsString('SMTP login with •••• failed', $text, $where);
+            self::assertStringContainsString('Relay said •••• is wrong', $text, $where);
             self::assertStringContainsString('key •••• is invalid', $text, $where);
             self::assertStringContainsString('Called with ••••', $text, $where);
         }

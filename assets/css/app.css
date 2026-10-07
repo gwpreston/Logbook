@@ -1499,6 +1499,21 @@ a.segmented__option {
     font-weight: 600;
 }
 
+/* Settings → Delivery: the mail server's reply under a failed test (spec.md §7.11). */
+.alert--top {
+    align-items: flex-start;
+}
+
+.alert__reply {
+    display: block;
+    max-height: 8rem;
+    overflow: auto;
+    margin-top: var(--space-1);
+    color: var(--text);
+    font-weight: 400;
+    overflow-wrap: anywhere;
+}
+
 .alert--error {
     background: var(--red-soft);
     color: var(--red);

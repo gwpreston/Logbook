@@ -30,10 +30,12 @@ use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Auth\Oidc\OidcCache;
 use Logbook\Service\Feature\FeatureTwigExtension;
+use Logbook\Service\Mail\MailerFactory;
+use Logbook\Service\Mail\SettingsTransport;
+use Logbook\Service\Mail\TransportFactory;
 use Logbook\Service\Mcp\McpToolbox;
 use Logbook\Service\Navigation\SidebarTwigExtension;
 use Logbook\Service\Notification\Channel\EmailChannel;
-use Logbook\Service\Notification\Channel\EmailConfig;
 use Logbook\Service\Notification\Channel\GotifyChannel;
 use Logbook\Service\Notification\Channel\NtfyChannel;
 use Logbook\Service\Notification\Channel\WebhookChannel;
@@ -398,12 +400,14 @@ return [
             'headers' => ['User-Agent' => 'Logbook'],
         ]), $mode);
     },
-    MailTransport::class => static function (ContainerInterface $c) use ($settingsOf): MailTransport {
-        $logger = $c->get(LoggerInterface::class);
-        assert($logger instanceof LoggerInterface);
+    // The email server (spec.md §7.11, Phase 36.1): Settings → Delivery, read on every send.
+    TransportFactory::class => get(MailerFactory::class),
+    MailTransport::class => static function (ContainerInterface $c): MailTransport {
+        $transport = $c->get(SettingsTransport::class);
+        assert($transport instanceof SettingsTransport);
         $mode = $c->get(DemoMode::class);
         assert($mode instanceof DemoMode);
 
-        return new DemoGuardedTransport(EmailConfig::fromEnv($settingsOf($c)->env)->createTransport($logger), $mode);
+        return new DemoGuardedTransport($transport, $mode);
     },
 ];

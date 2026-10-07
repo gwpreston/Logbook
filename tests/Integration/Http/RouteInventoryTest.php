@@ -370,6 +370,9 @@ DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
             'settings.jobs.started' => InstanceAbility::RunJobs,
             'settings.updates' => InstanceAbility::RunJobs,
             'notices.dismiss' => InstanceAbility::RunJobs,
+            // Phase 36.1: the email server.
+            'settings.delivery' => InstanceAbility::ManageNotifications,
+            'settings.delivery.remove' => InstanceAbility::ManageNotifications,
             'settings.users' => InstanceAbility::ManageUsers,
             'settings.users.change' => InstanceAbility::ManageUsers,
             'settings.users.confirm' => InstanceAbility::ManageUsers,

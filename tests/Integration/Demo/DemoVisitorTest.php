@@ -88,7 +88,7 @@ final class DemoVisitorTest extends DemoTestCase
         $blockedPaths = [
             '/settings/users', '/settings/backup', '/settings/jobs', '/settings/ai', '/settings/api-keys',
             '/settings/fuel-prices', '/settings/updates', '/settings/import-app', '/settings/password',
-            '/settings/email', '/settings/avatar', '/ask', '/scan', '/import/',
+            '/settings/email', '/settings/avatar', '/ask', '/scan', '/import/', '/settings/delivery',
         ];
         $pages = [
             '/', '/garage', '/settings', '/profile', '/insights', '/reminders', '/log/new',

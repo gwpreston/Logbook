@@ -37,6 +37,10 @@ if [ "${1:-}" = "apache2-foreground" ]; then
         vendor/bin/phinx migrate --configuration=phinx.php --environment=production --no-interaction
     fi
 
+    # A fresh volume gets a SESSION_SECRET in SESSION_SECRET_FILE (spec.md §9,
+    # Phase 36.1); an install that already has users never does.
+    php bin/session-secret.php || true
+
     # Migrations may have created the SQLite file as root.
     chown -R www-data:www-data "$DATA_DIR" var 2>/dev/null || true
 

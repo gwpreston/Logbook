@@ -13,14 +13,32 @@ use SodiumException;
  * `logbook-ai`), stored as `v1:` + base64(nonce ‖ ciphertext); or an
  * `env:NAME` reference, read at call time. Without a `SESSION_SECRET`
  * there is no key, so only references can be stored.
+ *
+ * Notification secrets (Phase 36.1, spec.md §6 NotificationSecret) use the
+ * same box under their own key (`withInfo('logbook-notify')`), so one can
+ * never be opened as the other.
  */
 final readonly class SecretBox
 {
+    public const string AI = 'logbook-ai';
+    public const string NOTIFY = 'logbook-notify';
+
     private const string PREFIX = 'v1:';
     private const string REFERENCE = '/^env:([A-Za-z_][A-Za-z0-9_]*)$/';
 
-    public function __construct(private AppSettings $settings)
+    public function __construct(
+        private AppSettings $settings,
+        /** The HKDF info string: which key this box seals with. */
+        private string $info = self::AI,
+    ) {
+    }
+
+    /**
+     * The same box, sealing with the key for another use.
+     */
+    public function withInfo(string $info): self
     {
+        return new self($this->settings, $info);
     }
 
     public static function isReference(string $value): bool
@@ -109,6 +127,6 @@ final readonly class SecretBox
 
     private function key(): string
     {
-        return hash_hkdf('sha256', $this->settings->sessionSecret, SODIUM_CRYPTO_SECRETBOX_KEYBYTES, 'logbook-ai');
+        return hash_hkdf('sha256', $this->settings->sessionSecret, SODIUM_CRYPTO_SECRETBOX_KEYBYTES, $this->info);
     }
 }

@@ -1,0 +1,112 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Settings → Delivery (spec.md §7.11 *The email server*; admins only): the
+ # email server the app sends from. Nothing here shows the password, not
+ # even masked: a saved one says so, with Replace (type a new one) and
+ # Remove. *Send test email* posts the same form with intent=test and sends
+ # with what was typed, without saving it.
+ #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'delivery.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}#admin">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'delivery.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'delivery.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if old_variables is not empty %}
+            <div class="alert alert--warning" role="status" data-old-variables>
+                {{ ui.icon('warning') }}<span>{{ 'delivery.email.old_variables'|trans({variable: old_variables|first, count: old_variables|length}) }}</span>
+            </div>
+        {% endif %}
+
+        {% if test %}
+            {% if test.sent %}
+                <div class="alert alert--success" role="status" data-test-result="sent">
+                    {{ ui.icon('check_circle') }}<span>{{ 'delivery.email.test.sent'|trans({address: test_to ?? values.test_to}) }}</span>
+                </div>
+            {% else %}
+                <div class="alert alert--error alert--top" role="alert" data-test-result="{{ test.stage }}">
+                    {{ ui.icon('error') }}
+                    <span>
+                        {{ ('delivery.email.test.failed.' ~ test.stage)|trans }}
+                        {% if test.reply %}<code class="alert__reply">{{ test.reply }}</code>{% endif %}
+                    </span>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <form class="form" method="post" action="{{ url_for('settings.delivery') }}" novalidate>
+            {{ ui.csrf(csrf) }}
+            <section class="card" aria-labelledby="email-heading">
+                <h2 id="email-heading" class="card__title">{{ ui.icon('mail') }}{{ 'delivery.email.heading'|trans }}</h2>
+                <p class="muted" data-source="{{ server ? 'settings' : 'none' }}">{{ (server ? 'delivery.email.source.settings' : 'delivery.email.source.none')|trans }}</p>
+
+                {% for warning in warnings %}
+                    <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ warning|trans }}</span></div>
+                {% endfor %}
+
+                {{ ui.input('host', 'delivery.email.host'|trans, values, errors, {required: true, maxlength: 253, autocomplete: 'off', placeholder: 'smtp.example.com', hint: 'delivery.email.host_hint'|trans}) }}
+                {% set options = [] %}
+                {% for encryption in encryptions %}
+                    {% set options = options|merge([{value: encryption.value, label: encryption.labelKey()|trans}]) %}
+                {% endfor %}
+                {{ ui.select('encryption', 'delivery.email.encryption'|trans, values, errors, options, {hint: 'delivery.email.encryption_hint'|trans}) }}
+                {{ ui.input('port', 'delivery.email.port'|trans, values, errors, {type: 'number', step: 1, min: 1, max: 65535, inputmode: 'numeric', optional: true, hint: 'delivery.email.port_hint'|trans}) }}
+                {{ ui.input('username', 'delivery.email.username'|trans, values, errors, {optional: true, maxlength: 254, autocomplete: 'off'}) }}
+
+                <div class="field">
+                    <label class="field__label" for="f-password">{{ (password ? 'delivery.email.password_replace' : 'delivery.email.password')|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <input class="input" id="f-password" name="password" type="password" autocomplete="new-password" spellcheck="false" maxlength="1000"{{ ui.described_by('password', errors, true) }}>
+                    <p class="field__hint" id="f-password-hint" data-password-state="{{ password.state ?? 'none' }}">
+                        {% if password is null %}
+                        {% elseif password.state == 'saved' %}
+                            {{ 'delivery.email.password_state.saved'|trans }}
+                        {% elseif password.state == 'env' %}
+                            {{ 'delivery.email.password_state.env'|trans({variable: password.variable}) }}
+                        {% elseif password.state == 'unset' %}
+                            <strong>{{ 'delivery.email.password_state.unset'|trans({variable: password.variable}) }}</strong>
+                        {% else %}
+                            <strong>{{ 'delivery.email.password_state.unreadable'|trans }}</strong>
+                        {% endif %}
+                        {{ (can_seal ? 'delivery.email.password_hint' : 'delivery.email.password_hint_no_key')|trans }}
+                    </p>
+                    {{ ui.field_error(errors, 'password') }}
+                </div>
+                {% if password %}
+                    <label class="toggle">
+                        <input type="checkbox" name="remove_password" value="1"{% if remove_password %} checked{% endif %}>
+                        <span class="toggle__text"><span class="toggle__title">{{ 'delivery.email.password_remove'|trans }}</span></span>
+                    </label>
+                {% endif %}
+
+                {{ ui.input('from_address', 'delivery.email.from_address'|trans, values, errors, {type: 'email', required: true, maxlength: 254, autocomplete: 'off', placeholder: 'logbook@example.com'}) }}
+                {{ ui.input('from_name', 'delivery.email.from_name'|trans, values, errors, {maxlength: 100, autocomplete: 'off'}) }}
+                {{ ui.input('admin_recipient', 'delivery.email.admin_recipient'|trans, values, errors, {type: 'email', optional: true, maxlength: 254, autocomplete: 'off', hint: 'delivery.email.admin_recipient_hint'|trans}) }}
+
+                {% if test_to is null %}
+                    {{ ui.input('test_to', 'delivery.email.test_to'|trans, values, errors, {type: 'email', maxlength: 254, autocomplete: 'email', hint: 'delivery.email.test_to_hint'|trans}) }}
+                {% else %}
+                    <p class="muted">{{ 'delivery.email.test_goes_to'|trans({address: test_to}) }}</p>
+                {% endif %}
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" name="intent" value="save" class="btn btn--primary btn--lg">{{ 'form.save'|trans }}</button>
+                <button type="submit" name="intent" value="test" class="btn btn--lg">{{ ui.icon('send') }}{{ 'delivery.email.test.button'|trans }}</button>
+                {% if server %}
+                    <a class="btn btn--lg" href="{{ url_for('settings.delivery.remove') }}">{{ ui.icon('delete') }}{{ 'delivery.email.remove'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+{% endblock %}

@@ -35,11 +35,8 @@ services:
       DB_PASSWORD: logbook
       # Per engine under bin/dev-setup.sh, so each database keeps its own photos.
       UPLOAD_PATH: ${DEV_UPLOAD_PATH:-/data/uploads}
-      # Every email goes to Mailpit (spec.md §10 *Development stack*, Phase 33.1).
-      MAIL_HOST: mailpit
-      MAIL_PORT: 1025
-      MAIL_ENCRYPTION: none
-      MAIL_FROM: logbook@localhost
+      # Mailpit catches every email (spec.md §10 *Development stack*): set it up once in
+      # Settings → Delivery as server mailpit, port 1025, encryption None (Phase 36.1).
     volumes:
       - .:/var/www/html
       - vendor:/var/www/html/vendor

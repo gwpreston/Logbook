@@ -1105,6 +1105,22 @@ Provider stations, provider prices and fuel price secrets are **not in
 backups**; they are re-synced. Station links, price changes and alerts
 are. The schema version moves.
 
+**NotificationSecret** (Phase 36.1, decided 2026-10-06, #224),
+`notification_secrets`
+- id, owner_user_id (nullable, FK users `ON DELETE CASCADE`; null = the
+  installation), name (up to 64: `smtp_password`, and from Phase 36.2
+  members' tokens), value (sealed, §7.25, with the HKDF info
+  `logbook-notify`; for installation rows only, an `env:NAME` reference),
+  created_at, updated_at (UTC). Unique `(owner_user_id, name)`. **Never**
+  in backups, exports, the API or any page. Its own table, as fuel price
+  secrets have theirs; the sealing code is the AI one (`SecretBox`).
+
+**Setting** `email.smtp` (Phase 36.1, scope global): `host`, `port`,
+`encryption` (`tls` | `ssl` | `none`), `username`, `from_address`,
+`from_name`, `admin_recipient` (nullable), `updated_at`, `updated_by`.
+The password is the installation's NotificationSecret `smtp_password`.
+In backups (the password is not).
+
 **ImportSource** (Phase 31, §7.13 *Importing from another app*),
 `import_sources`
 - id, app (`fuelio`), source_id (the row's own id in the app's export:
@@ -2575,9 +2591,10 @@ First-run setup creates the initial account. CSRF on all forms.
   pending, with a confirmation link sent when email is configured. These
   addresses are set only when a user is created, as today.
 - Settings → Reminders shows the confirmed address with a link to
-  Account; it no longer has its own field. `MAIL_TO` remains the fallback
-  for **reminders** to admins without a confirmed address, never for
-  reset links or notices.
+  Account; it no longer has its own field. The *Default recipient for
+  admins* (Settings → Delivery, §7.11; `MAIL_TO` until Phase 36.1)
+  remains the fallback for **reminders** to admins without a confirmed
+  address, never for reset links or notices.
 
 **Sign-in by username or email** (Phase 33.1, decided 2026-10-05, #162)
 
@@ -2593,7 +2610,8 @@ First-run setup creates the initial account. CSRF on all forms.
 
 **Forgotten password** (Phase 33.1, decided 2026-10-04, superseding #36)
 
-- Shown only when email is configured (`MAIL_HOST`), local sign-in is on
+- Shown only when the server's email is configured (Settings → Delivery,
+  §7.11; Phase 36.1), local sign-in is on
   and `PASSWORD_RESET_ENABLED` is not `false`. Otherwise the sign-in
   page has no link and the routes answer 404.
 - `GET /forgot-password` asks for **username or email address**. `POST`
@@ -2990,7 +3008,8 @@ Extensible channel interface so more can be added.
   generic JSON webhook. Each implements one `NotificationChannel` interface
   (`key()`, `isConfigured()`, `send()`) and is registered in the DI list
   `notification.channels`; the dispatcher only ever sees that interface. A
-  channel is *configured* when its environment variables are set (§9) and
+  channel is *configured* when its environment variables are set (§9;
+  email: when Settings → Delivery has a server, Phase 36.1) and
   *enabled* per owner in Settings → Reminders (until the owner saves a
   choice: every configured channel). Only enabled **and** configured
   channels are used. Adding a channel means implementing the interface,
@@ -3003,8 +3022,9 @@ Extensible channel interface so more can be added.
   A recipient without `ViewCosts` on a vehicle never gets its amounts
   (a reminder carries none today; *Coming up* costs are not sent).
 - **Channels per user** (Phase 19): email goes to the user's own address
-  (Settings → Reminders; `MAIL_TO` is the default for admins only, so a
-  member without an address gets no email). From Phase 33.1 that is the
+  (Settings → Reminders; the *Default recipient for admins*, Settings →
+  Delivery, is the default for admins only, so a member without an
+  address gets no email). From Phase 33.1 that is the
   user's confirmed address (§6 User `email`, set on Profile),
   no longer a preference. ntfy and Gotify take a
   personal topic URL / application token there, which replaces the
@@ -3056,6 +3076,81 @@ Extensible channel interface so more can be added.
   `APP_URL` and `APP_BASE_PATH`).
 - Settings → Reminders can send a **test notification** through the enabled
   channels.
+
+#### The email server (Phase 36.1, decided 2026-10-06, #222–#226)
+
+- **Settings are the only source.** The SMTP server is set in **Settings →
+  Delivery** (`/settings/delivery`, admins: `InstanceAbility::ManageNotifications`,
+  404 to anyone else) and nowhere else. The `MAIL_HOST`, `MAIL_PORT`,
+  `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM` and
+  `MAIL_TO` variables are **removed** in v3.3.0 and never read; nothing is
+  imported from them (#223). An install that used them has email off
+  until an admin fills in the page; the release notes and the upgrade
+  notes say so, and while any of them is still set the Delivery page says
+  "`MAIL_HOST` is set in the environment but is no longer read. Set the
+  server up here, then remove the variables."
+- **Effective configuration.** `MailConfig::effective()` reads the
+  `email.smtp` setting and the `smtp_password` secret each time it is
+  asked (never cached across requests or scheduler runs), and says its
+  source: `settings` or `none`. Email is **configured** when the saved
+  settings have a host.
+- **One transport.** `MailerFactory` is the only place a mail transport
+  is built, from `MailConfig::effective()` (or, for the test, from typed
+  values). Reminder email, the digest, invitations, password resets and
+  address confirmations (Phase 33.1), the test email and anything later
+  use it; demo mode's guard (§7.36) wraps what it builds. An architecture
+  test fails if anything else in `src/` builds one.
+- **Settings → Delivery → Email server.** Fields: *Server* (host), *Port*
+  (default by encryption: 587 for `tls`, 465 for `ssl`, 25 for `none`),
+  *Encryption* (`tls` = STARTTLS required, `ssl` = implicit TLS, `none`;
+  default `tls`), *Username*, *Password*, *From address*, *From name*
+  (default "Logbook"), *Default recipient for admins* (optional; reminders
+  to an admin without a confirmed address go there, #225; never reset
+  links or notices). Validation: a host (no scheme, path, port or space),
+  a port 1 to 65535, a valid From address, a valid recipient address when
+  given, a name up to 100 characters, a username up to 254; CR and LF are
+  rejected in every field (header injection). With `none` and a username,
+  a warning: "Your password would be sent unencrypted." **Remove email
+  server** (with a confirmation) deletes the setting and the saved
+  password; email is then off.
+- **The password** is the installation's NotificationSecret
+  `smtp_password`:
+  - an `env:NAME` reference (a valid variable name) stores only the
+    reference and reads the variable when sending, for those who keep it
+    in a Docker secret. Only admins can save this page, so the reference
+    is safe here (it is **not** allowed for members' secrets, Phase 36.2);
+  - anything else is sealed with libsodium `secretbox` exactly as AI
+    secrets are (§7.25), with the HKDF info `logbook-notify`;
+  - without a `SESSION_SECRET` only `env:` references can be saved, and
+    the form says so;
+  - it is never shown again, not even masked: *Saved* with *Replace* and
+    *Remove*; an empty field keeps it; a form re-shown after an error
+    never puts it back;
+  - if it can't be opened (another `SESSION_SECRET`, or a restore) the
+    page says *Re-enter the password*, and nothing is sent; an `env:`
+    variable that is unset says *Set {NAME}*.
+- **Send test email** sends one message to the **admin's own confirmed
+  address** (Phase 33.1); without one the form asks for an address. It
+  uses the **typed** values (an empty password field: the saved one)
+  without saving them, so a typo is found before it replaces a working
+  setup. It reports success, or the stage that failed (connection,
+  encryption, sign-in, send) with the server's reply, redacted. Timeouts:
+  10 seconds to connect and 10 for each reply (symfony/mailer has no
+  overall limit); no retry.
+- **Redaction.** Every installation `notification_secrets` value, and the
+  value of an `env:` reference, is added to the log and job-output
+  redaction (§7.30), as AI secrets are. Error text from the transport is
+  redacted before it reaches a page, a job's output or the log.
+- **Backups.** `email.smtp` is in backups; `notification_secrets` is not.
+  A restored install says *Re-enter the password* on the Delivery page,
+  and the restore page says so.
+- **Changes are logged** at notice level with the admin's id and the
+  names of the fields changed, never the values.
+- **Demo mode** (§7.36) blocks the page (*Not available in the demo*)
+  and every send.
+- **Not built:** OAuth 2 sign-in to an SMTP provider (§12, #226), more
+  than one server, per-user SMTP, DKIM, bounces, editable templates, a
+  `sendmail` or `mail()` transport.
 
 ### 7.12 Attachments
 Upload receipts, invoices, insurance/cert PDFs and images against fill-ups,
@@ -7242,7 +7337,10 @@ owner. Decided 2026-10-06 (#212–#217).
   - **Your data** (`#data`, fuel on): import from another app.
   - **Developers** (`#developers`): API keys (and MCP, which uses them).
   - **Administration** (`#admin`, admins): users, modules, AI
-    connections, fuel prices, backup and restore.
+    connections, fuel prices, **Delivery** (Phase 36.1: the
+    installation-wide places notifications leave the server from; the
+    email server), backup and restore. Personal channels are in Account
+    (Phase 36.2).
   - **Installation** (`#installation`): version, health, scheduled jobs
     and updates (admins), deep-link check.
 
@@ -7358,6 +7456,15 @@ Real environment variables override `.env`; an empty value counts as unset.
 - `SESSION_SECRET` (optional key for hashing session ids, calendar-feed
   tokens and API keys at rest; changing it signs everyone out, disables
   feed links and disables every API key),
+  `SESSION_SECRET_FILE` (Phase 36.1, decided 2026-10-06, #222: a file
+  whose contents are used when `SESSION_SECRET` is empty; the Docker image
+  sets it to `/data/session-secret`. On start, if neither gives a secret
+  **and the database has no users yet**, the entrypoint
+  (`bin/session-secret.php`) writes 64 random hex characters to that file,
+  readable only by the app. An install that already has users is never
+  given one, because it would sign everyone out and disable feed links,
+  API keys and invitation links; the log, Settings → Delivery and Settings
+  → AI say to set one. The bare-PHP path never generates one),
   `SESSION_SECURE` (default: true when `APP_URL` is https)
 - `API_ENABLED` (the REST API, §7.20; default `true`; `false` makes every
   `/api/v1` path a 404), `API_CORS_ORIGINS` (comma-separated origins
@@ -7403,13 +7510,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   accepted by the restore form; default 256, and PHP's upload limits must
   allow it)
 - `LOG_PATH` (default `php://stderr`), `LOG_LEVEL` (PSR-3 level)
-- Notifications (§7.11): `MAIL_HOST` (email is configured when set),
-  `MAIL_PORT` (default 587), `MAIL_USERNAME`, `MAIL_PASSWORD`,
-  `MAIL_ENCRYPTION` (`tls` = STARTTLS required, `ssl` = implicit TLS,
-  `none`; default `tls`), `MAIL_FROM` (default `logbook@localhost`),
-  `MAIL_TO` (the admins' default recipient for reminders; each user's
-  confirmed address takes precedence, and it is never used for reset
-  links); `PASSWORD_RESET_ENABLED` (Phase 33.1, default `true`: `false`
+- Notifications (§7.11): the email server is set in Settings → Delivery
+  only; `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,
+  `MAIL_ENCRYPTION`, `MAIL_FROM` and `MAIL_TO` were removed in v3.3.0
+  (Phase 36.1, #223) and are not read; `PASSWORD_RESET_ENABLED` (Phase 33.1, default `true`: `false`
   hides *Forgotten password* even with email configured, §7.9);
   `NTFY_URL` (topic URL; admins' default, members need their own topic),
   `NTFY_TOKEN`; `GOTIFY_URL` (server URL), `GOTIFY_TOKEN` (application
@@ -7487,8 +7591,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   use the *On page visits* or *External URL* trigger instead (§7.30).
 - **Development stack** (Phase 33.1): `docker-compose.dev.yml` runs
   **Mailpit** (`axllent/mailpit`, pinned tag, multi-arch) as `mailpit`,
-  and the app's dev environment points at it: `MAIL_HOST=mailpit`,
-  `MAIL_PORT=1025`, `MAIL_ENCRYPTION=none`, `MAIL_FROM=logbook@localhost`.
+  and the app reaches it as `mailpit`. From Phase 36.1 a developer sets
+  it up once in Settings → Delivery (server `mailpit`, port 1025,
+  encryption `none`, From `logbook@localhost`); the README says how.
   Its UI is on `http://localhost:${MAILPIT_PORT:-8025}` (`MAILPIT_PORT`,
   development only). Mailpit is never in `docker-compose.yml` or
   `docker-compose.mysql.yml`. `bin/dev-setup.sh --with-sample-data`
@@ -7538,6 +7643,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
+- Email server (Phase 36.1, #226): OAuth 2 sign-in to SMTP providers
+  (Microsoft 365, Gmail) for those that no longer take app passwords; an
+  SMTP relay or an app password works meanwhile.
 - Header sign-in (Phase 23.2): mTLS between proxy and app; RS256 or
   ES256 proxy JWTs checked against a key set, should a proxy offer them.
 - Single sign-on (Phase 23.1): more than one OIDC provider (#50); linking
@@ -8027,8 +8135,9 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 36.1 — Email server settings (admin).** The SMTP server set in
   Settings → Delivery by admins for the whole installation, with the
   password stored as an encrypted secret, a test that sends with unsaved
-  values, one mail transport, and the `MAIL_*` variables kept as defaults
-  (§6, §7.9, §7.11, §8, §9). One migration. Ships with Phase 36.3 as v3.3.0.
+  values, one mail transport, and the `MAIL_*` variables removed; a
+  `SESSION_SECRET` generated on a fresh Docker volume (§6, §7.9, §7.11,
+  §8, §9; #222–#226). One migration. Ships with Phase 36.3 as v3.3.0.
 - **Phase 36.2 — Personal notification channels.** Account → Notifications:
   a card per channel generated from a definition, with enable, test and
   last result; Email, ntfy, Gotify and Webhook as personal channels;

@@ -99,6 +99,28 @@ final class SecretBoxTest extends TestCase
         self::assertStringStartsWith('v1:', self::box(self::SECRET)->store('env:has space'));
     }
 
+    public function testNotificationSecretsHaveTheirOwnKey(): void
+    {
+        $ai = self::box(self::SECRET);
+        $notify = $ai->withInfo(SecretBox::NOTIFY);
+        $stored = $notify->store('smtp-password');
+
+        self::assertSame('smtp-password', $notify->open('smtp_password', $stored));
+        $this->expectException(SecretUnreadable::class);
+        $ai->open('smtp_password', $stored);
+    }
+
+    public function testTheMessageNamesTheSecretNotItsValue(): void
+    {
+        $stored = self::box(self::SECRET)->withInfo(SecretBox::NOTIFY)->store('smtp-password');
+        try {
+            self::box('another-secret-another-secret-xx')->withInfo(SecretBox::NOTIFY)->open('smtp_password', $stored);
+            self::fail('Another SESSION_SECRET must not open it.');
+        } catch (SecretUnreadable $e) {
+            self::assertSame('The secret "smtp_password" cannot be decrypted with this SESSION_SECRET.', $e->getMessage());
+        }
+    }
+
     /**
      * @param array<string, string> $env
      */

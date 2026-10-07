@@ -141,9 +141,11 @@ Everything is an environment variable (or a line in `.env`); all are
 documented in [`.env.example`](.env.example) and
 [docs/configuration.md](docs/configuration.md). The most important are
 `DB_DRIVER`/`DB_HOST`/`DB_NAME`/`DB_USER`/`DB_PASSWORD`, `APP_URL`,
-`APP_BASE_PATH` and `APP_TIMEZONE`. Reminders are sent through whichever
-notification channels you configure (`MAIL_*`, `NTFY_*`, `GOTIFY_*`,
-`WEBHOOK_URL`; see [docs/notification-channels.md](docs/notification-channels.md)).
+`APP_BASE_PATH` and `APP_TIMEZONE`. The one exception is the email server,
+which an admin sets up in the app, in **Settings → Delivery** (with *Send
+test email*). Reminders are sent through email and whichever other
+notification channels you configure (`NTFY_*`, `GOTIFY_*`, `WEBHOOK_URL`; see
+[docs/notification-channels.md](docs/notification-channels.md)).
 
 On first visit you create the first admin account; after that, units,
 currency, language and time zone are per-user settings in the app, and
@@ -207,10 +209,12 @@ start if something else already holds the app port. On Windows run it from
 | `-y`, `--yes` | Do not prompt before anything destructive. |
 
 Every email the app sends in development (password resets, invitations,
-reminders, digests) is caught by **Mailpit**: open `http://localhost:8025`.
+reminders, digests) can be caught by **Mailpit**: open `http://localhost:8025`.
 If another project already uses 8025, the script picks the next free port and
-prints it (or ask for one with `MAILPIT_PORT=8026 ./bin/dev-setup.sh`). Try *Forgotten your password?* as `demo` and the
-email appears there.
+prints it (or ask for one with `MAILPIT_PORT=8026 ./bin/dev-setup.sh`). Set it
+up once, as an admin, in **Settings → Delivery**: server `mailpit`, port
+`1025`, encryption *None*, From `logbook@localhost`, then *Send test email*.
+Try *Forgotten your password?* as `demo` and the email appears there.
 
 Migrations are applied automatically whenever the app starts. The dev stack
 runs on port 8090 so it never collides with the production stack on 8080 (the

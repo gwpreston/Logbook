@@ -58,6 +58,7 @@ ENV APP_ENV=production \
     DB_NAME=/data/logbook.sqlite \
     UPLOAD_PATH=/data/uploads \
     BACKUP_PATH=/data/backups \
+    SESSION_SECRET_FILE=/data/session-secret \
     LOGBOOK_DOCKER=1
 
 # ---------------------------------------------------------------------------

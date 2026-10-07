@@ -157,9 +157,9 @@ owner's lead times, so everyone agrees on what is due.
 
 Channels are per person (Settings → Reminders):
 
-- **Email** goes to your confirmed address (your Profile). `MAIL_TO`
-  is the admins' default only, so a member without an address gets no
-  email.
+- **Email** goes to your confirmed address (your Profile). The *Default
+  recipient for admins* (Settings → Delivery) is the admins' default
+  only, so a member without an address gets no email.
 - **ntfy** and **Gotify**: set your own topic URL or application token.
   Without one, only admins receive through the instance's topic or token,
   so a household topic is never flooded by everyone's cars.

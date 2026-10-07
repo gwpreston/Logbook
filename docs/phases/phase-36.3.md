@@ -262,8 +262,11 @@ before this phase was written and must be checked again.
       - *Changed* — channels moved from Settings → Reminders to Account →
         Notifications. The webhook payload is unchanged.
       - *Deprecated* — `NTFY_URL`, `NTFY_TOKEN`, `GOTIFY_URL`,
-        `GOTIFY_TOKEN`, `GOTIFY_PRIORITY`, `WEBHOOK_URL` and the `MAIL_*`
-        variables still work as fallbacks and defaults.
+        `GOTIFY_TOKEN`, `GOTIFY_PRIORITY` and `WEBHOOK_URL` still work as
+        fallbacks and defaults.
+      - *Removed* — the `MAIL_*` variables (36.1, #223): **email is off
+        after upgrading until an admin sets the server up in Settings →
+        Delivery**; nothing is imported.
       - *Upgrade notes* — two migrations (`notification_secrets`,
         `notification_channels`); personal ntfy and Gotify settings move
         automatically; **notification secrets are encrypted with

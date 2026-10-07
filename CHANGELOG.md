@@ -6,6 +6,28 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added
+- **Settings → Delivery** (admins, Phase 36.1): the email server is set up
+  in the app, with *Send test email* using the typed values unsaved, and
+  *Remove email server*. The password is stored encrypted (or as `env:NAME`),
+  never shown again, kept out of backups and job output.
+- `SESSION_SECRET_FILE`: the Docker image writes a random `SESSION_SECRET` to
+  `/data/session-secret` on a **fresh** volume.
+
+### Removed
+- **The `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,
+  `MAIL_ENCRYPTION`, `MAIL_FROM` and `MAIL_TO` variables.** Nothing is
+  imported from them.
+
+### Upgrade notes
+- **Email is off after upgrading until an admin sets the server up in
+  Settings → Delivery.** The page says so while any `MAIL_*` variable is
+  still set; remove them afterwards. `MAIL_TO` is now the *Default
+  recipient for admins* field there.
+- One migration (`notification_secrets`).
+- The development stack's Mailpit is set up once by hand in Settings →
+  Delivery (server `mailpit`, port 1025, encryption None).
+
 ## [3.2.0] — 2026-10-06
 
 Phases 35.1 and 35.2: **show it, and run it where you already run
