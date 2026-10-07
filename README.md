@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.3.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.2.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -22,8 +22,8 @@ your own server.
 > how far and how old each one is, its tread depth and when it will need
 > replacing; and reminders for all of it, with
 > lead times you choose, sent by email, ntfy, Gotify, Telegram, Discord,
-> Pushover, Mattermost, Slack or a webhook when they come due, as a list or a month calendar, plus an optional monthly digest
-> and a calendar feed; every cost
+> Pushover, Mattermost, Slack or a webhook when they come due, as a list or
+> a month calendar, plus an optional monthly digest and a calendar feed; every cost
 > rolled up into per-vehicle and fleet reports (by category, per month, per
 > mile or km, any date range) with CSV export and a clean printout (or PDF)
 > of every report, charts in black and grey beside their tables; valuations, depreciation and
@@ -83,11 +83,7 @@ your own server.
 > it?* after a fill-up, the listed price on the fill-up form and price
 > alerts on favourite stations; a public demo mode that resets itself;
 > tested recipes for Caddy and Traefik and a guide for Proxmox containers;
-> the email server set up in the app, and each person's own notification
-> channels (email, ntfy, Gotify, Telegram, Discord, Pushover, Mattermost,
-> Slack or a webhook) with a test on each; in English and German. Coming
-> from 3.2? Email is off after upgrading until an admin sets it up in
-> Settings → Delivery: read the 3.3.0 upgrade notes. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
+> in English and German. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
 > the plan and what may come next.
 

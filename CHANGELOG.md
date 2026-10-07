@@ -6,17 +6,6 @@ is called out explicitly.
 
 ## [Unreleased]
 
-## [3.3.0] — 2026-10-07
-
-Phases 36.1–36.3: **your reminders, where you want them**. The email server
-is set up in the app by an admin, and each person chooses their own
-channels (email, ntfy, Gotify, a webhook, and now Telegram, Discord,
-Pushover, Mattermost and Slack), sets them up themselves and tests each one.
-
-**Read the upgrade notes first: email is off after upgrading until an admin
-sets the server up in Settings → Delivery.** Two migrations; notification
-secrets are encrypted with `SESSION_SECRET` and are not in backups.
-
 ### Added
 - **Settings → Delivery** (admins, Phase 36.1): the email server is set up
   in the app, with *Send test email* using the typed values unsaved, and
