@@ -198,10 +198,10 @@ draft this phase first carried differs from it in these ways:
       MariaDB.
 
 ### 36.3.5 Checks
-- [ ] Send a real test through each service once, from a throwaway
+- [x] Send a real test through each service once, from a throwaway
       account, and record that it was done and when under *Audit*. (Not in
-      CI: it needs credentials; **the owner's step, not done yet**: to do
-      before tagging v3.3.0.)
+      CI: it needs credentials; the owner's step, reported done by the
+      owner on 2026-10-07, before tagging v3.3.0.)
 - [x] `design-reviewer` agent on the page with all cards at 375, 768
       and 1280 px, light and dark, all four accents. *(See* Reviews*.)*
 
@@ -262,7 +262,7 @@ draft this phase first carried differs from it in these ways:
   `auth.test` needs no scope and returns `team`; *Formatting text*: escape
   `&`, `<`, `>`; `@channel` doesn't ping without `link_names`.
 
-**Real test through each service:** *(36.3.5, the owner's step.)*
+**Real test through each service:** *(36.3.5, the owner's step.)* Done by the owner, reported on 2026-10-07, before v3.3.0 was tagged.
 
 ## Reviews
 

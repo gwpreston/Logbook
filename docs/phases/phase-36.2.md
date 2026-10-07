@@ -403,7 +403,7 @@ Decided by the owner on 2026-10-07, before any code.
       no channel rows.)
 
 ### Release
-- [ ] Ships with Phase 36.4 as **v3.3.0** (moved from 36.3, #254).
+- [x] Ships with Phase 36.4 as **v3.3.0** (moved from 36.3, #254).
 
 ---
 

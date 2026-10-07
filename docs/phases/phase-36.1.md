@@ -206,7 +206,7 @@ gains a sentence on the exception.
 - [x] None. Demo mode blocks the page.
 
 ### Release
-- [ ] Ships with Phase 36.4 as **v3.3.0** (moved from 36.3, #254), with the upgrade warning.
+- [x] Ships with Phase 36.4 as **v3.3.0** (moved from 36.3, #254), with the upgrade warning.
 
 ---
 

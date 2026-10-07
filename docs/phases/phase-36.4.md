@@ -130,9 +130,10 @@ alerts*, §12 and §13. In short:
       line (with "Coming from 3.2? Email is off after upgrading until an
       admin sets it up in Settings → Delivery") and `ROADMAP.md`; Phases
       36.1 to 36.4 marked complete.
-- [ ] The real test through each Phase 36.3 service (its 36.3.5 item), if
-      not done before. **The owner's step** (it needs real accounts).
-- [ ] Tag `v3.3.0` once merged (the owner's step).
+- [x] The real test through each Phase 36.3 service (its 36.3.5 item), if
+      not done before. **The owner's step** (it needs real accounts); done
+      by the owner, reported on 2026-10-07.
+- [x] Tag `v3.3.0` once merged (the owner's step).
 
 ---
 
