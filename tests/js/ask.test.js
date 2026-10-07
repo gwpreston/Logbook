@@ -2,10 +2,10 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const {outcome} = require('../../assets/js/ask.js');
+const {outcome, focusesBox} = require('../../assets/js/ask.js');
 
 test('a reply with a url goes to the answer', () => {
-    assert.deepStrictEqual(outcome(200, {url: '/ask/threads/3#answer-7'}, 'x'), {go: '/ask/threads/3#answer-7'});
+    assert.deepStrictEqual(outcome(200, {url: '/insights/questions/3#answer-7'}, 'x'), {go: '/insights/questions/3#answer-7'});
 });
 
 test('a reply with an error shows it', () => {
@@ -24,11 +24,19 @@ test('no reply from Logbook keeps waiting for the polls', () => {
 const {progressStep} = require('../../assets/js/ask.js');
 
 test('a done poll with a url goes to the answer', () => {
-    assert.deepStrictEqual(progressStep({done: true, url: '/ask/threads/4', line: 'x'}, 'f'), {go: '/ask/threads/4'});
+    assert.deepStrictEqual(progressStep({done: true, url: '/insights/questions/4', line: 'x'}, 'f'), {go: '/insights/questions/4'});
 });
 
 test('a running poll shows its line, a done one without a url fails', () => {
     assert.deepStrictEqual(progressStep({done: false, line: 'Looking up your costs…'}, 'f'), {line: 'Looking up your costs…'});
     assert.deepStrictEqual(progressStep({done: true, url: null}, 'f'), {error: 'f'});
     assert.deepStrictEqual(progressStep(null, 'f'), {});
+});
+
+test('arriving at #ask or #ask-question focuses the box, nothing else does', () => {
+    assert.strictEqual(focusesBox('#ask'), true);
+    assert.strictEqual(focusesBox('#ask-question'), true);
+    assert.strictEqual(focusesBox(''), false);
+    assert.strictEqual(focusesBox('#your-questions'), false);
+    assert.strictEqual(focusesBox('#draft-4'), false);
 });

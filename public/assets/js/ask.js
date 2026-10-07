@@ -1,7 +1,8 @@
 /*
  * Ask Logbook (spec.md §7.26, Phase 26.2).
  *
- * Progressive enhancement of the plain form on /ask:
+ * Progressive enhancement of the plain form on the Insights page and a
+ * thread's page (Phase 38):
  * - `[data-ask-form]` posts in the background (header `X-Ask: 1`) and polls
  *   its `data-progress-url` about once a second for the progress line
  *   ("Looking up your fuel costs…") until the answer is ready; then the
@@ -9,6 +10,9 @@
  *   proxy's timeout), the polls still find the answer once it is saved.
  *   Without JS the form posts and the server redirects to the answer.
  * - `[data-ask-copy]` buttons (hidden without JS) copy their answer's text.
+ * - Arriving at `#ask` (the top-bar button, the dashboard link, the phone's
+ *   quick action) or `#ask-question` focuses the box; without JS the
+ *   browser scrolls to it.
  *
  * The pure helper at the top has no DOM and is unit tested with
  * `composer test:js` (tests/js/ask.test.js).
@@ -54,7 +58,14 @@
         return body.line ? {line: body.line} : {};
     }
 
-    var core = {outcome: outcome, progressStep: progressStep};
+    /*
+     * Whether the page's address asks for the question box to be focused.
+     */
+    function focusesBox(hash) {
+        return hash === '#ask' || hash === '#ask-question';
+    }
+
+    var core = {outcome: outcome, progressStep: progressStep, focusesBox: focusesBox};
 
     if (typeof module === 'object' && module.exports) {
         module.exports = core;
@@ -221,8 +232,17 @@
         window.setTimeout(function () { form.hidden = true; }, seconds * 1000);
     }
 
+    function focusBox() {
+        var box = document.getElementById('ask-question');
+        if (box && focusesBox(window.location.hash)) {
+            box.focus();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         Array.prototype.forEach.call(document.querySelectorAll('[data-ask-form]'), enhance);
+        focusBox();
+        window.addEventListener('hashchange', focusBox);
         Array.prototype.forEach.call(document.querySelectorAll('[data-ask-copy]'), enhanceCopy);
         Array.prototype.forEach.call(document.querySelectorAll('[data-draft-undo]'), enhanceUndo);
     });

@@ -2,9 +2,11 @@
 {% import 'macros/ui.twig' as ui %}
 
 {#
- # The Insights page (spec.md §7.26 *Ask and the Insights page*, Phase 33.4):
- # the *Ask Logbook* box when Ask is available (it opens the new thread on
- # the Ask page), then every computed insight (§7.8) as a card.
+ # The Insights page (spec.md §7.26 *Ask and the Insights page*, Phases 33.4
+ # and 38): when Ask is available, the *Ask Logbook* box (`#ask`; a new
+ # question opens its thread's page); *Drafts to review* (§7.28) while there
+ # are any; *Your questions* with retention when Ask is available; then
+ # every computed insight (§7.8) as a card, and the AI insights.
  #}
 {% set active_nav = 'insights' %}
 
@@ -22,9 +24,61 @@
         </header>
 
         {% if ask_on %}
-            <section class="card ask-card" aria-labelledby="ask-card-title" data-insights-ask>
+            <section class="card ask-card" id="ask" aria-labelledby="ask-card-title" data-insights-ask>
                 {% include 'ask/_card_head.twig' with {level: 'h2'} %}
-                {% include 'ask/_card_form.twig' with {thread: null, question: '', error: null} %}
+                {% include 'ask/_card_form.twig' with {thread: null} %}
+            </section>
+        {% endif %}
+
+        {% if review_drafts is not empty %}
+            {% include 'ask/_review_drafts.twig' with {review_drafts: review_drafts, back: 'insights'} %}
+        {% endif %}
+
+        {% if ask_on %}
+            {# Your questions (#272, #275, #276): the latest few, the rest under Show all; retention always. #}
+            <section class="card" id="your-questions" aria-labelledby="ask-threads-heading">
+                <h2 id="ask-threads-heading" class="card__title">{{ ui.icon('history') }}{{ 'ask.threads.heading'|trans }}</h2>
+                {% if threads is empty %}
+                    <p class="muted">{{ 'ask.threads.none'|trans }}</p>
+                {% else %}
+                    <ul class="list" data-ask-threads>
+                        {% for item in threads|slice(0, threads_shown) %}
+                            {{ _self.thread_row(item, csrf) }}
+                        {% endfor %}
+                    </ul>
+                    {% if threads|length > threads_shown %}
+                        <details class="disclosure ask-threads-more">
+                            <summary class="disclosure__summary">{{ 'ask.threads.show_all'|trans({count: threads|length}) }}</summary>
+                            <ul class="list">
+                                {% for item in threads|slice(threads_shown) %}
+                                    {{ _self.thread_row(item, csrf) }}
+                                {% endfor %}
+                            </ul>
+                        </details>
+                    {% endif %}
+                    <details class="ask-delete-all">
+                        <summary class="btn btn--ghost">{{ ui.icon('delete') }}{{ 'ask.threads.delete_all'|trans }}</summary>
+                        <form method="post" action="{{ url_for('insights.questions.delete') }}">
+                            {{ ui.csrf(csrf) }}
+                            <p>{{ 'ask.threads.delete_all_confirm'|trans({count: threads|length}) }}</p>
+                            <button class="btn btn--danger" type="submit">{{ 'ask.threads.delete_all_button'|trans }}</button>
+                        </form>
+                    </details>
+                {% endif %}
+
+                <form method="post" action="{{ url_for('insights.questions.retention') }}" class="form ask-retention">
+                    {{ ui.csrf(csrf) }}
+                    <div class="field">
+                        <label class="field__label" for="ask-retention">{{ 'ask.retention.label'|trans }}</label>
+                        <select class="select" id="ask-retention" name="days" aria-describedby="ask-retention-hint">
+                            {% for days in retention_choices %}
+                                <option value="{{ days }}"{% if days == retention_days %} selected{% endif %}>{{ 'ask.retention.days'|trans({days: days}) }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="field__hint" id="ask-retention-hint">{{ 'ask.retention.hint'|trans }}</p>
+                    </div>
+                    <button class="btn" type="submit">{{ 'ask.retention.save'|trans }}</button>
+                </form>
             </section>
         {% endif %}
 
@@ -53,3 +107,20 @@
         {% endif %}
     </div>
 {% endblock %}
+
+{# One row of *Your questions*: the thread's page, when, and *Delete*. #}
+{% macro thread_row(item, csrf) %}
+    {% import 'macros/ui.twig' as ui %}
+    <li class="ask-thread-row">
+        <a class="list__item" href="{{ url_for('insights.question', {thread: item.id}) }}">
+            <span class="list__body">
+                <span class="list__title">{{ item.title }}</span>
+                <span class="list__meta">{{ item.updatedAt|local_datetime }}</span>
+            </span>
+        </a>
+        <form method="post" action="{{ url_for('insights.question.delete', {thread: item.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <button class="btn btn--ghost" type="submit">{{ ui.icon('delete') }}<span>{{ 'ask.threads.delete'|trans }}</span><span class="visually-hidden">: {{ item.title }}</span></button>
+        </form>
+    </li>
+{% endmacro %}

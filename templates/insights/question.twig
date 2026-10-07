@@ -3,21 +3,20 @@
 {% import 'macros/ai.twig' as ai %}
 
 {#
- # Ask Logbook (spec.md §7.26): the question box, the open thread with each
- # answer's sources and grounding marks, and the user's threads. Works as
- # plain forms; assets/js/ask.js posts in the background and shows progress.
+ # A thread's page under Insights (spec.md §7.26, Phase 38, #274): the
+ # questions and answers with each answer's sources and grounding marks,
+ # draft cards, feedback and *Copy*, then the follow-up box. Works as plain
+ # forms; assets/js/ask.js posts in the background and shows progress.
  #}
-{% set active_nav = 'ask' %}
+{% set active_nav = 'insights' %}
 
 {% block head %}<script defer src="{{ asset('js/ask.js') }}"></script>{% endblock %}
 
-{% block title %}{{ (thread ? thread.title : 'ask.title'|trans) }} · {{ parent() }}{% endblock %}
+{% block title %}{{ thread.title }} · {{ 'insights.page.title'|trans }} · {{ parent() }}{% endblock %}
 
 {% block content %}
     <div class="page__stack page__stack--narrow" data-ask>
-        {% if review_drafts is not empty %}
-            {% include 'ask/_review_drafts.twig' with {review_drafts: review_drafts, back: 'ask'} %}
-        {% endif %}
+        <a class="back-link" href="{{ url_for('insights') }}#your-questions">{{ ui.icon('chevron_left') }}{{ 'insights.page.title'|trans }}</a>
 
         <section class="card ask-card" aria-labelledby="ask-card-title">
         {% include 'ask/_card_head.twig' with {level: 'h1'} %}
@@ -83,7 +82,7 @@
                                     {% endif %}
                                     {% if not turn.error %}
                                         <button type="button" class="btn btn--ghost" data-ask-copy="answer-{{ answer.id }}" data-copied="{{ 'ask.copied'|trans }}" hidden>{{ ui.icon('content_copy') }}{{ 'ask.copy'|trans }}</button>
-                                        <form method="post" action="{{ url_for('ask.feedback', {message: answer.id}) }}" class="ask-feedback">
+                                        <form method="post" action="{{ url_for('insights.questions.feedback', {message: answer.id}) }}" class="ask-feedback">
                                             {{ ui.csrf(csrf) }}
                                             <span class="visually-hidden">{{ 'ask.feedback.label'|trans }}</span>
                                             <button class="btn btn--ghost" name="mark" value="helpful" aria-pressed="{{ answer.feedback and answer.feedback.value == 'helpful' ? 'true' : 'false' }}">{{ ui.icon('check') }}{{ 'ask.feedback.helpful'|trans }}</button>
@@ -99,52 +98,6 @@
         {% endif %}
 
         {% include 'ask/_card_form.twig' %}
-        </section>
-
-        <section class="card" aria-labelledby="ask-threads-heading">
-            <h2 id="ask-threads-heading" class="card__title">{{ ui.icon('history') }}{{ 'ask.threads.heading'|trans }}</h2>
-            {% if threads is empty %}
-                <p class="muted">{{ 'ask.threads.none'|trans }}</p>
-            {% else %}
-                <ul class="list" data-ask-threads>
-                    {% for item in threads %}
-                        <li class="ask-thread-row">
-                            <a class="list__item" href="{{ url_for('ask.thread', {thread: item.id}) }}"{% if thread and thread.id == item.id %} aria-current="page"{% endif %}>
-                                <span class="list__body">
-                                    <span class="list__title">{{ item.title }}</span>
-                                    <span class="list__meta">{{ item.updatedAt|local_datetime }}</span>
-                                </span>
-                            </a>
-                            <form method="post" action="{{ url_for('ask.thread.delete', {thread: item.id}) }}">
-                                {{ ui.csrf(csrf) }}
-                                <button class="btn btn--ghost" type="submit">{{ ui.icon('delete') }}<span>{{ 'ask.threads.delete'|trans }}</span><span class="visually-hidden">: {{ item.title }}</span></button>
-                            </form>
-                        </li>
-                    {% endfor %}
-                </ul>
-                <details class="ask-delete-all">
-                    <summary class="btn btn--ghost">{{ ui.icon('delete') }}{{ 'ask.threads.delete_all'|trans }}</summary>
-                    <form method="post" action="{{ url_for('ask.threads.delete') }}">
-                        {{ ui.csrf(csrf) }}
-                        <p>{{ 'ask.threads.delete_all_confirm'|trans({count: threads|length}) }}</p>
-                        <button class="btn btn--danger" type="submit">{{ 'ask.threads.delete_all_button'|trans }}</button>
-                    </form>
-                </details>
-            {% endif %}
-
-            <form method="post" action="{{ url_for('ask.retention') }}" class="form ask-retention">
-                {{ ui.csrf(csrf) }}
-                <div class="field">
-                    <label class="field__label" for="ask-retention">{{ 'ask.retention.label'|trans }}</label>
-                    <select class="select" id="ask-retention" name="days" aria-describedby="ask-retention-hint">
-                        {% for days in retention_choices %}
-                            <option value="{{ days }}"{% if days == retention_days %} selected{% endif %}>{{ 'ask.retention.days'|trans({days: days}) }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="field__hint" id="ask-retention-hint">{{ 'ask.retention.hint'|trans }}</p>
-                </div>
-                <button class="btn" type="submit">{{ 'ask.retention.save'|trans }}</button>
-            </form>
         </section>
     </div>
 {% endblock %}

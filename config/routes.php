@@ -162,7 +162,8 @@ use Logbook\Action\Report\ReportExportAction;
 use Logbook\Action\SalePack\DownloadPaperworkAction;
 use Logbook\Action\SalePack\ShowSalePackAction;
 use Logbook\Action\Settings\AdminTransferAction;
-use Logbook\Action\Ask\AskAction;
+use Logbook\Action\Ask\AskRedirectAction;
+use Logbook\Action\Ask\AskThreadAction;
 use Logbook\Action\Scan\ScanAction;
 use Logbook\Action\Scan\ScanFileAction;
 use Logbook\Action\Scan\ScanRemindersAction;
@@ -926,6 +927,10 @@ return static function (App $app): void {
 
         // Insights (spec.md §7.26 *Ask and the Insights page*, Phase 33.4): core.
         $group->get('/insights', InsightsPageAction::class)->setName('insights');
+        // The Ask page's old addresses (Phase 38): moved to Insights for good; an old tab's question is kept, not asked.
+        $group->get('/ask', AskRedirectAction::class)->setName('ask.moved');
+        $group->post('/ask', AskRedirectAction::class)->setName('ask.moved.post');
+        $group->get('/ask/threads/{thread:[0-9]+}', AskRedirectAction::class)->setName('ask.moved.thread');
 
         // AI (spec.md §7.25, Phase 26.1): not routed at all with AI_ENABLED=false.
         if ($settings->ai->enabled) {
@@ -934,16 +939,21 @@ return static function (App $app): void {
             // Ask Logbook (spec.md §7.26, Phase 26.2): 404 unless Ask is available to the user.
             // AI insights (spec.md §7.26, Phase 33.4): *Refresh*, or the Insights page's first view of the day.
             $group->post('/insights/refresh', RefreshAiInsightsAction::class)->setName('insights.refresh');
-            $group->get('/ask', AskAction::class)->setName('ask');
-            $group->post('/ask', AskPostAction::class)->setName('ask.post');
-            $group->get('/ask/progress/{token:[0-9a-f]{32}}', AskProgressAction::class)->setName('ask.progress');
-            $group->post('/ask/retention', AskRetentionAction::class)->setName('ask.retention');
-            $group->post('/ask/threads/delete', AskThreadDeleteAction::class)->setName('ask.threads.delete');
-            $group->get('/ask/threads/{thread:[0-9]+}', AskAction::class)->setName('ask.thread');
-            $group->post('/ask/threads/{thread:[0-9]+}/delete', AskThreadDeleteAction::class)->setName('ask.thread.delete');
-            $group->post('/ask/messages/{message:[0-9]+}/feedback', AskFeedbackAction::class)->setName('ask.feedback');
+            // Ask on the Insights page (spec.md §7.26, Phase 38): a thread's page, asking, its progress,
+            // *Your questions*' buttons and retention.
+            $group->post('/insights/questions', AskPostAction::class)->setName('insights.ask');
+            $group->get('/insights/questions/progress/{token:[0-9a-f]{32}}', AskProgressAction::class)
+                ->setName('insights.questions.progress');
+            $group->post('/insights/questions/retention', AskRetentionAction::class)->setName('insights.questions.retention');
+            $group->post('/insights/questions/delete', AskThreadDeleteAction::class)->setName('insights.questions.delete');
+            $group->get('/insights/questions/{thread:[0-9]+}', AskThreadAction::class)->setName('insights.question');
+            $group->post('/insights/questions/{thread:[0-9]+}/delete', AskThreadDeleteAction::class)
+                ->setName('insights.question.delete');
+            $group->post('/insights/questions/messages/{message:[0-9]+}/feedback', AskFeedbackAction::class)
+                ->setName('insights.questions.feedback');
             // Drafting entries (Phase 26.3): a card's buttons; the draft is the user's own or not found.
-            $group->post('/ask/drafts/{draft:[0-9]+}/{action:add|discard|undo}', AskDraftAction::class)->setName('ask.draft');
+            $group->post('/insights/questions/drafts/{draft:[0-9]+}/{action:add|discard|undo}', AskDraftAction::class)
+                ->setName('insights.questions.draft');
             // Reading files (spec.md §7.27, Phase 26.4): 404 unless scanning is available; a scan is its user's own.
             $group->map(['GET', 'POST'], '/scan', ScanAction::class)->setName('scan');
             $group->get('/scan/{token:[0-9a-f]{32}}', ScanResultAction::class)->setName('scan.result');

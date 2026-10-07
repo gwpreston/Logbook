@@ -89,17 +89,8 @@
 
                 <nav aria-label="{{ 'nav.label'|trans }}">
                     <ul class="nav-list">
-                        {# Settings comes last, below Ask (spec.md §8 *Sidebar order*). #}
+                        {# Settings comes last (spec.md §8 *Sidebar order*). #}
                         {% for item in nav_items|filter(i => i.key != 'settings')|merge(nav_items|filter(i => i.key == 'settings')) %}
-                            {% if item.key == 'settings' and ask_available() %}
-                            {# Ask Logbook (spec.md §7.26): only while it is available to this user. #}
-                            <li>
-                                <a class="nav-link" href="{{ url_for('ask') }}" data-ask-entry{% if current_nav == 'ask' %} aria-current="page"{% endif %}>
-                                    {{ ui.icon('forum') }}
-                                    <span class="nav-link__label">{{ 'ask.nav'|trans }}</span>
-                                </a>
-                            </li>
-                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{{ url_for(item.route) }}"{% if current_nav == item.key %} aria-current="page"{% endif %}>
                                     {{ ui.icon(item.icon) }}
@@ -154,7 +145,8 @@
                 {{ ui.brand() }}
                 {{ ui.theme_toggle('icon-btn', true, signed_in, csrf, current_path) }}
                 {% if signed_in and ask_available() %}
-                    <a class="icon-btn" href="{{ url_for('ask') }}" data-ask-entry{% if current_nav == 'ask' %} aria-current="page"{% endif %}>{{ ui.icon('forum') }}<span class="visually-hidden">{{ 'ask.nav'|trans }}</span></a>
+                    {# Ask Logbook lives on Insights (spec.md §7.26 *Where*, #273): the box, focused. #}
+                    <a class="icon-btn" href="{{ url_for('insights') }}#ask" data-ask-entry>{{ ui.icon('forum') }}<span class="visually-hidden">{{ 'ask.nav'|trans }}</span></a>
                 {% endif %}
                 {% if signed_in %}
                     <a class="icon-btn topbar__profile" href="{{ url_for('profile') }}"{% if current_nav == 'profile' %} aria-current="page"{% endif %} data-profile-link>{{ ui.avatar(user) }}<span class="visually-hidden">{{ 'profile.title'|trans }}</span></a>

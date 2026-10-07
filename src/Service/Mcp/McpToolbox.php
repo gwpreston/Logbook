@@ -270,7 +270,7 @@ final readonly class McpToolbox
     private function keep(User $user, DraftProposal $proposal): array
     {
         $id = $this->drafts->create($user, null, $proposal, DraftSource::Mcp);
-        $link = $this->urls->route('home') . '#draft-' . $id;
+        $link = $this->urls->route('insights') . '#draft-' . $id;
         $card = $proposal->card;
 
         return self::success([

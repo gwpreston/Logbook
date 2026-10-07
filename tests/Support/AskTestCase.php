@@ -95,7 +95,7 @@ abstract class AskTestCase extends AiTestCase
      */
     protected static function threadIn(string $location): string
     {
-        preg_match('#/ask/threads/(\d+)#', $location, $m);
+        preg_match('#/insights/questions/(\d+)#', $location, $m);
 
         return $m[1] ?? self::fail('No thread in ' . $location);
     }

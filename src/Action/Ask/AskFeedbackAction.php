@@ -17,7 +17,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
 
 /**
- * POST /ask/messages/{message}/feedback — *Helpful* or *Not right* on one
+ * POST /insights/questions/messages/{message}/feedback — *Helpful* or *Not right* on one
  * of the user's answers (spec.md §7.26, decided #71): the mark goes on the
  * answer, and the month's count moves with it.
  */
@@ -58,6 +58,6 @@ final readonly class AskFeedbackAction
         }
         RequestContext::session($request)->flash('success', 'ask.flash.feedback');
 
-        return $this->redirect->backOr($request, 'ask');
+        return $this->redirect->backOr($request, 'insights');
     }
 }

@@ -111,20 +111,23 @@ final class RouteInventoryTest extends AppTestCase
         'proxy.link',
         // Phase 26.1: one's own *Use AI features* switch.
         'settings.ai_use',
-        // Phase 26.2: Ask Logbook, one's own threads only (404 unless Ask is available).
-        'ask',
         // Phase 33.4: the Insights page and one's own AI insights (Refresh: 404 unless Ask is available).
         'insights',
         'insights.refresh',
-        'ask.post',
-        'ask.progress',
-        'ask.retention',
-        'ask.thread',
-        'ask.thread.delete',
-        'ask.threads.delete',
-        'ask.feedback',
+        // Phase 26.2, on Insights since Phase 38: Ask Logbook, one's own threads only (404 unless Ask is available).
+        'insights.ask',
+        'insights.questions.progress',
+        'insights.questions.retention',
+        'insights.question',
+        'insights.question.delete',
+        'insights.questions.delete',
+        'insights.questions.feedback',
         // Phase 26.3: a draft card's buttons, one's own drafts only; the kind's ability is checked at the press.
-        'ask.draft',
+        'insights.questions.draft',
+        // Phase 38: the Ask page's old addresses, redirects only (a stale POST's question is kept, never asked).
+        'ask.moved',
+        'ask.moved.post',
+        'ask.moved.thread',
         // Phase 26.5: an MCP draft's buttons, likewise; and the MCP endpoint, whose key's user is
         // judged by each tool, resource and prompt with the pages' access policy.
         'drafts.action',
@@ -233,7 +236,7 @@ final class RouteInventoryTest extends AppTestCase
         'settings.trips.journeys.create', 'settings.trips.journeys.edit', 'settings.trips.journeys.delete',
         'settings.trips.journeys.move', 'settings.trips.rates.create', 'settings.trips.rates.edit',
         'settings.trips.rates.delete', 'notices.dismiss', 'scheduler.tick', 'settings.preferences', 'users.avatar',
-        'settings.theme', 'insights',
+        'settings.theme', 'insights', 'ask.moved', 'ask.moved.post', 'ask.moved.thread',
     ];
 
     public function testEveryRouteIsClassified(): void

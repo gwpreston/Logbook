@@ -1,13 +1,13 @@
 {#
  # The *Ask Logbook* box (spec.md §7.26 *Ask and the Insights page*): the
  # question, *Ask* and, for a new question, the four suggestions. Shared by
- # the Ask page (after the thread) and the Insights page; both post to
- # /ask, and assets/js/ask.js posts in the background, shows progress and
- # opens the thread on the Ask page.
+ # the Insights page (a new question) and a thread's page (a follow-up);
+ # both post to /insights/questions, and assets/js/ask.js posts in the
+ # background, shows progress and opens the thread's page.
  # Expects: progress_token, csrf; optional thread, question, error.
  #}
 {% import 'macros/ui.twig' as ui %}
-<form class="form ask-form" method="post" action="{{ url_for('ask.post') }}" data-ask-form data-progress-url="{{ url_for('ask.progress', {token: progress_token}) }}" data-working="{{ 'ask.working'|trans }}" data-failed="{{ 'ask.failed'|trans }}">
+<form class="form ask-form" method="post" action="{{ url_for('insights.ask') }}" data-ask-form data-progress-url="{{ url_for('insights.questions.progress', {token: progress_token}) }}" data-working="{{ 'ask.working'|trans }}" data-failed="{{ 'ask.failed'|trans }}">
     {{ ui.csrf(csrf) }}
     <input type="hidden" name="progress" value="{{ progress_token }}">
     {% if thread|default(null) %}<input type="hidden" name="thread" value="{{ thread.id }}">{% endif %}
@@ -24,7 +24,7 @@
     {% if not thread|default(null) %}
         <ul class="chip-row ask-suggestions" aria-label="{{ 'ask.examples.heading'|trans }}">
             {% for key in ['cost_most', 'summary_12m', 'coming_up', 'cut_fuel'] %}
-                <li><a class="chip" href="{{ url_for('ask', {}, {q: ('ask.examples.' ~ key)|trans}) }}">{{ ('ask.examples.' ~ key)|trans }}</a></li>
+                <li><a class="chip" href="{{ url_for('insights', {}, {q: ('ask.examples.' ~ key)|trans}) }}#ask">{{ ('ask.examples.' ~ key)|trans }}</a></li>
             {% endfor %}
         </ul>
     {% endif %}

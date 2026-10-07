@@ -6,7 +6,6 @@ namespace Logbook\Action\Ask;
 
 use Logbook\Domain\Ai\Draft\AiDraft;
 use Logbook\Domain\Ai\Draft\DraftSource;
-use Logbook\Service\Ai\Ask\AskAvailability;
 use Logbook\Service\Ai\Draft\DraftInvalid;
 use Logbook\Service\Ai\Draft\DraftNotFound;
 use Logbook\Service\Ai\Draft\DraftRefused;
@@ -21,7 +20,7 @@ use Symfony\Contracts\Translation\TranslatableInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * POST /ask/drafts/{draft}/{action:add|discard|undo} and
+ * POST /insights/questions/drafts/{draft}/{action:add|discard|undo} and
  * POST /drafts/{draft}/{action} — a draft card's buttons (spec.md §7.26
  * *Drafting entries*, §7.28 *Drafts to review*). *Add* writes the draft as
  * it stands at the press, with the access the user has then; *Discard*
@@ -30,17 +29,16 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * An Ask draft needs Ask, and goes back to its card in its thread. An MCP
  * client's draft needs only its user (no AI is involved) and goes back to
- * the page it was listed on: the dashboard, or `/ask`. The `/drafts` route
+ * the page it was listed on: the dashboard, or the Insights page. The `/drafts` route
  * serves MCP drafts only.
  */
 final readonly class DraftAction
 {
     /** Where an MCP draft's buttons may send the user back to. */
-    private const array BACK = ['home' => 'home', 'ask' => 'ask'];
+    private const array BACK = ['home' => 'home', 'insights' => 'insights'];
 
     public function __construct(
         private AskGuard $guard,
-        private AskAvailability $ask,
         private DraftStore $drafts,
         private Redirector $redirect,
         private TranslatorInterface $translator,
@@ -110,18 +108,15 @@ final readonly class DraftAction
         if ($draft->source === DraftSource::Mcp) {
             $back = RequestContext::form($request)['back'] ?? null;
             $route = self::BACK[is_string($back) ? $back : ''] ?? 'home';
-            if ($route === 'ask' && !$this->ask->isAvailable(RequestContext::requireUser($request))) {
-                $route = 'home';
-            }
 
             return $this->redirect->to($this->redirect->urlFor($route) . '#drafts-to-review');
         }
         if ($draft->threadId === null) {
-            return $this->redirect->toRoute('ask');
+            return $this->redirect->to($this->redirect->urlFor('insights') . '#ask');
         }
 
         return $this->redirect->to(
-            $this->redirect->urlFor('ask.thread', ['thread' => (string) $draft->threadId]) . '#draft-' . $draft->id,
+            $this->redirect->urlFor('insights.question', ['thread' => (string) $draft->threadId]) . '#draft-' . $draft->id,
         );
     }
 }
