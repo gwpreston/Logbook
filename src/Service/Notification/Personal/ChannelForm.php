@@ -92,11 +92,30 @@ final readonly class ChannelForm
             }
         }
 
-        foreach ($sender->validate(array_filter($values, static fn (string $v): bool => $v !== '')) as $field => $key) {
+        foreach ($sender->validate(array_filter($values, static fn (string $v): bool => $v !== ''), $secrets) as $field => $key) {
             self::addError($errors, $definition->inputName($field), $key);
         }
 
         return new self($definition, $values, $secrets, $remove, $errors);
+    }
+
+    /**
+     * Whether saved settings still pass the form's rules and the kind's own
+     * (spec.md §7.11 *Re-checked on every send*, #258): a restored or old
+     * row is checked as if it were typed again.
+     */
+    public static function stillValid(PersonalSender $sender, #[SensitiveParameter] ChannelSettings $settings): bool
+    {
+        $definition = $sender->definition();
+        $input = [];
+        foreach ($definition->fields() as $field) {
+            $value = $field->isSecret() ? $settings->secret($field->name) : $settings->value($field->name);
+            if ($value !== null) {
+                $input[$definition->inputName($field->name)] = $value;
+            }
+        }
+
+        return self::parse($sender, $input)->isValid();
     }
 
     /**

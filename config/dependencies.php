@@ -41,9 +41,14 @@ use Logbook\Service\Notification\Channel\WebhookChannel;
 use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Service\Notification\ChannelResults;
 use Logbook\Service\Notification\NotificationDispatcher;
+use Logbook\Service\Notification\Personal\DiscordSender;
 use Logbook\Service\Notification\Personal\GotifySender;
+use Logbook\Service\Notification\Personal\MattermostSender;
 use Logbook\Service\Notification\Personal\NtfySender;
 use Logbook\Service\Notification\Personal\PersonalKinds;
+use Logbook\Service\Notification\Personal\PushoverSender;
+use Logbook\Service\Notification\Personal\SlackSender;
+use Logbook\Service\Notification\Personal\TelegramSender;
 use Logbook\Service\Notification\Personal\UserChannels;
 use Logbook\Service\Notification\Personal\WebhookSender;
 use Logbook\Service\Notification\SwitchOffNotice;
@@ -323,6 +328,12 @@ return [
         get(NtfySender::class),
         get(GotifySender::class),
         get(WebhookSender::class),
+        // Phase 36.3: services with their own limits, mention rules and error words.
+        get(TelegramSender::class),
+        get(DiscordSender::class),
+        get(PushoverSender::class),
+        get(MattermostSender::class),
+        get(SlackSender::class),
     ],
     PersonalKinds::class => autowire()->constructorParameter('senders', get('notification.personal')),
     // The demo's guard is named, not autowired: PHP-DI leaves an optional parameter at its default.

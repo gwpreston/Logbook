@@ -194,7 +194,7 @@ final class PersonalChannelsTest extends ReminderTestCase
         self::assertSame(404, $member->post('/settings/notifications/ntfy/switch', ['enabled' => '0'])->getStatusCode());
         self::assertSame(404, $member->get('/settings/notifications/ntfy/remove')->getStatusCode());
         self::assertSame(404, $member->post('/settings/notifications/ntfy/remove')->getStatusCode());
-        self::assertSame(404, $member->post('/settings/notifications/telegram', ['intent' => 'save'])->getStatusCode());
+        self::assertSame(404, $member->post('/settings/notifications/carrier-pigeon', ['intent' => 'save'])->getStatusCode());
         $member->post('/settings/notifications/ntfy', ['intent' => 'save', 'ntfy-url' => 'https://ntfy.test/sams-topic']);
         $member->post('/settings/notifications/ntfy', ['intent' => 'test', 'ntfy-url' => 'https://ntfy.test/sams-topic']);
         self::assertSame([], array_filter(

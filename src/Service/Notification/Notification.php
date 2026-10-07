@@ -29,7 +29,34 @@ final readonly class Notification
         public bool $urgent = false,
         public array $items = [],
         public array $attention = [],
+        /** The recipient's locale it was written in, for a sender's own words ("…and 3 more"). */
+        public ?string $locale = null,
     ) {
+    }
+
+    /**
+     * spec.md §7.11 *Urgency*: overdue reminders and a failed job are high,
+     * the monthly digest low, everything else normal.
+     */
+    public function urgency(): Urgency
+    {
+        return match ($this->kind) {
+            NotificationKind::Reminders => $this->urgent ? Urgency::High : Urgency::Normal,
+            NotificationKind::JobFailed => Urgency::High,
+            NotificationKind::Digest => Urgency::Low,
+            NotificationKind::Test, NotificationKind::PriceAlert, NotificationKind::ChannelOff => Urgency::Normal,
+        };
+    }
+
+    /**
+     * The body's lines: each reminder and each check is one, so a message
+     * can be cut between them.
+     *
+     * @return list<string>
+     */
+    public function lines(): array
+    {
+        return explode("\n", str_replace(["\r\n", "\r"], "\n", $this->message));
     }
 
     /**

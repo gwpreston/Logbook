@@ -47,6 +47,11 @@ final readonly class BoundChannel implements NotificationChannel
 
     public function send(Notification $notification, Recipient $recipient): DeliveryResult
     {
+        // A saved row (a restore, an old row) must still pass its kind's rules (#258); never counted.
+        if (!ChannelForm::stillValid($this->sender, $this->settings)) {
+            return DeliveryResult::refused($this->key(), ReplyWords::of('invalid_settings'));
+        }
+
         try {
             $result = $this->sender->send($notification, $recipient, $this->settings, $this->restricted);
         } catch (Throwable $e) {

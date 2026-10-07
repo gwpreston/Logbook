@@ -6,6 +6,8 @@ namespace Logbook\Service\Notification\Outbound;
 
 use Logbook\Service\Notification\Channel\HttpDelivery;
 use Logbook\Service\Notification\DeliveryResult;
+use JsonException;
+use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -40,6 +42,65 @@ final readonly class OutboundHttp
         }
 
         return HttpDelivery::post($this->http, $channel, $url, $options);
+    }
+
+    /**
+     * One request whose answer matters (Phase 36.3: a service's error
+     * codes, `getMe`, `getUpdates`, `users/validate`, `auth.test`), with
+     * the same check, pinning and no redirects as post(). A connection
+     * error's text is reduced to its kind, never the URL it names.
+     *
+     * @param array<string, mixed> $options symfony/http-client request options
+     */
+    public function send(string $method, string $url, array $options, bool $restricted): HttpAnswer
+    {
+        $destination = $this->destinations->check($url, $restricted, classify: $restricted);
+        if (!$destination->isAllowed()) {
+            return HttpAnswer::refused(self::refusal($destination));
+        }
+
+        $options['max_redirects'] = 0;
+        if ($destination->address !== null) {
+            $options['resolve'] = [$destination->host => $destination->address];
+            $options['no_proxy'] = '*';
+        }
+
+        try {
+            $response = $this->http->request($method, $url, $options);
+            $status = $response->getStatusCode();
+            $content = $response->getContent(false);
+            $retry = $response->getHeaders(false)['retry-after'][0] ?? null;
+        } catch (ExceptionInterface $e) {
+            return HttpAnswer::unreachable(self::connectionError($e->getMessage()));
+        }
+
+        try {
+            $body = $content === '' ? [] : json_decode($content, true, 16, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            $body = [];
+        }
+
+        return HttpAnswer::answered(
+            $status,
+            is_array($body) ? $body : [],
+            is_string($retry) && ctype_digit($retry) ? (int) $retry : null,
+        );
+    }
+
+    /**
+     * A transport error in words that never quote the URL (which may
+     * carry a token): a timeout, a name or connection failure, TLS.
+     */
+    public static function connectionError(string $message): string
+    {
+        $lower = strtolower($message);
+
+        return match (true) {
+            str_contains($lower, 'timeout') || str_contains($lower, 'timed out') => 'The service did not answer in time.',
+            str_contains($lower, 'resolve') => 'The service\'s name could not be found.',
+            preg_match('/ssl|tls|certificate/', $lower) === 1 => 'A secure connection could not be made.',
+            default => 'The service could not be reached.',
+        };
     }
 
     public static function refusal(Destination $destination): string

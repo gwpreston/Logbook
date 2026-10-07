@@ -25,7 +25,7 @@
     {% if status == 'ok' %}
         <p class="channel__result" data-last-result="ok">{{ ui.icon('check_circle') }}<span>{{ 'notifications.last.ok'|trans({when: at|local_datetime}) }}</span></p>
     {% elseif status == 'failed' %}
-        <p class="channel__result channel__result--failed" data-last-result="failed">{{ ui.icon('error') }}<span>{{ reply ? 'notifications.last.failed'|trans({when: at|local_datetime, error: error ?? ''}) : 'notifications.last.failed_plain'|trans({when: at|local_datetime}) }}</span></p>
+        <p class="channel__result channel__result--failed" data-last-result="failed">{{ ui.icon('error') }}<span>{{ reply ? 'notifications.last.failed'|trans({when: at|local_datetime, error: error|channel_error}) : 'notifications.last.failed_plain'|trans({when: at|local_datetime}) }}</span></p>
     {% endif %}
 {%- endmacro %}
 
@@ -45,7 +45,7 @@
                         {{ 'notifications.test.missing_secret'|trans }}
                     {% else %}
                         {{ 'notifications.test.failed'|trans }}
-                        {% if test.error and reply %}<code class="alert__reply">{{ test.error }}</code>{% endif %}
+                        {% if test.error and reply %}<code class="alert__reply">{{ test.error|channel_error }}</code>{% endif %}
                     {% endif %}
                 </span>
             </div>
@@ -131,6 +131,7 @@
                     <div class="channel__body">
                         <h2 class="channel__title" id="channel-{{ d.key }}-title">{{ d.label|trans }}</h2>
                         <p class="channel__hint">{{ d.hint|trans }}</p>
+                        {% if d.thirdParty %}<p class="channel__hint" data-third-party>{{ 'notifications.third_party'|trans({service: d.label|trans}) }}</p>{% endif %}
                     </div>
                     {% if card.status %}{{ page.status(card.status) }}{% else %}<span class="pill" data-channel-status="none">{{ 'notifications.status.none'|trans }}</span>{% endif %}
                 </div>
@@ -184,6 +185,40 @@
                             <button type="submit" name="intent" value="test" class="btn">{{ ui.icon('send') }}{{ 'notifications.test.button'|trans }}</button>
                         </div>
                     </form>
+                    {% if d.key == 'telegram' %}
+                        {# Find my chat (#237): with the saved token only, so no token goes back into a page. #}
+                        <div class="channel__find" data-find-chat>
+                            {% if card.chats %}
+                                {% if card.chats.error %}
+                                    <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ card.chats.error|channel_error }}</span></div>
+                                {% elseif card.chats.chats is empty %}
+                                    <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ 'notifications.telegram.find_none'|trans }}</span></div>
+                                {% else %}
+                                    <p id="telegram-chats-title">{{ 'notifications.telegram.find_pick'|trans }}</p>
+                                    <ul class="list" aria-labelledby="telegram-chats-title">
+                                        {% for chat in card.chats.chats %}
+                                            <li class="list__item">
+                                                <span class="list__body"><span class="list__title">{{ chat.name ?: 'notifications.telegram.find_unnamed'|trans }}</span><span class="list__meta">{{ chat.id }}</span></span>
+                                                <form class="list__end" method="post" action="{{ url_for('settings.notifications.channel', {kind: d.key}) }}">
+                                                    {{ ui.csrf(csrf) }}
+                                                    <input type="hidden" name="{{ d.inputName('chat_id') }}" value="{{ chat.id }}">
+                                                    <button type="submit" name="intent" value="save" class="btn btn--sm">{{ 'notifications.telegram.find_use'|trans }}<span class="visually-hidden">: {{ chat.name ?: chat.id }}</span></button>
+                                                </form>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            {% endif %}
+                            {% if card.secrets.token is defined and card.secrets.token == 'saved' %}
+                                <form method="post" action="{{ url_for('settings.notifications.find_chat') }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <button type="submit" class="btn btn--ghost">{{ ui.icon('search') }}{{ 'notifications.telegram.find'|trans }}</button>
+                                </form>
+                            {% else %}
+                                <p class="field__hint">{{ 'notifications.telegram.find_after_token'|trans }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                     {% if record %}
                         <div class="btn-row">
                             <form method="post" action="{{ url_for('settings.notifications.switch', {kind: d.key}) }}">

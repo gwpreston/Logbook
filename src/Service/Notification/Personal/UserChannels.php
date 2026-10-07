@@ -184,6 +184,77 @@ final readonly class UserChannels
     public function test(User $user, PersonalSender $sender, ChannelForm $form, Notification $notification): DeliveryResult
     {
         $definition = $sender->definition();
+        $settings = $this->typed($user, $sender, $form);
+        if ($settings === null) {
+            return DeliveryResult::failed($definition->key, 'missing_secret');
+        }
+
+        $result = $sender->send($notification, Recipient::of($user), $settings, !$user->isAdmin);
+        if (!$result->delivered && $result->error !== null) {
+            $result = DeliveryResult::failed($result->channel, Redactor::redact($result->error, $settings->secretValues()));
+        }
+        $this->logger->info('Test through notification channel {kind} by user {user}: {outcome}.', [
+            'kind' => $definition->key,
+            'user' => $user->id,
+            'outcome' => $result->delivered ? 'sent' : 'failed',
+        ]);
+
+        return $result;
+    }
+
+    /**
+     * Ask the service whether the typed settings work, before saving them
+     * (spec.md §7.11 *Checked on saving*, #261); null for a kind the
+     * service can't check.
+     */
+    public function verify(User $user, PersonalSender $sender, ChannelForm $form): ?Verification
+    {
+        if (!$sender instanceof VerifiesSettings) {
+            return null;
+        }
+        $settings = $this->typed($user, $sender, $form);
+
+        return $settings === null ? Verification::unreachable() : $sender->verify($settings, !$user->isAdmin);
+    }
+
+    /**
+     * Telegram *Find my chat* (#237) with the saved token: the private
+     * chats that wrote to the bot. Null when no token is saved.
+     */
+    public function findChats(User $user, TelegramSender $sender): ?FoundChats
+    {
+        $definition = $sender->definition();
+        $record = $this->records->find($user->id, $definition->key);
+        if ($record === null || !in_array('token', $record->secretFields(), true)) {
+            return null;
+        }
+        try {
+            $token = $this->secrets->open($user->id, $definition->secretName('token'));
+        } catch (SecretUnreadable) {
+            $token = null;
+        }
+        if ($token === null) {
+            return null;
+        }
+
+        $found = $sender->findChats($token, !$user->isAdmin);
+        $this->logger->info('Find my chat through {kind} by user {user}: {count} found.', [
+            'kind' => $definition->key,
+            'user' => $user->id,
+            'count' => count($found->chats),
+        ]);
+
+        return $found->error === null ? $found : FoundChats::failed(Redactor::redact($found->error, [$token]));
+    }
+
+    /**
+     * The typed values with their secrets: a typed secret, else the saved
+     * one when the host is the one it was saved for. Null when a required
+     * secret is missing.
+     */
+    private function typed(User $user, PersonalSender $sender, ChannelForm $form): ?ChannelSettings
+    {
+        $definition = $sender->definition();
         $existing = $this->records->find($user->id, $definition->key);
         $values = $form->settings();
         $secrets = $form->secrets;
@@ -204,22 +275,11 @@ final readonly class UserChannels
                 }
             }
             if ($field->required && !isset($secrets[$field->name])) {
-                return DeliveryResult::failed($definition->key, 'missing_secret');
+                return null;
             }
         }
 
-        $settings = new ChannelSettings($values, $secrets);
-        $result = $sender->send($notification, Recipient::of($user), $settings, !$user->isAdmin);
-        if (!$result->delivered && $result->error !== null) {
-            $result = DeliveryResult::failed($result->channel, Redactor::redact($result->error, $settings->secretValues()));
-        }
-        $this->logger->info('Test through notification channel {kind} by user {user}: {outcome}.', [
-            'kind' => $definition->key,
-            'user' => $user->id,
-            'outcome' => $result->delivered ? 'sent' : 'failed',
-        ]);
-
-        return $result;
+        return new ChannelSettings($values, $secrets);
     }
 
     /**
@@ -229,7 +289,7 @@ final readonly class UserChannels
     private function open(ChannelDefinition $definition, ChannelRecord $record): ?ChannelSettings
     {
         foreach ($definition->visibleFields() as $field) {
-            if ($field->required && $record->value($field->name) === null) {
+            if (($field->required || $field->neededToSend) && $record->value($field->name) === null) {
                 return null;
             }
         }

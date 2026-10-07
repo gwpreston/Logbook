@@ -84,7 +84,7 @@ final class ChannelBackupTest extends ReminderTestCase
                 return $settings->value('url');
             }
 
-            public function validate(array $values): array
+            public function validate(array $values, array $secrets = []): array
             {
                 return [];
             }
