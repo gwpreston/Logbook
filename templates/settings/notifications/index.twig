@@ -36,7 +36,7 @@
         <div class="alert alert--error" role="alert" data-test-result="refused">{{ ui.icon('error') }}<span>{{ refused|trans }}</span></div>
     {% elseif test is not null %}
         {% if test.delivered %}
-            <div class="alert alert--success" role="status" data-test-result="sent">{{ ui.icon('check_circle') }}<span>{{ 'notifications.test.sent'|trans({channel: label|trans}) }}</span></div>
+            <div class="alert alert--success" role="status" data-test-result="sent">{{ ui.icon('check_circle') }}<span>{{ 'notifications.test.sent'|trans({channel: label|trans}) }} {{ 'notifications.test.ignores'|trans }}</span></div>
         {% else %}
             <div class="alert alert--error" role="alert" data-test-result="failed">
                 {{ ui.icon('error') }}
@@ -51,6 +51,27 @@
             </div>
         {% endif %}
     {% endif %}
+{%- endmacro %}
+
+{# *Receives* (Phase 36.4): a box per category; at least one. `receives_shown` tells a form with
+   the boxes from one without them (Telegram's "use this chat"), which keeps what was saved. #}
+{% macro receives(key, offered, chosen, errors) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set name = 'receives-' ~ key %}
+    <fieldset class="field fieldset" data-receives="{{ key }}" aria-describedby="f-{{ name }}-hint{% if errors[name] ?? null %} f-{{ name }}-error{% endif %}">
+        <legend class="field__label">{{ 'notifications.receives.legend'|trans }}</legend>
+        <input type="hidden" name="receives_shown" value="1">
+        <div class="chip-row">
+            {% for category in offered %}
+                <label class="chip">
+                    <input type="checkbox" name="receives[]" value="{{ category.value }}"{% if category.value in chosen %} checked{% endif %}>
+                    <span>{{ category.labelKey()|trans }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        <p class="field__hint" id="f-{{ name }}-hint">{{ 'notifications.receives.hint'|trans }}</p>
+        {% if errors[name] ?? null %}<div role="alert">{{ ui.field_error(errors, name) }}</div>{% endif %}
+    </fieldset>
 {%- endmacro %}
 
 {% block title %}{{ 'notifications.page.title'|trans }} · {{ parent() }}{% endblock %}
@@ -76,6 +97,45 @@
                 </div>
                 <span class="pill pill--valid">{{ ui.icon('check_circle') }}{{ 'notifications.in_app.always'|trans }}</span>
             </div>
+        </section>
+
+        {# Quiet hours (Phase 36.4, #250): one period for all channels, in the user's time zone. #}
+        <section class="card channel" id="quiet-hours" aria-labelledby="quiet-hours-title">
+            <div class="channel__head">
+                <span class="list__icon">{{ ui.icon('dark_mode') }}</span>
+                <div class="channel__body">
+                    <h2 class="channel__title" id="quiet-hours-title">{{ 'notifications.quiet.title'|trans }}</h2>
+                    <p class="channel__hint">{{ 'notifications.quiet.hint'|trans }}</p>
+                </div>
+                {# The saved setting, not what was just typed. #}
+                {% if quiet_saved %}
+                    <span class="pill" data-quiet="on">{{ ui.icon('notifications_off') }}{{ 'notifications.quiet.status_on'|trans({start: quiet_saved.start, end: quiet_saved.end}) }}</span>
+                {% else %}
+                    <span class="pill" data-quiet="off">{{ ui.icon('notifications_active') }}{{ 'notifications.quiet.status_off'|trans }}</span>
+                {% endif %}
+            </div>
+            {% if not blocked %}
+                <div class="channel__content">
+                    <form class="form" method="post" action="{{ url_for('settings.notifications.quiet') }}" novalidate>
+                        {{ ui.csrf(csrf) }}
+                        {% if errors.quiet_start ?? errors.quiet_end ?? null %}
+                            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                        {% endif %}
+                        <label class="toggle">
+                            <input type="checkbox" name="quiet_on" value="1"{% if quiet.quiet_on == '1' %} checked{% endif %}>
+                            <span class="toggle__text"><span class="toggle__title">{{ 'notifications.quiet.on'|trans }}</span></span>
+                        </label>
+                        <div class="form-row">
+                            {{ ui.input('quiet_start', 'notifications.quiet.start'|trans, quiet, errors, {type: 'time', step: 60}) }}
+                            {{ ui.input('quiet_end', 'notifications.quiet.end'|trans, quiet, errors, {type: 'time', step: 60}) }}
+                        </div>
+                        <p class="field__hint">{{ 'notifications.quiet.end_hint'|trans }}</p>
+                        <div class="btn-row">
+                            <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
         </section>
 
         {# Email: the account's confirmed address through the server's email (Phase 33.1, 36.1). #}
@@ -105,6 +165,13 @@
                 {{ page.test_result(email.test, email.refused, 'notifications.channel.email', is_admin) }}
                 {# No switch while the server has no email: it would do nothing. #}
                 {% if not blocked and email.status.value != 'not_available' %}
+                    <form class="form" method="post" action="{{ url_for('settings.notifications.channel', {kind: 'email'}) }}" novalidate>
+                        {{ ui.csrf(csrf) }}
+                        {{ page.receives('email', offered, email.receives, errors) }}
+                        <div class="btn-row">
+                            <button type="submit" name="intent" value="receives" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                        </div>
+                    </form>
                     <div class="btn-row">
                         <form method="post" action="{{ url_for('settings.notifications.switch', {kind: 'email'}) }}">
                             {{ ui.csrf(csrf) }}
@@ -180,6 +247,7 @@
                                 {{ ui.input(name, field.label|trans, card.values, card.errors, {type: field.type.value == 'url' ? 'url' : 'text', required: field.required, maxlength: field.maxLength, autocomplete: 'off', placeholder: field.placeholder, hint: field.hint ? field.hint|trans : null}) }}
                             {% endif %}
                         {% endfor %}
+                        {{ page.receives(d.key, offered, card.receives, card.errors) }}
                         <div class="btn-row">
                             <button type="submit" name="intent" value="save" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
                             <button type="submit" name="intent" value="test" class="btn">{{ ui.icon('send') }}{{ 'notifications.test.button'|trans }}</button>

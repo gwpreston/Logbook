@@ -6,6 +6,18 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.3.0] — 2026-10-07
+
+Phases 36.1–36.4: **your reminders, where you want them**. The email server
+is set up in the app by an admin, and each person chooses their own
+channels (email, ntfy, Gotify, a webhook, Telegram, Discord, Pushover,
+Mattermost and Slack), what each receives and when, sets them up themselves
+and tests each one.
+
+**Read the upgrade notes first: email is off after upgrading until an admin
+sets the server up in Settings → Delivery.** Three migrations; notification
+secrets are encrypted with `SESSION_SECRET` and are not in backups.
+
 ### Added
 - **Settings → Delivery** (admins, Phase 36.1): the email server is set up
   in the app, with *Send test email* using the typed values unsaved, and
@@ -29,6 +41,14 @@ is called out explicitly.
   quietly. Telegram, Pushover and Slack tokens are checked when saved;
   Telegram's *Find my chat* finds the chat ID for you. The cards that send
   through someone else's servers say so.
+- **What each channel receives** (Phase 36.4): every card on Account →
+  Notifications, email's included, chooses among *Due*, *Overdue*,
+  *Monthly digest*, *Price alerts* and (admins) *Job failures*. Everything
+  is ticked until you change it.
+- **Quiet hours** (Phase 36.4): one period per person, in their time zone,
+  that can run past midnight. Nothing is sent inside it; the first run
+  after sends what still applies then, one message per kind. Tests ignore
+  both and say so.
 
 ### Changed
 - Notification channels moved from Settings → Reminders to Account →
@@ -40,6 +60,12 @@ is called out explicitly.
 - A personal channel's saved settings are checked against its rules before
   every send; one that no longer passes (after a restore, say) isn't sent,
   says so on its card, and doesn't count towards switching it off.
+- Every price alert of one person's that fires in one check now goes as
+  one message ("2 price alerts"); a single alert is unchanged.
+- Within one job run, a service that fails 3 times without answering is
+  skipped for the rest of the run (shown on its card, never counted
+  towards switching it off), so one that is down for everyone costs three
+  timeouts, not one per person.
 - The webhook payload is unchanged.
 
 ### Deprecated
@@ -60,7 +86,8 @@ is called out explicitly.
   Settings → Delivery.** The page says so while any `MAIL_*` variable is
   still set; remove them afterwards. `MAIL_TO` is now the *Default
   recipient for admins* field there.
-- Two migrations (`notification_secrets`, `notification_channels`).
+- Three migrations (`notification_secrets`, `notification_channels`, and
+  `notification_channels.categories`).
 - **Keep the `NTFY_*` and `GOTIFY_*` variables, and `SESSION_SECRET`, as
   they are until the new version has started once**: the upgrade imports
   them. Remove them afterwards (Settings → Delivery says while any is set).

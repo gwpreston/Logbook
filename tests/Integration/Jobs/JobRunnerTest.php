@@ -15,6 +15,9 @@ use Logbook\Repository\JobRunRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Jobs\AdminNotices;
 use Logbook\Service\Jobs\BackupJob;
+use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\Notification\NotificationComposer;
+use Logbook\Service\Notification\QuietHours;
 use Logbook\Service\Jobs\BackupSchedule;
 use Logbook\Service\Jobs\CleanupJob;
 use Logbook\Service\Jobs\Job;
@@ -285,6 +288,74 @@ final class JobRunnerTest extends ReminderTestCase
         $this->runJob($app, BackupJob::class);
         $this->runJob($app, BackupJob::class);
         self::assertCount(2, $this->mail->sent);
+    }
+
+    /**
+     * Phase 36.4 (spec.md §7.11, §7.30): an admin in quiet hours is sent a
+     * failed job after they end, if it is still failing; a streak that
+     * ended meanwhile is dropped.
+     */
+    public function testAFailedJobIsHeldThroughQuietHours(): void
+    {
+        $dir = $this->tempDir();
+        $blocker = $dir . '/not-a-directory';
+        file_put_contents($blocker, 'x');
+        $app = $this->createRecordingApp(['BACKUP_PATH' => $blocker . '/backups'] + self::CHANNELS);
+        $clock = $this->pinClock($app, self::NOW);
+        $this->signedIn($app);
+        $this->ownerFromBefore21($app);
+        $owner = $this->owner($app);
+        $store = $this->service($app, ReminderSettingsStore::class);
+        // 09:30 to 12:30 holds 10:00 UTC whether the owner is on UTC or British time.
+        $store->saveNotificationPreferences($owner->id, $store->notificationPreferences($owner->id)
+            ->withQuiet(QuietHours::of('09:30', '12:30')));
+
+        $this->runJob($app, BackupJob::class);
+        $this->runJob($app, BackupJob::class);
+        self::assertSame([], $this->mail->sent, 'held');
+
+        $clock->set(new DateTimeImmutable('2026-09-27T13:00:00Z'));
+        $this->runJob($app, CleanupJob::class);
+        self::assertCount(1, $this->mail->sent, 'sent after any run once quiet hours are over');
+        self::assertSame('Logbook: the Backup job failed twice in a row', $this->mail->sent[0]->getSubject());
+        $this->runJob($app, CleanupJob::class);
+        self::assertCount(1, $this->mail->sent, 'once');
+
+        // A new streak in quiet hours that ends before they do is dropped.
+        $this->service($app, JobRunRepository::class)->finish(
+            $this->runs($app)->start('backup', JobTrigger::Manual, null, $clock->now()),
+            JobStatus::Ok,
+            'ok',
+            '',
+            $clock->now(),
+        );
+        $this->service($app, JobFailureAlerts::class)->afterRun(
+            $this->runs($app)->latest('backup') ?? throw new \LogicException('run'),
+        );
+        $clock->set(new DateTimeImmutable('2026-09-28T10:00:00Z'));
+        $this->runJob($app, BackupJob::class);
+        $this->runJob($app, BackupJob::class);
+        $this->service($app, JobRunRepository::class)->finish(
+            $this->runs($app)->start('backup', JobTrigger::Manual, null, $clock->now()),
+            JobStatus::Ok,
+            'ok',
+            '',
+            $clock->now(),
+        );
+        $clock->set(new DateTimeImmutable('2026-09-28T13:00:00Z'));
+        $this->runJob($app, CleanupJob::class);
+        self::assertCount(1, $this->mail->sent, 'the streak ended: nothing to send');
+
+        // Several held at once go as one message (#253).
+        $failed = array_values(array_filter(
+            $this->runs($app)->recent(100),
+            static fn (JobRun $r): bool => $r->job === 'backup' && $r->status === JobStatus::Failed,
+        ));
+        $first = $failed[0] ?? self::fail('no failed run');
+        $second = $failed[1] ?? self::fail('one failed run');
+        $combined = $this->service($app, NotificationComposer::class)->jobsFailed($owner, [$first, $second]);
+        self::assertSame('Logbook: 2 jobs failed twice in a row', $combined->title);
+        self::assertStringContainsString('• Backup: ', $combined->message);
     }
 
     public function testRunJobFromTheCommandLine(): void

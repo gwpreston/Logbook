@@ -11,6 +11,7 @@ use Logbook\Repository\NotificationChannelRepository;
 use Logbook\Service\Ai\Redactor;
 use Logbook\Service\Ai\SecretUnreadable;
 use Logbook\Service\Mail\NotificationSecrets;
+use Logbook\Service\Notification\ChannelCategories;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
@@ -79,7 +80,12 @@ final readonly class UserChannels
         // so a slow resolver costs one lookup per channel and send, not three.
         foreach ($this->states($recipient->userId, $recipient->isAdmin, false) as $state) {
             if ($state->status === ChannelStatus::On && $state->settings !== null) {
-                $usable[] = new BoundChannel($state->sender, $state->settings, !$recipient->isAdmin);
+                $usable[] = new BoundChannel(
+                    $state->sender,
+                    $state->settings,
+                    !$recipient->isAdmin,
+                    ChannelCategories::fromStored($state->record->categories),
+                );
             }
         }
 
@@ -151,6 +157,15 @@ final readonly class UserChannels
         ]);
 
         return $dropped;
+    }
+
+    /**
+     * What a saved channel receives (spec.md §7.11 *What each channel
+     * receives*), saved with its card.
+     */
+    public function setCategories(User $user, string $kind, ChannelCategories $categories): void
+    {
+        $this->records->setCategories($user->id, $kind, $categories->toStored(), $this->clock->now());
     }
 
     public function setEnabled(User $user, string $kind, bool $enabled): void

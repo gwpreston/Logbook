@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Notification\Channel;
 
+use Logbook\Service\Notification\ChannelCategories;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
+use Logbook\Service\Notification\NotificationPreferences;
+use Logbook\Service\Notification\ReceivesCategories;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Ai\Redactor;
 use Logbook\Service\Mail\MailConfig;
@@ -21,7 +24,7 @@ use Symfony\Component\Mime\Email;
  * Delivery (spec.md §7.11). Plain text: the subject is the notification
  * title, the body its message and a link to the app.
  */
-final readonly class EmailChannel implements NotificationChannel
+final readonly class EmailChannel implements NotificationChannel, ReceivesCategories
 {
     public function __construct(
         private MailConfig $config,
@@ -33,6 +36,12 @@ final readonly class EmailChannel implements NotificationChannel
     public function key(): string
     {
         return 'email';
+    }
+
+    /** Kept in the user's `notifications` setting (Phase 36.4). */
+    public function categories(NotificationPreferences $preferences): ChannelCategories
+    {
+        return $preferences->emailCategories();
     }
 
     public function label(): string

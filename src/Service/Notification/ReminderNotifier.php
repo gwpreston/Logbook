@@ -34,6 +34,12 @@ use Psr\Log\LoggerInterface;
  * before anything is sent, so a re-run, or a run overlapping this one,
  * never sends it to them again. If no channel delivers, their claims are
  * released for the next run to retry; other recipients are not affected.
+ *
+ * From Phase 36.4 (spec.md §7.11 *What each channel receives, and quiet
+ * hours*): each channel gets the reminders it takes, and one is claimed
+ * only while some channel takes its category. Inside the user's quiet
+ * hours nothing is claimed and no digest is sent: the first run after
+ * sends what still applies then.
  */
 final readonly class ReminderNotifier
 {
@@ -67,14 +73,33 @@ final readonly class ReminderNotifier
         $this->sync->sync($user);
 
         $preferences = $this->settings->notificationPreferences($user->id);
+        if ($this->isQuiet($user, $preferences)) {
+            return 0;
+        }
         $recipient = Recipient::of($user);
-        if ($this->channels->active($preferences, $recipient) === []) {
+        // One lookup of their channels, filtered here per category.
+        $active = $this->channels->active($preferences, $recipient);
+        $taken = array_values(array_filter(
+            [NotificationCategory::Due, NotificationCategory::Overdue],
+            static function (NotificationCategory $c) use ($active, $preferences): bool {
+                foreach ($active as $channel) {
+                    if (ChannelCategories::forChannel($channel, $preferences)->takes($c)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+        ));
+        if ($taken === []) {
             // Nothing can reach them. Leave everything unclaimed, so it is
             // sent once a channel is set up (if it is still due then).
             return 0;
         }
 
-        return $this->sendDue($user, $recipient, $preferences, LocalTime::today($this->clock, $user->preferences->timeZone()));
+        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+
+        return $this->sendDue($user, $recipient, $preferences, $taken, $today);
     }
 
     /**
@@ -94,28 +119,40 @@ final readonly class ReminderNotifier
         if (!$preferences->digest || $this->settings->digestMonth($user->id) === $today->format('Y-m')) {
             return false;
         }
-        $this->sync->sync($user);
-
+        // Held (not marked done) in quiet hours or while no channel takes it: a later run sends it.
         $recipient = Recipient::of($user);
-        if ($this->channels->active($preferences, $recipient) === []) {
+        if (
+            $this->isQuiet($user, $preferences)
+            || $this->channels->active($preferences, $recipient, NotificationCategory::Digest) === []
+        ) {
             return false;
         }
+        $this->sync->sync($user);
 
         return $this->sendDigest($user, $recipient, $preferences, $today);
     }
 
+    private function isQuiet(User $user, NotificationPreferences $preferences): bool
+    {
+        return $preferences->quiet?->contains($this->clock->now(), $user->preferences->timeZone()) === true;
+    }
+
     /**
+     * @param non-empty-list<NotificationCategory> $taken the reminder categories some channel takes
      * @return int how many reminders were delivered
      */
     private function sendDue(
         User $user,
         Recipient $recipient,
         NotificationPreferences $preferences,
+        array $taken,
         DateTimeImmutable $today,
     ): int {
+        // A reminder no channel takes is left unclaimed, as with no channel at all.
         $claimed = array_values(array_filter(
             $this->reminders->listAwaitingNotification($this->access->recipientVehicleIds($user), $user->id),
-            fn (Reminder $r): bool => $this->reminders->claim($r, $user->id, $this->clock->now()),
+            fn (Reminder $r): bool => in_array(NotificationCategory::forReminder($r->status), $taken, true)
+                && $this->reminders->claim($r, $user->id, $this->clock->now()),
         ));
         if ($claimed === []) {
             return 0;
@@ -137,23 +174,32 @@ final readonly class ReminderNotifier
             return 0;
         }
 
-        $report = $this->dispatcher->dispatch($this->composer->reminders($user, $entries, $today), $recipient, $preferences);
-        if (!$report->anyDelivered()) {
-            $this->release($user, $claimed);
+        $report = $this->dispatcher->dispatchReminders(
+            $this->composer->reminderMessages($user, $entries, $today),
+            $recipient,
+            $preferences,
+        );
 
-            return 0;
-        }
-
+        // Each reminder by the channels that delivered its category: none, and it is retried.
+        $delivered = 0;
+        $undelivered = [];
         foreach ($claimed as $reminder) {
-            $this->reminders->recordDelivery($reminder, $user->id, $report->deliveredChannels(), $this->clock->now());
+            $channels = $report->deliveredChannelsFor(NotificationCategory::forReminder($reminder->status));
+            if ($channels === []) {
+                $undelivered[] = $reminder;
+                continue;
+            }
+            $this->reminders->recordDelivery($reminder, $user->id, $channels, $this->clock->now());
+            $delivered++;
         }
-        if ($report->failures() !== []) {
+        $this->release($user, $undelivered);
+        if ($delivered > 0 && $report->failures() !== []) {
             $this->logger->warning('Reminders for user {user} were only partly delivered; failed channels are not retried.', [
                 'user' => $user->id,
             ]);
         }
 
-        return count($claimed);
+        return $delivered;
     }
 
     /**

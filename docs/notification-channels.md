@@ -52,6 +52,23 @@ does: an icon, the name, a hint, and the status in words with an icon.
   the card's own rules (a restore can bring back old rows). One that
   doesn't is not sent, says "The saved settings are no longer valid. Open
   the card and save them again.", and never counts towards switching off.
+- **Receives** (from v3.3.0): each card, email's included, has a box per
+  kind of message: *Due*, *Overdue*, *Monthly digest*, *Price alerts* and,
+  for admins, *Job failures*. All are ticked until you change them, so
+  nothing changes on upgrade. At least one must stay ticked; to stop a
+  channel altogether, switch it off. The server's webhook (`WEBHOOK_URL`)
+  has no card and receives everything.
+- **Quiet hours** (from v3.3.0): one period for all your channels, in your
+  time zone, off by default. It can run past midnight (22:00 to 07:00).
+  Nothing is sent inside it; nothing is queued either. The first scheduled
+  run after it ends sends what **still applies then**: reminders still due
+  or overdue (one done meanwhile isn't sent; one that went overdue
+  meanwhile is sent once, as overdue), the month's digest, price alerts
+  whose price is still below, and failed jobs still failing. Each kind goes
+  as one message.
+- **Tests** (*Send test* on a card, and Settings → Reminders' test) ignore
+  both: they are sent whatever the channel receives, even in quiet hours,
+  and say so.
 - **Switch on / off** and **Remove** (with a confirmation).
 - **Switched off after failures.** A personal channel that fails **5 sends
   in a row** switches itself off; you are told once through your other
@@ -442,3 +459,19 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   `attention`.
 - From 3.3.0 a channel that switched itself off is announced once through
   the person's other channels; the webhook's `event` is `channel_off`.
+- From 3.3.0 each channel gets only what it receives (*Receives* above).
+  A run's reminders still go as one message per channel: a channel taking
+  due and overdue gets them all, one taking only overdue gets the overdue
+  ones. A reminder counts as sent once a channel taking it delivered it,
+  and `reminder_deliveries.channels` lists only those channels. One that
+  no channel takes is left for later, as with no channel at all.
+- From 3.3.0 every price alert of one person's that fires in one check
+  goes as one message ("2 price alerts", a line each); a single alert is
+  unchanged. The webhook's `items` stays empty for price alerts.
+- From 3.3.0, within one job run, a service that fails 3 times without
+  answering (a timeout, a connection or TLS failure; not an HTTP error) is
+  skipped for the rest of the run: its card says "The service didn't
+  answer earlier in this run, so it was skipped.", which never counts
+  towards switching it off. What wasn't delivered anywhere is retried on
+  the next run. Tests and checks on saving are never skipped; email isn't
+  covered.

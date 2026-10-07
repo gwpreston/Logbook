@@ -86,6 +86,8 @@ final class RouteInventoryTest extends AppTestCase
         'settings.notifications.remove',
         // Phase 36.3: Telegram *Find my chat*, with the user's own saved token.
         'settings.notifications.find_chat',
+        // Phase 36.4: one's own quiet hours.
+        'settings.notifications.quiet',
         'settings.tyres',
         // Phase 22: the user's own trip settings, saved journeys and rates.
         'settings.trips',

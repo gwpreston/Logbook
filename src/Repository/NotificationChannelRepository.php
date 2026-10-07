@@ -105,6 +105,20 @@ final readonly class NotificationChannelRepository
     }
 
     /**
+     * What a channel receives (spec.md §7.11, Phase 36.4); null for all.
+     * Saved with the card, so the row exists by then.
+     */
+    public function setCategories(int $userId, string $kind, ?string $categories, DateTimeImmutable $now): void
+    {
+        $this->connection->update(
+            self::TABLE,
+            ['categories' => $categories, 'updated_at' => $this->at($now)],
+            ['user_id' => $userId, 'kind' => $kind],
+            ['categories' => $categories === null ? ParameterType::NULL : ParameterType::STRING],
+        );
+    }
+
+    /**
      * Switch a channel on or off. Switching on clears the failure count and
      * a switch-off.
      */
@@ -223,6 +237,7 @@ final readonly class NotificationChannelRepository
             is_string($row['last_error'] ?? null) ? $row['last_error'] : null,
             $int($row['failures'] ?? null),
             $date($row['switched_off_at'] ?? null),
+            is_string($row['categories'] ?? null) ? $row['categories'] : null,
         );
     }
 

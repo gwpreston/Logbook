@@ -2,7 +2,7 @@
 
 *Five more places a reminder can reach you.*
 
-Status: 🚧 built, awaiting merge · no release of its own (ships with Phase
+Status: ✅ complete · no release of its own (ships with Phase
 36.4 as **v3.3.0**, #254) · file lives in `docs/phases/`
 
 Part three of Phase 36. [36.2](phase-36.2.md) made every channel personal
@@ -312,9 +312,15 @@ the 36.2 reviews' #255–#258 the same day.
 - **Saving when the check can't be made** (found while starting).
   *Decided (#261):* saved, with "couldn't be reached to check it".
 
-Raised by the reviews on 2026-10-07, waiting for the owner (log
-#262–#264):
+Raised by the reviews on 2026-10-07 and decided by the owner on the same
+day, when Phase 36.4 started (log #262–#264):
 
-- **Check Mattermost on saving?** (#262)
-- **Remember host lookups across requests?** (#263)
+- **Check Mattermost on saving?** (#262) *Decided:* no; *Send test*
+  shows whether it works (spec §7.11).
+- **Remember host lookups across requests?** (#263) *Decided:* no,
+  parked (spec §12); 60 seconds within one request or run.
 - **A shorter timeout or a circuit breaker for scheduled sends?** (#264)
+  *Decided:* a circuit breaker per run, built in
+  [Phase 36.4](phase-36.4.md): a host failing 3 times without answering
+  is skipped for the rest of the run; the timeout stays 10 seconds
+  (spec §7.11).

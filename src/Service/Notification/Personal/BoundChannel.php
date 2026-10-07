@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Logbook\Service\Notification\Personal;
 
 use Logbook\Service\Ai\Redactor;
+use Logbook\Service\Notification\ChannelCategories;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
+use Logbook\Service\Notification\NotificationPreferences;
+use Logbook\Service\Notification\ReceivesCategories;
 use Logbook\Service\Notification\Recipient;
 use Throwable;
 
@@ -16,13 +19,19 @@ use Throwable;
  * sender with that user's settings. Its error text is redacted of the
  * channel's secrets before it is stored, logged or shown.
  */
-final readonly class BoundChannel implements NotificationChannel
+final readonly class BoundChannel implements NotificationChannel, ReceivesCategories
 {
     public function __construct(
         private PersonalSender $sender,
         private ChannelSettings $settings,
         private bool $restricted,
+        private ?ChannelCategories $categories = null,
     ) {
+    }
+
+    public function categories(NotificationPreferences $preferences): ChannelCategories
+    {
+        return $this->categories ?? ChannelCategories::all();
     }
 
     public function key(): string

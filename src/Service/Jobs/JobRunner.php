@@ -10,6 +10,7 @@ use Logbook\Domain\Job\JobRun;
 use Logbook\Domain\Job\JobStatus;
 use Logbook\Domain\Job\JobTrigger;
 use Logbook\Repository\JobRunRepository;
+use Logbook\Service\Notification\Outbound\HostBreaker;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -39,6 +40,7 @@ final readonly class JobRunner
         private ClockInterface $clock,
         private LoggerInterface $logger,
         private TranslatorInterface $translator,
+        private ?HostBreaker $breaker = null,
     ) {
     }
 
@@ -84,6 +86,8 @@ final readonly class JobRunner
             $this->capture->begin($log);
             try {
                 $this->logger->debug('Starting {job} ({trigger}).', ['job' => $job->name(), 'trigger' => $trigger->value]);
+                // A host that stops answering is skipped for the rest of this run (#264).
+                $this->breaker?->arm();
                 try {
                     $result = $job->run($context);
                 } catch (Throwable $e) {
@@ -102,6 +106,7 @@ final readonly class JobRunner
                     ['job' => $job->name(), 'status' => $result->status->value, 'summary' => $summary],
                 );
             } finally {
+                $this->breaker?->disarm();
                 $this->capture->end();
             }
             $this->runs->finish($id, $result->status, $summary, $log->output(), $this->clock->now());

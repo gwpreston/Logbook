@@ -77,11 +77,28 @@ final readonly class ChannelRegistry
     /**
      * The channels to use for a person (spec.md §7.11 *Delivery*): the
      * server's that they have enabled and that can reach them, then their
-     * usable personal channels.
+     * usable personal channels. With a category, only those receiving it
+     * (Phase 36.4).
      *
      * @return list<NotificationChannel>
      */
-    public function active(NotificationPreferences $preferences, Recipient $recipient): array
+    public function active(
+        NotificationPreferences $preferences,
+        Recipient $recipient,
+        ?NotificationCategory $category = null,
+    ): array {
+        $channels = $this->usable($preferences, $recipient);
+
+        return $category === null ? $channels : array_values(array_filter(
+            $channels,
+            static fn (NotificationChannel $c): bool => ChannelCategories::forChannel($c, $preferences)->takes($category),
+        ));
+    }
+
+    /**
+     * @return list<NotificationChannel>
+     */
+    private function usable(NotificationPreferences $preferences, Recipient $recipient): array
     {
         // Nothing is sent from a demo (spec.md §7.36): no channel reaches anyone.
         if ($this->demo?->blocks(DemoRestriction::Outbound) === true) {

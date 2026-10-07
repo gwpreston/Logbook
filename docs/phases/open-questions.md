@@ -82,8 +82,10 @@ on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 #255–#258 on 2026-10-07; the owner answered them the same day, before
 Phase 36.3 started, with Phase 36.3's own (#236–#241, Slack added to it,
 and #260–#261 found while starting it). Phase 36.3's reviews raised
-#262–#264 on 2026-10-07; they wait for the owner. The owner answered #254 the same day:
-Phase 36.4 joins the v3.3.0 release.
+#262–#264 on 2026-10-07. The owner answered #254 the same day:
+Phase 36.4 joins the v3.3.0 release. #250–#253 and #262–#264 were
+answered on 2026-10-07, when Phase 36.4 started. Phase 36.4's reviews
+raised #265–#270 on 2026-10-07; they wait for the owner.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -336,10 +338,10 @@ Phase 36.4 joins the v3.3.0 release.
 | 247 | [36.2](phase-36.2.md) | Who gets the one-time import of `NTFY_*` and `GOTIFY_*`? (found while starting) | Decided | Every admin without their own ntfy or Gotify; and `NTFY_TOKEN` onto any user's personal topic on `NTFY_URL`'s server, as it was used. Nothing that worked stops. spec §7.11. | 2026-10-07 |
 | 248 | [36.2](phase-36.2.md) | When does a failing channel switch off, and how is the user told? (found while starting) | Decided | After 5 failed sends in a row (tests don't count; a success resets); the card says so and the user is told once through their other usable channels. spec §7.11. | 2026-10-07 |
 | 249 | [36.2](phase-36.2.md) | Does email switch off after failures too? (found while starting) | Decided | No: email's failures are usually the server's. spec §7.11. | 2026-10-07 |
-| 250 | [36.4](phase-36.4.md) | Quiet hours: one period per user, or per channel? | Needs a decision | Open; asked when Phase 36.4 starts. | — |
-| 251 | [36.4](phase-36.4.md) | Overdue reminders during quiet hours: held, or sent at once? | Needs a decision | Open. | — |
-| 252 | [36.4](phase-36.4.md) | A held message whose reminder is done before it is sent: drop or send? | Needs a decision | Open. | — |
-| 253 | [36.4](phase-36.4.md) | Several held messages: sent as they were, or combined? | Needs a decision | Open. | — |
+| 250 | [36.4](phase-36.4.md) | Quiet hours: one period per user, or per channel? | Decided | One period per user, in their time zone, off by default; per channel parked. spec §7.11 *What each channel receives, and quiet hours*, §12. | 2026-10-07 |
+| 251 | [36.4](phase-36.4.md) | Overdue reminders during quiet hours: held, or sent at once? | Decided | Held like everything else. spec §7.11. | 2026-10-07 |
+| 252 | [36.4](phase-36.4.md) | A held message whose reminder is done before it is sent: drop or send? | Decided | Dropped: nothing is queued; the first run after quiet hours sends what still applies then. spec §7.11. | 2026-10-07 |
+| 253 | [36.4](phase-36.4.md) | Several held messages: sent as they were, or combined? | Decided | Combined per kind: one reminders message (as a run already is), price alerts of one check in one message, held job failures in one; the digest its own. spec §7.11. | 2026-10-07 |
 | 254 | [36.4](phase-36.4.md) | Phase 36.4's release: its own v3.4.0, or with the next phase? | Decided | Neither: Phase 36.4 releases **v3.3.0** with Phases 36.1 to 36.3; Phase 36.3 no longer releases on its own. spec §13. | 2026-10-07 |
 | 255 | [36.2](phase-36.2.md) | Docker's bridge and compose network count as *Your network* (the default allows them): treat them as *This server* on Docker? (found by the security review) | Decided | No: kept as *Your network* and documented (list the bridge subnet under *This server's addresses*, or choose *The internet only*). spec §7.11. | 2026-10-07 |
 | 256 | [36.2](phase-36.2.md) | A member's failed send shows the HTTP status or connection error: show only a generic error for private destinations? (found by the security review) | Decided | No: the redacted error, as for admins. spec §7.11. | 2026-10-07 |
@@ -348,9 +350,15 @@ Phase 36.4 joins the v3.3.0 release.
 | 259 | [36.1](phase-36.1.md) | Should `bin/dev-setup.sh` set up the dev stack's Mailpit rather than leaving it to be done by hand? (the owner asked) | Decided | Yes: `bin/dev-mailpit.php` saves it when no email server is saved, development only. Replaces that part of #223. spec §10 *Development stack*. | 2026-10-07 |
 | 260 | [36.3](phase-36.3.md) | Urgency of a failed job and of the switched-off notice on the new channels (found while starting) | Decided | A failed job `high`, *your channel switched off* `normal`. spec §7.11 *Urgency*. | 2026-10-07 |
 | 261 | [36.3](phase-36.3.md) | Saving a Telegram, Pushover or Slack card when the token check can't be made (found while starting) | Decided | Saved, with "couldn't be reached to check it"; a token the service rejects is not saved. spec §7.11. | 2026-10-07 |
-| 262 | [36.3](phase-36.3.md) | Check a Mattermost webhook on saving too (it has no check call; a wrong URL is saved silently)? (found by the security review) | Needs a decision | Today: *Send test* shows whether it works. | — |
-| 263 | [36.3](phase-36.3.md) | Remember host lookups across requests (APCu or a file), so the Notifications page doesn't resolve each card's host every time? (found by the performance review) | Needs a decision | Today: remembered for 60 s within one request or run. | — |
-| 264 | [36.3](phase-36.3.md) | A shorter timeout or a per-run circuit breaker for scheduled sends when a service is down for everyone? (found by the performance review) | Needs a decision | Today: 10 s per request, each user's send tried. | — |
+| 262 | [36.3](phase-36.3.md) | Check a Mattermost webhook on saving too (it has no check call; a wrong URL is saved silently)? (found by the security review) | Decided | No: *Send test* shows whether it works. spec §7.11. | 2026-10-07 |
+| 263 | [36.3](phase-36.3.md) | Remember host lookups across requests (APCu or a file), so the Notifications page doesn't resolve each card's host every time? (found by the performance review) | Parked | No: 60 s within one request or run; spec §12. | 2026-10-07 |
+| 264 | [36.3](phase-36.3.md) | A shorter timeout or a per-run circuit breaker for scheduled sends when a service is down for everyone? (found by the performance review) | Scheduled | A circuit breaker per run in [Phase 36.4](phase-36.4.md): a host failing 3 times without answering is skipped for the rest of the run, never counted; the timeout stays 10 s. spec §7.11. | 2026-10-07 |
+| 265 | [36.4](phase-36.4.md) | Receives chips are 38 px tall (the design system's chip) and checked only by fill: raise them to 44 px and add a check mark, here or for every chip? (found by the design review) | Needs a decision | Today: the shared chip, as on the station grades. | — |
+| 266 | [36.4](phase-36.4.md) | Clear a demoted admin's held job failures (`jobs.held_failures`)? (found by the security review and bug hunt) | Needs a decision | Today: never sent, left in settings. | — |
+| 267 | [36.4](phase-36.4.md) | Should the per-run breaker also cover the failed-job alert sent after a run? (found by the bug hunt) | Needs a decision | Today: armed only while the job itself runs. | — |
+| 268 | [36.4](phase-36.4.md) | A channel saved with every box ticked is stored as a list: should a category added later reach it? (found by the bug hunt) | Needs a decision | Today: no, only channels never saved (null) get new categories. | — |
+| 269 | [36.4](phase-36.4.md) | Two job runs finishing together could both send one admin's held failures: compare-and-delete the held setting? (found by the bug hunt, unconfirmed) | Needs a decision | Today: removed before sending; a tiny window. | — |
+| 270 | [36.4](phase-36.4.md) | Skip the reminder sync for a user in quiet hours? (found by the performance review) | Needs a decision | Today: synced every run, as the spec says. | — |
 
 ## Other loose ends found in the review
 
