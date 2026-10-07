@@ -101,7 +101,13 @@ final readonly class NotificationPreferences
     }
 
     /**
-     * @return array{channels: list<string>|null, digest: bool, gotify_token?: string, email_categories?: string, quiet?: array{start: string, end: string}}
+     * @return array{
+     *     channels: list<string>|null,
+     *     digest: bool,
+     *     gotify_token?: string,
+     *     email_categories?: string,
+     *     quiet?: array{start: string, end: string},
+     * }
      */
     public function toArray(): array
     {

@@ -7,6 +7,7 @@ namespace Logbook\Service\Notification\Channel;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
+use Logbook\Service\Notification\Outbound\HostBreaker;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Notification\WebhookPayload;
 use Logbook\Support\Config\Env;
@@ -25,7 +26,7 @@ final readonly class WebhookChannel implements NotificationChannel
 
     private ?string $url;
 
-    public function __construct(Env $env, private HttpClientInterface $http)
+    public function __construct(Env $env, private HttpClientInterface $http, private ?HostBreaker $breaker = null)
     {
         $url = $env->nullableString(self::VARIABLE);
         $this->url = $url !== null && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true) ? $url : null;
@@ -61,6 +62,6 @@ final readonly class WebhookChannel implements NotificationChannel
         return HttpDelivery::post($this->http, $this->key(), $this->url, [
             'json' => WebhookPayload::of($notification, $recipient),
             'max_redirects' => 0,
-        ]);
+        ], $this->breaker);
     }
 }

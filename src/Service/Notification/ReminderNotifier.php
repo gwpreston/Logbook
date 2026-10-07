@@ -87,7 +87,9 @@ final readonly class ReminderNotifier
             return 0;
         }
 
-        return $this->sendDue($user, $recipient, $preferences, $taken, LocalTime::today($this->clock, $user->preferences->timeZone()));
+        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+
+        return $this->sendDue($user, $recipient, $preferences, $taken, $today);
     }
 
     /**
@@ -109,7 +111,10 @@ final readonly class ReminderNotifier
         }
         // Held (not marked done) in quiet hours or while no channel takes it: a later run sends it.
         $recipient = Recipient::of($user);
-        if ($this->isQuiet($user, $preferences) || $this->channels->active($preferences, $recipient, NotificationCategory::Digest) === []) {
+        if (
+            $this->isQuiet($user, $preferences)
+            || $this->channels->active($preferences, $recipient, NotificationCategory::Digest) === []
+        ) {
             return false;
         }
         $this->sync->sync($user);

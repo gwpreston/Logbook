@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Notification\Outbound;
 
 use Logbook\Service\Notification\Channel\HttpDelivery;
+use Logbook\Service\Notification\Personal\ReplyWords;
 use Logbook\Service\Notification\DeliveryResult;
 use JsonException;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
@@ -28,6 +29,7 @@ final readonly class OutboundHttp
     public function __construct(
         private HttpClientInterface $http,
         private OutboundDestination $destinations,
+        private ?HostBreaker $breaker = null,
     ) {
     }
 
@@ -50,7 +52,7 @@ final readonly class OutboundHttp
             $options['no_proxy'] = '*';
         }
 
-        return HttpDelivery::post($this->http, $channel, $url, $options);
+        return HttpDelivery::post($this->http, $channel, $url, $options, $this->breaker);
     }
 
     /**
@@ -66,6 +68,10 @@ final readonly class OutboundHttp
         $destination = $this->destinations->check($url, $restricted, classify: $restricted);
         if (!$destination->isAllowed()) {
             return HttpAnswer::refused(self::refusal($destination));
+        }
+        // A host that stopped answering in this run is skipped, never counted (#264).
+        if ($this->breaker?->skips($url) === true) {
+            return HttpAnswer::refused(ReplyWords::of('skipped_unreachable'));
         }
 
         $options['max_redirects'] = 0;
@@ -91,6 +97,8 @@ final readonly class OutboundHttp
                 }
             }
         } catch (ExceptionInterface $e) {
+            $this->breaker?->unanswered($url);
+
             return HttpAnswer::unreachable(self::connectionError($e->getMessage()));
         }
 

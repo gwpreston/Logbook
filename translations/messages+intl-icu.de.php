@@ -3118,6 +3118,17 @@ return [
         ],
     ],
     'notifications' => [
+        'price_alerts' => [
+            'title' => '{count, plural, other {# Preisalarme}}',
+            'intro' => 'Diese Preise liegen unter deinen Alarmen:',
+            'line' => '• {grade} bei {station}: {price} (dein Alarm: {below}; gemeldet {listed})',
+        ],
+        'jobs_failed' => [
+            'title' => 'Logbook: {count, plural, other {# Aufgaben sind zweimal hintereinander fehlgeschlagen}}',
+            'intro' => 'Diese Aufgaben sind zweimal hintereinander fehlgeschlagen:',
+            'line' => '• {job}: {summary}',
+            'outro' => 'Die Ausgabe findest du unter Einstellungen → Aufgaben.',
+        ],
         'price_alert' => [
             'title' => '{grade} bei {station}: {price}',
             'message' => "{grade} bei {station} wird für {price} gemeldet, unter deinem Alarm von {below}.\n\nGemeldet {listed}.",

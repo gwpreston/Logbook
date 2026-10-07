@@ -6,13 +6,17 @@ namespace Logbook\Service\Jobs;
 
 use Logbook\Domain\Job\JobRun;
 use Logbook\Domain\Job\JobStatus;
+use Logbook\Domain\Setting\SettingScope;
+use Logbook\Domain\User\User;
 use Logbook\Repository\JobRunRepository;
 use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Notification\NotificationComposer;
 use Logbook\Service\Notification\NotificationDispatcher;
 use Logbook\Service\Notification\Recipient;
+use Logbook\Service\Notification\NotificationPreferences;
 use Logbook\Service\Reminder\ReminderSettingsStore;
+use Psr\Clock\ClockInterface;
 
 /**
  * Failure alerts (spec.md §7.30, decided 2026-10-02, #107): a job whose
@@ -20,10 +24,16 @@ use Logbook\Service\Reminder\ReminderSettingsStore;
  * a notice while it lasts; once per streak each admin is also sent a
  * `job_failed` notification through their own channels. An ok or partial
  * run ends the streak.
+ *
+ * Phase 36.4 (spec.md §7.11): an admin inside their quiet hours gets a
+ * held entry instead (user setting `jobs.held_failures`). After every run,
+ * each admin out of quiet hours is sent their held jobs whose streak still
+ * lasts, as one message; the others are dropped.
  */
 final readonly class JobFailureAlerts
 {
     public const string SETTING = 'jobs.failure_alerts';
+    public const string HELD = 'jobs.held_failures';
 
     public function __construct(
         private JobRunRepository $runs,
@@ -32,10 +42,17 @@ final readonly class JobFailureAlerts
         private ReminderSettingsStore $preferences,
         private NotificationComposer $composer,
         private NotificationDispatcher $dispatcher,
+        private ClockInterface $clock,
     ) {
     }
 
     public function afterRun(JobRun $run): void
+    {
+        $this->alert($run);
+        $this->sendHeld();
+    }
+
+    private function alert(JobRun $run): void
     {
         if (in_array($run->status, [JobStatus::Ok, JobStatus::Partial], true)) {
             $this->forget($run->job);
@@ -59,12 +76,70 @@ final readonly class JobFailureAlerts
                 continue;
             }
             $preferences = $this->preferences->notificationPreferences($user->id);
+            if ($this->isQuiet($user, $preferences)) {
+                $held = $this->held($user);
+                $held[$run->job] = $run->id;
+                $this->settings->save(self::HELD, $held, SettingScope::User, $user->id);
+                continue;
+            }
             $this->dispatcher->dispatch(
                 $this->composer->jobFailed($user, $run),
                 Recipient::of($user),
                 $preferences,
             );
         }
+    }
+
+    /**
+     * Each admin's held failures once their quiet hours are over: the jobs
+     * still failing, as one message (#253); a streak that ended is dropped
+     * (#252).
+     */
+    private function sendHeld(): void
+    {
+        foreach ($this->users->listAll() as $user) {
+            if (!$user->isAdmin) {
+                continue;
+            }
+            $held = $this->held($user);
+            if ($held === []) {
+                continue;
+            }
+            $preferences = $this->preferences->notificationPreferences($user->id);
+            if ($user->isActive() && $this->isQuiet($user, $preferences)) {
+                continue;
+            }
+            // Removed first: a channel that hangs or throws never sends it twice.
+            $this->settings->delete(self::HELD, SettingScope::User, $user->id);
+            if (!$user->isActive()) {
+                continue;
+            }
+            $runs = array_values(array_filter(array_map($this->streak(...), array_keys($held))));
+            if ($runs !== []) {
+                $this->dispatcher->dispatch($this->composer->jobsFailed($user, $runs), Recipient::of($user), $preferences);
+            }
+        }
+    }
+
+    private function isQuiet(User $user, NotificationPreferences $preferences): bool
+    {
+        return $preferences->quiet?->contains($this->clock->now(), $user->preferences->timeZone()) === true;
+    }
+
+    /**
+     * @return array<string, int> run ids by job
+     */
+    private function held(User $user): array
+    {
+        $value = $this->settings->find(self::HELD, SettingScope::User, $user->id)?->value;
+        $held = [];
+        foreach (is_array($value) ? $value : [] as $job => $id) {
+            if (is_string($job) && is_int($id)) {
+                $held[$job] = $id;
+            }
+        }
+
+        return $held;
     }
 
     /**

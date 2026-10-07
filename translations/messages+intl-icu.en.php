@@ -3121,6 +3121,17 @@ return [
         ],
     ],
     'notifications' => [
+        'price_alerts' => [
+            'title' => '{count, plural, other {# price alerts}}',
+            'intro' => 'These are listed below your alerts:',
+            'line' => '• {grade} at {station}: {price} (your alert: {below}; listed {listed})',
+        ],
+        'jobs_failed' => [
+            'title' => 'Logbook: {count, plural, other {# jobs failed twice in a row}}',
+            'intro' => 'These jobs have failed twice in a row:',
+            'line' => '• {job}: {summary}',
+            'outro' => 'See Settings → Jobs for their output.',
+        ],
         'price_alert' => [
             'title' => '{grade} at {station}: {price}',
             'message' => "{grade} at {station} is listed at {price}, below your alert of {below}.\n\nListed {listed}.",

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Service\Notification\Channel;
 
 use Logbook\Service\Notification\DeliveryResult;
+use Logbook\Service\Notification\Outbound\HostBreaker;
+use Logbook\Service\Notification\Personal\ReplyWords;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -17,11 +19,22 @@ final class HttpDelivery
     /**
      * @param array<string, mixed> $options symfony/http-client request options
      */
-    public static function post(HttpClientInterface $http, string $channel, string $url, array $options): DeliveryResult
-    {
+    public static function post(
+        HttpClientInterface $http,
+        string $channel,
+        string $url,
+        array $options,
+        ?HostBreaker $breaker = null,
+    ): DeliveryResult {
+        // A host that stopped answering in this run is skipped, never counted (#264).
+        if ($breaker?->skips($url) === true) {
+            return DeliveryResult::refused($channel, ReplyWords::of('skipped_unreachable'));
+        }
         try {
             $status = $http->request('POST', $url, $options)->getStatusCode();
         } catch (ExceptionInterface $e) {
+            $breaker?->unanswered($url);
+
             return DeliveryResult::failed($channel, $e->getMessage());
         }
 

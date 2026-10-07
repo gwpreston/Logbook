@@ -189,6 +189,40 @@ final readonly class NotificationComposer
     }
 
     /**
+     * Failed jobs for one admin, as one message (spec.md §7.11, Phase 36.4:
+     * held through quiet hours, #253). One alone is jobFailed().
+     *
+     * @param non-empty-list<JobRun> $runs
+     */
+    public function jobsFailed(User $user, array $runs): Notification
+    {
+        if (count($runs) === 1) {
+            return $this->jobFailed($user, $runs[0]);
+        }
+
+        return $this->scope->run($user, function () use ($runs): Notification {
+            $lines = [$this->translator->trans('notifications.jobs_failed.intro'), ''];
+            foreach ($runs as $run) {
+                $lines[] = $this->translator->trans('notifications.jobs_failed.line', [
+                    'job' => $this->translator->trans('jobs.job.' . $run->job . '.title'),
+                    'summary' => $run->summary ?? '',
+                ]);
+            }
+            $lines[] = '';
+            $lines[] = $this->translator->trans('notifications.jobs_failed.outro');
+
+            return new Notification(
+                kind: NotificationKind::JobFailed,
+                title: $this->translator->trans('notifications.jobs_failed.title', ['count' => count($runs)]),
+                message: implode("\n", $lines),
+                url: $this->urls->route('settings.jobs'),
+                urgent: true,
+                locale: $this->translator->getLocale(),
+            );
+        });
+    }
+
+    /**
      * A personal channel switched itself off after failing 5 times in a row
      * (spec.md §7.11 *Switched off after failures*).
      *
@@ -211,6 +245,40 @@ final readonly class NotificationComposer
                 ]),
                 url: $this->urls->route('settings.notifications'),
                 urgent: true,
+                locale: $this->translator->getLocale(),
+            );
+        });
+    }
+
+    /**
+     * Every alert of one user's that fired in one check, as one message
+     * (spec.md §7.11, Phase 36.4, #253). One alone is priceAlert().
+     *
+     * @param non-empty-list<array{Station, PriceAlert, ListedPrice}> $alerts
+     */
+    public function priceAlerts(User $user, array $alerts, string $currency): Notification
+    {
+        if (count($alerts) === 1) {
+            return $this->priceAlert($user, $alerts[0][0], $alerts[0][1], $alerts[0][2], $currency);
+        }
+
+        return $this->scope->run($user, function () use ($alerts, $currency): Notification {
+            $lines = [$this->translator->trans('notifications.price_alerts.intro'), ''];
+            foreach ($alerts as [$station, $alert, $listed]) {
+                $lines[] = $this->translator->trans('notifications.price_alerts.line', [
+                    'grade' => $this->translator->trans($alert->grade->shortLabelKey()),
+                    'station' => $station->data->name,
+                    'price' => $this->formatter->unitPrice($listed->price, $currency, false),
+                    'below' => $this->formatter->unitPrice($alert->below, $currency, false),
+                    'listed' => $this->formatter->dateTime($listed->reportedAt, IntlDateFormatter::SHORT),
+                ]);
+            }
+
+            return new Notification(
+                kind: NotificationKind::PriceAlert,
+                title: $this->translator->trans('notifications.price_alerts.title', ['count' => count($alerts)]),
+                message: implode("\n", $lines),
+                url: $this->urls->route('stations.index'),
                 locale: $this->translator->getLocale(),
             );
         });

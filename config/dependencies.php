@@ -38,6 +38,9 @@ use Logbook\Service\Navigation\SidebarTwigExtension;
 use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Service\Notification\Channel\EmailChannel;
 use Logbook\Service\Notification\Channel\WebhookChannel;
+use Logbook\Service\Jobs\JobRunner;
+use Logbook\Service\Notification\Outbound\HostBreaker;
+use Logbook\Service\Notification\Outbound\OutboundHttp;
 use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Service\Notification\ChannelResults;
 use Logbook\Service\Notification\NotificationDispatcher;
@@ -342,6 +345,10 @@ return [
         ->constructorParameter('demo', get(DemoMode::class))
         ->constructorParameter('personal', get(UserChannels::class)),
     EmailChannel::class => autowire()->constructorParameter('secrets', get(NotificationSecrets::class)),
+    // One breaker per process, armed by the job runner for a run only (#264).
+    OutboundHttp::class => autowire()->constructorParameter('breaker', get(HostBreaker::class)),
+    WebhookChannel::class => autowire()->constructorParameter('breaker', get(HostBreaker::class)),
+    JobRunner::class => autowire()->constructorParameter('breaker', get(HostBreaker::class)),
     NotificationDispatcher::class => autowire()
         ->constructorParameter('results', get(ChannelResults::class))
         ->constructorParameter('notice', get(SwitchOffNotice::class)),

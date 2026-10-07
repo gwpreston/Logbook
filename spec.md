@@ -3526,8 +3526,9 @@ within one request or run, not across requests (#263, §12).
     price is still below. Every alert one user has that fires in one
     check goes as **one message** (#253). A single alert's message is
     unchanged. Several alerts give a title "{count} price alerts" and one
-    line per alert in the body; the webhook payload has one `items` entry
-    per alert.
+    line per alert in the body, linking to *Stations*. The webhook
+    payload's `items` stays empty, as for one alert (its items are
+    reminders).
   - *Job failures*: an admin inside quiet hours when the alert is due
     gets a held entry instead (user setting `jobs.held_failures`, `{job:
     run id}`). After each job run, the held entries of every admin no
