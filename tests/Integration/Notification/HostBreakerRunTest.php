@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Notification;
 
+use Logbook\Domain\Job\JobStatus;
+use Logbook\Domain\Job\JobTrigger;
 use Logbook\Repository\NotificationChannelRepository;
+use Logbook\Service\Jobs\Job;
+use Logbook\Service\Jobs\JobContext;
+use Logbook\Service\Jobs\JobResult;
+use Logbook\Service\Jobs\JobRunner;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationDispatcher;
 use Logbook\Service\Notification\NotificationKind;
@@ -64,5 +70,49 @@ final class HostBreakerRunTest extends ReminderTestCase
         // Outside a run (a test, a check), it is tried again.
         $send();
         self::assertCount(4, $this->http->to('https://discord.com'));
+    }
+
+    /**
+     * Phase 37 (#267): a host skipped in a run is skipped for the failed-job
+     * alert sent after it too, and the breaker is disarmed afterwards.
+     */
+    public function testTheFailureAlertAfterARunSkipsAHostTheRunFoundDown(): void
+    {
+        $app = $this->createRecordingApp(['WEBHOOK_URL' => 'https://hooks.test/logbook'] + self::CHANNELS);
+        $this->signedIn($app);
+        $breaker = $this->service($app, HostBreaker::class);
+        $job = new class ($breaker) implements Job {
+            public function __construct(private HostBreaker $breaker)
+            {
+            }
+
+            public function name(): string
+            {
+                return 'backup';
+            }
+
+            public function interval(): ?int
+            {
+                return null;
+            }
+
+            public function run(JobContext $context): JobResult
+            {
+                for ($i = 0; $i < HostBreaker::AFTER; $i++) {
+                    $this->breaker->unanswered('https://hooks.test/logbook');
+                }
+
+                return JobResult::failed('The webhook host is down.');
+            }
+        };
+        $runner = $this->service($app, JobRunner::class);
+
+        $runner->run($job, JobTrigger::Manual);
+        $second = $runner->run($job, JobTrigger::Manual);
+
+        self::assertSame(JobStatus::Failed, $second->status);
+        self::assertCount(1, $this->mail->sent, 'the alert went by email');
+        self::assertSame([], $this->http->to('https://hooks.test'), 'and skipped the host the run found down');
+        self::assertFalse($breaker->skips('https://hooks.test/logbook'), 'disarmed after the alert');
     }
 }

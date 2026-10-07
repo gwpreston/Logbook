@@ -12,6 +12,7 @@ use Logbook\Repository\UserIdentityRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Auth\Oidc\OidcOutcome;
 use Logbook\Service\Auth\Oidc\OidcResult;
+use Logbook\Service\Jobs\HeldJobFailures;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\User\EmailAddresses;
 use Logbook\Support\Config\AppSettings;
@@ -43,6 +44,7 @@ final readonly class ExternalUsers
         private ClockInterface $clock,
         private LoggerInterface $logger,
         private EmailAddresses $emails,
+        private HeldJobFailures $heldFailures,
     ) {
     }
 
@@ -290,6 +292,9 @@ final readonly class ExternalUsers
             return $user;
         }
         $this->users->setAdmin($user->id, $shouldBeAdmin, $this->clock->now());
+        if (!$shouldBeAdmin) {
+            $this->heldFailures->forget($user->id); // #266
+        }
         $this->logger->info('{label} made "{username}" {role} ({variable}).', [
             'label' => $policy->label,
             'username' => $user->username,

@@ -6,7 +6,6 @@ namespace Logbook\Service\Jobs;
 
 use Logbook\Domain\Job\JobRun;
 use Logbook\Domain\Job\JobStatus;
-use Logbook\Domain\Setting\SettingScope;
 use Logbook\Domain\User\User;
 use Logbook\Repository\JobRunRepository;
 use Logbook\Repository\SettingRepository;
@@ -26,18 +25,19 @@ use Psr\Clock\ClockInterface;
  * run ends the streak.
  *
  * Phase 36.4 (spec.md §7.11): an admin inside their quiet hours gets a
- * held entry instead (user setting `jobs.held_failures`). After every run,
- * each admin out of quiet hours is sent their held jobs whose streak still
- * lasts, as one message; the others are dropped.
+ * held entry instead (HeldJobFailures). After every run, each admin out
+ * of quiet hours is sent their held jobs whose streak still lasts, as one
+ * message; the others are dropped.
  */
 final readonly class JobFailureAlerts
 {
     public const string SETTING = 'jobs.failure_alerts';
-    public const string HELD = 'jobs.held_failures';
+    public const string HELD = HeldJobFailures::NAME;
 
     public function __construct(
         private JobRunRepository $runs,
         private SettingRepository $settings,
+        private HeldJobFailures $held,
         private UserRepository $users,
         private ReminderSettingsStore $preferences,
         private NotificationComposer $composer,
@@ -77,9 +77,7 @@ final readonly class JobFailureAlerts
             }
             $preferences = $this->preferences->notificationPreferences($user->id);
             if ($this->isQuiet($user, $preferences)) {
-                $held = $this->held($user);
-                $held[$run->job] = $run->id;
-                $this->settings->save(self::HELD, $held, SettingScope::User, $user->id);
+                $this->held->hold($user->id, $run->job, $run->id);
                 continue;
             }
             $this->dispatcher->dispatch(
@@ -101,17 +99,16 @@ final readonly class JobFailureAlerts
             if (!$user->isAdmin) {
                 continue;
             }
-            $held = $this->held($user);
-            if ($held === []) {
+            if ($this->held->of($user->id) === []) {
                 continue;
             }
             $preferences = $this->preferences->notificationPreferences($user->id);
             if ($user->isActive() && $this->isQuiet($user, $preferences)) {
                 continue;
             }
-            // Removed first: a channel that hangs or throws never sends it twice.
-            $this->settings->delete(self::HELD, SettingScope::User, $user->id);
-            if (!$user->isActive()) {
+            // Only the run that removed them sends them (#269).
+            $held = $this->held->take($user->id);
+            if ($held === [] || !$user->isActive()) {
                 continue;
             }
             $runs = array_values(array_filter(array_map($this->streak(...), array_keys($held))));
@@ -124,22 +121,6 @@ final readonly class JobFailureAlerts
     private function isQuiet(User $user, NotificationPreferences $preferences): bool
     {
         return $preferences->quiet?->contains($this->clock->now(), $user->preferences->timeZone()) === true;
-    }
-
-    /**
-     * @return array<string, int> run ids by job
-     */
-    private function held(User $user): array
-    {
-        $value = $this->settings->find(self::HELD, SettingScope::User, $user->id)?->value;
-        $held = [];
-        foreach (is_array($value) ? $value : [] as $job => $id) {
-            if (is_string($job) && is_int($id)) {
-                $held[$job] = $id;
-            }
-        }
-
-        return $held;
     }
 
     /**

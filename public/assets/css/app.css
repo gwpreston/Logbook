@@ -126,7 +126,7 @@
     /* Sizing. */
     --control-h: 2.75rem;      /* 44px — minimum touch target */
     --input-h: 3rem;           /* 48px */
-    --chip-h: 2.375rem;        /* 38px */
+    --chip-h: 2.375rem;        /* 38px: the segmented control (chips use --control-h) */
     --sidebar-w: 15.75rem;     /* 252px */
     --topbar-h: 3.75rem;       /* 60px */
     --bottom-nav-h: 4.5rem;    /* 72px */
@@ -1138,12 +1138,13 @@ a.list__item:hover {
     height: 1.375rem;
 }
 
-/* Chips: filters and single/multi choice (use aria-pressed or :checked). */
+/* Chips: filters and single/multi choice (use aria-pressed or :checked).
+   44 px, a touch target (Phase 37, #265). */
 .chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: var(--chip-h);
+    min-height: var(--control-h);
     padding: 0 var(--space-4);
     border: 1px solid var(--border);
     border-radius: var(--radius-pill);
@@ -1173,6 +1174,20 @@ button.chip:hover,
 label.chip:hover {
     border-color: var(--accent);
     background: var(--accent-soft);
+}
+
+/* A chosen chip shows a tick as well as its fill, so the choice is not
+   colour alone (#265); a chip marking where you are (aria-current) doesn't. */
+.chip[aria-pressed="true"]::before,
+.chip:has(input:checked)::before {
+    content: "";
+    flex: none;
+    width: 0.375rem;
+    height: 0.6875rem;
+    margin: -0.1875rem 0.125rem 0 0.125rem;
+    border: solid currentColor;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
 }
 
 button.chip[aria-pressed="true"]:hover,

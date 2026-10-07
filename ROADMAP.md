@@ -84,6 +84,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [36.2](docs/phases/phase-36.2.md) | Personal notification channels | ✅ |
 | [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover, Mattermost and Slack | ✅ |
 | [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours + v3.3 release | ✅ |
+| [37](docs/phases/phase-37.md) | Space between the Fuel prices providers + patch release | 📋 |
+| [38](docs/phases/phase-38.md) | Ask lives on Insights; the Ask page goes + release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -950,6 +952,41 @@ use.*
 - Released as **v3.3.0** (Phases 36.1 to 36.4; #254).
 
 → [`phase-36.4.md`](docs/phases/phase-36.4.md)
+
+---
+
+## Phase 37 — Space between the Fuel prices providers + patch release
+*The provider choices on Settings → Fuel prices sit apart like every other
+list of choices in Settings.*
+
+- The *Off*, *UK Fuel Finder* and *Sample prices (demo)* options get the
+  same gap as Settings → Jobs → *How jobs run*, through the shared list
+  wrapper rather than a one-off rule.
+- Every other bordered list of choices checked for the same fault and
+  fixed the same way.
+- The Phase 36.4 reviews' fixes (#265–#269): 44 px chips with a tick, a
+  demoted admin's held job failures cleared, the per-run breaker over the
+  alert after a run, an all-ticked *Receives* saved as "all" (existing
+  ones converted, #271), held failures sent by one run only.
+- Releases **v3.3.1**.
+
+→ [`phase-37.md`](docs/phases/phase-37.md)
+
+---
+
+## Phase 38 — Ask lives on Insights; the Ask page goes + release
+*One place for what Logbook has spotted and what you've asked it.*
+
+- *Your questions* (the thread list, with *Delete* and *Delete all*) and
+  the MCP *Drafts to review* move to the Insights page; each thread opens
+  on its own page under Insights.
+- The `/ask` page and its sidebar entry go; old `/ask` links redirect to
+  the matching Insights page. Reverses #192 and #193.
+- Open questions A–C (where *Your questions* sits, the top-bar button,
+  thread page or inline) are decided before it starts.
+- Releases the next minor version.
+
+→ [`phase-38.md`](docs/phases/phase-38.md)
 
 ---
 

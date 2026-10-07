@@ -21,12 +21,14 @@ use Logbook\Service\Notification\QuietHours;
 use Logbook\Service\Jobs\BackupSchedule;
 use Logbook\Service\Jobs\CleanupJob;
 use Logbook\Service\Jobs\Job;
+use Logbook\Service\Jobs\HeldJobFailures;
 use Logbook\Service\Jobs\JobFailureAlerts;
 use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobRunner;
 use Logbook\Service\Jobs\JobSettings;
 use Logbook\Service\Jobs\RemindersJob;
 use Logbook\Service\Scheduler\ScheduledTasks;
+use Logbook\Service\User\UserAdmin;
 use Logbook\Tests\Support\ReminderTestCase;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -356,6 +358,32 @@ final class JobRunnerTest extends ReminderTestCase
         $combined = $this->service($app, NotificationComposer::class)->jobsFailed($owner, [$first, $second]);
         self::assertSame('Logbook: 2 jobs failed twice in a row', $combined->title);
         self::assertStringContainsString('• Backup: ', $combined->message);
+    }
+
+    /**
+     * Phase 37 (#266, #269): held failures are sent once, by the run that
+     * removed them, and a demoted admin's are dropped unsent.
+     */
+    public function testHeldFailuresAreTakenOnceAndDroppedOnDemotion(): void
+    {
+        $app = $this->createRecordingApp();
+        $this->signedIn($app);
+        $owner = $this->owner($app);
+        $other = $this->createMember($app);
+        $admin = $this->service($app, UserAdmin::class);
+        self::assertNull($admin->setAdmin($other, true));
+        $held = $this->service($app, HeldJobFailures::class);
+
+        $held->hold($owner->id, 'backup', 5);
+        $held->hold($owner->id, 'cleanup', 6);
+        self::assertSame(['backup' => 5, 'cleanup' => 6], $held->take($owner->id));
+        self::assertSame([], $held->take($owner->id), 'a second run finds nothing to send');
+
+        $held->hold($other->id, 'backup', 5);
+        $demoted = $this->service($app, UserRepository::class)->find($other->id);
+        self::assertNotNull($demoted);
+        self::assertNull($admin->setAdmin($demoted, false));
+        self::assertSame([], $held->of($other->id), 'dropped with admin');
     }
 
     public function testRunJobFromTheCommandLine(): void

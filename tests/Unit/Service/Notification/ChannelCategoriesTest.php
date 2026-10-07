@@ -47,6 +47,18 @@ final class ChannelCategoriesTest extends TestCase
         self::assertSame('due', ChannelCategories::fromForm($posted, false)->toStored());
         self::assertSame('due,job_failures', ChannelCategories::fromForm($posted, true)->toStored());
         self::assertTrue(ChannelCategories::fromForm(null, true)->isEmpty());
+
+        // Every offered box ticked is all, so a later category reaches it (#268).
+        $member = ChannelCategories::fromForm(['due', 'overdue', 'digest', 'price_alerts'], false);
+        self::assertTrue($member->isAll());
+        self::assertNull($member->toStored());
+        $admin = ChannelCategories::fromForm(['due', 'overdue', 'digest', 'price_alerts', 'job_failures'], true);
+        self::assertTrue($admin->isAll());
+        self::assertSame(
+            'due,overdue,digest,price_alerts',
+            ChannelCategories::fromForm(['due', 'overdue', 'digest', 'price_alerts'], true)->toStored(),
+            'an admin who leaves job failures out',
+        );
         self::assertSame(['due', 'overdue', 'digest', 'price_alerts'], ChannelCategories::all()->values(false));
     }
 

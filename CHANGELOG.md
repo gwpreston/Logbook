@@ -6,6 +6,22 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Settings → Fuel prices** (Phase 37): the provider choices are spaced
+  apart like every other list of choices, instead of their borders
+  touching. The same applies to any list of option cards outside a
+  fieldset.
+- **Chips** (Phase 37, #265): every chip is 44 px tall, and a chosen chip
+  shows a tick as well as its colour.
+- **Receives** (Phase 37, #268): a channel with every box ticked now gets
+  categories added in later versions too; channels saved that way under
+  3.3.0 are converted by the upgrade.
+- **Job failure alerts** (Phase 37): a demoted admin's held alerts are
+  cleared (#266); a service that stopped answering during a run is
+  skipped for the alert sent after it too (#267); two runs finishing
+  together send held alerts once (#269).
+
 ## [3.3.0] — 2026-10-07
 
 Phases 36.1–36.4: **your reminders, where you want them**. The email server

@@ -8,7 +8,8 @@ namespace Logbook\Service\Notification\Outbound;
  * The per-run circuit breaker for scheduled sends (spec.md §7.11
  * *Unreachable services in a run*, Phase 36.4, #264). While a job runs,
  * a host (host and port) that failed 3 times without answering is skipped
- * for the rest of the run, so a service that is down for everyone costs
+ * for the rest of the run, the failure alert sent after it included
+ * (Phase 37, #267), so a service that is down for everyone costs
  * three timeouts, not one per user. Armed by the job runner for a run
  * only: tests, checks on saving and *Find my chat* are never skipped.
  *

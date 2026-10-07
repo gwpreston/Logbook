@@ -16,6 +16,7 @@ use Logbook\Repository\SessionRepository;
 use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Jobs\HeldJobFailures;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\Transaction;
@@ -44,6 +45,7 @@ final readonly class UserAdmin
         private OneTimeLinks $links,
         private ReminderSettingsStore $reminderSettings,
         private AvatarService $avatars,
+        private HeldJobFailures $heldFailures,
     ) {
     }
 
@@ -156,6 +158,10 @@ final readonly class UserAdmin
             return UserRefusal::LastAdmin;
         }
         $this->users->setAdmin($user->id, $isAdmin, $this->clock->now());
+        if (!$isAdmin) {
+            // A member is never sent job failures, so held ones are dropped (#266).
+            $this->heldFailures->forget($user->id);
+        }
 
         return null;
     }

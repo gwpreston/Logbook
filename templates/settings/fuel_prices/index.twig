@@ -56,29 +56,28 @@
 
         <form class="form" method="post" action="{{ url_for('settings.fuel_prices') }}">
             {{ ui.csrf(csrf) }}
-            <fieldset class="card fieldset">
+            <fieldset class="card fieldset" aria-describedby="provider-hint{% if errors.provider ?? null %} f-provider-error{% endif %}">
                 <legend class="card__title fieldset__legend">{{ 'fuel_prices.settings.provider.legend'|trans }}</legend>
-                <div class="stack" role="radiogroup" aria-describedby="provider-hint{% if errors.provider ?? null %} f-provider-error{% endif %}">
+                {# The options are the fieldset's own children, as on Settings → Jobs, so the shared rule spaces them (Phase 37). #}
+                <label class="toggle">
+                    <input type="radio" name="provider" value=""{% if values.provider == '' %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'fuel_prices.settings.provider.off'|trans }}</span>
+                        <span class="toggle__hint">{{ 'fuel_prices.settings.provider.off_hint'|trans }}</span>
+                    </span>
+                </label>
+                {% for row in providers %}
+                    {% set provider = row.provider %}
                     <label class="toggle">
-                        <input type="radio" name="provider" value=""{% if values.provider == '' %} checked{% endif %}>
+                        <input type="radio" name="provider" value="{{ provider.code() }}"{% if values.provider == provider.code() %} checked{% endif %}>
                         <span class="toggle__text">
-                            <span class="toggle__title">{{ 'fuel_prices.settings.provider.off'|trans }}</span>
-                            <span class="toggle__hint">{{ 'fuel_prices.settings.provider.off_hint'|trans }}</span>
+                            <span class="toggle__title">{{ provider.nameKey()|trans }}</span>
+                            <span class="toggle__hint">{{ provider.descriptionKey()|trans }}</span>
+                            <span class="toggle__hint">{{ ui.icon('shield') }} {{ provider.sendsKey()|trans({host: provider.host()}) }}</span>
+                            <span class="toggle__hint">{{ 'fuel_prices.settings.provider.licence'|trans({licence: provider.licence().name}) }}</span>
                         </span>
                     </label>
-                    {% for row in providers %}
-                        {% set provider = row.provider %}
-                        <label class="toggle">
-                            <input type="radio" name="provider" value="{{ provider.code() }}"{% if values.provider == provider.code() %} checked{% endif %}>
-                            <span class="toggle__text">
-                                <span class="toggle__title">{{ provider.nameKey()|trans }}</span>
-                                <span class="toggle__hint">{{ provider.descriptionKey()|trans }}</span>
-                                <span class="toggle__hint">{{ ui.icon('shield') }} {{ provider.sendsKey()|trans({host: provider.host()}) }}</span>
-                                <span class="toggle__hint">{{ 'fuel_prices.settings.provider.licence'|trans({licence: provider.licence().name}) }}</span>
-                            </span>
-                        </label>
-                    {% endfor %}
-                </div>
+                {% endfor %}
                 <p class="field__hint" id="provider-hint">{{ 'fuel_prices.settings.provider.hint'|trans }}</p>
                 {{ ui.field_error(errors, 'provider') }}
             </fieldset>
