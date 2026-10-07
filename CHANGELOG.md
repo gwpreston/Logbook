@@ -6,6 +6,12 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.3.1] — 2026-10-07
+
+Phase 37: **a patch release**. The provider choices on Settings → Fuel
+prices are spaced apart like every other list of choices, and the fixes
+from the 3.3.0 reviews are in.
+
 ### Fixed
 
 - **Settings → Fuel prices** (Phase 37): the provider choices are spaced
@@ -21,6 +27,12 @@ is called out explicitly.
   cleared (#266); a service that stopped answering during a run is
   skipped for the alert sent after it too (#267); two runs finishing
   together send held alerts once (#269).
+
+### Upgrade notes
+- Pull and restart. One data migration converts a *Receives* list with
+  every box ticked, saved under 3.3.0, to "all"; no schema or config
+  changes, and no change to the backup format. Rolling back leaves them
+  as "all", which is what they meant.
 
 ## [3.3.0] — 2026-10-07
 
@@ -2492,7 +2504,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.3.1...HEAD
+[3.3.1]: https://github.com/gwpreston16/Logbook/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/gwpreston16/Logbook/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/gwpreston16/Logbook/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/gwpreston16/Logbook/compare/v3.0.0...v3.1.0

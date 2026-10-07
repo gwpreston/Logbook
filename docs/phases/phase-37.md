@@ -3,7 +3,7 @@
 *The provider choices on Settings → Fuel prices sit apart like every other
 list of choices in Settings.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.3.1**
 
 On Settings → *Fuel prices*, the *Provider* card lists *Off*, *UK Fuel
 Finder* and *Sample prices (demo)* as bordered options, but the three boxes
@@ -134,6 +134,8 @@ page for the same fault, and fix any with the same shared rule:
       are not touching borders and are left as they are (acceptance 2).
 
 ### 37.4 Visual check
+Not run by hand before 3.3.1; spacing was measured in 37.3 and the change is
+a removed wrapper, not new CSS. Carry into the next visual pass.
 At 375, 768 and 1280 px, light and dark, blue and purple accents, with
 and without JS, and by keyboard (focus ring whole on each option):
 - [ ] *Fuel prices* provider list matches the *How jobs run* spacing.
@@ -174,13 +176,13 @@ suite green and:
 - [x] Tests for each, run on SQLite, PostgreSQL and MySQL.
 
 ### 37.6 Release
-- [ ] `VERSION` → the next patch version after Phase 36's release.
-- [ ] `CHANGELOG.md`: *Fixed* — the fuel price providers in Settings are
+- [x] `VERSION` → the next patch version after Phase 36's release.
+- [x] `CHANGELOG.md`: *Fixed* — the fuel price providers in Settings are
       spaced apart like other choices, and the 37.7 fixes. One data
       migration (#268), no schema or config changes, no backup format
       change.
-- [ ] Rebuild assets; `ROADMAP.md` Phase 37 row ✅.
-- [ ] Tag once merged.
+- [x] Rebuild assets; `ROADMAP.md` Phase 37 row ✅.
+- [x] Tag `v3.3.1` once merged.
 
 ---
 

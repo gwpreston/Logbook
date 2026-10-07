@@ -84,7 +84,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [36.2](docs/phases/phase-36.2.md) | Personal notification channels | ✅ |
 | [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover, Mattermost and Slack | ✅ |
 | [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours + v3.3 release | ✅ |
-| [37](docs/phases/phase-37.md) | Space between the Fuel prices providers + patch release | 📋 |
+| [37](docs/phases/phase-37.md) | Space between the Fuel prices providers + patch release | ✅ |
 | [38](docs/phases/phase-38.md) | Ask lives on Insights; the Ask page goes + release | 📋 |
 
 *Update the status column as each phase lands.*
