@@ -468,6 +468,26 @@ final class ServiceChannelsTest extends ReminderTestCase
         self::assertTrue($this->record($app, $owner, 'telegram')->enabled);
     }
 
+    public function testFindMyChatWorksBehindASubpath(): void
+    {
+        $app = $this->createRecordingApp(self::ENV + ['APP_BASE_PATH' => '/logbook']);
+        $this->dns->hosts['api.telegram.org'] = ['149.154.167.220'];
+        $browser = $this->signedIn($app);
+        $this->giveChannel($app, $this->owner($app), 'telegram', [], ['token' => self::TELEGRAM_TOKEN]);
+        $this->http->bodyFor['https://api.telegram.org'] = (string) json_encode(['ok' => true, 'result' => [
+            ['update_id' => 1, 'message' => ['chat' => ['id' => 111, 'type' => 'private', 'first_name' => 'Gareth']]],
+        ]]);
+
+        // Hard refresh with the prefix stripped by the proxy.
+        self::assertStringContainsString(
+            'action="/logbook/settings/notifications/telegram/chats"',
+            self::body($browser->get('/settings/notifications')),
+        );
+        $found = self::body($browser->post('/settings/notifications/telegram/chats'));
+        self::assertStringContainsString('action="/logbook/settings/notifications/telegram"', $found);
+        self::assertStringContainsString('value="111"', $found);
+    }
+
     /**
      * @param App<ContainerInterface> $app
      */

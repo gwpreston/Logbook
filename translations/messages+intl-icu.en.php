@@ -3518,7 +3518,7 @@ return [
             'files' => 'Photos and attachments',
         ],
         'confirm_warning' => 'Everything currently in Logbook will be replaced by this backup. A copy of the current data is saved on the server first.',
-        'mail_notice' => 'Backups never hold the email server\'s password. If this backup has an email server, enter its password again in Settings → Delivery after restoring. Notification tokens (ntfy, Gotify) are not in backups either: each person enters theirs again on Notifications.',
+        'mail_notice' => 'Backups never hold the email server\'s password. If this backup has an email server, enter its password again in Settings → Delivery after restoring. Notification tokens and webhook URLs (ntfy, Gotify, Telegram, Discord and the rest) are not in backups either: each person enters theirs again on Notifications.',
         'api_keys_notice' => 'This backup holds API keys. They keep working only if this install uses the same SESSION_SECRET as the one the backup came from; otherwise create new keys in Settings → API keys after restoring.',
         'ai_notice' => 'This backup holds AI connections but never their keys: enter each key again in Settings → AI after restoring.',
         'confirm_label' => 'Replace all data with this backup',
