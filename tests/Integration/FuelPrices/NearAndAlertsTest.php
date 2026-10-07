@@ -21,6 +21,8 @@ use Logbook\Service\FuelPrices\StationLinker;
 use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
 use Logbook\Service\FuelPrices\VehicleFuelProfiles;
 use Logbook\Service\Notification\ChannelRegistry;
+use Logbook\Service\Notification\QuietHours;
+use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Station\StationService;
 use Logbook\Tests\Support\FakeChannel;
 use DI\Container;
@@ -194,6 +196,48 @@ final class NearAndAlertsTest extends FuelPricesTestCase
         // Removing the favourite removes the alert.
         $this->service($app, StationService::class)->setFavourite($owner, $tesco, false);
         self::assertSame([], $this->service($app, PriceAlertRepository::class)->forUser($owner->id));
+    }
+
+    /**
+     * Phase 36.4 (spec.md §7.11): inside the user's quiet hours an alert
+     * stays armed; the first check after sends what still applies, every
+     * alert of the user's in one message (#253).
+     */
+    public function testAlertsWaitForQuietHoursAndGoTogether(): void
+    {
+        [$app, $owner] = $this->pricesApp();
+        $channel = new FakeChannel('fake');
+        $container = $app->getContainer();
+        self::assertInstanceOf(Container::class, $container);
+        $container->set(ChannelRegistry::class, new ChannelRegistry([$channel]));
+        $this->sync($app);
+        $linker = $this->service($app, StationLinker::class);
+        $stations = $this->service($app, StationService::class);
+        $alerts = $this->service($app, PriceAlerts::class);
+        foreach (['antrim-tesco' => '1.369', 'antrim-shell' => '1.389'] as $ref => $below) {
+            $station = $linker->addFromProvider($owner, self::ref($ref));
+            $stations->setFavourite($owner, $station, true);
+            $alerts->set($owner, $station, FuelGrade::E10_95, $below);
+        }
+        // 06:00 to 09:00 holds 07:00 UTC whether the owner is on UTC or British time.
+        $store = $this->service($app, ReminderSettingsStore::class);
+        $store->saveNotificationPreferences($owner->id, $store->notificationPreferences($owner->id)
+            ->withQuiet(QuietHours::of('06:00', '09:00')));
+
+        $this->sync($app);
+        self::assertSame([], $channel->sent, 'held');
+        foreach ($this->service($app, PriceAlertRepository::class)->forUser($owner->id) as $alert) {
+            self::assertNull($alert->triggeredAt, 'still armed');
+        }
+
+        $this->clock->set(new DateTimeImmutable('2026-10-03T10:00:00Z'));
+        $this->sync($app);
+        self::assertCount(1, $channel->sent, 'one message');
+        self::assertSame('2 price alerts', $channel->sent[0]->title);
+        self::assertStringContainsString('E10 95 at Tesco Antrim Extra: £1.359/L', $channel->sent[0]->message);
+        self::assertStringContainsString('Shell Junction One', $channel->sent[0]->message);
+        $this->sync($app);
+        self::assertCount(1, $channel->sent, 'once');
     }
 
     public function testAlertsIgnoreStalePricesAndClosedStationsAndHaveALimit(): void
