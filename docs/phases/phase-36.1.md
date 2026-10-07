@@ -2,7 +2,7 @@
 
 *The server's email, set up in the app by the person who runs it.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 36.4 as
+Status: ✅ complete · no release of its own (ships with Phase 36.4 as
 **v3.3.0**) · file lives in `docs/phases/`
 
 Phase 36 is **Notifications**, built last, after Phases 33 to 35 are

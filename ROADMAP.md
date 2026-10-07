@@ -80,10 +80,10 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | ✅ |
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | ✅ |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | ✅ |
-| [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 🚧 |
-| [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 🚧 |
-| [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover, Mattermost and Slack | 🚧 |
-| [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours + v3.3 release | 📋 |
+| [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | ✅ |
+| [36.2](docs/phases/phase-36.2.md) | Personal notification channels | ✅ |
+| [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover, Mattermost and Slack | ✅ |
+| [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours + v3.3 release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -943,9 +943,11 @@ use.*
 *Choose what reaches you where, and when it may.*
 
 - A choice per channel of what it receives (due, overdue, digest, price
-  alerts); quiet hours that hold a message until they end (#234).
-- Open questions #250–#253 are answered before it starts.
-- Release **v3.3.0** (Phases 36.1 to 36.4; #254).
+  alerts, and job failures for admins); quiet hours per person that hold
+  a message until they end, with nothing queued: the first run after sends
+  what still applies, one message per kind (#234, #250–#253).
+- A job run skips a service that stopped answering (#264).
+- Released as **v3.3.0** (Phases 36.1 to 36.4; #254).
 
 → [`phase-36.4.md`](docs/phases/phase-36.4.md)
 

@@ -2,7 +2,7 @@
 
 *Five more places a reminder can reach you.*
 
-Status: 🚧 built, awaiting merge · no release of its own (ships with Phase
+Status: ✅ complete · no release of its own (ships with Phase
 36.4 as **v3.3.0**, #254) · file lives in `docs/phases/`
 
 Part three of Phase 36. [36.2](phase-36.2.md) made every channel personal

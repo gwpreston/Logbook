@@ -2,7 +2,7 @@
 
 *Everyone chooses where their own reminders go, and sets it up themselves.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 36.4 as
+Status: ✅ complete · no release of its own (ships with Phase 36.4 as
 **v3.3.0**) · file lives in `docs/phases/`
 
 Part two of Phase 36 ([36.1](phase-36.1.md) moved the email server into

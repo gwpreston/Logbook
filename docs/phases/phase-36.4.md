@@ -2,7 +2,7 @@
 
 *Choose what reaches you where, and when it may.*
 
-Status: 🚧 in progress · releases **v3.3.0** with Phases 36.1 to 36.3 (#254) ·
+Status: ✅ complete · released as **v3.3.0** with Phases 36.1 to 36.3 (#254) ·
 file lives in `docs/phases/`
 
 Phase 36.2 made every notification channel personal (Account →
@@ -86,35 +86,35 @@ alerts*, §12 and §13. In short:
       lives in its own service, armed by the job runner for a run only.
 
 ### 36.4.2 Migration, code, docs, translations, tests
-- [ ] Migration: `notification_channels.categories` (nullable string
+- [x] Migration: `notification_channels.categories` (nullable string
       100); rollback drops it. Backups carry it; an older backup restores
       as null (all).
-- [ ] `NotificationCategory` enum; `NotificationPreferences` gains
+- [x] `NotificationCategory` enum; `NotificationPreferences` gains
       `emailCategories` and `quiet` (every `with*()` carries them);
       `QuietHours` value object (crossing midnight, DST by wall clock).
-- [ ] Registry: each usable channel with the categories it takes; the
+- [x] Registry: each usable channel with the categories it takes; the
       dispatcher sends a kind only to the channels taking it (tests and
       the notice to all).
-- [ ] `ReminderNotifier`: groups by `due` / `overdue`, one message per
+- [x] `ReminderNotifier`: groups by `due` / `overdue`, one message per
       group, per-reminder delivery and release; leaves unclaimed what no
       channel takes; quiet hours for reminders and the digest.
-- [ ] `PriceAlertChecker`: users in quiet hours skipped unclaimed; one
+- [x] `PriceAlertChecker`: users in quiet hours skipped unclaimed; one
       message per user per check (composer `priceAlerts()`).
-- [ ] `JobFailureAlerts`: held entries per admin, sent after a later run
+- [x] `JobFailureAlerts`: held entries per admin, sent after a later run
       once out of quiet hours, if the streak lasts; several in one
       message.
-- [ ] Circuit breaker (#264): per run, per host, 3 connection failures,
+- [x] Circuit breaker (#264): per run, per host, 3 connection failures,
       `refused` results; never for tests or checks.
-- [ ] Account → Notifications: *Receives* on each card (email has its
+- [x] Account → Notifications: *Receives* on each card (email has its
       own Save), *Quiet hours* form; the tests' wording.
-- [ ] Translations (every locale), `docs/` (notifications guide),
+- [x] Translations (every locale), `docs/` (notifications guide),
       `CHANGELOG.md` *Unreleased*.
-- [ ] Tests: categories per kind; mixed groups with one failing; quiet
+- [x] Tests: categories per kind; mixed groups with one failing; quiet
       hours across midnight and on DST days; held job failures dropped
       when the streak ends; the breaker; the migration both ways.
 
 ### Release (with Phases 36.1 to 36.3)
-- [ ] `CHANGELOG.md` **3.3.0**: the *Unreleased* entries of Phases 36.1 to
+- [x] `CHANGELOG.md` **3.3.0**: the *Unreleased* entries of Phases 36.1 to
       36.3 (already written) plus this phase's, under a dated `## [3.3.0]`
       with an introduction. Draft introduction, from Phase 36.3: "Phases
       36.1–36.4: **your reminders, where you want them**. The email server
@@ -126,13 +126,13 @@ alerts*, §12 and §13. In short:
       server up in Settings → Delivery.**", the migrations, and that
       notification secrets are encrypted with `SESSION_SECRET` and are not
       in backups.
-- [ ] Bump `VERSION` to 3.3.0, rebuild assets, update the README status
+- [x] Bump `VERSION` to 3.3.0, rebuild assets, update the README status
       line (with "Coming from 3.2? Email is off after upgrading until an
       admin sets it up in Settings → Delivery") and `ROADMAP.md`; Phases
       36.1 to 36.4 marked complete.
 - [ ] The real test through each Phase 36.3 service (its 36.3.5 item), if
-      not done before.
-- [ ] Tag `v3.3.0` once merged.
+      not done before. **The owner's step** (it needs real accounts).
+- [ ] Tag `v3.3.0` once merged (the owner's step).
 
 ---
 
