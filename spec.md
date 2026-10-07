@@ -3481,7 +3481,10 @@ within one request or run, not across requests (#263, §12).
   ("Choose at least one, or switch the channel off"). A member's saved
   list keeps out `job_failures`. A member made admin later gets job
   failures on a channel only once it is ticked there, unless that
-  channel's list was never saved (still "all"). The server's webhook
+  channel's list is "all": never saved, or saved with every box offered
+  to them ticked. From Phase 37 (#268, #271) a choice with every offered
+  box ticked is saved as "all" (null), so a category added later reaches
+  it; the upgrade converts the full lists saved before. The server's webhook
   (`WEBHOOK_URL`) has no card and receives everything. In-app is not
   affected.
 - **Which category a message is.** Reminders: each reminder by its status
@@ -3534,7 +3537,11 @@ within one request or run, not across requests (#263, §12).
     run id}`). After each job run, the held entries of every admin no
     longer in quiet hours are sent as **one message** per admin (a single
     job's is unchanged; several give "{count} jobs failed" with a line
-    each). A job whose streak has ended meanwhile is dropped.
+    each). A job whose streak has ended meanwhile is dropped. Only the
+    run that removes an admin's held entry sends it, so two runs
+    finishing together send it once (Phase 37, #269). Demoting an admin
+    (Settings → Users, or the admin groups at single sign-on) clears
+    their held entry, unsent (#266).
   - The switched-off notice only follows a real send, so it is never
     inside quiet hours.
   So "when they end" means the first scheduled run after the end. With
@@ -3546,7 +3553,8 @@ within one request or run, not across requests (#263, §12).
 - **Unreachable services in a run** (#264). Within one job run, a host
   (host and port) that fails **3 times without answering** (a timeout, a
   connection or a TLS failure, not an HTTP error) is **skipped for the
-  rest of the run**. Its sends are refused before any request with "The
+  rest of the run**, including the failed-job alert sent when the run
+  ends (Phase 37, #267). Its sends are refused before any request with "The
   service didn't answer earlier in this run, so it was skipped." That is shown as the last
   result and never counts towards switching off, as a refusal is. Each
   item then follows its sender's rule as if that channel had failed:
@@ -7640,6 +7648,14 @@ owner. Decided 2026-10-06 (#212–#217).
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
+- **Chips and option cards** (Phase 37, decided 2026-10-07, #265): a chip
+  (filters, single and multi choice, *Receives*) is at least 44 px tall,
+  and a chosen chip (checked, or `aria-pressed`) shows a tick as well as
+  its fill, so the choice never rests on colour alone. A chip that marks
+  where you are (`aria-current`: a page, a vehicle, a period) has no tick.
+  A list of bordered choices (radio or checkbox option cards, as on
+  Settings → Jobs → *How jobs run*) has a gap between each option, wherever
+  the list sits.
 - **Accent colour:** Profile → Appearance offers *Blue* (default), *Teal*,
   *Indigo* and *Purple*, stored per user (`users.accent`). It is rendered
   server-side as `data-accent` on `<html>` (no flash; signed-out pages use
@@ -7761,7 +7777,9 @@ owner. Decided 2026-10-06 (#212–#217).
   The user management pages, *Settings → Reminders* and the other linked
   pages use the same card and button styles (and list rows where they
   list things); their controls are unchanged. Their *‹ Settings* back
-  link lands on the group they belong to.
+  link lands on the group they belong to. A list of option cards on any
+  of these pages has a gap between each option (Phase 37, §8 *Chips and
+  option cards*).
 - **Profile page** (Phase 33.2, #172): `/profile` (route `profile`) holds
   everything about the signed-in user, in the Settings card style under
   two anchored groups, after who they are (avatar or initial, display
@@ -8585,6 +8603,14 @@ task breakdowns live in the per-phase files; this is the map.
   that hold messages until they end (#234, #250–#253), and a run skips a
   host that stopped answering (#264) (§6, §7.11, §7.30). One migration.
   Release v3.3.0 (Phases 36.1 to 36.4, #254).
+- **Phase 37 — Space between the Fuel prices providers + patch
+  release.** The provider option cards on Settings → Fuel prices get the
+  gap every list of option cards has (§8 *Chips and option cards*), and
+  the Phase 36.4 reviews' fixes: 44 px chips with a tick (#265), a
+  demoted admin's held failures cleared (#266), the breaker over the
+  alert after a run (#267), all-ticked saved as all with existing lists
+  converted (#268, #271), held failures sent once (#269) (§7.11, §8). One
+  data migration. Release v3.3.1.
 ---
 
 ## 14. Definition of done

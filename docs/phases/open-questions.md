@@ -85,7 +85,9 @@ and #260–#261 found while starting it). Phase 36.3's reviews raised
 #262–#264 on 2026-10-07. The owner answered #254 the same day:
 Phase 36.4 joins the v3.3.0 release. #250–#253 and #262–#264 were
 answered on 2026-10-07, when Phase 36.4 started. Phase 36.4's reviews
-raised #265–#270 on 2026-10-07; they wait for the owner.
+raised #265–#270 on 2026-10-07; the owner answered them the same day,
+before Phase 37 started, and #271, found while starting it. #265–#269 and
+#271 are built in Phase 37.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -353,12 +355,13 @@ raised #265–#270 on 2026-10-07; they wait for the owner.
 | 262 | [36.3](phase-36.3.md) | Check a Mattermost webhook on saving too (it has no check call; a wrong URL is saved silently)? (found by the security review) | Decided | No: *Send test* shows whether it works. spec §7.11. | 2026-10-07 |
 | 263 | [36.3](phase-36.3.md) | Remember host lookups across requests (APCu or a file), so the Notifications page doesn't resolve each card's host every time? (found by the performance review) | Parked | No: 60 s within one request or run; spec §12. | 2026-10-07 |
 | 264 | [36.3](phase-36.3.md) | A shorter timeout or a per-run circuit breaker for scheduled sends when a service is down for everyone? (found by the performance review) | Scheduled | A circuit breaker per run in [Phase 36.4](phase-36.4.md): a host failing 3 times without answering is skipped for the rest of the run, never counted; the timeout stays 10 s. spec §7.11. | 2026-10-07 |
-| 265 | [36.4](phase-36.4.md) | Receives chips are 38 px tall (the design system's chip) and checked only by fill: raise them to 44 px and add a check mark, here or for every chip? (found by the design review) | Needs a decision | Today: the shared chip, as on the station grades. | — |
-| 266 | [36.4](phase-36.4.md) | Clear a demoted admin's held job failures (`jobs.held_failures`)? (found by the security review and bug hunt) | Needs a decision | Today: never sent, left in settings. | — |
-| 267 | [36.4](phase-36.4.md) | Should the per-run breaker also cover the failed-job alert sent after a run? (found by the bug hunt) | Needs a decision | Today: armed only while the job itself runs. | — |
-| 268 | [36.4](phase-36.4.md) | A channel saved with every box ticked is stored as a list: should a category added later reach it? (found by the bug hunt) | Needs a decision | Today: no, only channels never saved (null) get new categories. | — |
-| 269 | [36.4](phase-36.4.md) | Two job runs finishing together could both send one admin's held failures: compare-and-delete the held setting? (found by the bug hunt, unconfirmed) | Needs a decision | Today: removed before sending; a tiny window. | — |
-| 270 | [36.4](phase-36.4.md) | Skip the reminder sync for a user in quiet hours? (found by the performance review) | Needs a decision | Today: synced every run, as the spec says. | — |
+| 265 | [36.4](phase-36.4.md) | Receives chips are 38 px tall (the design system's chip) and checked only by fill: raise them to 44 px and add a check mark, here or for every chip? (found by the design review) | Scheduled | Every chip: 44 px (`--control-h`), and a chosen chip shows a tick as well as the fill; `aria-current` chips don't. Built in [37](phase-37.md). spec §8 *Chips*. | 2026-10-07 |
+| 266 | [36.4](phase-36.4.md) | Clear a demoted admin's held job failures (`jobs.held_failures`)? (found by the security review and bug hunt) | Scheduled | Yes: demoting an admin (Users, or the admin groups at sign-on) clears them. Built in [37](phase-37.md). spec §7.11. | 2026-10-07 |
+| 267 | [36.4](phase-36.4.md) | Should the per-run breaker also cover the failed-job alert sent after a run? (found by the bug hunt) | Scheduled | Yes: the breaker stays armed for the alert after the run. Built in [37](phase-37.md). spec §7.11 *Unreachable services in a run*. | 2026-10-07 |
+| 268 | [36.4](phase-36.4.md) | A channel saved with every box ticked is stored as a list: should a category added later reach it? (found by the bug hunt) | Scheduled | Yes: every offered box ticked is saved as all (null). Built in [37](phase-37.md). spec §7.11 *Categories*. | 2026-10-07 |
+| 269 | [36.4](phase-36.4.md) | Two job runs finishing together could both send one admin's held failures: compare-and-delete the held setting? (found by the bug hunt, unconfirmed) | Scheduled | Yes: only the run whose delete removed the held entry sends it. Built in [37](phase-37.md). spec §7.11 *Held, not queued*. | 2026-10-07 |
+| 270 | [36.4](phase-36.4.md) | Skip the reminder sync for a user in quiet hours? (found by the performance review) | Decided | No: synced every run, as the spec says; quiet hours hold only sending. | 2026-10-07 |
+| 271 | [37](phase-37.md) | Channels saved under v3.3.0 with every box ticked are full lists: convert them to all? (found while starting) | Scheduled | Yes: a migration converts them (personal channels and email). Built in [37](phase-37.md). | 2026-10-07 |
 
 ## Other loose ends found in the review
 

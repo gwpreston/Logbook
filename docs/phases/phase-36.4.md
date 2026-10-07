@@ -159,15 +159,23 @@ alerts*, §12 and §13. In short:
 - **Several held messages.** Sent as they were, or combined into one?
   *Decided (#253, 2026-10-07):* combined per kind.
 
-Raised by the reviews on 2026-10-07, waiting for the owner (log
-#265–#270):
+Raised by the reviews on 2026-10-07 (log #265–#270), and decided by the
+owner the same day, before Phase 37 started; the fixes are built in
+[Phase 37](phase-37.md) (37.7):
 
-- **Receives chips: 44 px and a check mark?** (#265)
-- **Clear a demoted admin's held job failures?** (#266)
-- **Breaker over the failed-job alert after a run?** (#267)
+- **Receives chips: 44 px and a check mark?** (#265) *Decided
+  (2026-10-07):* yes, for every chip: 44 px, and a tick on a chosen chip.
+- **Clear a demoted admin's held job failures?** (#266) *Decided
+  (2026-10-07):* yes, when they are demoted.
+- **Breaker over the failed-job alert after a run?** (#267) *Decided
+  (2026-10-07):* yes.
 - **New categories for channels saved with every box ticked?** (#268)
+  *Decided (2026-10-07):* yes: every box ticked is saved as all, and the
+  lists already saved are converted (#271).
 - **Compare-and-delete the held failures?** (#269, unconfirmed race)
-- **Skip the sync in quiet hours?** (#270)
+  *Decided (2026-10-07):* yes: only the run that removed them sends them.
+- **Skip the sync in quiet hours?** (#270) *Decided (2026-10-07):* no;
+  nothing to build.
 
 ## Reviews
 
