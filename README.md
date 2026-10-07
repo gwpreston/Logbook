@@ -21,8 +21,8 @@ your own server.
 > certificates attached to any of them; tyres — what is fitted and stored,
 > how far and how old each one is, its tread depth and when it will need
 > replacing; and reminders for all of it, with
-> lead times you choose, sent by email, ntfy, Gotify or a webhook when they
-> come due, as a list or a month calendar, plus an optional monthly digest
+> lead times you choose, sent by email, ntfy, Gotify, Telegram, Discord,
+> Pushover, Mattermost, Slack or a webhook when they come due, as a list or a month calendar, plus an optional monthly digest
 > and a calendar feed; every cost
 > rolled up into per-vehicle and fleet reports (by category, per month, per
 > mile or km, any date range) with CSV export and a clean printout (or PDF)
@@ -131,7 +131,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/stations.md](docs/stations.md) | Fuel stations: your station names as stations, choosing one on a fill-up with what you paid last time, what you paid at each, favourites, your private places and straight-line distances, merging duplicates, chargers, who sees and changes what; live fuel prices (UK Fuel Finder), Cheapest near me and effective cost, Was it worth it?, price alerts, adding a provider adapter |
 | [docs/incidents.md](docs/incidents.md) | Incidents, damage and insurance claims: logging, photos kept as taken, linking repairs so costs count once, the claim and repair estimates, reading insurer letters, archiving a car as written off, the claims history for insurance quotes and what the sale pack shows |
 | [docs/demo-mode.md](docs/demo-mode.md) | Running a public demo that resets itself: seeding an empty database, the reset schedule, what visitors can and cannot do, why it cannot wipe a real instance, stopping being a demo |
-| [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify and webhooks; adding a channel |
+| [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify, Telegram, Discord, Pushover, Mattermost, Slack and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in each release, with upgrade notes |
 
@@ -144,7 +144,8 @@ documented in [`.env.example`](.env.example) and
 `APP_BASE_PATH` and `APP_TIMEZONE`. The one exception is the email server,
 which an admin sets up in the app, in **Settings → Delivery** (with *Send
 test email*). Each person chooses where their reminders go in **Settings →
-Account → Notifications**: email, ntfy, Gotify or a webhook of their own (see
+Account → Notifications**: email, ntfy, Gotify, Telegram, Discord, Pushover,
+Mattermost, Slack or a webhook of their own (see
 [docs/notification-channels.md](docs/notification-channels.md)); an admin
 decides in Settings → Delivery where members' channels may send.
 
