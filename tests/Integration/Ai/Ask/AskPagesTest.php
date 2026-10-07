@@ -105,7 +105,8 @@ final class AskPagesTest extends AskTestCase
         self::assertMatchesRegularExpression('#^/insights/questions/\d+\#answer-\d+$#', $posted->getHeaderLine('Location'));
 
         $ask = (string) $browser->follow($posted)->getBody();
-        self::assertStringContainsString('<h1 class="ask-card__title" id="ask-card-title">Ask Logbook</h1>', $ask);
+        self::assertStringContainsString('<h1 class="page-header__title ask-thread-title">Which BMWs?</h1>', $ask);
+        self::assertStringContainsString('<h2 class="ask-card__title" id="ask-card-title">Ask Logbook</h2>', $ask);
         self::assertStringContainsString('<title>Which BMWs? · Insights', $ask);
         self::assertStringContainsString('class="back-link" href="/insights#your-questions"', $ask);
         $thread = self::threadIn($posted->getHeaderLine('Location'));
@@ -477,6 +478,16 @@ final class AskPagesTest extends AskTestCase
         self::assertSame('/insights/questions/' . $thread . '#ask-question', $followUp->getHeaderLine('Location'));
         self::assertStringContainsString('>And the tyres?</textarea>', (string) $browser->follow($followUp)->getBody());
 
+        // A thread since deleted, or someone else's: the Insights box keeps the question instead.
+        $this->createMember($app, 'partner');
+        $partner = $this->browserFor($app, 'partner');
+        $theirs = $partner->post('/ask', ['question' => 'Not my thread?', 'thread' => $thread]);
+        self::assertSame('/insights#ask', $theirs->getHeaderLine('Location'));
+        self::assertStringContainsString('>Not my thread?</textarea>', (string) $partner->follow($theirs)->getBody());
+        $gone = $browser->post('/ask', ['question' => 'Gone?', 'thread' => '99999']);
+        self::assertSame('/insights#ask', $gone->getHeaderLine('Location'));
+        self::assertStringContainsString('>Gone?</textarea>', (string) $browser->follow($gone)->getBody());
+
         self::assertSame($asked, count($this->provider->requests), 'nothing asked');
         self::assertSame(1, $this->rows($app, 'ai_threads'));
         self::assertSame(2, $this->rows($app, 'ai_messages'));
@@ -489,7 +500,10 @@ final class AskPagesTest extends AskTestCase
         $browser = $this->browserFor($app, 'owner');
 
         self::assertSame('/insights#ask', $browser->get('/ask')->getHeaderLine('Location'));
-        self::assertSame('/insights#ask', $browser->get('/ask/threads/4')->getHeaderLine('Location'), 'no thread pages to go to');
+        $thread = $browser->get('/ask/threads/4');
+        self::assertSame('/insights#ask', $thread->getHeaderLine('Location'), 'no thread pages to go to');
+        self::assertSame(302, $thread->getStatusCode(), 'for now: with AI on again it must reach the thread');
+        self::assertSame(301, $browser->get('/ask')->getStatusCode());
         $posted = $browser->post('/ask', ['question' => 'Anything?', 'thread' => '4']);
         self::assertSame('/insights#ask', $posted->getHeaderLine('Location'));
         self::assertInsightsWithoutAsk((string) $browser->follow($posted)->getBody());

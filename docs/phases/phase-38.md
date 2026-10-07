@@ -274,3 +274,7 @@ D and E, found while starting, as below (#272–#276).*
   showed up to 50, no paging). Options: (1) latest 5 + *Show all*
   disclosure; (2) all of them; (3) latest 5 + a full-list page.
   *Decided:* (1).
+- **Found by the reviews (2026-10-07):** #277 (the thread page's heading
+  is the thread's title) and #278 (with AI off a thread's old address is
+  302, not 301) built in this phase; #279 (cap MCP drafts) and #280 (an
+  Insights query budget) logged in `open-questions.md` for a decision.

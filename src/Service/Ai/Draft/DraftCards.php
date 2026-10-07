@@ -33,12 +33,17 @@ final readonly class DraftCards
     {
         $now = $this->clock->now();
         $cards = [];
+        // Each vehicle once, however many drafts it has (they are listed on every Insights view).
+        $vehicles = [];
         foreach ($drafts as $draft) {
-            try {
-                $vehicle = $this->vehicles->get($user, $draft->vehicleId);
-            } catch (VehicleNotFound) {
-                $vehicle = null;
+            if (!array_key_exists($draft->vehicleId, $vehicles)) {
+                try {
+                    $vehicles[$draft->vehicleId] = $this->vehicles->get($user, $draft->vehicleId);
+                } catch (VehicleNotFound) {
+                    $vehicles[$draft->vehicleId] = null;
+                }
             }
+            $vehicle = $vehicles[$draft->vehicleId];
             $vehicleArgs = ['id' => (string) $draft->vehicleId];
             [$view, $edit, $editQuery] = match ($draft->kind) {
                 DraftKind::Fuel => [['fuel.index', $vehicleArgs], ['fuel.create', $vehicleArgs], []],

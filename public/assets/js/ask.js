@@ -243,6 +243,11 @@
         Array.prototype.forEach.call(document.querySelectorAll('[data-ask-form]'), enhance);
         focusBox();
         window.addEventListener('hashchange', focusBox);
+        // The browser's own scroll to the #ask fragment, at the end of the
+        // load, takes focus back to the page: focus the box again after it.
+        window.addEventListener('load', function () {
+            window.setTimeout(focusBox, 0);
+        });
         Array.prototype.forEach.call(document.querySelectorAll('[data-ask-copy]'), enhanceCopy);
         Array.prototype.forEach.call(document.querySelectorAll('[data-draft-undo]'), enhanceUndo);
     });

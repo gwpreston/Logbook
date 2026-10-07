@@ -21,7 +21,7 @@
     </p>
     {% if ai_set %}
         {% if ai_set.error %}
-            <div class="alert alert--warning" role="alert">{{ ui.icon('warning') }}<span>{{ 'ai_insights.failed'|trans }} {{ ai_set.error.messageKey()|trans }}</span></div>
+            <div class="alert alert--warning" role="alert">{{ ui.icon('warning') }}<span>{{ 'ai_insights.failed'|trans }} {{ ai_set.error.messageKey()|trans({connection: ai_set.connectionName ?? '', model: ai_set.model ?? '', seconds: 0, variable: ''}) }}</span></div>
         {% elseif ai_set.insights is empty %}
             <p class="muted">{{ 'ai_insights.none'|trans }}</p>
         {% else %}

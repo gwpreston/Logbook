@@ -5529,9 +5529,11 @@ request to any model service.
   your network"; "…by Anthropic, on the internet"). There is no `/ask`
   page: `GET /ask` answers 301 to `/insights` (keeping `?q=`), `GET
   /ask/threads/{id}` 301 to `/insights/questions/{id}`, and a `POST /ask`
-  from an old open tab 303 to the Insights box (or, with a `thread`, to
-  that thread's page) with the question filled in, never asked. These
-  redirects work with AI off too (they land on Insights).
+  from an old open tab 303 to the Insights box (or, with a `thread` that
+  is still the user's, to that thread's page) with the question filled
+  in, never asked. These redirects work with AI off too: they land on
+  Insights, and a thread's old address then answers 302, not 301, so it
+  reaches the thread once AI is on (#278).
 - **Works without JS:** a form POST (`/insights/questions`) answers with
   the thread's page at the answer.
   With JS it posts in the background and shows progress ("Looking up your
@@ -5787,7 +5789,8 @@ has no page of its own and lives on Insights.
   then the tools' own lines). Nothing about grounding, tools or *Add*
   changes.
 - **Thread page** (`/insights/questions/{id}`, the user's own thread or
-  404; #274): a back link to *Insights*, then the card with the thread
+  404; #274): a back link to *Insights*, the thread's title (its first
+  question) as the page's heading (#277), then the card with the thread
   (questions, answers, sources, grounding marks, draft cards, feedback,
   *Copy*), the connection line and the follow-up box. Follow-ups post
   from it and come back to it at the new answer.

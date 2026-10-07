@@ -89,7 +89,9 @@ raised #265–#270 on 2026-10-07; the owner answered them the same day,
 before Phase 37 started, and #271, found while starting it. #265–#269 and
 #271 are built in Phase 37. Phase 38's (#272–#274, and #275–#276
 found while starting it) were answered on 2026-10-07, before it was
-built; they replace #192 and #193, now obsolete.
+built; they replace #192 and #193, now obsolete. Its reviews raised
+#277–#280 on 2026-10-07: the owner had #277 and #278 built in Phase 38;
+#279 and #280 wait for a decision.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -369,6 +371,10 @@ built; they replace #192 and #193, now obsolete.
 | 274 | [38](phase-38.md) | C. Thread page or inline? | Scheduled | Each thread on its own page, `/insights/questions/{id}`. Built in [38](phase-38.md). spec §7.26. | 2026-10-07 |
 | 275 | [38](phase-38.md) | D. Where the *Keep conversations for* setting goes (found while starting) | Scheduled | Always on Insights under *Your questions*, even with no threads. Built in [38](phase-38.md). spec §7.26. | 2026-10-07 |
 | 276 | [38](phase-38.md) | E. How long *Your questions* is (found while starting) | Scheduled | The latest 5, the rest (up to 50) under *Show all (N)*, a disclosure that works without JS. Built in [38](phase-38.md). spec §7.26. | 2026-10-07 |
+| 277 | [38](phase-38.md) | A thread page's heading: "Ask Logbook" for every thread, or the thread's title? (found by the design review) | Scheduled | The thread's title is the page's `<h1>`; the card keeps "Ask Logbook" as its `<h2>`. Built in [38](phase-38.md). spec §7.26. | 2026-10-07 |
+| 278 | [38](phase-38.md) | Should the old `/ask` addresses stay 301 for good, including with AI off? (found by the reviews) | Scheduled | 301 for good, as the spec says, except a thread's old address with AI off: 302 to Insights, so it reaches the thread once AI is on. Built in [38](phase-38.md). spec §7.26 *Where*. | 2026-10-07 |
+| 279 | [38](phase-38.md) | Cap pending MCP drafts per user? Only the 7-day expiry limits them, and the Insights page lists them all (found by the performance review) | Needs a decision | Options: no cap (as now); a cap per user on creating drafts; show the latest few with *Show all*. Draft cards now load each vehicle once. | — |
+| 280 | [38](phase-38.md) | An explicit query budget for the Insights page? About 144 queries on a 10-vehicle household, on master too (found by the performance review) | Needs a decision | Batching `InsightsService::forVehicles` is the likely fix; flagged as its own task. | — |
 
 ## Other loose ends found in the review
 

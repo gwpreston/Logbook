@@ -23,6 +23,11 @@ spotted and what you've asked it.
   as the dashboard, with or without Ask, and the assistant's link goes
   there.
 
+### Fixed
+
+- **AI insights** (Phase 38 review): a failed day named the connection as
+  a literal `{connection}`; it now names it.
+
 ### Removed
 
 - **The Ask page and its sidebar entry** (Phase 38). Old links still

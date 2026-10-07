@@ -18,8 +18,13 @@
     <div class="page__stack page__stack--narrow" data-ask>
         <a class="back-link" href="{{ url_for('insights') }}#your-questions">{{ ui.icon('chevron_left') }}{{ 'insights.page.title'|trans }}</a>
 
+        {# The thread's title (its first question) heads the page; the card keeps Ask's own head. #}
+        <header class="page-header">
+            <h1 class="page-header__title ask-thread-title">{{ thread.title }}</h1>
+        </header>
+
         <section class="card ask-card" aria-labelledby="ask-card-title">
-        {% include 'ask/_card_head.twig' with {level: 'h1'} %}
+        {% include 'ask/_card_head.twig' with {level: 'h2'} %}
 
         {% if connection %}
             <p class="ask-where" data-ask-where>

@@ -94,6 +94,7 @@ final class AiInsightsTest extends AskTestCase
 
         $page = (string) $browser->get('/insights')->getBody();
         self::assertStringContainsString('Couldn’t get AI insights today.', $page);
+        self::assertDoesNotMatchRegularExpression('/\{(connection|model|seconds|variable)\}/', $page, 'the reason is filled in');
         self::assertStringNotContainsString('about £50 a month', $page, 'nothing half-read is shown');
         self::assertStringContainsString('>Refresh<', $page);
     }
