@@ -130,7 +130,7 @@ Written into `spec.md` before any code:
       A–E (#272–#276); #192 and #193 noted as replaced by Phase 38.
 
 ### 38.1 Audit
-- [ ] List every link, form action, redirect, script, template, test and
+- [x] List every link, form action, redirect, script, template, test and
       doc that names `/ask`, `AskPage`, `data-ask-entry` or
       `templates/ask/` (including `ask.js`, the PWA manifest's
       shortcuts, `docs/ai.md`, MCP tool messages, translations). Record
@@ -171,31 +171,33 @@ Written into `spec.md` before any code:
     back link and *Show all*.
 
 ### 38.2 Your questions on Insights
-- [ ] *Your questions* section on `/insights`: list, *Delete*, *Delete
+- [x] *Your questions* section on `/insights`: list, *Delete*, *Delete
       all* with confirm, *Show all*; only when Ask is available.
-- [ ] MCP *Drafts to review* on the Insights page.
+- [x] MCP *Drafts to review* on the Insights page.
 
 ### 38.3 Thread pages under Insights
-- [ ] `/insights/questions/{id}` with everything the Ask page shows for a
+- [x] `/insights/questions/{id}` with everything the Ask page shows for a
       thread; follow-ups post there.
-- [ ] New question from the Insights card opens its thread page; no-JS
+- [x] New question from the Insights card opens its thread page; no-JS
       POST path; progress endpoint moved; `ask.js` updated (Enter sends,
       Shift+Enter new line, progress lines).
-- [ ] `?q=` prefill on `/insights`; `?draft={id}` *Edit* flow unchanged.
+- [x] `?q=` prefill on `/insights`; `?draft={id}` *Edit* flow unchanged.
 
 ### 38.4 Remove the Ask page
-- [ ] Delete the `/ask` routes, page action, template and sidebar entry;
+- [x] Delete the `/ask` routes, page action, template and sidebar entry;
       the top-bar button as decided (B).
-- [ ] Redirects as in *Design decisions*.
-- [ ] Dashboard link, phone quick action, MCP \"{link} to add it\" point
+- [x] Redirects as in *Design decisions*.
+- [x] Dashboard link, phone quick action, MCP \"{link} to add it\" point
       at Insights.
-- [ ] Remove translations only `/ask` used; add the new ones in every
+- [x] Remove translations only `/ask` used; add the new ones in every
       shipped locale.
 
 ### 38.5 Docs
-- [ ] `docs/ai.md`, README and screenshots: Ask is on Insights.
-- [ ] Upgrade notes: the Ask page is gone; old links redirect; nothing to
-      migrate (threads keep their ids).
+- [x] `docs/ai.md`, README and screenshots: Ask is on Insights (no
+      screenshot showed Ask; `docs/mcp.md` and `docs/deployment.md`'s
+      proxy timeout path updated too).
+- [x] Upgrade notes: the Ask page is gone; old links redirect; nothing to
+      migrate (threads keep their ids). In `CHANGELOG.md`.
 
 ### 38.6 Tests
 - [ ] *Your questions* lists only the user's threads, newest first;

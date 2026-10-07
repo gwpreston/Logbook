@@ -6,6 +6,36 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 38: **Ask lives on Insights**. One place for what Logbook has
+spotted and what you've asked it.
+
+### Changed
+
+- **Ask Logbook is on the Insights page** (Phase 38): the box at the top,
+  then *Your questions* (your latest five conversations, *Show all* for
+  the rest, *Delete* and *Delete all*) and *Keep conversations for*. Each
+  conversation opens on its own page under Insights
+  (`/insights/questions/…`) with everything the Ask page showed: sources,
+  the grounding check, draft cards, feedback, *Copy* and the follow-up box.
+- The header's *Ask* button on a phone, the dashboard link and the phone
+  app's quick action open Insights with the box ready to type.
+- **Drafts to review** (from an MCP client) are listed on Insights as well
+  as the dashboard, with or without Ask, and the assistant's link goes
+  there.
+
+### Removed
+
+- **The Ask page and its sidebar entry** (Phase 38). Old links still
+  land: `/ask` opens Insights (a suggestion's question kept),
+  `/ask/threads/…` the conversation's page, and a question sent from a
+  tab opened before the upgrade is put back in the box, not asked.
+
+### Upgrade notes
+- Pull and restart. No migration, no config change: conversations keep
+  their ids, so bookmarks to them redirect. If you raised a proxy's
+  timeout for `<base>/ask` ([deployment](docs/deployment.md)), raise it
+  for `<base>/insights/questions` instead.
+
 ## [3.3.1] — 2026-10-07
 
 Phase 37: **a patch release**. The provider choices on Settings → Fuel

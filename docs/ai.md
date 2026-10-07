@@ -210,18 +210,24 @@ can't be chosen for it. A task without a model switches its features off.
 > [MCP server](mcp.md) gives it the same tools, with its own model and no
 > connection here.
 
-Ask a question in plain words on **Ask** (`/ask`; in the sidebar, the
-header on a phone, the dashboard and the phone app's quick actions):
+Ask a question in plain words in the *Ask Logbook* box at the top of the
+**Insights** page (`/insights`; the *Ask* button in the header on a phone,
+the dashboard link and the phone app's quick action all open it with the
+box ready to type):
 "How much did I spend on fuel last year?", "When did I last change the oil
 on the Golf?", "Which car costs me the most per mile?". It shows once the
 *Answering questions* task has a model, the *Ask Logbook* module is on
-(Settings → Modules) and your own *Use AI features* is on. The page names
-where the answer comes from ("Answered by Ollama on the desktop on your
-network").
+(Settings → Modules) and your own *Use AI features* is on. Four
+suggestions under the box fill it for you.
 
-The **Insights page** (`/insights`) has the same *Ask Logbook* box at the
-top, with four suggestions; a question asked there opens its conversation
-on the Ask page.
+Each conversation opens on its **own page** under Insights
+(`/insights/questions/…`), which names where the answer comes from
+("Answered by Ollama on the desktop on your network") and has the box
+for a follow-up. **Your questions**, under the box on Insights, lists your
+latest five conversations (*Show all* opens the rest), each with *Delete*.
+
+Until v3.4 Ask had its own page and sidebar entry at `/ask`. Old links
+and bookmarks still work: they open Insights or the conversation's page.
 
 ### AI insights
 
@@ -274,7 +280,8 @@ and small counts are not checked. The answer is still shown.
 questions, answers and tool results of the same conversation (trimmed to
 fit; anything about a vehicle you can no longer see is left out).
 Conversations are kept for **30 days** after their last message; choose 1,
-7, 30 or 90 days on the Ask page. *Delete* and *Delete all* remove them
+7, 30 or 90 days under *Your questions* on Insights. *Delete* and
+*Delete all* remove them
 at once. They are never in backups or exports.
 
 **Feedback.** *Helpful* and *Not right* are stored on the answer, so they

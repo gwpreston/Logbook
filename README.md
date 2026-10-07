@@ -53,10 +53,12 @@ your own server.
 > fill-ups and trips offline; a REST API with keys, so Home Assistant, Shortcuts,
 > Grafana and Node-RED can read your garage and log fill-ups and other entries; optional AI with
 > the model you choose, on this server, your network or a cloud provider
-> (off until an admin connects one): *Ask Logbook* answers questions in plain
+> (off until an admin connects one): an *Insights* page of patterns worked out
+> from your figures and, with AI on, a few the model finds each day, with
+> *Ask Logbook* at the top, which answers questions in plain
 > words from your own records, through read-only tools, with a source and a
 > link for every figure and a check that flags any number Logbook didn't
-> provide, and an *Insights* page of patterns worked out from your figures and, with AI on, a few the model finds each day; it drafts fill-ups, readings, services, documents, expenses, tread
+> provide; it drafts fill-ups, readings, services, documents, expenses, tread
 > checks and reminders from a sentence as cards you check and add, and reads a
 > photo or PDF of an invoice, receipt or certificate into the right form for you
 > to check, with the file attached (photos are always stored without their

@@ -207,10 +207,12 @@ Expose Logbook as in [deployment.md](deployment.md), with TLS. For `/mcp`:
 ## Drafts to review
 
 `draft_*` tools save nothing. Logbook keeps the draft for **7 days** and
-shows it on the **dashboard**, under *Drafts to review* (and on *Ask* when
-Ask is set up), as a card with **Add**, **Edit** and **Discard**. *Add*
+shows it under *Drafts to review* on the **dashboard** and the
+**Insights** page (with or without Ask), as a card with **Add**, **Edit**
+and **Discard**. *Add*
 writes it exactly as the form would, checked again at that moment; *Undo*
-is offered for 10 seconds after. The assistant's answer includes the link.
+is offered for 10 seconds after. The assistant's answer includes the link
+to the card on Insights.
 
 Fill-ups and readings are written at once instead, because they are the
 same writes an automation can already make with the API, and MCP clients
