@@ -157,6 +157,25 @@ alerts*, §12 and §13. In short:
   sends what still applies then.
 - **Several held messages.** Sent as they were, or combined into one?
   *Decided (#253, 2026-10-07):* combined per kind.
+
+Raised by the reviews on 2026-10-07, waiting for the owner (log
+#265–#270):
+
+- **Receives chips: 44 px and a check mark?** (#265)
+- **Clear a demoted admin's held job failures?** (#266)
+- **Breaker over the failed-job alert after a run?** (#267)
+- **New categories for channels saved with every box ticked?** (#268)
+- **Compare-and-delete the held failures?** (#269, unconfirmed race)
+- **Skip the sync in quiet hours?** (#270)
+
+## Reviews
+
+All four review agents on 2026-10-07 (head 6a6c7da), then fixed in
+0c58014 and after: the quiet-hours pill shows the saved setting, errors
+are announced, one hint under both times, one channel lookup per run, the
+station looked up after the quiet check, the spec's skipped wording. Security: no
+findings. Performance: two low, both fixed. Bug hunt: one low (wording),
+fixed.
 - **Release.** Its own v3.4.0, or with the next phase? *Decided
   (#254, 2026-10-07):* with Phases 36.1 to 36.3, as **v3.3.0**; 36.3 no
   longer releases on its own.

@@ -3547,7 +3547,7 @@ within one request or run, not across requests (#263, §12).
   (host and port) that fails **3 times without answering** (a timeout, a
   connection or a TLS failure, not an HTTP error) is **skipped for the
   rest of the run**. Its sends are refused before any request with "The
-  service didn't answer earlier in this run." That is shown as the last
+  service didn't answer earlier in this run, so it was skipped." That is shown as the last
   result and never counts towards switching off, as a refusal is. Each
   item then follows its sender's rule as if that channel had failed:
   nothing delivered means it is retried (reminders released, the digest
