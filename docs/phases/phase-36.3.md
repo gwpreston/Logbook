@@ -260,16 +260,21 @@ before this phase was written and must be checked again.
         for where members' channels may send (36.2); Telegram, Discord,
         Pushover and Mattermost (36.3).
       - *Changed* — channels moved from Settings → Reminders to Account →
-        Notifications. The webhook payload is unchanged.
-      - *Deprecated* — `NTFY_URL`, `NTFY_TOKEN`, `GOTIFY_URL`,
-        `GOTIFY_TOKEN`, `GOTIFY_PRIORITY` and `WEBHOOK_URL` still work as
-        fallbacks and defaults.
+        Notifications. A channel that fails 5 times in a row switches
+        off (email never does). The webhook payload is unchanged.
+      - *Deprecated* — `WEBHOOK_URL` (the server's webhook) still
+        receives every recipient's notifications.
       - *Removed* — the `MAIL_*` variables (36.1, #223): **email is off
         after upgrading until an admin sets the server up in Settings →
-        Delivery**; nothing is imported.
+        Delivery**; nothing is imported. `NTFY_URL`, `NTFY_TOKEN`,
+        `GOTIFY_URL`, `GOTIFY_TOKEN` and `GOTIFY_PRIORITY` (36.2, #247):
+        **imported once** into admins' own channels by the upgrade, then
+        no longer read.
       - *Upgrade notes* — two migrations (`notification_secrets`,
-        `notification_channels`); personal ntfy and Gotify settings move
-        automatically; **notification secrets are encrypted with
+        `notification_channels`); personal ntfy and Gotify settings and the
+        server's ntfy and Gotify variables move automatically (keep
+        `SESSION_SECRET` set while upgrading, or tokens wait to be
+        re-entered); **notification secrets are encrypted with
         `SESSION_SECRET` and are not in backups, so a restored install asks
         for them again**; members' channels that point somewhere the new
         setting refuses are kept and shown as blocked.

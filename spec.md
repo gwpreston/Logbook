@@ -196,12 +196,12 @@ disagree):
   their `InstanceAbility` as the route argument `instance`, checked by
   `Middleware\InstanceAccessMiddleware` (403 without it); their links on
   Settings use `can_instance()`. Personal settings (units, language, theme,
-  password, tyre limits, and all of Settings → Reminders: lead times, the
-  channels one is notified on, email, the personal ntfy topic and Gotify
-  token, digest, the test message and the calendar feed, each stored per
+  password, tyre limits, all of Settings → Reminders: lead times, digest,
+  the test message and the calendar feed, and from Phase 36.2 Settings →
+  Account → Notifications, the user's own channels, each stored per
   user) need only a signed-in user. Settings → Users declares
-  `ManageUsers`. `ManageNotifications` is reserved for when the channels'
-  servers, set by environment variables today, can be set in the app.
+  `ManageUsers`; Settings → Delivery declares `ManageNotifications`
+  (Phase 36.1).
 - **Reminder routes** (`/reminders/{reminder}`) declare a vehicle ability
   too (`Log` to mark done, dismiss or reopen; `Manage` to edit or delete);
   the reminder's vehicle must be visible (404) and allow it (403).
@@ -1109,11 +1109,31 @@ are. The schema version moves.
 `notification_secrets`
 - id, owner_user_id (nullable, FK users `ON DELETE CASCADE`; null = the
   installation), name (up to 64: `smtp_password`, and from Phase 36.2
-  members' tokens), value (sealed, §7.25, with the HKDF info
-  `logbook-notify`; for installation rows only, an `env:NAME` reference),
+  users' channel secrets, `{kind}.{field}` such as `gotify.token`), value
+  (sealed, §7.25, with the HKDF info `logbook-notify`; for installation
+  rows only, an `env:NAME` reference, never for a user's),
   created_at, updated_at (UTC). Unique `(owner_user_id, name)`. **Never**
   in backups, exports, the API or any page. Its own table, as fuel price
   secrets have theirs; the sealing code is the AI one (`SecretBox`).
+
+**NotificationChannel** (Phase 36.2, decided 2026-10-07, #227–#235,
+#247–#249), `notification_channels`
+- id, user_id (FK users `ON DELETE CASCADE`), kind (`ntfy` | `gotify` |
+  `personal-webhook`, and from Phase 36.3 `telegram` | `discord` |
+  `pushover` | `mattermost`; email is not a row, and `webhook` is the key
+  of the server's webhook), enabled (bool), settings (JSON: the kind's
+  non-secret fields), last_status (`ok` | `failed`, null before the first
+  send), last_attempt_at (UTC), last_error (up to 255, redacted), failures
+  (consecutive failed sends, default 0), switched_off_at (UTC, null unless
+  switched off after failures), created_at, updated_at (UTC). Unique
+  `(user_id, kind)`. Its secrets are NotificationSecrets owned by the
+  user. In backups without its secrets: a restored channel with a secret
+  field shows *Needs setup*.
+- Email's *enabled* flag stays in the user's `notifications` preference
+  (its `channels` list, which also keeps `webhook`); email's last result
+  is the user setting `notifications.email_result`. Global setting
+  `notifications.member_destinations`: `internet` | `network` (default) |
+  `server` (§7.11).
 
 **Setting** `email.smtp` (Phase 36.1, scope global): `host`, `port`,
 `encryption` (`tls` | `ssl` | `none`), `username`, `from_address`,
@@ -3004,36 +3024,26 @@ In-app always; plus at least one outbound channel — email (SMTP) and/or a
 webhook such as ntfy — configurable. Optional digest ("what's due this month").
 Extensible channel interface so more can be added.
 
-- **Channels shipped:** email (SMTP via symfony/mailer), ntfy, Gotify and a
-  generic JSON webhook. Each implements one `NotificationChannel` interface
-  (`key()`, `isConfigured()`, `send()`) and is registered in the DI list
-  `notification.channels`; the dispatcher only ever sees that interface. A
-  channel is *configured* when its environment variables are set (§9;
-  email: when Settings → Delivery has a server, Phase 36.1) and
-  *enabled* per owner in Settings → Reminders (until the owner saves a
-  choice: every configured channel). Only enabled **and** configured
-  channels are used. Adding a channel means implementing the interface,
-  adding it to the list and reading its own environment variables — nothing
-  else changes (`docs/notification-channels.md`).
+- **Channels shipped:** email (SMTP via symfony/mailer, the server's
+  from Settings → Delivery), ntfy, Gotify, a personal JSON webhook, and
+  the server's JSON webhook (`WEBHOOK_URL`, deprecated). From Phase 36.2
+  every channel but the server's webhook is **personal**: set up by each
+  user on Settings → Account → Notifications (below). The dispatcher sees
+  only the `NotificationChannel` interface; the registry gives it, for one
+  recipient, every usable channel.
 - **Recipients** (Phase 19): a vehicle's reminders go to its owner, and to
   each user whose share on it has `notify` on; nobody else, whatever they
   can see. The scheduled task runs once per active user: each run covers
   only their recipient vehicles, in their language, units and time zone.
   A recipient without `ViewCosts` on a vehicle never gets its amounts
   (a reminder carries none today; *Coming up* costs are not sent).
-- **Channels per user** (Phase 19): email goes to the user's own address
-  (Settings → Reminders; the *Default recipient for admins*, Settings →
-  Delivery, is the default for admins only, so a member without an
-  address gets no email). From Phase 33.1 that is the
-  user's confirmed address (§6 User `email`, set on Profile),
-  no longer a preference. ntfy and Gotify take a
-  personal topic URL / application token there, which replaces the
-  instance's for that user; without one, only admins receive through the
-  instance topic or token, so a household topic is never flooded by
-  everyone's cars. The webhook stays instance-level and its payload gains
-  `user` (`{"id", "username", "display_name"}`); it receives every
-  recipient's notifications. A channel a user cannot use (no address, no
-  topic) counts as not configured for them.
+- **Channels per user** (Phase 19, Phase 36.2): email goes to the user's
+  confirmed address (Phase 33.1, §6 User `email`, set on Profile; the
+  *Default recipient for admins*, Settings → Delivery, is the default for
+  admins only). ntfy, Gotify and the personal webhook are the user's own
+  (Phase 36.2, below). The webhook payload has `user` (`{"id",
+  "username", "display_name"}`), so one endpoint can serve several
+  people. A channel a user cannot use is not used for them.
 - **When:** the scheduled task (§10) syncs every user's reminders and
   notifies each reminder once per status and recipient: when it becomes *due* and again
   when it becomes *overdue* (one that goes straight to overdue is sent
@@ -3074,8 +3084,8 @@ Extensible channel interface so more can be added.
 - **Content** is translated into the recipient's language and formatted in their
   units and time zone, and links to the reminder list (absolute URL from
   `APP_URL` and `APP_BASE_PATH`).
-- Settings → Reminders can send a **test notification** through the enabled
-  channels.
+- Settings → Reminders can send a **test notification** through every
+  usable channel.
 
 #### The email server (Phase 36.1, decided 2026-10-06, #222–#226)
 
@@ -3151,6 +3161,117 @@ Extensible channel interface so more can be added.
 - **Not built:** OAuth 2 sign-in to an SMTP provider (§12, #226), more
   than one server, per-user SMTP, DKIM, bounces, editable templates, a
   `sendmail` or `mail()` transport.
+
+#### Personal channels (Phase 36.2, decided 2026-10-07, #227–#235, #247–#249)
+
+- **Where.** Settings → Account → **Notifications**
+  (`/settings/notifications`, every signed-in user, #231): an *In-app*
+  row (always on), then **Email**, then a card per personal kind.
+- **Usable.** A personal channel is usable for its user when it is
+  enabled, configured (its required fields saved, its secrets readable)
+  and allowed (*Where members' channels may send*). Email is usable when
+  the server's email is configured, the user has an address (or, for an
+  admin, the default recipient) and has it enabled.
+- **Definitions.** Each personal kind is a `ChannelDefinition` (key,
+  label, icon, fields with their type, whether each is secret, limits and
+  hint) plus a sender that sends one notification with one user's
+  settings. The page, the validation and the registry read only the
+  definition, so a new kind is a definition and a sender
+  (`docs/notification-channels.md`).
+- **Kinds.**
+  - **ntfy:** *Topic URL* (`https://ntfy.sh/my-topic`, visible) and an
+    optional *Access token* (secret). JSON publish to the server root, the
+    reminders link as the click action, overdue at high priority.
+  - **Gotify:** *Server URL*, *Application token* (secret), *Priority*
+    (0 to 10, default 5; overdue reminders go at least at 8).
+  - **Webhook** (`personal-webhook`): *URL*; the payload is the server
+    webhook's.
+  URLs are `http` or `https`, with a host, no credentials and no
+  fragment, up to 500 characters; tokens up to 200, no spaces.
+- **Secrets.** Each secret field is a NotificationSecret owned by the
+  user, sealed as the SMTP password is, never shown (*Saved* with
+  *Replace* and *Remove*; an empty field keeps it; a form re-shown after
+  an error never puts it back). **`env:` references are refused for a
+  user's secret**, when saving and in *Send test*: a reference would let
+  a member have the server send a variable's value to an address they
+  chose. A saved secret goes only to the host it was saved for: a changed
+  host needs it typed again. Without a `SESSION_SECRET` a secret can't be
+  saved and the form says so.
+- **Delivery.** For each recipient the dispatcher sends the same content
+  through email (if usable), the server's webhook (if set) and each
+  usable personal channel. One failing never stops another; one recipient
+  failing never affects another. After each real send to email or a
+  personal channel its last status, time and error (redacted, 255
+  characters) are written. `reminder_deliveries.channels` lists the keys
+  that succeeded; claiming, retrying and partial success are unchanged.
+- **Switched off after failures** (#233, #248, #249). A personal channel
+  that fails **5 sends in a row** is switched off (`enabled` false,
+  `switched_off_at` set); its card says "Switched off after 5 failed
+  sends. Check the settings, then switch it on again." The user is told
+  once, through their other usable channels (kind `channel_off`; nothing
+  if there are none); that notice never counts towards failures. A
+  success resets the count; switching on or saving resets it and clears
+  `switched_off_at`. Tests never count. Email is never switched off.
+- **Send test.** Each card's **Send test** sends "Test from Logbook"
+  through that channel only, with the typed values *unsaved* (an empty
+  secret field: the saved one, same host only), and shows the result on
+  the page. At most 5 tests per user in 10 minutes. Tests don't change
+  the card's last result.
+- **Status** on a card, in words with an icon: *On*, *Off*, *Needs
+  setup*, *Blocked by your administrator's setting*, *Switched off after
+  failures*, *Not available on this server* (email, until the server is
+  set up). Under it: "Last sent {time}" or "Last attempt failed:
+  {error}". A badge gives the destination's class (*This server*, *Your
+  network*, *Internet*).
+- **Privacy** (#232). A user's channels, values and errors are theirs
+  only; admins see nothing of members' channels, not even the kinds.
+  Routes take the user from the session and the kind from the path,
+  never an id.
+- **The server's variables** (#227, #228, #247). `NTFY_URL`,
+  `NTFY_TOKEN`, `GOTIFY_URL`, `GOTIFY_TOKEN` and `GOTIFY_PRIORITY` were
+  **imported once** by the Phase 36.2 migration and are **never read
+  again**: every admin without their own ntfy got the server's topic and
+  token; every admin without their own Gotify token got the server's
+  Gotify (URL, token, priority); a personal topic on `NTFY_URL`'s server
+  got `NTFY_TOKEN`, as it was used. While any is still set, Settings →
+  Delivery says "`NTFY_URL` is set in the environment but is no longer
+  read. It was imported into admins' own channels; remove it."
+  **`WEBHOOK_URL`** stays: the server's webhook (key `webhook`) receives
+  every recipient's notifications while it is set (a user who had
+  switched it off keeps it off; there is no switch for it any more). It
+  is **deprecated**, and Settings → Delivery says so.
+- **Backups** contain channel rows without secrets (§6). The migration
+  without a `SESSION_SECRET` creates a token's channel as *Needs setup*
+  and leaves the old plain value where it was until the user enters it
+  again (#230).
+- **Demo mode** (§7.36) blocks saving, testing and sending.
+
+#### Where members' channels may send (Phase 36.2, #229)
+
+Admins choose on **Settings → Delivery → Where members can send**:
+
+| Setting | Members' channels may send to |
+|---|---|
+| *The internet only* (`internet`) | public addresses |
+| *The internet and your network* (`network`, default) | public addresses and *Your network* |
+| *The internet, your network and this server* (`server`) | all three classes |
+
+- The classes are §7.25's, by the same rules (`ConnectionLocator`),
+  including the admin's *This server's addresses*, but **every** address
+  a name resolves to must be allowed, not only the widest. IPv4-mapped
+  IPv6 addresses are classed as IPv4. **Link-local addresses
+  (169.254.0.0/16, fe80::/10) are always refused for members** (cloud
+  metadata, router interfaces). A name that doesn't resolve is refused
+  for a member.
+- The host is resolved when a channel is saved, tested and **on every
+  send**, and the request connects to an address that was checked
+  (pinned), so a name can't change between the check and the call.
+  Redirects are never followed by any channel (`max_redirects: 0`).
+- An **admin's own** channels are not restricted, and the server's
+  webhook is the admin's.
+- A member's saved address that the policy now refuses is **kept**,
+  shown as *Blocked by your administrator's setting*, not used and not
+  deleted; relaxing the policy brings it back.
 
 ### 7.12 Attachments
 Upload receipts, invoices, insurance/cert PDFs and images against fill-ups,
@@ -7326,11 +7447,15 @@ owner. Decided 2026-10-06 (#212–#217).
   no section navigation and no per-section URL; every page Settings links
   to keeps its URL. Groups, in order, each card shown only to those who can
   use it:
-  - **Account** (`#account`): one link row, *Profile*, to the profile
-    page, which holds the user's account and preferences (#172).
+  - **Account** (`#account`): link rows *Profile*, to the profile page,
+    which holds the user's account and preferences (#172), and
+    *Notifications* (Phase 36.2, #231), where the user's channels are set
+    up (§7.11 *Personal channels*).
   - **Reminders and notifications** (`#reminders`): the
-    link to *Settings → Reminders* (lead times, channels, digest, calendar
-    feed). Nothing else.
+    link to *Settings → Reminders* (lead times, digest, *Needs attention*
+    thresholds, calendar feed, *Send test notification*, and one line,
+    "Sent to: Email, ntfy" or "Nowhere yet", linking to Notifications).
+    Nothing else.
   - **Vehicles and driving** (`#driving`): tyre thresholds (tyres on),
     trips and mileage claims (trips on), places (fuel stations on); absent
     when none is on.
@@ -7339,8 +7464,9 @@ owner. Decided 2026-10-06 (#212–#217).
   - **Administration** (`#admin`, admins): users, modules, AI
     connections, fuel prices, **Delivery** (Phase 36.1: the
     installation-wide places notifications leave the server from; the
-    email server), backup and restore. Personal channels are in Account
-    (Phase 36.2).
+    email server; Phase 36.2: *Where members can send* and the notices
+    about the channel variables), backup and restore. Personal channels
+    are in Account (Phase 36.2).
   - **Installation** (`#installation`): version, health, scheduled jobs
     and updates (admins), deep-link check.
 
@@ -7515,10 +7641,12 @@ Real environment variables override `.env`; an empty value counts as unset.
   `MAIL_ENCRYPTION`, `MAIL_FROM` and `MAIL_TO` were removed in v3.3.0
   (Phase 36.1, #223) and are not read; `PASSWORD_RESET_ENABLED` (Phase 33.1, default `true`: `false`
   hides *Forgotten password* even with email configured, §7.9);
-  `NTFY_URL` (topic URL; admins' default, members need their own topic),
-  `NTFY_TOKEN`; `GOTIFY_URL` (server URL), `GOTIFY_TOKEN` (application
-  token; admins' default, a user can set their own), `GOTIFY_PRIORITY` (0–10, default 5; overdue
-  reminders are sent at least at 8); `WEBHOOK_URL` (receives a JSON POST)
+  `NTFY_URL`, `NTFY_TOKEN`, `GOTIFY_URL`, `GOTIFY_TOKEN` and
+  `GOTIFY_PRIORITY` were imported once into admins' own channels by
+  v3.3.0 (Phase 36.2, #247) and are not read; channels are set up on
+  Settings → Account → Notifications. `WEBHOOK_URL` (**deprecated**: the
+  server's webhook, receives every recipient's notifications as a JSON
+  POST)
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES`,
   `FEATURES_INCIDENTS` (Phase 27.1), `FEATURES_FINANCE` (Phase 29.1),
@@ -8139,17 +8267,22 @@ task breakdowns live in the per-phase files; this is the map.
   `SESSION_SECRET` generated on a fresh Docker volume (§6, §7.9, §7.11,
   §8, §9; #222–#226). One migration. Ships with Phase 36.3 as v3.3.0.
 - **Phase 36.2 — Personal notification channels.** Account → Notifications:
-  a card per channel generated from a definition, with enable, test and
+  a card per channel generated from a definition, with switch, test and
   last result; Email, ntfy, Gotify and Webhook as personal channels;
-  existing personal settings migrated; the environment variables kept as
-  deprecated admin-only fallbacks; an admin policy for where members'
-  channels may send; no `env:` secrets for members; the prototype's
-  *Reminder delivery* design audited (§6, §7.11, §8). One migration. Ships
-  with Phase 36.3 as v3.3.0.
+  existing personal settings migrated and the `NTFY_*` / `GOTIFY_*`
+  variables imported once, then no longer read; `WEBHOOK_URL` kept as the
+  server's webhook, deprecated; an admin policy for where members'
+  channels may send; no `env:` secrets for members; switched off after 5
+  failures in a row; the prototype's *Reminder delivery* design audited
+  (§6, §7.11, §8, §9; #227–#235, #247–#249). One migration. Ships with
+  Phase 36.3 as v3.3.0.
 - **Phase 36.3 — Telegram, Discord, Pushover and Mattermost + v3.3
   release.** Four channels with per-service limits, no pings, no tokens in
   errors, Telegram's *Find my chat*, and a third-party notice (§7.11).
   Release v3.3.0 (Phases 36.1 to 36.3).
+- **Phase 36.4 — What each channel receives, and quiet hours.** A choice
+  per channel of what it receives, and quiet hours that hold messages
+  until they end (#234; open questions #250–#254).
 ---
 
 ## 14. Definition of done

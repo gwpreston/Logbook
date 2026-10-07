@@ -75,7 +75,10 @@ Those of Phases 35.2–36.3 (#218–#241) were added on
 answer the phase file drafts. Phase 35.2's #218–#220 were answered on
 2026-10-06, before it was built; #221 (a third-party script collection)
 stays the owner's, outside the phase. Phase 36.1's
-(#222–#226) were answered on 2026-10-06, before it was built.
+(#222–#226) were answered on 2026-10-06, before it was built. Phase
+36.2's (#227–#235, and #247–#249 found while starting it) were answered
+on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
+(#250–#254) were added the same day.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -305,15 +308,15 @@ stays the owner's, outside the phase. Phase 36.1's
 | 224 | [36.1](phase-36.1.md) | Where notification secrets live | Decided | A new `notification_secrets` table, sealed by the AI `SecretBox` with the info `logbook-notify`. spec §6. | 2026-10-06 |
 | 225 | [36.1](phase-36.1.md) | `MAIL_TO`: keep as the admin's default recipient, or retire? | Decided | Kept as the admins' default recipient, moved into Settings → Delivery as *Default recipient for admins*. spec §7.11. | 2026-10-06 |
 | 226 | [36.1](phase-36.1.md) | OAuth 2 for SMTP (Microsoft 365, Gmail)? | Parked | spec §12. | 2026-10-06 |
-| 227 | [36.2](phase-36.2.md) | The `NTFY_*`, `GOTIFY_*` and `WEBHOOK_URL` variables: fallbacks, import once, or remove? | Needs a decision | Drafted: admin-only deprecated fallbacks. Recommendation: removal announced for a later major release. | — |
-| 228 | [36.2](phase-36.2.md) | The instance webhook (`WEBHOOK_URL`) still receives everyone's notifications? | Needs a decision | Drafted: yes while set. Alternative: retire it; the REST API serves integrations. | — |
-| 229 | [36.2](phase-36.2.md) | Default for where members' channels may send | Needs a decision | Drafted: *The internet and your network*. Alternative: *The internet only*. | — |
-| 230 | [36.2](phase-36.2.md) | Migration when there is no `SESSION_SECRET` | Needs a decision | Drafted: Gotify created as *Needs setup*, old value left in place. Still open: 36.1 (#222) generates a secret only on a fresh Docker volume, so existing installs without one and bare-PHP installs still hit it. | — |
-| 231 | [36.2](phase-36.2.md) | Channels under Account → Notifications (replaces Phase 33.2's draft) | Needs a decision | Drafted as the owner asked; confirm. | — |
-| 232 | [36.2](phase-36.2.md) | What admins can see of members' channels | Needs a decision | Drafted: nothing. Alternative: the kinds configured, for support. | — |
-| 233 | [36.2](phase-36.2.md) | Failing channels: show the last error, or switch off after repeated failures? | Needs a decision | Drafted: show the last error only. | — |
-| 234 | [36.2](phase-36.2.md) | Per-channel choice of what to receive (due, overdue, digest, price alerts) and quiet hours | Needs a decision | Drafted: not built. Tracktor has per-provider categories; these would be new settings. | — |
-| 235 | [36.2](phase-36.2.md) | Anything the prototype's *Reminder delivery* shows that the app has no data for | Needs a decision | Added by task 36.2.1. | — |
+| 227 | [36.2](phase-36.2.md) | The `NTFY_*`, `GOTIFY_*` and `WEBHOOK_URL` variables: fallbacks, import once, or remove? | Decided | `NTFY_*` and `GOTIFY_*`: imported once by the migration (see #247), then never read; Settings → Delivery names any still set. `WEBHOOK_URL`: kept (#228). spec §7.11, §9. | 2026-10-07 |
+| 228 | [36.2](phase-36.2.md) | The instance webhook (`WEBHOOK_URL`) still receives everyone's notifications? | Decided | Yes, while set, under the key `webhook`; deprecated, named on Settings → Delivery. The personal webhook is `personal-webhook`. spec §7.11. | 2026-10-07 |
+| 229 | [36.2](phase-36.2.md) | Default for where members' channels may send | Decided | *The internet and your network*. spec §7.11 *Where members' channels may send*. | 2026-10-07 |
+| 230 | [36.2](phase-36.2.md) | Migration when there is no `SESSION_SECRET` | Decided | The channel is created as *Needs setup* and the old value (already plain text in the preferences) is left until the user enters it again. spec §6. | 2026-10-07 |
+| 231 | [36.2](phase-36.2.md) | Channels under Account → Notifications (replaces Phase 33.2's draft) | Decided | Confirmed: `/settings/notifications`, a row in Settings → Account. spec §8. | 2026-10-07 |
+| 232 | [36.2](phase-36.2.md) | What admins can see of members' channels | Decided | Nothing, not even the kinds. spec §7.11 *Privacy*. | 2026-10-07 |
+| 233 | [36.2](phase-36.2.md) | Failing channels: show the last error, or switch off after repeated failures? | Decided | Both: the last error, and a personal channel is switched off after 5 failed sends in a row (#248, #249). spec §6, §7.11. | 2026-10-07 |
+| 234 | [36.2](phase-36.2.md) | Per-channel choice of what to receive (due, overdue, digest, price alerts) and quiet hours | Scheduled | Wanted: [Phase 36.4](phase-36.4.md). Quiet hours hold a message until they end, in the user's time zone. | 2026-10-07 |
+| 235 | [36.2](phase-36.2.md) | Anything the prototype's *Reminder delivery* shows that the app has no data for | Decided | Nothing new: webhook formats, *Send at* and *Frequency* are parked (#168); *Download .ics* is the feed's `https` link. Phase 36.2 *Prototype notes*. | 2026-10-07 |
 | 236 | [36.3](phase-36.3.md) | A shared bot or Pushover application provided by the admin? | Needs a decision | Drafted: each user brings their own. Recommendation: personal now; shared can be added later without changing what is stored. | — |
 | 237 | [36.3](phase-36.3.md) | Telegram *Find my chat* helper | Needs a decision | Drafted: build it (removes the hardest step). Alternative: docs only. | — |
 | 238 | [36.3](phase-36.3.md) | Monthly digest sent quietly (Telegram no sound, Pushover low priority) | Needs a decision | Drafted: yes. | — |
@@ -325,6 +328,14 @@ stays the owner's, outside the phase. Phase 36.1's
 | 244 | [34.3](phase-34.3.md) | Does the widget count closed reminders? (found while starting) | Decided | No: open reminders only; closed ones are on the page (spec §7.8 *Calendar*). | 2026-10-06 |
 | 245 | [34.3](phase-34.3.md) | *Open day* on every calendar day with an item, or only where items are hidden? (found by the design review) | Decided | Keep as it is: *Open day* on every day with an item, the only way to its actions from the grid. | 2026-10-06 |
 | 246 | [34.3](phase-34.3.md) | The overdue strip, the sidebar badge and the widget count differently: align their wording? (found by the design review) | Decided | Keep each as it is: all overdue; overdue and due soon; this month's. | 2026-10-06 |
+| 247 | [36.2](phase-36.2.md) | Who gets the one-time import of `NTFY_*` and `GOTIFY_*`? (found while starting) | Decided | Every admin without their own ntfy or Gotify; and `NTFY_TOKEN` onto any user's personal topic on `NTFY_URL`'s server, as it was used. Nothing that worked stops. spec §7.11. | 2026-10-07 |
+| 248 | [36.2](phase-36.2.md) | When does a failing channel switch off, and how is the user told? (found while starting) | Decided | After 5 failed sends in a row (tests don't count; a success resets); the card says so and the user is told once through their other usable channels. spec §7.11. | 2026-10-07 |
+| 249 | [36.2](phase-36.2.md) | Does email switch off after failures too? (found while starting) | Decided | No: email's failures are usually the server's. spec §7.11. | 2026-10-07 |
+| 250 | [36.4](phase-36.4.md) | Quiet hours: one period per user, or per channel? | Needs a decision | Open; asked when Phase 36.4 starts. | — |
+| 251 | [36.4](phase-36.4.md) | Overdue reminders during quiet hours: held, or sent at once? | Needs a decision | Open. | — |
+| 252 | [36.4](phase-36.4.md) | A held message whose reminder is done before it is sent: drop or send? | Needs a decision | Open. | — |
+| 253 | [36.4](phase-36.4.md) | Several held messages: sent as they were, or combined? | Needs a decision | Open. | — |
+| 254 | [36.4](phase-36.4.md) | Phase 36.4's release: its own v3.4.0, or with the next phase? | Needs a decision | Open. | — |
 
 ## Other loose ends found in the review
 
