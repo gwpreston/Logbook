@@ -522,11 +522,17 @@ All decided on 2026-10-07, before any code (log #227–#235, #247–#249).
 - **Anything the prototype shows.** *Decided (#235):* nothing new; see
   *Prototype notes*.
 
-Raised by the reviews on 2026-10-07, waiting for the owner (log #255–#258):
+Raised by the reviews on 2026-10-07 and decided the same day, before
+Phase 36.3 started (log #255–#258):
 
 - **Docker's bridge network** counts as *Your network*: treat it as *This
-  server* on Docker? (#255)
+  server* on Docker? *Decided (#255):* no; kept and documented (list the
+  bridge subnet under *This server's addresses*, or choose *The internet
+  only*).
 - **Error detail for members**: show only a generic error for private
-  destinations? (#256)
-- **Send test and the last result**: should a test set it? (#257)
-- **Restored rows**: re-validate their URLs on restore? (#258)
+  destinations? *Decided (#256):* no; the redacted error, as for admins.
+- **Send test and the last result**: should a test set it? *Decided
+  (#257):* no, as built.
+- **Restored rows**: re-validate their URLs on restore? *Decided (#258):*
+  every personal kind's saved settings are re-checked against its rules
+  before each send, built in [Phase 36.3](phase-36.3.md).

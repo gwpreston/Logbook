@@ -82,7 +82,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | ✅ |
 | [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 🚧 |
 | [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 🚧 |
-| [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover and Mattermost + v3.3 release | 📋 |
+| [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover, Mattermost and Slack + v3.3 release | 🚧 |
 | [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours | 📋 |
 
 *Update the status column as each phase lands.*
@@ -914,6 +914,28 @@ use.*
 - No release of its own; ships with Phase 36.3 as v3.3.0.
 
 → [`phase-36.2.md`](docs/phases/phase-36.2.md)
+
+---
+
+## Phase 36.3 — Telegram, Discord, Pushover, Mattermost and Slack + v3.3 release
+*Five more places a reminder can reach you.*
+
+- Five personal channels on Account → Notifications, each set up with the
+  user's own bot, application or webhook (#236), with a status and *Send
+  test*; Slack with a bot token and a channel (#241).
+- Messages fit each service's limits, cut at a line with "…and N more",
+  and can't ping anyone or inject formatting; the monthly digest arrives
+  quietly (#238).
+- Tokens are checked on saving where the service allows (saved with a
+  notice if it can't be reached, #261), never shown, never in an error.
+- Telegram's *Find my chat* (#237); Mattermost's optional channel (#239);
+  a third-party notice on the cards that send through someone else's
+  servers (#240).
+- Saved settings are re-checked against their kind's rules on every send
+  (#258).
+- Release **v3.3.0** (Phases 36.1 to 36.3).
+
+→ [`phase-36.3.md`](docs/phases/phase-36.3.md)
 
 ---
 

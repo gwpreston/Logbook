@@ -79,7 +79,9 @@ stays the owner's, outside the phase. Phase 36.1's
 36.2's (#227–#235, and #247–#249 found while starting it) were answered
 on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 (#250–#254) were added the same day. The Phase 36.2 reviews raised
-#255–#258 on 2026-10-07; they wait for the owner.
+#255–#258 on 2026-10-07; the owner answered them the same day, before
+Phase 36.3 started, with Phase 36.3's own (#236–#241, Slack added to it,
+and #260–#261 found while starting it).
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -318,12 +320,12 @@ on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 | 233 | [36.2](phase-36.2.md) | Failing channels: show the last error, or switch off after repeated failures? | Decided | Both: the last error, and a personal channel is switched off after 5 failed sends in a row (#248, #249). spec §6, §7.11. | 2026-10-07 |
 | 234 | [36.2](phase-36.2.md) | Per-channel choice of what to receive (due, overdue, digest, price alerts) and quiet hours | Scheduled | Wanted: [Phase 36.4](phase-36.4.md). Quiet hours hold a message until they end, in the user's time zone. | 2026-10-07 |
 | 235 | [36.2](phase-36.2.md) | Anything the prototype's *Reminder delivery* shows that the app has no data for | Decided | Nothing new: webhook formats, *Send at* and *Frequency* are parked (#168); *Download .ics* is the feed's `https` link. Phase 36.2 *Prototype notes*. | 2026-10-07 |
-| 236 | [36.3](phase-36.3.md) | A shared bot or Pushover application provided by the admin? | Needs a decision | Drafted: each user brings their own. Recommendation: personal now; shared can be added later without changing what is stored. | — |
-| 237 | [36.3](phase-36.3.md) | Telegram *Find my chat* helper | Needs a decision | Drafted: build it (removes the hardest step). Alternative: docs only. | — |
-| 238 | [36.3](phase-36.3.md) | Monthly digest sent quietly (Telegram no sound, Pushover low priority) | Needs a decision | Drafted: yes. | — |
-| 239 | [36.3](phase-36.3.md) | Mattermost optional *Channel* override | Needs a decision | Drafted: offered. | — |
-| 240 | [36.3](phase-36.3.md) | Wording of the third-party notice on Telegram, Discord and Pushover | Needs a decision | Needs the owner's wording. | — |
-| 241 | [36.3](phase-36.3.md) | More services (Slack, Matrix, Signal, Apprise) | Needs a decision | Drafted: not now; or note one in spec §12? | — |
+| 236 | [36.3](phase-36.3.md) | A shared bot or Pushover application provided by the admin? | Decided | Personal only: each user brings their own bot, application or webhook; a shared option is parked in spec §12. spec §7.11. | 2026-10-07 |
+| 237 | [36.3](phase-36.3.md) | Telegram *Find my chat* helper | Decided | Built: `getUpdates` lists private chats, picking one saves only its ID. spec §7.11. | 2026-10-07 |
+| 238 | [36.3](phase-36.3.md) | Monthly digest sent quietly (Telegram no sound, Pushover low priority) | Decided | Yes: Telegram without a sound, Pushover at `-1`. spec §7.11 *Urgency*. | 2026-10-07 |
+| 239 | [36.3](phase-36.3.md) | Mattermost optional *Channel* override | Decided | Offered, optional. spec §7.11. | 2026-10-07 |
+| 240 | [36.3](phase-36.3.md) | Wording of the third-party notice on Telegram, Discord and Pushover | Decided | "This sends your reminders through {service}'s servers." On Telegram, Discord, Pushover and Slack. spec §7.11. | 2026-10-07 |
+| 241 | [36.3](phase-36.3.md) | More services (Slack, Matrix, Signal, Apprise) | Decided | Slack added to Phase 36.3, with a bot token and a channel (`chat.postMessage`); Matrix, Signal and Apprise parked. spec §7.11, §12. | 2026-10-07 |
 | 242 | [34.2](phase-34.2.md) | Light-theme *Tax* and *Other* colours below 3:1 as graphics (found by the design review) | Decided | Darken `--c-tax` and `--c-other` in the light theme to at least 3:1 against the card, built in Phase 34.3 (spec §7.8 *Expense breakdown*). | 2026-10-06 |
 | 243 | [34.3](phase-34.3.md) | With closed reminders shown by default, a way to hide them? (found while starting) | Decided | Yes: *Hide done and dismissed* links to `closed=0`; a URL choice, not a setting (spec §7.6 *Calendar view*). | 2026-10-06 |
 | 244 | [34.3](phase-34.3.md) | Does the widget count closed reminders? (found while starting) | Decided | No: open reminders only; closed ones are on the page (spec §7.8 *Calendar*). | 2026-10-06 |
@@ -337,11 +339,13 @@ on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 | 252 | [36.4](phase-36.4.md) | A held message whose reminder is done before it is sent: drop or send? | Needs a decision | Open. | — |
 | 253 | [36.4](phase-36.4.md) | Several held messages: sent as they were, or combined? | Needs a decision | Open. | — |
 | 254 | [36.4](phase-36.4.md) | Phase 36.4's release: its own v3.4.0, or with the next phase? | Needs a decision | Open. | — |
-| 255 | [36.2](phase-36.2.md) | Docker's bridge and compose network count as *Your network* (the default allows them): treat them as *This server* on Docker? (found by the security review) | Needs a decision | Documented today: list the bridge subnet under *This server's addresses*, or choose *The internet only*. | — |
-| 256 | [36.2](phase-36.2.md) | A member's failed send shows the HTTP status or connection error: show only a generic error for private destinations? (found by the security review) | Needs a decision | Today: the redacted error, as for admins. | — |
-| 257 | [36.2](phase-36.2.md) | Should *Send test* also set a channel's last result? (found by the design review) | Needs a decision | Today: no (spec §7.11); the test shows its own result on the card. | — |
-| 258 | [36.2](phase-36.2.md) | A restored channel row is not re-validated against the form's URL rules (only the destination policy at send) | Needs a decision | Today: the policy and pinning still apply on every send. | — |
+| 255 | [36.2](phase-36.2.md) | Docker's bridge and compose network count as *Your network* (the default allows them): treat them as *This server* on Docker? (found by the security review) | Decided | No: kept as *Your network* and documented (list the bridge subnet under *This server's addresses*, or choose *The internet only*). spec §7.11. | 2026-10-07 |
+| 256 | [36.2](phase-36.2.md) | A member's failed send shows the HTTP status or connection error: show only a generic error for private destinations? (found by the security review) | Decided | No: the redacted error, as for admins. spec §7.11. | 2026-10-07 |
+| 257 | [36.2](phase-36.2.md) | Should *Send test* also set a channel's last result? (found by the design review) | Decided | No, as built (spec §7.11). | 2026-10-07 |
+| 258 | [36.2](phase-36.2.md) | A restored channel row is not re-validated against the form's URL rules (only the destination policy at send) | Decided | Every personal kind's saved settings are re-checked against its rules before each send; a failing row is refused before any request and never counts. Built in [Phase 36.3](phase-36.3.md). spec §7.11. | 2026-10-07 |
 | 259 | [36.1](phase-36.1.md) | Should `bin/dev-setup.sh` set up the dev stack's Mailpit rather than leaving it to be done by hand? (the owner asked) | Decided | Yes: `bin/dev-mailpit.php` saves it when no email server is saved, development only. Replaces that part of #223. spec §10 *Development stack*. | 2026-10-07 |
+| 260 | [36.3](phase-36.3.md) | Urgency of a failed job and of the switched-off notice on the new channels (found while starting) | Decided | A failed job `high`, *your channel switched off* `normal`. spec §7.11 *Urgency*. | 2026-10-07 |
+| 261 | [36.3](phase-36.3.md) | Saving a Telegram, Pushover or Slack card when the token check can't be made (found while starting) | Decided | Saved, with "couldn't be reached to check it"; a token the service rejects is not saved. spec §7.11. | 2026-10-07 |
 
 ## Other loose ends found in the review
 
