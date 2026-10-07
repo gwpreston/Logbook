@@ -122,6 +122,10 @@ const icons = [
   'science',
   'sell',
   'send',
+  // Phase 36.3: the Slack, Pushover and Mattermost channel cards (named in their senders).
+  'tag',
+  'mobile',
+  'chat',
   'settings',
   'shopping_bag',
   'smart_toy',

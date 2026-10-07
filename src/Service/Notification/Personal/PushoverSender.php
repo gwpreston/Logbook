@@ -35,7 +35,7 @@ final readonly class PushoverSender implements PersonalSender, VerifiesSettings
 
     public function definition(): ChannelDefinition
     {
-        return new ChannelDefinition(self::KEY, 'Pushover', 'phone_iphone', 'notifications.pushover.hint', [
+        return new ChannelDefinition(self::KEY, 'Pushover', 'mobile', 'notifications.pushover.hint', [
             new ChannelField(
                 'token',
                 'notifications.pushover.token',
@@ -154,8 +154,11 @@ final readonly class PushoverSender implements PersonalSender, VerifiesSettings
             return Verification::works();
         }
 
-        return $answer->answeredAt(400, 499) && $answer->status !== 429
-            ? Verification::rejected(ReplyWords::of('pushover_keys'))
+        $words = self::words($answer);
+
+        // A bad device or anything else is a refusal in its own words, not the keys' (bug hunt).
+        return $words !== null && $answer->status !== 429 && $answer->answeredAt(400, 499)
+            ? Verification::rejected($words === ReplyWords::of('pushover_keys') ? $words : ReplyWords::of('pushover_device'))
             : Verification::unreachable();
     }
 

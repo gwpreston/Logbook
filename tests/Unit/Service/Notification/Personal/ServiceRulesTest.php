@@ -11,13 +11,16 @@ use Logbook\Service\Notification\Outbound\OutboundHttp;
 use Logbook\Service\Notification\Personal\ChannelForm;
 use Logbook\Service\Notification\Personal\ChannelSettings;
 use Logbook\Service\Notification\Personal\DiscordSender;
+use Logbook\Service\Notification\Personal\GotifySender;
 use Logbook\Service\Notification\Personal\MattermostSender;
+use Logbook\Service\Notification\Personal\NtfySender;
 use Logbook\Service\Notification\Personal\PersonalSender;
 use Logbook\Service\Notification\Personal\PushoverSender;
 use Logbook\Service\Notification\Personal\ReplyWords;
 use Logbook\Service\Notification\Personal\ServiceText;
 use Logbook\Service\Notification\Personal\SlackSender;
 use Logbook\Service\Notification\Personal\TelegramSender;
+use Logbook\Service\Notification\Personal\WebhookSender;
 use Logbook\Service\Notification\Urgency;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -113,6 +116,8 @@ final class ServiceRulesTest extends TestCase
         $telegram = self::sender(TelegramSender::class);
         self::assertSame([], $telegram->validate(['chat_id' => '-1001234567890'], ['token' => self::TELEGRAM_TOKEN]));
         self::assertSame([], $telegram->validate(['chat_id' => '@my_channel']));
+        $short = $telegram->validate(['chat_id' => '@abcd']);
+        self::assertSame(['chat_id' => 'notifications.telegram.chat_id_invalid'], $short, 'usernames are 5 to 32');
         self::assertSame(
             ['token' => 'notifications.telegram.token_invalid', 'chat_id' => 'notifications.telegram.chat_id_invalid'],
             $telegram->validate(['chat_id' => '12ab'], ['token' => '123:short']),
@@ -183,6 +188,31 @@ final class ServiceRulesTest extends TestCase
         self::assertSame('- MOT — \\*Golf\\*: due', $lines[4], 'a reminder is a list item');
     }
 
+    public function testEveryCardsIconIsInTheSprite(): void
+    {
+        $sprite = (string) file_get_contents(dirname(__DIR__, 5) . '/assets/vendor/icons.svg');
+        $classes = [
+            TelegramSender::class,
+            DiscordSender::class,
+            PushoverSender::class,
+            MattermostSender::class,
+            SlackSender::class,
+        ];
+        $http = (new ReflectionClass(OutboundHttp::class))->newInstanceWithoutConstructor();
+        $senders = [
+            new NtfySender($http),
+            new GotifySender($http),
+            new WebhookSender($http),
+            ...array_map(self::sender(...), $classes),
+        ];
+
+        foreach ($senders as $sender) {
+            $icon = $sender->definition()->icon;
+            $key = $sender->definition()->key;
+            self::assertStringContainsString('<symbol id="' . $icon . '"', $sprite, $key . ': ' . $icon);
+        }
+    }
+
     public function testSlackTextCannotFormAMentionOrALink(): void
     {
         self::assertSame(
@@ -200,7 +230,7 @@ final class ServiceRulesTest extends TestCase
         self::assertSame($gone, ReplyWords::decode(ReplyWords::of('discord_gone')));
         self::assertNull(ReplyWords::decode('HTTP 500'));
         self::assertNull(ReplyWords::decode('notifications.reply.x|y'));
-        self::assertSame('notifications.reply.wait|0', ReplyWords::of('wait', -5));
+        self::assertSame('notifications.reply.busy', ReplyWords::of('wait', 0), 'no usable Retry-After');
     }
 
     /**

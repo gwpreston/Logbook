@@ -143,7 +143,8 @@ final readonly class MattermostSender implements PersonalSender
                 self::lines($notification),
                 self::LIMIT,
                 $notification->url,
-                static fn (int $count): string => self::escape($more($count)),
+                // A blank line first, so it isn't read as part of the last list item.
+                static fn (int $count): string => "\n" . self::escape($more($count)),
             ),
         ];
         $channel = $settings->value('channel');

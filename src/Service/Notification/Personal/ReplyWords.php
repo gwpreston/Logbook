@@ -20,6 +20,11 @@ final class ReplyWords
 
     public static function of(string $name, ?int $seconds = null): string
     {
+        if ($name === 'wait' && $seconds !== null && $seconds <= 0) {
+            // No usable Retry-After: say it is busy rather than "wait 0 seconds".
+            return self::PREFIX . 'busy';
+        }
+
         return self::PREFIX . $name . ($seconds === null ? '' : '|' . max(0, $seconds));
     }
 

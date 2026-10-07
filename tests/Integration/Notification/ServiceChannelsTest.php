@@ -250,6 +250,17 @@ final class ServiceChannelsTest extends ReminderTestCase
         self::assertStringContainsString('Pushover rejected the token or the user key.', self::body($rejected));
         self::assertSame('https://api.pushover.net/1/users/validate.json', $this->http->requests[0]['url']);
 
+        // A bad device is not blamed on the keys.
+        $this->http->bodyFor['https://api.pushover.net'] = '{"status":0,"device":"invalid","errors":["device name is invalid"]}';
+        $device = $browser->post('/settings/notifications/pushover', [
+            'intent' => 'save',
+            'pushover-token' => self::PUSHOVER_TOKEN,
+            'pushover-user' => self::PUSHOVER_USER,
+            'pushover-device' => 'nope',
+        ]);
+        self::assertSame(422, $device->getStatusCode());
+        self::assertStringContainsString('Check the device name.', self::body($device));
+
         unset($this->http->statusFor['https://api.pushover.net']);
         $this->http->bodyFor['https://api.pushover.net'] = '{"status":1,"devices":["pixel"]}';
         $browser->post('/settings/notifications/pushover', [

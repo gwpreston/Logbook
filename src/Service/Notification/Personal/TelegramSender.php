@@ -24,7 +24,7 @@ final readonly class TelegramSender implements PersonalSender, VerifiesSettings
     public const string API = 'https://api.telegram.org';
     public const int LIMIT = 4096;
     private const string TOKEN = '/^\d{1,20}:[A-Za-z0-9_-]{30,}$/';
-    private const string CHAT = '/^(-?\d{1,20}|@[A-Za-z][A-Za-z0-9_]{3,31})$/';
+    private const string CHAT = '/^(-?\d{1,20}|@[A-Za-z][A-Za-z0-9_]{4,31})$/';
 
     public function __construct(private OutboundHttp $http, private ServiceText $text)
     {

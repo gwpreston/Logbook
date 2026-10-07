@@ -3259,6 +3259,8 @@ return [
         'saved_as' => '{channel} ist gespeichert: {name}.',
         'unchecked' => 'Gespeichert, aber {channel} war zum Prüfen nicht erreichbar. Sende einen Test, sobald es wieder geht.',
         'reply' => [
+            'busy' => 'Der Dienst ist ausgelastet. Beim nächsten Lauf wird es erneut versucht.',
+            'pushover_device' => 'Pushover hat diese Einstellungen abgelehnt. Prüfe den Gerätenamen.',
             'needs_setup' => 'Noch nicht eingerichtet.',
             'invalid_settings' => 'Die gespeicherten Einstellungen sind nicht mehr gültig. Öffne die Karte und speichere sie neu.',
             'redirect' => 'Der Dienst hat mit einer Weiterleitung geantwortet, der nicht gefolgt wird.',

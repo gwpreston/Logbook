@@ -3354,7 +3354,8 @@ go only to those hosts (the policy check still runs).
 - **Find my chat** (#237; a button on the card, a form post): the person
   must start a conversation with their bot first (a bot can't message
   someone who hasn't). It asks `getUpdates` (without an offset, so no
-  update is consumed) with the saved or typed token and lists the
+  update is consumed) with the **saved** token (no token goes back into a
+  page, so the button appears once one is saved) and lists the
   **private** chats found, each with its ID and first name, for the user
   to pick; picking fills *Chat ID* and saves it. Nothing else from the
   response is kept. If the bot has a webhook set, Telegram refuses
@@ -3396,7 +3397,10 @@ go only to those hosts (the policy check still runs).
   `/1/users/validate.json`.
 - Errors in words: *Pushover rejected the token or the user key* (400
   naming the token or user); *This application has used its monthly
-  messages* (429); *Pushover refused the message* (other 4xx).
+  messages* (429); *Pushover refused the message* (other 4xx). On saving,
+  a refusal that names neither says *Check the device name*.
+- A 429 without a usable wait (any service) says the service is busy and
+  it will be tried again.
 
 **Mattermost** (`mattermost`)
 - Fields: *Webhook URL* (secret), *Channel* (optional, #239:

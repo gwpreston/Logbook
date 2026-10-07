@@ -3262,6 +3262,8 @@ return [
         'saved_as' => '{channel} is saved: {name}.',
         'unchecked' => 'Saved, but {channel} couldn’t be reached to check it. Send a test when it’s back.',
         'reply' => [
+            'busy' => 'The service is busy. It will be tried again on the next run.',
+            'pushover_device' => 'Pushover refused these settings. Check the device name.',
             'needs_setup' => 'Not set up yet.',
             'invalid_settings' => 'The saved settings are no longer valid. Open the card and save them again.',
             'redirect' => 'The service answered with a redirect, which is not followed.',
