@@ -121,79 +121,79 @@ draft this phase first carried differs from it in these ways:
       under *Audit*.
 
 ### 36.3.1 Code
-- [ ] The urgency mapping and the fitting helper (code-point counting,
+- [x] The urgency mapping and the fitting helper (code-point counting,
       line boundary, "…and N more").
-- [ ] A request on the outbound client that returns the status and the
+- [x] A request on the outbound client that returns the status and the
       decoded body (for `getMe`, `getUpdates`, `users/validate`,
       `auth.test` and Slack's `ok: false`), with the same policy check,
       pinning and no redirects.
-- [ ] Five `PersonalSender`s with their definitions. No new dependency.
-- [ ] The check on saving (Telegram, Pushover, Slack): refused when the
+- [x] Five `PersonalSender`s with their definitions. No new dependency.
+- [x] The check on saving (Telegram, Pushover, Slack): refused when the
       service rejects the token, saved with a notice when it can't be
       reached.
-- [ ] The Telegram *Find my chat* action (a form post; a result page lists
+- [x] The Telegram *Find my chat* action (a form post; a result page lists
       the chats to pick from; picking saves the chat ID).
-- [ ] The Mattermost escaping and mention neutralisation; Slack's escaping;
+- [x] The Mattermost escaping and mention neutralisation; Slack's escaping;
       the Discord `allowed_mentions`; the Pushover priority mapping.
-- [ ] Redaction of tokens in URLs and responses for all five; the badge
+- [x] Redaction of tokens in URLs and responses for all five; the badge
       shows the host only.
-- [ ] Saved settings re-checked against their kind's rules before every
+- [x] Saved settings re-checked against their kind's rules before every
       send, for every personal kind (#258).
-- [ ] The cards appear on Account → Notifications from their definitions
+- [x] The cards appear on Account → Notifications from their definitions
       (36.2); the third-party notice on four of them.
 
 ### 36.3.2 Docs
-- [ ] `docs/notification-channels.md`: a section per service: how to get
+- [x] `docs/notification-channels.md`: a section per service: how to get
       the token or URL (check the current steps), what the fields mean, the
       limits, what Logbook sends, who the service sees it, and
       troubleshooting from the error words above. Update *Adding a channel*.
-- [ ] README feature paragraph and docs table.
+- [x] README feature paragraph and docs table.
 
 ### 36.3.3 Translations
-- [ ] English and German for hints, notices, statuses and the error words.
+- [x] English and German for hints, notices, statuses and the error words.
       Service names are not translated.
 
 ### 36.3.4 Tests
-- [ ] Unit, per service with a fake HTTP client: the exact request (URL,
+- [x] Unit, per service with a fake HTTP client: the exact request (URL,
       method, headers, body) for a reminder, a digest, a price alert and a
       test; validation of good and bad tokens, IDs and URLs (including
       `https://discord.com.example.org/api/webhooks/1/x`, a Discord URL with a
       query, a Mattermost URL not ending in `/hooks/{id}`, a Slack token
       that isn't `xoxb-`).
-- [ ] Unit: fitting. A digest of 200 items fits each limit exactly or under;
+- [x] Unit: fitting. A digest of 200 items fits each limit exactly or under;
       multi-byte text and emoji are counted in code points, not bytes; a
       single oversized line is cut; "and N more" is right.
-- [ ] Unit: mentions. `@everyone`, `@here`, `@channel`, `@user`, `<!channel>`
+- [x] Unit: mentions. `@everyone`, `@here`, `@channel`, `@user`, `<!channel>`
       and Markdown characters in a vehicle name, a title and a note are
       neutralised for Mattermost; `<!channel>` and `<@U1>` can't be formed
       for Slack; Discord sends `allowed_mentions` with an empty `parse`;
       Telegram sends no `parse_mode`.
-- [ ] Unit: Pushover priority is `-1`, `0` or `1` and never `2`; the urgency
+- [x] Unit: Pushover priority is `-1`, `0` or `1` and never `2`; the urgency
       of every kind.
-- [ ] Unit: the error words for each status a service can return (401, 403,
+- [x] Unit: the error words for each status a service can return (401, 403,
       404, 400, 409, 429, a timeout, a redirect, Slack's codes), and that
       none contains a token.
-- [ ] Unit: the check on saving: rejected → not saved; unreachable → saved
+- [x] Unit: the check on saving: rejected → not saved; unreachable → saved
       with the notice.
-- [ ] Integration: the destination policy applies to Mattermost (a LAN host
+- [x] Integration: the destination policy applies to Mattermost (a LAN host
       allowed under the default and refused under *The internet only*) and
       is still enforced for the fixed-host services.
-- [ ] Integration: *Find my chat* parses a `getUpdates` response, lists only
+- [x] Integration: *Find my chat* parses a `getUpdates` response, lists only
       private chats, stores only the chosen ID, and handles the webhook-set
       refusal.
-- [ ] Integration: all nine kinds usable for one recipient in one run send
+- [x] Integration: all nine kinds usable for one recipient in one run send
       through all nine; one failing leaves the others and the recipient's
       other channels untouched; idempotency and `reminder_deliveries` are
       as before.
-- [ ] Integration: a restored row that breaks its kind's rules is refused
+- [x] Integration: a restored row that breaks its kind's rules is refused
       before any request and doesn't count (#258).
-- [ ] Integration: secrets (including tokens inside URLs) never appear in a
+- [x] Integration: secrets (including tokens inside URLs) never appear in a
       response, a job's output, the log or an error; the cards show *Saved /
       Replace / Remove*.
-- [ ] Integration: user A cannot touch user B's new channels; demo mode
+- [x] Integration: user A cannot touch user B's new channels; demo mode
       blocks them; the route inventory classifies the new routes.
-- [ ] The English and German catalogues stay in step (existing key tests).
-- [ ] On every engine; the suite passes on SQLite, PostgreSQL, MySQL and
+- [x] The English and German catalogues stay in step (existing key tests).
+- [x] On every engine; the suite passes on SQLite, PostgreSQL, MySQL and
       MariaDB.
 
 ### 36.3.5 Checks
@@ -204,10 +204,10 @@ draft this phase first carried differs from it in these ways:
       and 1280 px, light and dark, all four accents.
 
 ### Sample data
-- [ ] None. Demo mode sends nothing.
+- [x] None. Demo mode sends nothing.
 
 ### Release (with Phases 36.1 and 36.2)
-- [ ] `CHANGELOG.md` **3.3.0**:
+- [x] `CHANGELOG.md` **3.3.0**:
       - *Added* — Settings → Delivery with the email server (36.1);
         Account → Notifications with personal Email, ntfy, Gotify and
         Webhook channels, a status and a test on each, and an admin setting
@@ -233,8 +233,9 @@ draft this phase first carried differs from it in these ways:
         `SESSION_SECRET` and are not in backups, so a restored install asks
         for them again**; members' channels that point somewhere the new
         setting refuses are kept and shown as blocked.
-- [ ] Bump `VERSION`, rebuild assets, update the README status and
-      `ROADMAP.md`; Phases 36.1 and 36.2 marked complete.
+- [x] Bump `VERSION`, rebuild assets, update the README status and
+      `ROADMAP.md`; Phases 36.1 and 36.2 marked complete. (No source
+      asset changed, so there was nothing to rebuild.)
 - [ ] Tag `v3.3.0` once merged.
 
 ---

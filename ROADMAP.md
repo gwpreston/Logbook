@@ -80,8 +80,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [34.3](docs/phases/phase-34.3.md) | Reminders calendar and dashboard widget + v3.1 release | ✅ |
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | ✅ |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | ✅ |
-| [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 🚧 |
-| [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 🚧 |
+| [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | ✅ |
+| [36.2](docs/phases/phase-36.2.md) | Personal notification channels | ✅ |
 | [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover, Mattermost and Slack + v3.3 release | 🚧 |
 | [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours | 📋 |
 
