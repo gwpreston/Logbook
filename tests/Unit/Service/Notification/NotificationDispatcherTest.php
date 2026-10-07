@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Logbook\Tests\Unit\Service\Notification;
 
 use InvalidArgumentException;
+use Logbook\Service\Notification\ChannelCategories;
 use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Service\Notification\Notification;
+use Logbook\Service\Notification\NotificationCategory;
 use Logbook\Service\Notification\NotificationDispatcher;
 use Logbook\Service\Notification\NotificationKind;
 use Logbook\Service\Notification\NotificationPreferences;
 use Logbook\Service\Notification\Recipient;
+use Logbook\Service\Notification\ReminderMessages;
+use Logbook\Tests\Support\CategorisedChannel;
 use Logbook\Tests\Support\FakeChannel;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -87,6 +91,71 @@ final class NotificationDispatcherTest extends TestCase
 
         self::assertSame(['telegram'], $report->deliveredChannels());
         self::assertSame('Oil change due', $telegram->sent[0]->title);
+    }
+
+    /**
+     * Phase 36.4: a digest, price alert or failed job goes only to the
+     * channels taking it; a test goes everywhere.
+     */
+    public function testAKindGoesOnlyToTheChannelsTakingIt(): void
+    {
+        $email = new CategorisedChannel('email', [NotificationCategory::Due]);
+        $ntfy = new CategorisedChannel('ntfy', [NotificationCategory::Digest]);
+        $webhook = new FakeChannel('webhook');
+        $dispatcher = self::dispatcher([$email, $ntfy, $webhook]);
+
+        $digest = new Notification(NotificationKind::Digest, 'Due in October 2026', '…');
+        $report = $dispatcher->dispatch($digest, self::recipient(), new NotificationPreferences());
+        self::assertSame(['ntfy', 'webhook'], $report->deliveredChannels(), 'the server webhook takes everything');
+        self::assertSame(['ntfy', 'webhook'], $report->deliveredChannelsFor(NotificationCategory::Digest));
+
+        $test = new Notification(NotificationKind::Test, 'Logbook test notification', '…');
+        $report = $dispatcher->dispatch($test, self::recipient(), new NotificationPreferences());
+        self::assertSame(['email', 'ntfy', 'webhook'], $report->deliveredChannels());
+
+        $jobs = new Notification(NotificationKind::JobFailed, 'Failed', '…');
+        $report = self::dispatcher([$email, $ntfy])->dispatch($jobs, self::recipient(), new NotificationPreferences());
+        self::assertTrue($report->hadNoChannels(), 'nobody takes job failures');
+    }
+
+    /**
+     * Phase 36.4: a run's reminders go to each channel as the part it
+     * takes; the report says which channels delivered each category.
+     */
+    public function testRemindersGoToEachChannelAsThePartItTakes(): void
+    {
+        $email = new CategorisedChannel('email', [NotificationCategory::Overdue]);
+        $ntfy = new CategorisedChannel('ntfy', [NotificationCategory::Due], 'fail');
+        $gotify = new CategorisedChannel('gotify', [NotificationCategory::Due, NotificationCategory::Overdue]);
+        $digestOnly = new CategorisedChannel('telegram', [NotificationCategory::Digest]);
+        $all = new Notification(NotificationKind::Reminders, 'All', '…');
+        $due = new Notification(NotificationKind::Reminders, 'Due', '…');
+        $overdue = new Notification(NotificationKind::Reminders, 'Overdue', '…', urgent: true);
+
+        $report = self::dispatcher([$email, $ntfy, $gotify, $digestOnly])->dispatchReminders(
+            new ReminderMessages($all, $due, $overdue),
+            self::recipient(),
+            new NotificationPreferences(),
+        );
+
+        self::assertSame(['Overdue'], array_map(static fn (Notification $n): string => $n->title, $email->sent));
+        self::assertSame(['Due'], array_map(static fn (Notification $n): string => $n->title, $ntfy->sent));
+        self::assertSame(['All'], array_map(static fn (Notification $n): string => $n->title, $gotify->sent));
+        self::assertSame([], $digestOnly->sent);
+        self::assertSame(['gotify'], $report->deliveredChannelsFor(NotificationCategory::Due), 'ntfy failed');
+        self::assertSame(['email', 'gotify'], $report->deliveredChannelsFor(NotificationCategory::Overdue));
+    }
+
+    public function testWithOnlyOneKindOfReminderEveryChannelTakingItGetsTheWholeMessage(): void
+    {
+        $messages = new ReminderMessages(
+            $all = new Notification(NotificationKind::Reminders, 'All', '…'),
+            $all,
+            null,
+        );
+
+        self::assertSame([$all, [NotificationCategory::Due]], $messages->for(ChannelCategories::all()));
+        self::assertNull($messages->for(ChannelCategories::of([NotificationCategory::Overdue])));
     }
 
     public function testChannelKeysMustBeUniqueAndSafe(): void
