@@ -103,8 +103,10 @@ final readonly class MattermostSender implements PersonalSender
         $text = str_replace(['<!', '@'], ['<!' . self::ZWSP, '@' . self::ZWSP], $text);
         $text = (string) preg_replace('/([\\\\`*_\[\]()#|<>~!])/u', '\\\\$1', $text);
 
-        // A line can't start a list, a heading or a quote.
-        return (string) preg_replace('/^(\s*)([-+]|\d+\.)(\s)/u', '$1\\\\$2$3', $text);
+        // A line can't start a list (headings and quotes are escaped above).
+        $text = (string) preg_replace('/^(\s*)([-+])(\s)/u', '$1\\\\$2$3', $text);
+
+        return (string) preg_replace('/^(\s*\d+)\.(\s)/u', '$1\\.$2', $text);
     }
 
     /**

@@ -110,6 +110,9 @@ final readonly class ChannelForm
         $input = [];
         foreach ($definition->fields() as $field) {
             $value = $field->isSecret() ? $settings->secret($field->name) : $settings->value($field->name);
+            if ($value === null && $field->isSecret() && $field->required) {
+                return false;
+            }
             if ($value !== null) {
                 $input[$definition->inputName($field->name)] = $value;
             }
