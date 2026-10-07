@@ -34,7 +34,7 @@ $container = Kernel::createApp($settings)->getContainer();
 $mail = $container->get(MailConfig::class);
 assert($mail instanceof MailConfig);
 if ($mail->isConfigured()) {
-    $host = $mail->effective()?->host ?? '?';
+    $host = $mail->effective()?->host;
     fwrite(STDOUT, sprintf("logbook: an email server is already saved (%s); left as it is.\n", $host));
     exit(0);
 }
