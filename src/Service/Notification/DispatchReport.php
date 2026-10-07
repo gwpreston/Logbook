@@ -11,9 +11,25 @@ final readonly class DispatchReport
 {
     /**
      * @param list<DeliveryResult> $results one per channel tried
+     * @param list<list<NotificationCategory>> $carried per result, the categories its message carried (Phase 36.4)
      */
-    public function __construct(public array $results)
+    public function __construct(public array $results, private array $carried = [])
     {
+    }
+
+    /**
+     * @return list<string> keys of the channels that delivered a message carrying this category
+     */
+    public function deliveredChannelsFor(NotificationCategory $category): array
+    {
+        $keys = [];
+        foreach ($this->results as $i => $result) {
+            if ($result->delivered && in_array($category, $this->carried[$i] ?? [], true)) {
+                $keys[] = $result->channel;
+            }
+        }
+
+        return $keys;
     }
 
     /**

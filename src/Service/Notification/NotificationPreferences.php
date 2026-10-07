@@ -8,7 +8,8 @@ namespace Logbook\Service\Notification;
  * An owner's delivery choices (spec.md §7.11), stored as the
  * `notifications` user setting. Their email address is on the user from
  * Phase 33.1 (§6 User `email`); their ntfy, Gotify and webhook channels
- * are rows of their own from Phase 36.2 (§6 NotificationChannel).
+ * are rows of their own from Phase 36.2 (§6 NotificationChannel). From
+ * Phase 36.4 it also holds what email receives and the quiet hours.
  */
 final readonly class NotificationPreferences
 {
@@ -27,7 +28,16 @@ final readonly class NotificationPreferences
          * user saves a Gotify token on Account → Notifications.
          */
         public ?string $legacyGotifyToken = null,
+        /** What email receives (Phase 36.4); all until the user chooses. */
+        public ?ChannelCategories $emailCategories = null,
+        /** Null when off (Phase 36.4). */
+        public ?QuietHours $quiet = null,
     ) {
+    }
+
+    public function emailCategories(): ChannelCategories
+    {
+        return $this->emailCategories ?? ChannelCategories::all();
     }
 
     /**
@@ -52,17 +62,27 @@ final readonly class NotificationPreferences
             $channels[] = $channelKey;
         }
 
-        return new self($channels, $this->digest, $this->legacyGotifyToken);
+        return new self($channels, $this->digest, $this->legacyGotifyToken, $this->emailCategories, $this->quiet);
     }
 
     public function withDigest(bool $digest): self
     {
-        return new self($this->channels, $digest, $this->legacyGotifyToken);
+        return new self($this->channels, $digest, $this->legacyGotifyToken, $this->emailCategories, $this->quiet);
     }
 
     public function withoutLegacyGotifyToken(): self
     {
-        return new self($this->channels, $this->digest);
+        return new self($this->channels, $this->digest, null, $this->emailCategories, $this->quiet);
+    }
+
+    public function withEmailCategories(ChannelCategories $categories): self
+    {
+        return new self($this->channels, $this->digest, $this->legacyGotifyToken, $categories, $this->quiet);
+    }
+
+    public function withQuiet(?QuietHours $quiet): self
+    {
+        return new self($this->channels, $this->digest, $this->legacyGotifyToken, $this->emailCategories, $quiet);
     }
 
     public static function fromArray(mixed $value): self
@@ -75,17 +95,26 @@ final readonly class NotificationPreferences
             is_array($channels) ? array_values(array_filter($channels, is_string(...))) : null,
             ($value['digest'] ?? false) === true,
             is_string($token) && $token !== '' ? $token : null,
+            isset($value['email_categories']) ? ChannelCategories::fromStored($value['email_categories']) : null,
+            QuietHours::fromStored($value['quiet'] ?? null),
         );
     }
 
     /**
-     * @return array{channels: list<string>|null, digest: bool, gotify_token?: string}
+     * @return array{channels: list<string>|null, digest: bool, gotify_token?: string, email_categories?: string, quiet?: array{start: string, end: string}}
      */
     public function toArray(): array
     {
         $array = ['channels' => $this->channels, 'digest' => $this->digest];
         if ($this->legacyGotifyToken !== null) {
             $array['gotify_token'] = $this->legacyGotifyToken;
+        }
+        $categories = $this->emailCategories?->toStored();
+        if ($categories !== null) {
+            $array['email_categories'] = $categories;
+        }
+        if ($this->quiet !== null) {
+            $array['quiet'] = $this->quiet->toStored();
         }
 
         return $array;

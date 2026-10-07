@@ -68,6 +68,36 @@ final readonly class NotificationComposer
     }
 
     /**
+     * Reminders that have just become due or overdue, written for each
+     * group of channels (spec.md §7.11 *Reminders by category*): all of
+     * them, and when they are mixed, the due and the overdue ones apart.
+     *
+     * @param non-empty-list<ReminderEntry> $entries
+     * @param DateTimeImmutable $today the owner's calendar date
+     */
+    public function reminderMessages(User $user, array $entries, DateTimeImmutable $today): ReminderMessages
+    {
+        $overdue = array_values(array_filter(
+            $entries,
+            static fn (ReminderEntry $e): bool => $e->reminder->status === ReminderStatus::Overdue,
+        ));
+        $due = array_values(array_filter(
+            $entries,
+            static fn (ReminderEntry $e): bool => $e->reminder->status !== ReminderStatus::Overdue,
+        ));
+        $all = $this->reminders($user, $entries, $today);
+        if ($overdue === [] || $due === []) {
+            return new ReminderMessages($all, $due === [] ? null : $all, $overdue === [] ? null : $all);
+        }
+
+        return new ReminderMessages(
+            $all,
+            $this->reminders($user, $due, $today),
+            $this->reminders($user, $overdue, $today),
+        );
+    }
+
+    /**
      * "What's due this month": open reminders due by the end of the month,
      * overdue ones included, then (Phase 24) the *Needs attention* checks
      * on the same vehicles. Either list may be empty, not both.

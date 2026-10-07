@@ -15,6 +15,12 @@ use Throwable;
  * concrete channel, so adding one never touches this class. One failing
  * channel never stops the others.
  *
+ * From Phase 36.4 a channel gets only the categories it receives (spec.md
+ * §7.11 *What each channel receives*): a digest, price alert or failed
+ * job goes to the channels taking it, a run's reminders to each channel
+ * as the part it takes (dispatchReminders()); a test and the switched-off
+ * notice go to every usable channel.
+ *
  * After a real send (not a test, not the switched-off notice) each
  * channel's last result is written; a personal channel failing for the
  * fifth time in a row is switched off, and the person is told once through
@@ -35,11 +41,48 @@ final readonly class NotificationDispatcher
         Recipient $recipient,
         NotificationPreferences $preferences,
     ): DispatchReport {
-        $results = [];
-        $switchedOff = [];
+        $category = NotificationCategory::forKind($notification->kind);
+        $sends = [];
+        foreach ($this->channels->active($preferences, $recipient, $category) as $channel) {
+            $sends[] = [$channel, $notification, $category === null ? [] : [$category]];
+        }
+
+        return $this->deliver($sends, $recipient, $preferences);
+    }
+
+    /**
+     * A run's reminders: to each channel the ones it takes, as one message
+     * (spec.md §7.11 *Reminders by category*). The report says, per
+     * category, which channels delivered it.
+     */
+    public function dispatchReminders(
+        ReminderMessages $messages,
+        Recipient $recipient,
+        NotificationPreferences $preferences,
+    ): DispatchReport {
+        $sends = [];
         foreach ($this->channels->active($preferences, $recipient) as $channel) {
+            $message = $messages->for(ChannelCategories::forChannel($channel, $preferences));
+            if ($message !== null) {
+                $sends[] = [$channel, ...$message];
+            }
+        }
+
+        return $this->deliver($sends, $recipient, $preferences);
+    }
+
+    /**
+     * @param list<array{NotificationChannel, Notification, list<NotificationCategory>}> $sends
+     */
+    private function deliver(array $sends, Recipient $recipient, NotificationPreferences $preferences): DispatchReport
+    {
+        $results = [];
+        $carried = [];
+        $switchedOff = [];
+        foreach ($sends as [$channel, $notification, $categories]) {
             $result = $this->send($channel, $notification, $recipient);
             $results[] = $result;
+            $carried[] = $categories;
             if ($notification->kind->counts() && $this->results?->record($recipient, $result) === true) {
                 $switchedOff[] = $channel->label();
                 $this->logger->warning('Channel {channel} of user {user} switched off after {count} failures in a row.', [
@@ -54,7 +97,7 @@ final readonly class NotificationDispatcher
             $this->tellSwitchedOff($recipient, $preferences, $switchedOff);
         }
 
-        return new DispatchReport($results);
+        return new DispatchReport($results, $carried);
     }
 
     private function send(NotificationChannel $channel, Notification $notification, Recipient $recipient): DeliveryResult

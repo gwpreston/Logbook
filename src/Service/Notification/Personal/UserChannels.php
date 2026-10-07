@@ -11,6 +11,7 @@ use Logbook\Repository\NotificationChannelRepository;
 use Logbook\Service\Ai\Redactor;
 use Logbook\Service\Ai\SecretUnreadable;
 use Logbook\Service\Mail\NotificationSecrets;
+use Logbook\Service\Notification\ChannelCategories;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
@@ -79,7 +80,12 @@ final readonly class UserChannels
         // so a slow resolver costs one lookup per channel and send, not three.
         foreach ($this->states($recipient->userId, $recipient->isAdmin, false) as $state) {
             if ($state->status === ChannelStatus::On && $state->settings !== null) {
-                $usable[] = new BoundChannel($state->sender, $state->settings, !$recipient->isAdmin);
+                $usable[] = new BoundChannel(
+                    $state->sender,
+                    $state->settings,
+                    !$recipient->isAdmin,
+                    ChannelCategories::fromStored($state->record->categories),
+                );
             }
         }
 

@@ -30,6 +30,8 @@ final readonly class ChannelRecord
         public ?string $lastError = null,
         public int $failures = 0,
         public ?DateTimeImmutable $switchedOffAt = null,
+        /** What it receives as stored (Phase 36.4, ChannelCategories); null for all. */
+        public ?string $categories = null,
     ) {
     }
 
