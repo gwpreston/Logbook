@@ -12,6 +12,8 @@ use Logbook\Service\Notification\Personal\ChannelSettings;
 use Logbook\Service\Notification\Personal\FieldType;
 use Logbook\Service\Notification\Personal\GotifySender;
 use Logbook\Service\Notification\Personal\UserChannels;
+use Logbook\Service\Notification\Personal\Verification;
+use Logbook\Service\Notification\Personal\VerifiesSettings;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Service\Reminder\ReminderSettingsStore;
@@ -35,6 +37,9 @@ final readonly class ChannelAction
     public const string TEST_BUCKET = 'notification-test';
     public const int TEST_MAX = 5;
     public const int TEST_WINDOW = 600;
+    /** Checks with the service on saving (#261): past this, saved unchecked. */
+    public const string CHECK_BUCKET = 'notification-check';
+    public const int CHECK_MAX = 10;
 
     public function __construct(
         private NotificationsPage $page,
@@ -83,7 +88,7 @@ final readonly class ChannelAction
         }
 
         // Where it would send, checked now for a member (spec.md §7.11 *Where members' channels may send*).
-        $url = $errors === [] ? $sender->destination(new ChannelSettings($form->settings())) : null;
+        $url = $errors === [] ? $sender->destination(new ChannelSettings($form->settings(), $form->secrets)) : null;
         if ($url !== null) {
             $destination = $this->destinations->check($url, !$user->isAdmin);
             if (!$destination->isAllowed()) {
@@ -114,6 +119,20 @@ final readonly class ChannelAction
             return $this->page->render($request, $response, $kind, $form, $result);
         }
 
+        // The service's own check (#261): a rejected token is not saved; an unreachable service is not a reason to refuse.
+        $verification = null;
+        if ($sender instanceof VerifiesSettings) {
+            $verification = $this->limiter->attempt(self::CHECK_BUCKET, (string) $user->id, self::CHECK_MAX, self::TEST_WINDOW)
+                ? $this->channels->verify($user, $sender, $form)
+                : Verification::unreachable();
+        }
+        if ($verification !== null && $verification->isRejected()) {
+            $field = $definition->secretFields()[0]->name ?? 'token';
+            $errors[$definition->inputName($field)] = ['key' => (string) $verification->words, 'params' => []];
+
+            return $this->page->render($request, $response, $kind, $form->withErrors($errors), null, 422);
+        }
+
         $dropped = $this->channels->save($user, $sender, $form);
         if ($kind === GotifySender::KEY) {
             // A token the upgrade could not seal (#230) is replaced by this one.
@@ -123,7 +142,15 @@ final readonly class ChannelAction
             }
         }
         $session = RequestContext::session($request);
-        $session->flash('success', 'notifications.saved', ['channel' => $this->translator->trans($definition->label)]);
+        $label = $this->translator->trans($definition->label);
+        if ($verification?->name !== null) {
+            $session->flash('success', 'notifications.saved_as', ['channel' => $label, 'name' => $verification->name]);
+        } else {
+            $session->flash('success', 'notifications.saved', ['channel' => $label]);
+        }
+        if ($verification !== null && $verification->isUnreachable()) {
+            $session->flash('warning', 'notifications.unchecked', ['channel' => $label]);
+        }
         if ($dropped !== []) {
             $session->flash('warning', 'notifications.secret_dropped');
         }

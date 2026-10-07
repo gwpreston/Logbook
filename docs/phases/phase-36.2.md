@@ -2,7 +2,7 @@
 
 *Everyone chooses where their own reminders go, and sets it up themselves.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 36.3 as
+Status: 🚧 in progress · no release of its own (ships with Phase 36.4 as
 **v3.3.0**) · file lives in `docs/phases/`
 
 Part two of Phase 36 ([36.1](phase-36.1.md) moved the email server into
@@ -403,7 +403,7 @@ Decided by the owner on 2026-10-07, before any code.
       no channel rows.)
 
 ### Release
-- [ ] Ships with Phase 36.3 as **v3.3.0**.
+- [ ] Ships with Phase 36.4 as **v3.3.0** (moved from 36.3, #254).
 
 ---
 
@@ -522,11 +522,17 @@ All decided on 2026-10-07, before any code (log #227–#235, #247–#249).
 - **Anything the prototype shows.** *Decided (#235):* nothing new; see
   *Prototype notes*.
 
-Raised by the reviews on 2026-10-07, waiting for the owner (log #255–#258):
+Raised by the reviews on 2026-10-07 and decided the same day, before
+Phase 36.3 started (log #255–#258):
 
 - **Docker's bridge network** counts as *Your network*: treat it as *This
-  server* on Docker? (#255)
+  server* on Docker? *Decided (#255):* no; kept and documented (list the
+  bridge subnet under *This server's addresses*, or choose *The internet
+  only*).
 - **Error detail for members**: show only a generic error for private
-  destinations? (#256)
-- **Send test and the last result**: should a test set it? (#257)
-- **Restored rows**: re-validate their URLs on restore? (#258)
+  destinations? *Decided (#256):* no; the redacted error, as for admins.
+- **Send test and the last result**: should a test set it? *Decided
+  (#257):* no, as built.
+- **Restored rows**: re-validate their URLs on restore? *Decided (#258):*
+  every personal kind's saved settings are re-checked against its rules
+  before each send, built in [Phase 36.3](phase-36.3.md).

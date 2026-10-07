@@ -62,6 +62,7 @@ final readonly class NotificationComposer
                 url: $this->urls->route('reminders.index'),
                 urgent: $this->anyOverdue($entries),
                 items: $items,
+                locale: $this->translator->getLocale(),
             );
         });
     }
@@ -120,6 +121,7 @@ final readonly class NotificationComposer
                     'kind' => $c->kind->value,
                     'title' => $this->attention->title($c),
                 ], $checks),
+                locale: $this->translator->getLocale(),
             );
         });
     }
@@ -131,6 +133,7 @@ final readonly class NotificationComposer
             title: $this->translator->trans('notifications.test.title'),
             message: $this->translator->trans('notifications.test.message', ['name' => $user->displayName]),
             url: $this->urls->route('reminders.index'),
+            locale: $this->translator->getLocale(),
         ));
     }
 
@@ -151,6 +154,7 @@ final readonly class NotificationComposer
             ]),
             url: $this->urls->route('settings.jobs.run', ['run' => (string) $run->id]),
             urgent: true,
+            locale: $this->translator->getLocale(),
         ));
     }
 
@@ -177,6 +181,7 @@ final readonly class NotificationComposer
                 ]),
                 url: $this->urls->route('settings.notifications'),
                 urgent: true,
+                locale: $this->translator->getLocale(),
             );
         });
     }
@@ -207,6 +212,7 @@ final readonly class NotificationComposer
                 'listed' => $this->formatter->dateTime($listed->reportedAt, IntlDateFormatter::SHORT),
             ]),
             url: $this->urls->route('stations.show', ['station' => (string) $station->id]),
+            locale: $this->translator->getLocale(),
         ));
     }
 

@@ -1120,7 +1120,7 @@ are. The schema version moves.
 #247–#249), `notification_channels`
 - id, user_id (FK users `ON DELETE CASCADE`), kind (`ntfy` | `gotify` |
   `personal-webhook`, and from Phase 36.3 `telegram` | `discord` |
-  `pushover` | `mattermost`; email is not a row, and `webhook` is the key
+  `pushover` | `mattermost` | `slack`; email is not a row, and `webhook` is the key
   of the server's webhook), enabled (bool), settings (JSON: the kind's
   non-secret fields), last_status (`ok` | `failed`, null before the first
   send), last_attempt_at (UTC), last_error (up to 255, redacted), failures
@@ -3025,7 +3025,8 @@ webhook such as ntfy — configurable. Optional digest ("what's due this month")
 Extensible channel interface so more can be added.
 
 - **Channels shipped:** email (SMTP via symfony/mailer, the server's
-  from Settings → Delivery), ntfy, Gotify, a personal JSON webhook, and
+  from Settings → Delivery), ntfy, Gotify, a personal JSON webhook,
+  Telegram, Discord, Pushover, Mattermost and Slack (Phase 36.3), and
   the server's JSON webhook (`WEBHOOK_URL`, deprecated). From Phase 36.2
   every channel but the server's webhook is **personal**: set up by each
   user on Settings → Account → Notifications (below). The dispatcher sees
@@ -3287,6 +3288,175 @@ Admins choose on **Settings → Delivery → Where members can send**:
 - A member's saved address that the policy now refuses is **kept**,
   shown as *Blocked by your administrator's setting*, not used and not
   deleted; relaxing the policy brings it back.
+
+#### Telegram, Discord, Pushover, Mattermost and Slack (Phase 36.3, decided 2026-10-07, #236–#241, #255–#258, #260–#261)
+
+Five more personal kinds, each a definition and a sender (above). Each
+person brings their own bot, application, token or webhook; the admin
+provides nothing (#236). No new dependency: every request goes through
+the one outbound HTTP client of 36.2 (10-second timeout, no redirects,
+address pinned, the destination policy applied on every request).
+Telegram, Discord, Pushover and Slack have fixed hosts, so their requests
+go only to those hosts (the policy check still runs).
+
+- **One message, formatted per service.** Each sender turns the
+  dispatcher's `Notification` (kind, title, the body's lines, the link)
+  into its service's request. The existing channels keep their formats
+  exactly.
+- **Urgency** (#238, #260): *overdue* reminders are `high`, *due* ones
+  `normal`; the monthly digest `low`; a price alert `normal`; a failed
+  job (admins) `high`; *your channel switched off* `normal`; a test
+  `normal`. Telegram sends `low` without a sound (`disable_notification`);
+  Pushover maps `low` / `normal` / `high` to priority `-1` / `0` / `1`.
+- **Limits are counted in Unicode code points.** A message is **cut at a
+  line boundary** (each reminder and each check is one line), with a
+  final line "…and {n} more" and the link, never mid-line and never over
+  the limit. A single line longer than the limit is cut with an ellipsis.
+- **No pings, no injected formatting.** Vehicle names, titles and notes
+  are text other users typed: Telegram is plain text, Discord sends
+  `allowed_mentions` with an empty `parse`, Mattermost escapes Markdown
+  and neutralises mentions, Slack escapes `&`, `<` and `>` and sends no
+  `link_names`. Link previews are switched off where a service has them.
+- **Third-party notice** (#240) on the Telegram, Discord, Pushover and
+  Slack cards: "This sends your reminders through {service}'s servers."
+  Mattermost is the user's own server and has none.
+- **Checked on saving** (Telegram, Pushover, Slack). Saving asks the
+  service whether the token works. A token the service **rejects** is not
+  saved (the field shows the service's words). If the check **can't be
+  made** (a timeout, the service down, the policy refusing), the card is
+  saved and says "Saved, but {service} couldn't be reached to check it."
+  (#261). Nothing from the answer is stored but what the card shows next
+  (the bot's or workspace's name, in the flash message only).
+  The check (and *Find my chat*) gives up after 5 seconds; at most 10
+  checks per user in 10 minutes, after which a save is made unchecked,
+  with the same notice (performance review, 2026-10-07).
+- **Redaction.** A token or webhook secret that appears in a request URL
+  or a response is removed from every error before it reaches a page, a
+  job's output or the log; the error text never contains the URL's path.
+- **The card's badge** shows the destination's host only, never a path
+  with a token in it.
+- **Re-checked on every send** (#258). A saved row (a restore, an old
+  row) is checked against its kind's own rules before each send, as the
+  form checks it; a row that fails is refused before any request ("The
+  saved settings are no longer valid. Open the card and save them
+  again."), which, like a policy refusal, never counts towards switching
+  off. This applies to every personal kind.
+
+**Telegram** (`telegram`)
+- Fields: *Bot token* (secret), *Chat ID*.
+- Token: digits, a colon, then at least 30 letters, digits, `_` or `-`.
+  Chat ID: a whole number (negative for a group) or `@channelusername`.
+- Request: `POST https://api.telegram.org/bot{token}/sendMessage`, JSON
+  `chat_id`, `text` (1 to **4096** characters after entity parsing; plain
+  text has none), **no `parse_mode`**, `link_preview_options`
+  `{"is_disabled": true}`, and `disable_notification` for `low`.
+- **Saving** checks the token with `getMe` and says "Bot @{username}".
+- **Find my chat** (#237; a button on the card, a form post): the person
+  must start a conversation with their bot first (a bot can't message
+  someone who hasn't). It asks `getUpdates` (without an offset, so no
+  update is consumed) with the **saved** token (no token goes back into a
+  page, so the button appears once one is saved) and lists the
+  **private** chats found, each with its ID and first name, for the user
+  to pick; picking fills *Chat ID* and saves it. Nothing else from the
+  response is kept. If the bot has a webhook set, Telegram refuses
+  `getUpdates` (409); the page says so in words. None found: "No messages
+  yet. Open your bot in Telegram, press Start, then try again."
+- Errors in words: *Telegram rejected the bot token* (401, 404); *The bot
+  can't reach that chat. Open it in Telegram and press Start* (403);
+  *Chat not found* (400 "chat not found"); *Telegram asked us to wait {n}
+  seconds* (429, `parameters.retry_after`).
+
+**Discord** (`discord`)
+- Field: *Webhook URL* (secret: the token is in it).
+- The URL must be `https://` with the host exactly `discord.com`,
+  `discordapp.com`, `ptb.discord.com` or `canary.discord.com`, the path
+  `/api/webhooks/{numeric id}/{token}` (the token letters, digits, `_`
+  and `-`), no port, no query and no fragment. A host such as
+  `discord.com.example.org` is refused.
+- Request: `POST` the webhook URL with JSON `content` (up to **2000**
+  characters), `username` "Logbook", `allowed_mentions` `{"parse": []}`
+  (so `@everyone`, `@here`, role and user mentions ping nobody) and
+  `flags` `4` (`SUPPRESS_EMBEDS`: no link preview). The title is the
+  first line. Success is 204.
+- Errors in words: *That webhook no longer exists* (404, 401); *Discord
+  asked us to wait {n} seconds* (429, `retry_after`); *Discord refused
+  the message* (400).
+
+**Pushover** (`pushover`)
+- Fields: *Application token* (secret), *User key* (secret), *Device*
+  (optional; up to 25 letters, digits, `_` or `-`, or several separated
+  by commas).
+- Token and user key: 30 letters and digits each.
+- Request: `POST https://api.pushover.net/1/messages.json` (form fields)
+  with `token`, `user`, `device` when set, `message` (up to **1024**
+  characters), `title` (up to **250**), `url` (up to **512**; left out if
+  longer) and `url_title` "Open Logbook" (up to **100**), and `priority`
+  `-1`, `0` or `1`. **Emergency priority (2) is never used**: it repeats
+  until acknowledged.
+- **Saving** checks the pair (and device) with
+  `/1/users/validate.json`.
+- Errors in words: *Pushover rejected the token or the user key* (400
+  naming the token or user); *This application has used its monthly
+  messages* (429); *Pushover refused the message* (other 4xx). On saving,
+  a refusal that names neither says *Check the device name*.
+- A 429 without a usable wait (any service) says the service is busy and
+  it will be tried again.
+
+**Mattermost** (`mattermost`)
+- Fields: *Webhook URL* (secret), *Channel* (optional, #239:
+  `town-square`, or `@name` for a direct message, as the webhook allows;
+  letters, digits, `.`, `_` and `-`, up to 64).
+- The URL is `http` or `https`, with a path that ends in `/hooks/{id}`
+  (letters and digits; a Mattermost under a subpath works), no query;
+  any host, classed and subject to the destination policy, as a member's
+  own server is usually on their network.
+- Request: `POST` JSON `text` (Markdown, up to **16383** characters) and
+  `channel` when set. The title is bold and the lines a list. The user's
+  strings are escaped for Markdown, and mentions are neutralised:
+  `@name`, `@channel`, `@here`, `@all` and `<!channel>` get a zero-width
+  space after the `@` or `<!`. Success is 200 with `ok`.
+- Errors in words: *Mattermost refused the message. Check that incoming
+  webhooks are enabled and that this webhook isn't locked to another
+  channel* (400, 403); *That webhook was not found* (404).
+
+**Slack** (`slack`, #241)
+- Fields: *Bot token* (secret), *Channel* (a channel ID such as
+  `C0123456789`, as Slack recommends, or `#name`).
+- Token: `xoxb-` then letters, digits and `-`, up to 200. Channel ID:
+  `C`, `G` or `D` then 8 to 12 capital letters or digits; or `#` and a
+  name of lower-case letters, digits, `-` and `_`, up to 80.
+- The user creates a Slack app with the `chat:write` scope, installs it
+  to their workspace and invites it to the channel
+  (`/invite @app`).
+- Request: `POST https://slack.com/api/chat.postMessage` with
+  `Authorization: Bearer {token}`, JSON `channel`, `text` (fitted to
+  Slack's recommended **4000** characters), `mrkdwn` false, no
+  `link_names`, `unfurl_links` and `unfurl_media` false. `&`, `<` and
+  `>` are escaped, so `<!channel>`, `<!here>`, `<!everyone>` and `<@U…>`
+  can't be formed. Slack answers 200 with `ok`; an error is `ok: false`
+  with a code.
+- **Saving** checks the token with `auth.test` and says "Connected to
+  {team}".
+- Errors in words: *Slack rejected the bot token* (`invalid_auth`,
+  `not_authed`, `token_revoked`, `token_expired`, `account_inactive`);
+  *Invite the app to the channel first* (`not_in_channel`); *Channel not
+  found* (`channel_not_found`); *That channel is archived*
+  (`is_archived`); *Slack asked us to wait {n} seconds* (429,
+  `Retry-After`); otherwise *Slack refused the message ({code})*.
+
+**Send test** for every channel is "Test from Logbook" with the link,
+through the same sender and limits as a real message.
+
+**Kept as they are** (the 36.2 reviews, #255–#257): Docker's bridge
+network counts as *Your network* (the docs say to list it under *This
+server's addresses* or choose *The internet only*); a member's failed
+send shows the redacted error, as an admin's does; *Send test* does not
+set the last result.
+
+**Not built:** a shared bot, application or workspace provided by the
+admin (#236); Matrix, Signal, Apprise and other services (§12, #241);
+Discord embeds, Telegram keyboards, Slack blocks, Pushover attachments;
+anything received back from a service.
 
 ### 7.12 Attachments
 Upload receipts, invoices, insurance/cert PDFs and images against fill-ups,
@@ -7789,6 +7959,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
+- Notification channels (Phase 36.3, #241): Matrix, Signal, and a
+  bridge such as Apprise, each a definition and a sender; a shared
+  Telegram bot or Pushover application provided by the admin (#236).
 - Email server (Phase 36.1, #226): OAuth 2 sign-in to SMTP providers
   (Microsoft 365, Gmail) for those that no longer take app passwords; an
   SMTP relay or an app password works meanwhile.
@@ -8283,7 +8456,7 @@ task breakdowns live in the per-phase files; this is the map.
   password stored as an encrypted secret, a test that sends with unsaved
   values, one mail transport, and the `MAIL_*` variables removed; a
   `SESSION_SECRET` generated on a fresh Docker volume (§6, §7.9, §7.11,
-  §8, §9; #222–#226). One migration. Ships with Phase 36.3 as v3.3.0.
+  §8, §9; #222–#226). One migration. Ships with Phase 36.4 as v3.3.0.
 - **Phase 36.2 — Personal notification channels.** Account → Notifications:
   a card per channel generated from a definition, with switch, test and
   last result; Email, ntfy, Gotify and Webhook as personal channels;
@@ -8293,14 +8466,16 @@ task breakdowns live in the per-phase files; this is the map.
   channels may send; no `env:` secrets for members; switched off after 5
   failures in a row; the prototype's *Reminder delivery* design audited
   (§6, §7.11, §8, §9; #227–#235, #247–#249). One migration. Ships with
-  Phase 36.3 as v3.3.0.
-- **Phase 36.3 — Telegram, Discord, Pushover and Mattermost + v3.3
-  release.** Four channels with per-service limits, no pings, no tokens in
-  errors, Telegram's *Find my chat*, and a third-party notice (§7.11).
-  Release v3.3.0 (Phases 36.1 to 36.3).
-- **Phase 36.4 — What each channel receives, and quiet hours.** A choice
-  per channel of what it receives, and quiet hours that hold messages
-  until they end (#234; open questions #250–#254).
+  Phase 36.4 as v3.3.0.
+- **Phase 36.3 — Telegram, Discord, Pushover, Mattermost and Slack.** Five personal channels with per-service limits, no
+  pings, no tokens in errors, a check on saving, Telegram's *Find my
+  chat*, a third-party notice, and saved settings re-checked on every
+  send (§7.11, §12; #236–#241, #255–#258, #260–#261). No migration.
+  Ships with Phase 36.4 as v3.3.0 (#254).
+- **Phase 36.4 — What each channel receives, and quiet hours + v3.3
+  release.** A choice per channel of what it receives, and quiet hours
+  that hold messages until they end (#234; open questions #250–#253).
+  Release v3.3.0 (Phases 36.1 to 36.4, #254).
 ---
 
 ## 14. Definition of done

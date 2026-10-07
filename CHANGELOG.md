@@ -22,6 +22,13 @@ is called out explicitly.
   internet and your network (default), or this server too. Link-local,
   unspecified and reserved addresses are always refused for members; every
   address is checked and pinned on each send.
+- **Telegram, Discord, Pushover, Mattermost and Slack** (Phase 36.3), each
+  with the person's own bot, application or webhook. Messages fit each
+  service's limit (cut between reminders, with "…and N more" and the link),
+  can't ping anyone or inject formatting, and the monthly digest arrives
+  quietly. Telegram, Pushover and Slack tokens are checked when saved;
+  Telegram's *Find my chat* finds the chat ID for you. The cards that send
+  through someone else's servers say so.
 
 ### Changed
 - Notification channels moved from Settings → Reminders to Account →
@@ -30,6 +37,10 @@ is called out explicitly.
   says so, once, through the person's other channels (email never does).
 - No channel follows redirects any more (the server's webhook followed up
   to three).
+- A personal channel's saved settings are checked against its rules before
+  every send; one that no longer passes (after a restore, say) isn't sent,
+  says so on its card, and doesn't count towards switching it off.
+- The webhook payload is unchanged.
 
 ### Deprecated
 - `WEBHOOK_URL`: still the server's webhook, receiving every recipient's
@@ -57,6 +68,9 @@ is called out explicitly.
   channels ask for their token again; nothing is copied in the clear.
 - Members' channels that point somewhere the new *Where members can send*
   setting refuses are kept and shown as blocked.
+- **Notification secrets are encrypted with `SESSION_SECRET` and are not in
+  backups**: a restored install asks for the email server's password and
+  each person's tokens again.
 - `bin/dev-setup.sh` points Settings → Delivery at the development
   stack's Mailpit when no email server is saved.
 

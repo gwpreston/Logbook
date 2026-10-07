@@ -1,9 +1,9 @@
-# Phase 36.4 — What each channel receives, and quiet hours
+# Phase 36.4 — What each channel receives, and quiet hours + v3.3 release
 
 *Choose what reaches you where, and when it may.*
 
-Status: 📋 planned · release to be decided (see *Open questions*) · file
-lives in `docs/phases/`
+Status: 📋 planned · releases **v3.3.0** with Phases 36.1 to 36.3 (#254) ·
+file lives in `docs/phases/`
 
 Phase 36.2 made every notification channel personal (Account →
 Notifications); every usable channel receives everything. The owner asked
@@ -28,6 +28,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.11
    message that would be sent inside them is **held** and sent when they
    end.
 3. The test sends regardless of either, and says so.
+4. Release **v3.3.0** (Phases 36.1 to 36.4; the owner's decision on
+   2026-10-07, #254).
 
 ## Not in scope
 
@@ -57,6 +59,27 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.11
 ### 36.4.2 Migration, code, docs, translations, tests
 - [ ] To be listed once the spec additions are written.
 
+### Release (with Phases 36.1 to 36.3)
+- [ ] `CHANGELOG.md` **3.3.0**: the *Unreleased* entries of Phases 36.1 to
+      36.3 (already written) plus this phase's, under a dated `## [3.3.0]`
+      with an introduction. Draft introduction, from Phase 36.3: "Phases
+      36.1–36.4: **your reminders, where you want them**. The email server
+      is set up in the app by an admin, and each person chooses their own
+      channels (email, ntfy, Gotify, a webhook, Telegram, Discord,
+      Pushover, Mattermost and Slack), what each receives and when, sets
+      them up themselves and tests each one." Then: "**Read the upgrade
+      notes first: email is off after upgrading until an admin sets the
+      server up in Settings → Delivery.**", the migrations, and that
+      notification secrets are encrypted with `SESSION_SECRET` and are not
+      in backups.
+- [ ] Bump `VERSION` to 3.3.0, rebuild assets, update the README status
+      line (with "Coming from 3.2? Email is off after upgrading until an
+      admin sets it up in Settings → Delivery") and `ROADMAP.md`; Phases
+      36.1 to 36.4 marked complete.
+- [ ] The real test through each Phase 36.3 service (its 36.3.5 item), if
+      not done before.
+- [ ] Tag `v3.3.0` once merged.
+
 ---
 
 ## Acceptance criteria
@@ -76,4 +99,6 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.11
 - **Held messages that stop applying.** A reminder marked done while its
   message is held: drop it, or send what was due at the time?
 - **Several held messages.** Sent as they were, or combined into one?
-- **Release.** Its own v3.4.0, or with the next phase?
+- **Release.** Its own v3.4.0, or with the next phase? *Decided
+  (#254, 2026-10-07):* with Phases 36.1 to 36.3, as **v3.3.0**; 36.3 no
+  longer releases on its own.

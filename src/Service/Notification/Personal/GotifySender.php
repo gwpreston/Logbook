@@ -8,6 +8,7 @@ use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\Outbound\OutboundHttp;
 use Logbook\Service\Notification\Recipient;
+use SensitiveParameter;
 
 /**
  * Gotify (https://gotify.net): POSTs to {server}/message with the user's
@@ -61,7 +62,7 @@ final readonly class GotifySender implements PersonalSender
         return $url === null ? null : rtrim($url, '/') . '/message';
     }
 
-    public function validate(array $values): array
+    public function validate(array $values, #[SensitiveParameter] array $secrets = []): array
     {
         return [];
     }

@@ -27,6 +27,8 @@ final readonly class ChannelDefinition
         public string $icon,
         public string $hint,
         array $fields,
+        /** Sends through someone else's servers: the card says so (spec.md §7.11 *Third-party notice*). */
+        public bool $thirdParty = false,
     ) {
         if (preg_match('/^[a-z0-9][a-z0-9-]{0,31}$/', $key) !== 1) {
             throw new InvalidArgumentException(sprintf('Channel kind "%s" is invalid.', $key));

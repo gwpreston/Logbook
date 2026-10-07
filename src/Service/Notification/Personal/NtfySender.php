@@ -8,6 +8,7 @@ use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\Outbound\OutboundHttp;
 use Logbook\Service\Notification\Recipient;
+use SensitiveParameter;
 
 /**
  * ntfy (https://ntfy.sh or self-hosted): the user's topic URL, such as
@@ -52,7 +53,7 @@ final readonly class NtfySender implements PersonalSender
         return $server === null ? null : $server . '/';
     }
 
-    public function validate(array $values): array
+    public function validate(array $values, #[SensitiveParameter] array $secrets = []): array
     {
         return isset($values['url']) && $values['url'] !== '' && self::split($values['url'])[0] === null
             ? ['url' => 'notifications.ntfy.url_invalid']

@@ -6,6 +6,7 @@ namespace Logbook\Support\View;
 
 use DateTimeImmutable;
 use Logbook\Kernel;
+use Logbook\Service\Notification\Personal\ReplyWords;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
@@ -95,6 +96,7 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('local_month', $this->formatter->month(...)),
             new TwigFilter('month_name', $this->formatter->monthName(...)),
             new TwigFilter('date_skeleton', $this->formatter->skeleton(...)),
+            new TwigFilter('channel_error', $this->channelError(...)),
         ];
     }
 
@@ -117,6 +119,17 @@ final class TwigExtension extends AbstractExtension
     private function locale(): string
     {
         return $this->translator->getLocale();
+    }
+
+    /**
+     * A channel's error: a service's stored words (ReplyWords) in the
+     * reader's language, anything else as it is (spec.md §7.11).
+     */
+    public function channelError(?string $error): string
+    {
+        $words = $error === null ? null : ReplyWords::decode($error);
+
+        return $words === null ? (string) $error : $this->translator->trans($words['key'], $words['params']);
     }
 
     /**

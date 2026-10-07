@@ -22,6 +22,11 @@ final readonly class ChannelField
         public int $min = 0,
         public int $max = 0,
         public ?int $default = null,
+        /**
+         * Optional in the form but needed before anything is sent (Telegram's
+         * chat ID, found after the token is saved): *Needs setup* until set.
+         */
+        public bool $neededToSend = false,
     ) {
     }
 

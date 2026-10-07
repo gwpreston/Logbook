@@ -7098,6 +7098,16 @@ p.stat__label {
     padding-left: calc(2.5rem + var(--space-3));
 }
 
+.channel__find {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.channel__find > p {
+    margin: 0;
+}
+
 .channel__content:empty {
     display: none;
 }

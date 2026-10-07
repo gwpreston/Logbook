@@ -9,6 +9,7 @@ use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\Outbound\OutboundHttp;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Notification\WebhookPayload;
+use SensitiveParameter;
 
 /**
  * A personal webhook (`personal-webhook`, spec.md §7.11): the user's URL
@@ -42,7 +43,7 @@ final readonly class WebhookSender implements PersonalSender
         return $settings->value('url');
     }
 
-    public function validate(array $values): array
+    public function validate(array $values, #[SensitiveParameter] array $secrets = []): array
     {
         return [];
     }

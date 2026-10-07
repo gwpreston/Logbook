@@ -12,6 +12,7 @@ use Logbook\Action\Dashboard\CheapestFuelPlaceAction;
 use Logbook\Action\Settings\Delivery\DeliveryAction;
 use Logbook\Action\Settings\Delivery\DeliveryRemoveAction;
 use Logbook\Action\Settings\Notifications\ChannelAction;
+use Logbook\Action\Settings\Notifications\FindChatAction;
 use Logbook\Action\Settings\Notifications\NotificationsAction;
 use Logbook\Action\Settings\Notifications\RemoveChannelAction;
 use Logbook\Action\Settings\Notifications\SwitchChannelAction;
@@ -759,6 +760,8 @@ return static function (App $app): void {
         // The signed-in user's own notification channels (spec.md §7.11 *Personal channels*, Phase 36.2):
         // the user is the session's and the kind is the path's, so no route names another user's channel.
         $group->get('/settings/notifications', NotificationsAction::class)->setName('settings.notifications');
+        $group->post('/settings/notifications/telegram/chats', FindChatAction::class)
+            ->setName('settings.notifications.find_chat');
         $group->post('/settings/notifications/{kind:[a-z0-9-]+}', ChannelAction::class)
             ->setName('settings.notifications.channel');
         $group->post('/settings/notifications/{kind:[a-z0-9-]+}/switch', SwitchChannelAction::class)

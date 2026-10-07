@@ -16,6 +16,11 @@ even an admin, can see or change them.
 | `ntfy` | [ntfy](https://ntfy.sh) push | each person: *Topic URL* and an optional *Access token* |
 | `gotify` | [Gotify](https://gotify.net) push | each person: *Server URL*, *Application token*, *Priority* (0–10, default 5) |
 | `personal-webhook` | JSON `POST` to your own URL | each person: *URL* |
+| `telegram` | [Telegram](#telegram) from your own bot | each person: *Bot token*, *Chat ID* |
+| `discord` | [Discord](#discord) channel webhook | each person: *Webhook URL* |
+| `pushover` | [Pushover](#pushover) push | each person: *Application token*, *User key*, optional *Device* |
+| `mattermost` | [Mattermost](#mattermost) incoming webhook | each person: *Webhook URL*, optional *Channel* |
+| `slack` | [Slack](#slack) from your own Slack app | each person: *Bot token*, *Channel* |
 | `webhook` | JSON `POST` to the server's URL | **deprecated**: `WEBHOOK_URL`; receives everyone's notifications |
 
 ## Account → Notifications
@@ -39,6 +44,14 @@ does: an icon, the name, a hint, and the status in words with an icon.
   saved. A saved token is only ever sent to the host it was saved for:
   change the URL's host and it must be typed again. `env:NAME` is **not**
   accepted here (it would let a member read the server's environment).
+- **Checked on saving** (Telegram, Pushover, Slack, from v3.3.0): saving asks
+  the service whether the token works. A token it **rejects** is not saved
+  and the field says why; if the service **can't be reached**, the card is
+  saved and says "Saved, but {service} couldn't be reached to check it."
+- **Re-checked on every send** (from v3.3.0): saved settings must still pass
+  the card's own rules (a restore can bring back old rows). One that
+  doesn't is not sent, says "The saved settings are no longer valid. Open
+  the card and save them again.", and never counts towards switching off.
 - **Switch on / off** and **Remove** (with a confirmation).
 - **Switched off after failures.** A personal channel that fails **5 sends
   in a row** switches itself off; you are told once through your other
@@ -145,6 +158,142 @@ file.
 `1025`, encryption *None*, From `logbook@localhost`) when no email server
 is saved; its inbox is at `http://localhost:8025`.
 
+## The services
+
+Five services added in v3.3.0 (Phase 36.3). Each person brings their own
+bot, application or webhook; the admin provides nothing. Every request
+goes through the same outbound client as ntfy and Gotify: a 10-second
+timeout, no redirects, the address checked and pinned, and the
+[destination policy](#where-members-can-send) applied. Telegram, Discord,
+Pushover and Slack only ever go to their own hosts.
+
+What all five have in common:
+
+- **Limits are counted in characters (Unicode code points),** as the
+  services count them. A message that's too long is cut **between two
+  reminders**, with a last line "…and 4 more" and the link, never in the
+  middle of one.
+- **Nothing can ping anyone or inject formatting.** Vehicle names, titles
+  and notes are text other people may have typed: Telegram and Slack get
+  plain text, Discord is told to allow no mentions, and Mattermost's
+  Markdown and mentions are escaped.
+- **Tokens never appear in an error.** Several of these services put the
+  token in the URL; errors are reduced to words ("Telegram rejected the bot
+  token", "The service did not answer in time"), shown in your language.
+- **How loudly.** Overdue reminders and failed jobs are *high*, due
+  reminders, price alerts and tests *normal*, the monthly digest *low*:
+  Telegram sends the digest without a sound, Pushover uses priority −1 /
+  0 / 1 (never the emergency priority 2, which repeats until acknowledged).
+- **A third-party notice** on the Telegram, Discord, Pushover and Slack
+  cards: "This sends your reminders through {service}'s servers." Logbook
+  keeps your data on your server; these four deliberately send some of it
+  (titles, vehicle names, due dates and the link) to someone else's.
+  Mattermost is your own server.
+
+### Telegram
+
+1. In Telegram, talk to **@BotFather**, send `/newbot`, choose a name and a
+   username, and copy the **token** it gives you
+   (`123456789:AAH…`).
+2. Paste it as *Bot token* and **Save**. Logbook checks it with Telegram
+   and says "Telegram is saved: @your_bot".
+3. Open your new bot in Telegram and press **Start** (a bot can't message
+   anyone who hasn't).
+4. Back on the card, press **Find my chat**. It lists the private chats
+   that have written to your bot; choose yours. Only its ID is stored.
+   For a group, add the bot to the group and type the group's ID (it starts
+   with a minus) in *Chat ID*.
+
+Limit 4096 characters, plain text, no link previews. If *Find my chat*
+says the bot has a webhook set, the bot is used by something else that
+receives its messages: remove that webhook or type the chat ID yourself.
+
+| Error | What to do |
+|---|---|
+| Telegram rejected the bot token | Copy the token again from @BotFather (`/token`). |
+| The bot can't reach that chat | Open the chat with your bot and press Start (or unblock it). |
+| Chat not found | Check the chat ID; for a group, add the bot to it first. |
+| Telegram asked us to wait *n* seconds | Too many messages at once; it sends again on the next run. |
+
+### Discord
+
+1. In Discord, open the channel's **Edit channel → Integrations →
+   Webhooks → New webhook**, and **Copy webhook URL**.
+2. Paste it as *Webhook URL* and **Save**.
+
+Only `https://discord.com/api/webhooks/{id}/{token}` (or `discordapp.com`,
+`ptb.discord.com`, `canary.discord.com`) is accepted, with no query. The
+whole URL is a secret: its last part is the token. Messages come from
+"Logbook", up to 2000 characters, with no link preview, and
+`@everyone`, `@here`, roles and users in the text ping nobody.
+
+| Error | What to do |
+|---|---|
+| That webhook no longer exists | It was deleted in Discord: make a new one and paste its URL. |
+| Discord refused the message | Rare; send a test, and check the channel still exists. |
+| Discord asked us to wait *n* seconds | Rate-limited; it sends again on the next run. |
+
+### Pushover
+
+1. On [pushover.net](https://pushover.net), your **User key** is on the
+   dashboard.
+2. **Create an Application/API token**, name it "Logbook", and copy its
+   **API token**.
+3. Paste both and **Save**: Logbook checks the pair with Pushover. To send
+   to one device only, type its name in *Device* (several, separated by
+   commas).
+
+Message up to 1024 characters, title up to 250; the link is sent as the
+notification's URL, titled "Open Logbook". A free application can send
+10,000 messages a month.
+
+| Error | What to do |
+|---|---|
+| Pushover rejected the token or the user key | Copy both again; check the device name if you set one. |
+| This application has used its monthly messages | Wait for the 1st of the month, or create another application. |
+
+### Mattermost
+
+1. In Mattermost, **Integrations → Incoming webhooks → Add incoming
+   webhook**, choose a channel, and copy the URL (it ends in `/hooks/` and
+   a long ID). An admin may need to enable incoming webhooks first.
+2. Paste it as *Webhook URL* and **Save**. To send somewhere other than the
+   webhook's channel, give a *Channel* (`town-square`, or `@name` for a
+   direct message); the webhook must not be locked to its channel.
+
+The URL may be on your network: it is checked against
+[where members can send](#where-members-can-send) like any member's
+address. Messages are Markdown (the title bold, reminders as a list), up to
+16383 characters, with every user's text escaped and `@name`, `@channel`,
+`@here` and `@all` made inert.
+
+| Error | What to do |
+|---|---|
+| Mattermost refused the message | Check incoming webhooks are enabled and the webhook isn't locked to another channel. |
+| That webhook was not found | It was deleted: make a new one. |
+
+### Slack
+
+1. At [api.slack.com/apps](https://api.slack.com/apps), **Create New App →
+   From scratch**, name it "Logbook" and choose your workspace.
+2. Under **OAuth & Permissions → Bot Token Scopes**, add `chat:write`, then
+   **Install to Workspace** and copy the **Bot User OAuth Token**
+   (`xoxb-…`).
+3. In Slack, invite the app to the channel: `/invite @Logbook`.
+4. Paste the token, and the channel's ID (in the channel's details, such
+   as `C0123456789`) or `#name`, and **Save**. Logbook checks the token and
+   says "Slack is saved: {workspace}".
+
+Plain text up to 4000 characters, no link previews; `<!channel>`,
+`<!here>` and `<@…>` can't be formed.
+
+| Error | What to do |
+|---|---|
+| Slack rejected the bot token | Reinstall the app and copy the new token. |
+| Invite the app to the channel first | `/invite @Logbook` in the channel. |
+| Channel not found | Use the channel's ID from its details. |
+| That channel is archived | Unarchive it, or choose another. |
+
 ## How it fits together
 
 ```
@@ -156,7 +305,7 @@ bin/run-scheduled-tasks.php ─► ScheduledTasks ─► ReminderNotifier
                                                     ▼
           ChannelRegistry ◄── 'notification.channels' (EmailChannel, WebhookChannel: the server's)
                           ◄── UserChannels::usable(recipient) ◄── 'notification.personal'
-                                                    │                 (NtfySender, GotifySender, WebhookSender, …)
+                                                    │                 (NtfySender, … TelegramSender, SlackSender)
                                                     ▼
                          BoundChannel(sender, the user's settings) ─► OutboundHttp (check, pin, POST)
 ```
@@ -199,8 +348,9 @@ the page or the migrations changes:
            return $settings->value('url');
        }
 
-       // Checks beyond each field's own (type, length, range); translation keys by field.
-       public function validate(array $values): array
+       // Checks beyond each field's own (type, length, range), on the typed values and any
+       // secrets typed; also run on every send against the saved ones. Translation keys by field.
+       public function validate(array $values, #[SensitiveParameter] array $secrets = []): array
        {
            return str_starts_with($values['room'] ?? '!', '!') ? [] : ['room' => 'notifications.matrix.room_invalid'];
        }
@@ -218,14 +368,24 @@ the page or the migrations changes:
    }
    ```
 
-   Always send through `OutboundHttp::post()` with `$restricted`: it checks
-   the policy, pins the address and refuses redirects on every send. A
+   Always send through `OutboundHttp` with `$restricted`: `post()` when only
+   success matters, `send()` when the answer's status and JSON body do (it
+   never quotes the URL in an error). Both check the policy, pin the
+   address and refuse redirects on every send. A
    `Notification` is already translated and formatted for the recipient:
    `title`, `message` (plain text), `url` (absolute link), `urgent`
    (something is overdue), `items` and `attention`. Report failure with
    `DeliveryResult::failed()`; the error is redacted of the channel's
    secrets before it is stored or shown, exceptions are caught by the
    dispatcher, and one failing channel never stops another.
+
+   Helpers the Phase 36.3 senders use: `MessageText::fit()` (a service's
+   limit, cut between lines with "…and N more"), `ServiceText` (those
+   words in the recipient's language, `plainLines()`), `ReplyWords` (a
+   service's errors as translation keys, shown by the `channel_error`
+   filter), `Notification::urgency()`, `thirdParty: true` on the
+   definition for the notice, `neededToSend: true` on a field that may be
+   filled after saving, and `VerifiesSettings` to check a token on saving.
 
 2. **Register it** in `config/dependencies.php`, and add its strings (EN
    and DE) to `translations/`:
@@ -242,8 +402,10 @@ That's all: it gets a card on everyone's Notifications page, with saving,
 tokens, *Send test*, the status, the policy and switching off after
 failures. Its rows live in `notification_channels` and its secrets in
 `notification_secrets` (named `matrix.token`); neither needs a migration.
-For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`
-and `tests/Integration/Notification/PersonalChannelsTest.php`.
+For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
+`ServiceRulesTest.php` and `MessageTextTest.php` beside it, and
+`tests/Integration/Notification/PersonalChannelsTest.php` and
+`ServiceChannelsTest.php`.
 
 ## What is sent, and when
 

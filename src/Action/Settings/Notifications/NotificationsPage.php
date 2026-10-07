@@ -12,6 +12,7 @@ use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Personal\ChannelForm;
 use Logbook\Service\Notification\Personal\ChannelState;
+use Logbook\Service\Notification\Personal\FoundChats;
 use Logbook\Service\Notification\Personal\UserChannels;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Support\Http\RequestContext;
@@ -40,6 +41,7 @@ final readonly class NotificationsPage
      * @param string|null $kind the card the form, errors or test belong to
      * @param ChannelForm|null $form what was typed on that card (shown again, never its secrets)
      * @param DeliveryResult|string|null $test a test's result, or a translation key saying why none was sent
+     * @param FoundChats|null $chats Telegram *Find my chat*'s answer, for the Telegram card
      */
     public function render(
         ServerRequestInterface $request,
@@ -48,6 +50,7 @@ final readonly class NotificationsPage
         ?ChannelForm $form = null,
         DeliveryResult|string|null $test = null,
         int $status = 200,
+        ?FoundChats $chats = null,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
         $states = $this->channels->states($user->id, $user->isAdmin);
@@ -68,6 +71,7 @@ final readonly class NotificationsPage
                 'secrets' => $this->secretStates($user, $state),
                 'test' => $own && $test instanceof DeliveryResult ? $test : null,
                 'refused' => $own && is_string($test) ? $test : null,
+                'chats' => $own ? $chats : null,
             ];
         }
 

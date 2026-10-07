@@ -2,7 +2,7 @@
 
 *The server's email, set up in the app by the person who runs it.*
 
-Status: 🚧 in progress · no release of its own (ships with Phase 36.3 as
+Status: 🚧 in progress · no release of its own (ships with Phase 36.4 as
 **v3.3.0**) · file lives in `docs/phases/`
 
 Phase 36 is **Notifications**, built last, after Phases 33 to 35 are
@@ -193,9 +193,9 @@ gains a sentence on the exception.
 - [x] Integration: `notification_secrets` is absent from a backup;
       restoring leaves *Re-enter the password*; the restore page says so.
 - [x] Integration: demo mode refuses the page and sends nothing.
-- [ ] Migration applies and rolls back on every engine; the suite passes on
-      SQLite, PostgreSQL, MySQL and MariaDB. *(SQLite done locally; the
-      other engines run in CI.)*
+- [x] Migration applies and rolls back on every engine; the suite passes on
+      SQLite, PostgreSQL, MySQL and MariaDB. *(All four with
+      `bin/test-all-dbs.sh` on 2026-10-07, in Phase 36.3.)*
 
 ### 36.1.7 Checks
 - [x] `design-reviewer` agent on the page at 375, 768 and 1280 px, light and
@@ -206,7 +206,7 @@ gains a sentence on the exception.
 - [x] None. Demo mode blocks the page.
 
 ### Release
-- [ ] Ships with Phase 36.3 as **v3.3.0**, with the upgrade warning.
+- [ ] Ships with Phase 36.4 as **v3.3.0** (moved from 36.3, #254), with the upgrade warning.
 
 ---
 

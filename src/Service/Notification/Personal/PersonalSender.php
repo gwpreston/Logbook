@@ -7,6 +7,7 @@ namespace Logbook\Service\Notification\Personal;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\Recipient;
+use SensitiveParameter;
 
 /**
  * One kind of personal channel (spec.md §7.11 *Definitions*): its
@@ -25,12 +26,15 @@ interface PersonalSender
 
     /**
      * Checks beyond each field's own (type, length, range), on the typed
-     * visible values.
+     * visible values and the secrets typed (a secret left empty keeps the
+     * saved one and is not here). Also run on every send against the saved
+     * settings (spec.md §7.11 *Re-checked on every send*, #258).
      *
      * @param array<string, string> $values by field name
+     * @param array<string, string> $secrets by field name
      * @return array<string, string> translation keys by field name
      */
-    public function validate(array $values): array;
+    public function validate(array $values, #[SensitiveParameter] array $secrets = []): array;
 
     /**
      * Send one notification. Every request goes through OutboundHttp with

@@ -17,6 +17,8 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
  *     url: string,
  *     headers: array<string, list<string>>,
  *     json: array<mixed>,
+ *     form: array<mixed>,
+ *     body: string,
  *     resolve: array<string, string>,
  *     max_redirects: int|null,
  * }
@@ -28,6 +30,12 @@ final class RecordingHttpClient
     public int $status = 200;
     /** @var array<string, int> answers by URL prefix, over $status */
     public array $statusFor = [];
+    /** @var array<string, string> response bodies by URL prefix (default "{}") */
+    public array $bodyFor = [];
+    /** @var array<string, array<string, string>> response headers by URL prefix */
+    public array $headersFor = [];
+    /** @var array<string, string> a transport error (its message) by URL prefix */
+    public array $errorFor = [];
     public readonly MockHttpClient $client;
 
     public function __construct()
@@ -38,6 +46,8 @@ final class RecordingHttpClient
                 'url' => $url,
                 'headers' => self::headers($options['normalized_headers'] ?? []),
                 'json' => self::json($options['body'] ?? ''),
+                'form' => self::form($options['body'] ?? ''),
+                'body' => is_string($options['body'] ?? null) ? $options['body'] : '',
                 'resolve' => self::resolve($options['resolve'] ?? null),
                 'max_redirects' => is_int($options['max_redirects'] ?? null) ? $options['max_redirects'] : null,
             ];
@@ -47,8 +57,25 @@ final class RecordingHttpClient
                     $status = $code;
                 }
             }
+            $body = '{}';
+            $headers = [];
+            foreach ($this->bodyFor as $prefix => $text) {
+                if (str_starts_with($url, $prefix)) {
+                    $body = $text;
+                }
+            }
+            foreach ($this->headersFor as $prefix => $values) {
+                if (str_starts_with($url, $prefix)) {
+                    $headers = $values;
+                }
+            }
+            foreach ($this->errorFor as $prefix => $error) {
+                if (str_starts_with($url, $prefix)) {
+                    return new MockResponse('', ['error' => $error]);
+                }
+            }
 
-            return new MockResponse('{}', ['http_code' => $status]);
+            return new MockResponse($body, ['http_code' => $status, 'response_headers' => $headers]);
         });
     }
 
@@ -94,6 +121,19 @@ final class RecordingHttpClient
         }
 
         return $pinned;
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private static function form(mixed $body): array
+    {
+        if (!is_string($body) || $body === '' || $body[0] === '{') {
+            return [];
+        }
+        parse_str($body, $fields);
+
+        return $fields;
     }
 
     /**
