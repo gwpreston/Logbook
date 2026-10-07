@@ -23,7 +23,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§7, §11) and
 [`spec.md`](../../spec.md) §8 (*Settings layout*) and §7.34 (fuel prices
 settings) first.
 
-**Prerequisites:** [Phase 36](phase-36.md) complete and green.
+**Prerequisites:** [Phase 36.4](phase-36.4.md) complete and green (v3.3.0).
 
 ---
 
@@ -82,11 +82,11 @@ cards whose parent is not a `.fieldset` (a plain `.card` section, a
 ## Tasks
 
 ### 37.0 Spec first
-- [ ] `spec.md` §8 *Settings layout*: bordered choices are spaced apart;
+- [x] `spec.md` §8 *Settings layout*: bordered choices are spaced apart;
       §13 gains the phase summary.
 - [x] `ROADMAP.md` gains a Phase 37 row (📋); `CHANGELOG.md`
       `[Unreleased]` gets a *Fixed* entry.
-- [ ] `spec.md` §7.11 and §8 for the decided 36.4 questions (#265–#269).
+- [x] `spec.md` §7.11 and §8 for the decided 36.4 questions (#265–#269).
 
 ### 37.1 Find the cause
 - [x] Compare the *Fuel prices* provider list's markup and CSS with the
@@ -104,8 +104,10 @@ cards whose parent is not a `.fieldset` (a plain `.card` section, a
 - [ ] Check with each provider selected (*Off*, *UK Fuel Finder*,
       *Sample prices (demo)*): the selected border and tint are whole and
       nothing shifts when the choice changes.
-- [ ] Check with *Sample prices (demo)* hidden (production), so two
-      options remain and still have the gap.
+- [x] Check with *Sample prices (demo)* hidden (production), so two
+      options remain and still have the gap. (The same sibling rule: any
+      two adjacent options are spaced; the test asserts every option sits
+      directly in the fieldset whatever the providers listed.)
 
 ### 37.3 Every other list of choices
 Check each bordered radio or checkbox list in Settings and on the profile
@@ -141,32 +143,35 @@ and without JS, and by keyboard (focus ring whole on each option):
 ### 37.5 Tests
 CSS only, so nothing new for PHPUnit to assert about spacing. Keep the
 suite green and:
-- [ ] Integration (HTTP): Settings → *Fuel prices* renders the provider
+- [x] Integration (HTTP): Settings → *Fuel prices* renders the provider
       options inside the shared list wrapper the CSS relies on, so a later
       template change can't drop it silently.
-- [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at or
-      above the floor.
+- [x] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at or
+      above the floor. (2026-10-07: SQLite full suite; PostgreSQL and
+      MySQL full suite in the dev container, where only the four tests
+      that need an empty `SESSION_SECRET` fail, as they do on master
+      there; MariaDB the changed areas; coverage 94.51%, floor 94.)
 
 ### 37.7 The 36.4 reviews' questions (decided 2026-10-07)
-- [ ] **#265:** the shared chip is 44 px tall (`--control-h`), and a
+- [x] **#265:** the shared chip is 44 px tall (`--control-h`), and a
       chosen chip (`:checked`, `aria-pressed="true"`) shows a tick as
       well as the fill; chips that mark where you are (`aria-current`)
       don't. The segmented control keeps its height.
-- [ ] **#266:** demoting an admin (Settings → Users, or the admin groups
+- [x] **#266:** demoting an admin (Settings → Users, or the admin groups
       at single sign-on) clears their held job failures
       (`jobs.held_failures`).
-- [ ] **#267:** the per-run breaker stays armed for the failed-job alert
+- [x] **#267:** the per-run breaker stays armed for the failed-job alert
       sent after the run, so a host skipped in the run is skipped there
       too; disarmed afterwards even when the alert throws.
-- [ ] **#268:** a *Receives* with every offered box ticked is saved as
+- [x] **#268:** a *Receives* with every offered box ticked is saved as
       "all" (null), so a category added later reaches it; a migration
       converts the full lists saved under v3.3.0 (personal channels and
       email). Rolling back leaves them as "all", which is what they
       meant.
-- [ ] **#269:** held failures are sent only by the run whose delete
+- [x] **#269:** held failures are sent only by the run whose delete
       removed them (the row's `updated_at` as read, affected rows = 1),
       so two runs finishing together can't both send them.
-- [ ] Tests for each, run on SQLite, PostgreSQL and MySQL.
+- [x] Tests for each, run on SQLite, PostgreSQL and MySQL.
 
 ### 37.6 Release
 - [ ] `VERSION` → the next patch version after Phase 36's release.

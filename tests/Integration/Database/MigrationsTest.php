@@ -134,6 +134,8 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 37: an all-ticked *Receives* is all (data only, no schema change).
+        Migrator::run('rollback');
         // Phase 36.4: what each personal channel receives.
         self::assertTrue($this->hasColumn('notification_channels', 'categories'));
         Migrator::run('rollback');

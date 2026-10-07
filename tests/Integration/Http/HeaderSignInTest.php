@@ -7,6 +7,7 @@ namespace Logbook\Tests\Integration\Http;
 use Logbook\Domain\User\UserIdentity;
 use Logbook\Repository\UserIdentityRepository;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Jobs\HeldJobFailures;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\HeaderSignIn;
 use Logbook\Tests\Support\TestBrowser;
@@ -239,8 +240,11 @@ final class HeaderSignInTest extends AppTestCase
 
         $this->viaProxy($app, ['Remote-User' => 'partner', 'Remote-Groups' => 'logbook-admins'])->get('/');
         self::assertTrue($users->find($partner->id)?->isAdmin);
+        $held = $this->service($app, HeldJobFailures::class);
+        $held->hold($partner->id, 'backup', 1);
         $this->viaProxy($app, ['Remote-User' => 'partner', 'Remote-Groups' => 'logbook'])->get('/');
         self::assertFalse($users->find($partner->id)->isAdmin, 'both ways');
+        self::assertSame([], $held->of($partner->id), 'held job failures dropped with admin (#266)');
 
         $this->viaProxy($app, ['Remote-User' => 'owner', 'Remote-Groups' => 'logbook'])->get('/');
         self::assertTrue($users->find($owner->id)?->isAdmin, 'never the last active admin');

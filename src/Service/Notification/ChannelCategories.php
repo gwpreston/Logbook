@@ -7,7 +7,7 @@ namespace Logbook\Service\Notification;
 /**
  * The categories one channel receives (spec.md §7.11 *What each channel
  * receives*): all of them until the user saves a choice, then exactly the
- * ones they ticked. Stored as a comma list (`due,overdue`), null for all;
+ * ones they ticked (every offered one ticked is still all, #268). Stored as a comma list (`due,overdue`), null for all;
  * unknown values are ignored.
  */
 final readonly class ChannelCategories
@@ -58,16 +58,19 @@ final readonly class ChannelCategories
     /**
      * The ticked boxes of a card's *Receives* (`receives[]`): only the
      * categories offered to this user, so a member's never holds job
-     * failures.
+     * failures. Every offered box ticked is all, so a category added later
+     * reaches the channel too (Phase 37, #268).
      */
     public static function fromForm(mixed $values, bool $isAdmin): self
     {
         $values = is_array($values) ? $values : [];
-
-        return self::of(array_values(array_filter(
-            NotificationCategory::offered($isAdmin),
+        $offered = NotificationCategory::offered($isAdmin);
+        $ticked = array_values(array_filter(
+            $offered,
             static fn (NotificationCategory $c): bool => in_array($c->value, $values, true),
-        )));
+        ));
+
+        return count($ticked) === count($offered) ? self::all() : self::of($ticked);
     }
 
     public function isEmpty(): bool

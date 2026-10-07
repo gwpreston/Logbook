@@ -62,64 +62,73 @@ final readonly class JobRunner
             return $this->skipped($job, $trigger, $userId, $sink);
         }
 
+        // Armed for the run and the failure alert sent after it (#264, #267).
         try {
-            $now = $this->clock->now();
-            $this->runs->interruptBefore(
-                $job->name(),
-                $now->modify(sprintf('-%d seconds', self::INTERRUPTED_AFTER)),
-                $now,
-                $this->translator->trans('jobs.summary.interrupted'),
-            );
-            $id = $this->runs->start($job->name(), $trigger, $userId, $now);
-            $log = new RunLog(
-                $this->redactor,
-                $this->clock,
-                fn (string $output) => $this->runs->writeOutput($id, $output),
-                $sink,
-            );
-            $deadline = $timeLimit === null ? null : $now->getTimestamp() + max(1, $timeLimit - 10);
-            $context = new JobContext(
-                $this->logger,
-                fn (): bool => $deadline !== null && $this->clock->now()->getTimestamp() >= $deadline,
-            );
-
-            $this->capture->begin($log);
             try {
-                $this->logger->debug('Starting {job} ({trigger}).', ['job' => $job->name(), 'trigger' => $trigger->value]);
-                // A host that stops answering is skipped for the rest of this run (#264).
-                $this->breaker?->arm();
-                try {
-                    $result = $job->run($context);
-                } catch (Throwable $e) {
-                    $this->logger->error('{job} failed: {message}', [
-                        'job' => $job->name(),
-                        'message' => $e->getMessage(),
-                        'exception' => $e,
-                    ]);
-                    $result = JobResult::failed($this->redactor->redact($e->getMessage()));
-                }
-                $summary = $this->redactor->redact($result->summary);
-                // Debug when ok: the run keeps the line, and the app log stays one summary per pass.
-                $this->logger->log(
-                    $result->status === JobStatus::Ok ? 'debug' : ($result->status === JobStatus::Partial ? 'warning' : 'error'),
-                    'Finished {job}: {status}. {summary}',
-                    ['job' => $job->name(), 'status' => $result->status->value, 'summary' => $summary],
+                $now = $this->clock->now();
+                $this->runs->interruptBefore(
+                    $job->name(),
+                    $now->modify(sprintf('-%d seconds', self::INTERRUPTED_AFTER)),
+                    $now,
+                    $this->translator->trans('jobs.summary.interrupted'),
                 );
-            } finally {
-                $this->breaker?->disarm();
-                $this->capture->end();
-            }
-            $this->runs->finish($id, $result->status, $summary, $log->output(), $this->clock->now());
-        } finally {
-            $this->locks->release($lock);
-        }
+                $id = $this->runs->start($job->name(), $trigger, $userId, $now);
+                $log = new RunLog(
+                    $this->redactor,
+                    $this->clock,
+                    fn (string $output) => $this->runs->writeOutput($id, $output),
+                    $sink,
+                );
+                $deadline = $timeLimit === null ? null : $now->getTimestamp() + max(1, $timeLimit - 10);
+                $context = new JobContext(
+                    $this->logger,
+                    fn (): bool => $deadline !== null && $this->clock->now()->getTimestamp() >= $deadline,
+                );
 
-        $run = ($this->runs->find($id) ?? throw new RuntimeException('The job run was not recorded.'))
-            ->withCounts($result->counts);
-        try {
-            $this->alerts->afterRun($run);
-        } catch (Throwable $e) {
-            $this->logger->error('Job failure alerts failed: {message}', ['message' => $e->getMessage(), 'exception' => $e]);
+                $this->capture->begin($log);
+                try {
+                    $this->logger->debug('Starting {job} ({trigger}).', ['job' => $job->name(), 'trigger' => $trigger->value]);
+                    // A host that stops answering is skipped for the rest of this run,
+                    // its failure alert included (#264, #267).
+                    $this->breaker?->arm();
+                    try {
+                        $result = $job->run($context);
+                    } catch (Throwable $e) {
+                        $this->logger->error('{job} failed: {message}', [
+                            'job' => $job->name(),
+                            'message' => $e->getMessage(),
+                            'exception' => $e,
+                        ]);
+                        $result = JobResult::failed($this->redactor->redact($e->getMessage()));
+                    }
+                    $summary = $this->redactor->redact($result->summary);
+                    // Debug when ok: the run keeps the line, and the app log stays one summary per pass.
+                    $this->logger->log(
+                        match ($result->status) {
+                            JobStatus::Ok => 'debug',
+                            JobStatus::Partial => 'warning',
+                            default => 'error',
+                        },
+                        'Finished {job}: {status}. {summary}',
+                        ['job' => $job->name(), 'status' => $result->status->value, 'summary' => $summary],
+                    );
+                } finally {
+                    $this->capture->end();
+                }
+                $this->runs->finish($id, $result->status, $summary, $log->output(), $this->clock->now());
+            } finally {
+                $this->locks->release($lock);
+            }
+
+            $run = ($this->runs->find($id) ?? throw new RuntimeException('The job run was not recorded.'))
+                ->withCounts($result->counts);
+            try {
+                $this->alerts->afterRun($run);
+            } catch (Throwable $e) {
+                $this->logger->error('Job failure alerts failed: {message}', ['message' => $e->getMessage(), 'exception' => $e]);
+            }
+        } finally {
+            $this->breaker?->disarm();
         }
 
         return $run;

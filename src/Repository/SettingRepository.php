@@ -116,6 +116,26 @@ final readonly class SettingRepository
     }
 
     /**
+     * Delete a setting only if nobody saved it since it was read (its
+     * `updated_at` is unchanged): true for the one caller that removed it.
+     * The value itself isn't compared, as JSON columns can't be on every
+     * engine.
+     */
+    public function deleteIfUnchanged(Setting $setting): bool
+    {
+        $platform = $this->connection->getDatabasePlatform();
+
+        return $this->connection->createQueryBuilder()
+            ->delete(self::TABLE)
+            ->where('scope = :scope', 'owner_id = :owner', 'name = :name', 'updated_at = :seen')
+            ->setParameter('scope', $setting->scope->value)
+            ->setParameter('owner', $setting->ownerId, ParameterType::INTEGER)
+            ->setParameter('name', $setting->name)
+            ->setParameter('seen', UtcDateTime::toDatabase($setting->updatedAt, $platform))
+            ->executeStatement() === 1;
+    }
+
+    /**
      * @param array<string, mixed> $row
      */
     private function hydrate(array $row): Setting

@@ -109,6 +109,29 @@ final class SettingRepositoryTest extends AppTestCase
         self::assertNull($this->repository->find('gone'));
     }
 
+    /**
+     * Phase 37 (#269): only the caller whose read is still current removes
+     * it; the value isn't compared, as JSON columns can't be everywhere.
+     */
+    public function testDeleteIfUnchangedRemovesItOnlyForTheFirstCaller(): void
+    {
+        $this->repository->save('held', ['backup' => 1], SettingScope::User, 7);
+        $first = $this->repository->find('held', SettingScope::User, 7);
+        $second = $this->repository->find('held', SettingScope::User, 7);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+
+        self::assertTrue($this->repository->deleteIfUnchanged($first));
+        self::assertFalse($this->repository->deleteIfUnchanged($second), 'already gone');
+        self::assertNull($this->repository->find('held', SettingScope::User, 7));
+
+        $read = $this->repository->save('held', ['backup' => 1], SettingScope::User, 7);
+        $this->clock->set($this->clock->now()->modify('+1 minute'));
+        $this->repository->save('held', ['backup' => 2], SettingScope::User, 7);
+        self::assertFalse($this->repository->deleteIfUnchanged($read), 'saved again since it was read');
+        self::assertSame(['backup' => 2], $this->repository->find('held', SettingScope::User, 7)?->value);
+    }
+
     private function countSettings(): int
     {
         $row = $this->connection->fetchAssociative('SELECT COUNT(*) AS n FROM settings');
