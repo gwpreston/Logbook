@@ -17,6 +17,7 @@ use Logbook\Service\Notification\NotificationDispatcher;
 use Logbook\Service\Notification\NotificationItem;
 use Logbook\Service\Notification\NotificationKind;
 use Logbook\Service\Notification\Outbound\OutboundDestination;
+use Logbook\Service\Notification\Outbound\OutboundHttp;
 use Logbook\Service\Notification\Personal\ChannelSettings;
 use Logbook\Service\Notification\Personal\DiscordSender;
 use Logbook\Service\Notification\Personal\MattermostSender;
@@ -468,6 +469,17 @@ final class ServiceChannelsTest extends ReminderTestCase
 
         $log = (string) @file_get_contents(Kernel::rootDir() . '/var/log/app.log');
         self::assertStringNotContainsString(self::TELEGRAM_TOKEN, $log);
+    }
+
+    public function testAnEndlessAnswerIsCutOffNotRead(): void
+    {
+        $app = $this->app();
+        $this->http->bodyFor['https://chat.example.com'] = str_repeat('x', OutboundHttp::MAX_BODY * 3);
+
+        $answer = $this->service($app, OutboundHttp::class)->send('POST', self::MATTERMOST_URL, [], false);
+
+        self::assertSame(200, $answer->status);
+        self::assertSame([], $answer->body);
     }
 
     public function testAMemberCannotTouchAnothersChannels(): void

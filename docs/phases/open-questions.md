@@ -81,7 +81,8 @@ on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 (#250–#254) were added the same day. The Phase 36.2 reviews raised
 #255–#258 on 2026-10-07; the owner answered them the same day, before
 Phase 36.3 started, with Phase 36.3's own (#236–#241, Slack added to it,
-and #260–#261 found while starting it).
+and #260–#261 found while starting it). Phase 36.3's reviews raised
+#262–#264 on 2026-10-07; they wait for the owner.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -346,6 +347,9 @@ and #260–#261 found while starting it).
 | 259 | [36.1](phase-36.1.md) | Should `bin/dev-setup.sh` set up the dev stack's Mailpit rather than leaving it to be done by hand? (the owner asked) | Decided | Yes: `bin/dev-mailpit.php` saves it when no email server is saved, development only. Replaces that part of #223. spec §10 *Development stack*. | 2026-10-07 |
 | 260 | [36.3](phase-36.3.md) | Urgency of a failed job and of the switched-off notice on the new channels (found while starting) | Decided | A failed job `high`, *your channel switched off* `normal`. spec §7.11 *Urgency*. | 2026-10-07 |
 | 261 | [36.3](phase-36.3.md) | Saving a Telegram, Pushover or Slack card when the token check can't be made (found while starting) | Decided | Saved, with "couldn't be reached to check it"; a token the service rejects is not saved. spec §7.11. | 2026-10-07 |
+| 262 | [36.3](phase-36.3.md) | Check a Mattermost webhook on saving too (it has no check call; a wrong URL is saved silently)? (found by the security review) | Needs a decision | Today: *Send test* shows whether it works. | — |
+| 263 | [36.3](phase-36.3.md) | Remember host lookups across requests (APCu or a file), so the Notifications page doesn't resolve each card's host every time? (found by the performance review) | Needs a decision | Today: remembered for 60 s within one request or run. | — |
+| 264 | [36.3](phase-36.3.md) | A shorter timeout or a per-run circuit breaker for scheduled sends when a service is down for everyone? (found by the performance review) | Needs a decision | Today: 10 s per request, each user's send tried. | — |
 
 ## Other loose ends found in the review
 

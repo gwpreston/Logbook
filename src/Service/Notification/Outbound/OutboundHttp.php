@@ -22,6 +22,8 @@ final readonly class OutboundHttp
     public const int TIMEOUT = 10;
     /** A check made while someone waits (a token on saving, Find my chat): shorter. */
     public const array CHECK = ['timeout' => 5, 'max_duration' => 8];
+    /** The most of an answer that is read: a service's JSON is far smaller; more is cut off. */
+    public const int MAX_BODY = 65536;
 
     public function __construct(
         private HttpClientInterface $http,
@@ -77,8 +79,17 @@ final readonly class OutboundHttp
         try {
             $response = $this->http->request($method, $url, $options);
             $status = $response->getStatusCode();
-            $content = $response->getContent(false);
             $retry = $response->getHeaders(false)['retry-after'][0] ?? null;
+            // Read at most MAX_BODY: a member's server could stream without end (security review).
+            $content = '';
+            foreach ($this->http->stream($response) as $chunk) {
+                $content .= $chunk->getContent();
+                if (strlen($content) > self::MAX_BODY) {
+                    $response->cancel();
+                    $content = '';
+                    break;
+                }
+            }
         } catch (ExceptionInterface $e) {
             return HttpAnswer::unreachable(self::connectionError($e->getMessage()));
         }

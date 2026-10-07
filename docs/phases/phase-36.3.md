@@ -308,3 +308,10 @@ the 36.2 reviews' #255–#258 the same day.
   starting). *Decided (#260):* `high` and `normal`.
 - **Saving when the check can't be made** (found while starting).
   *Decided (#261):* saved, with "couldn't be reached to check it".
+
+Raised by the reviews on 2026-10-07, waiting for the owner (log
+#262–#264):
+
+- **Check Mattermost on saving?** (#262)
+- **Remember host lookups across requests?** (#263)
+- **A shorter timeout or a circuit breaker for scheduled sends?** (#264)
