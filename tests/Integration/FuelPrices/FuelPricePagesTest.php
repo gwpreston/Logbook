@@ -11,6 +11,7 @@ use Logbook\Service\FuelPrices\StationLinker;
 use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
 use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\ApiFixtures;
+use Logbook\Tests\Support\Html;
 use Logbook\Tests\Support\JsonDoc;
 
 /**
@@ -92,6 +93,23 @@ final class FuelPricePagesTest extends FuelPricesTestCase
         self::assertStringContainsString('Read from the environment variable FF_ID.', $page);
         self::assertStringContainsString('Saved. Type a new value to replace it.', $page);
         self::assertStringContainsString('Sync now', $page);
+    }
+
+    /**
+     * Phase 37: the provider options are the fieldset's own children, as on
+     * Settings → Jobs, so `.fieldset > .toggle + .toggle` spaces them; a
+     * wrapper between them would let their borders touch again.
+     */
+    public function testProviderOptionsSitDirectlyInTheirFieldset(): void
+    {
+        [$app] = $this->pricesApp(enable: false);
+        $document = Html::document((string) $this->browserFor($app, 'owner')->get('/settings/fuel-prices')->getBody());
+
+        $all = $document->querySelectorAll('input[name="provider"]');
+        $spaced = $document->querySelectorAll('fieldset.card.fieldset > label.toggle > input[name="provider"]');
+        self::assertGreaterThanOrEqual(2, $all->length);
+        self::assertSame($all->length, $spaced->length);
+        Html::element($document, 'fieldset.card.fieldset[aria-describedby~="provider-hint"] > #provider-hint');
     }
 
     public function testCheapestNearMeFromTheCurrentPositionStoresNothing(): void

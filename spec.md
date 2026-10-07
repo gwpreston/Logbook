@@ -7653,9 +7653,10 @@ owner. Decided 2026-10-06 (#212–#217).
   and a chosen chip (checked, or `aria-pressed`) shows a tick as well as
   its fill, so the choice never rests on colour alone. A chip that marks
   where you are (`aria-current`: a page, a vehicle, a period) has no tick.
-  A list of bordered choices (radio or checkbox option cards, as on
-  Settings → Jobs → *How jobs run*) has a gap between each option, wherever
-  the list sits.
+  A list of bordered choices (radio or checkbox option cards) has a gap
+  between each option: in a card, the options are the fieldset's own
+  children, as on Settings → Jobs → *How jobs run*, never wrapped, so the
+  shared spacing applies.
 - **Accent colour:** Profile → Appearance offers *Blue* (default), *Teal*,
   *Indigo* and *Purple*, stored per user (`users.accent`). It is rendered
   server-side as `data-accent` on `<html>` (no flash; signed-out pages use

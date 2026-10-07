@@ -93,8 +93,14 @@ cards whose parent is not a `.fieldset` (a plain `.card` section, a
       *How jobs run* triggers'; write the cause into *Cause* above.
 
 ### 37.2 Fuel prices provider list
-- [ ] Give the provider options the same gap as the *How jobs run*
-      options, through the shared list wrapper (design decisions).
+- [x] Give the provider options the same gap as the *How jobs run*
+      options, through the shared list wrapper (design decisions). Done
+      by removing the unstyled `div.stack`: the options are now the
+      fieldset's own children, as on *Jobs*, so the existing
+      `.fieldset > .toggle + .toggle` rule spaces them (22 px between
+      cards, measured, the same as *How jobs run*). The radiogroup's
+      `aria-describedby` moved to the fieldset, which already groups the
+      radios under its legend. No CSS changed.
 - [ ] Check with each provider selected (*Off*, *UK Fuel Finder*,
       *Sample prices (demo)*): the selected border and tint are whole and
       nothing shifts when the choice changes.
@@ -111,7 +117,19 @@ page for the same fault, and fix any with the same shared rule:
 - [ ] Forms outside Settings that use the same option-card macro (the
       confirm pages, the incident and finance type choices, *Log entry*
       chooser), if any.
-- [ ] Record the list checked and what was changed under this task.
+- [x] Record the list checked and what was changed under this task.
+
+      Measured on 2026-10-07 at 1280 px (the space between each pair of
+      adjacent option cards): Settings → *Fuel prices* **0 px (the fault,
+      fixed)**; *Jobs*, *Modules*, *Updates* 22 px; *Delivery* (*Where
+      members can send*) 8 px; *Notifications*, *Reminders*, *Users*,
+      *Add user*, *Profile*, *Transfer*, *History print*, *Cheapest near
+      me*: one option card, nothing to space; *AI → Add a connection*,
+      *Log a trip*: option cards in separate places, not a list; *Saved
+      journey* form, *Log a fill-up* 14 px and *Sharing* 16 px (the
+      card's or form's own gap); *Sale pack* options 14 px. No other list
+      had the fault, so none changed. The differing gaps (8, 14, 16 px)
+      are not touching borders and are left as they are (acceptance 2).
 
 ### 37.4 Visual check
 At 375, 768 and 1280 px, light and dark, blue and purple accents, with
