@@ -1125,13 +1125,20 @@ are. The schema version moves.
   non-secret fields), last_status (`ok` | `failed`, null before the first
   send), last_attempt_at (UTC), last_error (up to 255, redacted), failures
   (consecutive failed sends, default 0), switched_off_at (UTC, null unless
-  switched off after failures), created_at, updated_at (UTC). Unique
+  switched off after failures), categories (Phase 36.4: up to 100
+  characters, the categories it receives as a comma list such as
+  `due,overdue,digest`, null meaning all, §7.11 *What each channel
+  receives*; unknown values are ignored), created_at, updated_at (UTC). Unique
   `(user_id, kind)`. Its secrets are NotificationSecrets owned by the
   user. In backups without its secrets: a restored channel with a secret
   field shows *Needs setup*.
 - Email's *enabled* flag stays in the user's `notifications` preference
   (its `channels` list, which also keeps `webhook`); email's last result
-  is the user setting `notifications.email_result`. Global setting
+  is the user setting `notifications.email_result`. From Phase 36.4 the
+  `notifications` preference also holds `email_categories` (as
+  `categories` above, absent meaning all) and `quiet` (`{"start", "end"}`,
+  absent when off); an admin's held job failures are the user setting
+  `jobs.held_failures`. Global setting
   `notifications.member_destinations`: `internet` | `network` (default) |
   `server` (§7.11).
 
@@ -3457,6 +3464,97 @@ set the last result.
 admin (#236); Matrix, Signal, Apprise and other services (§12, #241);
 Discord embeds, Telegram keyboards, Slack blocks, Pushover attachments;
 anything received back from a service.
+
+**Kept as they are** (the 36.3 reviews, decided 2026-10-07): a Mattermost
+webhook is not checked on saving, as it has no check call; *Send test*
+shows whether it works (#262). Host lookups are remembered for 60 seconds
+within one request or run, not across requests (#263, §12).
+
+#### What each channel receives, and quiet hours (Phase 36.4, decided 2026-10-07, #234, #250–#253, #264)
+
+- **Categories.** Each channel card (email and every personal kind) has
+  *Receives* with a checkbox for each category: **Due** (`due`),
+  **Overdue** (`overdue`), **Monthly digest** (`digest`), **Price
+  alerts** (`price_alerts`) and, for admins only, **Job failures**
+  (`job_failures`). They are saved with the card. The default is all of
+  them, so upgrading changes nothing. At least one must be ticked
+  ("Choose at least one, or switch the channel off"). A member's saved
+  list keeps out `job_failures`. A member made admin later gets job
+  failures on a channel only once it is ticked there, unless that
+  channel's list was never saved (still "all"). The server's webhook
+  (`WEBHOOK_URL`) has no card and receives everything. In-app is not
+  affected.
+- **Which category a message is.** Reminders: each reminder by its status
+  (`due` or `overdue`). The digest is `digest`, price alerts are
+  `price_alerts` and a failed job is `job_failures`. A test and the
+  switched-off notice are in none: they go to every usable channel.
+- **Reminders by category.** A run's reminders still go as **one
+  message per channel**. Channels are grouped by which of `due` and
+  `overdue` they take; each group gets one message of the reminders it
+  takes, written as today (high urgency if any is overdue), so a channel
+  taking both gets exactly what it got before. A reminder counts as
+  delivered when a channel in its group delivered it, and its
+  `reminder_deliveries.channels` lists only those channels. A reminder
+  that no channel delivered is released for the next run to retry. A
+  reminder whose category no usable channel takes is left unclaimed, as
+  with no channel at all, and is sent once one takes it, if it is still
+  at that status.
+- **No channel takes it.** The digest is not sent and the month is not
+  marked done: it goes on the first run in the month after a channel
+  takes it. A price alert counts as sent, as with no channel today. A
+  failed job is only the admin notice.
+- **Quiet hours** (per user, #250). In Account → Notifications, *Quiet
+  hours*: off by default, with a start and an end time (`HH:MM`) in the
+  user's time zone. They can run past midnight (22:00 to 07:00), and start
+  and end must differ. The time is quiet from the start up to, but not
+  including, the end, by the clock on that day (so on a DST change day
+  the quiet period is an hour longer or shorter). Stored in the user's
+  `notifications` preference as `quiet: {"start", "end"}` (absent when
+  off). The hint says: "Nothing is sent in these hours. What would have
+  been sent goes on the first scheduled run after they end."
+- **Held, not queued** (#251–#253). Nothing is stored to send later.
+  Inside quiet hours a sender does not claim anything, and the first run
+  after the end sends **what still applies then, as it is then**:
+  - *Reminders*: a run syncs but claims nothing. The first run after
+    sends every reminder still due or overdue that hasn't been sent at its
+    current status, as one message, overdue ones included (#251). One
+    marked done or dismissed meanwhile is not sent (#252). One that went
+    from due to overdue meanwhile is sent once, as overdue.
+  - *Digest*: not sent inside quiet hours; the first run after sends it.
+  - *Price alerts*: not claimed inside quiet hours. The first `fuel_prices`
+    check after the end (every 30 to 120 minutes) sends it only if the
+    price is still below. Every alert one user has that fires in one
+    check goes as **one message** (#253). A single alert's message is
+    unchanged. Several alerts give a title "{count} price alerts" and one
+    line per alert in the body; the webhook payload has one `items` entry
+    per alert.
+  - *Job failures*: an admin inside quiet hours when the alert is due
+    gets a held entry instead (user setting `jobs.held_failures`, `{job:
+    run id}`). After each job run, the held entries of every admin no
+    longer in quiet hours are sent as **one message** per admin (a single
+    job's is unchanged; several give "{count} jobs failed" with a line
+    each). A job whose streak has ended meanwhile is dropped.
+  - The switched-off notice only follows a real send, so it is never
+    inside quiet hours.
+  So "when they end" means the first scheduled run after the end. With
+  *On page visits* that is the first visit after the end.
+- **Tests ignore both** (Goal 3). Each card's *Send test* and Settings →
+  Reminders' test send through the channels whatever they receive and
+  whatever the time, and say so: "Tests are sent whatever the channel
+  receives, even in quiet hours."
+- **Unreachable services in a run** (#264). Within one job run, a host
+  (host and port) that fails **3 times without answering** (a timeout, a
+  connection or a TLS failure, not an HTTP error) is **skipped for the
+  rest of the run**. Its sends are refused before any request with "The
+  service didn't answer earlier in this run." That is shown as the last
+  result and never counts towards switching off, as a refusal is. Each
+  item then follows its sender's rule as if that channel had failed:
+  nothing delivered means it is retried (reminders released, the digest
+  not marked, a price alert re-armed), and a partial success is recorded
+  as today. The 10-second timeout stays. Tests, checks on saving and
+  *Find my chat* are never skipped. Email is not covered: the email
+  server is one host whose errors don't reliably tell "down" from
+  "refused".
 
 ### 7.12 Attachments
 Upload receipts, invoices, insurance/cert PDFs and images against fill-ups,
@@ -6395,6 +6493,10 @@ able to run without cron.
   zone, with the summary and a link to the run. An `ok` or `partial`
   run ends the streak; an admin with no channel set up only sees the
   notice. A failing `reminders` job may of course be unable to send it.
+  From Phase 36.4 it goes only through channels that receive *Job
+  failures*. An admin in quiet hours is sent it after they end, if the
+  streak still lasts (§7.11 *What each channel receives, and quiet
+  hours*).
 - **How jobs run** (on the Jobs page; any number on together, the locks
   keep runs from overlapping and each job's interval decides whether a
   pass runs it):
@@ -7962,6 +8064,11 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Notification channels (Phase 36.3, #241): Matrix, Signal, and a
   bridge such as Apprise, each a definition and a sender; a shared
   Telegram bot or Pushover application provided by the admin (#236).
+- Notification host lookups remembered across requests (APCu or a
+  file), so Account → Notifications doesn't resolve each card's host on
+  every visit (Phase 36.3, #263); today 60 seconds within one request or
+  run. Quiet hours per channel, and routing by vehicle (Phase 36.4,
+  #250).
 - Email server (Phase 36.1, #226): OAuth 2 sign-in to SMTP providers
   (Microsoft 365, Gmail) for those that no longer take app passwords; an
   SMTP relay or an app password works meanwhile.
@@ -8474,7 +8581,8 @@ task breakdowns live in the per-phase files; this is the map.
   Ships with Phase 36.4 as v3.3.0 (#254).
 - **Phase 36.4 — What each channel receives, and quiet hours + v3.3
   release.** A choice per channel of what it receives, and quiet hours
-  that hold messages until they end (#234; open questions #250–#253).
+  that hold messages until they end (#234, #250–#253), and a run skips a
+  host that stopped answering (#264) (§6, §7.11, §7.30). One migration.
   Release v3.3.0 (Phases 36.1 to 36.4, #254).
 ---
 
