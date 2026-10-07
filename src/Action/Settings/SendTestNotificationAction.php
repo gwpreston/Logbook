@@ -34,7 +34,7 @@ final readonly class SendTestNotificationAction
 
         $report = $this->dispatcher->dispatch(
             $this->composer->test($user),
-            Recipient::of($user, $preferences),
+            Recipient::of($user),
             $preferences,
         );
 

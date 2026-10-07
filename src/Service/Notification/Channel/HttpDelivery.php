@@ -25,8 +25,14 @@ final class HttpDelivery
             return DeliveryResult::failed($channel, $e->getMessage());
         }
 
-        return $status >= 200 && $status < 300
-            ? DeliveryResult::delivered($channel)
-            : DeliveryResult::failed($channel, sprintf('HTTP %d', $status));
+        return match (true) {
+            $status >= 200 && $status < 300 => DeliveryResult::delivered($channel),
+            // Redirects are never followed (spec.md §7.11): the address has to be the final one.
+            $status >= 300 && $status < 400 => DeliveryResult::failed(
+                $channel,
+                sprintf('HTTP %d: a redirect, which is not followed', $status),
+            ),
+            default => DeliveryResult::failed($channel, sprintf('HTTP %d', $status)),
+        };
     }
 }

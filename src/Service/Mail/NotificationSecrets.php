@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Mail;
 
+use InvalidArgumentException;
 use Logbook\Repository\NotificationSecretRepository;
 use Logbook\Service\Ai\SecretBox;
 use Logbook\Service\Ai\SecretUnreadable;
@@ -15,7 +16,10 @@ use Throwable;
  * Notification secrets (spec.md §6 NotificationSecret, §7.11): sealed by
  * the AI secret box under their own key (`logbook-notify`), or an `env:NAME`
  * reference for the installation's. Opened only to send; never shown back.
- * A null owner is the installation.
+ * A null owner is the installation; any other is a user's channel secret,
+ * which is **never** an `env:` reference (Phase 36.2): one saved by a
+ * member would let them have the server send a variable's value to an
+ * address they chose. Such a value is refused when stored and never read.
  */
 final readonly class NotificationSecrets
 {
@@ -47,6 +51,9 @@ final readonly class NotificationSecrets
 
     public function store(?int $ownerId, string $name, #[SensitiveParameter] string $value): void
     {
+        if ($ownerId !== null && SecretBox::isReference($value)) {
+            throw new InvalidArgumentException('A user\'s notification secret cannot be an env: reference.');
+        }
         $this->repository->put($ownerId, $name, $this->box->store($value), $this->clock->now());
     }
 
@@ -74,6 +81,9 @@ final readonly class NotificationSecrets
     public function open(?int $ownerId, string $name): ?string
     {
         $stored = $this->repository->find($ownerId, $name);
+        if ($stored !== null && $ownerId !== null && SecretBox::variable($stored) !== null) {
+            throw new SecretUnreadable($name);
+        }
 
         return $stored === null ? null : $this->box->open($name, $stored);
     }
@@ -92,6 +102,9 @@ final readonly class NotificationSecrets
             return null;
         }
         $variable = SecretBox::variable($stored);
+        if ($ownerId !== null && $variable !== null) {
+            return ['state' => 'unreadable', 'variable' => null];
+        }
         try {
             $this->box->open($name, $stored);
             $state = $variable === null ? 'saved' : 'env';

@@ -47,6 +47,8 @@ final class DemoRoutes
         'settings.updates',
         // Sending something out: a test notification and a calendar feed.
         'settings.reminders.test', 'settings.reminders.calendar',
+        // One's own notification channels (Phase 36.2): saving, testing, switching and removing.
+        'settings.notifications.channel', 'settings.notifications.switch', 'settings.notifications.remove',
     ];
 
     public static function isBlocked(?string $routeName): bool

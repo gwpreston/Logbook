@@ -36,10 +36,16 @@ use Logbook\Service\Mail\TransportFactory;
 use Logbook\Service\Mcp\McpToolbox;
 use Logbook\Service\Navigation\SidebarTwigExtension;
 use Logbook\Service\Notification\Channel\EmailChannel;
-use Logbook\Service\Notification\Channel\GotifyChannel;
-use Logbook\Service\Notification\Channel\NtfyChannel;
 use Logbook\Service\Notification\Channel\WebhookChannel;
 use Logbook\Service\Notification\ChannelRegistry;
+use Logbook\Service\Notification\ChannelResults;
+use Logbook\Service\Notification\NotificationDispatcher;
+use Logbook\Service\Notification\Personal\GotifySender;
+use Logbook\Service\Notification\Personal\NtfySender;
+use Logbook\Service\Notification\Personal\PersonalKinds;
+use Logbook\Service\Notification\Personal\UserChannels;
+use Logbook\Service\Notification\Personal\WebhookSender;
+use Logbook\Service\Notification\SwitchOffNotice;
 use Logbook\Support\Clock\Sleeper;
 use Logbook\Support\Clock\SystemSleeper;
 use Logbook\Support\Clock\UtcClock;
@@ -301,21 +307,30 @@ return [
     },
 
     /*
-     * Notification channels (spec.md §7.11). The registry — and so the
-     * dispatcher — knows only this list. To add a channel, implement
-     * NotificationChannel and append it here (another definitions file can
+     * Notification channels (spec.md §7.11). The server's: email and the
+     * server's webhook. Personal kinds (Phase 36.2): each a definition and a
+     * sender, in the order Account → Notifications shows them; to add one,
+     * implement PersonalSender and append it (another definitions file can
      * use DI\add() instead); see docs/notification-channels.md.
      */
     'notification.channels' => [
         get(EmailChannel::class),
-        get(NtfyChannel::class),
-        get(GotifyChannel::class),
         get(WebhookChannel::class),
     ],
+    'notification.personal' => [
+        get(NtfySender::class),
+        get(GotifySender::class),
+        get(WebhookSender::class),
+    ],
+    PersonalKinds::class => autowire()->constructorParameter('senders', get('notification.personal')),
     // The demo's guard is named, not autowired: PHP-DI leaves an optional parameter at its default.
     ChannelRegistry::class => autowire()
         ->constructorParameter('channels', get('notification.channels'))
-        ->constructorParameter('demo', get(DemoMode::class)),
+        ->constructorParameter('demo', get(DemoMode::class))
+        ->constructorParameter('personal', get(UserChannels::class)),
+    NotificationDispatcher::class => autowire()
+        ->constructorParameter('results', get(ChannelResults::class))
+        ->constructorParameter('notice', get(SwitchOffNotice::class)),
     RemindersJob::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
     AdminNotices::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
 

@@ -11,6 +11,10 @@ use Logbook\Action\Api\FuelPricesNearAction;
 use Logbook\Action\Dashboard\CheapestFuelPlaceAction;
 use Logbook\Action\Settings\Delivery\DeliveryAction;
 use Logbook\Action\Settings\Delivery\DeliveryRemoveAction;
+use Logbook\Action\Settings\Notifications\ChannelAction;
+use Logbook\Action\Settings\Notifications\NotificationsAction;
+use Logbook\Action\Settings\Notifications\RemoveChannelAction;
+use Logbook\Action\Settings\Notifications\SwitchChannelAction;
 use Logbook\Action\Settings\FuelPrices\FuelPricesAction;
 use Logbook\Action\Station\CreateStationAction;
 use Logbook\Action\Station\DuplicatesAction as StationDuplicatesAction;
@@ -752,6 +756,15 @@ return static function (App $app): void {
         $group->get('/settings', SettingsAction::class)->setName('settings');
         // The signed-in user's own account (spec.md §8 *Profile page*, Phase 33.2).
         $group->get('/profile', ProfileAction::class)->setName('profile');
+        // The signed-in user's own notification channels (spec.md §7.11 *Personal channels*, Phase 36.2):
+        // the user is the session's and the kind is the path's, so no route names another user's channel.
+        $group->get('/settings/notifications', NotificationsAction::class)->setName('settings.notifications');
+        $group->post('/settings/notifications/{kind:[a-z0-9-]+}', ChannelAction::class)
+            ->setName('settings.notifications.channel');
+        $group->post('/settings/notifications/{kind:[a-z0-9-]+}/switch', SwitchChannelAction::class)
+            ->setName('settings.notifications.switch');
+        $group->map(['GET', 'POST'], '/settings/notifications/{kind:[a-z0-9-]+}/remove', RemoveChannelAction::class)
+            ->setName('settings.notifications.remove');
         // Lead times also drive the vehicle tabs' due badges, so this page stays when reminders are off.
         $group->map(['GET', 'POST'], '/settings/reminders', ReminderSettingsAction::class)->setName('settings.reminders');
         $group->map(['GET', 'POST'], '/settings/modules', ModuleSettingsAction::class)->setName('settings.modules')

@@ -171,6 +171,9 @@ final class UserExport
         $out['ai_models'] = [];
         $out['ai_tasks'] = [];
 
+        // Phase 36.2: their own notification channels, without secrets (never exported).
+        $out['notification_channels'] = $keep('notification_channels', static fn (array $row): bool => $row['user_id'] === $user);
+
         $files = array_values(array_filter([
             ...array_column($out['vehicles'], 'photo_path'),
             ...array_column($out['attachments'], 'stored_path'),

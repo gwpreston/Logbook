@@ -20,8 +20,8 @@ use Symfony\Component\Mime\Email;
 
 /**
  * The scheduled task delivering reminders through every shipped channel
- * (email, ntfy, Gotify, webhook) with recorded transports, and never twice
- * (spec.md §7.11).
+ * (email, the owner's ntfy and Gotify, the server's webhook) with recorded
+ * transports, and never twice (spec.md §7.11).
  */
 final class NotificationDeliveryTest extends ReminderTestCase
 {
@@ -159,23 +159,18 @@ final class NotificationDeliveryTest extends ReminderTestCase
 
     public function testOnlyTheChannelsTheOwnerEnabledAreUsed(): void
     {
-        $app = $this->createRecordingApp();
+        $app = $this->createRecordingApp(array_diff_key(self::CHANNELS, ['WEBHOOK_URL' => 1]));
         $this->pinClock($app, self::NOW);
         $browser = $this->signedIn($app);
         $this->document($app, $this->vehicle($app), '2026-10-09');
 
-        $form = self::body($browser->get('/settings/reminders'));
-        foreach (['email', 'ntfy', 'gotify', 'webhook'] as $key) {
-            self::assertStringContainsString('value="' . $key . '" checked', $form, 'every configured channel starts on');
-        }
+        $page = self::body($browser->get('/settings/reminders'));
+        self::assertStringContainsString('Sent to: Email, ntfy, Gotify.', $page, 'every set-up channel starts on');
 
-        $browser->post('/settings/reminders', [
-            'schedule_days' => '30',
-            'schedule_distance' => '621',
-            'document_days' => '30',
-            'manual_days' => '7',
-            'channels' => ['ntfy'],
-        ]);
+        $browser->get('/settings/notifications');
+        $browser->post('/settings/notifications/email/switch', ['enabled' => '0']);
+        $browser->post('/settings/notifications/gotify/switch', ['enabled' => '0']);
+        self::assertStringContainsString('Sent to: ntfy.', self::body($browser->get('/settings/reminders')));
         $this->runTasks($app);
 
         self::assertSame([], $this->mail->sent);
@@ -197,7 +192,7 @@ final class NotificationDeliveryTest extends ReminderTestCase
         self::assertNull($this->onlyReminder($app)->notifiedStatus, 'left for when a channel is set up');
 
         $form = self::body($browser->get('/settings/reminders'));
-        self::assertStringContainsString('value="ntfy" disabled', $form);
+        self::assertStringContainsString('Sent nowhere yet.', $form);
         self::assertStringContainsString('No notification channel is turned on and set up yet.', $form);
     }
 

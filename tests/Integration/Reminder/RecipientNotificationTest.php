@@ -24,8 +24,9 @@ use Symfony\Component\Mime\Email;
 /**
  * Reminders per recipient (spec.md §7.11): a vehicle's reminders go to its
  * owner and to the shares with *Send me its reminders*, each in their own
- * language, through the channels that reach them, once per status; the
- * instance's ntfy topic and MAIL_TO are the admins'.
+ * language, through their own channels, once per status; the default
+ * recipient for admins is the admins' (Phase 36.2: every other channel is
+ * personal, and the server's webhook names each recipient).
  */
 final class RecipientNotificationTest extends ReminderTestCase
 {
@@ -46,7 +47,8 @@ final class RecipientNotificationTest extends ReminderTestCase
         $shares->insert($golf->id, $viewer->id, ShareLevel::View, false, false, $now);
         $ntfy = 'https://ntfy.test/sam';
         $partner = $this->withEmail($app, $partner, 'partner@example.com');
-        $this->preferences($app, $partner, new NotificationPreferences(null, false, $ntfy));
+        $this->preferences($app, $partner, new NotificationPreferences(null, false));
+        $this->giveChannel($app, $partner, 'ntfy', ['url' => $ntfy]);
         $this->withEmail($app, $viewer, 'viewer@example.com');
 
         $summary = $this->service($app, ScheduledTasks::class)->run();

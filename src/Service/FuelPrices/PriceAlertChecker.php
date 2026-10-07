@@ -81,7 +81,7 @@ final readonly class PriceAlertChecker
                 $preferences = $this->preferences->notificationPreferences($user->id);
                 $report = $this->dispatcher->dispatch(
                     $this->composer->priceAlert($user, $station, $alert, $listed, $provider->currency()),
-                    Recipient::of($user, $preferences),
+                    Recipient::of($user),
                     $preferences,
                 );
                 $sent = $report->anyDelivered() || $report->hadNoChannels();

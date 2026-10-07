@@ -83,6 +83,9 @@ final readonly class BackupRepository
         'ai_connections',
         'ai_models',
         'ai_tasks',
+        // Phase 36.2: each user's notification channels. Never their secrets
+        // (`notification_secrets`): a restored channel asks for its token again.
+        'notification_channels',
     ];
 
     /**

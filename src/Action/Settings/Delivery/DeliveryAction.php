@@ -4,22 +4,28 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings\Delivery;
 
+use Logbook\Domain\Notification\MemberDestinations;
 use Logbook\Service\Mail\EmailServerAdmin;
 use Logbook\Service\Mail\EmailServerForm;
 use Logbook\Service\Mail\MailConfig;
 use Logbook\Service\Mail\MailEncryption;
 use Logbook\Service\Mail\MailTestResult;
+use Logbook\Service\Notification\ChannelVariables;
+use Logbook\Service\Notification\Outbound\OutboundDestination;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * GET|POST /settings/delivery — Settings → Delivery (spec.md §7.11 *The
  * email server*), admins only: the email server's fields, its password
  * (never shown back, not even after an error), *Save*, and *Send test
- * email*, which sends with what was typed without saving it.
+ * email*, which sends with what was typed without saving it. From Phase
+ * 36.2 also *Where members can send* (`intent=destinations`) and the
+ * notices about the old channel variables.
  */
 final readonly class DeliveryAction
 {
@@ -28,6 +34,9 @@ final readonly class DeliveryAction
         private EmailServerAdmin $admin,
         private View $view,
         private Redirector $redirect,
+        private OutboundDestination $destinations,
+        private ChannelVariables $variables,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -39,6 +48,19 @@ final readonly class DeliveryAction
         }
 
         $input = RequestContext::form($request);
+        if (($input['intent'] ?? null) === 'destinations') {
+            $policy = MemberDestinations::tryFrom(is_string($input['destinations'] ?? null) ? $input['destinations'] : '');
+            if ($policy !== null) {
+                $this->destinations->savePolicy($policy);
+                $this->logger->notice('Where members can send changed by user {user}: {policy}.', [
+                    'user' => $user->id,
+                    'policy' => $policy->value,
+                ]);
+                RequestContext::session($request)->flash('success', 'delivery.destinations.saved');
+            }
+
+            return $this->redirect->toRoute('settings.delivery');
+        }
         $form = EmailServerForm::parse($input);
         $errors = $form->errors;
         if ($form->password !== null && !isset($errors['password']) && !$this->admin->canStore($form->password)) {
@@ -104,6 +126,10 @@ final readonly class DeliveryAction
             'encryptions' => MailEncryption::cases(),
             'test' => $test,
             'test_to' => $user->email,
+            'destinations' => $this->destinations->policy(),
+            'destination_choices' => MemberDestinations::cases(),
+            'channel_variables' => $this->variables->removedButSet(),
+            'webhook_variable' => $this->variables->webhookSet(),
         ], $status);
     }
 }

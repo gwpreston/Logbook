@@ -63,30 +63,16 @@
             <section class="card" aria-labelledby="channels-heading">
                 <h2 id="channels-heading" class="card__title">{{ 'reminders.settings.channels_heading'|trans }}</h2>
                 <p class="field__hint">{{ 'reminders.settings.channels_intro'|trans }}</p>
-                <fieldset class="fieldset">
-                    <legend class="visually-hidden">{{ 'reminders.settings.channels_heading'|trans }}</legend>
-                    {% for channel in channels %}
-                        <label class="toggle{{ channel.configured ? '' : ' toggle--disabled' }}">
-                            <input type="checkbox" name="channels[]" value="{{ channel.key }}"
-                                {%- if channel.enabled and channel.configured %} checked{% endif %}
-                                {%- if not channel.configured %} disabled{% endif %}>
-                            <span class="toggle__text">
-                                <span class="toggle__title">{{ channel.label|trans }}</span>
-                                <span class="toggle__hint">{{ (not channel.configured ? 'reminders.settings.not_configured' : (channel.reaches ? 'reminders.settings.configured' : 'reminders.settings.needs_personal'))|trans }}</span>
-                            </span>
-                        </label>
-                    {% endfor %}
-                </fieldset>
-                {# The address is the account's, confirmed on Settings → Account (Phase 33.1). #}
-                <div class="field">
-                    <span class="field__label">{{ 'reminders.settings.email'|trans }}</span>
-                    <p>
-                        {%- if user.email %}<strong>{{ user.email }}</strong>{% else %}{{ (is_admin ? 'reminders.settings.email_none_admin' : 'reminders.settings.email_none')|trans }}{% endif %}
-                        · <a href="{{ url_for('profile') }}#email">{{ 'reminders.settings.email_change'|trans }}</a>
-                    </p>
-                </div>
-                {{ ui.input('ntfy_url', 'reminders.settings.ntfy_url'|trans, values, errors, {type: 'url', optional: true, maxlength: 500, autocomplete: 'off', placeholder: 'https://ntfy.sh/my-topic', hint: (is_admin ? 'reminders.settings.ntfy_url_hint' : 'reminders.settings.ntfy_url_hint_member')|trans}) }}
-                {{ ui.input('gotify_token', 'reminders.settings.gotify_token'|trans, values, errors, {optional: true, maxlength: 200, autocomplete: 'off', hint: (is_admin ? 'reminders.settings.gotify_token_hint' : 'reminders.settings.gotify_token_hint_member')|trans}) }}
+                {# Where they go is the user's own, on Account → Notifications (spec.md §8, Phase 36.2). #}
+                <p data-sent-to>
+                    {%- if sent_to is empty -%}
+                        {{ 'reminders.settings.sent_to_none'|trans }}
+                    {%- else -%}
+                        {% set names = [] %}{% for label in sent_to %}{% set names = names|merge([label|trans]) %}{% endfor %}
+                        {{ 'reminders.settings.sent_to'|trans({channels: names|join(', ')}) }}
+                    {%- endif %}
+                    · <a href="{{ url_for('settings.notifications') }}">{{ 'reminders.settings.sent_to_change'|trans }}</a>
+                </p>
                 <label class="toggle">
                     <input type="checkbox" name="digest" value="1"{% if digest %} checked{% endif %}>
                     <span class="toggle__text">

@@ -23,34 +23,43 @@ final class ReminderSettingsFormTest extends TestCase
             'schedule_distance' => '500',
             'document_days' => '0',
             'manual_days' => '3',
-            'channels' => ['ntfy', 'bogus'],
             'digest' => '1',
-        ], $uk, ['email', 'ntfy', 'gotify']);
+        ], $uk);
 
         self::assertIsArray($parsed);
-        [$reminders, $notifications] = $parsed;
+        [$reminders, $digest] = $parsed;
         self::assertSame(14, $reminders->scheduleDays);
         self::assertSame('804.672', $reminders->scheduleKm, '500 miles');
         self::assertSame(0, $reminders->documentDays, 'zero is a legitimate lead time');
         self::assertSame(3, $reminders->manualDays);
-        self::assertSame(['ntfy'], $notifications->channels, 'unknown channels are ignored');
-        self::assertTrue($notifications->digest);
+        self::assertTrue($digest);
 
-        self::assertSame('500', ReminderSettingsForm::values($reminders, $notifications, $uk)['schedule_distance']);
+        self::assertSame('500', ReminderSettingsForm::values($reminders, $uk)['schedule_distance']);
     }
 
-    public function testUncheckingEveryChannelTurnsThemAllOff(): void
+    public function testTheDigestIsOffUnlessTicked(): void
     {
         $parsed = ReminderSettingsForm::parse(
             ['schedule_days' => '30', 'schedule_distance' => '1000', 'document_days' => '30', 'manual_days' => '7'],
             self::preferences(UnitPreset::Metric),
-            ['email'],
         );
 
         self::assertIsArray($parsed);
-        self::assertSame([], $parsed[1]->channels);
-        self::assertFalse($parsed[1]->isEnabled('email'));
-        self::assertFalse($parsed[1]->digest);
+        self::assertFalse($parsed[1]);
+    }
+
+    public function testChannelChoicesKeepTheDigestAndAnUnsealedToken(): void
+    {
+        $preferences = NotificationPreferences::fromArray(['digest' => true, 'gotify_token' => 'left-by-upgrade']);
+
+        $off = $preferences->withChannel('email', false);
+        self::assertSame(['webhook'], $off->channels, 'from "both" to the server webhook only');
+        self::assertFalse($off->isEnabled('email'));
+        self::assertTrue($off->digest);
+        self::assertSame('left-by-upgrade', $off->toArray()['gotify_token'] ?? null);
+        self::assertSame(['webhook', 'email'], $off->withChannel('email', true)->channels);
+        self::assertArrayNotHasKey('gotify_token', $off->withoutLegacyGotifyToken()->toArray());
+        self::assertFalse($off->withDigest(false)->digest);
     }
 
     public function testInvalidInputIsRejectedWithClearErrors(): void
@@ -60,11 +69,10 @@ final class ReminderSettingsFormTest extends TestCase
             'schedule_distance' => '-1',
             'document_days' => 'soon',
             'manual_days' => '',
-            'ntfy_url' => 'not a topic',
-        ], self::preferences(UnitPreset::Metric), []);
+        ], self::preferences(UnitPreset::Metric));
 
         self::assertInstanceOf(ValidationErrors::class, $errors);
-        foreach (['schedule_days', 'schedule_distance', 'document_days', 'manual_days', 'ntfy_url'] as $field) {
+        foreach (['schedule_days', 'schedule_distance', 'document_days', 'manual_days'] as $field) {
             self::assertTrue($errors->has($field), $field);
         }
     }

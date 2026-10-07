@@ -67,7 +67,7 @@ final readonly class ReminderNotifier
         $this->sync->sync($user);
 
         $preferences = $this->settings->notificationPreferences($user->id);
-        $recipient = Recipient::of($user, $preferences);
+        $recipient = Recipient::of($user);
         if ($this->channels->active($preferences, $recipient) === []) {
             // Nothing can reach them. Leave everything unclaimed, so it is
             // sent once a channel is set up (if it is still due then).
@@ -96,7 +96,7 @@ final readonly class ReminderNotifier
         }
         $this->sync->sync($user);
 
-        $recipient = Recipient::of($user, $preferences);
+        $recipient = Recipient::of($user);
         if ($this->channels->active($preferences, $recipient) === []) {
             return false;
         }

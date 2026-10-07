@@ -7,7 +7,6 @@ namespace Logbook\Tests\Unit\Service\Attention;
 use Logbook\Domain\Attention\AttentionKind;
 use Logbook\Domain\Attention\AttentionSeverity;
 use Logbook\Service\Attention\AttentionThresholds;
-use Logbook\Service\Notification\NotificationPreferences;
 use Logbook\Service\Reminder\ReminderPreferences;
 use Logbook\Service\Reminder\ReminderSettingsForm;
 use Logbook\Support\Display\DisplayPreferences;
@@ -78,7 +77,7 @@ final class AttentionThresholdsTest extends TestCase
         $display = DisplayPreferences::defaults('en_GB', 'Europe/London', 'GBP');
         $input = ['schedule_days' => '30', 'schedule_distance' => '1000', 'document_days' => '30', 'manual_days' => '7'];
 
-        $parsed = ReminderSettingsForm::parse($input + ['mileage_days' => '90', 'valuation_months' => '6'], $display, []);
+        $parsed = ReminderSettingsForm::parse($input + ['mileage_days' => '90', 'valuation_months' => '6'], $display);
         self::assertIsArray($parsed);
         self::assertSame(['mileage_days' => 90, 'valuation_months' => 6] + self::DEFAULT_CHECKS, $parsed[2]->toArray());
 
@@ -89,7 +88,7 @@ final class AttentionThresholdsTest extends TestCase
             'cost_multiple' => '4',
             'cost_floor' => '250',
         ];
-        $custom = ReminderSettingsForm::parse($input + $checks, $display, []);
+        $custom = ReminderSettingsForm::parse($input + $checks, $display);
         self::assertIsArray($custom);
         self::assertSame(
             [
@@ -110,14 +109,13 @@ final class AttentionThresholdsTest extends TestCase
                 'cost_floor' => '-1',
             ],
             $display,
-            [],
         );
         self::assertInstanceOf(ValidationErrors::class, $wrong);
         foreach (array_keys($checks) as $field) {
             self::assertArrayHasKey($field, $wrong->all());
         }
 
-        $blank = ReminderSettingsForm::parse($input + ['mileage_days' => '', 'valuation_months' => ''], $display, []);
+        $blank = ReminderSettingsForm::parse($input + ['mileage_days' => '', 'valuation_months' => ''], $display);
         self::assertIsArray($blank);
         self::assertSame(
             ['mileage_days' => 60, 'valuation_months' => 12] + self::DEFAULT_CHECKS,
@@ -125,14 +123,13 @@ final class AttentionThresholdsTest extends TestCase
             'blank: the defaults',
         );
 
-        $errors = ReminderSettingsForm::parse($input + ['mileage_days' => '6', 'valuation_months' => '61'], $display, []);
+        $errors = ReminderSettingsForm::parse($input + ['mileage_days' => '6', 'valuation_months' => '61'], $display);
         self::assertInstanceOf(ValidationErrors::class, $errors);
         self::assertArrayHasKey('mileage_days', $errors->all());
         self::assertArrayHasKey('valuation_months', $errors->all());
 
         $values = ReminderSettingsForm::values(
             new ReminderPreferences(),
-            new NotificationPreferences(),
             $display,
             new AttentionThresholds(45, 18, 12, 20, 40, 4, 250),
         );

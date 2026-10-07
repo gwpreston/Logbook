@@ -1,0 +1,26 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{# Confirm removing one of your own notification channels (spec.md §7.11). #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'notifications.remove_title'|trans({channel: definition.label|trans}) }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.notifications') }}#channel-{{ definition.key }}">{{ ui.icon('chevron_left') }}{{ 'notifications.page.title'|trans }}</a>
+        <header class="page-header">
+            <div><h1 class="page-header__title">{{ 'notifications.remove_title'|trans({channel: definition.label|trans}) }}</h1></div>
+        </header>
+        <form class="form" method="post" action="{{ url_for('settings.notifications.remove', {kind: definition.key}) }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card">
+                <p>{{ 'notifications.remove_confirm'|trans({channel: definition.label|trans}) }}</p>
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--danger btn--lg">{{ ui.icon('delete') }}{{ 'notifications.remove'|trans }}</button>
+                <a class="btn btn--lg" href="{{ url_for('settings.notifications') }}#channel-{{ definition.key }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
