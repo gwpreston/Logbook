@@ -11,3 +11,5 @@
 /data/
 /design-import
 /export
+.DS_Store
+Thumbs.db
