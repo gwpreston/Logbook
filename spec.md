@@ -8456,7 +8456,7 @@ task breakdowns live in the per-phase files; this is the map.
   password stored as an encrypted secret, a test that sends with unsaved
   values, one mail transport, and the `MAIL_*` variables removed; a
   `SESSION_SECRET` generated on a fresh Docker volume (§6, §7.9, §7.11,
-  §8, §9; #222–#226). One migration. Ships with Phase 36.3 as v3.3.0.
+  §8, §9; #222–#226). One migration. Ships with Phase 36.4 as v3.3.0.
 - **Phase 36.2 — Personal notification channels.** Account → Notifications:
   a card per channel generated from a definition, with switch, test and
   last result; Email, ntfy, Gotify and Webhook as personal channels;
@@ -8466,16 +8466,16 @@ task breakdowns live in the per-phase files; this is the map.
   channels may send; no `env:` secrets for members; switched off after 5
   failures in a row; the prototype's *Reminder delivery* design audited
   (§6, §7.11, §8, §9; #227–#235, #247–#249). One migration. Ships with
-  Phase 36.3 as v3.3.0.
-- **Phase 36.3 — Telegram, Discord, Pushover, Mattermost and Slack +
-  v3.3 release.** Five personal channels with per-service limits, no
+  Phase 36.4 as v3.3.0.
+- **Phase 36.3 — Telegram, Discord, Pushover, Mattermost and Slack.** Five personal channels with per-service limits, no
   pings, no tokens in errors, a check on saving, Telegram's *Find my
   chat*, a third-party notice, and saved settings re-checked on every
   send (§7.11, §12; #236–#241, #255–#258, #260–#261). No migration.
-  Release v3.3.0 (Phases 36.1 to 36.3).
-- **Phase 36.4 — What each channel receives, and quiet hours.** A choice
-  per channel of what it receives, and quiet hours that hold messages
-  until they end (#234; open questions #250–#254).
+  Ships with Phase 36.4 as v3.3.0 (#254).
+- **Phase 36.4 — What each channel receives, and quiet hours + v3.3
+  release.** A choice per channel of what it receives, and quiet hours
+  that hold messages until they end (#234; open questions #250–#253).
+  Release v3.3.0 (Phases 36.1 to 36.4, #254).
 ---
 
 ## 14. Definition of done

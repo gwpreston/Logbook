@@ -1,13 +1,14 @@
-# Phase 36.3 — Telegram, Discord, Pushover, Mattermost and Slack + v3.3 release
+# Phase 36.3 — Telegram, Discord, Pushover, Mattermost and Slack
 
 *Five more places a reminder can reach you.*
 
-Status: ✅ complete · releases **v3.3.0** with Phases 36.1 and 36.2 · file
-lives in `docs/phases/`
+Status: 🚧 built, awaiting merge · no release of its own (ships with Phase
+36.4 as **v3.3.0**, #254) · file lives in `docs/phases/`
 
 Part three of Phase 36. [36.2](phase-36.2.md) made every channel personal
 and definition-driven; this phase adds five channels as five definitions
-and five senders, and cuts **v3.3.0**. Slack was added by the owner on
+and five senders. It was to cut **v3.3.0**; on 2026-10-07 the owner moved
+the release to Phase 36.4 (#254). Slack was added by the owner on
 2026-10-07 (#241).
 
 | Channel | What the user provides | Goes to |
@@ -37,7 +38,7 @@ before this phase was written and must be checked again.
 2. Each message fits its service's limits and cannot **ping people it should
    not** (a vehicle's name or a note is text another user typed).
 3. Tokens that appear in a URL never reach a page, a log or an error.
-4. Release **v3.3.0** (Phases 36.1 to 36.3).
+4. ~~Release v3.3.0~~: moved to [Phase 36.4](phase-36.4.md) (#254).
 5. Saved settings are re-checked against their kind's rules on every send
    (#258, for every personal kind).
 
@@ -207,37 +208,11 @@ draft this phase first carried differs from it in these ways:
 ### Sample data
 - [x] None. Demo mode sends nothing.
 
-### Release (with Phases 36.1 and 36.2)
-- [x] `CHANGELOG.md` **3.3.0**:
-      - *Added* — Settings → Delivery with the email server (36.1);
-        Account → Notifications with personal Email, ntfy, Gotify and
-        Webhook channels, a status and a test on each, and an admin setting
-        for where members' channels may send (36.2); Telegram, Discord,
-        Pushover, Mattermost and Slack (36.3).
-      - *Changed* — channels moved from Settings → Reminders to Account →
-        Notifications. A channel that fails 5 times in a row switches
-        off (email never does). Saved channel settings are re-checked on
-        every send. The webhook payload is unchanged.
-      - *Deprecated* — `WEBHOOK_URL` (the server's webhook) still
-        receives every recipient's notifications.
-      - *Removed* — the `MAIL_*` variables (36.1, #223): **email is off
-        after upgrading until an admin sets the server up in Settings →
-        Delivery**; nothing is imported. `NTFY_URL`, `NTFY_TOKEN`,
-        `GOTIFY_URL`, `GOTIFY_TOKEN` and `GOTIFY_PRIORITY` (36.2, #247):
-        **imported once** into admins' own channels by the upgrade, then
-        no longer read.
-      - *Upgrade notes* — two migrations (`notification_secrets`,
-        `notification_channels`); personal ntfy and Gotify settings and the
-        server's ntfy and Gotify variables move automatically (keep
-        `SESSION_SECRET` set while upgrading, or tokens wait to be
-        re-entered); **notification secrets are encrypted with
-        `SESSION_SECRET` and are not in backups, so a restored install asks
-        for them again**; members' channels that point somewhere the new
-        setting refuses are kept and shown as blocked.
-- [x] Bump `VERSION`, rebuild assets, update the README status and
-      `ROADMAP.md`; Phases 36.1 and 36.2 marked complete. (No source
-      asset changed, so there was nothing to rebuild.)
-- [ ] Tag `v3.3.0` once merged.
+### Release (moved to Phase 36.4, #254)
+- [x] `CHANGELOG.md`: this phase's entries under *Unreleased*, with those of
+      Phases 36.1 and 36.2 (the 3.3.0 notes were drafted here; their
+      introduction is kept in [Phase 36.4](phase-36.4.md)'s release task).
+- [x] No `VERSION` or README status bump: Phase 36.4 releases **v3.3.0**.
 
 ---
 

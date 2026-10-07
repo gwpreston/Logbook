@@ -2,7 +2,7 @@
 
 *The server's email, set up in the app by the person who runs it.*
 
-Status: ✅ complete · no release of its own (ships with Phase 36.3 as
+Status: 🚧 in progress · no release of its own (ships with Phase 36.4 as
 **v3.3.0**) · file lives in `docs/phases/`
 
 Phase 36 is **Notifications**, built last, after Phases 33 to 35 are
@@ -206,7 +206,7 @@ gains a sentence on the exception.
 - [x] None. Demo mode blocks the page.
 
 ### Release
-- [x] Ships with Phase 36.3 as **v3.3.0**, with the upgrade warning.
+- [ ] Ships with Phase 36.4 as **v3.3.0** (moved from 36.3, #254), with the upgrade warning.
 
 ---
 

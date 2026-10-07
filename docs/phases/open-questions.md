@@ -82,7 +82,8 @@ on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 #255–#258 on 2026-10-07; the owner answered them the same day, before
 Phase 36.3 started, with Phase 36.3's own (#236–#241, Slack added to it,
 and #260–#261 found while starting it). Phase 36.3's reviews raised
-#262–#264 on 2026-10-07; they wait for the owner.
+#262–#264 on 2026-10-07; they wait for the owner. The owner answered #254 the same day:
+Phase 36.4 joins the v3.3.0 release.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -339,7 +340,7 @@ and #260–#261 found while starting it). Phase 36.3's reviews raised
 | 251 | [36.4](phase-36.4.md) | Overdue reminders during quiet hours: held, or sent at once? | Needs a decision | Open. | — |
 | 252 | [36.4](phase-36.4.md) | A held message whose reminder is done before it is sent: drop or send? | Needs a decision | Open. | — |
 | 253 | [36.4](phase-36.4.md) | Several held messages: sent as they were, or combined? | Needs a decision | Open. | — |
-| 254 | [36.4](phase-36.4.md) | Phase 36.4's release: its own v3.4.0, or with the next phase? | Needs a decision | Open. | — |
+| 254 | [36.4](phase-36.4.md) | Phase 36.4's release: its own v3.4.0, or with the next phase? | Decided | Neither: Phase 36.4 releases **v3.3.0** with Phases 36.1 to 36.3; Phase 36.3 no longer releases on its own. spec §13. | 2026-10-07 |
 | 255 | [36.2](phase-36.2.md) | Docker's bridge and compose network count as *Your network* (the default allows them): treat them as *This server* on Docker? (found by the security review) | Decided | No: kept as *Your network* and documented (list the bridge subnet under *This server's addresses*, or choose *The internet only*). spec §7.11. | 2026-10-07 |
 | 256 | [36.2](phase-36.2.md) | A member's failed send shows the HTTP status or connection error: show only a generic error for private destinations? (found by the security review) | Decided | No: the redacted error, as for admins. spec §7.11. | 2026-10-07 |
 | 257 | [36.2](phase-36.2.md) | Should *Send test* also set a channel's last result? (found by the design review) | Decided | No, as built (spec §7.11). | 2026-10-07 |
