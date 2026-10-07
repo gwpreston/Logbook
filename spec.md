@@ -7734,9 +7734,12 @@ Real environment variables override `.env`; an empty value counts as unset.
   use the *On page visits* or *External URL* trigger instead (§7.30).
 - **Development stack** (Phase 33.1): `docker-compose.dev.yml` runs
   **Mailpit** (`axllent/mailpit`, pinned tag, multi-arch) as `mailpit`,
-  and the app reaches it as `mailpit`. From Phase 36.1 a developer sets
-  it up once in Settings → Delivery (server `mailpit`, port 1025,
-  encryption `none`, From `logbook@localhost`); the README says how.
+  and the app reaches it as `mailpit`. `bin/dev-setup.sh` points the
+  email server at it (server `mailpit`, port 1025, encryption `none`, From
+  `logbook@localhost`, no password) through `bin/dev-mailpit.php`, but
+  only when no email server is saved, so a developer's own setup is never
+  replaced; the helper refuses to run unless `APP_ENV=development`
+  (decided 2026-10-07, #259, replacing 36.1's "set up by hand").
   Its UI is on `http://localhost:${MAILPIT_PORT:-8025}` (`MAILPIT_PORT`,
   development only). Mailpit is never in `docker-compose.yml` or
   `docker-compose.mysql.yml`. `bin/dev-setup.sh --with-sample-data`

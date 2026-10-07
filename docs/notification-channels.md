@@ -140,9 +140,10 @@ Email is off until an admin fills in Settings → Delivery; while any of them
 is still set, the page says so. Then remove them from your `.env` or compose
 file.
 
-**Development:** `docker-compose.dev.yml` runs Mailpit. Set it up once in
-Settings → Delivery as server `mailpit`, port `1025`, encryption *None*,
-From `logbook@localhost`; its inbox is at `http://localhost:8025`.
+**Development:** `docker-compose.dev.yml` runs Mailpit, and
+`bin/dev-setup.sh` points Settings → Delivery at it (server `mailpit`, port
+`1025`, encryption *None*, From `logbook@localhost`) when no email server
+is saved; its inbox is at `http://localhost:8025`.
 
 ## How it fits together
 

@@ -341,6 +341,7 @@ on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 | 256 | [36.2](phase-36.2.md) | A member's failed send shows the HTTP status or connection error: show only a generic error for private destinations? (found by the security review) | Needs a decision | Today: the redacted error, as for admins. | — |
 | 257 | [36.2](phase-36.2.md) | Should *Send test* also set a channel's last result? (found by the design review) | Needs a decision | Today: no (spec §7.11); the test shows its own result on the card. | — |
 | 258 | [36.2](phase-36.2.md) | A restored channel row is not re-validated against the form's URL rules (only the destination policy at send) | Needs a decision | Today: the policy and pinning still apply on every send. | — |
+| 259 | [36.1](phase-36.1.md) | Should `bin/dev-setup.sh` set up the dev stack's Mailpit rather than leaving it to be done by hand? (the owner asked) | Decided | Yes: `bin/dev-mailpit.php` saves it when no email server is saved, development only. Replaces that part of #223. spec §10 *Development stack*. | 2026-10-07 |
 
 ## Other loose ends found in the review
 

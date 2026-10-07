@@ -212,9 +212,10 @@ start if something else already holds the app port. On Windows run it from
 Every email the app sends in development (password resets, invitations,
 reminders, digests) can be caught by **Mailpit**: open `http://localhost:8025`.
 If another project already uses 8025, the script picks the next free port and
-prints it (or ask for one with `MAILPIT_PORT=8026 ./bin/dev-setup.sh`). Set it
-up once, as an admin, in **Settings → Delivery**: server `mailpit`, port
-`1025`, encryption *None*, From `logbook@localhost`, then *Send test email*.
+prints it (or ask for one with `MAILPIT_PORT=8026 ./bin/dev-setup.sh`). The
+script points **Settings → Delivery** at it (server `mailpit`, port `1025`,
+encryption *None*, From `logbook@localhost`) whenever no email server is
+saved yet; one you saved yourself is left alone.
 Try *Forgotten your password?* as `demo` and the email appears there.
 
 Migrations are applied automatically whenever the app starts. The dev stack

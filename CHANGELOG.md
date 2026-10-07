@@ -57,8 +57,8 @@ is called out explicitly.
   channels ask for their token again; nothing is copied in the clear.
 - Members' channels that point somewhere the new *Where members can send*
   setting refuses are kept and shown as blocked.
-- The development stack's Mailpit is set up once by hand in Settings →
-  Delivery (server `mailpit`, port 1025, encryption None).
+- `bin/dev-setup.sh` points Settings → Delivery at the development
+  stack's Mailpit when no email server is saved.
 
 ## [3.2.0] — 2026-10-06
 
