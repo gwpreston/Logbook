@@ -143,9 +143,10 @@ documented in [`.env.example`](.env.example) and
 `DB_DRIVER`/`DB_HOST`/`DB_NAME`/`DB_USER`/`DB_PASSWORD`, `APP_URL`,
 `APP_BASE_PATH` and `APP_TIMEZONE`. The one exception is the email server,
 which an admin sets up in the app, in **Settings → Delivery** (with *Send
-test email*). Reminders are sent through email and whichever other
-notification channels you configure (`NTFY_*`, `GOTIFY_*`, `WEBHOOK_URL`; see
-[docs/notification-channels.md](docs/notification-channels.md)).
+test email*). Each person chooses where their reminders go in **Settings →
+Account → Notifications**: email, ntfy, Gotify or a webhook of their own (see
+[docs/notification-channels.md](docs/notification-channels.md)); an admin
+decides in Settings → Delivery where members' channels may send.
 
 On first visit you create the first admin account; after that, units,
 currency, language and time zone are per-user settings in the app, and

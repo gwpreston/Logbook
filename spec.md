@@ -3204,6 +3204,9 @@ Extensible channel interface so more can be added.
   personal channel its last status, time and error (redacted, 255
   characters) are written. `reminder_deliveries.channels` lists the keys
   that succeeded; claiming, retrying and partial success are unchanged.
+  Email's error is the server's reply, redacted of every notification
+  secret; the email card shows it to admins only (members see that it
+  failed, not the server's reply).
 - **Switched off after failures** (#233, #248, #249). A personal channel
   that fails **5 sends in a row** is switched off (`enabled` false,
   `switched_off_at` set); its card says "Switched off after 5 failed
@@ -3259,10 +3262,14 @@ Admins choose on **Settings → Delivery → Where members can send**:
 - The classes are §7.25's, by the same rules (`ConnectionLocator`),
   including the admin's *This server's addresses*, but **every** address
   a name resolves to must be allowed, not only the widest. IPv4-mapped
-  IPv6 addresses are classed as IPv4. **Link-local addresses
-  (169.254.0.0/16, fe80::/10) are always refused for members** (cloud
-  metadata, router interfaces). A name that doesn't resolve is refused
-  for a member.
+  IPv6 addresses are classed as IPv4. **Always refused for members**,
+  whatever the setting: link-local addresses (169.254.0.0/16, fe80::/10:
+  cloud metadata, router interfaces), unspecified (0.0.0.0/8, `::`, which
+  reaches the server's own services), multicast (224.0.0.0/4, ff00::/8),
+  reserved and broadcast (240.0.0.0/4), and IPv6 forms that carry an IPv4
+  address (`::/96`, NAT64 `64:ff9b::/96` and `64:ff9b:1::/48`, 6to4
+  `2002::/16`). A name that doesn't resolve is refused for a member.
+- The pinned address is an IPv4 one where the name has one.
 - The host is resolved when a channel is saved, tested and **on every
   send**, and the request connects to an address that was checked
   (pinned), so a name can't change between the check and the call.

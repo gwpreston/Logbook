@@ -187,7 +187,10 @@ Rewritten on 2026-10-07 with the owner's decisions (#227–#235, #247–#249);
 > *This server's addresses*. **Every** address a name resolves to must be
 > allowed (not only the widest). In addition, **link-local addresses
 > (169.254.0.0/16, fe80::/10) are always refused for members**: they are
-> where cloud metadata services and router interfaces live. IPv4-mapped
+> where cloud metadata services and router interfaces live. So are
+> unspecified, multicast, reserved and broadcast addresses and IPv6 forms
+> carrying an IPv4 address (added by the build review, 2026-10-07; spec
+> §7.11 lists them). IPv4-mapped
 > IPv6 addresses are classed as their IPv4 form.
 >
 > - The host is resolved when a channel is saved, when it is tested and
@@ -271,8 +274,8 @@ Decided by the owner on 2026-10-07, before any code.
       *Prototype notes*, extending Phase 33.2's.
 
 ### 36.2.2 Migration (every engine, reversible)
-- [ ] `notification_channels` table as above.
-- [ ] Move each user's personal ntfy topic and Gotify token into rows.
+- [x] `notification_channels` table as above.
+- [x] Move each user's personal ntfy topic and Gotify token into rows.
       Gotify's row takes `GOTIFY_URL` as its *Server URL* (the server the
       token belongs to) and `GOTIFY_PRIORITY`. The *enabled* flag follows
       the user's saved choice, or *on* where they never saved one (Phase
@@ -282,96 +285,96 @@ Decided by the owner on 2026-10-07, before any code.
       copied in the clear** into the new tables. Without a key the channel
       is created as *Needs setup* and the old value is left where it was
       until the user enters it again. Moved values leave the preferences.
-- [ ] Import once (#247): admins without their own ntfy get `NTFY_URL` and
+- [x] Import once (#247): admins without their own ntfy get `NTFY_URL` and
       `NTFY_TOKEN`; admins without their own Gotify token get `GOTIFY_URL`,
       `GOTIFY_TOKEN` and `GOTIFY_PRIORITY`; a personal topic on
       `NTFY_URL`'s server gets `NTFY_TOKEN`. The migration reads the same
       environment as the app (`phinx.php` passes the few variables it
       needs, including `SESSION_SECRET` / `SESSION_SECRET_FILE`). Logs
       counts only, never values.
-- [ ] The preferences' `channels` list keeps `email` and `webhook`.
-- [ ] Rolling back puts personal topics and tokens back into the
+- [x] The preferences' `channels` list keeps `email` and `webhook`.
+- [x] Rolling back puts personal topics and tokens back into the
       preferences (opening sealed tokens where it can; imported channels
       are dropped, since the variables were their source) and drops the
       table and the users' channel secrets.
 
 ### 36.2.3 Code
-- [ ] `ChannelDefinition`s and senders for ntfy, Gotify and the personal
+- [x] `ChannelDefinition`s and senders for ntfy, Gotify and the personal
       webhook; email and the server webhook stay `NotificationChannel`s;
       the registry gives the dispatcher every usable channel for a
       recipient; the dispatcher writes the last result and counts
       failures; switching off after 5 and the notice.
-- [ ] `OutboundDestination`: the policy (every resolved address, link-local
+- [x] `OutboundDestination`: the policy (every resolved address, link-local
       refused for members), resolve and pin, `max_redirects: 0`. Used by
       every personal sender (and by 36.3's).
-- [ ] Account → Notifications page and actions (save, switch on and off,
+- [x] Account → Notifications page and actions (save, switch on and off,
       remove, test with the throttle); the secret field pattern from 36.1;
       no `env:` for user secrets (save and test); a saved secret only to
       its host; routes take the user from the session and the kind from the
       path; route inventory.
-- [ ] Settings → Delivery: *Where members can send*, the removed-variables
+- [x] Settings → Delivery: *Where members can send*, the removed-variables
       notice and the `WEBHOOK_URL` notice. Settings → Reminders: channels
       removed, the *Sent to* line added. Settings → Account: the
       *Notifications* row.
-- [ ] `NtfyChannel` and `GotifyChannel` (environment-based) removed;
+- [x] `NtfyChannel` and `GotifyChannel` (environment-based) removed;
       `WebhookChannel` keeps `WEBHOOK_URL`, with `max_redirects: 0`.
-- [ ] Users' notification secrets in the redaction; channel rows in
+- [x] Users' notification secrets in the redaction; channel rows in
       backups (without secrets) and the demo reset.
 
 ### 36.2.4 Docs
-- [ ] `docs/notification-channels.md`: rewritten around personal channels,
+- [x] `docs/notification-channels.md`: rewritten around personal channels,
       the policy, switching off, the server webhook and *adding a channel*
       (a definition and a sender). `.env.example`, `docs/configuration.md`
       and the compose files: the five variables removed (imported once),
       `WEBHOOK_URL` deprecated.
-- [ ] `docs/deployment.md`, README: where notifications are configured.
-- [ ] `CHANGELOG.md` (unreleased 3.3.0).
+- [x] `docs/deployment.md`, README: where notifications are configured.
+- [x] `CHANGELOG.md` (unreleased 3.3.0).
 
 ### 36.2.5 Translations
-- [ ] English and German strings for the page, statuses, hints, errors,
+- [x] English and German strings for the page, statuses, hints, errors,
       the switched-off notice and the policy card.
 
 ### 36.2.6 Tests
-- [ ] Unit: each definition's validation (ntfy URL and topic, Gotify URL,
+- [x] Unit: each definition's validation (ntfy URL and topic, Gotify URL,
       token and priority range, webhook URL; `http` and `https` only, no
       credentials, no fragment).
-- [ ] Unit: the policy matrix. Each setting against loopback, `localhost`,
+- [x] Unit: the policy matrix. Each setting against loopback, `localhost`,
       `host.docker.internal`, RFC 1918, ULA, `100.64.0.0/10`, `.lan` names,
       link-local, a public address, a name that resolves to both, an
       IPv4-mapped IPv6 address; link-local always refused for a member and
       allowed for an admin.
-- [ ] Unit: the request is pinned to the classed address (a resolver that
+- [x] Unit: the request is pinned to the classed address (a resolver that
       changes its answer between calls is not followed); a redirect is
       reported and not followed.
-- [ ] Unit: an `env:` reference is refused for a member's secret (save and
+- [x] Unit: an `env:` reference is refused for a member's secret (save and
       test) and accepted for an admin's SMTP password.
-- [ ] Integration: the dispatcher sends through every usable channel for
+- [x] Integration: the dispatcher sends through every usable channel for
       each recipient; a failing channel does not stop the others; a
       recipient with none gets nothing; the last result is written;
       `reminder_deliveries` and idempotency behave as before.
-- [ ] Integration: 5 failures in a row switch a channel off and tell the
+- [x] Integration: 5 failures in a row switch a channel off and tell the
       user once through their other channels; email never switches off; a
       success resets the count; switching on again clears it.
-- [ ] Integration: **user A cannot read, edit, switch, test or remove user
+- [x] Integration: **user A cannot read, edit, switch, test or remove user
       B's channel** (an IDOR test per route); a member cannot reach
       Delivery; the route inventory classifies every new route.
-- [ ] Integration: a secret never appears in any response, including after
+- [x] Integration: a secret never appears in any response, including after
       a validation error, nor in a job's output, the log or an error; the
       test uses unsaved typed values; a saved secret is not sent to a
       changed host; the throttle blocks the sixth test.
-- [ ] Integration: `NTFY_*` and `GOTIFY_*` are no longer read; the server
+- [x] Integration: `NTFY_*` and `GOTIFY_*` are no longer read; the server
       webhook still receives every recipient's notifications with the
       payload unchanged; the Delivery notices name the variables set.
-- [ ] Integration: a member's saved address that the policy refuses shows
+- [x] Integration: a member's saved address that the policy refuses shows
       *Blocked*, is not used and is not deleted; relaxing the policy brings
       it back.
-- [ ] Integration: the migration moves personal values, imports the
+- [x] Integration: the migration moves personal values, imports the
       variables, keeps *enabled*, handles no key (nothing copied in the
       clear), and rolls back; the app opens what it sealed.
-- [ ] Integration: backups contain channel rows without secrets; a restore
+- [x] Integration: backups contain channel rows without secrets; a restore
       shows *Needs setup*.
-- [ ] Integration: demo mode blocks saving, testing and sending.
-- [ ] Without JavaScript every action works (each is a form).
+- [x] Integration: demo mode blocks saving, testing and sending.
+- [x] Without JavaScript every action works (each is a form).
 
 ### 36.2.7 Checks
 - [ ] `design-reviewer` agent on Notifications, Delivery and Reminders at
@@ -381,8 +384,10 @@ Decided by the owner on 2026-10-07, before any code.
       branch.
 
 ### Sample data
-- [ ] `DemoDataSeeder`: the demo owner has Email on and nothing else.
-      Demo mode sends nothing; nothing else is seeded.
+- [x] `DemoDataSeeder`: the demo owner has Email on and nothing else.
+      Demo mode sends nothing; nothing else is seeded. (Already so: the
+      seeder stores no notification preferences, which means email on, and
+      no channel rows.)
 
 ### Release
 - [ ] Ships with Phase 36.3 as **v3.3.0**.
