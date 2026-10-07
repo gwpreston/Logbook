@@ -13,6 +13,7 @@ use Logbook\Action\Settings\Delivery\DeliveryAction;
 use Logbook\Action\Settings\Delivery\DeliveryRemoveAction;
 use Logbook\Action\Settings\Notifications\ChannelAction;
 use Logbook\Action\Settings\Notifications\FindChatAction;
+use Logbook\Action\Settings\Notifications\QuietHoursAction;
 use Logbook\Action\Settings\Notifications\NotificationsAction;
 use Logbook\Action\Settings\Notifications\RemoveChannelAction;
 use Logbook\Action\Settings\Notifications\SwitchChannelAction;
@@ -762,6 +763,8 @@ return static function (App $app): void {
         $group->get('/settings/notifications', NotificationsAction::class)->setName('settings.notifications');
         $group->post('/settings/notifications/telegram/chats', FindChatAction::class)
             ->setName('settings.notifications.find_chat');
+        $group->post('/settings/notifications/quiet', QuietHoursAction::class)
+            ->setName('settings.notifications.quiet');
         $group->post('/settings/notifications/{kind:[a-z0-9-]+}', ChannelAction::class)
             ->setName('settings.notifications.channel');
         $group->post('/settings/notifications/{kind:[a-z0-9-]+}/switch', SwitchChannelAction::class)

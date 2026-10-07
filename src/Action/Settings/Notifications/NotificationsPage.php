@@ -9,7 +9,9 @@ use Logbook\Domain\Notification\ChannelStatus;
 use Logbook\Domain\User\User;
 use Logbook\Service\Mail\MailConfig;
 use Logbook\Service\Mail\NotificationSecrets;
+use Logbook\Service\Notification\ChannelCategories;
 use Logbook\Service\Notification\DeliveryResult;
+use Logbook\Service\Notification\NotificationCategory;
 use Logbook\Service\Notification\Personal\ChannelForm;
 use Logbook\Service\Notification\Personal\ChannelState;
 use Logbook\Service\Notification\Personal\FoundChats;
@@ -22,8 +24,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Renders Settings → Account → Notifications (spec.md §7.11 *Personal
- * channels*, §8): In-app, Email, then a card per personal kind, each from
- * its definition. Only the signed-in user's own channels are read; a
+ * channels*, §8): In-app, quiet hours (Phase 36.4), Email, then a card
+ * per personal kind, each from its definition; every card with what it
+ * receives. Only the signed-in user's own channels are read; a
  * secret is never put back on the page, only whether one is saved.
  */
 final readonly class NotificationsPage
@@ -42,6 +45,9 @@ final readonly class NotificationsPage
      * @param ChannelForm|null $form what was typed on that card (shown again, never its secrets)
      * @param DeliveryResult|string|null $test a test's result, or a translation key saying why none was sent
      * @param FoundChats|null $chats Telegram *Find my chat*'s answer, for the Telegram card
+     * @param ChannelCategories|null $receives what was ticked on that card's *Receives*
+     * @param array<string, array{key: string, params: array<string, mixed>}> $errors email's and quiet hours' errors
+     * @param array<string, string>|null $quiet the quiet hours form as typed
      */
     public function render(
         ServerRequestInterface $request,
@@ -51,9 +57,13 @@ final readonly class NotificationsPage
         DeliveryResult|string|null $test = null,
         int $status = 200,
         ?FoundChats $chats = null,
+        ?ChannelCategories $receives = null,
+        array $errors = [],
+        ?array $quiet = null,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
         $states = $this->channels->states($user->id, $user->isAdmin);
+        $preferences = $this->settings->notificationPreferences($user->id);
 
         $cards = [];
         foreach ($this->channels->kinds()->all() as $sender) {
@@ -72,10 +82,11 @@ final readonly class NotificationsPage
                 'test' => $own && $test instanceof DeliveryResult ? $test : null,
                 'refused' => $own && is_string($test) ? $test : null,
                 'chats' => $own ? $chats : null,
+                'receives' => ($own && $receives !== null
+                    ? $receives
+                    : ChannelCategories::fromStored($state?->record->categories))->values($user->isAdmin),
             ];
         }
-
-        $preferences = $this->settings->notificationPreferences($user->id);
         $address = $user->email ?? ($user->isAdmin ? $this->mail->adminRecipient() : null);
         $emailStatus = match (true) {
             !$this->mail->isConfigured() => ChannelStatus::NotAvailable,
@@ -94,7 +105,16 @@ final readonly class NotificationsPage
                 'result' => $this->emailResult($user->id),
                 'test' => $kind === 'email' && $test instanceof DeliveryResult ? $test : null,
                 'refused' => $kind === 'email' && is_string($test) ? $test : null,
+                'receives' => ($kind === 'email' && $receives !== null ? $receives : $preferences->emailCategories())
+                    ->values($user->isAdmin),
             ],
+            'offered' => NotificationCategory::offered($user->isAdmin),
+            'quiet' => $quiet ?? [
+                'quiet_on' => $preferences->quiet === null ? '' : '1',
+                'quiet_start' => $preferences->quiet->start ?? '22:00',
+                'quiet_end' => $preferences->quiet->end ?? '07:00',
+            ],
+            'errors' => $errors,
             'can_seal' => $this->secrets->canSeal(),
             'is_admin' => $user->isAdmin,
         ], $status);

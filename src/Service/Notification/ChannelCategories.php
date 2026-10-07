@@ -55,6 +55,39 @@ final readonly class ChannelCategories
         ))));
     }
 
+    /**
+     * The ticked boxes of a card's *Receives* (`receives[]`): only the
+     * categories offered to this user, so a member's never holds job
+     * failures.
+     */
+    public static function fromForm(mixed $values, bool $isAdmin): self
+    {
+        $values = is_array($values) ? $values : [];
+
+        return self::of(array_values(array_filter(
+            NotificationCategory::offered($isAdmin),
+            static fn (NotificationCategory $c): bool => in_array($c->value, $values, true),
+        )));
+    }
+
+    public function isEmpty(): bool
+    {
+        return $this->categories === [];
+    }
+
+    /**
+     * The categories shown ticked on a card.
+     *
+     * @return list<string>
+     */
+    public function values(bool $isAdmin): array
+    {
+        return array_values(array_map(
+            static fn (NotificationCategory $c): string => $c->value,
+            array_filter(NotificationCategory::offered($isAdmin), $this->takes(...)),
+        ));
+    }
+
     public function toStored(): ?string
     {
         return $this->categories === null

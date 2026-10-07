@@ -159,6 +159,15 @@ final readonly class UserChannels
         return $dropped;
     }
 
+    /**
+     * What a saved channel receives (spec.md §7.11 *What each channel
+     * receives*), saved with its card.
+     */
+    public function setCategories(User $user, string $kind, ChannelCategories $categories): void
+    {
+        $this->records->setCategories($user->id, $kind, $categories->toStored(), $this->clock->now());
+    }
+
     public function setEnabled(User $user, string $kind, bool $enabled): void
     {
         $this->records->setEnabled($user->id, $kind, $enabled, $this->clock->now());

@@ -134,6 +134,14 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 36.4: what each personal channel receives.
+        self::assertTrue($this->hasColumn('notification_channels', 'categories'));
+        Migrator::run('rollback');
+        self::assertFalse(
+            $this->hasColumn('notification_channels', 'categories'),
+            'rollback must drop notification_channels.categories',
+        );
+
         // Phase 36.2: personal notification channels.
         self::assertTrue($schema->tablesExist(['notification_channels']));
         Migrator::run('rollback');
