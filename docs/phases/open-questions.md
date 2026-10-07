@@ -87,7 +87,9 @@ Phase 36.4 joins the v3.3.0 release. #250–#253 and #262–#264 were
 answered on 2026-10-07, when Phase 36.4 started. Phase 36.4's reviews
 raised #265–#270 on 2026-10-07; the owner answered them the same day,
 before Phase 37 started, and #271, found while starting it. #265–#269 and
-#271 are built in Phase 37.
+#271 are built in Phase 37. Phase 38's (#272–#274, and #275–#276
+found while starting it) were answered on 2026-10-07, before it was
+built; they replace #192 and #193, now obsolete.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -282,8 +284,8 @@ before Phase 37 started, and #271, found while starting it. #265–#269 and
 | 189 | [33.4](phase-33.4.md) | Cost bar: §7.35's five parts or the prototype's seven? (found by the audit) | Decided | §7.35's five; finance stays in *Other* and has its own summary card (spec §7.7). | 2026-10-05 |
 | 190 | [33.4](phase-33.4.md) | A period picker on the Cost of ownership page? (found by the audit) | Decided | No: since bought only, as today and the prototype; the draft's wording corrected (spec §7.7). | 2026-10-05 |
 | 191 | [33.4](phase-33.4.md) | The prototype's vehicle *Cost of ownership* tab (found by the audit) | Decided | Build it after Expenses, from the overview card's figures (spec §7.1). | 2026-10-05 |
-| 192 | [33.4](phase-33.4.md) | Ask has no page in the prototype: where does `/ask` go? (found by the audit) | Decided | Ask keeps its navigation entry and page; the Insights page also has the Ask box (spec §7.26 *Ask and the Insights page*). | 2026-10-05 |
-| 193 | [33.4](phase-33.4.md) | What the Insights Ask box does (found by the audit) | Decided | Always opens the new thread on `/ask` (spec §7.26). | 2026-10-05 |
+| 192 | [33.4](phase-33.4.md) | Ask has no page in the prototype: where does `/ask` go? (found by the audit) | Obsolete | Replaced by Phase 38. Was: Ask keeps its navigation entry and page; now ([Phase 38](phase-38.md)): Ask lives on Insights, no `/ask` page. | 2026-10-07 |
+| 193 | [33.4](phase-33.4.md) | What the Insights Ask box does (found by the audit) | Obsolete | Replaced by Phase 38. Was: always opens the new thread on `/ask`; now ([Phase 38](phase-38.md)): opens the thread's page under Insights. | 2026-10-07 |
 | 194 | [33.4](phase-33.4.md) | Ask features the existing tools can't support | Obsolete | None: the prototype's Ask uses only what Ask has (spec §7.26). | 2026-10-05 |
 | 195 | [33.4](phase-33.4.md) | Fuel stations: one price list, or your stations too? (found by the audit) | Decided | *Prices nearby* on top when a provider is on, *Your stations* below (spec §7.33 *Fuel stations page*). | 2026-10-05 |
 | 196 | [33.4](phase-33.4.md) | Fuel stations features: build or not now | Decided | All built: area average, saving banner, favourite (adding an unlinked station), OpenStreetMap directions, *Log fill-up here* with a `?station=` prefill (spec §7.33). | 2026-10-05 |
@@ -362,6 +364,11 @@ before Phase 37 started, and #271, found while starting it. #265–#269 and
 | 269 | [36.4](phase-36.4.md) | Two job runs finishing together could both send one admin's held failures: compare-and-delete the held setting? (found by the bug hunt, unconfirmed) | Scheduled | Yes: only the run whose delete removed the held entry sends it. Built in [37](phase-37.md). spec §7.11 *Held, not queued*. | 2026-10-07 |
 | 270 | [36.4](phase-36.4.md) | Skip the reminder sync for a user in quiet hours? (found by the performance review) | Decided | No: synced every run, as the spec says; quiet hours hold only sending. | 2026-10-07 |
 | 271 | [37](phase-37.md) | Channels saved under v3.3.0 with every box ticked are full lists: convert them to all? (found while starting) | Scheduled | Yes: a migration converts them (personal channels and email). Built in [37](phase-37.md). | 2026-10-07 |
+| 272 | [38](phase-38.md) | A. Where *Your questions* sits on Insights | Scheduled | Under the *Ask Logbook* card, before the insights. Built in [38](phase-38.md). spec §7.26 *Ask and the Insights page*. | 2026-10-07 |
+| 273 | [38](phase-38.md) | B. The top-bar *Ask* button | Scheduled | Kept; opens `/insights#ask` with the box focused. Built in [38](phase-38.md). spec §7.26 *Where*, §8. | 2026-10-07 |
+| 274 | [38](phase-38.md) | C. Thread page or inline? | Scheduled | Each thread on its own page, `/insights/questions/{id}`. Built in [38](phase-38.md). spec §7.26. | 2026-10-07 |
+| 275 | [38](phase-38.md) | D. Where the *Keep conversations for* setting goes (found while starting) | Scheduled | Always on Insights under *Your questions*, even with no threads. Built in [38](phase-38.md). spec §7.26. | 2026-10-07 |
+| 276 | [38](phase-38.md) | E. How long *Your questions* is (found while starting) | Scheduled | The latest 5, the rest (up to 50) under *Show all (N)*, a disclosure that works without JS. Built in [38](phase-38.md). spec §7.26. | 2026-10-07 |
 
 ## Other loose ends found in the review
 

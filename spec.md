@@ -5516,17 +5516,30 @@ request to any model service.
 
 ### 7.26 Ask Logbook (Phase 26.2)
 
-- **Where:** `/ask`, a header button (*Ask*), a dashboard link, and the
-  phone app's quick actions. It is shown only when AI is enabled, the
-  `ask` task has a model, the `ai_ask` module is on, and the user's *Use
-  AI features* is on. The page names the connection's location ("Answered
-  by Ollama on your network"; "…by Anthropic, on the internet").
-- **Works without JS:** a form POST returns the page with the answer.
+- **Where** (Phase 38, decided 2026-10-07, #272–#276): on the Insights
+  page (`/insights`): the *Ask Logbook* box, *Your questions* and the
+  retention setting; each thread on its own page,
+  `/insights/questions/{id}`. Reached from the top-bar button (*Ask*,
+  `forum`, opening `/insights#ask` with the box focused), the dashboard
+  link and the phone app's quick action (both `/insights#ask`). It is
+  shown only when AI is enabled, the `ask` task has a model, the `ai_ask`
+  module is on, and the user's *Use AI features* is on; otherwise the
+  Insights page has none of it and the thread pages answer 404. The
+  thread page names the connection's location ("Answered by Ollama on
+  your network"; "…by Anthropic, on the internet"). There is no `/ask`
+  page: `GET /ask` answers 301 to `/insights` (keeping `?q=`), `GET
+  /ask/threads/{id}` 301 to `/insights/questions/{id}`, and a `POST /ask`
+  from an old open tab 303 to the Insights box (or, with a `thread`, to
+  that thread's page) with the question filled in, never asked. These
+  redirects work with AI off too (they land on Insights).
+- **Works without JS:** a form POST (`/insights/questions`) answers with
+  the thread's page at the answer.
   With JS it posts in the background and shows progress ("Looking up your
   fuel costs…", from the tools being called): the page sends a random
   progress token with the question, the loop records each tool call
-  against it as it starts, and the page polls `/ask/progress/{token}`
-  (JSON) about once a second until the answer is ready (decided
+  against it as it starts, and the page polls
+  `/insights/questions/progress/{token}` (JSON; the old `/ask/progress`
+  path is gone, not redirected) about once a second until the answer is ready (decided
   2026-10-01, `docs/phases/open-questions.md` #73). Sessions live in the
   database, so a poll never waits on the running request.
 - **Context sent to the model:** a fixed system text (below), today's date
@@ -5610,8 +5623,9 @@ request to any model service.
   questions, answers and tool results (trimmed to fit). Threads are kept
   for **30 days** (user setting `ai.ask_retention_days`: 1, 7, 30 or 90;
   decided 2026-10-01, #70), counted from the thread's last message and
-  deleted by the scheduled task. They are listed on `/ask` with *Delete*
-  and *Delete all*, and excluded from backups and exports. A follow-up
+  deleted by the scheduled task. They are listed on the Insights page
+  under *Your questions* with *Delete* and *Delete all* (Phase 38), and
+  excluded from backups and exports. A follow-up
   drops earlier tool results for vehicles the user can no longer see.
 - **Access:** every tool runs as the asking user through the §7.21 access
   policy. An admin's *Ask* sees what the admin sees in the app: their own
@@ -5757,31 +5771,48 @@ entries by message*.
 
 #### Ask and the Insights page (Phase 33.4, decided 2026-10-05, #192–#194)
 
-- **Ask page layout** (the prototype's *Ask Logbook* card): a card headed
+Phase 38 (decided 2026-10-07, #272–#276) replaced #192 and #193: Ask
+has no page of its own and lives on Insights.
+
+- **Ask Logbook card** (the prototype's): a card headed
   by an accent tile with `auto_awesome`, "Ask Logbook" and "AI answers
   using only your logged data"; a two-row question box ("e.g. Why has my
   fuel spend gone up?") with an *Ask* button (`send`; "Thinking…" while
   waiting); with JS, Enter sends and Shift+Enter starts a new line. Under
-  it four suggestions, each a link that fills the box (`/ask?q=`): "Which
+  it four suggestions, each a link that fills the box (`/insights?q=`,
+  back at `#ask`): "Which
   vehicle costs me most per mile?", "Summarise my last 12 months",
   "What's coming up in the next 3 months?", "How could I cut my fuel
   costs?". While waiting, the progress line ("Reading your logbook…",
-  then the tools' own lines). The thread, sources, grounding marks,
-  drafts, feedback, copy, conversations and retention are unchanged and
-  sit below in the same card style. Nothing about grounding, tools or
-  *Add* changes.
-- **Ask stays in the navigation** (#192): its sidebar entry and top-bar
-  button as today; *Insights* is a separate entry.
+  then the tools' own lines). Nothing about grounding, tools or *Add*
+  changes.
+- **Thread page** (`/insights/questions/{id}`, the user's own thread or
+  404; #274): a back link to *Insights*, then the card with the thread
+  (questions, answers, sources, grounding marks, draft cards, feedback,
+  *Copy*), the connection line and the follow-up box. Follow-ups post
+  from it and come back to it at the new answer.
+- **No *Ask* in the sidebar** (#192 replaced): *Insights* is the one
+  entry. The top-bar button stays (#273), opening `/insights#ask`.
 - **Insights page** (`/insights`, *Insights* in the sidebar with
   `auto_awesome` after *Fuel stations*; never in the phone's bottom bar,
   where the dashboard widget's *All insights* reaches it; core, every
   signed-in user): title "Insights", lead "Patterns spotted in
   your records, and answers to your own questions." Then:
-  - the *Ask Logbook* card above (box, *Ask* and the four suggestions),
-    only when Ask is available to the user (§7.26 *Where*). Its form posts
-    to `/ask` as a new question and **always opens the new thread on the
-    Ask page** (#193); with JS the card shows "Reading your logbook…"
-    while it posts, then goes there;
+  - the *Ask Logbook* card above (box, *Ask* and the four suggestions;
+    `id="ask"`), only when Ask is available to the user (§7.26 *Where*).
+    Its form posts as a new question and **opens the new thread's page**
+    (#193 replaced); with JS the card shows "Reading your logbook…" and
+    the progress lines while it posts, then goes there. `?q=` fills the
+    box;
+  - *Drafts to review* (§7.28), while there are any, whether or not Ask
+    is available;
+  - **Your questions** (#272), only when Ask is available: the user's
+    threads, newest first (last activity), each its title (the first
+    question), when, and *Delete*; the latest **5** shown and the rest
+    (up to 50, as before) under *Show all (N)*, a disclosure that works
+    without JS (#276); *Delete all…* with its confirm. With no threads,
+    "Nothing asked yet." Under the list, always (#275), *Keep
+    conversations for* (1, 7, 30 or 90 days) and *Save*;
   - every computed insight (§7.8 *Insights*, all of them, not the
     widget's two) as a card in a grid: a tone tile with its icon, the
     title, the body and its action link (`arrow_forward`);
@@ -6128,7 +6159,8 @@ with its own model. No connection in Settings → AI is needed or used.
     27.1, `draft_incident`: validated as
     in §7.26 *Drafting entries*, then kept as a draft from MCP (§6
     AiDraft `source = mcp`) for **7 days**. Their result says "Draft
-    saved. Open {link} to add it.", the link going to the dashboard card.
+    saved. Open {link} to add it.", the link going to the card on the
+    Insights page (`/insights#draft-{id}`, Phase 38).
   - Tool descriptions are written for an MCP client's model, translated
     to the key user's language (`mcp.tool.*`). Unknown tools, and tools
     the key can't use, are a JSON-RPC -32602. A tool's own refusal (a
@@ -6138,7 +6170,8 @@ with its own model. No connection in Settings → AI is needed or used.
     with its `status` and what to ask.
 - **Drafts to review:** waiting MCP drafts are listed on the dashboard
   (*Drafts to review*, above the widgets, while there are any) and on
-  `/ask` when Ask is available, each as the §7.26 draft card with *Add*,
+  the Insights page (after the *Ask Logbook* card and before *Your
+  questions*, while there are any, with or without Ask; Phase 38), each as the §7.26 draft card with *Add*,
   *Edit* and *Discard*, and *Undo* for 10 seconds after *Add*. Their
   buttons work without Ask (only the draft's own user); an Ask draft
   still needs Ask. Expired MCP drafts are deleted by the scheduled task
@@ -7729,7 +7762,7 @@ owner. Decided 2026-10-06 (#212–#217).
   off there is no badge and no dots. The same counts drive the garage and
   dashboard "N due" badges.
 - **Sidebar order** (Phase 33.2): Dashboard, Garage, Reminders, Reports,
-  Fuel stations (module on), Ask (AI on), **Settings**, then the
+  Fuel stations (module on), Insights, **Settings**, then the
   *Vehicles* list. The mobile bottom navigation keeps its slots and its
   order; only its labels follow the rename below.
 - **Fuel stations** (Phase 33.2): the module and its pages are called
@@ -8612,6 +8645,13 @@ task breakdowns live in the per-phase files; this is the map.
   alert after a run (#267), all-ticked saved as all with existing lists
   converted (#268, #271), held failures sent once (#269) (§7.11, §8). One
   data migration. Release v3.3.1.
+- **Phase 38 — Ask lives on Insights; the Ask page goes + release.**
+  *Your questions* (latest 5, *Show all*, *Delete*, *Delete all*), the
+  retention setting and the MCP *Drafts to review* move to the Insights
+  page; each thread opens on `/insights/questions/{id}`; the `/ask` page
+  and its sidebar entry go, the top-bar button opens `/insights#ask`, and
+  old `/ask` links redirect (§7.26, §7.28, §8; #272–#276, replacing #192
+  and #193). No migration. Release v3.4.0.
 ---
 
 ## 14. Definition of done
