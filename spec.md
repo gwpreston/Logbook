@@ -3327,6 +3327,9 @@ go only to those hosts (the policy check still runs).
   saved and says "Saved, but {service} couldn't be reached to check it."
   (#261). Nothing from the answer is stored but what the card shows next
   (the bot's or workspace's name, in the flash message only).
+  The check (and *Find my chat*) gives up after 5 seconds; at most 10
+  checks per user in 10 minutes, after which a save is made unchecked,
+  with the same notice (performance review, 2026-10-07).
 - **Redaction.** A token or webhook secret that appears in a request URL
   or a response is removed from every error before it reaches a page, a
   job's output or the log; the error text never contains the URL's path.

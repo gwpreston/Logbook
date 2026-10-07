@@ -3255,7 +3255,7 @@ return [
         ],
         'more' => '{count, plural, one {…und eins mehr} other {…und # mehr}}',
         'open_link' => 'Logbook öffnen',
-        'third_party' => 'Hierüber laufen deine Erinnerungen über die Server von {service}.',
+        'third_party' => 'Deine Erinnerungen werden über die Server von {service} gesendet.',
         'saved_as' => '{channel} ist gespeichert: {name}.',
         'unchecked' => 'Gespeichert, aber {channel} war zum Prüfen nicht erreichbar. Sende einen Test, sobald es wieder geht.',
         'reply' => [

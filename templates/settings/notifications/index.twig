@@ -210,10 +210,12 @@
                                 {% endif %}
                             {% endif %}
                             {% if card.secrets.token is defined and card.secrets.token == 'saved' %}
-                                <form method="post" action="{{ url_for('settings.notifications.find_chat') }}">
-                                    {{ ui.csrf(csrf) }}
-                                    <button type="submit" class="btn btn--ghost">{{ ui.icon('search') }}{{ 'notifications.telegram.find'|trans }}</button>
-                                </form>
+                                <div class="btn-row">
+                                    <form method="post" action="{{ url_for('settings.notifications.find_chat') }}">
+                                        {{ ui.csrf(csrf) }}
+                                        <button type="submit" class="btn btn--ghost">{{ ui.icon('search') }}{{ 'notifications.telegram.find'|trans }}</button>
+                                    </form>
+                                </div>
                             {% else %}
                                 <p class="field__hint">{{ 'notifications.telegram.find_after_token'|trans }}</p>
                             {% endif %}

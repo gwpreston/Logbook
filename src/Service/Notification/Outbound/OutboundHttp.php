@@ -18,6 +18,11 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final readonly class OutboundHttp
 {
+    /** spec.md §7.11: every channel's request gives up after 10 seconds. */
+    public const int TIMEOUT = 10;
+    /** A check made while someone waits (a token on saving, Find my chat): shorter. */
+    public const array CHECK = ['timeout' => 5, 'max_duration' => 8];
+
     public function __construct(
         private HttpClientInterface $http,
         private OutboundDestination $destinations,
@@ -36,6 +41,8 @@ final readonly class OutboundHttp
         }
 
         $options['max_redirects'] = 0;
+        $options['timeout'] ??= self::TIMEOUT;
+        $options['max_duration'] ??= self::TIMEOUT;
         if ($destination->address !== null) {
             $options['resolve'] = [$destination->host => $destination->address];
             $options['no_proxy'] = '*';
@@ -60,6 +67,8 @@ final readonly class OutboundHttp
         }
 
         $options['max_redirects'] = 0;
+        $options['timeout'] ??= self::TIMEOUT;
+        $options['max_duration'] ??= self::TIMEOUT;
         if ($destination->address !== null) {
             $options['resolve'] = [$destination->host => $destination->address];
             $options['no_proxy'] = '*';

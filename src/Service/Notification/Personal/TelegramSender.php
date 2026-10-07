@@ -108,7 +108,7 @@ final readonly class TelegramSender implements PersonalSender, VerifiesSettings
         if ($token === null) {
             return Verification::unreachable();
         }
-        $answer = $this->http->send('POST', self::method($token, 'getMe'), [], $restricted);
+        $answer = $this->http->send('POST', self::method($token, 'getMe'), OutboundHttp::CHECK, $restricted);
         if ($answer->ok()) {
             $result = $answer->body['result'] ?? null;
             $username = is_array($result) && is_string($result['username'] ?? null) ? $result['username'] : null;
@@ -129,7 +129,7 @@ final readonly class TelegramSender implements PersonalSender, VerifiesSettings
     public function findChats(#[SensitiveParameter] string $token, bool $restricted): FoundChats
     {
         $url = self::method($token, 'getUpdates');
-        $answer = $this->http->send('POST', $url, ['json' => ['limit' => 100]], $restricted);
+        $answer = $this->http->send('POST', $url, ['json' => ['limit' => 100]] + OutboundHttp::CHECK, $restricted);
         if ($answer->error !== null) {
             return FoundChats::failed($answer->error);
         }

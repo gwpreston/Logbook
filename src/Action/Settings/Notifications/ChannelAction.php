@@ -12,6 +12,8 @@ use Logbook\Service\Notification\Personal\ChannelSettings;
 use Logbook\Service\Notification\Personal\FieldType;
 use Logbook\Service\Notification\Personal\GotifySender;
 use Logbook\Service\Notification\Personal\UserChannels;
+use Logbook\Service\Notification\Personal\Verification;
+use Logbook\Service\Notification\Personal\VerifiesSettings;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Service\Reminder\ReminderSettingsStore;
@@ -35,6 +37,9 @@ final readonly class ChannelAction
     public const string TEST_BUCKET = 'notification-test';
     public const int TEST_MAX = 5;
     public const int TEST_WINDOW = 600;
+    /** Checks with the service on saving (#261): past this, saved unchecked. */
+    public const string CHECK_BUCKET = 'notification-check';
+    public const int CHECK_MAX = 10;
 
     public function __construct(
         private NotificationsPage $page,
@@ -115,7 +120,12 @@ final readonly class ChannelAction
         }
 
         // The service's own check (#261): a rejected token is not saved; an unreachable service is not a reason to refuse.
-        $verification = $this->channels->verify($user, $sender, $form);
+        $verification = null;
+        if ($sender instanceof VerifiesSettings) {
+            $verification = $this->limiter->attempt(self::CHECK_BUCKET, (string) $user->id, self::CHECK_MAX, self::TEST_WINDOW)
+                ? $this->channels->verify($user, $sender, $form)
+                : Verification::unreachable();
+        }
         if ($verification !== null && $verification->isRejected()) {
             $field = $definition->secretFields()[0]->name ?? 'token';
             $errors[$definition->inputName($field)] = ['key' => (string) $verification->words, 'params' => []];

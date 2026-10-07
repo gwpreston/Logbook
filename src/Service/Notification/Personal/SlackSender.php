@@ -117,7 +117,8 @@ final readonly class SlackSender implements PersonalSender, VerifiesSettings
         if ($token === null) {
             return Verification::unreachable();
         }
-        $answer = $this->http->send('POST', self::API . 'auth.test', ['auth_bearer' => $token], $restricted);
+        $options = ['auth_bearer' => $token] + OutboundHttp::CHECK;
+        $answer = $this->http->send('POST', self::API . 'auth.test', $options, $restricted);
         if ($answer->ok() && ($answer->body['ok'] ?? false) === true) {
             return Verification::works($answer->string('team'));
         }

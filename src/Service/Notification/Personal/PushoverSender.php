@@ -148,7 +148,8 @@ final readonly class PushoverSender implements PersonalSender, VerifiesSettings
             $body['device'] = $device;
         }
 
-        $answer = $this->http->send('POST', self::API . 'users/validate.json', ['body' => $body], $restricted);
+        $url = self::API . 'users/validate.json';
+        $answer = $this->http->send('POST', $url, ['body' => $body] + OutboundHttp::CHECK, $restricted);
         if ($answer->ok() && ($answer->body['status'] ?? null) === 1) {
             return Verification::works();
         }

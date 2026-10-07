@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Notification;
 
+use Logbook\Action\Settings\Notifications\ChannelAction;
 use Logbook\Domain\Notification\ChannelRecord;
 use Logbook\Domain\Notification\MemberDestinations;
 use Logbook\Domain\User\User;
@@ -266,6 +267,24 @@ final class ServiceChannelsTest extends ReminderTestCase
         $this->http->bodyFor['https://slack.com'] = '{"ok":true,"team":"Home Garage"}';
         $saved = $browser->post('/settings/notifications/slack', $typed);
         self::assertStringContainsString('Slack is saved: Home Garage.', self::body($browser->follow($saved)));
+    }
+
+    public function testTheCheckOnSavingIsLimitedAndThenSavesUnchecked(): void
+    {
+        $app = $this->app();
+        $browser = $this->signedIn($app);
+        $this->http->bodyFor['https://slack.com'] = '{"ok":true,"team":"Home Garage"}';
+        $typed = ['intent' => 'save', 'slack-token' => self::SLACK_TOKEN, 'slack-channel' => '#garage'];
+
+        for ($i = 0; $i < ChannelAction::CHECK_MAX; $i++) {
+            $browser->post('/settings/notifications/slack', $typed);
+        }
+        self::assertCount(ChannelAction::CHECK_MAX, $this->http->to('https://slack.com/api/auth.test'));
+
+        $saved = $browser->post('/settings/notifications/slack', $typed);
+        self::assertSame(303, $saved->getStatusCode());
+        self::assertStringContainsString('couldn’t be reached to check it', self::body($browser->follow($saved)));
+        self::assertCount(ChannelAction::CHECK_MAX, $this->http->to('https://slack.com/api/auth.test'), 'not asked again');
     }
 
     public function testFindMyChatListsPrivateChatsAndKeepsOnlyThePickedId(): void
