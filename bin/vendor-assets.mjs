@@ -174,6 +174,9 @@ const icons = [
   'pets',
   'local_fire_department',
   'minor_crash',
+  // Phase 36.2: the personal webhook channel (Account → Notifications).
+  'webhook',
+  'notifications_off',
 ];
 
 mkdirSync(join(outDir, 'fonts'), { recursive: true });

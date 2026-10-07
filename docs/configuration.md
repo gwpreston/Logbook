@@ -169,11 +169,16 @@ longer read; see [notification-channels.md](notification-channels.md#email).
 | Variable | Default | Meaning |
 |---|---|---|
 | `MAILPIT_PORT` | `8025` | Development only (`docker-compose.dev.yml`): the Mailpit web UI on the host. Unset, `bin/dev-setup.sh` moves to the next free port when 8025 is taken. |
-| `NTFY_URL` | *(empty)* | ntfy topic URL, e.g. `https://ntfy.sh/my-garage`: the admins' reminders; each user can set their own topic. |
-| `NTFY_TOKEN` | *(empty)* | Access token for a protected topic. |
-| `GOTIFY_URL`, `GOTIFY_TOKEN` | *(empty)* | Gotify server URL and application token (the admins'; each user can set their own token on this server). |
-| `GOTIFY_PRIORITY` | `5` | 0–10; overdue reminders are sent at 8 or more. |
-| `WEBHOOK_URL` | *(empty)* | Receives each notification as a JSON POST. |
+| `WEBHOOK_URL` | *(empty)* | **Deprecated.** The server's webhook: receives every person's notifications as a JSON POST, naming them. Redirects are not followed. Each person can add their own webhook instead. |
+
+**ntfy, Gotify and personal webhooks** are not environment variables from
+v3.3.0: each person sets up their own in **Settings → Account →
+Notifications**, and an admin chooses where members' channels may send in
+**Settings → Delivery** ([notification-channels.md](notification-channels.md)).
+`NTFY_URL`, `NTFY_TOKEN`, `GOTIFY_URL`, `GOTIFY_TOKEN` and `GOTIFY_PRIORITY`
+are **removed**: the v3.3.0 upgrade imports them once into every admin's own
+channels, and they are not read after it. Keep them set until the upgrade has
+run, then remove them; Settings → Delivery says while any is still set.
 
 ## Modules
 

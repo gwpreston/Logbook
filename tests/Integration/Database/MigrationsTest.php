@@ -63,6 +63,7 @@ final class MigrationsTest extends AppTestCase
         'ai_drafts',
         'ai_insights',
         'notification_secrets',
+        'notification_channels',
         'pending_uploads',
         'incidents',
         'job_runs',
@@ -133,6 +134,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 36.2: personal notification channels.
+        self::assertTrue($schema->tablesExist(['notification_channels']));
+        Migrator::run('rollback');
+        self::assertFalse($schema->tablesExist(['notification_channels']), 'rollback must drop notification_channels');
+
         // Phase 36.1: notification secrets.
         self::assertTrue($schema->tablesExist(['notification_secrets']));
         Migrator::run('rollback');

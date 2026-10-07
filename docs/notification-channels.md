@@ -4,32 +4,103 @@ Reminders always appear in the app. When they come due (and again if they
 become overdue) the scheduled task also sends them through each recipient's
 **notification channels** (spec.md §7.11). A vehicle's recipients are its
 owner and anyone it is shared with who ticked *Send me its reminders*
-([users-and-sharing.md](users-and-sharing.md)). Logbook ships four:
+([users-and-sharing.md](users-and-sharing.md)).
 
-| Key | Channel | Configured by |
+From v3.3.0 every channel but one is **personal**: each person sets up
+their own in **Settings → Account → Notifications**, and nobody else, not
+even an admin, can see or change them.
+
+| Key | Channel | Set up by |
 |---|---|---|
-| `email` | Email over SMTP (symfony/mailer) | **Settings → Delivery** (admins; see [Email](#email)) |
-| `ntfy` | [ntfy](https://ntfy.sh) push | `NTFY_URL` (topic URL), `NTFY_TOKEN` (optional) |
-| `gotify` | [Gotify](https://gotify.net) push | `GOTIFY_URL`, `GOTIFY_TOKEN` (+ `GOTIFY_PRIORITY`) |
-| `webhook` | JSON `POST` to any URL | `WEBHOOK_URL` |
+| `email` | Email to your confirmed address | the server's email in **Settings → Delivery** (admins; see [Email](#email)); each person switches it on or off |
+| `ntfy` | [ntfy](https://ntfy.sh) push | each person: *Topic URL* and an optional *Access token* |
+| `gotify` | [Gotify](https://gotify.net) push | each person: *Server URL*, *Application token*, *Priority* (0–10, default 5) |
+| `personal-webhook` | JSON `POST` to your own URL | each person: *URL* |
+| `webhook` | JSON `POST` to the server's URL | **deprecated**: `WEBHOOK_URL`; receives everyone's notifications |
 
-A channel is **configured** when it is set up (email in Settings → Delivery,
-the others by their environment variables), and
-**enabled** per user in Settings → Reminders (until they choose, every
-configured channel is on). It is used for someone only when it is enabled
-and it **reaches** them:
+## Account → Notifications
 
-| Channel | Reaches an admin | Reaches a member |
-|---|---|---|
-| `email` | their own address, else the *Default recipient for admins* | their own address only |
-| `ntfy` | their own topic URL, else `NTFY_URL` | their own topic URL only |
-| `gotify` | their own application token, else `GOTIFY_TOKEN` (on `GOTIFY_URL`) | their own token on `GOTIFY_URL` only |
-| `webhook` | always, when `WEBHOOK_URL` is set | always; the payload names the `user` |
+The page has a row per channel, as the design's *Reminder delivery* card
+does: an icon, the name, a hint, and the status in words with an icon.
 
-So a household ntfy topic or a shared inbox gets the admins' reminders only,
-never everyone's cars. Each person sets their own address, topic and token in
-Settings → Reminders. *Send a test* checks the channels that reach you;
-failures are logged at `warning` level.
+- **Status:** *On*, *Off*, *Not set up*, *Needs setup* (a required field or
+  token is missing, for instance after a restore), *Blocked by your
+  administrator's setting* (see [below](#where-members-can-send)),
+  *Switched off after failures*, *Not available on this server* (email,
+  until an admin sets it up). Under it: "Last sent {time}" or "Last attempt
+  failed {time}: {error}".
+- **Save** stores the fields; **Send test** sends "Logbook test
+  notification" through that channel only, with what is typed, **without
+  saving it**, and shows the result. At most 5 tests per person in 10
+  minutes. Tests don't change the last result.
+- **Tokens** are never shown again, not even masked: *Saved*, with a field
+  to replace it (empty keeps it) and *Remove the saved token*. They are
+  encrypted with a key from `SESSION_SECRET`; without one they can't be
+  saved. A saved token is only ever sent to the host it was saved for:
+  change the URL's host and it must be typed again. `env:NAME` is **not**
+  accepted here (it would let a member read the server's environment).
+- **Switch on / off** and **Remove** (with a confirmation).
+- **Switched off after failures.** A personal channel that fails **5 sends
+  in a row** switches itself off; you are told once through your other
+  channels, and the card says so until you switch it on again (or save it).
+  A success resets the count; tests don't count. Email is never switched
+  off: its failures are usually the server's.
+- *Settings → Reminders* keeps lead times, the digest, the calendar feed
+  and *Send test notification* (through every channel that is on), and
+  says where reminders go: "Sent to: Email, ntfy."
+
+## Where members can send
+
+A member's ntfy, Gotify or webhook address is one the **server** calls, so
+an admin chooses in **Settings → Delivery → Where members can send**:
+
+| Setting | Members' channels may send to |
+|---|---|
+| *The internet only* | public addresses |
+| *The internet and your network* (default) | also your home or office network (RFC 1918, IPv6 ULA, `100.64.0.0/10`, `.lan` and similar names) |
+| *The internet, your network and this server* | also this server (loopback, `localhost`, Docker's host, and the addresses listed under *This server's addresses* in AI connections) |
+
+- **Every** address a name resolves to must be allowed, and the request
+  connects to an address that was checked (so a name can't change in
+  between). It is checked when a channel is saved, tested and on every send.
+- Always refused for members, whatever the setting: link-local
+  (`169.254.0.0/16`, `fe80::/10`, where cloud metadata services live),
+  unspecified (`0.0.0.0/8`, `::`), multicast, reserved and broadcast
+  addresses, and IPv6 forms carrying an IPv4 address (NAT64, 6to4).
+- Redirects are never followed, for any channel.
+- An admin's own channels are not restricted.
+- **Docker:** the bridge gateway (`172.17.0.1`), the app's own container
+  address and other containers on the compose network are private
+  addresses, so they count as *Your network*, which the default allows.
+  To keep members off them, list the bridge subnet (e.g. `172.16.0.0/12`)
+  and the container's address under *This server's addresses* (Settings →
+  AI connections), or choose *The internet only*.
+- A saved address the setting now refuses is **kept**, shown as *Blocked*,
+  and not used; relaxing the setting brings it back.
+
+## Upgrading to v3.3.0
+
+- Each person's ntfy topic and Gotify token (from Settings → Reminders)
+  move to their Notifications page, switched on or off as they were.
+- **`NTFY_URL`, `NTFY_TOKEN`, `GOTIFY_URL`, `GOTIFY_TOKEN` and
+  `GOTIFY_PRIORITY` are imported once, then no longer read.** Every admin
+  without their own ntfy topic gets the server's (with its token); every
+  admin without their own Gotify token gets the server's Gotify; a topic on
+  `NTFY_URL`'s server gets `NTFY_TOKEN`, as it was sent with it. Keep them
+  set, and `SESSION_SECRET` unchanged, until the new version has started
+  once; then remove them. Settings → Delivery says while any is still set.
+- Without a `SESSION_SECRET` the tokens can't be encrypted: those channels
+  are created as *Needs setup* and nothing new is copied in the clear; a
+  personal Gotify token stays where it already was (in plain text, as
+  before) until its owner enters it again on the Notifications page, which
+  removes it. Rolling the upgrade back also puts tokens back there in plain
+  text, as the older version kept them.
+- **`WEBHOOK_URL` keeps working** as the server's webhook (key `webhook`):
+  it receives every recipient's notifications, naming them, as before. It
+  is deprecated, and no longer follows redirects (it used to follow up to
+  three).
+- Backups hold the channels but never their tokens: after a restore, each
+  person enters theirs again.
 
 ## Email
 
@@ -69,9 +140,10 @@ Email is off until an admin fills in Settings → Delivery; while any of them
 is still set, the page says so. Then remove them from your `.env` or compose
 file.
 
-**Development:** `docker-compose.dev.yml` runs Mailpit. Set it up once in
-Settings → Delivery as server `mailpit`, port `1025`, encryption *None*,
-From `logbook@localhost`; its inbox is at `http://localhost:8025`.
+**Development:** `docker-compose.dev.yml` runs Mailpit, and
+`bin/dev-setup.sh` points Settings → Delivery at it (server `mailpit`, port
+`1025`, encryption *None*, From `logbook@localhost`) when no email server
+is saved; its inbox is at `http://localhost:8025`.
 
 ## How it fits together
 
@@ -79,85 +151,99 @@ From `logbook@localhost`; its inbox is at `http://localhost:8025`.
 bin/run-scheduled-tasks.php ─► ScheduledTasks ─► ReminderNotifier
                                                     │  sync, claim, compose
                                                     ▼
-                                         NotificationDispatcher
+                                         NotificationDispatcher ─► ChannelResults (last result, failures)
                                                     │  registry->active(preferences, recipient)
                                                     ▼
-                           ChannelRegistry ◄── 'notification.channels' (DI list)
-                                                    │
-                            EmailChannel · NtfyChannel · GotifyChannel · WebhookChannel · …
+          ChannelRegistry ◄── 'notification.channels' (EmailChannel, WebhookChannel: the server's)
+                          ◄── UserChannels::usable(recipient) ◄── 'notification.personal'
+                                                    │                 (NtfySender, GotifySender, WebhookSender, …)
+                                                    ▼
+                         BoundChannel(sender, the user's settings) ─► OutboundHttp (check, pin, POST)
 ```
 
-The reminder engine and the dispatcher only ever see the
-`Logbook\Service\Notification\NotificationChannel` interface. Nothing outside a
-channel class knows it exists, apart from its line in the DI list.
+The dispatcher only ever sees the
+`Logbook\Service\Notification\NotificationChannel` interface. A personal
+kind is a `ChannelDefinition` (its fields) and a `PersonalSender`; the
+Notifications page, the form's validation and the registry read only the
+definition.
 
 ## Adding a channel
 
-Say, Telegram. Three steps, and nothing in the reminder engine, the
-dispatcher or the settings page changes:
+Say, Matrix. Two steps, and nothing in the reminder engine, the dispatcher,
+the page or the migrations changes:
 
-1. **Implement the interface** in `src/Service/Notification/Channel/`:
+1. **Write a sender** in `src/Service/Notification/Personal/`:
 
    ```php
-   final readonly class TelegramChannel implements NotificationChannel
+   final readonly class MatrixSender implements PersonalSender
    {
-       private ?string $token;
-       private ?string $chatId;
+       public const string KEY = 'matrix';
 
-       public function __construct(Env $env, private HttpClientInterface $http)
+       public function __construct(private OutboundHttp $http)
        {
-           // 3. Its own configuration, read from its own variables.
-           $this->token = $env->nullableString('TELEGRAM_BOT_TOKEN');
-           $this->chatId = $env->nullableString('TELEGRAM_CHAT_ID');
        }
 
-       public function key(): string { return 'telegram'; }        // stored in settings; never change it
-       public function label(): string { return 'Telegram'; }      // a product name, or a translation key
-       public function isConfigured(): bool { return $this->token !== null && $this->chatId !== null; }
-       // Whether it can deliver to this person: here, one chat for everyone,
-       // so an instance-wide chat is an admin's (see the table above).
-       public function reaches(Recipient $recipient): bool { return $this->isConfigured() && $recipient->isAdmin; }
-
-       public function send(Notification $notification, Recipient $recipient): DeliveryResult
+       public function definition(): ChannelDefinition
        {
-           return HttpDelivery::post($this->http, $this->key(), 'https://api.telegram.org/bot' . $this->token . '/sendMessage', [
-               'json' => ['chat_id' => $this->chatId, 'text' => $notification->title . "\n\n" . $notification->textWithLink()],
+           // The key is stored with each user's channel: never change it.
+           return new ChannelDefinition(self::KEY, 'Matrix', 'forum', 'notifications.matrix.hint', [
+               new ChannelField('url', 'notifications.matrix.url', FieldType::Url, required: true),
+               new ChannelField('room', 'notifications.matrix.room', FieldType::Text, required: true, maxLength: 255),
+               new ChannelField('token', 'notifications.matrix.token', FieldType::Secret, required: true, maxLength: 500),
            ]);
+       }
+
+       // Where it sends: checked against the policy and shown as the card's badge.
+       public function destination(ChannelSettings $settings): ?string
+       {
+           return $settings->value('url');
+       }
+
+       // Checks beyond each field's own (type, length, range); translation keys by field.
+       public function validate(array $values): array
+       {
+           return str_starts_with($values['room'] ?? '!', '!') ? [] : ['room' => 'notifications.matrix.room_invalid'];
+       }
+
+       public function send(Notification $notification, Recipient $recipient, ChannelSettings $settings, bool $restricted): DeliveryResult
+       {
+           $url = rtrim((string) $settings->value('url'), '/') . '/_matrix/client/v3/rooms/'
+               . rawurlencode((string) $settings->value('room')) . '/send/m.room.message/' . bin2hex(random_bytes(8));
+
+           return $this->http->post(self::KEY, $url, [
+               'auth_bearer' => $settings->secret('token'),
+               'json' => ['msgtype' => 'm.text', 'body' => $notification->title . "\n\n" . $notification->textWithLink()],
+           ], $restricted);
        }
    }
    ```
 
-   `send()` gets a `Notification` that is already translated and formatted for
-   the recipient (a `Recipient`: their id, name, username, whether they are an
-   admin, and their own email, ntfy topic and Gotify token), and a
-   `Notification`: `title`, `message` (plain text), `url` (absolute link to the
-   reminders), `urgent` (something is overdue) and structured `items`. Report
-   failure with `DeliveryResult::failed()`; exceptions are caught and logged by
-   the dispatcher too, and one failing channel never stops the others.
+   Always send through `OutboundHttp::post()` with `$restricted`: it checks
+   the policy, pins the address and refuses redirects on every send. A
+   `Notification` is already translated and formatted for the recipient:
+   `title`, `message` (plain text), `url` (absolute link), `urgent`
+   (something is overdue), `items` and `attention`. Report failure with
+   `DeliveryResult::failed()`; the error is redacted of the channel's
+   secrets before it is stored or shown, exceptions are caught by the
+   dispatcher, and one failing channel never stops another.
 
-2. **Register it** by adding it to the list in `config/dependencies.php`:
+2. **Register it** in `config/dependencies.php`, and add its strings (EN
+   and DE) to `translations/`:
 
    ```php
-   'notification.channels' => [
-       get(EmailChannel::class),
+   'notification.personal' => [
+       get(NtfySender::class),
        // …
-       get(TelegramChannel::class),
+       get(MatrixSender::class),
    ],
    ```
 
-   (A separate definitions file can append with `DI\add([get(TelegramChannel::class)])`
-   instead of editing the list.) PHP-DI autowires the constructor: `Env`,
-   `HttpClientInterface`, `LoggerInterface` and the other app services are
-   available.
-
-3. **Document its variables** in `.env.example` and spec.md §9 (and pass them
-   through in the compose files if Docker users should set them in `.env`).
-
-That's all: it appears in Settings → Reminders, can be enabled per user, is
-tested by *Send a test*, and receives reminders and digests. For tests, see
-`tests/Support/FakeChannel.php` and `tests/Unit/Service/Notification/NotificationDispatcherTest.php`;
-the shipped channels are exercised with recorded transports in
-`tests/Integration/Reminder/NotificationDeliveryTest.php`.
+That's all: it gets a card on everyone's Notifications page, with saving,
+tokens, *Send test*, the status, the policy and switching off after
+failures. Its rows live in `notification_channels` and its secrets in
+`notification_secrets` (named `matrix.token`); neither needs a migration.
+For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`
+and `tests/Integration/Notification/PersonalChannelsTest.php`.
 
 ## What is sent, and when
 
@@ -192,3 +278,5 @@ the shipped channels are exercised with recorded transports in
   row (Settings → Jobs), once until it works again, through their own
   channels. The webhook's `event` is `job_failed`, with empty `items` and
   `attention`.
+- From 3.3.0 a channel that switched itself off is announced once through
+  the person's other channels; the webhook's `event` is `channel_off`.

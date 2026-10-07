@@ -155,6 +155,33 @@ final readonly class NotificationComposer
     }
 
     /**
+     * A personal channel switched itself off after failing 5 times in a row
+     * (spec.md §7.11 *Switched off after failures*).
+     *
+     * @param non-empty-list<string> $labels the channels' names (translation keys or product names)
+     */
+    public function channelOff(User $user, array $labels): Notification
+    {
+        return $this->scope->run($user, function () use ($labels): Notification {
+            $names = array_map(fn (string $label): string => $this->translator->trans($label), $labels);
+
+            return new Notification(
+                kind: NotificationKind::ChannelOff,
+                title: $this->translator->trans('notifications.channel_off.title', [
+                    'count' => count($names),
+                    'channel' => $names[0],
+                ]),
+                message: $this->translator->trans('notifications.channel_off.message', [
+                    'count' => count($names),
+                    'channels' => implode(', ', $names),
+                ]),
+                url: $this->urls->route('settings.notifications'),
+                urgent: true,
+            );
+        });
+    }
+
+    /**
      * "E10 95 at Tesco Antrim is £1.359/L" (spec.md §7.34 *Price alerts*),
      * in the user's language and units.
      */

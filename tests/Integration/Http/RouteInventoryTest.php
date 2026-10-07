@@ -79,6 +79,11 @@ final class RouteInventoryTest extends AppTestCase
         'settings.reminders',
         'settings.reminders.test',
         'settings.reminders.calendar',
+        // Phase 36.2: one's own notification channels, by kind (never an id).
+        'settings.notifications',
+        'settings.notifications.channel',
+        'settings.notifications.switch',
+        'settings.notifications.remove',
         'settings.tyres',
         // Phase 22: the user's own trip settings, saved journeys and rates.
         'settings.trips',
@@ -216,7 +221,7 @@ final class RouteInventoryTest extends AppTestCase
         'attachments.delete', 'reminders.index', 'reminders.calendar', 'reminders.create', 'reminders.edit',
         'reminders.delete', 'reminders.status', 'reports.index', 'reports.export', 'reports.ownership',
         'reports.ownership.export', 'reports.true_cost', 'reports.true_cost.export', 'settings', 'profile',
-        'settings.reminders', 'settings.modules', 'settings.tyres', 'stations.index', 'stations.search',
+        'settings.reminders', 'settings.notifications', 'settings.modules', 'settings.tyres', 'stations.index', 'stations.search',
         'stations.duplicates', 'stations.near', 'stations.near.add', 'stations.create', 'stations.show',
         'stations.edit', 'stations.favourite', 'stations.merge', 'stations.link', 'stations.alerts',
         'settings.places', 'settings.places.create', 'settings.places.edit', 'settings.places.delete',

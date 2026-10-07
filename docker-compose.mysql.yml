@@ -27,8 +27,9 @@ services:
       SESSION_SECURE: ${SESSION_SECURE:-}
       UPLOAD_PATH: /data/uploads
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
-      # Reminders and notifications (see .env.example); empty = channel off. The email
-      # server is set in Settings → Delivery.
+      # Notifications are set up in the app (Settings → Delivery, Account → Notifications).
+      # NTFY_* and GOTIFY_* are passed only so the v3.3.0 upgrade can import them once;
+      # they are not read after it (see .env.example). WEBHOOK_URL is deprecated.
       NTFY_URL: ${NTFY_URL:-}
       NTFY_TOKEN: ${NTFY_TOKEN:-}
       GOTIFY_URL: ${GOTIFY_URL:-}

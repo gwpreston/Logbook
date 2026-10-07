@@ -20,16 +20,19 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Domain\Setting\SettingScope;
+use Logbook\Repository\NotificationChannelRepository;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Mail\MailConfig;
 use Logbook\Service\Mail\MailEncryption;
+use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Service\Mail\SmtpServer;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Net\HostResolver;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 use Symfony\Component\Mailer\Transport\TransportInterface as MailTransport;
@@ -46,7 +49,10 @@ abstract class ReminderTestCase extends AppTestCase
      * Every shipped channel configured (and APP_URL for absolute links). The
      * email server is described by the test-only `TEST_MAIL_*` keys: it is
      * saved as the `email.smtp` setting (spec.md §7.11), since the app reads
-     * no `MAIL_*` variables any more.
+     * no `MAIL_*` variables any more. The `NTFY_*` and `GOTIFY_*` keys
+     * describe the owner's own channels (Phase 36.2: the app no longer reads
+     * them), saved as the upgrade would import them; `WEBHOOK_URL` is the
+     * server's webhook, which the app still reads.
      */
     protected const array CHANNELS = [
         'APP_URL' => 'https://garage.example',
@@ -61,8 +67,12 @@ abstract class ReminderTestCase extends AppTestCase
         'WEBHOOK_URL' => 'https://hooks.test/logbook',
     ];
 
+    /** Seals the owner's channel tokens. */
+    protected const string SESSION_SECRET = 'reminder-test-secret-0123456789abcdef0123456789';
+
     /** No channel configured, whatever the environment says. */
     protected const array NO_CHANNELS = [
+        'SESSION_SECRET' => self::SESSION_SECRET,
         'TEST_MAIL_HOST' => '',
         'NTFY_URL' => '',
         'GOTIFY_URL' => '',
@@ -74,6 +84,10 @@ abstract class ReminderTestCase extends AppTestCase
     /** The email server the recording app has (null: email off); saved again after a reset. */
     protected ?SmtpServer $smtp = null;
     protected RecordingHttpClient $http;
+    /** The test hosts resolve to public addresses (spec.md §7.11 *Where members' channels may send*). */
+    protected FakeHostResolver $dns;
+    /** @var array<string, string> the recording app's channel keys */
+    private array $channelEnv = [];
 
     /**
      * An app whose outbound email and HTTP are recorded, not sent.
@@ -84,6 +98,7 @@ abstract class ReminderTestCase extends AppTestCase
     protected function createRecordingApp(array $env = self::CHANNELS): App
     {
         $env += self::NO_CHANNELS;
+        $this->channelEnv = $env;
         $app = $this->createApp($env);
         $this->smtp = $env['TEST_MAIL_HOST'] === '' ? null : new SmtpServer(
             host: $env['TEST_MAIL_HOST'],
@@ -102,8 +117,65 @@ abstract class ReminderTestCase extends AppTestCase
         self::assertInstanceOf(Container::class, $container);
         $container->set(MailTransport::class, $this->mail);
         $container->set(HttpClientInterface::class, $this->http->client);
+        $this->dns = new FakeHostResolver();
+        $this->dns->hosts += [
+            'ntfy.test' => ['203.0.113.10'],
+            'gotify.test' => ['203.0.113.11'],
+            'hooks.test' => ['203.0.113.12'],
+        ];
+        $container->set(HostResolver::class, $this->dns);
 
         return $app;
+    }
+
+    /**
+     * Signed in as the owner, who has the recording app's ntfy and Gotify as
+     * their own channels.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    protected function signedIn(App $app): TestBrowser
+    {
+        $browser = parent::signedIn($app);
+        $owner = $this->owner($app);
+        $env = $this->channelEnv;
+        if (($env['NTFY_URL'] ?? '') !== '') {
+            $this->giveChannel($app, $owner, 'ntfy', ['url' => $env['NTFY_URL']], ['token' => $env['NTFY_TOKEN'] ?? '']);
+        }
+        if (($env['GOTIFY_URL'] ?? '') !== '' && ($env['GOTIFY_TOKEN'] ?? '') !== '') {
+            $this->giveChannel($app, $owner, 'gotify', [
+                'url' => rtrim($env['GOTIFY_URL'], '/'),
+                'priority' => (int) ($env['GOTIFY_PRIORITY'] ?? 5),
+            ], ['token' => $env['GOTIFY_TOKEN']]);
+        }
+
+        return $browser;
+    }
+
+    /**
+     * Save a personal channel for a user, as Account → Notifications would.
+     *
+     * @param App<ContainerInterface> $app
+     * @param array<string, scalar> $settings
+     * @param array<string, string> $secrets empty values are left out
+     */
+    protected function giveChannel(
+        App $app,
+        User $user,
+        string $kind,
+        array $settings,
+        array $secrets = [],
+        bool $enabled = true,
+    ): void {
+        $secrets = array_filter($secrets, static fn (string $v): bool => $v !== '');
+        foreach ($secrets as $field => $value) {
+            $this->service($app, NotificationSecrets::class)->store($user->id, $kind . '.' . $field, $value);
+        }
+        if ($secrets !== []) {
+            $settings['_secrets'] = array_keys($secrets);
+        }
+        $this->service($app, NotificationChannelRepository::class)
+            ->save($user->id, $kind, $settings, $enabled, new DateTimeImmutable());
     }
 
     /**

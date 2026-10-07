@@ -9,6 +9,8 @@ cd "$(dirname "$0")/.."
 compose="docker compose -f docker-compose.dev.yml --profile all"
 engines="${*:-sqlite pgsql mysql mariadb}"
 server="-e TEST_DB_NAME=logbook_test -e TEST_DB_USER=logbook -e TEST_DB_PASSWORD=logbook"
+# The tests choose their own SESSION_SECRET: the dev image's generated one (Phase 36.1) must not leak in.
+nosecret="-e SESSION_SECRET= -e SESSION_SECRET_FILE="
 
 $compose up -d --wait pgsql mysql mariadb >/dev/null
 
@@ -22,7 +24,7 @@ for engine in $engines; do
     esac
     echo "=== $engine ==="
     # shellcheck disable=SC2086
-    $compose run --rm --no-deps $env app sh -c '
+    $compose run --rm --no-deps $env $nosecret app sh -c '
         vendor/bin/phinx migrate -e testing -q &&
         vendor/bin/phinx rollback -e testing -t 0 -q &&
         vendor/bin/phinx migrate -e testing -q &&

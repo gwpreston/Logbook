@@ -17,6 +17,8 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
  *     url: string,
  *     headers: array<string, list<string>>,
  *     json: array<mixed>,
+ *     resolve: array<string, string>,
+ *     max_redirects: int|null,
  * }
  */
 final class RecordingHttpClient
@@ -24,6 +26,8 @@ final class RecordingHttpClient
     /** @var list<RecordedRequest> */
     public array $requests = [];
     public int $status = 200;
+    /** @var array<string, int> answers by URL prefix, over $status */
+    public array $statusFor = [];
     public readonly MockHttpClient $client;
 
     public function __construct()
@@ -34,9 +38,17 @@ final class RecordingHttpClient
                 'url' => $url,
                 'headers' => self::headers($options['normalized_headers'] ?? []),
                 'json' => self::json($options['body'] ?? ''),
+                'resolve' => self::resolve($options['resolve'] ?? null),
+                'max_redirects' => is_int($options['max_redirects'] ?? null) ? $options['max_redirects'] : null,
             ];
+            $status = $this->status;
+            foreach ($this->statusFor as $prefix => $code) {
+                if (str_starts_with($url, $prefix)) {
+                    $status = $code;
+                }
+            }
 
-            return new MockResponse('{}', ['http_code' => $this->status]);
+            return new MockResponse('{}', ['http_code' => $status]);
         });
     }
 
@@ -65,6 +77,23 @@ final class RecordingHttpClient
         }
 
         return $headers;
+    }
+
+    /**
+     * The `resolve` option: host => the address it was pinned to.
+     *
+     * @return array<string, string>
+     */
+    private static function resolve(mixed $option): array
+    {
+        $pinned = [];
+        foreach (is_array($option) ? $option : [] as $host => $address) {
+            if (is_string($address)) {
+                $pinned[(string) $host] = $address;
+            }
+        }
+
+        return $pinned;
     }
 
     /**

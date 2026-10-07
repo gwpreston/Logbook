@@ -61,7 +61,7 @@ final readonly class JobFailureAlerts
             $preferences = $this->preferences->notificationPreferences($user->id);
             $this->dispatcher->dispatch(
                 $this->composer->jobFailed($user, $run),
-                Recipient::of($user, $preferences),
+                Recipient::of($user),
                 $preferences,
             );
         }

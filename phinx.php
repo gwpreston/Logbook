@@ -20,8 +20,15 @@ use Logbook\Support\Config\Env;
 require __DIR__ . '/vendor/autoload.php';
 
 $env = Env::fromSystem(__DIR__ . '/.env');
-$app = DatabaseConfig::fromEnv($env, Kernel::rootDir())->toPhinxEnvironment();
-$testing = DatabaseConfig::fromEnv($env, Kernel::rootDir(), 'TEST_DB_', 'var/testing.sqlite')->toPhinxEnvironment();
+// The few variables a data migration reads, as the app sees them (`.env` included): the notification key
+// and, once, the channel variables Phase 36.2 imports (db/migrations/*_create_notification_channels.php).
+$migrationEnv = ['logbook_env' => array_intersect_key($env->all(), array_flip([
+    'SESSION_SECRET', 'SESSION_SECRET_FILE',
+    'NTFY_URL', 'NTFY_TOKEN', 'GOTIFY_URL', 'GOTIFY_TOKEN', 'GOTIFY_PRIORITY',
+]))];
+$app = DatabaseConfig::fromEnv($env, Kernel::rootDir())->toPhinxEnvironment() + $migrationEnv;
+$testing = DatabaseConfig::fromEnv($env, Kernel::rootDir(), 'TEST_DB_', 'var/testing.sqlite')->toPhinxEnvironment()
+    + $migrationEnv;
 
 return [
     'paths' => [

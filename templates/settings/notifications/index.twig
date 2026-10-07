@@ -1,0 +1,204 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import _self as page %}
+
+{#
+ # Settings → Account → Notifications (spec.md §7.11 *Personal channels*,
+ # §8): In-app, Email, then one card per personal kind, each drawn from its
+ # definition. The prototype's *Reminder delivery* rows: a 40 px icon
+ # tile, title, hint and status, with the fields and *Send test* under the
+ # row. A secret is never shown again, not even masked: only whether one
+ # is saved. Every action is a form, so it all works without JavaScript.
+ #}
+{% set active_nav = 'settings' %}
+
+{# A channel's status: words and an icon, never colour alone. #}
+{% macro status(status) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set tone = {ok: 'valid', warn: 'soon', neutral: ''}[status.tone()] %}
+    <span class="pill{{ tone ? ' pill--' ~ tone }}" data-channel-status="{{ status.value }}">{{ ui.icon(status.icon()) }}{{ status.labelKey()|trans }}</span>
+{%- endmacro %}
+
+{# "Last sent {time}" or "Last attempt failed: {error}". #}
+{% macro last_result(status, at, error, reply = true) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% if status == 'ok' %}
+        <p class="channel__result" data-last-result="ok">{{ ui.icon('check_circle') }}<span>{{ 'notifications.last.ok'|trans({when: at|local_datetime}) }}</span></p>
+    {% elseif status == 'failed' %}
+        <p class="channel__result channel__result--failed" data-last-result="failed">{{ ui.icon('error') }}<span>{{ reply ? 'notifications.last.failed'|trans({when: at|local_datetime, error: error ?? ''}) : 'notifications.last.failed_plain'|trans({when: at|local_datetime}) }}</span></p>
+    {% endif %}
+{%- endmacro %}
+
+{# A test's outcome on its card. #}
+{% macro test_result(test, refused, label, reply = true) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% if refused %}
+        <div class="alert alert--error" role="alert" data-test-result="refused">{{ ui.icon('error') }}<span>{{ refused|trans }}</span></div>
+    {% elseif test is not null %}
+        {% if test.delivered %}
+            <div class="alert alert--success" role="status" data-test-result="sent">{{ ui.icon('check_circle') }}<span>{{ 'notifications.test.sent'|trans({channel: label|trans}) }}</span></div>
+        {% else %}
+            <div class="alert alert--error" role="alert" data-test-result="failed">
+                {{ ui.icon('error') }}
+                <span>
+                    {% if test.error == 'missing_secret' %}
+                        {{ 'notifications.test.missing_secret'|trans }}
+                    {% else %}
+                        {{ 'notifications.test.failed'|trans }}
+                        {% if test.error and reply %}<code class="alert__reply">{{ test.error }}</code>{% endif %}
+                    {% endif %}
+                </span>
+            </div>
+        {% endif %}
+    {% endif %}
+{%- endmacro %}
+
+{% block title %}{{ 'notifications.page.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    {% set blocked = demo_blocked('settings.notifications.channel') %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}#account">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'notifications.page.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'notifications.page.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <section class="card channel" aria-labelledby="channel-inapp-title">
+            <div class="channel__head">
+                <span class="list__icon">{{ ui.icon('notifications') }}</span>
+                <div class="channel__body">
+                    <h2 class="channel__title" id="channel-inapp-title">{{ 'notifications.in_app.title'|trans }}</h2>
+                    <p class="channel__hint">{{ 'notifications.in_app.hint'|trans }}</p>
+                </div>
+                <span class="pill pill--valid">{{ ui.icon('check_circle') }}{{ 'notifications.in_app.always'|trans }}</span>
+            </div>
+        </section>
+
+        {# Email: the account's confirmed address through the server's email (Phase 33.1, 36.1). #}
+        <section class="card channel" id="channel-email" aria-labelledby="channel-email-title">
+            <div class="channel__head">
+                <span class="list__icon">{{ ui.icon('mail') }}</span>
+                <div class="channel__body">
+                    <h2 class="channel__title" id="channel-email-title">{{ 'notifications.channel.email'|trans }}</h2>
+                    <p class="channel__hint">
+                        {%- if email.status.value == 'not_available' -%}
+                            {{ (is_admin ? 'notifications.email.not_available_admin' : 'notifications.email.not_available')|trans }}
+                            {%- if is_admin %} <a href="{{ url_for('settings.delivery') }}">{{ 'notifications.email.set_up'|trans }}</a>{% endif %}
+                        {%- elseif email.address -%}
+                            {{ 'notifications.email.to'|trans({address: email.address}) }}
+                            {%- if not email.own_address %} {{ 'notifications.email.to_default'|trans }}{% endif %}
+                            · <a href="{{ url_for('profile') }}#email">{{ 'notifications.email.change'|trans }}</a>
+                        {%- else -%}
+                            {{ 'notifications.email.no_address'|trans }} <a href="{{ url_for('profile') }}#email">{{ 'notifications.email.add'|trans }}</a>
+                        {%- endif -%}
+                    </p>
+                </div>
+                {{ page.status(email.status) }}
+            </div>
+            <div class="channel__content">
+                {# The email server's reply is the admins' to read (it is about the server, not you). #}
+                {% if email.result %}{{ page.last_result(email.result.status, email.result.at, email.result.error, is_admin) }}{% endif %}
+                {{ page.test_result(email.test, email.refused, 'notifications.channel.email', is_admin) }}
+                {# No switch while the server has no email: it would do nothing. #}
+                {% if not blocked and email.status.value != 'not_available' %}
+                    <div class="btn-row">
+                        <form method="post" action="{{ url_for('settings.notifications.switch', {kind: 'email'}) }}">
+                            {{ ui.csrf(csrf) }}
+                            <input type="hidden" name="enabled" value="{{ email.enabled ? '0' : '1' }}">
+                            <button type="submit" class="btn btn--ghost">{{ ui.icon(email.enabled ? 'notifications_off' : 'notifications_active') }}{{ (email.enabled ? 'notifications.switch_off' : 'notifications.switch_on')|trans }}</button>
+                        </form>
+                        {% if email.status.value == 'on' %}
+                            <form method="post" action="{{ url_for('settings.notifications.channel', {kind: 'email'}) }}">
+                                {{ ui.csrf(csrf) }}
+                                <button type="submit" name="intent" value="test" class="btn">{{ ui.icon('send') }}{{ 'notifications.test.button'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        {% for card in cards %}
+            {% set d = card.definition %}
+            {% set record = card.state.record ?? null %}
+            <section class="card channel" id="channel-{{ d.key }}" aria-labelledby="channel-{{ d.key }}-title" data-channel="{{ d.key }}">
+                <div class="channel__head">
+                    <span class="list__icon">{{ ui.icon(d.icon) }}</span>
+                    <div class="channel__body">
+                        <h2 class="channel__title" id="channel-{{ d.key }}-title">{{ d.label|trans }}</h2>
+                        <p class="channel__hint">{{ d.hint|trans }}</p>
+                    </div>
+                    {% if card.status %}{{ page.status(card.status) }}{% else %}<span class="pill" data-channel-status="none">{{ 'notifications.status.none'|trans }}</span>{% endif %}
+                </div>
+
+                <div class="channel__content">
+                    {% if card.status and card.status.value == 'switched_off' %}
+                        <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'notifications.switched_off_notice'|trans({count: 5}) }}</span></div>
+                    {% elseif card.status and card.status.value == 'blocked' %}
+                        <div class="alert alert--warning" role="status">{{ ui.icon('block') }}<span>{{ 'notifications.blocked_notice'|trans }}</span></div>
+                    {% endif %}
+                    {% if record %}
+                        {# Where it sends, as a neutral note (one status per row, as the prototype has). #}
+                        {% if card.location %}
+                            <p class="channel__meta muted" data-destination="{{ card.location.value }}">{{ ui.icon(card.location.icon()) }}<span>{{ ('notifications.sends_to.' ~ card.location.value)|trans }}</span></p>
+                        {% endif %}
+                        {{ page.last_result(record.lastStatus, record.lastAttemptAt, record.lastError) }}
+                    {% endif %}
+                    {{ page.test_result(card.test, card.refused, d.label) }}
+
+                    {% if not blocked %}
+                    <form class="form" method="post" action="{{ url_for('settings.notifications.channel', {kind: d.key}) }}" novalidate>
+                        {{ ui.csrf(csrf) }}
+                        {% for field in d.fields() %}
+                            {% set name = d.inputName(field.name) %}
+                            {% if field.isSecret() %}
+                                {% set saved = card.secrets[field.name] ?? null %}
+                                <div class="field">
+                                    <label class="field__label" for="f-{{ name }}">{{ (saved ? 'notifications.secret_replace' : field.label)|trans({field: field.label|trans}) }}{% if not field.required or saved %} <span class="field__optional">{{ 'form.optional'|trans }}</span>{% endif %}</label>
+                                    <input class="input" id="f-{{ name }}" name="{{ name }}" type="password" autocomplete="new-password" spellcheck="false" maxlength="{{ field.maxLength }}"{{ ui.described_by(name, card.errors, true) }}>
+                                    <p class="field__hint" id="f-{{ name }}-hint" data-secret-state="{{ saved ?? 'none' }}">
+                                        {% if saved == 'saved' %}{{ 'notifications.secret.saved'|trans }}{% elseif saved == 'unreadable' %}<strong>{{ 'notifications.secret.unreadable'|trans }}</strong>{% endif %}
+                                        {% if field.hint %}{{ field.hint|trans }}{% endif %}
+                                        {{ (can_seal ? 'notifications.secret.hint' : 'notifications.secret.hint_no_key')|trans }}
+                                    </p>
+                                    {{ ui.field_error(card.errors, name) }}
+                                </div>
+                                {% if saved %}
+                                    <label class="toggle">
+                                        <input type="checkbox" name="{{ name }}-remove" value="1"{% if field.name in card.remove %} checked{% endif %}>
+                                        <span class="toggle__text"><span class="toggle__title">{{ 'notifications.secret.remove'|trans({field: field.label|trans}) }}</span></span>
+                                    </label>
+                                {% endif %}
+                            {% elseif field.type.value == 'integer' %}
+                                {{ ui.input(name, field.label|trans, card.values, card.errors, {type: 'number', step: 1, min: field.min, max: field.max, inputmode: 'numeric', optional: not field.required, hint: field.hint ? field.hint|trans : null}) }}
+                            {% else %}
+                                {{ ui.input(name, field.label|trans, card.values, card.errors, {type: field.type.value == 'url' ? 'url' : 'text', required: field.required, maxlength: field.maxLength, autocomplete: 'off', placeholder: field.placeholder, hint: field.hint ? field.hint|trans : null}) }}
+                            {% endif %}
+                        {% endfor %}
+                        <div class="btn-row">
+                            <button type="submit" name="intent" value="save" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
+                            <button type="submit" name="intent" value="test" class="btn">{{ ui.icon('send') }}{{ 'notifications.test.button'|trans }}</button>
+                        </div>
+                    </form>
+                    {% if record %}
+                        <div class="btn-row">
+                            <form method="post" action="{{ url_for('settings.notifications.switch', {kind: d.key}) }}">
+                                {{ ui.csrf(csrf) }}
+                                <input type="hidden" name="enabled" value="{{ record.enabled ? '0' : '1' }}">
+                                <button type="submit" class="btn btn--ghost">{{ ui.icon(record.enabled ? 'notifications_off' : 'notifications_active') }}{{ (record.enabled ? 'notifications.switch_off' : 'notifications.switch_on')|trans }}</button>
+                            </form>
+                            <a class="btn btn--ghost" href="{{ url_for('settings.notifications.remove', {kind: d.key}) }}">{{ ui.icon('delete') }}{{ 'notifications.remove'|trans }}</a>
+                        </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </section>
+        {% endfor %}
+
+        <p class="muted">{{ (is_admin ? 'notifications.page.admin_note' : 'notifications.page.member_note')|trans }}</p>
+    </div>
+{% endblock %}

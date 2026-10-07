@@ -7046,3 +7046,100 @@ p.stat__label {
 .input--short {
     width: 7rem;
 }
+
+/* Settings → Account → Notifications (Phase 36.2): the prototype's
+   *Reminder delivery* rows — a 40 px icon tile, title, hint and status —
+   with the channel's fields and buttons indented under the row. */
+.channel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.channel__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.channel__head > .list__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 12px;
+}
+
+.channel__body {
+    /* Room for the hint before the status wraps under it (a long status at 375 px). */
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.channel__title {
+    margin: 0;
+    font-size: var(--fs-base);
+    font-weight: 700;
+}
+
+.channel__hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+}
+
+.channel__head > .pill {
+    flex: none;
+}
+
+.channel__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-left: calc(2.5rem + var(--space-3));
+}
+
+.channel__content:empty {
+    display: none;
+}
+
+.channel__meta:empty {
+    display: none;
+}
+
+.channel__meta,
+.channel__result {
+    margin: 0;
+}
+
+.channel__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--fs-sm);
+}
+
+.channel .alert {
+    align-items: flex-start;
+}
+
+.channel .alert__reply {
+    overflow-wrap: anywhere;
+}
+
+.channel__result {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+}
+
+.channel__result--failed {
+    color: var(--red);
+}
+
+@media (max-width: 30rem) {
+    .channel__content {
+        padding-left: 0;
+    }
+}

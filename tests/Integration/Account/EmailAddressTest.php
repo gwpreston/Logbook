@@ -120,14 +120,15 @@ final class EmailAddressTest extends AccountTestCase
         self::assertNull($this->user($app)->email);
     }
 
-    public function testRemindersGoToTheConfirmedAddressAndTheReminderPageLinksToIt(): void
+    public function testRemindersGoToTheConfirmedAddressAndTheNotificationsPageLinksToIt(): void
     {
-        $app = $this->accountApp();
+        $app = $this->accountApp(['TEST_MAIL_TO' => '']);
         $browser = $this->signedIn($app);
-        self::assertStringContainsString('No address on your account yet', self::body($browser->get('/settings/reminders')));
+        self::assertStringContainsString('No address on your account yet', self::body($browser->get('/settings/notifications')));
         $this->withEmail($app, $this->owner($app), 'pat@example.com');
-        $page = self::body($browser->get('/settings/reminders'));
-        self::assertStringContainsString('<strong>pat@example.com</strong>', $page);
+        $page = self::body($browser->get('/settings/notifications'));
+        self::assertStringContainsString('To pat@example.com.', $page);
+        self::assertStringContainsString('href="/profile#email"', $page);
         self::assertStringNotContainsString('name="email"', $page, 'no field of its own any more');
     }
 

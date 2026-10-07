@@ -23,7 +23,7 @@ there is no public sign-up, and only an admin adds people.
 
 | | Can |
 |---|---|
-| **Admin** | everything a member can, plus Settings → Users, Modules, Backup and restore; the instance's default email address, ntfy topic and Gotify token |
+| **Admin** | everything a member can, plus Settings → Users, Modules, Backup and restore, and Delivery (the email server, its default recipient for admins, and where members' channels may send) |
 | **Member** | their own vehicles, those shared with them, and their own settings |
 
 The first account, made by setup, is an admin; upgrading to 2.0.0 makes the
@@ -155,16 +155,18 @@ and once if it becomes overdue, in their own language, units and time zone,
 through their own channels. A shared vehicle is always judged by its
 owner's lead times, so everyone agrees on what is due.
 
-Channels are per person (Settings → Reminders):
+Channels are per person (Settings → Account → Notifications, from v3.3.0;
+see [notification-channels.md](notification-channels.md)):
 
 - **Email** goes to your confirmed address (your Profile). The *Default
   recipient for admins* (Settings → Delivery) is the admins' default
   only, so a member without an address gets no email.
-- **ntfy** and **Gotify**: set your own topic URL or application token.
-  Without one, only admins receive through the instance's topic or token,
-  so a household topic is never flooded by everyone's cars.
-- The **webhook** stays instance-wide and receives everyone's notifications,
-  each naming its `user`.
+- **ntfy**, **Gotify** and a **webhook** of your own: each with its own
+  card, *Send test* and status. Nobody else, admins included, can see them.
+  Where members' channels may send is the admins' choice (Settings →
+  Delivery).
+- The server's **webhook** (`WEBHOOK_URL`, deprecated) still receives
+  everyone's notifications, each naming its `user`.
 
 The monthly digest and the calendar feed are per person too, covering their
 own vehicles and those they chose to be reminded about.

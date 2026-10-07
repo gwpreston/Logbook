@@ -29,6 +29,18 @@
             </div>
         {% endif %}
 
+        {# The old channel variables (Phase 36.2, #227, #228). #}
+        {% if channel_variables is not empty %}
+            <div class="alert alert--warning" role="status" data-channel-variables>
+                {{ ui.icon('warning') }}<span>{{ 'delivery.channels.old_variables'|trans({variable: channel_variables|first, count: channel_variables|length}) }}</span>
+            </div>
+        {% endif %}
+        {% if webhook_variable %}
+            <div class="alert alert--info" role="status" data-webhook-variable>
+                {{ ui.icon('info') }}<span>{{ 'delivery.channels.webhook_deprecated'|trans }}</span>
+            </div>
+        {% endif %}
+
         {% if test %}
             {% if test.sent %}
                 <div class="alert alert--success" role="status" data-test-result="sent">
@@ -106,6 +118,32 @@
                 {% if server %}
                     <a class="btn btn--lg" href="{{ url_for('settings.delivery.remove') }}">{{ ui.icon('delete') }}{{ 'delivery.email.remove'|trans }}</a>
                 {% endif %}
+            </div>
+        </form>
+
+        {# Where members' channels may send (spec.md §7.11, Phase 36.2). #}
+        <form class="form" method="post" action="{{ url_for('settings.delivery') }}" id="destinations">
+            {{ ui.csrf(csrf) }}
+            <input type="hidden" name="intent" value="destinations">
+            <section class="card" aria-labelledby="destinations-heading">
+                <h2 id="destinations-heading" class="card__title">{{ ui.icon('public') }}{{ 'delivery.destinations.heading'|trans }}</h2>
+                <p class="muted">{{ 'delivery.destinations.intro'|trans }}</p>
+                <fieldset class="fieldset">
+                    <legend class="visually-hidden">{{ 'delivery.destinations.heading'|trans }}</legend>
+                    {% for choice in destination_choices %}
+                        <label class="toggle">
+                            <input type="radio" name="destinations" value="{{ choice.value }}"{% if choice == destinations %} checked{% endif %}>
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ choice.labelKey()|trans }}</span>
+                                <span class="toggle__hint">{{ (choice.labelKey() ~ '_hint')|trans }}</span>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </fieldset>
+                <p class="field__hint">{{ 'delivery.destinations.always'|trans }}</p>
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ 'form.save'|trans }}</button>
             </div>
         </form>
     </div>

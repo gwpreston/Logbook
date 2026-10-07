@@ -7,11 +7,13 @@ namespace Logbook\Service\Notification;
 use InvalidArgumentException;
 use Logbook\Service\Demo\DemoMode;
 use Logbook\Service\Demo\DemoRestriction;
+use Logbook\Service\Notification\Personal\UserChannels;
 
 /**
- * Every notification channel the app knows, as registered in the
- * `notification.channels` DI list (config/dependencies.php). Knows nothing
- * about concrete channel types.
+ * Every notification channel the app knows: the server's (email and the
+ * server's webhook, the `notification.channels` DI list in
+ * config/dependencies.php) and, per person, their usable personal channels
+ * (Phase 36.2, UserChannels). Knows nothing about concrete channel types.
  */
 final readonly class ChannelRegistry
 {
@@ -21,8 +23,11 @@ final readonly class ChannelRegistry
     /**
      * @param iterable<NotificationChannel> $channels
      */
-    public function __construct(iterable $channels, private ?DemoMode $demo = null)
-    {
+    public function __construct(
+        iterable $channels,
+        private ?DemoMode $demo = null,
+        private ?UserChannels $personal = null,
+    ) {
         $byKey = [];
         foreach ($channels as $channel) {
             $key = $channel->key();
@@ -70,8 +75,9 @@ final readonly class ChannelRegistry
     }
 
     /**
-     * The channels to use for a person: enabled by them AND able to reach
-     * them (configured here, with their own details or an admin's defaults).
+     * The channels to use for a person (spec.md §7.11 *Delivery*): the
+     * server's that they have enabled and that can reach them, then their
+     * usable personal channels.
      *
      * @return list<NotificationChannel>
      */
@@ -82,9 +88,11 @@ final readonly class ChannelRegistry
             return [];
         }
 
-        return array_values(array_filter(
+        $server = array_values(array_filter(
             $this->channels,
             static fn (NotificationChannel $c): bool => $preferences->isEnabled($c->key()) && $c->reaches($recipient),
         ));
+
+        return [...$server, ...($this->personal?->usable($recipient) ?? [])];
     }
 }

@@ -19,7 +19,8 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Renders Settings → Reminders: lead times, the *Needs attention*
- * thresholds, notification channels, digest and the calendar feed.
+ * thresholds, digest, the test notification and the calendar feed, and
+ * one line saying where notifications go (spec.md §8, Phase 36.2).
  */
 final readonly class ReminderSettingsPage
 {
@@ -37,28 +38,20 @@ final readonly class ReminderSettingsPage
 
     /**
      * @param array<string, string>|null $values submitted values; null = the saved ones
-     * @param list<string>|null $enabled submitted channel keys; null = the saved ones
      */
     public function render(
         ServerRequestInterface $request,
         ResponseInterface $response,
         ?array $values = null,
-        ?array $enabled = null,
         ?ValidationErrors $errors = null,
         int $status = 200,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
         $notifications = $this->settings->notificationPreferences($user->id);
 
-        $recipient = Recipient::of($user, $notifications);
-        $channels = array_map(static fn (NotificationChannel $c): array => [
-            'key' => $c->key(),
-            'label' => $c->label(),
-            'configured' => $c->isConfigured() || $c->reaches($recipient),
-            // Configured here but not for them: a member needs their own address, topic or token (Phase 19).
-            'reaches' => $c->reaches($recipient),
-            'enabled' => $enabled === null ? $notifications->isEnabled($c->key()) : in_array($c->key(), $enabled, true),
-        ], $this->channels->all());
+        // "Sent to: Email, ntfy" (spec.md §8): every channel that would be used now.
+        $active = $this->channels->active($notifications, Recipient::of($user));
+        $sentTo = array_values(array_unique(array_map(static fn (NotificationChannel $c): string => $c->label(), $active)));
 
         $session = RequestContext::session($request);
         $newFeed = $session->get(self::NEW_FEED_URL);
@@ -67,15 +60,13 @@ final readonly class ReminderSettingsPage
         return $this->view->render($request, $response, 'settings/reminders.twig', [
             'values' => $values ?? ReminderSettingsForm::values(
                 $this->settings->reminderPreferences($user->id),
-                $notifications,
                 $user->preferences,
                 $this->attention->thresholds($user->id),
             ),
             'digest' => $values === null ? $notifications->digest : ($values['digest'] ?? '') !== '',
             'errors' => $errors?->all() ?? [],
-            'channels' => $channels,
-            'any_active' => $this->channels->active($notifications, $recipient) !== [],
-            'is_admin' => $user->isAdmin,
+            'sent_to' => $sentTo,
+            'any_active' => $active !== [],
             'feed_enabled' => $this->feed->isEnabled($user),
             'new_feed' => is_array($newFeed) ? $newFeed : null,
         ], $status);

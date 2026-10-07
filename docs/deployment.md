@@ -92,25 +92,30 @@ See [Background jobs](#background-jobs).
 
 ### Notifications
 
-Reminders always show in the app. To also have them sent when they come due,
-set up email in **Settings → Delivery** (admins: the SMTP server, with *Send
-test email*), set any other channels in the `.env` next to the compose file,
-then choose which to use in **Settings → Reminders** (where *Send a test*
-checks them):
+Reminders always show in the app. To also have them sent when they come due:
+
+1. An admin sets up email in **Settings → Delivery** (the SMTP server, with
+   *Send test email*), and there chooses **where members can send**: the
+   internet only, the internet and your network (the default), or this
+   server too.
+2. Each person sets up their own channels in **Settings → Account →
+   Notifications**: email to their confirmed address, ntfy, Gotify or a
+   webhook, each with *Send test*.
+
+Set `APP_URL` so the links in notifications and the calendar feed point at
+the address people use:
 
 ```dotenv
-APP_URL=https://garage.example.com        # used for links in notifications and the calendar feed
-# ntfy
-NTFY_URL=https://ntfy.sh/a-long-unguessable-topic
-# Gotify
-GOTIFY_URL=https://gotify.example.com
-GOTIFY_TOKEN=AbCdEf123
-# Any JSON webhook (Home Assistant, n8n, …)
-WEBHOOK_URL=https://ha.example.com/api/webhook/logbook
+APP_URL=https://garage.example.com
 ```
 
-All variables are listed in `.env.example`; adding another kind of channel is
-described in [notification-channels.md](notification-channels.md).
+**Upgrading to v3.3.0:** `NTFY_URL`, `NTFY_TOKEN`, `GOTIFY_URL`,
+`GOTIFY_TOKEN` and `GOTIFY_PRIORITY` are imported once into every admin's
+own channels by the upgrade, then no longer read: keep them set (and
+`SESSION_SECRET` unchanged) until the new version has started once, then
+remove them. `WEBHOOK_URL` still works as the server's webhook but is
+deprecated, and no longer follows redirects. Adding another kind of channel
+is described in [notification-channels.md](notification-channels.md).
 
 With email set up, people can also reset a forgotten password from the
 sign-in page, and admins can email reset links and add users directly
@@ -252,8 +257,7 @@ location = /logbook {
 ### Scheduled tasks (cron)
 
 Reminders are brought up to date and sent through the notification channels
-(see [Notifications](#notifications) above; the same `NTFY_*`, `GOTIFY_*` and
-`WEBHOOK_URL` variables go in `.env`, and email is set in Settings → Delivery) by a runner that should be
+(see [Notifications](#notifications) above: channels are set up in the app) by a runner that should be
 called every 15 minutes, as the web server user. In `/etc/cron.d/logbook`:
 
 ```cron

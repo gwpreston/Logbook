@@ -220,7 +220,7 @@ elif [ "$DO_STATUS" -eq 1 ]; then
     TOTAL_STEPS=2
     printf '\n%s Logbook — local development status %s\n' "$BOLD" "$RESET"
 else
-    TOTAL_STEPS=5
+    TOTAL_STEPS=6
     [ "$DO_RESET" -eq 1 ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
     [ "$SAMPLE_DATA" -eq 1 ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
     printf '\n%s Logbook — local development setup %s\n' "$BOLD" "$RESET"
@@ -523,6 +523,25 @@ if [ "$SAMPLE_DATA" -eq 1 ]; then
         chmod 600 "$CREDENTIALS"
         info "written to $CREDENTIALS (readable by you only)"
     fi
+fi
+
+# ---------------------------------------------------------------------------
+step "Pointing email at Mailpit"
+# ---------------------------------------------------------------------------
+# Settings → Delivery is the only place the email server is set (Phase 36.1);
+# fill it in with Mailpit unless this database already has a server saved.
+if service_running mailpit; then
+    if run_logged exec -T -u www-data app php bin/dev-mailpit.php; then
+        if grep -q "already saved" "$LOG"; then
+            ok "an email server is already saved in Settings → Delivery — left as it is"
+        else
+            ok "Settings → Delivery sends through Mailpit (mailpit:1025)"
+        fi
+    else
+        warn "could not set the email server; set it in Settings → Delivery: server mailpit, port 1025, encryption None"
+    fi
+else
+    warn "Mailpit is not running, so email was not set up"
 fi
 
 # ---------------------------------------------------------------------------

@@ -81,8 +81,9 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [35.1](docs/phases/phase-35.1.md) | Demo mode | ✅ |
 | [35.2](docs/phases/phase-35.2.md) | Proxmox LXC, Traefik and Caddy guides + v3.2 release | ✅ |
 | [36.1](docs/phases/phase-36.1.md) | Email server settings (admin) | 🚧 |
-| [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 📋 |
+| [36.2](docs/phases/phase-36.2.md) | Personal notification channels | 🚧 |
 | [36.3](docs/phases/phase-36.3.md) | Telegram, Discord, Pushover and Mattermost + v3.3 release | 📋 |
+| [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -891,6 +892,39 @@ use.*
 - No release of its own; ships with Phase 36.3 as v3.3.0.
 
 → [`phase-36.1.md`](docs/phases/phase-36.1.md)
+
+---
+
+## Phase 36.2 — Personal notification channels
+*Everyone chooses where their own reminders go, and sets it up themselves.*
+
+- Settings → Account → Notifications: In-app, Email, ntfy, Gotify and a
+  personal webhook, each a card from one definition, with a status, the
+  last result and *Send test* (unsaved values, 5 per 10 minutes).
+- The `NTFY_*` and `GOTIFY_*` variables are imported once into admins'
+  own channels, then no longer read (#227, #247); `WEBHOOK_URL` stays as
+  the server's webhook, deprecated (#228).
+- An admin chooses where members' channels may send (default: the
+  internet and your network, #229); every address is checked and pinned,
+  link-local is always refused for members, redirects are never followed.
+- A channel that fails 5 times in a row switches off and says so (#233);
+  email never does.
+- Members' secrets are sealed, never `env:`, never shown; admins see
+  nothing of members' channels (#232).
+- No release of its own; ships with Phase 36.3 as v3.3.0.
+
+→ [`phase-36.2.md`](docs/phases/phase-36.2.md)
+
+---
+
+## Phase 36.4 — What each channel receives, and quiet hours
+*Choose what reaches you where, and when it may.*
+
+- A choice per channel of what it receives (due, overdue, digest, price
+  alerts); quiet hours that hold a message until they end (#234).
+- Open questions #250–#254 are answered before it starts.
+
+→ [`phase-36.4.md`](docs/phases/phase-36.4.md)
 
 ---
 

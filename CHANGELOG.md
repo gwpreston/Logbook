@@ -13,20 +13,52 @@ is called out explicitly.
   never shown again, kept out of backups and job output.
 - `SESSION_SECRET_FILE`: the Docker image writes a random `SESSION_SECRET` to
   `/data/session-secret` on a **fresh** volume.
+- **Settings → Account → Notifications** (Phase 36.2): each person's own
+  Email, ntfy, Gotify and webhook channels, each with a status, the last
+  result and *Send test* (with the typed values, unsaved). Tokens are
+  encrypted, never shown again and never in backups. Nobody else, admins
+  included, can see a person's channels.
+- **Where members can send** (Settings → Delivery): the internet only, the
+  internet and your network (default), or this server too. Link-local,
+  unspecified and reserved addresses are always refused for members; every
+  address is checked and pinned on each send.
+
+### Changed
+- Notification channels moved from Settings → Reminders to Account →
+  Notifications; Settings → Reminders says where reminders go.
+- A personal channel that fails 5 times in a row switches itself off and
+  says so, once, through the person's other channels (email never does).
+- No channel follows redirects any more (the server's webhook followed up
+  to three).
+
+### Deprecated
+- `WEBHOOK_URL`: still the server's webhook, receiving every recipient's
+  notifications; each person can now add their own.
 
 ### Removed
 - **The `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,
   `MAIL_ENCRYPTION`, `MAIL_FROM` and `MAIL_TO` variables.** Nothing is
   imported from them.
+- **`NTFY_URL`, `NTFY_TOKEN`, `GOTIFY_URL`, `GOTIFY_TOKEN` and
+  `GOTIFY_PRIORITY`** (Phase 36.2): imported once by the upgrade into every
+  admin's own channels (and `NTFY_TOKEN` onto topics on the same server),
+  then no longer read.
 
 ### Upgrade notes
 - **Email is off after upgrading until an admin sets the server up in
   Settings → Delivery.** The page says so while any `MAIL_*` variable is
   still set; remove them afterwards. `MAIL_TO` is now the *Default
   recipient for admins* field there.
-- One migration (`notification_secrets`).
-- The development stack's Mailpit is set up once by hand in Settings →
-  Delivery (server `mailpit`, port 1025, encryption None).
+- Two migrations (`notification_secrets`, `notification_channels`).
+- **Keep the `NTFY_*` and `GOTIFY_*` variables, and `SESSION_SECRET`, as
+  they are until the new version has started once**: the upgrade imports
+  them. Remove them afterwards (Settings → Delivery says while any is set).
+  Without a `SESSION_SECRET` the tokens can't be encrypted, so those
+  channels ask for their token again; nothing is copied in the clear.
+- Members' channels that point somewhere the new *Where members can send*
+  setting refuses are kept and shown as blocked.
+- `bin/dev-setup.sh` points Settings → Delivery at the development
+  stack's Mailpit when no email server is saved.
 
 ## [3.2.0] — 2026-10-06
 

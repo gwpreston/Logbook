@@ -7,28 +7,27 @@ namespace Logbook\Service\Notification\Channel;
 use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
-use Logbook\Service\Notification\NotificationItem;
 use Logbook\Service\Notification\Recipient;
+use Logbook\Service\Notification\WebhookPayload;
 use Logbook\Support\Config\Env;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * A generic webhook (WEBHOOK_URL) receiving the notification as JSON, for
- * Home Assistant, n8n, Node-RED, a chat bridge…:
- *
- *   {"event": "reminders"|"digest"|"test"|"job_failed", "title": …, "message": …,
- *    "url": …, "urgent": bool, "items": [{"reminder_id", "title",
- *    "detail", "status", "due_on"}], "attention": [{"vehicle_id",
- *    "vehicle", "kind", "title"}] (the digest's checks, Phase 24; else
- *    empty), "user": {"id", "username", "display_name"}}
+ * The server's webhook (`WEBHOOK_URL`, key `webhook`; spec.md §7.11,
+ * deprecated from Phase 36.2, #228): it receives every recipient's
+ * notifications as JSON (WebhookPayload), naming them. Set by the admin
+ * in the environment, so the members' destination policy does not apply;
+ * redirects are not followed. Personal webhooks are `personal-webhook`.
  */
 final readonly class WebhookChannel implements NotificationChannel
 {
+    public const string VARIABLE = 'WEBHOOK_URL';
+
     private ?string $url;
 
     public function __construct(Env $env, private HttpClientInterface $http)
     {
-        $url = $env->nullableString('WEBHOOK_URL');
+        $url = $env->nullableString(self::VARIABLE);
         $this->url = $url !== null && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true) ? $url : null;
     }
 
@@ -47,7 +46,7 @@ final readonly class WebhookChannel implements NotificationChannel
         return $this->url !== null;
     }
 
-    /** Instance-level: it receives every recipient's notifications, naming them. */
+    /** Server-wide: it receives every recipient's notifications, naming them. */
     public function reaches(Recipient $recipient): bool
     {
         return $this->isConfigured();
@@ -60,16 +59,8 @@ final readonly class WebhookChannel implements NotificationChannel
         }
 
         return HttpDelivery::post($this->http, $this->key(), $this->url, [
-            'json' => [
-                'event' => $notification->kind->value,
-                'title' => $notification->title,
-                'message' => $notification->message,
-                'url' => $notification->url,
-                'urgent' => $notification->urgent,
-                'items' => array_map(static fn (NotificationItem $i): array => $i->toArray(), $notification->items),
-                'attention' => $notification->attention,
-                'user' => ['id' => $recipient->userId, 'username' => $recipient->username, 'display_name' => $recipient->name],
-            ],
+            'json' => WebhookPayload::of($notification, $recipient),
+            'max_redirects' => 0,
         ]);
     }
 }
