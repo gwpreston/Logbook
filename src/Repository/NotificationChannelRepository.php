@@ -80,7 +80,8 @@ final readonly class NotificationChannelRepository
             ];
             $types = ['enabled' => ParameterType::BOOLEAN, 'switched_off_at' => ParameterType::NULL];
             $updated = $connection->update(self::TABLE, $values, ['user_id' => $userId, 'kind' => $kind], $types);
-            if ($updated === 0) {
+            // MySQL counts changed rows, not matched ones: an identical save in the same second updates 0.
+            if ($updated === 0 && !$this->exists($connection, $userId, $kind)) {
                 $connection->insert(self::TABLE, $values + [
                     'user_id' => $userId,
                     'kind' => $kind,
@@ -89,6 +90,18 @@ final readonly class NotificationChannelRepository
             }
         };
         $this->connection->transactional($save);
+    }
+
+    private function exists(Connection $connection, int $userId, string $kind): bool
+    {
+        return $connection->createQueryBuilder()
+            ->select('1')
+            ->from(self::TABLE)
+            ->where('user_id = :user', 'kind = :kind')
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('kind', $kind)
+            ->executeQuery()
+            ->fetchOne() !== false;
     }
 
     /**

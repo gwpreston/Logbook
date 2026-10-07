@@ -294,7 +294,7 @@ final class ServiceChannelsTest extends ReminderTestCase
         self::assertCount(ChannelAction::CHECK_MAX, $this->http->to('https://slack.com/api/auth.test'));
 
         $saved = $browser->post('/settings/notifications/slack', $typed);
-        self::assertSame(303, $saved->getStatusCode());
+        self::assertSame(303, $saved->getStatusCode(), substr(self::body($saved), 0, 600));
         self::assertStringContainsString('couldn’t be reached to check it', self::body($browser->follow($saved)));
         self::assertCount(ChannelAction::CHECK_MAX, $this->http->to('https://slack.com/api/auth.test'), 'not asked again');
     }

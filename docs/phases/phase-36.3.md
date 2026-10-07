@@ -2,7 +2,7 @@
 
 *Five more places a reminder can reach you.*
 
-Status: 🚧 in progress · releases **v3.3.0** with Phases 36.1 and 36.2 · file
+Status: ✅ complete · releases **v3.3.0** with Phases 36.1 and 36.2 · file
 lives in `docs/phases/`
 
 Part three of Phase 36. [36.2](phase-36.2.md) made every channel personal
@@ -199,9 +199,10 @@ draft this phase first carried differs from it in these ways:
 ### 36.3.5 Checks
 - [ ] Send a real test through each service once, from a throwaway
       account, and record that it was done and when under *Audit*. (Not in
-      CI: it needs credentials; the owner's step.)
-- [ ] `design-reviewer` agent on the page with all cards at 375, 768
-      and 1280 px, light and dark, all four accents.
+      CI: it needs credentials; **the owner's step, not done yet**: to do
+      before tagging v3.3.0.)
+- [x] `design-reviewer` agent on the page with all cards at 375, 768
+      and 1280 px, light and dark, all four accents. *(See* Reviews*.)*
 
 ### Sample data
 - [x] None. Demo mode sends nothing.
@@ -287,6 +288,33 @@ draft this phase first carried differs from it in these ways:
   `&`, `<`, `>`; `@channel` doesn't ping without `link_names`.
 
 **Real test through each service:** *(36.3.5, the owner's step.)*
+
+## Reviews
+
+All four review agents on 2026-10-07 (head 2790138), then fixed:
+
+- **Design** (0 HIGH, 0 MEDIUM, 3 LOW, all fixed): *Find my chat* spacing
+  on the card's rhythm, its button in a `.btn-row` like the others, the
+  German third-party notice reworded. Checked at 375, 768 and 1280 px,
+  light and dark, all four accents, JS off: no overflow, 44 px buttons,
+  the notices present. Not covered by the prototype (it has only the
+  *Reminder delivery* rows): the notice, the chat list, the error words.
+- **Performance** (1 MEDIUM, 3 LOW): the check on saving now gives up
+  after 5 seconds and is limited to 10 per user in 10 minutes (then saved
+  unchecked); every channel request now times out at 10 seconds, as the
+  spec said. LOW: resolving each card's host on page view (#263), fitting
+  quadratic in lines (0.1 ms at 100 lines; left), sequential sends when a
+  service is down (#264).
+- **Security** (1 MEDIUM, 1 LOW): a service's answer is read only up to
+  64 KB, so a member's server streaming without end can't exhaust memory;
+  the LOW (checks on saving not limited) was fixed by the limit above.
+  Mattermost checked on saving: #262.
+- **Bug hunt** (1 MEDIUM, 3 LOW, all fixed): the Slack, Pushover and
+  Mattermost icons were missing from the sprite (added, with a test that
+  every card's icon is there); a bad Pushover device blamed the keys;
+  Telegram usernames are 5 to 32 characters; Mattermost's "…and N more"
+  could join the last list item; a 429 without a wait now says the service
+  is busy. The spec now says *Find my chat* uses the saved token.
 
 ## Open questions
 
