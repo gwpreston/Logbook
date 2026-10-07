@@ -69,6 +69,12 @@ an admin chooses in **Settings → Delivery → Where members can send**:
   addresses, and IPv6 forms carrying an IPv4 address (NAT64, 6to4).
 - Redirects are never followed, for any channel.
 - An admin's own channels are not restricted.
+- **Docker:** the bridge gateway (`172.17.0.1`), the app's own container
+  address and other containers on the compose network are private
+  addresses, so they count as *Your network*, which the default allows.
+  To keep members off them, list the bridge subnet (e.g. `172.16.0.0/12`)
+  and the container's address under *This server's addresses* (Settings →
+  AI connections), or choose *The internet only*.
 - A saved address the setting now refuses is **kept**, shown as *Blocked*,
   and not used; relaxing the setting brings it back.
 
@@ -84,8 +90,11 @@ an admin chooses in **Settings → Delivery → Where members can send**:
   set, and `SESSION_SECRET` unchanged, until the new version has started
   once; then remove them. Settings → Delivery says while any is still set.
 - Without a `SESSION_SECRET` the tokens can't be encrypted: those channels
-  are created as *Needs setup* and nothing is copied in the clear; enter
-  the token again on the Notifications page.
+  are created as *Needs setup* and nothing new is copied in the clear; a
+  personal Gotify token stays where it already was (in plain text, as
+  before) until its owner enters it again on the Notifications page, which
+  removes it. Rolling the upgrade back also puts tokens back there in plain
+  text, as the older version kept them.
 - **`WEBHOOK_URL` keeps working** as the server's webhook (key `webhook`):
   it receives every recipient's notifications, naming them, as before. It
   is deprecated, and no longer follows redirects (it used to follow up to

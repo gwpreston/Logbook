@@ -43,6 +43,12 @@ final readonly class ChannelResults
 
             return false;
         }
+        if ($result->refused) {
+            // Shown, never counted: a resolver outage or a stricter policy must not switch channels off.
+            $this->records->recordRefusal($recipient->userId, $result->channel, $result->error ?? 'Refused.', $now);
+
+            return false;
+        }
 
         return $this->records->recordFailure($recipient->userId, $result->channel, $result->error ?? 'Failed.', $now);
     }

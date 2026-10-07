@@ -32,7 +32,7 @@ final readonly class WebhookSender implements PersonalSender
                 FieldType::Url,
                 required: true,
                 hint: 'notifications.webhook.url_hint',
-                placeholder: 'https://example.com/hooks/logbook',
+                placeholder: 'https://example.com/hook',
             ),
         ]);
     }

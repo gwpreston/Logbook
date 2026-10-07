@@ -122,6 +122,20 @@ final readonly class NotificationChannelRepository
     }
 
     /**
+     * Record a send refused before any request (the destination policy, a
+     * name that did not resolve): the last result says so, the failure
+     * count is left as it was.
+     */
+    public function recordRefusal(int $userId, string $kind, string $error, DateTimeImmutable $now): void
+    {
+        $this->connection->update(self::TABLE, [
+            'last_status' => 'failed',
+            'last_attempt_at' => $this->at($now),
+            'last_error' => mb_substr($error, 0, self::ERROR_MAX),
+        ], ['user_id' => $userId, 'kind' => $kind]);
+    }
+
+    /**
      * Record a failed send, and switch the channel off when it is the
      * fifth in a row.
      *

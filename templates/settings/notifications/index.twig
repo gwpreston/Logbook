@@ -1,6 +1,5 @@
 {% extends 'layout.twig' %}
 {% import 'macros/ui.twig' as ui %}
-{% import 'macros/ai.twig' as ai %}
 {% import _self as page %}
 
 {#
@@ -104,12 +103,13 @@
                 {# The email server's reply is the admins' to read (it is about the server, not you). #}
                 {% if email.result %}{{ page.last_result(email.result.status, email.result.at, email.result.error, is_admin) }}{% endif %}
                 {{ page.test_result(email.test, email.refused, 'notifications.channel.email', is_admin) }}
-                {% if not blocked %}
+                {# No switch while the server has no email: it would do nothing. #}
+                {% if not blocked and email.status.value != 'not_available' %}
                     <div class="btn-row">
                         <form method="post" action="{{ url_for('settings.notifications.switch', {kind: 'email'}) }}">
                             {{ ui.csrf(csrf) }}
                             <input type="hidden" name="enabled" value="{{ email.enabled ? '0' : '1' }}">
-                            <button type="submit" class="btn">{{ ui.icon(email.enabled ? 'notifications_off' : 'notifications_active') }}{{ (email.enabled ? 'notifications.switch_off' : 'notifications.switch_on')|trans }}</button>
+                            <button type="submit" class="btn btn--ghost">{{ ui.icon(email.enabled ? 'notifications_off' : 'notifications_active') }}{{ (email.enabled ? 'notifications.switch_off' : 'notifications.switch_on')|trans }}</button>
                         </form>
                         {% if email.status.value == 'on' %}
                             <form method="post" action="{{ url_for('settings.notifications.channel', {kind: 'email'}) }}">
@@ -142,9 +142,10 @@
                         <div class="alert alert--warning" role="status">{{ ui.icon('block') }}<span>{{ 'notifications.blocked_notice'|trans }}</span></div>
                     {% endif %}
                     {% if record %}
-                        <p class="channel__meta">
-                            {% if card.location %}{{ ai.location(card.location) }}{% endif %}
-                        </p>
+                        {# Where it sends, as a neutral note (one status per row, as the prototype has). #}
+                        {% if card.location %}
+                            <p class="channel__meta muted" data-destination="{{ card.location.value }}">{{ ui.icon(card.location.icon()) }}<span>{{ ('notifications.sends_to.' ~ card.location.value)|trans }}</span></p>
+                        {% endif %}
                         {{ page.last_result(record.lastStatus, record.lastAttemptAt, record.lastError) }}
                     {% endif %}
                     {{ page.test_result(card.test, card.refused, d.label) }}

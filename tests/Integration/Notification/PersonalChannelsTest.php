@@ -140,6 +140,11 @@ final class PersonalChannelsTest extends ReminderTestCase
         $sent = $this->http->to('https://gotify.test/message')[0];
         self::assertSame(['AppTokenSecret'], $sent['headers']['x-gotify-key'] ?? null);
 
+        // Another port or plain http is another destination too.
+        $browser->post('/settings/notifications/gotify', ['intent' => 'test', 'gotify-url' => 'http://gotify.test']);
+        $browser->post('/settings/notifications/gotify', ['intent' => 'test', 'gotify-url' => 'https://gotify.test:8443']);
+        self::assertCount(1, $this->http->requests);
+
         // Saving another host without typing the token drops it and says so.
         $moved = $browser->post('/settings/notifications/gotify', [
             'intent' => 'save',
@@ -311,6 +316,26 @@ final class PersonalChannelsTest extends ReminderTestCase
         $preferences = $this->service($app, ReminderSettingsStore::class)->notificationPreferences($owner->id);
         self::assertTrue($preferences->isEnabled('email'));
         self::assertSame('failed', $this->service($app, ReminderSettingsStore::class)->emailResult($owner->id)['status'] ?? null);
+    }
+
+    public function testARefusedDestinationIsShownButNeverSwitchesAChannelOff(): void
+    {
+        $app = $this->createRecordingApp(self::SERVER_ONLY);
+        $this->signedIn($app);
+        $sam = $this->createMember($app, 'sam');
+        // A name that stops resolving (a resolver outage) is refused before any request.
+        $this->giveChannel($app, $sam, 'ntfy', ['url' => 'https://gone.test/topic']);
+
+        for ($i = 0; $i < ChannelRecord::SWITCH_OFF_AFTER + 2; $i++) {
+            $this->dispatch($app, $sam);
+        }
+
+        $record = $this->record($app, $sam, 'ntfy');
+        self::assertTrue($record->enabled, 'never switched off for a refusal');
+        self::assertSame(0, $record->failures);
+        self::assertSame('failed', $record->lastStatus);
+        self::assertSame('gone.test could not be found.', $record->lastError);
+        self::assertSame([], $this->http->to('https://gone.test'));
     }
 
     public function testTheServersChannelVariablesAreNoLongerReadAndDeliverySaysSo(): void

@@ -75,8 +75,9 @@ final readonly class UserChannels
     public function usable(Recipient $recipient): array
     {
         $usable = [];
-        // An admin's channels are not restricted: no need to resolve them here (each send checks again).
-        foreach ($this->states($recipient->userId, $recipient->isAdmin, !$recipient->isAdmin) as $state) {
+        // No lookup here: each send checks its destination (and a refusal is never counted),
+        // so a slow resolver costs one lookup per channel and send, not three.
+        foreach ($this->states($recipient->userId, $recipient->isAdmin, false) as $state) {
             if ($state->status === ChannelStatus::On && $state->settings !== null) {
                 $usable[] = new BoundChannel($state->sender, $state->settings, !$recipient->isAdmin);
             }
@@ -261,9 +262,15 @@ final readonly class UserChannels
      */
     private function hostOf(PersonalSender $sender, array $values): ?string
     {
+        // Scheme, host and port: a saved token never goes to plain http or another service on the host.
         $url = $sender->destination(new ChannelSettings($values));
-        $host = $url === null ? null : parse_url($url, PHP_URL_HOST);
+        $parts = $url === null ? false : parse_url($url);
+        if (!is_array($parts) || !is_string($parts['host'] ?? null)) {
+            return null;
+        }
+        $scheme = strtolower($parts['scheme'] ?? '');
+        $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
 
-        return is_string($host) ? strtolower($host) : null;
+        return $scheme . '://' . strtolower($parts['host']) . ':' . $port;
     }
 }

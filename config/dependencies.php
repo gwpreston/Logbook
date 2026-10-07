@@ -55,6 +55,7 @@ use Logbook\Support\Config\OidcConfig;
 use Logbook\Support\Config\ProxyAuthConfig;
 use Logbook\Support\Log\LogThrottle;
 use Logbook\Support\Net\HostResolver;
+use Logbook\Support\Net\CachingHostResolver;
 use Logbook\Support\Net\SystemHostResolver;
 use Logbook\Support\Database\ConnectionFactory;
 use Logbook\Support\Display\DisplayContext;
@@ -404,7 +405,15 @@ return [
     },
 
     // AI hosts are classed by what they resolve to (spec.md §7.25).
-    HostResolver::class => get(SystemHostResolver::class),
+    HostResolver::class => static function (ContainerInterface $c): HostResolver {
+        $system = $c->get(SystemHostResolver::class);
+        assert($system instanceof SystemHostResolver);
+        $clock = $c->get(ClockInterface::class);
+        assert($clock instanceof ClockInterface);
+
+        // Each name asked once a minute: a slow resolver must not stall a pass (Phase 36.2).
+        return new CachingHostResolver($system, $clock);
+    },
 
     // Every outbound request and every mail goes through the demo guard: an active demo sends nothing (spec.md §7.36).
     HttpClientInterface::class => static function (ContainerInterface $c): HttpClientInterface {

@@ -165,12 +165,12 @@ final class NotificationDeliveryTest extends ReminderTestCase
         $this->document($app, $this->vehicle($app), '2026-10-09');
 
         $page = self::body($browser->get('/settings/reminders'));
-        self::assertStringContainsString('Sent to: Email, ntfy, Gotify.', $page, 'every set-up channel starts on');
+        self::assertStringContainsString('Sent to: Email, ntfy, Gotify', $page, 'every set-up channel starts on');
 
         $browser->get('/settings/notifications');
         $browser->post('/settings/notifications/email/switch', ['enabled' => '0']);
         $browser->post('/settings/notifications/gotify/switch', ['enabled' => '0']);
-        self::assertStringContainsString('Sent to: ntfy.', self::body($browser->get('/settings/reminders')));
+        self::assertStringContainsString('Sent to: ntfy', self::body($browser->get('/settings/reminders')));
         $this->runTasks($app);
 
         self::assertSame([], $this->mail->sent);

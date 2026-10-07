@@ -9,6 +9,7 @@ use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
 use Logbook\Service\Notification\Recipient;
+use Throwable;
 
 /**
  * One user's usable personal channel, as the dispatcher sees it: the
@@ -46,10 +47,20 @@ final readonly class BoundChannel implements NotificationChannel
 
     public function send(Notification $notification, Recipient $recipient): DeliveryResult
     {
-        $result = $this->sender->send($notification, $recipient, $this->settings, $this->restricted);
+        try {
+            $result = $this->sender->send($notification, $recipient, $this->settings, $this->restricted);
+        } catch (Throwable $e) {
+            // Caught here, not by the dispatcher, so the message is redacted before it is logged.
+            $result = DeliveryResult::failed($this->key(), $e->getMessage());
+        }
 
-        return $result->delivered || $result->error === null
-            ? $result
-            : DeliveryResult::failed($result->channel, Redactor::redact($result->error, $this->settings->secretValues()));
+        if ($result->delivered || $result->error === null) {
+            return $result;
+        }
+        $error = Redactor::redact($result->error, $this->settings->secretValues());
+
+        return $result->refused
+            ? DeliveryResult::refused($result->channel, $error)
+            : DeliveryResult::failed($result->channel, $error);
     }
 }

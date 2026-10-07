@@ -106,6 +106,9 @@ final class NotificationChannelsMigrationTest extends AppTestCase
         self::assertSame(['email', 'webhook'], $this->preferences($app, $owner)['channels'] ?? null);
         self::assertSame('https://push.example/kim', $this->preferences($app, $kim)['ntfy_url'] ?? null);
         self::assertArrayNotHasKey('gotify_token', $this->preferences($app, $kim), 'the imported token goes with its variable');
+        $kimChannels = $this->preferences($app, $kim)['channels'] ?? null;
+        self::assertIsArray($kimChannels);
+        self::assertContains('gotify', $kimChannels, 'an imported channel that was on stays on');
         self::assertSame([], $this->service($app, NotificationSecretRepository::class)->all());
         self::assertFalse($this->connection($app)->createSchemaManager()->tablesExist(['notification_channels']));
     }
@@ -153,7 +156,10 @@ final class NotificationChannelsMigrationTest extends AppTestCase
             'gotify_token' => 'SamsOwnToken',
         ]);
         $this->service($app, SettingRepository::class)->delete('notifications', SettingScope::User, $lee->id);
-        $this->saveOld($app, $kim, ['channels' => ['email', 'ntfy', 'webhook'], 'ntfy_url' => 'https://push.example/kim/']);
+        $this->saveOld($app, $kim, [
+            'channels' => ['email', 'ntfy', 'gotify', 'webhook'],
+            'ntfy_url' => 'https://push.example/kim/',
+        ]);
 
         return [$owner, $sam, $lee, $kim];
     }

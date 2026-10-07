@@ -27,9 +27,10 @@ final readonly class OutboundHttp
      */
     public function post(string $channel, string $url, array $options, bool $restricted): DeliveryResult
     {
-        $destination = $this->destinations->check($url, $restricted);
+        // An admin's own channel is not restricted: nothing to resolve before the request.
+        $destination = $this->destinations->check($url, $restricted, classify: $restricted);
         if (!$destination->isAllowed()) {
-            return DeliveryResult::failed($channel, self::refusal($destination));
+            return DeliveryResult::refused($channel, self::refusal($destination));
         }
 
         $options['max_redirects'] = 0;

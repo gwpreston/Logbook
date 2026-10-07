@@ -7058,6 +7058,7 @@ p.stat__label {
 
 .channel__head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
 }
@@ -7069,7 +7070,8 @@ p.stat__label {
 }
 
 .channel__body {
-    flex: 1;
+    /* Room for the hint before the status wraps under it (a long status at 375 px). */
+    flex: 1 1 12rem;
     min-width: 0;
 }
 
@@ -7109,6 +7111,21 @@ p.stat__label {
     margin: 0;
 }
 
+.channel__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--fs-sm);
+}
+
+.channel .alert {
+    align-items: flex-start;
+}
+
+.channel .alert__reply {
+    overflow-wrap: anywhere;
+}
+
 .channel__result {
     display: flex;
     align-items: center;
@@ -7122,10 +7139,6 @@ p.stat__label {
 }
 
 @media (max-width: 30rem) {
-    .channel__head {
-        flex-wrap: wrap;
-    }
-
     .channel__content {
         padding-left: 0;
     }

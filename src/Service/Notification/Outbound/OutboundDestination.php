@@ -63,8 +63,9 @@ final readonly class OutboundDestination
 
     /**
      * @param bool $restricted a member's channel (the policy applies)
+     * @param bool $classify for an unrestricted channel, resolve the host for the badge
      */
-    public function check(string $url, bool $restricted): Destination
+    public function check(string $url, bool $restricted, bool $classify = true): Destination
     {
         $host = parse_url($url, PHP_URL_HOST);
         $scheme = parse_url($url, PHP_URL_SCHEME);
@@ -72,6 +73,9 @@ final readonly class OutboundDestination
             return Destination::refused('', null, Destination::INVALID);
         }
         $host = strtolower(trim($host, '[]'));
+        if (!$restricted && !$classify) {
+            return Destination::allowed($host, null, null);
+        }
         $literal = filter_var($host, FILTER_VALIDATE_IP) !== false;
         $addresses = $literal ? [$host] : $this->resolver->resolve($host);
         $thisHost = $this->locator->thisHost();

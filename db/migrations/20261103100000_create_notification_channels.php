@@ -146,10 +146,21 @@ final class CreateNotificationChannels extends AbstractMigration
             $kind = self::text($row['kind'] ?? null);
             $settings = is_string($row['settings'] ?? null) ? json_decode($row['settings'], true) : null;
             $settings = is_array($settings) ? $settings : [];
-            if (!in_array($kind, ['ntfy', 'gotify'], true) || ($settings['_imported'] ?? false) === true) {
+            if (!in_array($kind, ['ntfy', 'gotify'], true)) {
                 continue;
             }
             [$settingId, $value] = $preferences[$userId] ?? [null, []];
+            if (($settings['_imported'] ?? false) === true) {
+                // Made from the server's variable, which the older version reads again: only its switch comes back.
+                $on = self::truthy($row['enabled'] ?? null);
+                if ($on && is_array($value['channels'] ?? null) && !in_array($kind, $value['channels'], true)) {
+                    $value['channels'][] = $kind;
+                    $preferences[$userId] = [$settingId, $value];
+                } elseif (!$on) {
+                    $disabled[$userId][] = $kind;
+                }
+                continue;
+            }
             if ($kind === 'ntfy' && is_string($settings['url'] ?? null)) {
                 $value['ntfy_url'] = $settings['url'];
             }

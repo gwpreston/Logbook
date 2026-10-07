@@ -3210,7 +3210,10 @@ Extensible channel interface so more can be added.
 - **Switched off after failures** (#233, #248, #249). A personal channel
   that fails **5 sends in a row** is switched off (`enabled` false,
   `switched_off_at` set); its card says "Switched off after 5 failed
-  sends. Check the settings, then switch it on again." The user is told
+  sends. Check the settings, then switch it on again." A send refused
+  before any request (the policy, or a name that does not resolve) is
+  shown as the last result but **never counts**, so a resolver outage or a
+  stricter setting never switches channels off. The user is told
   once, through their other usable channels (kind `channel_off`; nothing
   if there are none); that notice never counts towards failures. A
   success resets the count; switching on or saving resets it and clears
@@ -3273,6 +3276,11 @@ Admins choose on **Settings → Delivery → Where members can send**:
 - The host is resolved when a channel is saved, tested and **on every
   send**, and the request connects to an address that was checked
   (pinned), so a name can't change between the check and the call.
+  Choosing which channels to use does not resolve (each send does); the
+  Notifications page resolves to show *Blocked* and the badge. Each name's
+  answer, a failure included, is remembered for 60 seconds, so a slow
+  resolver costs one lookup per name and pass (performance review,
+  2026-10-07).
   Redirects are never followed by any channel (`max_redirects: 0`).
 - An **admin's own** channels are not restricted, and the server's
   webhook is the admin's.
