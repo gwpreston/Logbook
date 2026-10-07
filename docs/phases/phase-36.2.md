@@ -521,3 +521,12 @@ All decided on 2026-10-07, before any code (log #227–#235, #247–#249).
   hours (held until they end) in [Phase 36.4](phase-36.4.md).
 - **Anything the prototype shows.** *Decided (#235):* nothing new; see
   *Prototype notes*.
+
+Raised by the reviews on 2026-10-07, waiting for the owner (log #255–#258):
+
+- **Docker's bridge network** counts as *Your network*: treat it as *This
+  server* on Docker? (#255)
+- **Error detail for members**: show only a generic error for private
+  destinations? (#256)
+- **Send test and the last result**: should a test set it? (#257)
+- **Restored rows**: re-validate their URLs on restore? (#258)

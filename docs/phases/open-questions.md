@@ -78,7 +78,8 @@ stays the owner's, outside the phase. Phase 36.1's
 (#222–#226) were answered on 2026-10-06, before it was built. Phase
 36.2's (#227–#235, and #247–#249 found while starting it) were answered
 on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
-(#250–#254) were added the same day.
+(#250–#254) were added the same day. The Phase 36.2 reviews raised
+#255–#258 on 2026-10-07; they wait for the owner.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -336,6 +337,10 @@ on 2026-10-07, before it was built; #234 became Phase 36.4, whose own questions
 | 252 | [36.4](phase-36.4.md) | A held message whose reminder is done before it is sent: drop or send? | Needs a decision | Open. | — |
 | 253 | [36.4](phase-36.4.md) | Several held messages: sent as they were, or combined? | Needs a decision | Open. | — |
 | 254 | [36.4](phase-36.4.md) | Phase 36.4's release: its own v3.4.0, or with the next phase? | Needs a decision | Open. | — |
+| 255 | [36.2](phase-36.2.md) | Docker's bridge and compose network count as *Your network* (the default allows them): treat them as *This server* on Docker? (found by the security review) | Needs a decision | Documented today: list the bridge subnet under *This server's addresses*, or choose *The internet only*. | — |
+| 256 | [36.2](phase-36.2.md) | A member's failed send shows the HTTP status or connection error: show only a generic error for private destinations? (found by the security review) | Needs a decision | Today: the redacted error, as for admins. | — |
+| 257 | [36.2](phase-36.2.md) | Should *Send test* also set a channel's last result? (found by the design review) | Needs a decision | Today: no (spec §7.11); the test shows its own result on the card. | — |
+| 258 | [36.2](phase-36.2.md) | A restored channel row is not re-validated against the form's URL rules (only the destination policy at send) | Needs a decision | Today: the policy and pinning still apply on every send. | — |
 
 ## Other loose ends found in the review
 
