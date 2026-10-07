@@ -377,11 +377,24 @@ Decided by the owner on 2026-10-07, before any code.
 - [x] Without JavaScript every action works (each is a form).
 
 ### 36.2.7 Checks
-- [ ] `design-reviewer` agent on Notifications, Delivery and Reminders at
-      375, 768 and 1280 px, light and dark, all four accents, keyboard only,
-      and the secret fields with a screen reader.
-- [ ] `bug-hunter`, `security-scanner` and `performance-auditor` on the
-      branch.
+- [x] `design-reviewer` on Notifications, Delivery, Reminders and Settings
+      at 375, 768 and 1280 px, light and dark, German, keyboard and
+      without JavaScript (2026-10-07). Fixed: the email hint crushed at
+      375 px, a switch shown while email is not available, the destination
+      shown as a second green pill, alert alignment, "Sent to" punctuation,
+      the webhook placeholder. Not rendered: the *Blocked*, *Switched off*
+      and *Needs setup* states (covered by tests), accents by screenshot, a
+      screen reader run.
+- [x] `bug-hunter`, `security-scanner` and `performance-auditor`
+      (2026-10-07). Fixed: rolling back dropped an imported channel's
+      switch; a saved token now goes only to the same scheme, host and port;
+      a thrown error is redacted before the log; DNS is cached for 60 s and
+      not resolved to choose channels, so a dead resolver costs one lookup
+      per name and pass instead of three per channel; a send refused before
+      any request never counts towards switching off. Documented: Docker's
+      bridge counts as *Your network*; the plain-text Gotify token kept
+      without a key and on rollback. Suite green on SQLite, PostgreSQL,
+      MySQL and MariaDB.
 
 ### Sample data
 - [x] `DemoDataSeeder`: the demo owner has Email on and nothing else.

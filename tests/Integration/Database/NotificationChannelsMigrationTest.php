@@ -65,7 +65,7 @@ final class NotificationChannelsMigrationTest extends AppTestCase
         $gotify = $channels->find($owner->id, 'gotify');
         self::assertNotNull($gotify);
         self::assertFalse($gotify->enabled);
-        self::assertSame(['priority' => 7, 'url' => 'https://gotify.test'], $gotify->values());
+        self::assertEquals(['priority' => 7, 'url' => 'https://gotify.test'], $gotify->values(), 'MySQL sorts JSON keys');
         self::assertSame('ServerAppToken', $secrets->open($owner->id, 'gotify.token'));
 
         // Sam (a member) had their own topic on the server's ntfy, which was sent with NTFY_TOKEN, and their own Gotify token.
@@ -77,7 +77,7 @@ final class NotificationChannelsMigrationTest extends AppTestCase
         self::assertArrayNotHasKey('_imported', $samNtfy->settings);
         self::assertSame('SamsOwnToken', $secrets->open($sam->id, 'gotify.token'));
         self::assertSame('https://gotify.test', $channels->find($sam->id, 'gotify')?->value('url'));
-        self::assertSame(['channels' => null, 'digest' => true], $this->preferences($app, $sam), 'the values left the setting');
+        self::assertEquals(['channels' => null, 'digest' => true], $this->preferences($app, $sam), 'the values left the setting');
 
         // Lee (a member) had nothing: a member never gets the server's.
         self::assertSame([], $channels->forUser($lee->id));
