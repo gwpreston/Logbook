@@ -48,13 +48,13 @@ final readonly class UserChannels
      *
      * @return array<string, ChannelState>
      */
-    public function states(int $userId, bool $isAdmin): array
+    public function states(int $userId, bool $isAdmin, bool $classify = true): array
     {
         $states = [];
         foreach ($this->records->forUser($userId) as $kind => $record) {
             $sender = $this->kinds->get($kind);
             if ($sender !== null) {
-                $states[$kind] = $this->state($sender, $record, !$isAdmin);
+                $states[$kind] = $this->state($sender, $record, !$isAdmin, $classify);
             }
         }
 
@@ -75,7 +75,8 @@ final readonly class UserChannels
     public function usable(Recipient $recipient): array
     {
         $usable = [];
-        foreach ($this->states($recipient->userId, $recipient->isAdmin) as $state) {
+        // An admin's channels are not restricted: no need to resolve them here (each send checks again).
+        foreach ($this->states($recipient->userId, $recipient->isAdmin, !$recipient->isAdmin) as $state) {
             if ($state->status === ChannelStatus::On && $state->settings !== null) {
                 $usable[] = new BoundChannel($state->sender, $state->settings, !$recipient->isAdmin);
             }
@@ -84,11 +85,14 @@ final readonly class UserChannels
         return $usable;
     }
 
-    public function state(PersonalSender $sender, ChannelRecord $record, bool $restricted): ChannelState
+    /**
+     * @param bool $classify resolve the host (for the policy and the badge); not needed for an admin's send
+     */
+    public function state(PersonalSender $sender, ChannelRecord $record, bool $restricted, bool $classify = true): ChannelState
     {
         $settings = $this->open($sender->definition(), $record);
         $url = $settings === null ? null : $sender->destination($settings);
-        $destination = $url === null ? null : $this->destinations->check($url, $restricted);
+        $destination = $url === null || !$classify ? null : $this->destinations->check($url, $restricted);
 
         $status = match (true) {
             $record->switchedOff() => ChannelStatus::SwitchedOff,

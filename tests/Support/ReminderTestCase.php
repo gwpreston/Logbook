@@ -159,8 +159,14 @@ abstract class ReminderTestCase extends AppTestCase
      * @param array<string, scalar> $settings
      * @param array<string, string> $secrets empty values are left out
      */
-    protected function giveChannel(App $app, User $user, string $kind, array $settings, array $secrets = [], bool $enabled = true): void
-    {
+    protected function giveChannel(
+        App $app,
+        User $user,
+        string $kind,
+        array $settings,
+        array $secrets = [],
+        bool $enabled = true,
+    ): void {
         $secrets = array_filter($secrets, static fn (string $v): bool => $v !== '');
         foreach ($secrets as $field => $value) {
             $this->service($app, NotificationSecrets::class)->store($user->id, $kind . '.' . $field, $value);

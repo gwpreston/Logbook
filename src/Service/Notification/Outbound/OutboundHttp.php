@@ -45,7 +45,7 @@ final readonly class OutboundHttp
     {
         return match ($destination->refusal) {
             Destination::BLOCKED => sprintf('%s is not an address your administrator allows.', $destination->host),
-            Destination::LINK_LOCAL => sprintf('%s is a link-local address, which is never allowed.', $destination->host),
+            Destination::LINK_LOCAL => sprintf('%s is a link-local or reserved address, never allowed.', $destination->host),
             Destination::UNRESOLVED => sprintf('%s could not be found.', $destination->host),
             default => 'Not an http or https address.',
         };

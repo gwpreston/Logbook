@@ -14,7 +14,7 @@ final readonly class Destination
 {
     /** The admin's setting does not allow this class of address. */
     public const string BLOCKED = 'blocked';
-    /** A link-local address (169.254.0.0/16, fe80::/10): never for members. */
+    /** A link-local, unspecified, multicast or reserved address: never for members. */
     public const string LINK_LOCAL = 'link_local';
     /** The name does not resolve, so it cannot be checked. */
     public const string UNRESOLVED = 'unresolved';

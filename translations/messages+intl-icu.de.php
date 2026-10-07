@@ -3183,6 +3183,7 @@ return [
         'last' => [
             'ok' => 'Zuletzt gesendet {when}',
             'failed' => 'Letzter Versuch fehlgeschlagen {when}: {error}',
+            'failed_plain' => 'Letzter Versuch fehlgeschlagen {when}. Deine Administration sieht den Grund im Protokoll.',
         ],
         'test' => [
             'title' => 'Logbook-Testbenachrichtigung',
@@ -3226,7 +3227,7 @@ return [
             'no_key' => 'Dieser Server hat kein SESSION_SECRET, daher kann kein Token gespeichert werden.',
             'destination' => [
                 'blocked' => '{host} ist eine Adresse, die deine Administration nicht erlaubt.',
-                'link_local' => '{host} ist eine Link-Local-Adresse, die nie erlaubt ist.',
+                'link_local' => '{host} ist eine Link-Local- oder reservierte Adresse, die nie erlaubt ist.',
                 'unresolved' => '{host} wurde nicht gefunden.',
                 'invalid' => 'Gib eine vollständige Adresse mit https:// oder http:// ein.',
             ],
@@ -3431,7 +3432,7 @@ return [
             'files' => 'Fotos und Anhänge',
         ],
         'confirm_warning' => 'Alles, was jetzt in Logbook ist, wird durch diese Sicherung ersetzt. Vorher wird eine Kopie der aktuellen Daten auf dem Server gespeichert.',
-        'mail_notice' => 'Sicherungen enthalten nie das Passwort des E-Mail-Servers. Wenn diese Sicherung einen E-Mail-Server enthält, gib sein Passwort nach dem Wiederherstellen unter Einstellungen → Zustellung erneut ein.',
+        'mail_notice' => 'Sicherungen enthalten nie das Passwort des E-Mail-Servers. Wenn diese Sicherung einen E-Mail-Server enthält, gib sein Passwort nach dem Wiederherstellen unter Einstellungen → Zustellung erneut ein. Benachrichtigungs-Tokens (ntfy, Gotify) sind ebenfalls nicht in Sicherungen: Jede Person gibt ihre unter Benachrichtigungen erneut ein.',
         'api_keys_notice' => 'Diese Sicherung enthält API-Schlüssel. Sie funktionieren nur weiter, wenn diese Installation dasselbe SESSION_SECRET verwendet wie die, aus der die Sicherung stammt; andernfalls nach dem Wiederherstellen unter Einstellungen → API-Schlüssel neue Schlüssel anlegen.',
         'ai_notice' => 'Diese Sicherung enthält KI-Verbindungen, aber nie ihre Schlüssel: Gib jeden Schlüssel nach dem Wiederherstellen unter Einstellungen → KI neu ein.',
         'confirm_label' => 'Alle Daten durch diese Sicherung ersetzen',

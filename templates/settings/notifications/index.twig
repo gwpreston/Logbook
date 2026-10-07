@@ -21,17 +21,17 @@
 {%- endmacro %}
 
 {# "Last sent {time}" or "Last attempt failed: {error}". #}
-{% macro last_result(status, at, error) -%}
+{% macro last_result(status, at, error, reply = true) -%}
     {% import 'macros/ui.twig' as ui %}
     {% if status == 'ok' %}
         <p class="channel__result" data-last-result="ok">{{ ui.icon('check_circle') }}<span>{{ 'notifications.last.ok'|trans({when: at|local_datetime}) }}</span></p>
     {% elseif status == 'failed' %}
-        <p class="channel__result channel__result--failed" data-last-result="failed">{{ ui.icon('error') }}<span>{{ 'notifications.last.failed'|trans({when: at|local_datetime, error: error ?? ''}) }}</span></p>
+        <p class="channel__result channel__result--failed" data-last-result="failed">{{ ui.icon('error') }}<span>{{ reply ? 'notifications.last.failed'|trans({when: at|local_datetime, error: error ?? ''}) : 'notifications.last.failed_plain'|trans({when: at|local_datetime}) }}</span></p>
     {% endif %}
 {%- endmacro %}
 
 {# A test's outcome on its card. #}
-{% macro test_result(test, refused, label) -%}
+{% macro test_result(test, refused, label, reply = true) -%}
     {% import 'macros/ui.twig' as ui %}
     {% if refused %}
         <div class="alert alert--error" role="alert" data-test-result="refused">{{ ui.icon('error') }}<span>{{ refused|trans }}</span></div>
@@ -46,7 +46,7 @@
                         {{ 'notifications.test.missing_secret'|trans }}
                     {% else %}
                         {{ 'notifications.test.failed'|trans }}
-                        {% if test.error %}<code class="alert__reply">{{ test.error }}</code>{% endif %}
+                        {% if test.error and reply %}<code class="alert__reply">{{ test.error }}</code>{% endif %}
                     {% endif %}
                 </span>
             </div>
@@ -101,8 +101,9 @@
                 {{ page.status(email.status) }}
             </div>
             <div class="channel__content">
-                {% if email.result %}{{ page.last_result(email.result.status, email.result.at, email.result.error) }}{% endif %}
-                {{ page.test_result(email.test, email.refused, 'notifications.channel.email') }}
+                {# The email server's reply is the admins' to read (it is about the server, not you). #}
+                {% if email.result %}{{ page.last_result(email.result.status, email.result.at, email.result.error, is_admin) }}{% endif %}
+                {{ page.test_result(email.test, email.refused, 'notifications.channel.email', is_admin) }}
                 {% if not blocked %}
                     <div class="btn-row">
                         <form method="post" action="{{ url_for('settings.notifications.switch', {kind: 'email'}) }}">

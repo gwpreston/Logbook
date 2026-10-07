@@ -35,6 +35,7 @@ use Logbook\Service\Mail\SettingsTransport;
 use Logbook\Service\Mail\TransportFactory;
 use Logbook\Service\Mcp\McpToolbox;
 use Logbook\Service\Navigation\SidebarTwigExtension;
+use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Service\Notification\Channel\EmailChannel;
 use Logbook\Service\Notification\Channel\WebhookChannel;
 use Logbook\Service\Notification\ChannelRegistry;
@@ -328,6 +329,7 @@ return [
         ->constructorParameter('channels', get('notification.channels'))
         ->constructorParameter('demo', get(DemoMode::class))
         ->constructorParameter('personal', get(UserChannels::class)),
+    EmailChannel::class => autowire()->constructorParameter('secrets', get(NotificationSecrets::class)),
     NotificationDispatcher::class => autowire()
         ->constructorParameter('results', get(ChannelResults::class))
         ->constructorParameter('notice', get(SwitchOffNotice::class)),

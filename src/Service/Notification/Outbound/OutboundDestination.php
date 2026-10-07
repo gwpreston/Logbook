@@ -24,7 +24,25 @@ final readonly class OutboundDestination
     /** Global setting: what members' channels may reach. */
     public const string SETTING = 'notifications.member_destinations';
 
+    /** Cloud metadata services and router interfaces: never for members. */
     private const array LINK_LOCAL = ['169.254.0.0/16', 'fe80::/10'];
+
+    /**
+     * Never for members either: "this host" (0.0.0.0 reaches the server's
+     * own services on Linux), multicast, reserved and broadcast, and IPv6
+     * forms that carry an IPv4 address the classes could not see
+     * (IPv4-compatible, NAT64, 6to4).
+     */
+    private const array NEVER = [
+        '0.0.0.0/8',
+        '224.0.0.0/4',
+        '240.0.0.0/4',
+        '::/96',
+        'ff00::/8',
+        '64:ff9b::/96',
+        '64:ff9b:1::/48',
+        '2002::/16',
+    ];
 
     public function __construct(
         private HostResolver $resolver,
@@ -71,12 +89,22 @@ final readonly class OutboundDestination
             if (IpRange::anyContains(array_map(IpRange::parse(...), self::LINK_LOCAL), $address)) {
                 return Destination::refused($host, $location, Destination::LINK_LOCAL);
             }
+            // ::1 is in ::/96 but is loopback, which the policy decides.
+            if ($address !== '::1' && IpRange::anyContains(array_map(IpRange::parse(...), self::NEVER), $address)) {
+                return Destination::refused($host, $location, Destination::LINK_LOCAL);
+            }
             // Each address on its own: a name with one public and one private address is not *Internet*.
             if (!$policy->allows(ConnectionLocator::classify($host, [$address], $thisHost))) {
                 return Destination::refused($host, $location, Destination::BLOCKED);
             }
         }
 
-        return Destination::allowed($host, $location, $addresses[0]);
+        // Every address passed; connect to one of them, an IPv4 one where there is one.
+        $ipv4 = array_values(array_filter(
+            $addresses,
+            static fn (string $a): bool => filter_var($a, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false,
+        ));
+
+        return Destination::allowed($host, $location, $ipv4[0] ?? $addresses[0]);
     }
 }

@@ -3186,6 +3186,7 @@ return [
         'last' => [
             'ok' => 'Last sent {when}',
             'failed' => 'Last attempt failed {when}: {error}',
+            'failed_plain' => 'Last attempt failed {when}. Your administrator can see why in the log.',
         ],
         'test' => [
             'title' => 'Logbook test notification',
@@ -3229,7 +3230,7 @@ return [
             'no_key' => 'This server has no SESSION_SECRET, so a token cannot be saved.',
             'destination' => [
                 'blocked' => '{host} is an address your administrator does not allow.',
-                'link_local' => '{host} is a link-local address, which is never allowed.',
+                'link_local' => '{host} is a link-local or reserved address, which is never allowed.',
                 'unresolved' => '{host} could not be found.',
                 'invalid' => 'Enter a full address starting with https:// or http://.',
             ],
@@ -3434,7 +3435,7 @@ return [
             'files' => 'Photos and attachments',
         ],
         'confirm_warning' => 'Everything currently in Logbook will be replaced by this backup. A copy of the current data is saved on the server first.',
-        'mail_notice' => 'Backups never hold the email server\'s password. If this backup has an email server, enter its password again in Settings → Delivery after restoring.',
+        'mail_notice' => 'Backups never hold the email server\'s password. If this backup has an email server, enter its password again in Settings → Delivery after restoring. Notification tokens (ntfy, Gotify) are not in backups either: each person enters theirs again on Notifications.',
         'api_keys_notice' => 'This backup holds API keys. They keep working only if this install uses the same SESSION_SECRET as the one the backup came from; otherwise create new keys in Settings → API keys after restoring.',
         'ai_notice' => 'This backup holds AI connections but never their keys: enter each key again in Settings → AI after restoring.',
         'confirm_label' => 'Replace all data with this backup',

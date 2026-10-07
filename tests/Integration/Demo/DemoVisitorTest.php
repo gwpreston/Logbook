@@ -89,10 +89,13 @@ final class DemoVisitorTest extends DemoTestCase
             '/settings/users', '/settings/backup', '/settings/jobs', '/settings/ai', '/settings/api-keys',
             '/settings/fuel-prices', '/settings/updates', '/settings/import-app', '/settings/password',
             '/settings/email', '/settings/avatar', '/ask', '/scan', '/import/', '/settings/delivery',
+            // Phase 36.2: saving, testing, switching and removing one's channels (the page itself stays).
+            '/settings/notifications/',
         ];
         $pages = [
             '/', '/garage', '/settings', '/profile', '/insights', '/reminders', '/log/new',
             '/vehicles/' . $vehicle, '/vehicles/' . $vehicle . '/expenses', '/settings/reminders', '/stations',
+            '/settings/notifications',
         ];
         foreach ($pages as $page) {
             $response = $browser->get($page);

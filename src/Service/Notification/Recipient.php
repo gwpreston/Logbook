@@ -19,7 +19,7 @@ final readonly class Recipient
         public string $name,
         /** Their confirmed email address; null = the default recipient for admins, for admins. */
         public ?string $email = null,
-        public bool $isAdmin = true,
+        public bool $isAdmin = false,
         public string $username = '',
     ) {
     }

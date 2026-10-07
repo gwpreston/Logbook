@@ -8,7 +8,9 @@ use Logbook\Service\Notification\DeliveryResult;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationChannel;
 use Logbook\Service\Notification\Recipient;
+use Logbook\Service\Ai\Redactor;
 use Logbook\Service\Mail\MailConfig;
+use Logbook\Service\Mail\NotificationSecrets;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Component\Mime\Address;
@@ -21,8 +23,11 @@ use Symfony\Component\Mime\Email;
  */
 final readonly class EmailChannel implements NotificationChannel
 {
-    public function __construct(private MailConfig $config, private TransportInterface $transport)
-    {
+    public function __construct(
+        private MailConfig $config,
+        private TransportInterface $transport,
+        private ?NotificationSecrets $secrets = null,
+    ) {
     }
 
     public function key(): string
@@ -66,7 +71,8 @@ final readonly class EmailChannel implements NotificationChannel
         try {
             $this->transport->send($email);
         } catch (TransportExceptionInterface $e) {
-            return DeliveryResult::failed($this->key(), $e->getMessage());
+            // The server's reply, redacted of every notification secret (spec.md §7.11, 36.1).
+            return DeliveryResult::failed($this->key(), Redactor::redact($e->getMessage(), $this->secrets?->openAll() ?? []));
         }
 
         return DeliveryResult::delivered($this->key());
