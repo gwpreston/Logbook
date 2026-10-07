@@ -77,9 +77,19 @@ final readonly class ReminderNotifier
             return 0;
         }
         $recipient = Recipient::of($user);
+        // One lookup of their channels, filtered here per category.
+        $active = $this->channels->active($preferences, $recipient);
         $taken = array_values(array_filter(
             [NotificationCategory::Due, NotificationCategory::Overdue],
-            fn (NotificationCategory $c): bool => $this->channels->active($preferences, $recipient, $c) !== [],
+            static function (NotificationCategory $c) use ($active, $preferences): bool {
+                foreach ($active as $channel) {
+                    if (ChannelCategories::forChannel($channel, $preferences)->takes($c)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
         ));
         if ($taken === []) {
             // Nothing can reach them. Leave everything unclaimed, so it is

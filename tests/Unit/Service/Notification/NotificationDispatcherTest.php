@@ -9,6 +9,7 @@ use Logbook\Service\Notification\ChannelCategories;
 use Logbook\Service\Notification\ChannelRegistry;
 use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\NotificationCategory;
+use Logbook\Service\Notification\NotificationChannel;
 use Logbook\Service\Notification\NotificationDispatcher;
 use Logbook\Service\Notification\NotificationKind;
 use Logbook\Service\Notification\NotificationPreferences;
@@ -172,7 +173,7 @@ final class NotificationDispatcherTest extends TestCase
     }
 
     /**
-     * @param list<FakeChannel> $channels
+     * @param list<NotificationChannel> $channels
      */
     private static function dispatcher(array $channels): NotificationDispatcher
     {

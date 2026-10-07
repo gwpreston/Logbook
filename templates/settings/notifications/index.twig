@@ -70,7 +70,7 @@
             {% endfor %}
         </div>
         <p class="field__hint" id="f-{{ name }}-hint">{{ 'notifications.receives.hint'|trans }}</p>
-        {{ ui.field_error(errors, name) }}
+        {% if errors[name] ?? null %}<div role="alert">{{ ui.field_error(errors, name) }}</div>{% endif %}
     </fieldset>
 {%- endmacro %}
 
@@ -107,24 +107,29 @@
                     <h2 class="channel__title" id="quiet-hours-title">{{ 'notifications.quiet.title'|trans }}</h2>
                     <p class="channel__hint">{{ 'notifications.quiet.hint'|trans }}</p>
                 </div>
-                {% if quiet.quiet_on == '1' and not errors %}
-                    <span class="pill" data-quiet="on">{{ ui.icon('dark_mode') }}{{ 'notifications.quiet.status_on'|trans({start: quiet.quiet_start, end: quiet.quiet_end}) }}</span>
+                {# The saved setting, not what was just typed. #}
+                {% if quiet_saved %}
+                    <span class="pill" data-quiet="on">{{ ui.icon('notifications_off') }}{{ 'notifications.quiet.status_on'|trans({start: quiet_saved.start, end: quiet_saved.end}) }}</span>
                 {% else %}
-                    <span class="pill" data-quiet="off">{{ 'notifications.quiet.status_off'|trans }}</span>
+                    <span class="pill" data-quiet="off">{{ ui.icon('notifications_active') }}{{ 'notifications.quiet.status_off'|trans }}</span>
                 {% endif %}
             </div>
             {% if not blocked %}
                 <div class="channel__content">
                     <form class="form" method="post" action="{{ url_for('settings.notifications.quiet') }}" novalidate>
                         {{ ui.csrf(csrf) }}
+                        {% if errors.quiet_start ?? errors.quiet_end ?? null %}
+                            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+                        {% endif %}
                         <label class="toggle">
                             <input type="checkbox" name="quiet_on" value="1"{% if quiet.quiet_on == '1' %} checked{% endif %}>
                             <span class="toggle__text"><span class="toggle__title">{{ 'notifications.quiet.on'|trans }}</span></span>
                         </label>
                         <div class="form-row">
                             {{ ui.input('quiet_start', 'notifications.quiet.start'|trans, quiet, errors, {type: 'time', step: 60}) }}
-                            {{ ui.input('quiet_end', 'notifications.quiet.end'|trans, quiet, errors, {type: 'time', step: 60, hint: 'notifications.quiet.end_hint'|trans}) }}
+                            {{ ui.input('quiet_end', 'notifications.quiet.end'|trans, quiet, errors, {type: 'time', step: 60}) }}
                         </div>
+                        <p class="field__hint">{{ 'notifications.quiet.end_hint'|trans }}</p>
                         <div class="btn-row">
                             <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}</button>
                         </div>

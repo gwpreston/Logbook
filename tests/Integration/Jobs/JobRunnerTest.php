@@ -351,7 +351,9 @@ final class JobRunnerTest extends ReminderTestCase
             $this->runs($app)->recent(100),
             static fn (JobRun $r): bool => $r->job === 'backup' && $r->status === JobStatus::Failed,
         ));
-        $combined = $this->service($app, NotificationComposer::class)->jobsFailed($owner, array_slice($failed, 0, 2));
+        $first = $failed[0] ?? self::fail('no failed run');
+        $second = $failed[1] ?? self::fail('one failed run');
+        $combined = $this->service($app, NotificationComposer::class)->jobsFailed($owner, [$first, $second]);
         self::assertSame('Logbook: 2 jobs failed twice in a row', $combined->title);
         self::assertStringContainsString('• Backup: ', $combined->message);
     }

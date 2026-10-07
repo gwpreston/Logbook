@@ -21,6 +21,7 @@ use Logbook\Service\FuelPrices\StationLinker;
 use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
 use Logbook\Service\FuelPrices\VehicleFuelProfiles;
 use Logbook\Service\Notification\ChannelRegistry;
+use Logbook\Service\Notification\Notification;
 use Logbook\Service\Notification\QuietHours;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Station\StationService;
@@ -233,9 +234,10 @@ final class NearAndAlertsTest extends FuelPricesTestCase
         $this->clock->set(new DateTimeImmutable('2026-10-03T10:00:00Z'));
         $this->sync($app);
         self::assertCount(1, $channel->sent, 'one message');
-        self::assertSame('2 price alerts', $channel->sent[0]->title);
-        self::assertStringContainsString('E10 95 at Tesco Antrim Extra: £1.359/L', $channel->sent[0]->message);
-        self::assertStringContainsString('Shell Junction One', $channel->sent[0]->message);
+        $sent = self::firstSent($channel);
+        self::assertSame('2 price alerts', $sent->title);
+        self::assertStringContainsString('E10 95 at Tesco Antrim Extra: £1.359/L', $sent->message);
+        self::assertStringContainsString('Shell Junction One', $sent->message);
         $this->sync($app);
         self::assertCount(1, $channel->sent, 'once');
     }
@@ -290,5 +292,10 @@ final class NearAndAlertsTest extends FuelPricesTestCase
         }
         $alerts->set($owner, $maxol, FuelGrade::B7, '1.400');
         self::assertSame('1.400', $repository->forStation($owner->id, $maxol->id)[0]->below, 'changing one is not a new one');
+    }
+
+    private static function firstSent(FakeChannel $channel): Notification
+    {
+        return $channel->sent[0] ?? self::fail('nothing sent');
     }
 }

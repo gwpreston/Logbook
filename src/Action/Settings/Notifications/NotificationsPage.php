@@ -114,6 +114,7 @@ final readonly class NotificationsPage
                 'quiet_start' => $preferences->quiet->start ?? '22:00',
                 'quiet_end' => $preferences->quiet->end ?? '07:00',
             ],
+            'quiet_saved' => $preferences->quiet?->toStored(),
             'errors' => $errors,
             'can_seal' => $this->secrets->canSeal(),
             'is_admin' => $user->isAdmin,

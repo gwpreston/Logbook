@@ -84,10 +84,12 @@ final readonly class PriceAlertChecker
             if (!array_key_exists($alert->userId, $recipients)) {
                 $recipients[$alert->userId] = $this->recipient($alert->userId, $now);
             }
-            $recipient = $recipients[$alert->userId];
-            $station = $this->stations->find($alert->stationId);
             // Not claimed in quiet hours: it stays armed for the first check after.
-            if ($recipient === null || $station === null || !$this->alerts->claim($alert->id, $now)) {
+            if ($recipients[$alert->userId] === null) {
+                continue;
+            }
+            $station = $this->stations->find($alert->stationId);
+            if ($station === null || !$this->alerts->claim($alert->id, $now)) {
                 continue;
             }
             $firing[$alert->userId][] = [$station, $alert, $listed];

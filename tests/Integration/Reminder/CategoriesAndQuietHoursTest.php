@@ -132,9 +132,11 @@ final class CategoriesAndQuietHoursTest extends ReminderTestCase
         $clock = $this->pinClock($app, '2026-09-27T23:30:00Z');
         $this->quiet($app, '22:00', '07:00');
 
-        self::assertSame(0, $this->runTasks($app)->remindersSent);
+        $late = $this->runTasks($app);
+        self::assertSame(0, $late->remindersSent);
         $clock->set(new DateTimeImmutable('2026-09-28T03:00:00Z'));
-        self::assertSame(0, $this->runTasks($app)->remindersSent);
+        $night = $this->runTasks($app);
+        self::assertSame(0, $night->remindersSent);
 
         $clock->set(new DateTimeImmutable('2026-09-28T08:00:00Z'));
         self::assertSame(2, $this->runTasks($app)->remindersSent);
@@ -170,7 +172,8 @@ final class CategoriesAndQuietHoursTest extends ReminderTestCase
         self::assertCount(1, $digests, 'by email, the only channel taking it');
         self::assertSame([], array_filter(
             $this->http->to('https://ntfy.test'),
-            static fn (array $r): bool => str_starts_with((string) ($r['json']['title'] ?? ''), 'Due in'),
+            static fn (array $r): bool => is_string($r['json']['title'] ?? null)
+                && str_starts_with($r['json']['title'], 'Due in'),
         ));
     }
 
