@@ -7,6 +7,8 @@ namespace Logbook\Action\Attachment;
 use Logbook\Domain\Attachment\Attachment;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Trip\TripNotFound;
 use Logbook\Service\Trip\TripService;
@@ -29,16 +31,29 @@ final readonly class TripFileGuard
 
     public function allow(ServerRequestInterface $request, Attachment $attachment): void
     {
+        if (!$this->mayUse(RequestContext::requireUser($request), RequestContext::vehicle($request), $attachment)) {
+            throw new HttpNotFoundException($request);
+        }
+    }
+
+    /**
+     * The same rule for a caller that has the user and vehicle in hand (the
+     * API's `/attachments/{id}`, spec.md §7.20).
+     */
+    public function mayUse(User $user, Vehicle $vehicle, Attachment $attachment): bool
+    {
         if ($attachment->ownerType !== AttachmentOwner::Trip) {
-            return;
+            return true;
         }
         if (!$this->features->isEnabled(Feature::Trips)) {
-            throw new HttpNotFoundException($request);
+            return false;
         }
         try {
-            $this->trips->get(RequestContext::requireUser($request), RequestContext::vehicle($request), $attachment->ownerId);
+            $this->trips->get($user, $vehicle, $attachment->ownerId);
         } catch (TripNotFound) {
-            throw new HttpNotFoundException($request);
+            return false;
         }
+
+        return true;
     }
 }

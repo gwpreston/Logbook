@@ -185,6 +185,9 @@ final class RouteInventoryTest extends AppTestCase
         'api.attention',
         // Phase 39.2: hide names its vehicle in the key; ApiUserWrites checks Log on it.
         'api.attention.hide',
+        // Phase 39.3: a file by id; ApiAttachments finds its vehicle and checks View (404), and Log
+        // and canChange for a delete, as the page's delete link; TripFileGuard for a trip's file.
+        'api.attachments.show',
         // Phase 22: the user's own claim, over the vehicles they may see.
         'trips.claim',
         'trips.claim.export',

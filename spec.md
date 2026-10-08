@@ -5142,7 +5142,13 @@ form; `POST` because PHP reads multipart bodies on `POST` only).
   check, `MAX_UPLOAD_MB`, stripping (except incident photos) and the edit
   form's limits. `201` with the attachment. `Log` and
   `EntryAccess::canChange` on the entry, as the edit form.
-- `DELETE /attachments/{id}`, as the page's delete link.
+- `DELETE /attachments/{id}`, as the page's delete link: `Log`, and
+  `Manage` or the user's own upload.
+- As 39.2's writes, an archived vehicle's files don't change (409
+  `vehicle_archived`) except a valuation's. A reading another entry wrote
+  takes no files (409 `reading_derived`: attach them to that entry), and
+  paperwork needs its purchase or sale date (422), as the edit form. No
+  `If-Match`: a stored file never changes.
 
 *Webhooks* (Phase 39.3, #285, #288, #289). A user can have Logbook tell
 another system when an entry changes, so a dashboard or Node-RED flow

@@ -85,6 +85,9 @@ use Logbook\Action\Api\LogReminderAction as ApiLogReminderAction;
 use Logbook\Action\Api\LogTreadCheckAction as ApiLogTreadCheckAction;
 use Logbook\Action\Api\LogTripAction as ApiLogTripAction;
 use Logbook\Action\Api\MeAction as ApiMeAction;
+use Logbook\Action\Api\AttachmentAction as ApiAttachmentAction;
+use Logbook\Action\Api\EntryAttachmentsAction as ApiEntryAttachmentsAction;
+use Logbook\Action\Api\VehiclePhotoWriteAction as ApiVehiclePhotoWriteAction;
 use Logbook\Action\Api\OpenApiAction;
 use Logbook\Action\Api\RemindersAction as ApiRemindersAction;
 use Logbook\Action\Api\ShowVehicleAction as ApiVehicleAction;
@@ -361,6 +364,47 @@ return static function (App $app): void {
                         }
                     }
                 };
+                // Attachments (Phase 39.3, spec.md §7.20 *Attachments*, #286, #300): an entry's files under
+                // its own path, read with the entry's read ability and module, added with its edit form's
+                // (Log, Manage for valuations and paperwork; ApiAttachments checks canChange). The file
+                // itself, and its delete, by id: ApiAttachments finds the vehicle and checks it.
+                $owners = [
+                    'fuel' => [VehicleAbility::View, VehicleAbility::Log, Feature::Fuel],
+                    'odometer' => [VehicleAbility::View, VehicleAbility::Log, null],
+                    'maintenance' => [VehicleAbility::View, VehicleAbility::Log, Feature::Maintenance],
+                    'documents' => [VehicleAbility::View, VehicleAbility::Log, Feature::Compliance],
+                    'expenses' => [VehicleAbility::ViewCosts, VehicleAbility::Log, null],
+                    'valuations' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
+                    'trips' => [VehicleAbility::View, VehicleAbility::Log, Feature::Trips],
+                    'incidents' => [VehicleAbility::View, VehicleAbility::Log, Feature::Incidents],
+                    'purchase' => [VehicleAbility::View, VehicleAbility::Manage, null],
+                    'sale' => [VehicleAbility::View, VehicleAbility::Manage, null],
+                ];
+                foreach ($owners as $owner => [$read, $write, $feature]) {
+                    $path = '/vehicles/{id:[0-9]+}/' . $owner
+                        . ($owner === 'purchase' || $owner === 'sale' ? '' : '/{entry:[0-9]+}') . '/attachments';
+                    $routes = [
+                        $keyed->get($path, ApiEntryAttachmentsAction::class)->setName('api.' . $owner . '.attachments')
+                            ->setArgument($ability, $read->value),
+                        $keyed->post($path, ApiEntryAttachmentsAction::class)->setName('api.' . $owner . '.attachments.create')
+                            ->setArgument($ability, $write->value),
+                    ];
+                    foreach ($routes as $route) {
+                        $route->setArgument('list', $owner);
+                        if ($feature !== null) {
+                            $route->add($module($feature));
+                        }
+                    }
+                }
+                $keyed->map(['GET', 'DELETE'], '/attachments/{attachment:[0-9]+}', ApiAttachmentAction::class)
+                    ->setName('api.attachments.show');
+                // The vehicle's photo (#300): not an attachment; Manage to change it, as the edit form.
+                $keyed->get('/vehicles/{id:[0-9]+}/photo', VehiclePhotoAction::class)->setName('api.vehicles.photo')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $keyed->map(['POST', 'DELETE'], '/vehicles/{id:[0-9]+}/photo', ApiVehiclePhotoWriteAction::class)
+                    ->setName('api.vehicles.photo.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
                 // Phase 39.2 (#284): the key's user becomes the owner; no vehicle to check yet.

@@ -44,11 +44,11 @@ Phase 27.1's incident-photo rules (#104).
 ## Tasks
 
 ### 39.3.1 Attachments
-- [ ] List per entry, download (the pages' authenticated handler), upload
+- [x] List per entry, download (the pages' authenticated handler), upload
       (multipart, field `file`, one file, the pages' checks and limits),
       delete; every owner type of §6 and §7.12, `trip` included (only for
       those who may see the trip), under each entry's API path (#300).
-- [ ] The vehicle photo on its own path: `GET`, `POST` (multipart) and
+- [x] The vehicle photo on its own path: `GET`, `POST` (multipart) and
       `DELETE /vehicles/{id}/photo`, through the edit form's rules (#300).
 
 ### 39.3.2 Webhooks

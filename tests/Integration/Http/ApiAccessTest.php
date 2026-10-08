@@ -111,6 +111,9 @@ final class ApiAccessTest extends AppTestCase
             if (in_array($route->getName(), ['api.finance.show', 'api.finance.agreements'], true)) {
                 // Finance needs Manage and ViewCosts and answers 404 to anyone else (spec.md §7.32 *Access*).
                 self::assertSame(404, $status, $route->getPattern());
+            } elseif ($route->getName() === 'api.vehicles.photo') {
+                // Phase 39.3: View reaches the photo, and the fixture has none.
+                self::assertSame(404, $status, $route->getPattern());
             } elseif ($needs === VehicleAbility::View) {
                 self::assertSame(200, $status, $route->getPattern());
             } else {
