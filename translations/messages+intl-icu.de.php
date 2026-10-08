@@ -657,6 +657,7 @@ return [
             'purchase' => 'Kauf',
             'issue' => 'Mangel',
             'issue_update' => 'Mangel',
+            'mot' => 'MOT',
         ],
         'stat' => [
             'current' => 'Kilometerstand',

@@ -658,6 +658,7 @@ return [
             'purchase' => 'Bought',
             'issue' => 'Issue',
             'issue_update' => 'Issue',
+            'mot' => 'MOT',
         ],
         'stat' => [
             'current' => 'Odometer',

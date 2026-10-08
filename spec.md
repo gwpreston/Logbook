@@ -1416,7 +1416,7 @@ from fleet totals unless "include archived" is toggled.
 - **Look up** (Phase 41, §7.38, #326; add form only, while an MOT
   history provider is on): beside the registration, "Sends this
   registration to DVSA". Fills only blank fields (make, model, fuel type,
-  colour, first registration and, for a vehicle DVSA lists with no tests,
+  first registration and, for a vehicle DVSA lists with no tests,
   *First MOT due*); nothing is stored until the vehicle is saved.
 - **Current odometer** (add form only, optional, in the owner's distance unit,
   parsed like a reading; 0 is valid for a new vehicle): when filled, saving
@@ -8537,11 +8537,15 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   has no record and the vehicle has a VIN, by VIN. When the VIN's record
   is under another registration (a private plate), the page states it:
   "DVSA knows this vehicle as AB12 CDE".
-- **Matching:** when the make or the model clearly disagrees with the
-  vehicle's (case-folded; the model compared by its first word; blank
-  on either side never disagrees), nothing is stored and the page says:
-  "DVSA's record for AB12 CDE is a Ford Fiesta; this vehicle is a VW
-  Golf. Check the registration."
+- **Matching** (#336): when the make clearly disagrees with the
+  vehicle's, nothing is stored and the page says: "DVSA's record for AB12
+  CDE is a Ford Fiesta; this vehicle is a VW Golf. Check the
+  registration." Makes are compared case-folded with spaces and dashes
+  removed; one starting with the other agrees, as do common short names
+  (VW, Merc, Mercedes, Land Rover / Range Rover, Vauxhall / Opel, Mini /
+  BMW Mini); a blank make on either side never disagrees. The model never
+  refuses (owners write "3 Series" where DVSA writes "320D M SPORT"): a
+  different one is noted on the page ("DVSA lists it as a 320D M SPORT").
 - **Tests without a number or a date** (#334): a test DVSA gives no
   number (often Northern Ireland's) is keyed by its source and completed
   time, so a refresh still matches it; a test with no completed date
@@ -8624,7 +8628,7 @@ overview while any test is unreviewed. A test is reviewed
   the form is filled in place; without it, a submit redraws the form
   filled.
 - It fills only blank fields: make, model, fuel type (DVSA's fuel mapped
-  to §7.3's types; unmapped left blank), colour, first registration and,
+  to §7.3's types; unmapped left blank), first registration and,
   for a vehicle with no tests, *First MOT due*. Nothing is stored until
   the owner saves; the lookup doesn't enable MOT history for the new
   vehicle. Errors and "No DVSA record for AB12 CDE" show beside the

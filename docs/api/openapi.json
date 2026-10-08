@@ -8614,7 +8614,8 @@
               "incident",
               "purchase",
               "issue",
-              "issue_update"
+              "issue_update",
+              "mot"
             ]
           },
           "source_id": {
@@ -9493,7 +9494,8 @@
                   "incident",
                   "purchase",
                   "issue",
-                  "issue_update"
+                  "issue_update",
+                  "mot"
                 ]
               }
             }

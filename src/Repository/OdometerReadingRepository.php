@@ -219,6 +219,7 @@ final readonly class OdometerReadingRepository
             'incident_id' => ParameterType::INTEGER,
             'issue_id' => ParameterType::INTEGER,
             'issue_update_id' => ParameterType::INTEGER,
+            'mot_test_id' => ParameterType::INTEGER,
         ]);
 
         return (int) $this->connection->lastInsertId();
@@ -248,7 +249,7 @@ final readonly class OdometerReadingRepository
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'reading_km', 'recorded_at', 'source', 'note', 'fuel_entry_id')
             ->addSelect('maintenance_entry_id', 'compliance_document_id', 'tyre_change_id', 'incident_id')
-            ->addSelect('issue_id', 'issue_update_id')
+            ->addSelect('issue_id', 'issue_update_id', 'mot_test_id')
             ->addSelect('created_at', 'updated_at', 'created_by')
             ->from(self::TABLE);
     }
@@ -263,6 +264,7 @@ final readonly class OdometerReadingRepository
             OdometerSource::Incident => 'incident_id',
             OdometerSource::Issue => 'issue_id',
             OdometerSource::IssueUpdate => 'issue_update_id',
+            OdometerSource::Mot => 'mot_test_id',
             OdometerSource::Manual, OdometerSource::Purchase => throw new LogicException(
                 sprintf('%s readings have no owning entry.', ucfirst($source->value)),
             ),
@@ -305,6 +307,7 @@ final readonly class OdometerReadingRepository
             incidentId: Row::nullableInt($row, 'incident_id'),
             issueId: Row::nullableInt($row, 'issue_id'),
             issueUpdateId: Row::nullableInt($row, 'issue_update_id'),
+            motTestId: Row::nullableInt($row, 'mot_test_id'),
         );
     }
 }

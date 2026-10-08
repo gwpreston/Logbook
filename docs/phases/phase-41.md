@@ -231,7 +231,7 @@ and the decisions below win. In short:
 
 ## Open questions
 
-Logged as #320–#335 in [`open-questions.md`](open-questions.md). A was
+Logged as #320–#336 in [`open-questions.md`](open-questions.md). A was
 answered from DVSA's documentation; the owner decided B–G and the
 question found while starting on 2026-10-08, before the phase started.
 
@@ -295,6 +295,10 @@ Found while starting, decided by the owner on 2026-10-08:
   2026-10-08): a *Sample MOT history* provider, as fuel prices' sample
   one, outside production only and not in demo mode; the seeder enables
   it and stores the sample vehicles' history. Built with 41.2. (#335)
+- The mismatch check refuses on the make only (aliases such as VW and
+  Merc allowed); a different model is noted, never refused, since owners
+  write "3 Series" where DVSA writes "320D M SPORT" (found while building
+  41.2). *Look up* fills no colour: vehicles have no colour field. (#336)
 - Answered from the spec: `mot_history_secrets` is never in backups, as
   §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
   *Spec addition* draft's "the secrets sealed as others" means that.

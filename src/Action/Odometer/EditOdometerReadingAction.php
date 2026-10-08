@@ -106,6 +106,10 @@ final readonly class EditOdometerReadingAction
                 'id' => (string) $vehicle->id,
                 'update' => (string) $reading->issueUpdateId,
             ]),
+            // An MOT test's reading changes only by refreshing (spec.md §7.38): its page says so.
+            $reading->motTestId !== null => $this->redirect->toRoute('mot_history.show', [
+                'id' => (string) $vehicle->id,
+            ]),
             // Mileage when bought is set on the vehicle form (spec.md §6 OdometerReading).
             $reading->source === OdometerSource::Purchase => $this->redirect->toRoute('vehicles.edit', [
                 'id' => (string) $vehicle->id,
