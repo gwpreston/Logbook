@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Incident\IncidentPicker;
+use Logbook\Action\Issue\IssueFixPicker;
 use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\Ask\DraftPrefill;
 use Logbook\Action\Scan\ScanPrefill;
@@ -48,6 +49,7 @@ final readonly class CreateMaintenanceEntryAction
         private Redirector $redirect,
         private ClockInterface $clock,
         private IncidentPicker $incidents,
+        private IssueFixPicker $fixes,
     ) {
     }
 
@@ -66,8 +68,11 @@ final readonly class CreateMaintenanceEntryAction
             $defaults = $this->prefill->values($request, DraftKind::Maintenance, $vehicle->id, $defaults);
             $defaults = $this->scan->values($request, ScanTarget::Maintenance, $vehicle, $defaults);
             $defaults = $this->incidents->prefill($request, $vehicle, $defaults);
+            // *Log the repair* on an issue (spec.md §7.37): its category and title, the issue ticked.
+            $defaults = $this->fixes->prefill($request, $vehicle, $defaults);
+            $ticked = $this->fixes->requestedTicks($request, $vehicle);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $defaults);
+            return $this->page->render($request, $response, $vehicle, $currency, $defaults, ticked: $ticked);
         }
 
         $input = RequestContext::form($request);
@@ -77,9 +82,12 @@ final readonly class CreateMaintenanceEntryAction
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422);
+            $ticked = $this->fixes->posted($input);
+
+            return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422, $ticked);
         }
 
+        $fixes = $this->fixes->toSave($vehicle, null, $input);
         [$entry, $claimed] = $this->scan->save(
             $request,
             $files,
@@ -88,6 +96,7 @@ final readonly class CreateMaintenanceEntryAction
                 $data,
                 $user->preferences->timeZone(),
                 $files,
+                $fixes,
             ),
         );
         $this->incidents->save($vehicle, LinkKind::Maintenance, $entry->id, $input);

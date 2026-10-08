@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.22.0",
+    "version": "1.23.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -9195,6 +9195,7 @@
               "trips",
               "incidents",
               "finance",
+              "issues",
               "stations"
             ],
             "properties": {
@@ -9223,6 +9224,9 @@
                 "type": "boolean"
               },
               "finance": {
+                "type": "boolean"
+              },
+              "issues": {
                 "type": "boolean"
               },
               "stations": {

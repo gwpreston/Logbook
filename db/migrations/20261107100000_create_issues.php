@@ -62,10 +62,11 @@ final class CreateIssues extends AbstractMigration
             ])
             ->create();
 
-        $this->table('issue_fixes', ['id' => false, 'primary_key' => ['issue_id', 'maintenance_entry_id']])
+        $this->table('issue_fixes')
             ->addColumn('issue_id', 'integer', ['null' => false, 'signed' => false])
             ->addColumn('maintenance_entry_id', 'integer', ['null' => false, 'signed' => false])
             ->addColumn('created_at', 'datetime', ['null' => false])
+            ->addIndex(['issue_id', 'maintenance_entry_id'], ['unique' => true, 'name' => 'issue_fixes_pair_uniq'])
             ->addIndex(['maintenance_entry_id'], ['name' => 'issue_fixes_record_idx'])
             ->addForeignKey('issue_id', 'issues', 'id', [
                 'delete' => 'CASCADE',

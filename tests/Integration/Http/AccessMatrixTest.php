@@ -13,6 +13,8 @@ use Logbook\Domain\Finance\AgreementData;
 use Logbook\Domain\Finance\AgreementType;
 use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Domain\Incident\IncidentData;
+use Logbook\Domain\Issue\IssueData;
+use Logbook\Domain\Issue\IssueUpdateData;
 use Logbook\Domain\Incident\IncidentType;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
@@ -25,6 +27,7 @@ use Logbook\Repository\FinanceAgreementRepository;
 use Logbook\Repository\TripRepository;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Incident\IncidentService;
+use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
@@ -137,6 +140,19 @@ final class AccessMatrixTest extends AppTestCase
         'incidents.edit' => self::MANAGE,
         'incidents.delete' => self::MANAGE,
         'incidents.links' => self::MANAGE,
+        // Phase 40.1 (spec.md §7.37 *Access*): Log adds, watches, fixes and notes; the
+        // owner's issue and note are someone else's under Log.
+        'issues.index' => self::VIEW,
+        'issues.create' => self::LOG,
+        'issues.show' => self::VIEW,
+        'issues.edit' => self::MANAGE,
+        'issues.delete' => self::MANAGE,
+        'issues.watch' => self::LOG,
+        'issues.reopen' => self::LOG,
+        'issues.fix' => self::LOG,
+        'issues.updates.create' => self::LOG,
+        'issues.updates.edit' => self::MANAGE,
+        'issues.updates.delete' => self::MANAGE,
         'finance.index' => self::FINANCE,
         'finance.create' => self::FINANCE,
         'finance.show' => self::FINANCE,
@@ -280,6 +296,10 @@ final class AccessMatrixTest extends AppTestCase
             null,
             new DateTimeZone('Europe/London'),
         );
+        $issues = $this->service($app, IssueService::class);
+        $issue = $issues->create($vehicle, new IssueData($day('2026-09-08'), 'Knock'), new DateTimeZone('Europe/London'));
+        $still = new IssueUpdateData($day('2026-09-09'), 'Still there');
+        $note = $issues->addUpdate($vehicle, $issue, $still, new DateTimeZone('Europe/London'));
         $agreement = $this->service($app, FinanceAgreementRepository::class)->insert($vehicle->id, new AgreementData(
             type: AgreementType::Hp,
             lender: 'Black Horse',
@@ -355,6 +375,8 @@ final class AccessMatrixTest extends AppTestCase
             'attachment' => $attachment,
             'reminder' => $reminder->id,
             'incident' => $incident->id,
+            'issue' => $issue->id,
+            'update' => $note->id,
             'agreement' => $agreement,
             'event' => $event,
             'quote' => $quote,

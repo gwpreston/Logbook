@@ -1,0 +1,92 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
+
+{#
+ # Log or edit an issue (spec.md §7.37 *Add / edit*), as a page and a
+ # desktop modal. The status is open or watching here (*Mark fixed* fixes);
+ # the look-again point is only kept while watching. The owner's words are
+ # the record: there is no cause to choose.
+ #}
+{% set active_nav = 'garage' %}
+{% set editing = issue is not null %}
+{% set fixed = editing and issue.isFixed() %}
+{% set heading = (editing ? 'issue.edit_title' : 'issue.add_title')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ editing ? url_for('issues.show', {id: vehicle.id, issue: issue.id}) : url_for('issues.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'issue.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'issue.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" id="issue-form" method="post" enctype="multipart/form-data"
+              action="{{ editing ? url_for('issues.edit', {id: vehicle.id, issue: issue.id}) : url_for('issues.create', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card">
+                {{ ui.input('title', 'issue.field.title'|trans, values, errors, {required: true, maxlength: 120, hint: 'issue.hint.title'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input('noticed_on', 'issue.field.noticed_on'|trans, values, errors, {type: 'date', required: true, max: 'now'|date('Y-m-d')}) }}
+                    {{ ui.input('odometer', 'issue.field.odometer'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, optional: true, hint: 'issue.hint.odometer'|trans}) }}
+                </div>
+                <div class="field">
+                    <label class="field__label" for="f-description">{{ 'issue.field.description'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-description" name="description" rows="3" maxlength="2000"{{ ui.described_by('description', errors, false) }}>{{ values.description ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'description') }}
+                </div>
+                {{ ui.select('category', 'issue.field.category'|trans, values, errors, [{value: '', label: 'issue.category_none'|trans}]|merge(categories|map(c => {value: c.value, label: ('maintenance.category.' ~ c.value)|trans})), {hint: 'issue.hint.category'|trans}) }}
+                <label class="toggle">
+                    <input type="checkbox" name="affects_safety" value="1"{% if (values.affects_safety ?? '') == '1' %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'issue.field.affects_safety'|trans }}</span>
+                        <span class="toggle__hint">{{ 'issue.hint.affects_safety'|trans }}</span>
+                    </span>
+                </label>
+            </section>
+
+            {% if not fixed %}
+                <section class="card" aria-labelledby="issue-status">
+                    <h2 id="issue-status" class="card__title">{{ 'issue.field.status'|trans }}</h2>
+                    {{ ui.chips('status', 'issue.field.status'|trans, values, errors, [
+                        {value: 'open', label: 'issue.status.open'|trans},
+                        {value: 'watching', label: 'issue.status.watching'|trans},
+                    ]) }}
+                    <p class="field__hint">{{ 'issue.hint.watching'|trans }}</p>
+                    <div class="form-row">
+                        {{ ui.input('look_again_on', 'issue.field.look_again_on'|trans, values, errors, {type: 'date', optional: true}) }}
+                        {{ ui.input('look_again_odometer', 'issue.field.look_again_odometer'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, optional: true}) }}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="card">
+                {{ files.input(vehicle, attachments, errors, max_upload_mb, max_upload_files, {label: 'issue.field.files'|trans, hint: 'issue.hint.files'|trans}) }}
+            </section>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'issue.add_submit')|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (editing ? url_for('issues.show', {id: vehicle.id, issue: issue.id}) : url_for('issues.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('issues.delete', {id: vehicle.id, issue: issue.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

@@ -92,6 +92,17 @@ final class UserExport
             },
             $out['incidents'],
         );
+        // Phase 40.1: the issues (theirs), their timelines (every line theirs) and the records that fixed them.
+        $out['issues'] = array_map(
+            static fn (array $row): array => ['created_by' => $user] + $row,
+            $keep('issues', static fn (array $row): bool => in_array($row['vehicle_id'], $vehicles, true)),
+        );
+        $issues = array_column($out['issues'], 'id');
+        $out['issue_updates'] = array_map(
+            static fn (array $row): array => ['created_by' => $user] + $row,
+            $keep('issue_updates', static fn (array $row): bool => in_array($row['issue_id'], $issues, true)),
+        );
+        $out['issue_fixes'] = $keep('issue_fixes', static fn (array $row): bool => in_array($row['issue_id'], $issues, true));
         $changes = array_column($out['tyre_changes'], 'id');
         $out['tyre_change_lines'] = $keep(
             'tyre_change_lines',

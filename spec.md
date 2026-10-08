@@ -732,7 +732,7 @@ MySQL only.
   `(vehicle_id, status)`.
 
 **IssueFix** (Phase 40.1), `issue_fixes`
-- issue_id (`ON DELETE CASCADE`), maintenance_entry_id (`ON DELETE
+- id, issue_id (`ON DELETE CASCADE`), maintenance_entry_id (`ON DELETE
   CASCADE`), created_at (UTC); unique on the pair. One record can fix
   several issues (a brake job); a second attempt can be linked too.
 

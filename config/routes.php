@@ -238,6 +238,16 @@ use Logbook\Action\Sharing\ChangeShareAction;
 use Logbook\Action\Sharing\MyShareAction;
 use Logbook\Action\Sharing\SharingAction;
 use Logbook\Action\Sharing\TransferVehicleAction;
+use Logbook\Action\Issue\CreateIssueAction;
+use Logbook\Action\Issue\DeleteIssueAction;
+use Logbook\Action\Issue\EditIssueAction;
+use Logbook\Action\Issue\FixIssueAction;
+use Logbook\Action\Issue\FleetIssuesAction;
+use Logbook\Action\Issue\IssueListAction;
+use Logbook\Action\Issue\IssueUpdateAction;
+use Logbook\Action\Issue\ReopenIssueAction;
+use Logbook\Action\Issue\ShowIssueAction;
+use Logbook\Action\Issue\WatchIssueAction;
 use Logbook\Action\Incident\ClaimsHistoryAction;
 use Logbook\Action\Incident\ClaimsHistoryExportAction;
 use Logbook\Action\Incident\CreateIncidentAction;
@@ -892,6 +902,40 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
             })->add($module(Feature::Trips));
 
+            // Issues (spec.md §7.37). Editing or deleting someone else's issue or note needs Manage (EntryGuard).
+            $vehicle->group('', function (Group $issues) use ($ability): void {
+                $view = VehicleAbility::View->value;
+                $log = VehicleAbility::Log->value;
+                $issues->get('/issues', IssueListAction::class)->setName('issues.index')->setArgument($ability, $view);
+                $issues->map(['GET', 'POST'], '/issues/new', CreateIssueAction::class)->setName('issues.create')
+                    ->setArgument($ability, $log);
+                $issues->get('/issues/{issue:[0-9]+}', ShowIssueAction::class)->setName('issues.show')
+                    ->setArgument($ability, $view);
+                $issues->map(['GET', 'POST'], '/issues/{issue:[0-9]+}/edit', EditIssueAction::class)->setName('issues.edit')
+                    ->setArgument($ability, $log);
+                $issues->map(['GET', 'POST'], '/issues/{issue:[0-9]+}/delete', DeleteIssueAction::class)
+                    ->setName('issues.delete')
+                    ->setArgument($ability, $log);
+                $issues->map(['GET', 'POST'], '/issues/{issue:[0-9]+}/watch', WatchIssueAction::class)->setName('issues.watch')
+                    ->setArgument($ability, $log);
+                $issues->post('/issues/{issue:[0-9]+}/reopen', ReopenIssueAction::class)->setName('issues.reopen')
+                    ->setArgument($ability, $log);
+                $issues->map(['GET', 'POST'], '/issues/{issue:[0-9]+}/fix', FixIssueAction::class)->setName('issues.fix')
+                    ->setArgument($ability, $log);
+                $issues->map(['GET', 'POST'], '/issues/{issue:[0-9]+}/updates/new', IssueUpdateAction::class)
+                    ->setName('issues.updates.create')
+                    ->setArgument('mode', 'new')
+                    ->setArgument($ability, $log);
+                $issues->map(['GET', 'POST'], '/issue-updates/{update:[0-9]+}/edit', IssueUpdateAction::class)
+                    ->setName('issues.updates.edit')
+                    ->setArgument('mode', 'edit')
+                    ->setArgument($ability, $log);
+                $issues->map(['GET', 'POST'], '/issue-updates/{update:[0-9]+}/delete', IssueUpdateAction::class)
+                    ->setName('issues.updates.delete')
+                    ->setArgument('mode', 'delete')
+                    ->setArgument($ability, $log);
+            })->add($module(Feature::Issues));
+
             // Incidents (spec.md §7.29). Editing someone else's needs Manage (EntryGuard).
             $vehicle->group('/incidents', function (Group $incidents) use ($ability): void {
                 $incidents->get('', IncidentListAction::class)->setName('incidents.index')
@@ -1081,6 +1125,9 @@ return static function (App $app): void {
             $stations->post('/settings/places/{place:[0-9]+}/delete', PlaceDeleteAction::class)
                 ->setName('settings.places.delete');
         })->add($module(Feature::Stations));
+
+        // Every visible vehicle's open and watching issues (spec.md §7.37 *Fleet*).
+        $group->get('/issues', FleetIssuesAction::class)->setName('issues.fleet')->add($module(Feature::Issues));
 
         // The claims history, every vehicle the user can see (spec.md §7.29).
         $group->group('', function (Group $incidents): void {

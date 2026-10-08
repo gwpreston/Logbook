@@ -43,6 +43,11 @@ final readonly class BackupRepository
         // Phase 27.1: after the policy it claims on, before the records it links.
         'incidents',
         'maintenance_entries',
+        // Phase 40.1: issues, their timelines and the records that fixed them, before the
+        // readings an issue or an update owns.
+        'issues',
+        'issue_updates',
+        'issue_fixes',
         // Tyres (Phase 11.1): a change refers to its service record, and a
         // change's odometer reading to the change, so they come before the readings.
         'tyre_sets',

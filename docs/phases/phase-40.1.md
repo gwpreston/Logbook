@@ -58,8 +58,8 @@ and webhook endpoints.
 
 - **AI diagnosis** in any form: no "possible causes", no Ask tool that
   suggests one, no AI insight about a fault's cause.
-- The recommended-work card, API, webhooks, Ask, MCP, CSV, backups and
-  `bin/export-user.php`: [Phase 40.2](phase-40.2.md).
+- The recommended-work card, API, webhooks, Ask, MCP and CSV:
+  [Phase 40.2](phase-40.2.md).
 - **MOT advisories** as a source: [Phase 41](phase-41.md), which writes
   through this phase's create path.
 - A **severity** or safety rating set by Logbook. The owner's words are
@@ -130,16 +130,16 @@ Issue, IssueFix and IssueUpdate. In short:
       (#307–#318); phase split into 40.1 and 40.2; `ROADMAP.md` rows.
 
 ### 40.1.1 Migration and services
-- [ ] Three tables, `odometer_readings.issue_id` and `issue_update_id`;
+- [x] Three tables, `odometer_readings.issue_id` and `issue_update_id`;
       reversible on every engine (rollback turns `issue` readings
       `manual`, removes `issue` attachments and reminders).
-- [ ] Domain: `Issue`, `IssueStatus`, `IssueSource`, `IssueUpdate`;
+- [x] Domain: `Issue`, `IssueStatus`, `IssueSource`, `IssueUpdate`;
       repositories for issues, fixes and updates.
-- [ ] `Service\Issue\IssueService`: create, edit, delete, status changes
+- [x] `Service\Issue\IssueService`: create, edit, delete, status changes
       with automatic updates, watch, fix (records or none), unfix,
       reopen, add/edit/delete update; the reading written in the same
       transaction; maintenance save and delete call fix/unfix.
-- [ ] Module `issues` (`Feature`, Settings → Modules, `FEATURES_ISSUES` in
+- [x] Module `issues` (`Feature`, Settings → Modules, `FEATURES_ISSUES` in
       `.env.example` and the configuration docs).
 
 ### 40.1.2 Pages
@@ -147,10 +147,13 @@ Issue, IssueFix and IssueUpdate. In short:
       timeline and fixes, fleet `/issues`, add/edit modal and page,
       delete confirmation, *Add update* (and edit/delete of a note),
       *Watch* / *Stop watching*, *Mark fixed* (three routes), *It's back*.
-- [ ] Maintenance form *Fixes* checklist (page and modal, with and
+- [x] Maintenance form *Fixes* checklist (page and modal, with and
       without JS), *Log the repair* prefill.
-- [ ] *Log entry* chooser entry; Mileage tab source label *Issue*.
-- [ ] Attachments with owner type `issue`.
+- [x] *Log entry* chooser entry; Mileage tab source label *Issue*.
+- [x] Attachments with owner type `issue`.
+- [x] Backups and `bin/export-user.php` carry the three tables (moved
+      here from 40.2: the backup test requires every table to be placed,
+      and a release-less master should not lose issues on restore).
 
 ### 40.1.3 Integrations
 - [ ] *Needs attention*: *Open issue* and *Look again* items, safety

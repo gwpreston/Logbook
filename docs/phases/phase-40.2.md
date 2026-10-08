@@ -42,9 +42,8 @@ and §7.28.
       line; AI insights never take a cause.
 - [ ] MCP: the read tool and the `draft_issue` pending draft.
 - [ ] CSV `/vehicles/{id}/export/issues.csv`.
-- [ ] Backups and `bin/export-user.php` carry the three tables (restore
-      order: vehicles, maintenance entries, issues, then fixes and
-      updates); a v3.5.0 backup restores with no issues.
+- [x] Backups and `bin/export-user.php` carry the three tables: built in
+      [40.1](phase-40.1.md).
 - [ ] Translations (every shipped locale).
 
 ### 40.2.4 Tests

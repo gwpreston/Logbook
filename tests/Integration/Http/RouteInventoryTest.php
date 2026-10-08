@@ -199,6 +199,8 @@ final class RouteInventoryTest extends AppTestCase
         'incidents.history',
         'incidents.history.export',
         'api.incidents.history',
+        // Phase 40.1: open and watching issues on the active vehicles the user can see.
+        'issues.fleet',
         // Phase 30.1: stations are shared records; what was paid at them comes from the
         // fill-ups on the vehicles the user can see (StationService::visits), amounts only
         // where they may see them; editing and merging check the creator or an admin.
@@ -245,7 +247,9 @@ final class RouteInventoryTest extends AppTestCase
         'maintenance.schedules.delete', 'tyres.index', 'tyres.change', 'tyres.changes.edit',
         'tyres.changes.delete', 'tyres.sets.edit', 'tyres.sets.delete', 'tyres.edit', 'tyres.delete',
         'trips.index', 'trips.create', 'trips.edit', 'trips.delete', 'incidents.index', 'incidents.create',
-        'incidents.show', 'incidents.edit', 'incidents.delete', 'incidents.links', 'finance.index',
+        'incidents.show', 'incidents.edit', 'incidents.delete', 'incidents.links', 'issues.index', 'issues.create',
+        'issues.show', 'issues.edit', 'issues.delete', 'issues.watch', 'issues.reopen', 'issues.fix',
+        'issues.updates.create', 'issues.updates.edit', 'issues.updates.delete', 'issues.fleet', 'finance.index',
         'finance.create', 'finance.show', 'finance.edit', 'finance.delete', 'finance.payments',
         'finance.events.delete', 'finance.quotes', 'finance.quotes.delete', 'finance.schedule', 'finance.end',
         'compliance.index', 'compliance.create', 'compliance.edit', 'compliance.delete', 'expenses.index',

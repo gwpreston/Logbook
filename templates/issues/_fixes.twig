@@ -1,0 +1,22 @@
+{#
+ # *Fixes* on the service record form (spec.md §7.37): the vehicle's open
+ # and watching issues as checkboxes. Saving links the ticked ones and sets
+ # each to fixed on the record's date; unticking takes the link away. The
+ # hidden `fixes_sent` tells the save the checklist was here.
+ # Expects: fix_options (list of issues; empty hides it), fix_ticked (ids).
+ #}
+{% if fix_options|default([]) is not empty %}
+    <fieldset class="field fieldset">
+        <legend class="field__label">{{ 'issue.fixes.field'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></legend>
+        <input type="hidden" name="fixes_sent" value="1">
+        <div class="chip-row">
+            {% for issue in fix_options %}
+                <label class="chip">
+                    <input type="checkbox" name="fixes[]" value="{{ issue.id }}"{% if issue.id in fix_ticked %} checked{% endif %}>
+                    <span>{{ issue.data.title }}{% if issue.data.affectsSafety %} · {{ 'issue.affects_safety'|trans }}{% endif %}</span>
+                </label>
+            {% endfor %}
+        </div>
+        <p class="field__hint">{{ 'issue.fixes.hint'|trans }}</p>
+    </fieldset>
+{% endif %}

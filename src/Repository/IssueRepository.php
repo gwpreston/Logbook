@@ -338,6 +338,23 @@ final readonly class IssueRepository
     }
 
     /**
+     * The issue id an update belongs to, if that issue is on the vehicle.
+     */
+    public function issueOfUpdate(int $vehicleId, int $updateId): ?int
+    {
+        $id = $this->connection->createQueryBuilder()
+            ->select('u.issue_id')
+            ->from(self::UPDATES, 'u')
+            ->innerJoin('u', self::TABLE, 'i', 'i.id = u.issue_id')
+            ->where('u.id = :update', 'i.vehicle_id = :vehicle')
+            ->setParameter('update', $updateId, ParameterType::INTEGER)
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->fetchOne();
+
+        return is_numeric($id) ? (int) $id : null;
+    }
+
+    /**
      * @return list<IssueUpdate> oldest first: by date, then the order added
      */
     public function updatesOf(int $issueId): array

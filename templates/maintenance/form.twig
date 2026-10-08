@@ -61,6 +61,7 @@
                     {{ ui.field_error(errors, 'description') }}
                 </div>
                 {% include 'incidents/_picker.twig' %}
+                {% include 'issues/_fixes.twig' %}
             </section>
 
             {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}

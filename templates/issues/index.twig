@@ -1,0 +1,55 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/issues.twig' as issues_ui %}
+
+{#
+ # The Issues tab (spec.md §7.37 *Pages*): filters as links, then the
+ # issues, safety first, then newest noticed first. Logbook lists what the
+ # owner noticed; it never suggests a cause.
+ #}
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'issue.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'issues'} %}
+
+        <div class="toolbar list-toolbar">
+            <h1 id="issues-heading" class="visually-hidden">{{ 'issue.title'|trans }}</h1>
+            <div class="btn-row list-toolbar__actions">
+                {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+                    <a class="btn btn--primary" href="{{ url_for('issues.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'issue.add'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <section class="card" aria-labelledby="issues-heading">
+            {% if counts.all == 0 %}
+                <div class="empty">
+                    {{ ui.icon('report') }}
+                    <p class="empty__title">{{ 'issue.empty_title'|trans }}</p>
+                    <p>{{ 'issue.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <nav class="chip-row" aria-label="{{ 'issue.filter_label'|trans }}">
+                    {% for option in filters %}
+                        <a class="chip" href="{{ url_for('issues.index', {id: vehicle.id}, option == 'open' ? {} : {status: option}) }}"{% if filter == option %} aria-current="true"{% endif %}>
+                            {{- ('issue.filter.' ~ option)|trans }} <span class="muted tabular">{{ counts[option] }}</span>
+                        </a>
+                    {% endfor %}
+                </nav>
+                {% if issues is empty %}
+                    <p class="muted">{{ ('issue.filter_empty.' ~ filter)|trans }}</p>
+                {% else %}
+                    <ul class="list">
+                        {% for issue in issues %}
+                            {{ issues_ui.row(issue, vehicle, attachment_counts.of('issue', issue.id)) }}
+                        {% endfor %}
+                    </ul>
+                    {{ ui.pagination(pagination, 'issues.index', {id: vehicle.id}, filter == 'open' ? {} : {status: filter}) }}
+                {% endif %}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

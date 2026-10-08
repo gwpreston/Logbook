@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Incident\IncidentPicker;
+use Logbook\Action\Issue\IssueFixPicker;
 use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
@@ -37,6 +38,7 @@ final readonly class EditMaintenanceEntryAction
         private TyreFormPage $tyreErrors,
         private EntryGuard $guard,
         private IncidentPicker $incidents,
+        private IssueFixPicker $fixes,
     ) {
     }
 
@@ -69,17 +71,22 @@ final readonly class EditMaintenanceEntryAction
         if ($errors !== null || $data instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422);
+            $ticked = $this->fixes->posted($input);
+
+            return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422, $ticked);
         }
 
         try {
-            $updated = $this->maintenance->update($vehicle, $entry, $data, $user->preferences->timeZone(), $files);
+            $fixes = $this->fixes->toSave($vehicle, $entry, $input);
+            $updated = $this->maintenance->update($vehicle, $entry, $data, $user->preferences->timeZone(), $files, $fixes);
         } catch (TyreChangeRefused $refused) {
             // A linked tyre change cannot move to the new date or odometer (spec.md §7.17).
             $values = RequestContext::formValues($request);
             $errors = $this->tyreErrors->errors($refused);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422);
+            $ticked = $this->fixes->posted($input);
+
+            return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422, $ticked);
         }
         $this->incidents->save($vehicle, LinkKind::Maintenance, $entry->id, $input);
         $session = RequestContext::session($request);

@@ -1,0 +1,56 @@
+{#
+ # Issues (spec.md §7.37): the status and safety pills, and a list row.
+ # Safety is said in words as well as the danger colour, never colour alone.
+ #}
+
+{% macro status_pill(issue) -%}
+    {% set tone = {open: 'pill--soon', watching: '', fixed: 'pill--valid'}[issue.status().value] %}
+    <span class="pill {{ tone }}">{{ issue.status().labelKey()|trans }}</span>
+{%- endmacro %}
+
+{% macro safety_pill(issue) -%}
+    {% if issue.data.affectsSafety %}<span class="pill pill--overdue">{{ 'issue.affects_safety'|trans }}</span>{% endif %}
+{%- endmacro %}
+
+{# "noticed 12 Aug 2026 · 48,120 mi · watching since …" #}
+{% macro meta(issue) -%}
+    {%- set data = issue.data -%}
+    {{- 'issue.noticed_on'|trans({date: data.noticedOn|local_date}) -}}
+    {%- if data.odometerKm is not null %} · <span class="tabular">{{ data.odometerKm|distance(0) }}</span>{% endif -%}
+    {%- if issue.isFixed() and issue.fixedOn %} · {{ 'issue.fixed_on'|trans({date: issue.fixedOn|local_date}) }}{% endif -%}
+    {%- if data.status.value == 'watching' and (data.lookAgainOn or data.lookAgainKm is not null) %} · {{ _self.look_again(issue) }}{% endif -%}
+{%- endmacro %}
+
+{% macro look_again(issue) -%}
+    {%- set data = issue.data -%}
+    {%- if data.lookAgainOn and data.lookAgainKm is not null -%}
+        {{ 'issue.look_again_both'|trans({date: data.lookAgainOn|local_date, distance: data.lookAgainKm|distance(0)}) }}
+    {%- elseif data.lookAgainOn -%}
+        {{ 'issue.look_again_date'|trans({date: data.lookAgainOn|local_date}) }}
+    {%- elseif data.lookAgainKm is not null -%}
+        {{ 'issue.look_again_distance'|trans({distance: data.lookAgainKm|distance(0)}) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# One issue as a list row linking to its page; `vehicle_name` names it on the fleet page. #}
+{% macro row(issue, vehicle, files = 0, vehicle_name = null) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% import 'macros/attachments.twig' as paperclip %}
+    <li>
+        <a class="list__item" href="{{ url_for('issues.show', {id: vehicle.id, issue: issue.id}) }}">
+            <span class="list__icon">{{ ui.icon(issue.status().icon()) }}</span>
+            <span class="list__body">
+                <span class="list__title">{{ issue.data.title }}</span>
+                <span class="list__meta">
+                    {%- if vehicle_name %}{{ vehicle_name }} · {% endif -%}
+                    {{ _self.meta(issue) }}
+                </span>
+            </span>
+            <span class="list__end">
+                {{ _self.safety_pill(issue) }}
+                {{ _self.status_pill(issue) }}
+                {{ paperclip.count(files) }}
+            </span>
+        </a>
+    </li>
+{%- endmacro %}

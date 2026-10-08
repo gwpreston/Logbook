@@ -411,6 +411,22 @@ final readonly class IssueService
     }
 
     /**
+     * An update of one of the vehicle's issues, with its issue, by the
+     * update's id alone (a reading's edit link knows only that).
+     *
+     * @return array{0: Issue, 1: IssueUpdate}
+     * @throws IssueNotFound
+     */
+    public function updateOnVehicle(Vehicle $vehicle, int $updateId): array
+    {
+        $issueId = $this->issues->issueOfUpdate($vehicle->id, $updateId)
+            ?? throw new IssueNotFound(sprintf('Update %d not found.', $updateId));
+        $issue = $this->get($vehicle, $issueId);
+
+        return [$issue, $this->getUpdate($issue, $updateId)];
+    }
+
+    /**
      * *Add update*: a note, an odometer and an optional status change. A
      * change to fixed is not made here (*Mark fixed* does it).
      */

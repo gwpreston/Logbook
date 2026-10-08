@@ -74,6 +74,9 @@ final class MigrationsTest extends AppTestCase
         'station_favourites',
         'places',
         'import_sources',
+        'issues',
+        'issue_fixes',
+        'issue_updates',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -134,6 +137,16 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 40.1: issues, their fixes and updates, and the reading links.
+        self::assertTrue($schema->tablesExist(['issues', 'issue_fixes', 'issue_updates']));
+        self::assertTrue($this->hasColumn('odometer_readings', 'issue_id'));
+        Migrator::run('rollback');
+        foreach (['issue_updates', 'issue_fixes', 'issues'] as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+        self::assertFalse($this->hasColumn('odometer_readings', 'issue_id'), 'rollback must drop odometer_readings.issue_id');
+        self::assertFalse($this->hasColumn('odometer_readings', 'issue_update_id'));
+
         // Phase 39.3: entry webhooks.
         self::assertTrue($schema->tablesExist(['webhooks', 'webhook_deliveries']));
         Migrator::run('rollback');
