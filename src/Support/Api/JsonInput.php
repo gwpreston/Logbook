@@ -541,6 +541,32 @@ final class JsonInput
     }
 
     /**
+     * A `PATCH` body laid over the stored entry (spec.md §7.20, #283): the
+     * edit form's values for the entry, with each field the body sends
+     * replaced by its converted value, or emptied when it is `null`. What
+     * the body leaves out keeps its stored value, never the create
+     * mapper's default (now, today, the usual fuel).
+     *
+     * @param array<string, string|list<string>> $stored the edit form's values, in the mapped preferences
+     * @param array<string, mixed> $body the decoded request body
+     * @param array<string, string|list<string>> $mapped the create mapper's input for the same body
+     * @param array<string, string> $fields API field → form field
+     * @return array<string, string|list<string>>
+     */
+    public static function overlay(array $stored, array $body, array $mapped, array $fields): array
+    {
+        foreach ($body as $name => $value) {
+            $form = $fields[$name] ?? null;
+            if ($form === null) {
+                continue;
+            }
+            $stored[$form] = $value === null ? (is_array($stored[$form] ?? null) ? [] : '') : ($mapped[$form] ?? '');
+        }
+
+        return $stored;
+    }
+
+    /**
      * A form's errors under the API's field names.
      *
      * @param array<string, string> $fields API field → form field

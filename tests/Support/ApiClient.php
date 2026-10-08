@@ -70,6 +70,36 @@ final class ApiClient
     }
 
     /**
+     * @param array<string, mixed>|string $body an array is sent as JSON; a string as it is
+     * @param array<string, string> $headers
+     */
+    public function patch(string $path, array|string $body, array $headers = []): ResponseInterface
+    {
+        $raw = is_string($body) ? $body : json_encode((object) $body, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+
+        return $this->send('PATCH', $path, $raw, $headers + ['Content-Type' => 'application/json']);
+    }
+
+    /**
+     * @param array<string, mixed>|string|null $body
+     * @param array<string, string> $headers
+     */
+    public function put(string $path, array|string|null $body = null, array $headers = []): ResponseInterface
+    {
+        $raw = is_array($body) ? json_encode((object) $body, JSON_THROW_ON_ERROR) : $body;
+
+        return $this->send('PUT', $path, $raw, $headers + ($raw === null ? [] : ['Content-Type' => 'application/json']));
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    public function delete(string $path, array $headers = []): ResponseInterface
+    {
+        return $this->send('DELETE', $path, null, $headers);
+    }
+
+    /**
      * @param array<string, string> $headers
      */
     public function send(string $method, string $path, ?string $body = null, array $headers = []): ResponseInterface

@@ -56,6 +56,9 @@ use Logbook\Action\Api\ListValuationsAction as ApiValuationsAction;
 use Logbook\Action\Api\OwnershipAction as ApiOwnershipAction;
 use Logbook\Action\Api\ReminderActionAction as ApiReminderActionAction;
 use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
+use Logbook\Action\Api\EditEntryAction as ApiEditEntryAction;
+use Logbook\Action\Api\EditReminderAction as ApiEditReminderAction;
+use Logbook\Action\Api\DeleteEntryAction as ApiDeleteEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
 use Logbook\Action\Api\FinanceAgreementsAction as ApiFinanceAgreementsAction;
@@ -338,6 +341,21 @@ return static function (App $app): void {
             $api->get('/openapi.json', OpenApiAction::class)->setName('api.openapi');
 
             $api->group('', function (Group $keyed) use ($module, $ability): void {
+                // PATCH and DELETE of an entry (Phase 39.2, spec.md §7.20): declare Log; ApiEditor
+                // checks EntryAccess::canChange once the entry is loaded, as the edit pages do.
+                $edits = static function (Group $group, string $list, ?Feature $feature = null) use ($module, $ability): void {
+                    $path = '/vehicles/{id:[0-9]+}/' . $list . '/{entry:[0-9]+}';
+                    $routes = [
+                        $group->patch($path, ApiEditEntryAction::class)->setName('api.' . $list . '.update'),
+                        $group->delete($path, ApiDeleteEntryAction::class)->setName('api.' . $list . '.delete'),
+                    ];
+                    foreach ($routes as $route) {
+                        $route->setArgument('list', $list)->setArgument($ability, VehicleAbility::Log->value);
+                        if ($feature !== null) {
+                            $route->add($module($feature));
+                        }
+                    }
+                };
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
                 $keyed->get('/upcoming', ApiUpcomingAction::class)->setName('api.upcoming');
@@ -366,6 +384,12 @@ return static function (App $app): void {
                         ->add($module(Feature::Reminders));
                 }
 
+                // A manual reminder's Edit and Delete (Phase 39.2): Manage, as the Reminders page.
+                $keyed->map(['PATCH', 'DELETE'], '/reminders/{reminder:[0-9]+}', ApiEditReminderAction::class)
+                    ->setName('api.reminders.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value)
+                    ->add($module(Feature::Reminders));
+
                 $keyed->get('/vehicles/{id:[0-9]+}', ApiVehicleAction::class)->setName('api.vehicles.show')
                     ->setArgument($ability, VehicleAbility::View->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/summary', ApiSummaryAction::class)->setName('api.vehicles.summary')
@@ -377,6 +401,8 @@ return static function (App $app): void {
                     ->setName('api.odometer.show')
                     ->setArgument('list', 'odometer')
                     ->setArgument($ability, VehicleAbility::View->value);
+                $edits($keyed, 'odometer');
+                $edits($keyed, 'expenses');
                 $keyed->post('/vehicles/{id:[0-9]+}/odometer', ApiLogReadingAction::class)->setName('api.odometer.create')
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/expenses', ApiExpensesAction::class)->setName('api.expenses.index')
@@ -404,7 +430,7 @@ return static function (App $app): void {
                 $keyed->post('/vehicles/{id:[0-9]+}/reminders', ApiLogReminderAction::class)->setName('api.reminders.create')
                     ->setArgument($ability, VehicleAbility::Manage->value)
                     ->add($module(Feature::Reminders));
-                $keyed->group('', function (Group $fuel) use ($ability): void {
+                $keyed->group('', function (Group $fuel) use ($ability, $edits): void {
                     $fuel->get('/vehicles/{id:[0-9]+}/fuel', ApiFuelAction::class)->setName('api.fuel.index')
                         ->setArgument($ability, VehicleAbility::View->value);
                     $fuel->get('/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}', ApiShowEntryAction::class)
@@ -413,6 +439,7 @@ return static function (App $app): void {
                         ->setArgument($ability, VehicleAbility::View->value);
                     $fuel->post('/vehicles/{id:[0-9]+}/fuel', ApiLogFuelAction::class)->setName('api.fuel.create')
                         ->setArgument($ability, VehicleAbility::Log->value);
+                    $edits($fuel, 'fuel');
                 })->add($module(Feature::Fuel));
                 // Stations (spec.md §7.33): read only; fill-ups link them.
                 $keyed->group('', function (Group $stations): void {
@@ -439,6 +466,8 @@ return static function (App $app): void {
                     ->setArgument('list', 'documents')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Compliance));
+                $edits($keyed, 'maintenance', Feature::Maintenance);
+                $edits($keyed, 'documents', Feature::Compliance);
                 // Schedules (Phase 39.1, spec.md §7.4, §7.20): with the Maintenance module.
                 $keyed->get('/vehicles/{id:[0-9]+}/schedules', ApiSchedulesAction::class)->setName('api.schedules.index')
                     ->setArgument($ability, VehicleAbility::View->value)
@@ -484,7 +513,7 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Finance));
                 // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.
-                $keyed->group('', function (Group $trips) use ($ability): void {
+                $keyed->group('', function (Group $trips) use ($ability, $edits): void {
                     $trips->get('/vehicles/{id:[0-9]+}/trips', ApiTripsAction::class)->setName('api.trips.index')
                         ->setArgument($ability, VehicleAbility::View->value);
                     $trips->get('/vehicles/{id:[0-9]+}/trips/{entry:[0-9]+}', ApiShowEntryAction::class)
@@ -493,11 +522,12 @@ return static function (App $app): void {
                         ->setArgument($ability, VehicleAbility::View->value);
                     $trips->post('/vehicles/{id:[0-9]+}/trips', ApiLogTripAction::class)->setName('api.trips.create')
                         ->setArgument($ability, VehicleAbility::Log->value);
+                    $edits($trips, 'trips');
                     $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
                     $trips->get('/journeys', ApiJourneysAction::class)->setName('api.journeys');
                 })->add($module(Feature::Trips));
                 // Incidents (spec.md §7.20, §7.29): the access rules of IncidentAccess.
-                $keyed->group('', function (Group $incidents) use ($ability): void {
+                $keyed->group('', function (Group $incidents) use ($ability, $edits): void {
                     $incidents->get('/vehicles/{id:[0-9]+}/incidents', ApiIncidentsAction::class)
                         ->setName('api.incidents.index')
                         ->setArgument($ability, VehicleAbility::View->value);
@@ -508,6 +538,7 @@ return static function (App $app): void {
                     $incidents->post('/vehicles/{id:[0-9]+}/incidents', ApiLogIncidentAction::class)
                         ->setName('api.incidents.create')
                         ->setArgument($ability, VehicleAbility::Log->value);
+                    $edits($incidents, 'incidents');
                     $incidents->get('/incidents/history', ApiIncidentHistoryAction::class)->setName('api.incidents.history');
                 })->add($module(Feature::Incidents));
             })->add(VehicleAccessMiddleware::class)

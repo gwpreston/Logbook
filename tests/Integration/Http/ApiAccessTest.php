@@ -235,9 +235,17 @@ final class ApiAccessTest extends AppTestCase
             $path = str_replace('{entry:[0-9]+}', (string) $id, $path);
         }
 
-        return in_array('GET', $route->getMethods(), true)
-            ? $api->get($path)
-            : $api->post($path, ['odometer' => '12000', 'distance_unit' => 'km', 'volume' => '40', 'total_cost' => '60']);
+        return match ($route->getMethods()[0]) {
+            'GET' => $api->get($path),
+            // Phase 39.2: edits and deletes, refused before anything is read from the body.
+            'PATCH' => $api->patch($path, ['notes' => 'x']),
+            'PUT' => $api->put($path),
+            'DELETE' => $api->delete($path),
+            default => $api->post(
+                $path,
+                ['odometer' => '12000', 'distance_unit' => 'km', 'volume' => '40', 'total_cost' => '60'],
+            ),
+        };
     }
 
     /**

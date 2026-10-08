@@ -80,7 +80,7 @@ final readonly class ApiResponder
             $body['errors'] = $problem->errors;
         }
 
-        return $body;
+        return $body + $problem->extra;
     }
 
     /**

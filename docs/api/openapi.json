@@ -395,6 +395,115 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "patch": {
+        "operationId": "editFuelEntry",
+        "summary": "Edit a fill-up",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2). Its odometer reading moves with it; the economy segments around it are recomputed. Sending one of volume, price_per_unit and total_cost keeps the other two as stored, as the edit form does (#298).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FuelPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelEntryEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteFuelEntry",
+        "summary": "Delete a fill-up",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the delete page's service, with its knock-on effects; the entry's attachments go too (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/odometer": {
@@ -549,6 +658,115 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editReading",
+        "summary": "Edit a manual odometer reading",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2). A reading written by a fill-up, service record, document, tyre change or incident, or the mileage when bought, answers 409 reading_derived with links.entry.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteReading",
+        "summary": "Delete a manual odometer reading",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the delete page's service, with its knock-on effects; the entry's attachments go too (Phase 39.2). A reading written by a fill-up, service record, document, tyre change or incident, or the mileage when bought, answers 409 reading_derived with links.entry.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -731,6 +949,115 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editMaintenanceEntry",
+        "summary": "Edit a service record",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2). Its schedule's last done and next due are recomputed; deleting falls back to the previous record.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenancePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceEntryEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMaintenanceEntry",
+        "summary": "Delete a service record",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the delete page's service, with its knock-on effects; the entry's attachments go too (Phase 39.2). Its schedule's last done and next due are recomputed; deleting falls back to the previous record.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -996,6 +1323,115 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "patch": {
+        "operationId": "editDocument",
+        "summary": "Edit a document",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2). Its reminder and odometer reading follow it.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDocument",
+        "summary": "Delete a document",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the delete page's service, with its knock-on effects; the entry's attachments go too (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/expenses": {
@@ -1151,6 +1587,115 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editExpense",
+        "summary": "Edit an expense",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpensePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteExpense",
+        "summary": "Delete an expense",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the delete page's service, with its knock-on effects; the entry's attachments go too (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -2434,6 +2979,115 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "patch": {
+        "operationId": "editTrip",
+        "summary": "Edit a trip",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2). Distances are the whole trip in km, as on create; journey_id is refused (a saved journey fills a new trip only).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTrip",
+        "summary": "Delete a trip",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the delete page's service, with its knock-on effects; the entry's attachments go too (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/trips/claim": {
@@ -2857,6 +3511,115 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "patch": {
+        "operationId": "editIncident",
+        "summary": "Edit an incident",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteIncident",
+        "summary": "Delete an incident",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the delete page's service, with its knock-on effects; the entry's attachments go too (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/incidents/history": {
@@ -3218,6 +3981,134 @@
           }
         }
       }
+    },
+    "/reminders/{reminder}": {
+      "patch": {
+        "operationId": "editReminder",
+        "summary": "Edit a manual reminder",
+        "description": "Needs a read and write key and Manage on the reminder's vehicle, as the Reminders page. Through the reminder form (Phase 39.2). The ETag is of the stored reminder; send it back in If-Match.",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), or the reminder is not a manual one (reminder_not_manual): it changes through its source.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteReminder",
+        "summary": "Delete a manual reminder",
+        "description": "Needs a read and write key and Manage on the reminder's vehicle, as the Reminders page (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), or the reminder is not a manual one (reminder_not_manual): it changes through its source.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3291,6 +4182,15 @@
         "schema": {
           "type": "integer",
           "minimum": 1
+        }
+      },
+      "ifMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": false,
+        "description": "Optional (#282): the ETag of the entry as last read. When it no longer matches, the answer is 412 and nothing is written; without it the last write wins, as on the pages.",
+        "schema": {
+          "type": "string"
         }
       }
     },
@@ -3396,6 +4296,29 @@
             }
           }
         }
+      },
+      "Conflict": {
+        "description": "The vehicle is archived (vehicle_archived), or the change is one the pages refuse (reading_derived: the reading belongs to another entry, see links.entry).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "PreconditionFailed": {
+        "description": "If-Match names a tag the entry no longer has (precondition_failed); nothing was written.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Deleted": {
+        "description": "Deleted"
       }
     },
     "schemas": {
@@ -3481,7 +4404,10 @@
               "validation_failed",
               "vehicle_archived",
               "cors_not_allowed",
-              "internal_error"
+              "internal_error",
+              "precondition_failed",
+              "reading_derived",
+              "reminder_not_manual"
             ]
           },
           "detail": {
@@ -3505,6 +4431,20 @@
                 "message": {
                   "type": "string"
                 }
+              }
+            }
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entry"
+            ],
+            "description": "reading_derived only: where to change the reading (Phase 39.2).",
+            "properties": {
+              "entry": {
+                "type": "string",
+                "description": "The owning entry's path under /api/v1."
               }
             }
           }
@@ -10856,6 +11796,1285 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FinanceAgreementDetail"
+            }
+          }
+        }
+      },
+      "FuelPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused.",
+        "properties": {
+          "filled_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Send it, so a retry is recognised."
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fuel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "petrol",
+                  "diesel",
+                  "lpg",
+                  "cng",
+                  "ev",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "e10_95",
+                  "e5_95",
+                  "e5_97",
+                  "e5_98",
+                  "e10_98",
+                  "e5_99",
+                  "e0",
+                  "e85",
+                  "e15",
+                  "e20",
+                  "aki_87",
+                  "aki_89",
+                  "aki_91",
+                  "b7",
+                  "b7_premium",
+                  "b10",
+                  "b20",
+                  "b100",
+                  "xtl",
+                  "home",
+                  "ac",
+                  "dc",
+                  "dc_rapid",
+                  "dc_ultra"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "l",
+                  "gal_uk",
+                  "gal_us",
+                  "kwh",
+                  "kg"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "price_per_unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_partial": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_missed_previous": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "station": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A station name: linked to the station with that name (ignoring case and spacing), or a new station. Not with station_id."
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A station from GET /stations. Not with station. Ignored for home charging."
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "FuelEntryEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/FuelEntry"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ReadingPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "recorded_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Send it, so a retry is recognised."
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused."
+      },
+      "ReadingEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/OdometerReading"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "MaintenancePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "performed_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "service",
+                  "oil",
+                  "tyres",
+                  "brakes",
+                  "battery",
+                  "repair",
+                  "bodywork",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vendor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "schedule_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One of the vehicle's schedules: the record completes it."
+          }
+        },
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused."
+      },
+      "MaintenanceEntryEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/MaintenanceEntry"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "DocumentPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "insurance",
+                  "pollution",
+                  "registration",
+                  "inspection",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Needed for type other."
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiry_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Needs start_on: the reading is written at local noon on it."
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused."
+      },
+      "DocumentEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ExpensePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "spent_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "tax",
+                  "parking",
+                  "tolls",
+                  "cleaning",
+                  "accessories",
+                  "fines",
+                  "finance",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused."
+      },
+      "ExpenseEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Expense"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "TripPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused.",
+        "properties": {
+          "travelled_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Send it, so a retry is recognised."
+          },
+          "from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_return": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The whole trip in km, never doubled."
+          },
+          "odometer_start_km": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "odometer_end_km": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_business": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A business trip needs a purpose."
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "passengers": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 8
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TripEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Trip"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "IncidentPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused.",
+        "properties": {
+          "occurred_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "occurred_at_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "collision",
+                  "parked_damage",
+                  "theft",
+                  "break_in",
+                  "vandalism",
+                  "weather",
+                  "glass",
+                  "pothole",
+                  "animal",
+                  "fire",
+                  "breakdown",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fault": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "at_fault",
+                  "not_at_fault",
+                  "split",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "damage_areas": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "front",
+                    "rear",
+                    "left",
+                    "right",
+                    "roof",
+                    "underside",
+                    "glass",
+                    "wheels",
+                    "interior"
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "cosmetic",
+                  "minor",
+                  "major"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "driver_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Someone who can view the vehicle."
+          },
+          "driver_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "other_party_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "other_party_registration": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "other_party_insurer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "police_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "closed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "write_off_category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "cat_n",
+                  "cat_s",
+                  "cat_b",
+                  "cat_a"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claim_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "not_claimed",
+                  "notified",
+                  "open",
+                  "settled",
+                  "declined",
+                  "withdrawn"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insurer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insurance_document_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One of the vehicle's insurance documents."
+          },
+          "claim_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "excess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "repair_estimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ncd_affected": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claim_updated_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "IncidentEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Incident"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ReminderPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283): each is laid over the stored entry, null clears an optional field, and the result is validated as the edit form validates. Unknown fields are refused.",
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The odometer it is due at, in distance_unit."
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ReminderEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Reminder"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
             }
           }
         }

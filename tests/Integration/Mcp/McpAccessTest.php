@@ -93,6 +93,9 @@ final class McpAccessTest extends AppTestCase
         self::assertSame(204, $preflight->getStatusCode());
         self::assertStringContainsString('Mcp-Method', $preflight->getHeaderLine('Access-Control-Allow-Headers'));
         self::assertStringContainsString('MCP-Protocol-Version', $preflight->getHeaderLine('Access-Control-Allow-Headers'));
+        // Phase 39 widens the API's preflight, not the MCP endpoint's (spec.md §7.20).
+        self::assertSame('GET, POST, OPTIONS', $preflight->getHeaderLine('Access-Control-Allow-Methods'));
+        self::assertStringNotContainsString('If-Match', $preflight->getHeaderLine('Access-Control-Allow-Headers'));
 
         $noCors = $this->createApp();
         $refused = (new McpClient($noCors, $this->apiKey($noCors, $owner)))->modern('tools/list', [], ['Origin' => self::ORIGIN]);
