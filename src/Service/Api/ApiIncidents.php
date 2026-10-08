@@ -69,6 +69,19 @@ final readonly class ApiIncidents
     }
 
     /**
+     * One incident as the list returns it (spec.md §7.20 *Phase 39*): the
+     * detail fields and amounts under the same rules.
+     *
+     * @return array<string, mixed>
+     */
+    public function one(User $user, Vehicle $vehicle, Incident $incident): array
+    {
+        $costs = $this->incidents->costsFor($user, $vehicle, [$incident]);
+
+        return $this->serialize($user, $vehicle, $incident, $costs[$incident->id] ?? null, $this->incidents->links($vehicle));
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function history(User $user, ClaimsFilter $filter): array

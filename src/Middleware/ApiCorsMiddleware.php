@@ -70,7 +70,9 @@ final readonly class ApiCorsMiddleware implements MiddlewareInterface
 
         $response = $handler->handle($request);
         if ($allowed) {
-            return $this->withCors($response, $origin);
+            // Single-entry reads carry an ETag for If-Match (Phase 39); a page's script may read it.
+            return $mcp ? $this->withCors($response, $origin)
+                : $this->withCors($response, $origin)->withHeader('Access-Control-Expose-Headers', 'ETag');
         }
 
         // Answers differ by origin once any are allowed: keep caches apart.

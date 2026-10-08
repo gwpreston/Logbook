@@ -25,8 +25,12 @@ use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Tyre\TyreChange;
+use Logbook\Domain\Tyre\Tyre;
 use Logbook\Domain\Tyre\TyreChangeLine;
+use Logbook\Domain\Tyre\TyreLineAction;
+use Logbook\Domain\Tyre\TyreSet;
 use Logbook\Domain\Vehicle\FuelType;
+use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Finance\AgreementView;
@@ -43,6 +47,7 @@ use Logbook\Service\Trip\ClaimTotals;
 use Logbook\Service\Trip\ValuedTrip;
 use Logbook\Service\Tyre\TyreStanding;
 use Logbook\Service\Tyre\TyreView;
+use Logbook\Service\Maintenance\ScheduleState;
 use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
 
@@ -346,6 +351,68 @@ final class Serializer
     }
 
     /**
+     * A tyre change (spec.md §7.17, §7.20 Phase 39) with its lines. A line's
+     * `position` is where the tyre went for `on` and `move`, and where it was
+     * for `off`, `retire` and `repair`; `retire_reason` is the tyre's, on a
+     * `retire` line.
+     *
+     * @param array<int, Tyre> $tyres the vehicle's tyres by id
+     * @return array<string, mixed>
+     */
+    public static function tyreChange(TyreChange $change, array $tyres): array
+    {
+        $data = $change->data;
+
+        return [
+            'id' => $change->id,
+            'vehicle_id' => $change->vehicleId,
+            'kind' => $change->kind->value,
+            'changed_on' => self::date($data->doneOn),
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'note' => $data->note,
+            'service_record_id' => $data->maintenanceEntryId,
+            'incident_id' => $change->incidentId,
+            'lines' => array_map(static fn (TyreChangeLine $line): array => [
+                'tyre_id' => $line->tyreId,
+                'action' => $line->action->value,
+                'position' => $line->position?->value,
+                'depth_mm' => self::dec($line->treadMm, 3),
+                'retire_reason' => $line->action === TyreLineAction::Retire
+                    ? ($tyres[$line->tyreId] ?? null)?->retiredReason?->value
+                    : null,
+            ], $change->lines),
+            'created_by' => $change->createdBy,
+            'created_at' => self::instant($change->createdAt),
+            'updated_at' => self::instant($change->updatedAt),
+        ];
+    }
+
+    /**
+     * A tyre set (spec.md §7.17) with the tyres in it.
+     *
+     * @param list<Tyre> $tyres the set's tyres
+     * @return array<string, mixed>
+     */
+    public static function tyreSet(TyreSet $set, array $tyres): array
+    {
+        return [
+            'id' => $set->id,
+            'vehicle_id' => $set->vehicleId,
+            'name' => $set->data->name,
+            'storage_location' => $set->data->storageLocation,
+            'notes' => $set->data->notes,
+            'tyres' => array_map(static fn (Tyre $tyre): array => [
+                'id' => $tyre->id,
+                'status' => $tyre->status->value,
+                'position' => $tyre->position?->value,
+            ], $tyres),
+            'created_at' => self::instant($set->createdAt),
+            'updated_at' => self::instant($set->updatedAt),
+        ];
+    }
+
+    /**
      * A tread check (Phase 26.3): the depth measured at each position, mm.
      *
      * @return array<string, mixed>
@@ -497,6 +564,8 @@ final class Serializer
             'distance_unit' => self::DISTANCE_UNIT,
             'days_left' => $entry->daysLeft($today),
             'lead_time_days' => $reminder->leadTimeDays,
+            // Phase 39.1: when it was marked done or dismissed; null while open.
+            'closed_at' => $reminder->closedAt === null ? null : self::instant($reminder->closedAt),
             'created_at' => self::instant($reminder->createdAt),
             'updated_at' => self::instant($reminder->updatedAt),
         ];
@@ -872,6 +941,70 @@ final class Serializer
                 'paid_on' => self::date($event->paymentDate()),
                 'amount' => self::dec($event->amount, self::QUANTITY_SCALE),
             ], $schedule->extras),
+        ];
+    }
+
+    /**
+     * A maintenance schedule with its due state (spec.md §7.4, §7.20 Phase
+     * 39): the interval, the baseline, the stored last done and next due,
+     * and the status the Maintenance tab shows, in the owner's lead times.
+     * `due_on` is the date limit, or the projected day the distance limit
+     * is reached (`due_on_projected`).
+     *
+     * @return array<string, mixed>
+     */
+    public static function schedule(ScheduleState $state): array
+    {
+        $schedule = $state->schedule;
+        $data = $schedule->data;
+        $due = $state->due;
+
+        return [
+            'id' => $schedule->id,
+            'vehicle_id' => $schedule->vehicleId,
+            'category' => $data->category->value,
+            'title' => $data->title,
+            'interval_km' => self::dec($data->intervalKm, self::QUANTITY_SCALE),
+            'interval_months' => $data->intervalMonths,
+            'baseline_done_on' => self::date($data->baselineDoneOn),
+            'baseline_odometer' => self::dec($data->baselineDoneKm, self::QUANTITY_SCALE),
+            'last_done_on' => self::date($schedule->lastDone->on),
+            'last_done_odometer' => self::dec($schedule->lastDone->km, self::QUANTITY_SCALE),
+            'next_due_on' => self::date($schedule->nextDue->on),
+            'next_due_odometer' => self::dec($schedule->nextDue->km, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'status' => $due->status->value,
+            'trigger' => $due->trigger?->value,
+            'due_on' => self::date($due->dueOn),
+            'due_on_projected' => $due->projected,
+            'days_left' => $due->daysLeft,
+            'distance_left' => self::dec($due->kmLeft, self::QUANTITY_SCALE),
+            'created_at' => self::instant($schedule->createdAt),
+            'updated_at' => self::instant($schedule->updatedAt),
+        ];
+    }
+
+    /**
+     * A valuation (spec.md §7.1, Phase 14.1): a figure someone quoted, in
+     * the vehicle's currency.
+     *
+     * @return array<string, mixed>
+     */
+    public static function valuation(VehicleValuation $valuation, string $currency): array
+    {
+        $data = $valuation->data;
+
+        return [
+            'id' => $valuation->id,
+            'vehicle_id' => $valuation->vehicleId,
+            'valued_on' => self::date($data->valuedOn),
+            'amount' => self::dec($data->amount, self::QUANTITY_SCALE),
+            'currency' => $currency,
+            'source' => $data->source,
+            'notes' => $data->notes,
+            'created_by' => $valuation->createdBy,
+            'created_at' => self::instant($valuation->createdAt),
+            'updated_at' => self::instant($valuation->updatedAt),
         ];
     }
 

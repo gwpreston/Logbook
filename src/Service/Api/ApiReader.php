@@ -9,11 +9,13 @@ use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Api\ApiKey;
 use Logbook\Domain\Compliance\ComplianceDocument;
+use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseEntry;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
+use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Reminder\ReminderStatus;
@@ -218,10 +220,15 @@ final readonly class ApiReader
     /**
      * @return array{items: list<array<string, mixed>>, cursor: ?string}
      */
-    public function maintenance(User $user, Vehicle $vehicle, ListQuery $query): array
-    {
+    public function maintenance(
+        User $user,
+        Vehicle $vehicle,
+        ListQuery $query,
+        ?MaintenanceCategory $category = null,
+        ?string $text = null,
+    ): array {
         $page = $query->page(
-            $this->maintenance->history($vehicle)->entries,
+            $this->maintenance->history($vehicle)->search($category, $text),
             static fn (MaintenanceEntry $entry): array => [$entry->data->performedOn, $entry->id],
         );
         $currency = $this->vehicles->currencyFor($user, $vehicle);
@@ -290,13 +297,25 @@ final readonly class ApiReader
     }
 
     /**
-     * Documents by start date (or expiry, or when added).
+     * Documents by start date (or expiry, or when added); `?type=` and
+     * `?current=1` (in force today in the key user's time zone, as the
+     * list's status) narrow them (Phase 39.1).
      *
      * @return array{items: list<array<string, mixed>>, cursor: ?string}
      */
-    public function documents(User $user, Vehicle $vehicle, ListQuery $query): array
-    {
-        $page = $query->page($this->documentStates($user, $vehicle), static function (DocumentState $state): array {
+    public function documents(
+        User $user,
+        Vehicle $vehicle,
+        ListQuery $query,
+        ?ComplianceType $type = null,
+        bool $inForce = false,
+    ): array {
+        $states = array_values(array_filter(
+            $this->documentStates($user, $vehicle),
+            static fn (DocumentState $state): bool => ($type === null || $state->document->data->type === $type)
+                && (!$inForce || $state->status->isInForce()),
+        ));
+        $page = $query->page($states, static function (DocumentState $state): array {
             $data = $state->document->data;
 
             return [$data->startOn ?? $data->expiryOn ?? $state->document->createdAt, $state->document->id];
@@ -420,15 +439,17 @@ final readonly class ApiReader
     }
 
     /**
-     * Open reminders, most urgent first (spec.md §7.6).
+     * Open reminders, most urgent first (spec.md §7.6); or, with `$closed`
+     * (Phase 39.1), the done and dismissed ones as the Reminders page lists
+     * them, most recently closed first.
      *
      * @return list<array<string, mixed>>
      */
-    public function reminders(User $user, ?Vehicle $vehicle, ?ReminderStatus $status): array
+    public function reminders(User $user, ?Vehicle $vehicle, ?ReminderStatus $status, bool $closed = false): array
     {
         $overview = $this->reminders->overview($user);
         $entries = array_filter(
-            $overview->open,
+            $closed ? $overview->closed : $overview->open,
             static fn (ReminderEntry $entry): bool => ($vehicle === null || $entry->vehicle->id === $vehicle->id)
                 && ($status === null || $entry->reminder->status === $status),
         );

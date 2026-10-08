@@ -91,7 +91,13 @@ before Phase 37 started, and #271, found while starting it. #265–#269 and
 found while starting it) were answered on 2026-10-07, before it was
 built; they replace #192 and #193, now obsolete. Its reviews raised
 #277–#280 on 2026-10-07: the owner had #277 and #278 built in Phase 38;
-#279 and #280 wait for a decision.
+#279 and #280 wait for a decision. Phase 39's (#281–#288, and #289
+found while starting it) were answered on 2026-10-08, before Phase 39.1
+started; the phase was split into 39.1, 39.2 and 39.3. #221, #279 and
+#280 were reviewed the same day and carried as they are: none of them
+changes Phase 39. #290 was found while starting Phase 39.1 and waits
+for a decision before Phase 39.3; the spec review of the same day
+raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review; the owner answered both the same day.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -375,6 +381,23 @@ built; they replace #192 and #193, now obsolete. Its reviews raised
 | 278 | [38](phase-38.md) | Should the old `/ask` addresses stay 301 for good, including with AI off? (found by the reviews) | Scheduled | 301 for good, as the spec says, except a thread's old address with AI off: 302 to Insights, so it reaches the thread once AI is on. Built in [38](phase-38.md). spec §7.26 *Where*. | 2026-10-07 |
 | 279 | [38](phase-38.md) | Cap pending MCP drafts per user? Only the 7-day expiry limits them, and the Insights page lists them all (found by the performance review) | Needs a decision | Options: no cap (as now); a cap per user on creating drafts; show the latest few with *Show all*. Draft cards now load each vehicle once. | — |
 | 280 | [38](phase-38.md) | An explicit query budget for the Insights page? About 144 queries on a 10-vehicle household, on master too (found by the performance review) | Needs a decision | Batching `InsightsService::forVehicles` is the likely fix; flagged as its own task. | — |
+| 281 | [39.1](phase-39.1.md) | A. One phase or three? | Scheduled | Three, each runnable, released together as v3.5.0: [39.1](phase-39.1.md) reads and reminder actions, [39.2](phase-39.2.md) writes, edit and delete, [39.3](phase-39.3.md) attachments, webhooks and the release. | 2026-10-08 |
+| 282 | [39.1](phase-39.1.md) | B. Optimistic concurrency on API edits? | Scheduled | `ETag` on every single-entry read (39.1); `If-Match` optional on `PATCH` and `DELETE`, 412 `precondition_failed` on a mismatch (39.2). spec §7.20 *Phase 39 conventions*. | 2026-10-08 |
+| 283 | [39.2](phase-39.2.md) | C. What `PATCH` means | Scheduled | Partial: only the fields sent change, `null` clears an optional field; the result goes through the edit form's parser and service. Built in [39.2](phase-39.2.md). spec §7.20. | 2026-10-08 |
+| 284 | [39.2](phase-39.2.md) | D. Vehicle create over the API? | Scheduled | Yes: `POST /vehicles` with the add form's rules; the key's user becomes the owner. Built in [39.2](phase-39.2.md). spec §7.20. | 2026-10-08 |
+| 285 | [39.3](phase-39.3.md) | E. Webhook payload | Scheduled | Ids and links only, no entry contents and no amounts; the receiver fetches with its own key. Built in [39.3](phase-39.3.md). spec §7.20 *Webhooks*. | 2026-10-08 |
+| 286 | [39.3](phase-39.3.md) | F. Attachment upload format | Scheduled | `multipart/form-data`, one file per request in the field `file`. Built in [39.3](phase-39.3.md). spec §7.20 *Attachments*. | 2026-10-08 |
+| 287 | [39.2](phase-39.2.md) | G. Finance writes in this phase? | Scheduled | Yes: agreements, payment events, settlement quotes and *End*; leaving with the vehicle goes through archive. Built in [39.2](phase-39.2.md). spec §7.20. | 2026-10-08 |
+| 288 | [39.3](phase-39.3.md) | H. The proposed numbers | Scheduled | Kept and written into spec §7.20 as tested values: pause a webhook after 50 consecutive failures; delivery rows kept 7 days; retries after 1 min, 5 min, 30 min, 2 h and 6 h; a 10-minute duplicate window for vehicle create (39.2). | 2026-10-08 |
+| 289 | [39.3](phase-39.3.md) | Is a webhook's signing secret in backups? (found while starting) | Scheduled | No, as channel secrets (#227): the webhook is backed up without it; a restored webhook is paused and shows *Needs a new secret* until the user makes one. Built in [39.3](phase-39.3.md). spec §6 Webhook, §7.20. | 2026-10-08 |
+| 290 | [39.3](phase-39.3.md) | Which entries fire webhooks, and with which `kind`? Schedules, valuations, tyre changes and sets, finance events and attachments may not be history kinds (found while starting 39.1) | Needs a decision | Options: the history feed's kinds only; everything 39.2 can write, with new kinds; the same without attachments. Before 39.3 starts. | — |
+| 291 | [39.3](phase-39.3.md) | How often does the `webhooks` job run, given a 15-minute pass and 1- and 5-minute retries? (found by the spec review) | Needs a decision | Options: every pass, intervals as minimums; its own 1-minute interval; shortest retry 15 minutes. Before 39.3. | — |
+| 292 | [39.3](phase-39.3.md) | How does a paused or restored webhook come back, and does resuming reset its failures? (found by the spec review) | Needs a decision | Options: *Resume* only; *Resume* and *New secret*; an *Edit* page with both. Before 39.3. | — |
+| 293 | [39.3](phase-39.3.md) | What counts toward a webhook's 50 failures, and what happens to queued deliveries when it pauses? (found by the spec review) | Needs a decision | Options: each failed attempt; each delivery given up; each attempt, reset by a success. Before 39.3. | — |
+| 294 | [39.3](phase-39.3.md) | Where does the "webhook paused" notice go, and do quiet hours apply? (found by the spec review) | Needs a decision | Options: every channel on; the reminder channels under quiet hours; the Webhooks page and dashboard only. Before 39.3. | — |
+| 295 | [39.3](phase-39.3.md) | Queue events on cost entries for a user without *Can see costs*? (found by the spec review) | Needs a decision | Options: yes, ids and kind only; no, skip those kinds for them. Related to #290. Before 39.3. | — |
+| 296 | [39.1](phase-39.1.md) | List and un-hide hidden *Needs attention* items over the API? The pages have no *Show again* (found while building 39.1) | Decided | No: the API does what the pages do, hide only; `?hidden=1` and `/unhide` are dropped. spec §7.20. | 2026-10-08 |
+| 297 | [39.1](phase-39.1.md) | Should fuel grade verdicts (relative price and cost per distance) need *Can see costs*? (found by the 39.1 security review) | Decided | No: they stay visible on the Fuel tab, in Ask and in the API; relative figures only, never amounts. | 2026-10-08 |
 
 ## Other loose ends found in the review
 

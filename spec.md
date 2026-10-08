@@ -327,6 +327,7 @@ disagree):
     | `update_check` | daily at the install's own minute, while *Check for updates* is on (Phase 28.2, §7.31) | asks GitHub for the latest release; registered only while `UPDATE_CHECK_ALLOWED` is on |
     | `fuel_prices` | every 30, 60 or 120 minutes while a price provider is enabled; never otherwise (Phase 30.2, §7.34) | syncs provider stations and listed prices, records tracked stations' price changes, refreshes linked stations and checks price alerts |
     | `ai_insights` | hourly while Ask is set up; never otherwise (Phase 33.4, §7.26 *AI insights*) | makes the day's AI insights for each active user with AI on, with a session in the last 30 days and no set for their today yet; up to 300 seconds a run, the rest left for the next; a user whose AI is busy waits for the next run |
+    | `webhooks` | every pass, after `reminders` (Phase 39.3; how the retry intervals map onto passes is open, #291) | sends the entry-webhook deliveries that are due and removes delivery rows older than 7 days (§7.20 *Webhooks*) |
     | `demo_reset` | every `DEMO_RESET_HOURS` (default 24), listed only while the demo is active; never run from a page visit (Phase 35.1, §7.36) | puts the sample data back |
 
     A job is due when its interval is `0`, or when its last finished run
@@ -849,6 +850,26 @@ MySQL only.
   token itself is never stored), scope (`read` | `read_write`),
   created_at, last_used_at (optional; updated at most once a minute),
   revoked_at (optional), all UTC. Index on user_id. In backups (§7.20).
+
+**Webhook** (Phase 39.3, decided 2026-10-08, #285, #288, #289), `webhooks`
+- id, user_id (FK users `ON DELETE CASCADE`), name (up to 100), url (up
+  to 500), events (up to 100 characters, a comma list of
+  `entry.created`, `entry.updated`, `entry.deleted`, `reminder.changed`;
+  null meaning all), secret (sealed, §7.25, with its own HKDF info
+  `logbook-webhook`; null after a restore until the user makes a new
+  one), paused (bool), paused_reason (`user` | `failures` | `restored`,
+  null when running), last_status (`ok` | `failed`, null before the first
+  delivery), last_attempt_at (UTC), last_error (up to 255, redacted),
+  failures (consecutive failed deliveries, default 0), created_at,
+  updated_at (UTC). Index on user_id. In backups **without** `secret`
+  (§7.20 *Webhooks*): restored rows are paused with `restored`.
+
+**WebhookDelivery** (Phase 39.3), `webhook_deliveries`
+- id, webhook_id (`ON DELETE CASCADE`), event, payload (JSON: ids and
+  links only, §7.20), attempts (default 0), next_attempt_at (UTC; null
+  once delivered or given up), delivered_at (UTC, nullable), created_at
+  (UTC). Index on `(next_attempt_at)`. Rows are removed 7 days after
+  `created_at`. Not in backups.
 
 **AttentionHidden** (Phase 24, §7.24)
 - id, user_id (`ON DELETE CASCADE`), vehicle_id (`ON DELETE CASCADE`),
@@ -3292,6 +3313,8 @@ Admins choose on **Settings → Delivery → Where members can send**:
   Redirects are never followed by any channel (`max_redirects: 0`).
 - An **admin's own** channels are not restricted, and the server's
   webhook is the admin's.
+- From Phase 39.3, a user's **entry webhooks** (§7.20 *Webhooks*) follow
+  this policy exactly as a personal channel does, an admin's included.
 - A member's saved address that the policy now refuses is **kept**,
   shown as *Blocked by your administrator's setting*, not used and not
   deleted; relaxing the policy brings it back.
@@ -3739,7 +3762,10 @@ vehicles; a disabled module cannot be imported).
   onto any supported engine: SQLite → PostgreSQL works) and `uploads/…`
   (every file under `UPLOAD_PATH`: photos and attachments). Sessions and
   invitation links are not included (Phase 19: a link is for this install,
-  now), nor are job runs (Phase 28.1).
+  now), nor are job runs (Phase 28.1), nor webhook deliveries (Phase
+  39.3). Webhooks are included without their `secret` column; a restore
+  sets each one's secret to null and pauses it (`restored`), as §7.20
+  *Webhooks* says, and a backup without the column restores as one.
 - **Scheduled backups** (Phase 28.1, §7.30) are the same archive, written
   to `BACKUP_PATH` by the `backup` job as `logbook-scheduled-…zip`. The
   Backup page lists them, newest first, with size and *Download*
@@ -4801,7 +4827,8 @@ their responses against it as for the others.
 **CORS** is off by default. `API_CORS_ORIGINS` (comma-separated origins)
 allows browser dashboards: those origins get `Access-Control-Allow-Origin`
 on API responses, errors included, and a preflight (`OPTIONS`) answers 204
-for them (methods `GET, POST`, headers `Authorization, Content-Type`); any
+for them (methods `GET, POST`, headers `Authorization, Content-Type`;
+from Phase 39 also `PUT, PATCH, DELETE` and `If-Match`); any
 other preflight answers 403 (`cors_not_allowed`). Credentials are never
 allowed: the key travels in a header the page sets. The same applies to
 the MCP endpoint (§7.28, Phase 26.5), whose preflight also allows the
@@ -4856,11 +4883,256 @@ km, the change against the 12 months before, each calendar year and its
 *What changed*; core, needs `ViewCosts` (403 without). The summary's
 `costs` carries `true_cost_per_distance`.
 
-**Not in this version:** editing or deleting through the API, writes
-beyond those above (valuations, schedules, tyre fitting and changes, trips'
-journeys), attachments, OAuth or sessions, webhooks for new entries, reports
-and ownership figures beyond the summary, per-vehicle keys (Phase 19 lets
-a device have its own user instead).
+**Phase 39: the rest of the API** (decided 2026-10-08, #281–#289; built
+in Phases 39.1 reads and reminder actions, 39.2 writes, edit and delete,
+39.3 attachments and webhooks; released together as v3.5.0). Anything a
+vehicle's pages can do, a key can do, under the same access rules, except
+what *Still not in the API* lists. Every change is additive: the API
+stays `v1`, and existing responses don't change.
+
+*Conventions.*
+- **Paths are nested under the vehicle:** `/vehicles/{id}/fuel/{entry}`.
+  An entry id that belongs to another vehicle answers 404, as an
+  unreadable vehicle does. Journeys, price alerts and stations belong to
+  the user or the install, so their paths are top level.
+- **Read one:** every entry list (and schedules and valuations) gains `GET …/{entry}`, returning the
+  object exactly as the list returns it, with an `ETag`: a keyed hash
+  (HMAC-SHA256, key derived from `SESSION_SECRET`, so changing it changes
+  every tag) of the entry's own stored columns, never of derived figures (a fill-up's
+  segment economy, which a neighbour's edit changes) or of what the
+  viewer may see, so it changes exactly when the entry does. It exists
+  for `If-Match`; `If-None-Match` and 304 are not supported. A single
+  read applies its list's visibility (a trip the key's user may not see
+  answers 404; incident details need `ViewIncidentDetails`), not only
+  the vehicle's `View`.
+- **Edit is `PATCH`** (#283): only the fields sent change, and `null`
+  clears an optional field. The stored entry is loaded, the sent fields
+  are laid over it, and the result goes through the **edit form's parser
+  and service**, as creates go through the add form's: the form's
+  validation, messages (422), recomputation and `warnings`. Unknown
+  fields are refused (`api.validation.unknown_field`). Answers `200` with
+  the entry.
+- **Delete is `DELETE`**, through the same service as the delete
+  confirmation page, with the same knock-on effects (a schedule falls back
+  to the previous record, a fill-up's economy segments are recomputed, the
+  entry's attachments are removed). Answers `204`.
+- **Concurrency** (#282): `If-Match` is **optional** on `PATCH` and
+  `DELETE`. When sent and it doesn't match the entry's current `ETag`,
+  the answer is 412 (`precondition_failed`) and nothing is written.
+  Without it, the last write wins, as on the pages.
+- **Abilities** are the pages'. Edit and delete declare `Log` and are
+  checked with `EntryAccess::canChange` once the entry is loaded (`Manage`,
+  or `Log` on the key user's own entry), 403 `forbidden` otherwise. Where
+  the page needs `Manage` or `Own`, so does the API, as listed below. A
+  `read` key on any write answers 403 `insufficient_scope`.
+- **Archived vehicles** refuse every write (409, `vehicle_archived`)
+  except *Restore* and a valuation the sale-date rule allows.
+- **Derived readings** (written by a fill-up, service record or document)
+  can't be edited or deleted on their own, as on the pages: 409
+  `reading_derived`, with `links.entry` pointing at the entry that owns it.
+- **Modules** apply as before: a switched-off module's paths answer 404.
+- **Amounts** follow `EntryAccess::canSeeAmount` on every new read and
+  are omitted, not zeroed.
+- **CORS:** from Phase 39 the API's preflight allows `GET, POST, PUT,
+  PATCH, DELETE` and the `If-Match` header for the allowed origins, and
+  responses expose `ETag`. The MCP endpoint's preflight is unchanged.
+- **OpenAPI:** every new operation, schema and error code, with the
+  tests validating every response against it. `info.version` moves one
+  minor version, once, in Phase 39.1 (each later sub-phase adds
+  operations under that version).
+
+*New reads* (scope `read`; Phase 39.1).
+
+| Endpoint | Returns | Needs |
+|---|---|---|
+| `GET /vehicles/{id}/{list}/{entry}` for `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents` | one entry, as its list returns it, with `ETag` | as its list |
+| `GET /vehicles/{id}/maintenance` | gains `?category=` and `?q=` (every word, any case, in the title, vendor, description or category code), searched as Ask's `maintenance` tool does | `View` |
+| `GET /vehicles/{id}/documents` | gains `?type=` and `?current=1` (or `true`; `0` and `false` don't filter): in force today in the key user's time zone, as the list's status (started, not expired, not replaced) | `View` |
+| `GET /vehicles/{id}/schedules`, `…/schedules/{schedule}` | schedules with interval, baseline, stored last done and next due, and the Maintenance tab's due state in the owner's lead times: `status` (the app's codes `overdue`, `soon`, `ok`, `unknown`), `trigger`, `due_on` (the date limit, or the projected day of the distance limit, flagged `due_on_projected`), `days_left`, `distance_left` (§7.4); module `maintenance` | `View` |
+| `GET /vehicles/{id}/valuations`, `…/valuations/{valuation}` | valuations, newest first, paged as the entry lists | `ViewCosts` |
+| `GET /vehicles/{id}/ownership` | Phase 14.2's figures: lifetime running cost, purchase and current value, depreciation (amount, percentage, per year, per distance, or the state that stops it: `no_purchase_price`, `no_value`), the stale-valuation flag, with `display` strings | `ViewCosts` (403 without) |
+| `GET /vehicles/{id}/history`, `GET /history` | the `ActivityFeed` (§7.16) for one vehicle or every active visible one (`?vehicle=` narrows the fleet's): kind, milestone, date, summary, amount (per `canSeeAmount`), price (a purchase, sale or valuation; `ViewCosts`), odometer, attachment count, entry id and API link; `?kinds=` (comma list), `?since=` / `?until=` (calendar days, inclusive), paged by a cursor of its own (newest first by date, then when added, id and kind) | `View` |
+| `GET /reports/costs` | §7.7's totals by category group, month or vehicle (`?group_by=category\|month\|vehicle`, one `by_*` list), per currency, with distance driven; `?group=` one cost group | `ViewCosts` on each vehicle counted; others in scope are left out and listed in `excluded` |
+| `GET /reports/cost-per-distance` | per vehicle and fleet, with distance | as above |
+| `GET /reports/fuel` | Phase 16's fuel statistics per vehicle (`by_vehicle`) and kind of energy: fill-ups, volume, spend, price per unit, economy, by grade, with the grade verdicts (over the whole history, as the Fuel tab); `?grade=`; module `fuel` | `View`; spend and price only with `ViewCosts` |
+| `GET /reports/mileage` | distance driven in the period per vehicle (`by_vehicle`) and in all, the average per month and per year over the whole log, the latest reading | `View` |
+| `GET /vehicles/{id}/tyres/changes` | tyre changes and tread checks, newest first, with their lines (tyre, action, position: where it went for `on` and `move`, where it was for `off`, `retire`, `repair`; depth; the tyre's retire reason on a `retire` line) | `View`; module `tyres` |
+| `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | sets with name, storage, notes and their tyres (id, status, position); the fleet's are every active visible vehicle's, `?vehicle=` narrows | `View`; module `tyres` |
+| `GET /reminders` | gains `?status=done\|dismissed` and `?closed=1`, as the Reminders page's closed list (#208) | `View` |
+| `GET /attention` | *Needs attention* (§7.24) for the active visible vehicles, `?vehicle=`, in the page's order and words (kind, severity, title, detail), each hideable item with its `key` (vehicle, kind, subject, fingerprint) and every item with its fix's API link where one exists; hidden items left out, as on the page (#296: no listing of hidden items) | `View` |
+| `GET /fuel-prices/alerts` | the key user's price alerts | a price provider enabled |
+| `GET /vehicles/{id}/finance/agreements` | every agreement, active first, then ended ones newest first, with payment events and settlement quotes; never the agreement number | module `finance`; §7.32's access |
+
+`GET /stations` (`?q=`, `?favourites=1`) and `GET /stations/{id}` already
+exist (Phase 30.1, §7.33). Reports read the **same services as the
+Reports page** (and Ask's report tools; the fuel statistics' sums are
+`FuelStatistics`, shared with Ask), so the API's totals always match it.
+Every report takes the page's parameters, read strictly (anything that
+can't be read is 400, not a fallback): `range` (`month`, `3m`, `12m`
+the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
+(one; else the active fleet) and `include_archived=1`; each answers its
+`period` (range, from, to), the `vehicles` covered and `excluded`.
+
+*Reminder actions* (scope `read_write`; Phase 39.1).
+- `POST /reminders/{id}/done`, `/dismiss`, `/reopen`: the Reminders
+  page's one-click forms, with the same ability (`Log`) and rules, on a
+  reminder of any source (schedule, document, tyre, finance, first MOT,
+  manual) that the key user can act on. Answers `200` with the reminder.
+  Repeating an action already in effect answers `200` with
+  `"unchanged": true` and writes nothing, so a retry is safe. Reminders gain `closed_at` (when marked done or dismissed;
+  null while open) in every response that carries one.
+
+*Writes, edits and deletes* (scope `read_write`; Phase 39.2).
+- **Entries:** `PATCH` and `DELETE` for fill-ups, readings (manual only;
+  see *Derived readings*), service records, documents, expenses, trips
+  and incidents, under the conventions above.
+- **Manual reminders:** `PATCH` and `DELETE /reminders/{id}` (`Manage`,
+  as the page). Other sources answer 409 `reminder_not_manual`: they
+  change through their source (the schedule, the document).
+- **Vehicles** (#284): `POST /vehicles`, the add form's fields (type,
+  make, model and fuel type required; everything else optional, with the
+  form's validation, including *First MOT due* and its suggestion when the
+  field isn't sent). The key's user becomes the owner. `201` with the
+  vehicle as `GET /vehicles/{id}` returns it. Duplicate key: same owner,
+  registration (when given), make and model, created in the last **10
+  minutes** (#288). `PATCH /vehicles/{id}` is the edit form (`Manage`);
+  purchase and sale fields follow its rules (a sale date marks the
+  vehicle *Sold*; clearing it clears that). `POST /vehicles/{id}/archive`
+  (`Own`) takes `disposal` (`sold`, `written_off`, `returned_lender`,
+  `returned_lessor`) and the fields the *Archive* page asks for with that
+  reason (sale date and price; the settled incident for a write-off; the
+  finance agreement's ending), through the archive page's service (§7.1,
+  §7.29 *Total loss*, §7.32 *Ending*). `POST /vehicles/{id}/restore`
+  (`Own`) is *Restore*.
+- **Valuations** (`Manage`): `POST /vehicles/{id}/valuations` with
+  `valued_on` (default today in the key owner's time zone), `amount`,
+  `source`, `notes`, and the form's validation (not after today, not
+  before the purchase date, not after the sale date, amount ≥ 0).
+  Duplicate key: same date, amount and source. `PATCH` and `DELETE
+  …/valuations/{valuation}`. The one write an archived vehicle accepts
+  (§7.1: a scrapped car's scrap value), unless the sale-date rule refuses
+  it. Logbook never fetches a value (Phase 14.1): the figure is one
+  someone quoted.
+- **Schedules** (`Manage`): `POST /vehicles/{id}/schedules` with
+  `category`, `title`, `interval_km` or `interval_distance` with
+  `distance_unit`, `interval_months` (at least one interval),
+  `baseline_done_on`, `baseline_odometer`; next due is computed and
+  stored as by the form. Duplicate key: same category, title and
+  intervals. `PATCH` and `DELETE …/schedules/{schedule}`; deleting keeps
+  the records that completed it (§7.4).
+- **Tyres** (module `tyres`): `POST /vehicles/{id}/tyres/changes` (`Log`)
+  with `kind` (`existing`, `fit`, `swap`, `rotate`, `repair`, `remove`),
+  `changed_on`, `odometer`, `distance_unit`, `note`, `service_record_id`,
+  and the kind's lines in the form's terms (new tyres with their details
+  for `existing` and `fit`; the set for `swap`; a position per tyre for
+  `rotate`; the tyres and `off` or `retire` with reason for `remove` and
+  for tyres a `fit` replaces). The change is **replayed** through the
+  form's service (§7.17), so every state the form refuses is refused
+  (422). Sets are created inline by `swap` and `remove` (name and
+  storage). `PATCH` and `DELETE …/tyres/changes/{change}` (`EntryAccess`)
+  edit only what the page does (date, odometer, note, service-record
+  link); a delete replays the rest and answers 409 where the page would
+  refuse it. `PATCH /vehicles/{id}/tyres/{tyre}` (`Manage`) edits a tyre's
+  own details (brand, model, size, season, DOT code, notes); status and
+  position come only from changes.
+- **Journeys** (module `trips`): `POST /journeys`, `PATCH` and `DELETE
+  /journeys/{id}`, the Settings → Trips journey form, for the key's user
+  only. Deleting leaves the trips logged from it.
+- **Station favourites** (module `stations`): `PUT` and `DELETE
+  /stations/{id}/favourite`, the key user's favourite, idempotent.
+  Stations are still created only by naming one on a fill-up.
+- **Price alerts** (a price provider enabled): `POST /fuel-prices/alerts`,
+  `PATCH` and `DELETE /fuel-prices/alerts/{id}`, the alert form's fields
+  and limits (§7.34, #138).
+- **Needs attention:** `POST /attention/{key}/hide`, the page's *Hide*
+  for the key's user (§6 AttentionHidden); no un-hide, as the pages have
+  no *Show again* (decided 2026-10-08, #296),
+  idempotent.
+- **Finance** (#287; module `finance`, `Manage`): `POST
+  /vehicles/{id}/finance/agreements` and `PATCH
+  …/agreements/{agreement}` with the agreement form's fields, derivations
+  and *one active agreement* rule (409 `finance_active_exists`); the
+  agreement number is accepted but **never returned**. `POST
+  …/agreements/{agreement}/payments` (kind `missed`, `paid_late`,
+  `extra`, `settlement`) and `POST …/agreements/{agreement}/quotes`, with
+  `DELETE` for each. `POST …/agreements/{agreement}/end` is the page's
+  *End* for an agreement that ends while the vehicle stays (settled
+  early, completed); an ending with the vehicle leaving goes through
+  `POST /vehicles/{id}/archive` (§7.32 *Ending*).
+
+*Attachments* (Phase 39.3, #286). Owner types as §7.12: `fuel`,
+`maintenance`, `document`, `expense`, `reading` (manual only),
+`valuation`, `purchase`, `sale`, `incident`, `vehicle_photo`.
+- `GET …/{entry}/attachments` (`View`): id, filename, content type,
+  size, uploaded at, uploaded by (as the page names them), and a
+  `download` link.
+- `GET /attachments/{id}`: the file, through the pages' authenticated
+  handler, so incident photos follow §7.12 and #104 (the original only
+  with `ViewIncidentDetails`, otherwise an upright, stripped copy made as
+  it is served).
+- `POST …/{entry}/attachments`: `multipart/form-data`, **one file per
+  request** in the field `file`, with the pages' content check, decode
+  check, `MAX_UPLOAD_MB`, stripping (except incident photos) and the edit
+  form's limits. `201` with the attachment. `Log` and
+  `EntryAccess::canChange` on the entry, as the edit form.
+- `DELETE /attachments/{id}`, as the page's delete link.
+
+*Webhooks* (Phase 39.3, #285, #288, #289). A user can have Logbook tell
+another system when an entry changes, so a dashboard or Node-RED flow
+refreshes without polling. These are **entry** webhooks; the
+generic-webhook *format* for reminder pushes parked in §12 (#168) is a
+notification channel and unrelated.
+- **Settings → API keys → Webhooks** (`/settings/webhooks`): add a URL
+  with a name and the events to send (`entry.created`, `entry.updated`,
+  `entry.deleted`, `reminder.changed`; all by default). The signing
+  secret is shown **once**, as a key's token is. Each webhook shows its
+  last delivery status, time and error (redacted, 255 characters), with
+  *Send test*, *Pause* and *Delete* (on its own confirmation page). Works
+  without JS.
+- **Where it may send** is §7.11 *Where members' channels may send*: the
+  same classes, the same always-refused ranges, resolved and pinned on
+  save, test and every send, and an admin's own webhooks unrestricted, as
+  their channels. No new rules.
+- **What triggers it** (which entries, and their `kind`, open: #290;
+  who is told about cost entries, open: #295): any create, edit or delete of an entry on a
+  vehicle the webhook's user can `View`, by any path (form, import, API,
+  Ask draft, MCP). `reminder.changed` covers status changes (due,
+  overdue, done, dismissed, reopened).
+- **Payload:** `event`, `id` (unique per delivery), `occurred_at`,
+  `vehicle_id`, `kind` (the history feed's kinds), `entry_id`, and
+  `links` (the API URLs to fetch it). **No entry contents and no
+  amounts**: the receiver fetches with its own key, so access is checked
+  when the data is read, never at send time.
+- **Signing:** `X-Logbook-Signature: t=<unix time>,v1=<hex HMAC-SHA256 of
+  "t.body" with the webhook's secret>`. `docs/api.md` shows how to verify
+  it and reject old timestamps.
+- **Delivery:** queued in the transaction that changes the entry and sent
+  by the job scheduler (§7.30), never in the request. A failed delivery
+  is retried after **1 minute, 5 minutes, 30 minutes, 2 hours and 6
+  hours**, then given up (how these map onto the scheduler's passes is
+  open, #291). After **50 consecutive failures** (what counts as one is
+  open, #293) the webhook is paused and the user is told through their
+  notification channels (which ones, and quiet hours, open: #294). How a
+  paused or restored webhook comes back is open (#292). Delivered or given up, a delivery row is removed after **7
+  days**.
+- **Switches:** `API_ENABLED=false` stops deliveries (queued ones wait).
+  `WEBHOOKS_ENABLED` (default `true`, §9) switches only this feature off:
+  the Settings page says so and nothing is queued or sent. A disabled or
+  deleted user's webhooks stop at once.
+- **Tables** `webhooks` and `webhook_deliveries` (§6 Webhook,
+  WebhookDelivery). Webhooks are in backups **without their secret**
+  (#289), as channels are: a restored webhook is paused and shows *Needs
+  a new secret* until the user makes one (and updates the receiver).
+  Deliveries are not backed up.
+
+**Still not in the API** (replaces *Not in this version*, Phase 39):
+OAuth and sessions; per-vehicle keys (Phase 19 lets a device have its own
+user); account and instance administration, sharing, transfer and
+Settings; deleting a vehicle; Ask (MCP is the AI surface, §7.28);
+places (Phase 30.1); imports, CSV exports, the sale pack and print views;
+editing a reading that an entry wrote (edit the entry); automatic
+valuation; and MCP tools for the Phase 39 writes (a later phase can map
+them, as Phase 26.5 mapped Phase 26.3's).
 
 ### 7.21 Sharing (Phase 19)
 
@@ -6511,6 +6783,11 @@ able to run without cron.
   - `demo_reset` (Phase 35.1, §7.36): "Reset the demo: 7 vehicles, 226 fill-ups".
     Listed only while the demo is active, and **excluded from the
     page-visit trigger**.
+  - `webhooks` (Phase 39.3, §7.20 *Webhooks*): every pass; "Sent 4
+    deliveries; 1 failed, retrying" (only what happened). It sends the
+    deliveries that are due, then removes rows older than 7 days. With
+    `WEBHOOKS_ENABLED=false` or `API_ENABLED=false`: "Webhooks are off;
+    nothing sent."
   - A job that throws is `failed`, with the message as its summary.
   - Summaries are written in the language of whoever ran the job (the
     admin for *Run now*, the visitor for a page visit, `APP_LOCALE` for
@@ -7638,8 +7915,8 @@ owner. Decided 2026-10-06 (#212–#217).
   - changing the password, the email address or the avatar, and linking
     single sign-on;
   - sending anything **out**: reminder and digest notifications, test
-    notifications, email and every channel are switched off (the reminder
-    job records "demo: not sent"), and the app makes no outbound request
+    notifications, email, every channel and (Phase 39.3) entry webhooks
+    are switched off (the reminder job records "demo: not sent"), and the app makes no outbound request
     except to the sample provider's own generator;
   - creating a calendar feed;
   - **uploading a file** (#214): the file fields are not offered and a
@@ -7801,7 +8078,8 @@ owner. Decided 2026-10-06 (#212–#217).
     trips and mileage claims (trips on), places (fuel stations on); absent
     when none is on.
   - **Your data** (`#data`, fuel on): import from another app.
-  - **Developers** (`#developers`): API keys (and MCP, which uses them).
+  - **Developers** (`#developers`): API keys (and MCP, which uses them)
+    and, from Phase 39.3, Webhooks.
   - **Administration** (`#admin`, admins): users, modules, AI
     connections, fuel prices, **Delivery** (Phase 36.1: the
     installation-wide places notifications leave the server from; the
@@ -7937,7 +8215,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   `SESSION_SECURE` (default: true when `APP_URL` is https)
 - `API_ENABLED` (the REST API, §7.20; default `true`; `false` makes every
   `/api/v1` path a 404), `API_CORS_ORIGINS` (comma-separated origins
-  allowed to call the API from a browser; default none)
+  allowed to call the API from a browser; default none),
+  `WEBHOOKS_ENABLED` (entry webhooks, §7.20, Phase 39.3; default `true`;
+  `false` queues and sends nothing, and Settings → Webhooks says so;
+  `API_ENABLED=false` also holds deliveries)
 - `MCP_ENABLED` (the MCP server, §7.28; default `true`; `false`, or
   `API_ENABLED=false`, makes `/mcp` a 404)
 - `UPLOAD_PATH`, `MAX_UPLOAD_MB`
@@ -8172,7 +8453,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   since the sample has none to build and test against). Drivvo, Tesla
   and ABRP readers.
 - From the Phase 33.2 prototype (decided 2026-10-05, #168): Gotify, Home
-  Assistant and generic-webhook formats for reminder pushes; a *Send at*
+  Assistant and generic-webhook formats for reminder pushes (notification
+  channel formats; not the Phase 39.3 entry webhooks, §7.20); a *Send at*
   time and a *Frequency* for reminder delivery; *Reset dashboard layout*;
   one *Export expenses (CSV)* on Settings; a *Reset password* button on
   the profile page that emails the user a link; a "letter and a number"
@@ -8655,6 +8937,24 @@ task breakdowns live in the per-phase files; this is the map.
   and its sidebar entry go, the top-bar button opens `/insights#ask`, and
   old `/ask` links redirect (§7.26, §7.28, §8; #272–#276, replacing #192
   and #193). No migration. Release v3.4.0.
+- **Phase 39.1 — API reads and reminder actions.** Single-entry reads
+  with `ETag`, list filters, schedules, valuations, ownership, history,
+  the four reports, tyre changes and sets, closed reminders, *Needs
+  attention*, price alerts and finance agreements; reminder *done*,
+  *dismiss* and *reopen* (§7.20; #281, #282). No migration. Ships with
+  Phase 39.3 as v3.5.0.
+- **Phase 39.2 — API writes, edit and delete.** `PATCH` and `DELETE` for
+  every entry under `EntryAccess` with optional `If-Match`; vehicles
+  (create, edit, archive, restore), valuations, schedules, tyre changes
+  and tyres, journeys, station favourites, price alerts, attention
+  hiding, manual reminders and finance (§7.20; #282–#284, #287). No
+  migration. Ships with Phase 39.3 as v3.5.0.
+- **Phase 39.3 — API attachments and entry webhooks + v3.5 release.**
+  Attachments over the API (one file per request); signed entry webhooks
+  carrying ids only, sent by the scheduler with backoff, paused after 50
+  failures, on Settings → API keys → Webhooks; `WEBHOOKS_ENABLED`
+  (§6, §7.11, §7.20, §7.30, §9; #285, #286, #288, #289). One migration. Release
+  v3.5.0 (Phases 39.1 to 39.3).
 ---
 
 ## 14. Definition of done

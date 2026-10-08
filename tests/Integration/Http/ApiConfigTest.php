@@ -117,6 +117,8 @@ final class ApiConfigTest extends AppTestCase
         $response = $api->get('/me', ['Origin' => self::ORIGIN]);
         self::assertSame(self::ORIGIN, $response->getHeaderLine('Access-Control-Allow-Origin'));
         self::assertStringContainsString('Origin', $response->getHeaderLine('Vary'));
+        // Single-entry reads carry an ETag (Phase 39.1) that a page's script may read.
+        self::assertSame('ETag', $response->getHeaderLine('Access-Control-Expose-Headers'));
         $denied = $api->withToken(null)->get('/me', ['Origin' => self::ORIGIN]);
         self::assertSame(401, $denied->getStatusCode());
         self::assertSame(

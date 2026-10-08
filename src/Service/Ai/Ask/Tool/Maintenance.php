@@ -72,28 +72,9 @@ final readonly class Maintenance implements AskTool
         $text = $arguments->string('text');
         $period = $this->kit->period($user, $arguments, 'all_time');
         $limit = $arguments->int('limit', 1, ToolKit::LIST_CAP) ?? 10;
-        $words = $text === null ? [] : (preg_split('/\s+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY) ?: []);
-
         $records = array_values(array_filter(
-            $this->maintenance->history($vehicle)->newestFirst($category),
-            static function (MaintenanceEntry $entry) use ($period, $words): bool {
-                if (!$period->contains($entry->data->performedOn)) {
-                    return false;
-                }
-                $haystack = mb_strtolower(implode(' ', array_filter([
-                    $entry->data->title,
-                    $entry->data->vendor,
-                    $entry->data->description,
-                    $entry->data->category->value,
-                ])));
-                foreach ($words as $word) {
-                    if (!str_contains($haystack, $word)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            },
+            $this->maintenance->history($vehicle)->search($category, $text),
+            static fn (MaintenanceEntry $entry): bool => $period->contains($entry->data->performedOn),
         ));
         $currency = $this->kit->currency($user, $vehicle);
         $shown = array_slice($records, 0, $limit);

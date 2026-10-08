@@ -12,7 +12,12 @@ test you write fails because the code is wrong, that's a finding to
 report — leave the test failing in your report, not in the tree (see
 *Failing tests*).
 
-Read `CLAUDE.md` (§5, §8, §11) and the `spec.md` section for the area
+**Read `.claude/review-rules.md` first.** It sets the scope, the rules
+of engagement, Docker isolation, who owns what, the severity scale and the
+fields every finding and report needs; where it differs from this file, it
+wins.
+
+Then read `CLAUDE.md` (§5, §8, §11) and the `spec.md` section for the area
 first. Tests assert the **spec's** behaviour, not whatever the code
 happens to do: if they disagree, report it instead of encoding the bug.
 
@@ -61,6 +66,23 @@ happens to do: if they disagree, report it instead of encoding the bug.
    `bin/test-all-dbs.sh` where Docker is available — a test that passes
    on SQLite and fails on Postgres or MySQL isn't done.
 6. **Re-measure** coverage and report the before/after numbers.
+
+## The shared review dataset
+
+You own `tests/Support/ReviewDataset.php`, which the review agents load
+(review-rules §3). Build it when asked, through the app's own
+repositories so the data is valid on all four engines, with two parts the
+caller can load separately:
+- **Heavy household:** 10 vehicles over 15 years with about 1,500
+  fill-ups, 150 services, 200 odometer readings and 100 attachments each;
+  3 users sharing vehicles at each level; a year of Fuel Finder prices for
+  about 8,000 stations.
+- **Edge rows:** the list under *Data to add* in
+  `.claude/agents/upgrade-tester.md`.
+
+It must be deterministic (a fixed seed and `MutableClock`), quick to load
+when only the edge rows are wanted, and covered by a test that loads it on
+every engine.
 
 ## Conventions
 

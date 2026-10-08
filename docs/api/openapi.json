@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.20.0",
+    "version": "1.21.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -171,6 +171,76 @@
         "description": "Current odometer, economy per series, last fill-up, 12-month cost per distance, what is due next, reminder counts, current documents and tyres, and the same figures as text in the owner's units."
       }
     },
+    "/vehicles/{id}/history": {
+      "get": {
+        "operationId": "listVehicleHistory",
+        "summary": "One vehicle's history feed, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "kinds",
+            "in": "query",
+            "description": "A comma list of kinds; all by default.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "First calendar day (YYYY-MM-DD), inclusive, on the owner's calendar.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "Last calendar day (YYYY-MM-DD), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vehicles/{id}/fuel": {
       "get": {
         "operationId": "listFuel",
@@ -280,6 +350,49 @@
           },
           "422": {
             "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/fuel/{entry}": {
+      "get": {
+        "operationId": "getFuelEntry",
+        "summary": "One fill-up, as the fuel list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelEntry"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
           }
         }
       }
@@ -397,6 +510,49 @@
         }
       }
     },
+    "/vehicles/{id}/odometer/{entry}": {
+      "get": {
+        "operationId": "getOdometerReading",
+        "summary": "One odometer reading, as the odometer list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OdometerReading"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/vehicles/{id}/maintenance": {
       "get": {
         "operationId": "listMaintenance",
@@ -416,6 +572,32 @@
           },
           {
             "$ref": "#/components/parameters/until"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Only this category (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "service",
+                "oil",
+                "tyres",
+                "brakes",
+                "battery",
+                "repair",
+                "bodywork",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Only records whose title, vendor, description or category hold every word (any case), as Ask searches (Phase 39.1). Up to 100 characters are read.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -510,6 +692,127 @@
         }
       }
     },
+    "/vehicles/{id}/maintenance/{entry}": {
+      "get": {
+        "operationId": "getMaintenanceEntry",
+        "summary": "One service record, as the maintenance list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceEntry"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/schedules": {
+      "get": {
+        "operationId": "listSchedules",
+        "summary": "Maintenance schedules with their due state, most urgent first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/schedules/{entry}": {
+      "get": {
+        "operationId": "getSchedule",
+        "summary": "One schedule, as the list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Schedule"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/vehicles/{id}/documents": {
       "get": {
         "operationId": "listDocuments",
@@ -529,6 +832,35 @@
           },
           {
             "$ref": "#/components/parameters/until"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Only this type (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "insurance",
+                "pollution",
+                "registration",
+                "inspection",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "current",
+            "in": "query",
+            "description": "1: only documents in force today in the key user's time zone: started, not expired and not replaced (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
           }
         ],
         "responses": {
@@ -619,6 +951,49 @@
           },
           "422": {
             "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/documents/{entry}": {
+      "get": {
+        "operationId": "getDocument",
+        "summary": "One compliance document, as the documents list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Document"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
           }
         }
       }
@@ -737,6 +1112,177 @@
         }
       }
     },
+    "/vehicles/{id}/expenses/{entry}": {
+      "get": {
+        "operationId": "getExpense",
+        "summary": "One expense, as the expenses list returns it (needs ViewCosts)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/valuations": {
+      "get": {
+        "operationId": "listValuations",
+        "summary": "Valuations, newest first (needs ViewCosts)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/valuations/{entry}": {
+      "get": {
+        "operationId": "getValuation",
+        "summary": "One valuation (needs ViewCosts)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Valuation"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/ownership": {
+      "get": {
+        "operationId": "getOwnership",
+        "summary": "Cost of ownership and depreciation (needs ViewCosts)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ownership"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/vehicles/{id}/tyres": {
       "get": {
         "operationId": "listTyres",
@@ -772,6 +1318,114 @@
         }
       }
     },
+    "/vehicles/{id}/tyres/changes": {
+      "get": {
+        "operationId": "listTyreChanges",
+        "summary": "Tyre changes and tread checks, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreChangeList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/tyre-sets": {
+      "get": {
+        "operationId": "listVehicleTyreSets",
+        "summary": "A vehicle's tyre sets with their tyres",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreSetList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/tyre-sets": {
+      "get": {
+        "operationId": "listTyreSets",
+        "summary": "Tyre sets of every active vehicle (or ?vehicle=)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreSetList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
     "/vehicles/{id}/finance": {
       "get": {
         "operationId": "showFinance",
@@ -789,6 +1443,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FinanceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements": {
+      "get": {
+        "operationId": "listFinanceAgreements",
+        "summary": "Every agreement, the active one first, with payment events and quotes (Manage and ViewCosts; 404 otherwise)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceAgreementList"
                 }
               }
             }
@@ -895,6 +1584,502 @@
         }
       }
     },
+    "/attention": {
+      "get": {
+        "operationId": "listAttention",
+        "summary": "Needs attention for the active vehicles (or ?vehicle=), in the page's order",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttentionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reports/costs": {
+      "get": {
+        "operationId": "reportCosts",
+        "summary": "Spend by category, month or vehicle",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "category",
+                "month",
+                "vehicle"
+              ]
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "description": "Only this cost group.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fuel",
+                "maintenance",
+                "compliance",
+                "other"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostsReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reports/cost-per-distance": {
+      "get": {
+        "operationId": "reportCostPerDistance",
+        "summary": "Cost per distance, per vehicle and in all",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostPerDistanceReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reports/fuel": {
+      "get": {
+        "operationId": "reportFuel",
+        "summary": "Fuel statistics per vehicle, kind and grade",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "e10_95",
+                "e5_95",
+                "e5_97",
+                "e5_98",
+                "e10_98",
+                "e5_99",
+                "e0",
+                "e85",
+                "e15",
+                "e20",
+                "aki_87",
+                "aki_89",
+                "aki_91",
+                "b7",
+                "b7_premium",
+                "b10",
+                "b20",
+                "b100",
+                "xtl",
+                "home",
+                "ac",
+                "dc",
+                "dc_rapid",
+                "dc_ultra"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reports/mileage": {
+      "get": {
+        "operationId": "reportMileage",
+        "summary": "Distance driven and averages",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MileageReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/history": {
+      "get": {
+        "operationId": "listFleetHistory",
+        "summary": "The history feed of every active vehicle (or ?vehicle=), newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "kinds",
+            "in": "query",
+            "description": "A comma list of kinds; all by default.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "First calendar day (YYYY-MM-DD), inclusive, on the owner's calendar.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "Last calendar day (YYYY-MM-DD), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reminders": {
       "get": {
         "operationId": "listReminders",
@@ -911,7 +2096,24 @@
               "enum": [
                 "overdue",
                 "due",
-                "upcoming"
+                "upcoming",
+                "done",
+                "dismissed"
+              ]
+            },
+            "description": "One status. done or dismissed lists the closed reminders (Phase 39.1)."
+          },
+          {
+            "name": "closed",
+            "in": "query",
+            "description": "1: the done and dismissed reminders instead of the open ones, most recently closed first, as the Reminders page lists them (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
               ]
             }
           }
@@ -941,6 +2143,138 @@
           },
           "400": {
             "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/reminders/{reminder}/done": {
+      "post": {
+        "operationId": "markReminderDone",
+        "summary": "Mark a reminder done (the Reminders page's one-click form). Repeating it is safe: \"unchanged\": true.",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reminders/{reminder}/dismiss": {
+      "post": {
+        "operationId": "dismissReminder",
+        "summary": "Dismiss a reminder (the Reminders page's one-click form). Repeating it is safe: \"unchanged\": true.",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reminders/{reminder}/reopen": {
+      "post": {
+        "operationId": "reopenReminder",
+        "summary": "Reopen a done or dismissed reminder (the Reminders page's one-click form). Repeating it is safe: \"unchanged\": true.",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
           }
         }
       }
@@ -1055,6 +2389,49 @@
           },
           "422": {
             "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/trips/{entry}": {
+      "get": {
+        "operationId": "getTrip",
+        "summary": "One trip the key's user may see, as the trips list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trip"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
           }
         }
       }
@@ -1439,6 +2816,49 @@
         }
       }
     },
+    "/vehicles/{id}/incidents/{entry}": {
+      "get": {
+        "operationId": "getIncident",
+        "summary": "One incident, as the incidents list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/incidents/history": {
       "get": {
         "operationId": "claimsHistory",
@@ -1771,6 +3191,33 @@
           }
         }
       }
+    },
+    "/fuel-prices/alerts": {
+      "get": {
+        "operationId": "listPriceAlerts",
+        "summary": "The key user's price alerts (404 while no price provider is enabled)",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1835,6 +3282,24 @@
           "minimum": 1
         },
         "description": "Only this vehicle."
+      },
+      "entry": {
+        "name": "entry",
+        "in": "path",
+        "required": true,
+        "description": "The entry's id. An id that belongs to another vehicle answers 404.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "headers": {
+      "ETag": {
+        "description": "A tag of the stored entry (not of this response): it changes exactly when the entry does. Send it back in If-Match on PATCH and DELETE (Phase 39.2). If-None-Match is not supported.",
+        "schema": {
+          "type": "string"
+        }
       }
     },
     "responses": {
@@ -3269,6 +4734,7 @@
           "distance_unit",
           "days_left",
           "lead_time_days",
+          "closed_at",
           "created_at",
           "updated_at"
         ],
@@ -3311,7 +4777,9 @@
             "enum": [
               "upcoming",
               "due",
-              "overdue"
+              "overdue",
+              "done",
+              "dismissed"
             ]
           },
           "due_on": {
@@ -3333,6 +4801,9 @@
           },
           "lead_time_days": {
             "type": "integer"
+          },
+          "closed_at": {
+            "$ref": "#/components/schemas/NullableInstant"
           },
           "created_at": {
             "$ref": "#/components/schemas/Instant"
@@ -7131,6 +8602,2260 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NearItem"
+            }
+          }
+        }
+      },
+      "ReminderActionResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "source",
+          "title",
+          "category",
+          "notes",
+          "status",
+          "due_on",
+          "due_odometer",
+          "distance_unit",
+          "days_left",
+          "lead_time_days",
+          "closed_at",
+          "created_at",
+          "updated_at",
+          "unchanged"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "compliance",
+              "tyre",
+              "first_inspection",
+              "manual",
+              "finance",
+              "finance_end"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "due",
+              "overdue",
+              "done",
+              "dismissed"
+            ]
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "due_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "lead_time_days": {
+            "type": "integer"
+          },
+          "closed_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "unchanged": {
+            "type": "boolean",
+            "description": "True when the action was already in effect: nothing was written."
+          }
+        },
+        "description": "A reminder after an action, as GET /reminders lists it, and whether anything changed."
+      },
+      "Schedule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "category",
+          "title",
+          "interval_km",
+          "interval_months",
+          "baseline_done_on",
+          "baseline_odometer",
+          "last_done_on",
+          "last_done_odometer",
+          "next_due_on",
+          "next_due_odometer",
+          "distance_unit",
+          "status",
+          "trigger",
+          "due_on",
+          "due_on_projected",
+          "days_left",
+          "distance_left",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "interval_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "interval_months": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "baseline_done_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "baseline_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "last_done_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "last_done_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "next_due_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "next_due_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "soon",
+              "overdue",
+              "unknown"
+            ],
+            "description": "As the Maintenance tab shows it, in the owner's lead times."
+          },
+          "trigger": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "date",
+              "distance",
+              null
+            ],
+            "description": "The limit that applies (the sooner one)."
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/NullableDate",
+            "description": "The date limit, or the day the distance limit is projected to be reached (due_on_projected)."
+          },
+          "due_on_projected": {
+            "type": "boolean"
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "distance_left": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A maintenance schedule with its due state (Phase 39.1)."
+      },
+      "ScheduleList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Schedule"
+            }
+          }
+        }
+      },
+      "Valuation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "valued_on",
+          "amount",
+          "currency",
+          "source",
+          "notes",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "valued_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A valuation someone quoted (Phase 39.1)."
+      },
+      "ValuationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Valuation"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "Ownership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicle_id",
+          "currency",
+          "since",
+          "distance_km",
+          "distance_unit",
+          "running_costs",
+          "running_costs_entries",
+          "purchase_price",
+          "purchase_date",
+          "current_value",
+          "depreciation",
+          "valuation_stale_months",
+          "total",
+          "per_km",
+          "per_km_is_running_only",
+          "per_month",
+          "per_month_is_running_only",
+          "display"
+        ],
+        "properties": {
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "since": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "running_costs": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "running_costs_entries": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "purchase_price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "purchase_date": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "current_value": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "amount",
+                  "on",
+                  "kind",
+                  "source"
+                ],
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/Decimal"
+                  },
+                  "on": {
+                    "$ref": "#/components/schemas/Date"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "bought",
+                      "valuation",
+                      "sold"
+                    ]
+                  },
+                  "source": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "depreciation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "change",
+              "fraction",
+              "per_year",
+              "per_km"
+            ],
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "no_purchase_price",
+                  "no_value",
+                  "ready"
+                ]
+              },
+              "change": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "fraction": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "per_year": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "per_km": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              }
+            }
+          },
+          "valuation_stale_months": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "total": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "per_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "per_km_is_running_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "per_month": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "per_month_is_running_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "display": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "running_costs",
+              "current_value",
+              "depreciation",
+              "depreciation_percent",
+              "per_distance",
+              "per_month"
+            ],
+            "properties": {
+              "running_costs": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "current_value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "depreciation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "depreciation_percent": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "per_distance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "per_month": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "description": "Cost of ownership and depreciation (Phase 14.2), as the overview's card works them out. change is current value − purchase price (negative is a loss)."
+      },
+      "HistoryItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "milestone",
+          "vehicle_id",
+          "entry_id",
+          "date",
+          "created_at",
+          "summary",
+          "amount",
+          "price",
+          "currency",
+          "odometer",
+          "distance_unit",
+          "attachments",
+          "created_by",
+          "links"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fuel",
+              "odometer",
+              "maintenance",
+              "document",
+              "expense",
+              "tyre",
+              "valuation",
+              "trip",
+              "incident",
+              "milestone"
+            ]
+          },
+          "milestone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "first_registered",
+              "bought",
+              "sold",
+              "written_off",
+              "returned_lender",
+              "returned_lessor",
+              null
+            ]
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "entry_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "attachments": {
+            "type": "integer"
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entry"
+            ],
+            "properties": {
+              "entry": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The entry's path under /api/v1 where it has a single read; the vehicle for a milestone."
+              }
+            }
+          }
+        },
+        "description": "One line of the history feed (spec.md §7.16). amount follows the entry's cost access; price (a purchase, sale or valuation) needs ViewCosts; null otherwise."
+      },
+      "HistoryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "ReportPeriod": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "range",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "month",
+              "3m",
+              "12m",
+              "ytd",
+              "all",
+              "custom"
+            ]
+          },
+          "from": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Date"
+          }
+        },
+        "description": "The calendar days covered, both inclusive, in the key user's time zone."
+      },
+      "CostsReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "group",
+          "group_by",
+          "currencies"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles counted."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "fuel",
+              "maintenance",
+              "compliance",
+              "other",
+              null
+            ]
+          },
+          "group_by": {
+            "type": "string",
+            "enum": [
+              "category",
+              "month",
+              "vehicle"
+            ]
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "currency",
+                "total",
+                "entries",
+                "distance_km",
+                "cost_per_km",
+                "average_per_month"
+              ],
+              "properties": {
+                "currency": {
+                  "type": "string"
+                },
+                "total": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "entries": {
+                  "type": "integer"
+                },
+                "distance_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "cost_per_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_per_month": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "by_category": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "group",
+                      "total"
+                    ],
+                    "properties": {
+                      "group": {
+                        "type": "string",
+                        "enum": [
+                          "fuel",
+                          "maintenance",
+                          "compliance",
+                          "other"
+                        ]
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      }
+                    }
+                  }
+                },
+                "by_month": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "month",
+                      "total"
+                    ],
+                    "properties": {
+                      "month": {
+                        "type": "string",
+                        "pattern": "^[0-9]{4}-[0-9]{2}$"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      }
+                    }
+                  }
+                },
+                "by_vehicle": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "vehicle_id",
+                      "total",
+                      "entries",
+                      "distance_km"
+                    ],
+                    "properties": {
+                      "vehicle_id": {
+                        "type": "integer"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "entries": {
+                        "type": "integer"
+                      },
+                      "distance_km": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Spend by category group, month or vehicle, per currency (spec.md §7.7). Exactly one by_* list is present, per group_by."
+      },
+      "CostPerDistanceReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "currencies"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles counted."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "currency",
+                "total",
+                "entries",
+                "distance_km",
+                "cost_per_km",
+                "average_per_month",
+                "vehicles"
+              ],
+              "properties": {
+                "currency": {
+                  "type": "string"
+                },
+                "total": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "entries": {
+                  "type": "integer"
+                },
+                "distance_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "cost_per_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_per_month": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "vehicles": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "vehicle_id",
+                      "total",
+                      "distance_km",
+                      "cost_per_km"
+                    ],
+                    "properties": {
+                      "vehicle_id": {
+                        "type": "integer"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "distance_km": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      },
+                      "cost_per_km": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "FuelReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "grade",
+          "by_vehicle"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles covered."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "grade": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "by_vehicle": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "vehicle_id",
+                "currency",
+                "kinds"
+              ],
+              "properties": {
+                "vehicle_id": {
+                  "type": "integer"
+                },
+                "currency": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kinds": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "fill_ups",
+                      "volume",
+                      "volume_unit",
+                      "economy",
+                      "by_grade",
+                      "grade_verdicts"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "liquid",
+                          "electric",
+                          "gas"
+                        ]
+                      },
+                      "fill_ups": {
+                        "type": "integer"
+                      },
+                      "volume": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "volume_unit": {
+                        "type": "string",
+                        "enum": [
+                          "l",
+                          "kwh",
+                          "kg"
+                        ]
+                      },
+                      "spend": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "average_price_per_unit": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      },
+                      "economy": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "distance_km",
+                              "volume",
+                              "per_100km"
+                            ],
+                            "properties": {
+                              "distance_km": {
+                                "$ref": "#/components/schemas/Decimal"
+                              },
+                              "volume": {
+                                "$ref": "#/components/schemas/Decimal"
+                              },
+                              "per_100km": {
+                                "$ref": "#/components/schemas/Decimal"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "by_grade": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "grade",
+                            "fill_ups",
+                            "volume",
+                            "volume_unit",
+                            "economy"
+                          ],
+                          "properties": {
+                            "grade": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "fill_ups": {
+                              "type": "integer"
+                            },
+                            "volume": {
+                              "$ref": "#/components/schemas/Decimal"
+                            },
+                            "volume_unit": {
+                              "type": "string",
+                              "enum": [
+                                "l",
+                                "kwh",
+                                "kg"
+                              ]
+                            },
+                            "spend": {
+                              "$ref": "#/components/schemas/Decimal"
+                            },
+                            "average_price_per_unit": {
+                              "$ref": "#/components/schemas/NullableDecimal"
+                            },
+                            "economy": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "distance_km",
+                                    "volume",
+                                    "per_100km"
+                                  ],
+                                  "properties": {
+                                    "distance_km": {
+                                      "$ref": "#/components/schemas/Decimal"
+                                    },
+                                    "volume": {
+                                      "$ref": "#/components/schemas/Decimal"
+                                    },
+                                    "per_100km": {
+                                      "$ref": "#/components/schemas/Decimal"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "grade_verdicts": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "grade",
+                            "compared_with",
+                            "status",
+                            "cost_per_distance",
+                            "price",
+                            "fuel_used"
+                          ],
+                          "properties": {
+                            "grade": {
+                              "type": "string"
+                            },
+                            "compared_with": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "cost_per_distance": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "direction",
+                                    "percent"
+                                  ],
+                                  "properties": {
+                                    "direction": {
+                                      "type": "string",
+                                      "enum": [
+                                        "more",
+                                        "less",
+                                        "same"
+                                      ]
+                                    },
+                                    "percent": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "price": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "direction",
+                                    "percent"
+                                  ],
+                                  "properties": {
+                                    "direction": {
+                                      "type": "string",
+                                      "enum": [
+                                        "more",
+                                        "less",
+                                        "same"
+                                      ]
+                                    },
+                                    "percent": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "fuel_used": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "direction",
+                                    "percent"
+                                  ],
+                                  "properties": {
+                                    "direction": {
+                                      "type": "string",
+                                      "enum": [
+                                        "more",
+                                        "less",
+                                        "same"
+                                      ]
+                                    },
+                                    "percent": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Phase 16's fuel statistics. spend and average_price_per_unit are left out without ViewCosts on the vehicle. Grade verdicts are over the whole history, as the Fuel tab."
+      },
+      "MileageReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "distance_unit",
+          "distance_km",
+          "by_vehicle"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles covered."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "by_vehicle": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "vehicle_id",
+                "distance_km",
+                "average_km_per_month",
+                "average_km_per_year",
+                "latest_odometer",
+                "latest_recorded_at"
+              ],
+              "properties": {
+                "vehicle_id": {
+                  "type": "integer"
+                },
+                "distance_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_km_per_month": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_km_per_year": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "latest_odometer": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "latest_recorded_at": {
+                  "$ref": "#/components/schemas/NullableInstant"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TyreChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "kind",
+          "changed_on",
+          "odometer",
+          "distance_unit",
+          "note",
+          "service_record_id",
+          "incident_id",
+          "lines",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "existing",
+              "fit",
+              "swap",
+              "rotate",
+              "repair",
+              "remove",
+              "check"
+            ]
+          },
+          "changed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "service_record_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "incident_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "tyre_id",
+                "action",
+                "position",
+                "depth_mm",
+                "retire_reason"
+              ],
+              "properties": {
+                "tyre_id": {
+                  "type": "integer"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "off",
+                    "retire",
+                    "move",
+                    "repair",
+                    "measure"
+                  ]
+                },
+                "position": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "fl",
+                    "fr",
+                    "rl",
+                    "rr",
+                    "spare",
+                    "front",
+                    "rear",
+                    null
+                  ],
+                  "description": "Where the tyre went (on, move) or where it was (off, retire, repair)."
+                },
+                "depth_mm": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "retire_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "worn",
+                    "damaged",
+                    "puncture",
+                    "sold",
+                    "other",
+                    null
+                  ]
+                }
+              }
+            }
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A tyre change or tread check (Phase 39.1)."
+      },
+      "TyreChangeList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TyreChange"
+            }
+          }
+        }
+      },
+      "TyreSet": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "name",
+          "storage_location",
+          "notes",
+          "tyres",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "storage_location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tyres": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "status",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "fitted",
+                    "stored",
+                    "retired"
+                  ]
+                },
+                "position": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "fl",
+                    "fr",
+                    "rl",
+                    "rr",
+                    "spare",
+                    "front",
+                    "rear",
+                    null
+                  ]
+                }
+              }
+            }
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A tyre set and its tyres (Phase 39.1)."
+      },
+      "TyreSetList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TyreSet"
+            }
+          }
+        }
+      },
+      "AttentionItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicle_id",
+          "kind",
+          "severity",
+          "title",
+          "detail",
+          "days",
+          "reminder_id",
+          "key",
+          "links"
+        ],
+        "properties": {
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "finance_missed",
+              "reading",
+              "economy",
+              "mileage_stale",
+              "trips_exceed",
+              "valuation_stale",
+              "drift_liquid",
+              "drift_electric",
+              "drift_gas",
+              "fuel_price",
+              "maintenance_cost",
+              "stalled_claim",
+              "finance_mileage"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "now",
+              "check"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "days": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "reminder_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Names a hideable item for POST /attention/{key}/hide (Phase 39.2); null when it can't be hidden."
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fix"
+            ],
+            "properties": {
+              "fix": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The entry or list that fixes it, as a path under /api/v1."
+              }
+            }
+          }
+        },
+        "description": "One Needs attention item, in the page's words (spec.md §7.24)."
+      },
+      "AttentionList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttentionItem"
+            }
+          }
+        }
+      },
+      "PriceAlert": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "station_id",
+          "grade",
+          "below",
+          "volume_unit",
+          "currency",
+          "armed",
+          "triggered_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "station_id": {
+            "type": "integer"
+          },
+          "grade": {
+            "type": "string"
+          },
+          "below": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "volume_unit": {
+            "type": "string",
+            "const": "l"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "armed": {
+            "type": "boolean"
+          },
+          "triggered_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A price alert (spec.md §7.34): sent once when the station's listed price drops below `below` per litre, re-armed when it rises above."
+      },
+      "PriceAlertList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceAlert"
+            }
+          }
+        }
+      },
+      "FinanceAgreementDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "type",
+          "lender",
+          "status",
+          "started_on",
+          "ends_on",
+          "ended_on",
+          "currency",
+          "apr",
+          "payments_total",
+          "payments_made",
+          "payments_remaining",
+          "next_payment",
+          "remaining_to_pay",
+          "optional_final_payment",
+          "total_amount_payable",
+          "total_amount_payable_worked_out",
+          "amount_of_credit",
+          "settlement",
+          "cost_of_credit",
+          "half_paid",
+          "equity",
+          "mileage",
+          "schedule",
+          "extra_payments",
+          "events",
+          "quotes"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "hp",
+              "pcp",
+              "loan",
+              "lease"
+            ]
+          },
+          "lender": {
+            "type": "string",
+            "description": "The lender, or the lessor for a lease. The agreement number is never included."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "settled",
+              "completed",
+              "handed_back",
+              "ended"
+            ]
+          },
+          "started_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "ends_on": {
+            "$ref": "#/components/schemas/NullableDate",
+            "description": "The last scheduled payment's date."
+          },
+          "ended_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217; every amount in this object is in it."
+          },
+          "apr": {
+            "$ref": "#/components/schemas/NullableDecimal",
+            "description": "Percent; null for a lease."
+          },
+          "payments_total": {
+            "type": "integer",
+            "description": "Regular monthly payments (rentals after the initial one, for a lease)."
+          },
+          "payments_made": {
+            "type": "integer"
+          },
+          "payments_remaining": {
+            "type": "integer"
+          },
+          "next_payment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "due_on",
+              "amount"
+            ],
+            "properties": {
+              "due_on": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Decimal"
+              }
+            }
+          },
+          "remaining_to_pay": {
+            "$ref": "#/components/schemas/Decimal",
+            "description": "Exact, from the agreement: the scheduled payments still due, a PCP's optional final payment left out."
+          },
+          "optional_final_payment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "due_on",
+              "amount"
+            ],
+            "properties": {
+              "due_on": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Decimal"
+              }
+            },
+            "description": "A PCP's optional final payment (GFV) while still due."
+          },
+          "total_amount_payable": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "total_amount_payable_worked_out": {
+            "type": "boolean",
+            "description": "True when worked out from the figures rather than entered."
+          },
+          "amount_of_credit": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "settlement": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "amount",
+              "estimate",
+              "quoted_on",
+              "valid_until"
+            ],
+            "properties": {
+              "amount": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "estimate": {
+                "type": "boolean",
+                "description": "True for Logbook's estimate; the lender's figure will differ. False for the lender's quote while valid."
+              },
+              "quoted_on": {
+                "$ref": "#/components/schemas/NullableDate"
+              },
+              "valid_until": {
+                "$ref": "#/components/schemas/NullableDate"
+              }
+            },
+            "description": "Credit agreements while active."
+          },
+          "cost_of_credit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "total",
+              "so_far",
+              "so_far_estimate"
+            ],
+            "properties": {
+              "total": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "so_far": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "so_far_estimate": {
+                "type": "boolean",
+                "description": "True while active (interest split from the payments made); false once ended, when it is exact."
+              }
+            },
+            "description": "Not for a lease."
+          },
+          "half_paid": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "target",
+              "paid_so_far",
+              "still_needed",
+              "reached",
+              "on"
+            ],
+            "properties": {
+              "target": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "paid_so_far": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "still_needed": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "reached": {
+                "type": "boolean"
+              },
+              "on": {
+                "$ref": "#/components/schemas/NullableDate"
+              }
+            },
+            "description": "HP and PCP."
+          },
+          "equity": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "amount",
+              "valuation",
+              "valued_on",
+              "estimate"
+            ],
+            "properties": {
+              "amount": {
+                "$ref": "#/components/schemas/Decimal",
+                "description": "Latest valuation less the settlement figure; negative for negative equity."
+              },
+              "valuation": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "valued_on": {
+                "$ref": "#/components/schemas/Date"
+              },
+              "estimate": {
+                "type": "boolean",
+                "description": "True when the settlement figure is Logbook's estimate."
+              }
+            },
+            "description": "With a valuation from the last 12 months, while active."
+          },
+          "mileage": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "distance_unit",
+              "agreement_unit",
+              "allowance",
+              "start_odometer",
+              "distance_so_far",
+              "allowed_to_date",
+              "projected",
+              "projected_excess",
+              "excess_charge_per_unit",
+              "projected_excess_charge",
+              "projection_estimate"
+            ],
+            "properties": {
+              "distance_unit": {
+                "type": "string",
+                "const": "km",
+                "description": "Every distance in this object is in kilometres."
+              },
+              "agreement_unit": {
+                "type": "string",
+                "enum": [
+                  "mi",
+                  "km"
+                ],
+                "description": "The unit the allowance and the excess charge are written in."
+              },
+              "allowance": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "start_odometer": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "distance_so_far": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "allowed_to_date": {
+                "$ref": "#/components/schemas/Decimal"
+              },
+              "projected": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "The distance at the end; null without enough readings to project."
+              },
+              "projected_excess": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "Projected less the allowance: negative when under."
+              },
+              "excess_charge_per_unit": {
+                "$ref": "#/components/schemas/NullableDecimal",
+                "description": "Per agreement_unit."
+              },
+              "projected_excess_charge": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "projection_estimate": {
+                "type": "boolean"
+              }
+            },
+            "description": "PCP and leases with an allowance."
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "number",
+                "kind",
+                "due_on",
+                "amount",
+                "status",
+                "paid_on"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "description": "0 for a lease's initial rental, then 1…, the final payment last."
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "initial_rental",
+                    "regular",
+                    "final"
+                  ]
+                },
+                "due_on": {
+                  "$ref": "#/components/schemas/Date"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "paid",
+                    "due",
+                    "missed",
+                    "paid_late"
+                  ]
+                },
+                "paid_on": {
+                  "$ref": "#/components/schemas/NullableDate"
+                }
+              }
+            }
+          },
+          "extra_payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "paid_on",
+                "amount"
+              ],
+              "properties": {
+                "paid_on": {
+                  "$ref": "#/components/schemas/NullableDate"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                }
+              }
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "due_on",
+                "amount",
+                "paid_on",
+                "notes"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "missed",
+                    "paid_late",
+                    "extra",
+                    "settlement"
+                  ]
+                },
+                "due_on": {
+                  "$ref": "#/components/schemas/NullableDate"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "paid_on": {
+                  "$ref": "#/components/schemas/NullableDate"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "quotes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "quoted_on",
+                "amount",
+                "valid_until",
+                "notes"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "quoted_on": {
+                  "$ref": "#/components/schemas/Date"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "valid_until": {
+                  "$ref": "#/components/schemas/Date"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "An agreement as GET …/finance shows one, with its payment events and settlement quotes (Phase 39.1). Never the agreement number."
+      },
+      "FinanceAgreementList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinanceAgreementDetail"
             }
           }
         }

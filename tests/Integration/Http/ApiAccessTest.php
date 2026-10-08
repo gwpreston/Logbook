@@ -10,6 +10,10 @@ use DI\Container;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseCategory;
+use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Maintenance\MaintenanceScheduleData;
+use Logbook\Domain\Trip\TripData;
+use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -19,6 +23,10 @@ use Logbook\Middleware\VehicleAccessMiddleware;
 use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Api\ApiIncidents;
+use Logbook\Service\Maintenance\ScheduleService;
+use Logbook\Service\Trip\TripService;
+use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Security\PasswordHasher;
@@ -49,6 +57,19 @@ final class ApiAccessTest extends AppTestCase
     /** Amounts no other figure in these responses can produce by accident. */
     private const array AMOUNTS = ['14250.370', '61.370', '187.430', '243.190', '12.910', '55.000'];
 
+    /** The table of each list with a single-entry read (Phase 39.1). */
+    private const array ENTRY_TABLES = [
+        'fuel' => 'fuel_entries',
+        'odometer' => 'odometer_readings',
+        'maintenance' => 'maintenance_entries',
+        'documents' => 'compliance_documents',
+        'expenses' => 'expense_entries',
+        'trips' => 'trips',
+        'incidents' => 'incidents',
+        'schedules' => 'maintenance_schedules',
+        'valuations' => 'vehicle_valuations',
+    ];
+
     protected function tearDown(): void
     {
         self::clearThrottle();
@@ -67,7 +88,7 @@ final class ApiAccessTest extends AppTestCase
         $routes = $this->apiVehicleRoutes($app);
         self::assertGreaterThanOrEqual(10, count($routes));
         foreach ($routes as $route) {
-            self::assertSame(404, $this->callRoute($api, $route, $golf)->getStatusCode(), $route->getPattern());
+            self::assertSame(404, $this->callRoute($app, $api, $route, $golf)->getStatusCode(), $route->getPattern());
         }
         self::assertSame([], ApiClient::json($api->get('/vehicles?status=all'))->get('items'));
         self::assertSame([], ApiClient::json($api->get('/upcoming'))->get('items'));
@@ -86,8 +107,8 @@ final class ApiAccessTest extends AppTestCase
 
         foreach ($this->apiVehicleRoutes($app) as $route) {
             $needs = VehicleAbility::from($route->getArgument(VehicleAccessMiddleware::ABILITY) ?? '');
-            $status = $this->callRoute($api, $route, $golf)->getStatusCode();
-            if ($route->getName() === 'api.finance.show') {
+            $status = $this->callRoute($app, $api, $route, $golf)->getStatusCode();
+            if (in_array($route->getName(), ['api.finance.show', 'api.finance.agreements'], true)) {
                 // Finance needs Manage and ViewCosts and answers 404 to anyone else (spec.md §7.32 *Access*).
                 self::assertSame(404, $status, $route->getPattern());
             } elseif ($needs === VehicleAbility::View) {
@@ -192,9 +213,27 @@ final class ApiAccessTest extends AppTestCase
         return [$app, $access];
     }
 
-    private function callRoute(ApiClient $api, RouteInterface $route, Vehicle $vehicle): ResponseInterface
+    /**
+     * @param App<ContainerInterface> $app
+     */
+    private function callRoute(App $app, ApiClient $api, RouteInterface $route, Vehicle $vehicle): ResponseInterface
     {
         $path = substr(str_replace('{id:[0-9]+}', (string) $vehicle->id, $route->getPattern()), strlen('/api/v1'));
+        if (str_contains($path, '/{entry:[0-9]+}')) {
+            // A single-entry read (Phase 39.1): an entry of that list, found on the owner's side
+            // so every access level really requests it; the fixture has one of each.
+            $list = (string) $route->getArgument('list');
+            $table = self::ENTRY_TABLES[$list] ?? null;
+            self::assertNotNull($table, 'no table for the ' . $list . ' list');
+            $id = $this->connection($app)->createQueryBuilder()
+                ->select('MIN(id)')
+                ->from($table)
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicle->id)
+                ->fetchOne();
+            self::assertTrue(is_int($id) || is_string($id), 'the fixture has no ' . $list . ' entry');
+            $path = str_replace('{entry:[0-9]+}', (string) $id, $path);
+        }
 
         return in_array('GET', $route->getMethods(), true)
             ? $api->get($path)
@@ -220,6 +259,29 @@ final class ApiAccessTest extends AppTestCase
         $this->maintenance($app, $golf, '2026-09-05', 'Annual service', '187.43', '10200');
         $this->document($app, $golf, ComplianceType::Insurance, '2026-09-01', '2027-08-31', '243.19');
         $this->expense($app, $golf, '2026-09-12', '12.91', ExpenseCategory::Parking);
+        // One of every list with a single-entry read (Phase 39.1).
+        $this->service($app, ScheduleService::class)->create($golf, new MaintenanceScheduleData(
+            MaintenanceCategory::Service,
+            'Annual service',
+            intervalMonths: 12,
+        ));
+        $this->service($app, ValuationService::class)->create($golf, new VehicleValuationData(
+            new DateTimeImmutable('2026-09-01', new DateTimeZone('UTC')),
+            '11000',
+        ));
+        $this->service($app, TripService::class)->create($golf, new TripData(
+            new DateTimeImmutable('2026-09-10', new DateTimeZone('UTC')),
+            'Ballymena',
+            'Belfast',
+            true,
+            '90.5',
+        ));
+        $this->service($app, ApiIncidents::class)->log($this->owner($app), $golf, [
+            'occurred_on' => '2026-03-14',
+            'type' => 'parked_damage',
+            'fault' => 'not_at_fault',
+            'damage_areas' => ['rear'],
+        ]);
         // Added by someone else: a user's own entries always carry their amounts (Phase 19).
         $author = $this->createMember($app, 'author');
         foreach (['fuel_entries', 'maintenance_entries', 'compliance_documents', 'expense_entries'] as $table) {
