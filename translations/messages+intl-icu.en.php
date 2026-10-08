@@ -1939,6 +1939,7 @@ return [
     ],
     // Phase 27.1: incidents, damage and insurance claims (spec.md §7.29).
     'issue' => [
+        'view_all' => 'All issues →',
         'title' => 'Issues',
         'add' => 'Add issue',
         'add_title' => 'Add an issue',
@@ -2071,6 +2072,8 @@ return [
             'archived' => 'This vehicle is archived: its issues are read-only.',
             'record' => 'Choose one of the service records listed.',
         ],
+        'reminder_title' => 'Look again: {title}',
+        'fleet_link' => 'All open issues →',
         'fleet_title' => 'Open issues',
         'fleet_lead' => 'Every open and watched issue across your vehicles, safety first.',
         'fleet_empty' => 'No open issues.',
@@ -2591,6 +2594,10 @@ return [
     ],
     // Needs attention (Phase 24, spec.md §7.24): what is wrong now. Never a score.
     'attention' => [
+        'issue' => [
+            'noticed' => 'Noticed {date}, {unit, select, day {{n, plural, =0 {today} one {yesterday} other {# days ago}}} week {{n, plural, one {# week ago} other {# weeks ago}}} other {{n, plural, one {# month ago} other {# months ago}}}}',
+            'watching_since' => 'Watching since {date}',
+        ],
         'finance' => [
             'missed' => 'Finance payment due {date} marked missed',
             'missed_detail' => '{agreement}. Mark it paid late on the agreement once it is paid.',
@@ -2672,6 +2679,10 @@ return [
             'open_claim' => 'Open claim',
             'open_agreement' => 'Open agreement',
             'hide' => 'Hide',
+            'log_repair' => 'Log the repair',
+            'watch' => 'Watch',
+            'watch_again' => 'Watch again',
+            'reopen' => 'Reopen',
         ],
         'show_all' => 'Show all ({count})',
         'marker' => 'Needs attention',

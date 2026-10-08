@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Logbook\Service\Attention;
 
 use Logbook\Repository\IncidentRepository;
+use Logbook\Repository\IssueRepository;
+use Logbook\Domain\Issue\Issue;
+use Logbook\Domain\Issue\IssueStatus;
 use Logbook\Service\Incident\IncidentAccess;
 use DateTimeImmutable;
 use Logbook\Domain\Access\VehicleAbility;
@@ -41,6 +44,7 @@ use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Number\Decimal;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -83,6 +87,7 @@ final readonly class AttentionList
         private IncidentRepository $incidents,
         private IncidentAccess $incidentAccess,
         private FinanceService $finance,
+        private IssueRepository $issues,
     ) {
     }
 
@@ -126,6 +131,13 @@ final readonly class AttentionList
         $hidden = $withHidden ? [] : $this->hidden->fingerprints($user->id, $ids);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $book = new PriceBook();
+        // Phase 40.1: every vehicle's open and watching issues in one query.
+        $issues = [];
+        if ($enabled[Feature::Issues->value]) {
+            foreach ($this->issues->listForVehicles($ids, [IssueStatus::Open, IssueStatus::Watching]) as $issue) {
+                $issues[$issue->vehicleId][] = $issue;
+            }
+        }
 
         $items = [];
         foreach ($vehicles as $vehicle) {
@@ -141,6 +153,9 @@ final readonly class AttentionList
             }
             if ($enabled[Feature::Finance->value]) {
                 array_push($items, ...$this->financeItems($user, $vehicle));
+            }
+            if (isset($issues[$vehicle->id])) {
+                array_push($items, ...$this->issueItems($user, $vehicle, $issues[$vehicle->id], $stored, $canLog));
             }
         }
 
@@ -411,6 +426,61 @@ final readonly class AttentionList
                 fingerprint: Fingerprint::claim($incident),
                 canAct: true,
                 canHide: true,
+            );
+        }
+
+        return $items;
+    }
+
+    /**
+     * *Open issue* for each open issue, and *Look again* for each watching
+     * one whose look-again date (the owner's today) or mileage (the latest
+     * reading) is reached, unless its look-again reminder was dismissed or
+     * done (spec.md §7.37). Shown to everyone who can view; the actions
+     * need `Log`. Nothing here judges what a fault is.
+     *
+     * @param list<Issue> $issues the vehicle's open and watching issues
+     * @param array<string, Reminder> $stored generated reminders by key
+     * @return list<AttentionItem>
+     */
+    private function issueItems(User $user, Vehicle $vehicle, array $issues, array $stored, bool $canLog): array
+    {
+        $owner = $vehicle->userId === $user->id ? $user : $this->directory->find($vehicle->userId) ?? $user;
+        $today = LocalTime::today($this->clock, $owner->preferences->timeZone());
+        $since = $this->issues->watchingSince(array_map(static fn (Issue $i): int => $i->id, $issues));
+        $latest = null;
+        $items = [];
+        foreach ($issues as $issue) {
+            $data = $issue->data;
+            if ($issue->status() === IssueStatus::Open) {
+                $items[] = new AttentionItem(
+                    kind: AttentionKind::IssueOpen,
+                    vehicle: $vehicle,
+                    subjectId: $issue->id,
+                    icon: 'report',
+                    days: LocalTime::daysBetween($data->noticedOn, $today),
+                    issue: $issue,
+                    canAct: $canLog,
+                );
+                continue;
+            }
+            if ($data->lookAgainKm !== null) {
+                $latest ??= $this->odometer->history($vehicle)->latest()->readingKm ?? '';
+            }
+            $reached = ($data->lookAgainOn !== null && $data->lookAgainOn <= $today)
+                || ($data->lookAgainKm !== null && $latest !== '' && Decimal::compare($latest, $data->lookAgainKm) >= 0);
+            $reminder = $stored[GeneratedReminder::keyOf($vehicle->id, ReminderSource::Issue, $issue->id)] ?? null;
+            if (!$reached || ($reminder !== null && $reminder->status->isClosed())) {
+                continue;
+            }
+            $items[] = new AttentionItem(
+                kind: AttentionKind::IssueLookAgain,
+                vehicle: $vehicle,
+                subjectId: $issue->id,
+                icon: 'visibility',
+                issue: $issue,
+                since: $since[$issue->id] ?? $data->noticedOn,
+                canAct: $canLog,
             );
         }
 

@@ -15,6 +15,8 @@ use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\FinanceAgreementRepository;
+use Logbook\Repository\IssueRepository;
+use Logbook\Domain\Issue\IssueStatus;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
@@ -63,6 +65,7 @@ final readonly class ReminderSync
         private VehicleService $vehicleService,
         private DisplayFormatter $formatter,
         private WebhookEvents $webhooks,
+        private IssueRepository $issues,
     ) {
     }
 
@@ -83,6 +86,13 @@ final readonly class ReminderSync
         $withDocuments = $enabled[Feature::Compliance->value];
         $withTyres = $enabled[Feature::Tyres->value];
         $withFinance = $enabled[Feature::Finance->value];
+        $withIssues = $enabled[Feature::Issues->value];
+        $watched = [];
+        if ($withIssues) {
+            foreach ($this->issues->listForVehicles($active, [IssueStatus::Watching]) as $issue) {
+                $watched[$issue->vehicleId][] = $issue;
+            }
+        }
         foreach ($existing as $key => $reminder) {
             $feature = $reminder->source->feature();
             if ($feature !== null && !$enabled[$feature->value]) {
@@ -156,6 +166,25 @@ final readonly class ReminderSync
                         $endTitle,
                         $preferences,
                     )];
+                }
+            }
+
+            // Phase 40.1: watching issues' look-again points (#311).
+            if (isset($watched[$vehicle->id])) {
+                $history = $this->odometer->history($vehicle);
+                foreach ($watched[$vehicle->id] as $issue) {
+                    $look = ReminderGenerator::fromIssue(
+                        $vehicle->id,
+                        $issue,
+                        $this->issueTitle($owner, $issue->data->title),
+                        $today,
+                        $preferences,
+                        $history->latest()?->readingKm,
+                        $history->averageKmPerDay(),
+                    );
+                    if ($look !== null) {
+                        $wanted[] = $look;
+                    }
                 }
             }
 
@@ -262,6 +291,17 @@ final readonly class ReminderSync
             // A long lender's name must still fit the title column.
             return [mb_substr($final, 0, 150), mb_substr($ends, 0, 150)];
         });
+    }
+
+    /**
+     * "Look again: Brake pipes corroded", in the owner's language whoever asks.
+     */
+    private function issueTitle(User $owner, string $title): string
+    {
+        return $this->scope->run(
+            $owner,
+            fn (): string => mb_substr($this->translator->trans('issue.reminder_title', ['title' => $title]), 0, 150),
+        );
     }
 
     /**

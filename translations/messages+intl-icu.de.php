@@ -1937,6 +1937,7 @@ return [
     ],
     // Phase 27.1: Schäden und Versicherungsfälle (spec.md §7.29).
     'issue' => [
+        'view_all' => 'Alle Mängel →',
         'title' => 'Mängel',
         'add' => 'Mangel hinzufügen',
         'add_title' => 'Mangel hinzufügen',
@@ -2069,6 +2070,8 @@ return [
             'archived' => 'Dieses Fahrzeug ist archiviert: seine Mängel sind schreibgeschützt.',
             'record' => 'Wähle einen der aufgeführten Werkstatteinträge.',
         ],
+        'reminder_title' => 'Erneut prüfen: {title}',
+        'fleet_link' => 'Alle offenen Mängel →',
         'fleet_title' => 'Offene Mängel',
         'fleet_lead' => 'Alle offenen und beobachteten Mängel deiner Fahrzeuge, sicherheitsrelevante zuerst.',
         'fleet_empty' => 'Keine offenen Mängel.',
@@ -2588,6 +2591,10 @@ return [
     ],
     // Handlungsbedarf (Phase 24, spec.md §7.24): was jetzt nicht stimmt. Nie eine Punktzahl.
     'attention' => [
+        'issue' => [
+            'noticed' => 'Bemerkt {date}, {unit, select, day {{n, plural, =0 {heute} one {gestern} other {vor # Tagen}}} week {{n, plural, one {vor # Woche} other {vor # Wochen}}} other {{n, plural, one {vor # Monat} other {vor # Monaten}}}}',
+            'watching_since' => 'Beobachtet seit {date}',
+        ],
         'finance' => [
             'missed' => 'Finanzierungsrate vom {date} als verpasst markiert',
             'missed_detail' => '{agreement}. Markiere sie im Vertrag als verspätet bezahlt, sobald sie bezahlt ist.',
@@ -2669,6 +2676,10 @@ return [
             'open_claim' => 'Schaden öffnen',
             'open_agreement' => 'Vertrag öffnen',
             'hide' => 'Ausblenden',
+            'log_repair' => 'Reparatur erfassen',
+            'watch' => 'Beobachten',
+            'watch_again' => 'Weiter beobachten',
+            'reopen' => 'Wieder öffnen',
         ],
         'show_all' => 'Alle anzeigen ({count})',
         'marker' => 'Handlungsbedarf',

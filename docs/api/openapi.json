@@ -14150,6 +14150,8 @@
             "enum": [
               "overdue",
               "finance_missed",
+              "issue_open",
+              "issue_look_again",
               "reading",
               "economy",
               "mileage_stale",

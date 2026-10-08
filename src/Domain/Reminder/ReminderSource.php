@@ -33,6 +33,11 @@ enum ReminderSource: string
      * and source id (#130).
      */
     case FinanceEnd = 'finance_end';
+    /**
+     * A watching issue's look-again point (Phase 40.1, spec.md §7.37, #311);
+     * the source id is the issue. *Done* means *Looked at it*.
+     */
+    case Issue = 'issue';
     /** Added by hand. */
     case Manual = 'manual';
 
@@ -55,6 +60,7 @@ enum ReminderSource: string
             self::Compliance, self::FirstInspection => Feature::Compliance,
             self::Tyre => Feature::Tyres,
             self::Finance, self::FinanceEnd => Feature::Finance,
+            self::Issue => Feature::Issues,
             self::Manual => null,
         };
     }

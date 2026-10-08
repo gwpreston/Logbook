@@ -15,4 +15,8 @@
     {% if dashboard.attention.items|length > items|length %}
         <p class="field__hint">{{ 'attention.more'|trans({count: dashboard.attention.items|length - items|length}) }}</p>
     {% endif %}
+    {# Every open and watched issue on one page (spec.md §7.37 *Fleet*). #}
+    {% if feature_enabled('issues') and dashboard.attention.items|filter(i => i.issue is not null) is not empty %}
+        <p><a class="card__link" href="{{ url_for('issues.fleet') }}">{{ 'issue.fleet_link'|trans }}</a></p>
+    {% endif %}
 {% endif %}

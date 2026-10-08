@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Attention;
 
 use Logbook\Service\Incident\IncidentView;
+use Logbook\Domain\Issue\Issue;
 use DateTimeImmutable;
 use Logbook\Domain\Attention\AttentionKind;
 use Logbook\Domain\Attention\AttentionSeverity;
@@ -53,6 +54,9 @@ final readonly class AttentionItem
         public ?IncidentView $incident = null,
         /** The agreement and its missed payment or mileage (FinanceMissed, FinanceMileage). */
         public ?FinanceFinding $finance = null,
+        /** The issue (IssueOpen, IssueLookAgain), and since when it is watched (IssueLookAgain). */
+        public ?Issue $issue = null,
+        public ?DateTimeImmutable $since = null,
         /** The vehicle's currency, for the amounts in a price or cost title. */
         public ?string $currency = null,
         /** What was judged (hideable kinds). */
@@ -72,11 +76,16 @@ final readonly class AttentionItem
     }
 
     /**
-     * Now before Check; overdue work oldest first (as *Coming up* orders
+     * Safety issues first; Now before Check; overdue work oldest first (as *Coming up* orders
      * it), then by kind, readings, fill-ups and records oldest first.
      */
     public static function compare(self $a, self $b): int
     {
+        // An issue the owner marked *Affects safety* comes first (spec.md §7.37).
+        $safety = ($b->issue->data->affectsSafety ?? false) <=> ($a->issue->data->affectsSafety ?? false);
+        if ($safety !== 0) {
+            return $safety;
+        }
         if ($a->forecast !== null && $b->forecast !== null) {
             return ForecastItem::compare($a->forecast, $b->forecast);
         }
@@ -85,6 +94,7 @@ final readonly class AttentionItem
             ?: (($a->reading?->recordedAt <=> $b->reading?->recordedAt))
             ?: (($a->price?->entry->data->filledAt <=> $b->price?->entry->data->filledAt))
             ?: (($a->cost?->entry->data->performedOn <=> $b->cost?->entry->data->performedOn))
+            ?: (($a->issue?->data->noticedOn <=> $b->issue?->data->noticedOn))
             ?: strcmp($a->vehicle->name(), $b->vehicle->name())
             ?: ($a->vehicle->id <=> $b->vehicle->id)
             ?: ($a->subjectId <=> $b->subjectId);

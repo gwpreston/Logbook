@@ -18,6 +18,10 @@ enum AttentionKind: string
      * *Now* item, so it ranks with overdue work, before every check.
      */
     case FinanceMissed = 'finance_missed';
+    /** An open issue (Phase 40.1, §7.37): a *Now* item, real work like an overdue service. */
+    case IssueOpen = 'issue_open';
+    /** A watching issue whose look-again date or mileage is reached (Phase 40.1). */
+    case IssueLookAgain = 'issue_look_again';
     /** A reading the Mileage tab flags (§7.2). */
     case Reading = 'reading';
     /** The vehicle's unconfirmed economy flags, as one item (§7.3). */
@@ -45,17 +49,23 @@ enum AttentionKind: string
 
     public function severity(): AttentionSeverity
     {
-        return $this === self::Overdue || $this === self::FinanceMissed ? AttentionSeverity::Now : AttentionSeverity::Check;
+        return in_array($this, [self::Overdue, self::FinanceMissed, self::IssueOpen, self::IssueLookAgain], true)
+            ? AttentionSeverity::Now
+            : AttentionSeverity::Check;
     }
 
     /**
      * Whether *Hide* applies. Economy flags are confirmed with *Looks
      * right*, trips are fixed in the data, overdue work is dismissed
-     * through its reminder.
+     * through its reminder, and an issue is set aside with *Watch* (§7.37).
      */
     public function isHideable(): bool
     {
-        return !in_array($this, [self::Overdue, self::Economy, self::TripsExceed, self::FinanceMissed], true);
+        return !in_array(
+            $this,
+            [self::Overdue, self::Economy, self::TripsExceed, self::FinanceMissed, self::IssueOpen, self::IssueLookAgain],
+            true,
+        );
     }
 
     /**

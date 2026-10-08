@@ -8,6 +8,7 @@ use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
+use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attention\AttentionList;
 use Logbook\Service\Attention\AttentionSettingsStore;
@@ -84,6 +85,7 @@ final readonly class ShowVehicleAction
         private FinanceService $finance,
         private TrueCostService $trueCosts,
         private TrueCostWording $trueCostWording,
+        private IssueService $issues,
     ) {
     }
 
@@ -162,6 +164,8 @@ final readonly class ShowVehicleAction
             'attention_wording' => $this->attentionWording,
             'forecast_wording' => $this->forecastWording,
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
+            // Phase 40.1 (spec.md §7.37): open and watching issues, safety first; the card shows five.
+            'issues' => $this->features->isEnabled(Feature::Issues) ? $this->issues->unresolved($vehicle) : [],
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
             'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)
                 ? $this->tyres->overview($vehicle, $user)

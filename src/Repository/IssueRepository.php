@@ -271,6 +271,37 @@ final readonly class IssueRepository
         return $fixes;
     }
 
+    /**
+     * When each watching issue was last set to watching: its latest
+     * automatic line to `watching` (*Look again*'s "watching since").
+     *
+     * @param list<int> $issueIds
+     * @return array<int, DateTimeImmutable> by issue id
+     */
+    public function watchingSince(array $issueIds): array
+    {
+        if ($issueIds === []) {
+            return [];
+        }
+        $rows = $this->connection->createQueryBuilder()
+            ->select('issue_id', 'MAX(noted_on) AS since')
+            ->from(self::UPDATES)
+            ->where('issue_id IN (:issues)', 'status_to = :watching')
+            ->groupBy('issue_id')
+            ->setParameter('issues', $issueIds, ArrayParameterType::INTEGER)
+            ->setParameter('watching', IssueStatus::Watching->value)
+            ->fetchAllAssociative();
+        $since = [];
+        foreach ($rows as $row) {
+            $date = Row::nullableDate($row, 'since');
+            if ($date !== null) {
+                $since[Row::int($row, 'issue_id')] = $date;
+            }
+        }
+
+        return $since;
+    }
+
     // Updates
 
     public function insertUpdate(

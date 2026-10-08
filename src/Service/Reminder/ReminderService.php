@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Reminder;
 
+use DateTimeZone;
+use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
@@ -46,6 +48,7 @@ final readonly class ReminderService
         private UserDirectory $directory,
         private FinanceService $finance,
         private WebhookEvents $webhooks,
+        private IssueService $issues,
     ) {
     }
 
@@ -152,6 +155,9 @@ final readonly class ReminderService
     public function markDone(Reminder $reminder): void
     {
         $this->reminders->setStatus($reminder->id, ReminderStatus::Done, $this->clock->now());
+        if ($reminder->source === ReminderSource::Issue && $reminder->sourceId !== null) {
+            $this->lookedAt($reminder->vehicleId, $reminder->sourceId);
+        }
         $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'done');
     }
 
@@ -168,6 +174,23 @@ final readonly class ReminderService
         $this->reminders->setStatus($reminder->id, ReminderStatus::Upcoming, $this->clock->now());
         $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'reopened');
         $this->sync->sync($user);
+    }
+
+    /**
+     * *Done* on a look-again reminder is *Looked at it* (spec.md §7.37, #311):
+     * the point is cleared and the issue stays watching, dated in the owner's
+     * zone. The next sync removes the reminder with its point.
+     */
+    private function lookedAt(int $vehicleId, int $issueId): void
+    {
+        $vehicle = $this->vehicles->findById($vehicleId);
+        $issue = $vehicle === null ? null : $this->issues->find($vehicle, $issueId);
+        if ($vehicle === null || $issue === null) {
+            return;
+        }
+        $owner = $this->directory->find($vehicle->userId);
+        $zone = $owner?->preferences->timeZone() ?? new DateTimeZone('UTC');
+        $this->issues->lookedAt($vehicle, $issue, $zone);
     }
 
     public function createManual(User $user, ManualReminderData $data): Reminder

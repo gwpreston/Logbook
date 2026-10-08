@@ -7,6 +7,8 @@ namespace Logbook\Service\Reminder;
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Finance\FinanceAgreement;
+use Logbook\Domain\Issue\Issue;
+use Logbook\Domain\Issue\IssueStatus;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Finance\MileageAllowance;
@@ -204,6 +206,53 @@ final class ReminderGenerator
         }
 
         return $reminders;
+    }
+
+    /**
+     * A watching issue's look-again reminder (Phase 40.1, spec.md §7.37,
+     * #311): due at its date and/or odometer, judged as a manual reminder by
+     * distance with the owner's manual lead time. The occurrence is the
+     * point, so a new point opens it again. None for an issue that is not
+     * watching or has no point.
+     *
+     * @param string $title already in the owner's language
+     * @param DateTimeImmutable $today the owner's calendar date
+     */
+    public static function fromIssue(
+        int $vehicleId,
+        Issue $issue,
+        string $title,
+        DateTimeImmutable $today,
+        ReminderPreferences $preferences,
+        ?string $currentKm,
+        ?float $kmPerDay,
+    ): ?GeneratedReminder {
+        $data = $issue->data;
+        if ($data->status !== IssueStatus::Watching || !$data->hasLookAgain()) {
+            return null;
+        }
+        $due = ReminderRules::manual(
+            $data->lookAgainOn,
+            $data->lookAgainKm,
+            $today,
+            $preferences->manualDays,
+            $currentKm,
+            $kmPerDay,
+            $preferences->scheduleKm,
+        );
+
+        return new GeneratedReminder(
+            vehicleId: $vehicleId,
+            source: ReminderSource::Issue,
+            sourceId: $issue->id,
+            occurrence: ($data->lookAgainOn?->format('Y-m-d') ?? '') . '|' . ($data->lookAgainKm ?? ''),
+            category: null,
+            title: $title,
+            dueOn: $data->lookAgainOn,
+            dueKm: $data->lookAgainKm,
+            leadTimeDays: $preferences->manualDays,
+            status: $due->status,
+        );
     }
 
     public static function fromFirstInspection(
