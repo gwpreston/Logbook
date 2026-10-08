@@ -5,7 +5,11 @@ and Android automations that log a fill-up, Grafana panels, Node-RED flows
 and OBD tools that post the odometer. It reads what a dashboard needs and
 writes **fill-ups**, **odometer readings** and **trips**, and from 2.7
 **service records**, **documents**, **expenses**, **tread checks** and
-**manual reminders**.
+**manual reminders**. From 3.5 it also **edits and deletes** them, and
+writes what else the pages do: **vehicles**, **valuations**,
+**schedules**, **tyre changes**, **saved journeys**, **favourite
+stations**, **price alerts**, **finance**, and *Hide* on *Needs
+attention*.
 
 The contract is the OpenAPI 3.1 description, served by your install at
 `<your URL>/api/v1/openapi.json` (the same file as
@@ -21,6 +25,8 @@ and other assistants.
 - [Lists: paging and dates](#lists-paging-and-dates)
 - [Logging fill-ups and readings](#logging-fill-ups-and-readings)
 - [Logging other entries](#logging-other-entries)
+- [Editing and deleting](#editing-and-deleting)
+- [More writes](#more-writes)
 - [Errors](#errors)
 - [Browser dashboards (CORS)](#browser-dashboards-cors)
 - Examples: [curl](#curl) · [Home Assistant](#home-assistant) ·
@@ -105,7 +111,7 @@ user prefers, so automations can compare and chart them:
 |---|---|
 | `GET /me` | the key's user and preferences, the key's name and scope, which modules are on |
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default `active`) |
-| `GET /vehicles/{id}` | one vehicle, as its edit form holds it |
+| `GET /vehicles/{id}` | one vehicle, as its edit form holds it, with an `ETag` and its `disposal` (`sold`, `written_off`, …) |
 | `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months and the true cost per km (depreciation included), what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with the economy of the tank it closes and its economy-check flag (paged) |
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
@@ -133,7 +139,7 @@ user prefers, so automations can compare and chart them:
 | `GET /upcoming` | *Coming up* over the next 12 months (`?vehicle=`) |
 | `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`); `?closed=1` (or `?status=done\|dismissed`) the done and dismissed ones, most recently closed first; every reminder carries `closed_at` (null while open) |
 | `POST /reminders/{id}/done`, `/dismiss`, `/reopen` | the Reminders page's buttons, for a reminder of any kind; safe to repeat (`"unchanged": true`) (read and write key; Log) |
-| `GET /attention` | *Needs attention* for every active vehicle (`?vehicle=`), in the page's order and words, each with a link to its fix; an item you can hide carries a `key` (hiding over the API comes with the writes) |
+| `GET /attention` | *Needs attention* for every active vehicle (`?vehicle=`), in the page's order and words, each with a link to its fix; an item you can hide carries a `key` for `POST /attention/{key}/hide` |
 | `GET /reports/costs` | spend by category group, month or vehicle (`?group_by=`), per currency ([Reports](#reports)) |
 | `GET /reports/cost-per-distance` | cost per km, per vehicle and in all ([Reports](#reports)) |
 | `GET /reports/fuel` | fuel statistics per vehicle, kind and grade, with the grade verdicts ([Reports](#reports); fuel module) |
@@ -146,6 +152,18 @@ user prefers, so automations can compare and chart them:
 | `GET /stations/{station}` | one station and what you paid there; a merged station's id answers with the station it became (stations module) |
 | `GET /fuel-prices/near` | *Cheapest near me*: listed prices near a point, ranked by effective cost for a vehicle ([Fuel prices](#fuel-prices); only while a price provider is enabled) |
 | `GET /fuel-prices/alerts` | your price alerts: station, grade, the price per litre below which it tells you, and whether it is armed (only while a price provider is enabled) |
+| `PATCH`, `DELETE /vehicles/{id}/{list}/{entry}` | edit or delete a fill-up, manual reading, service record, document, expense, trip or incident ([Editing and deleting](#editing-and-deleting); read and write key) |
+| `PATCH`, `DELETE /reminders/{id}` | edit or delete a manual reminder (Manage) |
+| `POST /vehicles`, `PATCH /vehicles/{id}` | add a vehicle (you own it) or edit one (Manage) ([More writes](#more-writes)) |
+| `POST /vehicles/{id}/archive`, `/restore` | the *Archive* page and *Restore* (Own) |
+| `POST /vehicles/{id}/valuations`, `PATCH`, `DELETE …/valuations/{valuation}` | valuations (Manage; also on an archived vehicle) |
+| `POST /vehicles/{id}/schedules`, `PATCH`, `DELETE …/schedules/{schedule}` | maintenance schedules (Manage; maintenance module) |
+| `POST /vehicles/{id}/tyres/changes`, `PATCH`, `DELETE …/tyres/changes/{change}`, `PATCH …/tyres/{tyre}` | tyre changes and a tyre's details (tyres module) |
+| `POST /journeys`, `PATCH`, `DELETE /journeys/{id}` | your saved journeys (trips module) |
+| `PUT`, `DELETE /stations/{id}/favourite` | star or unstar a station (stations module) |
+| `POST /fuel-prices/alerts`, `PATCH`, `DELETE /fuel-prices/alerts/{id}` | your price alerts (a price provider enabled) |
+| `POST /attention/{key}/hide` | *Hide* a *Needs attention* item for you (Log) |
+| `POST`, `PATCH /vehicles/{id}/finance/agreements…` | agreements, payment events, settlement quotes and *End* ([More writes](#more-writes); finance module) |
 | `GET /openapi.json` | the OpenAPI description (no key) |
 
 A vehicle id the key's user cannot see answers `404`, like one that does
@@ -510,6 +528,106 @@ ago. A linked station with no prices yet has `[]`. It is `null` for a
 station that isn't linked (or whose feed record isn't synced yet), and
 while no provider is enabled.
 
+## Editing and deleting
+
+From 3.5, `PATCH` edits an entry and `DELETE` deletes it, at the address
+it is read from: `/vehicles/{id}/{list}/{entry}` for `fuel`, `odometer`,
+`maintenance`, `documents`, `expenses`, `trips` and `incidents`, and
+`/reminders/{id}` for a manual reminder. They go through the page's edit
+form and delete confirmation, so the validation, the messages and the
+knock-on effects are the pages': a fill-up's odometer reading moves with
+it and the economy around it is recomputed, a schedule falls back to the
+record before, and an entry's attachments go with it.
+
+- **Only what you send changes.** Every other field keeps its stored
+  value exactly. `null` clears an optional field (and on a required one
+  is the form's *required* error). A field the create doesn't know is
+  refused here too. Units work as on create: `distance_unit` and
+  `volume_unit` say what the numbers you send are in.
+- **Nothing is worked out that the form wouldn't.** Sending only
+  `total_cost` keeps the stored volume and price, as the edit form does.
+- **Who may:** Manage on the vehicle, or Log on an entry you added
+  yourself (`403` otherwise); Manage for a reminder.
+- **Not here:** an archived vehicle (`409 vehicle_archived`); a reading
+  written by another entry (`409 reading_derived`, with `links.entry`
+  pointing at the entry to change instead); a reminder that follows a
+  schedule or document (`409 reminder_not_manual`).
+- `PATCH` answers `200` with `entry` (as its single read returns it),
+  `warnings`, and the new `ETag`. `DELETE` answers `204`.
+
+**Two people editing the same entry.** `If-Match` is optional. Send the
+`ETag` you read and the edit (or delete) only goes through if nobody has
+changed the entry since; otherwise the answer is `412
+precondition_failed` and nothing is written. Without it, the last edit
+wins, as on the pages.
+
+```sh
+# Correct a mistyped odometer on fill-up 42, only if it is unchanged since read.
+TAG=$(curl -si -H "Authorization: Bearer $KEY" "$BASE/vehicles/1/fuel/42" \
+      | awk -F': ' 'tolower($1)=="etag" {print $2}' | tr -d '\r')
+curl -X PATCH -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -H "If-Match: $TAG" -d '{"odometer": 41230, "distance_unit": "km"}' \
+     "$BASE/vehicles/1/fuel/42"
+
+# Delete an expense.
+curl -X DELETE -H "Authorization: Bearer $KEY" "$BASE/vehicles/1/expenses/7"
+```
+
+## More writes
+
+From 3.5, the rest of what the pages write. Each takes the page form's
+fields (as JSON, numbers as numbers or decimal strings), validates as it
+does, and answers with the object as its read returns it, in `entry`.
+`PATCH` works as in [Editing and deleting](#editing-and-deleting). The
+OpenAPI description has every field.
+
+| Endpoint | Needs | Notes |
+|---|---|---|
+| `POST /vehicles` | a read and write key | the add form: `type`, `make`, `model`, `fuel_type` required; `current_odometer` for a starting reading; *First MOT due* suggested as the form does unless you send it (`null`: none). You own it. A retry within 10 minutes (same registration, make and model) answers `200` with `duplicate: true` |
+| `PATCH /vehicles/{id}` | Manage | the edit form; a `sale_date` marks the vehicle sold (`disposal: "sold"`), clearing it clears that |
+| `POST /vehicles/{id}/archive` | Own | the *Archive* page: no body just archives; `disposal` (`sold`, `written_off`, `returned_lender`, `returned_lessor`) where the page offers it, with `sale_date`, `sale_price`, `incident_id` (written off), `settle_from_sale` and `settlement` (an active HP or PCP) |
+| `POST /vehicles/{id}/restore` | Own | *Restore* |
+| `POST /vehicles/{id}/valuations` | Manage | `amount` (required), `valued_on` (default today), `source`, `notes`; the one write an archived vehicle takes (a scrap value), within its sale date. A retry with the same date, amount and source answers `duplicate: true` |
+| `POST /vehicles/{id}/schedules` | Manage | `category`, `title`, `interval_km` or `interval_distance` (in `distance_unit`), `interval_months`, `baseline_done_on`, `baseline_odometer`; a retry with the same category, title and intervals answers `duplicate: true`. Deleting keeps its records |
+| `POST /vehicles/{id}/tyres/changes` | Log | `kind` (`existing`, `fit`, `swap`, `rotate`, `repair`, `remove`) and its lines, replayed as the change form ([Tyre changes](#tyre-changes)) |
+| `PATCH …/tyres/changes/{change}` | Log (own) or Manage | `changed_on`, `odometer`, `note`, `service_record_id` only; a delete the page would refuse is `409 tyre_change_refused` |
+| `PATCH /vehicles/{id}/tyres/{tyre}` | Manage | `brand`, `model`, `size`, `season`, `dot`, `notes` |
+| `POST /journeys` | your own | `from`, `to`, `distance_km` (one way), `is_return`, `is_business` (default true), `purpose` |
+| `PUT`, `DELETE /stations/{id}/favourite` | your own | `204`, safe to repeat; unstarring removes the station's alerts |
+| `POST /fuel-prices/alerts` | your own | `station_id` (a favourite), `grade`, `below` per `volume_unit`; at most 20; an alert for that station and grade is changed (`200`, `duplicate: true`). `PATCH` changes `below` |
+| `POST /attention/{key}/hide` | Log | the `key` from `GET /attention`; `204`, safe to repeat; `404` once the item has changed. Nothing un-hides, as on the page |
+| `POST /vehicles/{id}/finance/agreements` | Manage and cost access | the agreement form; one active agreement (`409 finance_active_exists`); the agreement number is stored, never returned |
+| `POST …/agreements/{agreement}/payments` | as above | `kind`: `missed` or `paid_late` with `due_on` (and `paid_on`), or `extra` with `amount` and `paid_on`; `DELETE …/payments/{event}` |
+| `POST …/agreements/{agreement}/quotes` | as above | `quoted_on`, `amount`, `valid_until`, `notes`; `DELETE …/quotes/{quote}` |
+| `POST …/agreements/{agreement}/end` | as above | `outcome`, `ended_on`, `settlement`, `excess_charge`, `damage_charge`; the vehicle stays. Selling or handing it back goes through `…/archive` |
+
+```sh
+# An importer adding a vehicle from another app, and its history after it.
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"type": "car", "make": "Skoda", "model": "Octavia", "fuel_type": "diesel",
+          "registration": "OC21 TAV", "first_registered_on": "2021-06-01",
+          "purchase_date": "2023-02-01", "purchase_price": 15995,
+          "purchase_odometer": 30000, "distance_unit": "mi"}' \
+     "$BASE/vehicles"
+```
+
+### Tyre changes
+
+A change is replayed through the change form, so whatever the form
+refuses (a tyre that isn't on, a date before it was fitted) is refused
+with its message. The lines, by kind:
+
+| `kind` | Lines |
+|---|---|
+| `existing` | `tyres`: `[{"position": "fl", "brand": …, "model": …, "size": …, "season": …, "dot": "2325", "tread": 8}]` |
+| `fit` | `tyre`: `{"brand", "model", "size", "season"}`, `tread`, `positions`: `[{"position": "fl", "dot": "2325", "replace": "store"}]` (`replace`, for a tyre on there now: `store` or a retire reason) |
+| `swap` | `set` (a set id, or `{"name", "storage"}` for a new one), `on`: `{"<stored tyre id>": "fl"}`, `depths`: `{"<tyre id>": 5.5}` |
+| `rotate` | `moves`: every fitted tyre `{"<tyre id>": "fr"}` |
+| `repair` | `tyres`: `[<tyre id>]` |
+| `remove` | `set`, `tyres`: `{"<tyre id>": "store"}` (or a retire reason), `depths` |
+
+An error points at the body's path: `positions.0.dot`, `moves.12`.
+
 ## Errors
 
 Errors are [RFC 9457 problem details](https://www.rfc-editor.org/rfc/rfc9457)
@@ -539,7 +657,12 @@ Branch on `code`; `detail` and `message` are English text for people.
 | 403 | `cors_not_allowed` | a browser preflight from an origin that is not allowed |
 | 404 | `not_found` | no such address or vehicle, a switched-off module, or the API is off |
 | 405 | `method_not_allowed` | see `Allow` |
-| 409 | `vehicle_archived` | writes to an archived vehicle |
+| 409 | `vehicle_archived` | writes to an archived vehicle (but a valuation, and *Restore*) |
+| 409 | `reading_derived` | a reading another entry wrote; `links.entry` is that entry |
+| 409 | `reminder_not_manual` | a reminder that follows its schedule or document |
+| 409 | `tyre_change_refused` | deleting a tyre change later ones depend on |
+| 409 | `finance_active_exists`, `finance_ended` | a second active agreement; a change to one that has ended |
+| 412 | `precondition_failed` | `If-Match` no longer matches; nothing was written |
 | 422 | `validation_failed` | per field: the form's message key and text |
 | 429 | `too_many_failures` | too many failed keys from this address; see `Retry-After` |
 | 500 | `internal_error` | logged on the server |
@@ -550,7 +673,8 @@ Servers (Home Assistant, Grafana, Node-RED) call the API directly and need
 nothing here. A web page on another origin that calls it from the browser
 needs its origin listed: `API_CORS_ORIGINS=https://dash.example.com`
 (comma-separated). Anything the page sends carries the key, so only list
-pages you trust.
+pages you trust. The preflight allows `GET`, `POST`, `PUT`, `PATCH`,
+`DELETE` and the `If-Match` header, and responses expose `ETag`.
 
 ---
 
@@ -666,6 +790,13 @@ the same header), **Get Dictionary Value** `items`, **Choose from List**
 showing each item's `journey`, then POST `{"journey_id": <its id>}` to
 `…/api/v1/vehicles/1/trips`. Today's date and the journey's distance,
 return and purpose are filled in.
+
+"Log a valuation" (a figure from a dealer or a price guide; Logbook never
+fetches one): **Ask for Input** Number "Value", then **Get Contents of
+URL** `…/api/v1/vehicles/1/valuations`, Method **POST**, the same header,
+Request Body **JSON** `amount` (Number) = *Provided Input*, `source`
+(Text) = `Dealer quote`. The date is today; run it twice and the second
+answers `duplicate: true`.
 
 Android automations (Tasker's *HTTP Request*, Home Assistant's companion
 app) are the same request: POST, the header, and the JSON body.

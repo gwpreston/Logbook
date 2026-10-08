@@ -84,11 +84,11 @@ nested routes, entry guard and `ETag`).
       (create and delete for each), *End*.
 
 ### 39.2.4 OpenAPI, docs, translations
-- [ ] `docs/api/openapi.json`: every operation, schema and error code of
+- [x] `docs/api/openapi.json`: every operation, schema and error code of
       this sub-phase (under 39.1's `info.version`).
-- [ ] `docs/api.md`: editing and deleting with `If-Match`; logging a
+- [x] `docs/api.md`: editing and deleting with `If-Match`; logging a
       valuation from a Shortcut; creating a vehicle from an importer.
-- [ ] Translations for every new string, in every shipped locale.
+- [x] Translations for every new string, in every shipped locale.
 
 ### 39.2.5 Tests
 - [ ] **Contract:** every new response validated against the OpenAPI
