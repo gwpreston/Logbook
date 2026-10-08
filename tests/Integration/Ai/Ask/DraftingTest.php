@@ -372,7 +372,7 @@ final class DraftingTest extends AskTestCase
         self::assertSame(1, $this->rows($this->app, 'odometer_readings'));
     }
 
-    public function testEditPrefillsEverySevenFormsAndSavingClosesTheCard(): void
+    public function testEditPrefillsEveryDraftFormAndSavingClosesTheCard(): void
     {
         $this->document($this->app, $this->bmw, ComplianceType::Inspection, '2026-03-11', '2027-03-10', '54.85');
         $this->fitFronts();
@@ -410,6 +410,7 @@ final class DraftingTest extends AskTestCase
                 'tyre_changes',
             ],
             'reminder' => ['draft_reminder', ['title' => 'Wash it', 'due' => '2026-12-01'], '/reminders/new', 'reminders'],
+            'issue' => ['draft_issue', ['title' => 'Knock from front left'], $vehicle . '/issues/new', 'issues'],
         ];
         $store = $this->service($this->app, DraftStore::class);
         foreach ($kinds as $kind => [$tool, $arguments, $form, $table]) {

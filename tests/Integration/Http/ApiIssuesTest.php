@@ -76,6 +76,9 @@ final class ApiIssuesTest extends AppTestCase
         ];
     }
 
+    /**
+     * @param array<string, mixed> $body
+     */
     private function logged(array $body = []): int
     {
         $response = $this->api->post($this->path, self::issue($body));

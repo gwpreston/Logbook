@@ -6,6 +6,7 @@ namespace Logbook\Service\Ai\Draft;
 
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Service\Api\ApiIncidents;
+use Logbook\Service\Api\ApiIssues;
 use Logbook\Service\Incident\IncidentForm;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\DraftKind;
@@ -22,6 +23,7 @@ use Logbook\Service\Api\ApiWriter;
 use Logbook\Service\Compliance\ComplianceDocumentForm;
 use Logbook\Service\Expense\ExpenseEntryForm;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Issue\IssueForm;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\ScheduleService;
@@ -60,6 +62,7 @@ final readonly class DraftWriter
         private DisplayFormatter $format,
         private TranslatorInterface $translator,
         private ApiIncidents $incidents,
+        private ApiIssues $issues,
         private StationService $stations,
     ) {
     }
@@ -107,6 +110,7 @@ final readonly class DraftWriter
                 DraftKind::TyreCheck => $this->treadCheck($user, $vehicle, $input),
                 DraftKind::Reminder => $this->reminder($user, $vehicle, $input),
                 DraftKind::Incident => $this->incident($user, $vehicle, $input),
+                DraftKind::Issue => $this->issue($user, $vehicle, $input),
             };
         } catch (ApiProblem $problem) {
             if ($problem->validation !== null) {
@@ -360,6 +364,44 @@ final readonly class DraftWriter
             $fields,
             [],
             IncidentForm::flatValues(IncidentForm::values($incident, $result['odometerKm'], $user->preferences)),
+        );
+    }
+
+    /**
+     * An issue (Phase 40.2): the user's words, never a cause.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function issue(User $user, Vehicle $vehicle, array $input): DraftWritten
+    {
+        $result = $this->issues->logIssue($user, $vehicle, $input);
+        $issue = $result['issue'];
+        $data = $issue->data;
+        $fields = [
+            self::field('date', $this->format->date($data->noticedOn)),
+            self::field('title', $data->title),
+        ];
+        if ($data->odometerKm !== null) {
+            $fields[] = self::field('odometer', $this->format->distance($data->odometerKm));
+        }
+        $fields[] = self::field('status', $this->t($issue->status()->labelKey()));
+        if ($data->lookAgainOn !== null) {
+            $fields[] = self::field('look_again', $this->format->date($data->lookAgainOn));
+        }
+        if ($data->affectsSafety) {
+            $fields[] = self::field('affects_safety', $this->t('ask.draft.yes'));
+        }
+
+        return $this->written(
+            DraftKind::Issue,
+            $issue->id,
+            $issue->updatedAt,
+            $result['duplicate'],
+            $result['warnings'],
+            $this->t('ask.draft.summary.issue', ['title' => $data->title, 'date' => $this->format->date($data->noticedOn)]),
+            $fields,
+            [],
+            IssueForm::values($issue, $user->preferences),
         );
     }
 

@@ -123,14 +123,11 @@ final readonly class ApiIssues
     public function log(User $user, Vehicle $vehicle, array $body): array
     {
         $result = $this->logIssue($user, $vehicle, $body);
-        $warnings = $result['duplicate']
-            ? []
-            : ApiWriter::odometerWarnings($this->issues->odometerWarning($vehicle, $result['issue']));
 
         return [
             'entry' => $this->serialize($this->state($vehicle, $result['issue']->id)),
             'duplicate' => $result['duplicate'],
-            'warnings' => $warnings,
+            'warnings' => $result['warnings'],
         ];
     }
 
@@ -138,7 +135,7 @@ final readonly class ApiIssues
      * The same write, giving the issue (the draft tools' path, spec.md §7.26).
      *
      * @param array<string, mixed> $body
-     * @return array{issue: Issue, duplicate: bool}
+     * @return array{issue: Issue, duplicate: bool, warnings: list<array{code: string, detail: string}>}
      * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
      */
     public function logIssue(
@@ -163,13 +160,17 @@ final readonly class ApiIssues
                 && $issue->data->title === $data->title
                 && $issue->sourceRef === $sourceRef
             ) {
-                return ['issue' => $issue, 'duplicate' => true];
+                return ['issue' => $issue, 'duplicate' => true, 'warnings' => []];
             }
         }
 
         $issue = $this->issues->create($vehicle, $data, $zone, source: $source, sourceRef: $sourceRef);
 
-        return ['issue' => $issue, 'duplicate' => false];
+        return [
+            'issue' => $issue,
+            'duplicate' => false,
+            'warnings' => ApiWriter::odometerWarnings($this->issues->odometerWarning($vehicle, $issue)),
+        ];
     }
 
     /**

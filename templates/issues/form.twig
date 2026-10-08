@@ -37,6 +37,7 @@
         <form class="form" id="issue-form" method="post" enctype="multipart/form-data"
               action="{{ editing ? url_for('issues.edit', {id: vehicle.id, issue: issue.id}) : url_for('issues.create', {id: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
+            {% include 'ask/_draft_notice.twig' %}
             {{ ui.return_field(return_to) }}
 
             <section class="card">

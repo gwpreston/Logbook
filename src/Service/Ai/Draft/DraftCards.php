@@ -52,6 +52,7 @@ final readonly class DraftCards
                 DraftKind::Document => [['compliance.index', $vehicleArgs], ['compliance.create', $vehicleArgs], []],
                 DraftKind::Expense => [['expenses.index', $vehicleArgs], ['expenses.create', $vehicleArgs], []],
                 DraftKind::Incident => [['incidents.index', $vehicleArgs], ['incidents.create', $vehicleArgs], []],
+                DraftKind::Issue => [['issues.index', $vehicleArgs], ['issues.create', $vehicleArgs], []],
                 DraftKind::TyreCheck => [
                     ['tyres.index', $vehicleArgs],
                     ['tyres.change', $vehicleArgs + ['kind' => 'check']],

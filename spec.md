@@ -6254,7 +6254,9 @@ entries by message*.
 - **Tools offered:** the model is told, in the system text, to draft only
   what the user's own message asks for, to pass on their words, never to
   say an entry is saved, and to ask exactly the question a tool returns.
-- `bin/ai-eval.php` has 30 drafting cases beside the 40 questions, and
+- `bin/ai-eval.php` has 31 drafting cases beside the 41 questions (from
+  Phase 40.2 one asks what causes a knock and expects the answer to point
+  to a mechanic), and
   checks that no entry was written without *Add*.
 - **Not in scope:** editing or deleting existing entries by chat;
   changing settings by chat (parked, #75, §12); several entries in one

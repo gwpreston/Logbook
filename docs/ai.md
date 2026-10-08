@@ -300,10 +300,12 @@ after about four minutes of model calls. If it fails, the page says why
 and links to the page for what was asked, when the question got that far.
 Nothing is retried on another connection.
 
-**Trying a model.** `php bin/ai-eval.php` asks 40 questions and 30
+**Trying a model.** `php bin/ai-eval.php` asks 41 questions and 31
 sentences to draft from, of the configured model as the demo owner (`./bin/dev-setup.sh
 --with-sample-data`) and reports how often it chose the right tool, whether
-the expected figures appear, how many answers had a flagged figure, and the
+the expected figures appear, whether a question about what causes a fault
+is answered with a mechanic rather than a guess, how many answers had a
+flagged figure, and the
 time. It also checks that no entry was written without *Add*. It sends
 real requests, so it is never run automatically.
 
@@ -321,6 +323,13 @@ Tell *Ask* what you did, and it drafts the entry for you to check and add:
 | "Paid £6.50 for parking for the Golf." | an expense (*Parking*) |
 | "Front tyres 5.5 and 5.6 mm, rears 6.8." | a tread check |
 | "Remind me to book the MOT two weeks before it expires." | a manual reminder dated 14 days before the current MOT's expiry |
+| "Noticed a knock from the front left of the Golf when braking." | an issue (open), in your words (issues module) |
+
+**Faults.** *Ask* reads your issues (what you noticed, its status and what
+fixed it) but never guesses what causes a fault, even if you ask: Logbook
+only records what you noted, and a qualified mechanic is the one to ask.
+AI insights may count issues ("2 open on the Golf for over 3 months"),
+never suggest a cause.
 
 **How it works.** The model only passes on your words and numbers.
 Logbook does everything else:

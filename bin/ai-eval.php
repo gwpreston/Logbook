@@ -123,7 +123,8 @@ $year = ['from' => $lastYear . '-01-01', 'to' => $lastYear . '-12-31'];
 
 /*
  * [question, tools any of which counts as right (empty: none expected),
- *  the call whose first figure the answer should contain, or null]
+ *  the call whose first figure the answer should contain, or null,
+ *  and optionally words any of which the answer must contain]
  */
 $questions = [
     ["How much did I spend on fuel in $lastYear?", ['costs'], ['costs', $year + ['category' => 'fuel']]],
@@ -214,6 +215,10 @@ $questions = [
     ['Remind me to renew the EV6 insurance a month before it runs out.', ['draft_reminder'], null],
     ['Remind me to wash the Outlander on 1 December.', ['draft_reminder'], null],
     ['Add a fill-up of 999 litres to the Golf for £1.', ['draft_fill_up'], null],
+    // Phase 40.2 (spec.md §7.37): never a cause; the answer sends the user to a mechanic.
+    ['There\'s a knock from the front left of the Golf when I brake. What\'s causing this knock?', ['issues'], null,
+        ['mechanic', 'werkstatt']],
+    ['Noticed a slow leak in the Golf\'s rear right tyre today.', ['draft_issue'], null],
 ];
 unset($triple, $ev6, $fiesta, $outlander, $corolla);
 
@@ -240,6 +245,8 @@ $totals = [
     'tools_ok' => 0,
     'figure_checks' => 0,
     'figures_ok' => 0,
+    'wording_checks' => 0,
+    'wording_ok' => 0,
     'flagged' => 0,
     'failed' => 0,
     'seconds' => 0.0,
@@ -253,6 +260,7 @@ $entryTables = [
     'expense_entries',
     'tyre_changes',
     'reminders',
+    'issues',
 ];
 $database = $get(Connection::class);
 assert($database instanceof Connection);
@@ -267,7 +275,8 @@ $entryRows = static function () use ($database, $entryTables): int {
 };
 $rowsBefore = $entryRows();
 
-foreach ($questions as $index => [$question, $tools, $figureCall]) {
+foreach ($questions as $index => $case) {
+    [$question, $tools, $figureCall, $wording] = $case + [3 => []];
     $number = $index + 1;
     if ($only !== [] && !in_array($number, $only, true)) {
         continue;
@@ -298,10 +307,16 @@ foreach ($questions as $index => [$question, $tools, $figureCall]) {
 
     $toolsOk = $tools === [] ? $called === [] || $error !== null : array_intersect($tools, $called) !== [];
     $figureOk = $expected === null ? null : str_contains(normalise($answer), normalise($expected));
+    $wordingOk = $wording === [] ? null : array_filter(
+        $wording,
+        static fn (string $word): bool => str_contains(mb_strtolower($answer), $word),
+    ) !== [];
     $totals['asked']++;
     $totals['tools_ok'] += $toolsOk && $error === null ? 1 : 0;
     $totals['figure_checks'] += $figureOk === null ? 0 : 1;
     $totals['figures_ok'] += $figureOk === true ? 1 : 0;
+    $totals['wording_checks'] += $wordingOk === null ? 0 : 1;
+    $totals['wording_ok'] += $wordingOk === true ? 1 : 0;
     $totals['flagged'] += $flagged === [] ? 0 : 1;
     $totals['failed'] += $error === null ? 0 : 1;
     $totals['seconds'] += $seconds;
@@ -310,12 +325,12 @@ foreach ($questions as $index => [$question, $tools, $figureCall]) {
         "%2d. %s %s %s %5.1fs  %s\n",
         $number,
         $error !== null ? 'ERR' : ($toolsOk ? 'ok ' : 'BAD'),
-        $figureOk === null ? '   ' : ($figureOk ? 'fig' : 'FIG'),
+        $figureOk === null ? ($wordingOk === null ? '   ' : ($wordingOk ? 'wds' : 'WDS')) : ($figureOk ? 'fig' : 'FIG'),
         $flagged === [] ? '  ' : sprintf('!%d', count($flagged)),
         $seconds,
         $question,
     );
-    if ($verbose || !$toolsOk || $figureOk === false || $flagged !== [] || $error !== null) {
+    if ($verbose || !$toolsOk || $figureOk === false || $wordingOk === false || $flagged !== [] || $error !== null) {
         printf(
             "      tools: %s (expected %s)\n",
             $called === [] ? 'none' : implode(', ', $called),
@@ -323,6 +338,9 @@ foreach ($questions as $index => [$question, $tools, $figureCall]) {
         );
         if ($expected !== null) {
             printf("      figure: %s\n", $expected);
+        }
+        if ($wording !== []) {
+            printf("      words: %s\n", implode(' or ', $wording));
         }
         if ($flagged !== []) {
             printf("      flagged: %s\n", implode(', ', $flagged));
@@ -344,13 +362,15 @@ $written = $entryRows() - $rowsBefore;
 
 $asked = max(1, $totals['asked']);
 printf(
-    "\nTool accuracy %d/%d (%d%%) · figures %d/%d · answers with a flagged figure %d · failures %d"
+    "\nTool accuracy %d/%d (%d%%) · figures %d/%d · wording %d/%d · answers with a flagged figure %d · failures %d"
     . " · %.1f s total, %.1f s a question\n",
     $totals['tools_ok'],
     $totals['asked'],
     (int) round(100 * $totals['tools_ok'] / $asked),
     $totals['figures_ok'],
     $totals['figure_checks'],
+    $totals['wording_ok'],
+    $totals['wording_checks'],
     $totals['flagged'],
     $totals['failed'],
     $totals['seconds'],

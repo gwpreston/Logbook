@@ -29,8 +29,8 @@ key's user sees. `spec.md` §7.28 has the rules.
 **Tools.** Every key gets the read tools: `find_vehicles`, `costs`,
 `cost_per_distance`, `maintenance`, `vehicle_summary`, `fuel_stats`,
 `last_done`, `mileage`, `ownership`, `coming_up`, `documents`, `tyres`,
-`trips_summary`, `incidents`, `finance`, `stations`, `cheapest_fuel` and
-`needs_attention`. Each
+`trips_summary`, `incidents`, `issues`, `finance`, `stations`,
+`cheapest_fuel` and `needs_attention`. Each
 returns raw values beside display strings in your units, language and
 currency, and a link to the page in Logbook that shows the same.
 
@@ -40,7 +40,7 @@ A **read and write** key also gets:
 |---|---|
 | `log_fill_up` | Logs a fill-up (or a charge) **now**, through the API's write path: the same validation, derived amount and warnings as the form. Calling it again with the same fill-up finds it already logged and writes nothing. |
 | `add_reading` | Logs an odometer reading now, likewise. |
-| `draft_service_record`, `draft_document`, `draft_expense`, `draft_tyre_check`, `draft_reminder` | **Drafts** the entry and saves nothing. You add it in Logbook ([Drafts to review](#drafts-to-review)). |
+| `draft_service_record`, `draft_document`, `draft_expense`, `draft_tyre_check`, `draft_reminder`, `draft_incident`, `draft_issue` | **Drafts** the entry and saves nothing. You add it in Logbook ([Drafts to review](#drafts-to-review)). |
 
 A tool shows only while its module is on (no fuel module, no `fuel_stats`
 or `log_fill_up`) and while you can add that kind of entry to some vehicle.
