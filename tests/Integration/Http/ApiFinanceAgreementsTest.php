@@ -54,7 +54,11 @@ final class ApiFinanceAgreementsTest extends AppTestCase
         $id = ApiClient::json($api->get($path))->int('items', 0, 'id');
         $url = '/vehicles/' . $golf->id . '/finance/' . $id;
         $browser->post($url . '/payments', ['kind' => 'missed', 'due_on' => '2026-06-15']);
-        $browser->post($url . '/quotes', ['quote_amount' => '7612.08', 'quoted_on' => '2026-07-10', 'valid_until' => '2026-07-31']);
+        $browser->post($url . '/quotes', [
+            'quote_amount' => '7612.08',
+            'quoted_on' => '2026-07-10',
+            'valid_until' => '2026-07-31',
+        ]);
 
         $response = $api->get($path);
         $list = ApiClient::json($response);
