@@ -19,7 +19,9 @@ use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Storage\FileUpload;
 use Logbook\Support\Storage\UploadKind;
 use Logbook\Support\Validation\ValidationErrors;
+use Logbook\Service\MotHistory\VehicleLookup;
 use Psr\Clock\ClockInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -28,7 +30,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * current odometer and the date it was read (written as its first reading),
  * its mileage when bought and its purchase and sale paperwork. Without JS, a
  * blank *First MOT due* gets the suggestion, and the flash says so (spec.md
- * §7.1).
+ * §7.1). *Look up* (Phase 41) fills blank fields from DVSA: JSON for the
+ * form's script, or the form drawn again without JS.
  */
 final readonly class CreateVehicleAction
 {
@@ -42,6 +45,8 @@ final readonly class CreateVehicleAction
         private FirstInspectionPrompt $prompt,
         private DisplayFormatter $formatter,
         private OdometerWarningFlash $warnings,
+        private VehicleLookup $lookup,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -53,6 +58,11 @@ final readonly class CreateVehicleAction
 
         if ($request->getMethod() !== 'POST') {
             return $this->page->render($request, $response, VehicleForm::defaults($today));
+        }
+
+        // *Look up* (spec.md §7.38, #326): DVSA's details for the blank fields; nothing is saved.
+        if ((RequestContext::form($request)['lookup'] ?? null) === '1' && $this->lookup->available()) {
+            return $this->lookUp($request, $response);
         }
 
         $withFirstInspection = $this->features->isEnabled(Feature::Compliance);
@@ -102,5 +112,29 @@ final readonly class CreateVehicleAction
         }
 
         return $this->redirect->toRoute('vehicles.show', ['id' => (string) $vehicle->id]);
+    }
+
+    private function lookUp(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $values = RequestContext::formValues($request);
+        $result = $this->lookup->lookUp($values);
+        if ($request->getHeaderLine('X-Lookup') === '1') {
+            $response->getBody()->write((string) json_encode([
+                'fields' => $result['fields'],
+                'message' => $this->translator->trans($result['message'], $result['params']),
+            ], JSON_THROW_ON_ERROR));
+
+            return $response->withHeader('Content-Type', 'application/json');
+        }
+
+        return $this->page->render(
+            $request,
+            $response,
+            $result['fields'] + $values,
+            null,
+            null,
+            200,
+            ['message' => $result['message'], 'params' => $result['params'], 'filled' => array_keys($result['fields'])],
+        );
     }
 }

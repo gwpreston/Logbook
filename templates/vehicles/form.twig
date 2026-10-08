@@ -38,6 +38,11 @@
                   },
               }">
             {{ ui.csrf(csrf) }}
+            {% set with_lookup = not editing and mot_history_enabled() %}
+            {% if with_lookup %}
+                {# Enter saves the form, not *Look up*: the first submit button is the default one. #}
+                <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">{{ 'vehicle.add_submit'|trans }}</button>
+            {% endif %}
             {{ ui.return_field(return_to) }}
 
             <section class="card" aria-labelledby="basics-heading">
@@ -85,6 +90,18 @@
                     {{ ui.input('registration', 'vehicle.field.registration'|trans, values, errors, {optional: true, maxlength: 20, autocomplete: 'off'}) }}
                     {{ ui.input('vin', 'vehicle.field.vin'|trans, values, errors, {optional: true, maxlength: 40, autocomplete: 'off', hint: 'vehicle.hint.vin'|trans}) }}
                 </div>
+                {# Look up (spec.md §7.38, #326, #330): DVSA's details for the blank fields.
+                   js/vehicle-lookup.js fills them in place; without JS the form comes back filled. #}
+                {% if with_lookup %}
+                    <div class="field" data-vehicle-lookup>
+                        <button type="submit" name="lookup" value="1" formnovalidate class="btn btn--soft" data-lookup-button
+                                data-working="{{ 'mot_history.lookup.working'|trans }}">{{ ui.icon('fact_check') }}{{ 'mot_history.lookup.button'|trans }}</button>
+                        <p class="field__hint">{{ ui.icon('shield') }} {{ 'mot_history.lookup.sends'|trans }}</p>
+                        <p class="field__hint" role="status" aria-live="polite" data-lookup-message>
+                            {%- if lookup %}{{ lookup.message|trans(lookup.params) }}{% endif -%}
+                        </p>
+                    </div>
+                {% endif %}
 
                 {% set fuel_options = [] %}
                 {% for fuel in fuel_types %}

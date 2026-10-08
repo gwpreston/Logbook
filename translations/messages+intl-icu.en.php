@@ -6389,6 +6389,14 @@ return [
             'done' => 'Done',
             'back' => 'Back to MOT history',
         ],
+        'lookup' => [
+            'button' => 'Look up',
+            'working' => 'Asking DVSA…',
+            'sends' => 'Sends this registration to DVSA.',
+            'no_registration' => 'Type a registration to look up first.',
+            'filled' => '{count, plural, one {Filled # field from DVSA. Check it before saving.} other {Filled # fields from DVSA. Check them before saving.}}',
+            'nothing_new' => 'DVSA has nothing for the blank fields.',
+        ],
         'result' => [
             'passed' => 'Passed',
             'failed' => 'Failed',

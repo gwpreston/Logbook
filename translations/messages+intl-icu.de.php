@@ -6386,6 +6386,14 @@ return [
             'done' => 'Fertig',
             'back' => 'Zurück zur MOT-Historie',
         ],
+        'lookup' => [
+            'button' => 'Nachschlagen',
+            'working' => 'Frage bei der DVSA nach …',
+            'sends' => 'Sendet dieses Kennzeichen an die DVSA.',
+            'no_registration' => 'Gib zuerst ein Kennzeichen zum Nachschlagen ein.',
+            'filled' => '{count, plural, one {# Feld aus DVSA-Daten ausgefüllt. Prüfe es vor dem Speichern.} other {# Felder aus DVSA-Daten ausgefüllt. Prüfe sie vor dem Speichern.}}',
+            'nothing_new' => 'Die DVSA hat nichts für die leeren Felder.',
+        ],
         'result' => [
             'passed' => 'Bestanden',
             'failed' => 'Nicht bestanden',

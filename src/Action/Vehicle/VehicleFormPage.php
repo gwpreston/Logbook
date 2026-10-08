@@ -55,6 +55,7 @@ final readonly class VehicleFormPage
 
     /**
      * @param array<string, string> $values
+     * @param array{message: string, params: array<string, string>, filled: list<string>}|null $lookup
      */
     public function render(
         ServerRequestInterface $request,
@@ -63,6 +64,7 @@ final readonly class VehicleFormPage
         ?Vehicle $vehicle = null,
         ?ValidationErrors $errors = null,
         int $status = 200,
+        ?array $lookup = null,
     ): ResponseInterface {
         $user = RequestContext::requireUser($request);
         $todayDate = LocalTime::today($this->clock, $user->preferences->timeZone());
@@ -74,6 +76,8 @@ final readonly class VehicleFormPage
         return $this->view->render($request, $response, 'vehicles/form.twig', $this->paperwork->formContext($vehicle) + [
             'vehicle' => $vehicle,
             'values' => $values,
+            // *Look up*'s outcome without JS (spec.md §7.38).
+            'lookup' => $lookup,
             'errors' => $errors?->all() ?? [],
             'types' => VehicleType::cases(),
             'fuel_types' => FuelType::cases(),

@@ -15,6 +15,7 @@
     "js/stations.js": "784ab4825b6d",
     "js/theme.js": "effc85a28e76",
     "js/trip-form.js": "3bdfa6acdffe",
+    "js/vehicle-lookup.js": "1c2fc77eba3d",
     "vendor/THIRD-PARTY-NOTICES.txt": "95a5844d48b4",
     "vendor/alpine.min.js": "232519394c6c",
     "vendor/chart.umd.min.js": "48444a82d4ed",
