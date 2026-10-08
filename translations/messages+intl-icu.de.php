@@ -2601,6 +2601,10 @@ return [
     ],
     // Handlungsbedarf (Phase 24, spec.md §7.24): was jetzt nicht stimmt. Nie eine Punktzahl.
     'attention' => [
+        'mot_recall' => [
+            'title' => 'Offener Rückruf für {vehicle}',
+            'detail' => 'Die DVSA meldet einen noch nicht erledigten Rückruf. Wende dich an den Hersteller oder eine Werkstatt.',
+        ],
         'issue' => [
             'noticed' => 'Bemerkt {date}, {unit, select, day {{n, plural, =0 {heute} one {gestern} other {vor # Tagen}}} week {{n, plural, one {vor # Woche} other {vor # Wochen}}} other {{n, plural, one {vor # Monat} other {vor # Monaten}}}}',
             'watching_since' => 'Beobachtet seit {date}',
@@ -2622,6 +2626,8 @@ return [
         ],
         'reading' => [
             'backwards' => 'Stand vom {date} ({odometer}) ist niedriger als der davor',
+            'mot_after' => 'Dein Stand am {date} ({odometer}) ist niedriger als beim MOT am {mot_date} ({mot_odometer})',
+            'mot_before' => 'Dein Stand am {date} ({odometer}) ist höher als beim MOT am {mot_date} ({mot_odometer})',
             'jump' => 'Stand vom {date} ({odometer}) liegt {distance} über dem davor',
             'detail' => [
                 'backwards' => 'Der Stand davor war {previous} am {date}.',
@@ -2685,6 +2691,7 @@ return [
             'add_valuation' => 'Bewertung erfassen',
             'open_claim' => 'Schaden öffnen',
             'open_agreement' => 'Vertrag öffnen',
+            'mot_history' => 'MOT-Historie',
             'hide' => 'Ausblenden',
             'log_repair' => 'Reparatur erfassen',
             'watch' => 'Beobachten',

@@ -36,6 +36,12 @@ final readonly class AttentionItem
         public ?int $reminderId = null,
         public ?OdometerReading $reading = null,
         public ?OdometerWarning $warning = null,
+        /**
+         * A flagged pair of an MOT's reading and the owner's (Phase 41,
+         * §7.38): `after` when the owner's comes after the MOT, `before`
+         * when before; the subject is always the owner's reading.
+         */
+        public ?string $motPair = null,
         /** How many fill-ups are flagged (Economy). */
         public int $count = 0,
         /** The latest reading (MileageStale; null: none at all). */

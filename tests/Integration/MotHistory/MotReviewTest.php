@@ -285,8 +285,16 @@ final class MotReviewTest extends MotHistoryTestCase
     {
         $data = json_decode((string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json'), true, 32, JSON_THROW_ON_ERROR);
         self::assertIsArray($data);
-        self::assertIsArray($data['motTests'][1]['defects'] ?? null);
-        $data['motTests'][1]['defects'][] = ['text' => $text, 'type' => $type, 'dangerous' => false];
+        $tests = $data['motTests'] ?? null;
+        self::assertIsArray($tests);
+        $fail = $tests[1] ?? null;
+        self::assertIsArray($fail);
+        $defects = $fail['defects'] ?? null;
+        self::assertIsArray($defects);
+        $defects[] = ['text' => $text, 'type' => $type, 'dangerous' => false];
+        $fail['defects'] = $defects;
+        $tests[1] = $fail;
+        $data['motTests'] = $tests;
 
         return new MockResponse((string) json_encode($data));
     }

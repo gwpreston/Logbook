@@ -22,6 +22,11 @@ enum AttentionKind: string
     case IssueOpen = 'issue_open';
     /** A watching issue whose look-again date or mileage is reached (Phase 40.1). */
     case IssueLookAgain = 'issue_look_again';
+    /**
+     * DVSA's last answer said a recall is outstanding (Phase 41, §7.38, #325,
+     * #329): work to do, so a *Now* item, gone when a later fetch says otherwise.
+     */
+    case MotRecall = 'mot_recall';
     /** A reading the Mileage tab flags (§7.2). */
     case Reading = 'reading';
     /** The vehicle's unconfirmed economy flags, as one item (§7.3). */
@@ -49,7 +54,7 @@ enum AttentionKind: string
 
     public function severity(): AttentionSeverity
     {
-        return in_array($this, [self::Overdue, self::FinanceMissed, self::IssueOpen, self::IssueLookAgain], true)
+        return in_array($this, [self::Overdue, self::FinanceMissed, self::IssueOpen, self::IssueLookAgain, self::MotRecall], true)
             ? AttentionSeverity::Now
             : AttentionSeverity::Check;
     }
@@ -57,13 +62,22 @@ enum AttentionKind: string
     /**
      * Whether *Hide* applies. Economy flags are confirmed with *Looks
      * right*, trips are fixed in the data, overdue work is dismissed
-     * through its reminder, and an issue is set aside with *Watch* (§7.37).
+     * through its reminder, an issue is set aside with *Watch* (§7.37), and a
+     * recall goes when DVSA stops reporting it (§7.38, #329).
      */
     public function isHideable(): bool
     {
         return !in_array(
             $this,
-            [self::Overdue, self::Economy, self::TripsExceed, self::FinanceMissed, self::IssueOpen, self::IssueLookAgain],
+            [
+                self::Overdue,
+                self::Economy,
+                self::TripsExceed,
+                self::FinanceMissed,
+                self::IssueOpen,
+                self::IssueLookAgain,
+                self::MotRecall,
+            ],
             true,
         );
     }

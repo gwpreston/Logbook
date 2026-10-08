@@ -192,7 +192,7 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         );
         self::assertNotContains('mot', $sources);
         $connection = $this->connection($this->app);
-        self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM issues WHERE vehicle_id = ?', [$golf->id]));
-        self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM compliance_documents WHERE vehicle_id = ?', [$golf->id]));
+        self::assertEquals(1, $connection->fetchOne('SELECT COUNT(*) FROM issues WHERE vehicle_id = ?', [$golf->id]));
+        self::assertEquals(1, $connection->fetchOne('SELECT COUNT(*) FROM compliance_documents WHERE vehicle_id = ?', [$golf->id]));
     }
 }

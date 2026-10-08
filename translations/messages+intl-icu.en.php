@@ -2604,6 +2604,10 @@ return [
     ],
     // Needs attention (Phase 24, spec.md §7.24): what is wrong now. Never a score.
     'attention' => [
+        'mot_recall' => [
+            'title' => 'Outstanding recall on {vehicle}',
+            'detail' => 'DVSA reports a recall not yet fixed. Check with the manufacturer or a dealer.',
+        ],
         'issue' => [
             'noticed' => 'Noticed {date}, {unit, select, day {{n, plural, =0 {today} one {yesterday} other {# days ago}}} week {{n, plural, one {# week ago} other {# weeks ago}}} other {{n, plural, one {# month ago} other {# months ago}}}}',
             'watching_since' => 'Watching since {date}',
@@ -2625,6 +2629,8 @@ return [
         ],
         'reading' => [
             'backwards' => 'Reading on {date} ({odometer}) is lower than the one before',
+            'mot_after' => 'Your reading on {date} ({odometer}) is lower than the MOT on {mot_date} ({mot_odometer})',
+            'mot_before' => 'Your reading on {date} ({odometer}) is higher than the MOT on {mot_date} ({mot_odometer})',
             'jump' => 'Reading on {date} ({odometer}) is {distance} more than the one before',
             'detail' => [
                 'backwards' => 'The reading before it was {previous} on {date}.',
@@ -2688,6 +2694,7 @@ return [
             'add_valuation' => 'Add valuation',
             'open_claim' => 'Open claim',
             'open_agreement' => 'Open agreement',
+            'mot_history' => 'MOT history',
             'hide' => 'Hide',
             'log_repair' => 'Log the repair',
             'watch' => 'Watch',

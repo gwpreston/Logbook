@@ -40,11 +40,13 @@ final readonly class AttentionWording
     {
         return match ($item->kind) {
             AttentionKind::Overdue => $item->forecast === null ? '' : $this->forecast->title($item->forecast),
-            AttentionKind::Reading => $this->translator->trans('attention.reading.' . ($item->warning->type ?? 'backwards'), [
-                'date' => $this->formatter->instantDate($item->reading?->recordedAt),
-                'odometer' => $this->formatter->distance($item->reading?->readingKm),
-                'distance' => $this->formatter->distance(ltrim($item->warning->distanceKm ?? '0', '-')),
-            ]),
+            AttentionKind::Reading => $item->motPair !== null && ($item->warning->type ?? null) === 'backwards'
+                ? $this->motPairTitle($item)
+                : $this->translator->trans('attention.reading.' . ($item->warning->type ?? 'backwards'), [
+                    'date' => $this->formatter->instantDate($item->reading?->recordedAt),
+                    'odometer' => $this->formatter->distance($item->reading?->readingKm),
+                    'distance' => $this->formatter->distance(ltrim($item->warning->distanceKm ?? '0', '-')),
+                ]),
             AttentionKind::Economy => $this->translator->trans('attention.economy.title', ['count' => $item->count]),
             AttentionKind::MileageStale => $item->latest === null
                 ? $this->translator->trans('attention.mileage.none')
@@ -71,7 +73,28 @@ final readonly class AttentionWording
             AttentionKind::FinanceMileage => $this->mileageTitle($item->finance),
             // The owner's words, never a cause (spec.md §7.37).
             AttentionKind::IssueOpen, AttentionKind::IssueLookAgain => $item->issue->data->title ?? '',
+            AttentionKind::MotRecall => $this->translator->trans('attention.mot_recall.title', [
+                'vehicle' => $item->vehicle->data->registration ?? $item->vehicle->name(),
+            ]),
         };
+    }
+
+    /**
+     * "Your reading on 2 Mar 2026 (41,200 mi) is lower than the MOT on 14 Feb
+     * 2026 (43,950 mi)" (spec.md §7.38 *Mileage*): which reading is whose.
+     */
+    private function motPairTitle(AttentionItem $item): string
+    {
+        $flagged = $item->reading;
+        $previous = $item->warning?->previous;
+        [$yours, $mot] = $item->motPair === 'before' ? [$previous, $flagged] : [$flagged, $previous];
+
+        return $this->translator->trans('attention.reading.mot_' . $item->motPair, [
+            'date' => $this->formatter->instantDate($yours?->recordedAt),
+            'odometer' => $this->formatter->distance($yours?->readingKm),
+            'mot_date' => $this->formatter->instantDate($mot?->recordedAt),
+            'mot_odometer' => $this->formatter->distance($mot?->readingKm),
+        ]);
     }
 
     /**
@@ -139,6 +162,7 @@ final readonly class AttentionWording
             AttentionKind::IssueLookAgain => $this->safety($item) . $this->translator->trans('attention.issue.watching_since', [
                 'date' => $this->formatter->date($item->since),
             ]),
+            AttentionKind::MotRecall => $this->translator->trans('attention.mot_recall.detail'),
         };
     }
 
