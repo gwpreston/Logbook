@@ -3,7 +3,7 @@
 *Files go in and out over the API, and other systems hear when an entry
 changes.*
 
-Status: ✅ complete · releases **v3.5.0** (Phases 39.1 to 39.3) · file
+Status: ✅ complete · released as **v3.5.0** (Phases 39.1 to 39.3) · file
 lives in `docs/phases/`
 
 The last of Phase 39's three parts (#281). [Phase 39.1](phase-39.1.md)
@@ -117,7 +117,7 @@ Phase 27.1's incident-photo rules (#104).
       pass-through, `docs/deployment.md` (the job's cadence, per #291),
       `docs/demo-mode.md` (webhooks off).
 - [x] README and `ROADMAP.md` rows for 39.1–39.3 ✅.
-- [ ] Tag v3.5.0 once merged.
+- [x] Tag `v3.5.0` once merged.
 
 ---
 
@@ -193,10 +193,10 @@ Found while starting 39.3 (2026-10-08):
   users who may see it (its author, and those who see everyone's
   trips), as the history feed.
 
-Still open (found by the upgrade review, 2026-10-08; blocks nothing):
+Found by the upgrade review, 2026-10-08:
 
 - **#306 Database newer than the code?** Rolling the code back before the
   database leaves a migration the old code has no file for; it runs on
-  regardless and its backups won't restore. Options: warn on `/health`
-  and the admin dashboard; refuse to start; documentation only (the
-  *Upgrading* guide now gives the right order).
+  regardless and its backups won't restore. — *Decided 2026-10-08:*
+  documentation only; the *Upgrading* guide gives the right order (new
+  code first). No warning on `/health` and no refusal to start.

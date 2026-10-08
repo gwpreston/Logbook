@@ -3,7 +3,7 @@
 *Everything a vehicle's pages show, an automation can read, and a
 reminder can be marked done from a phone notification.*
 
-Status: ✅ complete · no release of its own (**v3.5.0** ships with
+Status: ✅ complete · released as **v3.5.0** (with
 [Phase 39.3](phase-39.3.md)) · file lives in `docs/phases/`
 
 Phase 18.2 gave the API reads and two writes. Phases 22, 26.3, 27.1, 29.2,
