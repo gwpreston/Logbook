@@ -210,6 +210,14 @@ final class WebhooksTest extends ReminderTestCase
         ]))->int('entry', 'id');
         $api->post($base . '/archive', []);
         $api->post($base . '/restore', []);
+        // Issues (Phase 40.2, #317): an update, a fix and a reopen are each an update of the issue.
+        $issue = $json($api->post($base . '/issues', ['noticed_on' => '2026-09-20', 'title' => 'Knock from front left']))
+            ->int('entry', 'id');
+        $api->post($base . '/issues/' . $issue . '/updates', ['note' => 'Worse when cold']);
+        $api->post($base . '/issues/' . $issue . '/fix', ['note' => 'Went away']);
+        $api->post($base . '/issues/' . $issue . '/fix', []);
+        $api->post($base . '/issues/' . $issue . '/reopen', []);
+        $api->delete($base . '/issues/' . $issue);
 
         $seen = array_map(
             static fn (WebhookDelivery $d): string => self::text($d->payload['event'] ?? null) . ' '
@@ -226,12 +234,15 @@ final class WebhooksTest extends ReminderTestCase
             'entry.updated finance ' . $agreement,
             'entry.created valuation ' . $valuation,
             'entry.created incident ' . $incident,
+            'entry.created issue ' . $issue,
+            'entry.deleted issue ' . $issue,
             'entry.updated vehicle ' . $this->golf->id,
             ] as $expected
         ) {
             self::assertContains($expected, $seen);
         }
         self::assertSame(2, count(array_keys($seen, 'entry.updated vehicle ' . $this->golf->id, true)), 'archive and restore');
+        self::assertSame(3, count(array_keys($seen, 'entry.updated issue ' . $issue, true)), 'update, fix, reopen; a repeated fix is not told');
         foreach ($this->queued($webhook) as $delivery) {
             self::assertMatchesPayloadSchema($delivery->payload);
         }

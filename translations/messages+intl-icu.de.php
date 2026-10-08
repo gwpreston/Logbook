@@ -3735,6 +3735,9 @@ return [
     'api' => [
         'validation' => [
             'unknown_field' => 'Dieses Feld gehört nicht zu dieser Anfrage.',
+            'issue_status' => 'Verwende open oder watching: Behoben wird mit POST …/fix, „Ist wieder da“ mit POST …/reopen.',
+            'issue_fix_either' => 'Sende entweder records oder fixed_on und note, nicht beides.',
+            'issue_records' => 'Jede ID muss ein Serviceeintrag dieses Fahrzeugs sein, datiert am oder nach dem Tag, an dem der Mangel bemerkt wurde.',
             'instant' => 'Gib Datum und Uhrzeit mit Zeitzone an, z. B. 2026-09-29T07:42:00Z.',
             'boolean' => 'Verwende true oder false.',
             'string' => 'Verwende einen Text.',

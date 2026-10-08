@@ -3738,6 +3738,9 @@ return [
     'api' => [
         'validation' => [
             'unknown_field' => 'This field is not part of this request.',
+            'issue_status' => 'Use open or watching: fixing an issue is POST …/fix, and It\'s back is POST …/reopen.',
+            'issue_fix_either' => 'Send either records or fixed_on and note, not both.',
+            'issue_records' => 'Each id must be one of this vehicle\'s service records dated on or after the issue was noticed.',
             'instant' => 'Enter a date and time with a time zone, e.g. 2026-09-29T07:42:00Z.',
             'boolean' => 'Use true or false.',
             'string' => 'Use a text value.',

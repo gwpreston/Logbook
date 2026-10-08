@@ -75,8 +75,7 @@ final readonly class ApiAttention
                 => $vehicle . '/fuel',
             AttentionKind::FinanceMissed, AttentionKind::FinanceMileage => $vehicle . '/finance/agreements',
             AttentionKind::Overdue => '/reminders?vehicle=' . $item->vehicle->id,
-            // Phase 40.2 gives issues their API.
-            AttentionKind::IssueOpen, AttentionKind::IssueLookAgain => null,
+            AttentionKind::IssueOpen, AttentionKind::IssueLookAgain => $vehicle . '/issues/' . $item->subjectId,
         };
     }
 }

@@ -285,17 +285,22 @@ final readonly class IssueRepository
      * Every fix link of a vehicle's issues, in one query.
      *
      * @param list<int> $issueIds
+     * @param bool $currentOnly leave out the fixes kept as history (*It's back*)
      * @return array<int, list<int>> record ids by issue id
      */
-    public function fixesFor(array $issueIds): array
+    public function fixesFor(array $issueIds, bool $currentOnly = false): array
     {
         if ($issueIds === []) {
             return [];
         }
-        $rows = $this->connection->createQueryBuilder()
+        $query = $this->connection->createQueryBuilder()
             ->select('issue_id', 'maintenance_entry_id')
             ->from(self::FIXES)
-            ->where('issue_id IN (:issues)')
+            ->where('issue_id IN (:issues)');
+        if ($currentOnly) {
+            $query->andWhere('historical = :no')->setParameter('no', false, ParameterType::BOOLEAN);
+        }
+        $rows = $query
             ->orderBy('created_at')
             ->addOrderBy('maintenance_entry_id')
             ->setParameter('issues', $issueIds, ArrayParameterType::INTEGER)
@@ -468,6 +473,32 @@ final readonly class IssueRepository
             ->fetchAllAssociative();
 
         return array_values(array_map($this->hydrateUpdate(...), $rows));
+    }
+
+    /**
+     * The timelines of several issues, in one query.
+     *
+     * @param list<int> $issueIds
+     * @return array<int, list<IssueUpdate>> oldest first, by issue id
+     */
+    public function updatesFor(array $issueIds): array
+    {
+        if ($issueIds === []) {
+            return [];
+        }
+        $rows = $this->selectUpdates()
+            ->where('issue_id IN (:issues)')
+            ->orderBy('noted_on')
+            ->addOrderBy('id')
+            ->setParameter('issues', $issueIds, ArrayParameterType::INTEGER)
+            ->fetchAllAssociative();
+        $updates = [];
+        foreach ($rows as $row) {
+            $update = $this->hydrateUpdate($row);
+            $updates[$update->issueId][] = $update;
+        }
+
+        return $updates;
     }
 
     private function select(): QueryBuilder

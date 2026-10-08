@@ -4954,7 +4954,7 @@ amounts.
   `affects_safety`, `look_again_on`, `look_again_odometer`, `fixed_on`,
   `fixed_without_record`, `fixed_by` (the service record ids, current
   fixes only), `source` (`manual`, `recommended_work`, from Phase 41
-  `mot`), `source_ref`, `updates` (oldest first: `id`, `noted_on`,
+  `mot_advisory`), `source_ref`, `updates` (oldest first: `id`, `noted_on`,
   `odometer`, `note`, `status_from`, `status_to`, `automatic`),
   `created_at`, `updated_at`. `GET …/issues/{issue}` returns the same
   with an `ETag` that changes when an update, a fix or a status change is

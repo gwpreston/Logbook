@@ -7061,6 +7061,643 @@
           }
         }
       }
+    },
+    "/vehicles/{id}/issues": {
+      "get": {
+        "operationId": "listIssues",
+        "summary": "Issues, newest noticed first",
+        "description": "Needs View on the vehicle and the issues module (Phase 40.2). affects_safety is a field: sort by it to put safety issues first, as the pages do.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "watching",
+                "fixed"
+              ]
+            },
+            "description": "One status; without it every status (Phase 40.2)."
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logIssue",
+        "summary": "Log an issue",
+        "description": "Needs a read and write key and Log on the vehicle. Validated as the issue form validates. One of the vehicle's issues with the same date and title (and no source reference) is not written again: it comes back with duplicate true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already logged (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/issues/{entry}": {
+      "get": {
+        "operationId": "getIssue",
+        "summary": "One issue, as the issues list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Issue"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "description": "Its ETag changes when an update, a fix or a status change is written."
+      },
+      "patch": {
+        "operationId": "editIssue",
+        "summary": "Edit an issue",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteIssue",
+        "summary": "Delete an issue",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own issue. Its updates, readings, files and look-again reminder go too; the service records that fixed it are kept.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/issues/{entry}/updates": {
+      "post": {
+        "operationId": "addIssueUpdate",
+        "summary": "Add an update to an issue",
+        "description": "Needs a read and write key and Log on the vehicle (Phase 40.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueUpdateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueEdit"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/issues/{entry}/fix": {
+      "post": {
+        "operationId": "fixIssue",
+        "summary": "Mark an issue fixed",
+        "description": "Needs a read and write key and Log on the vehicle. Repeating it on a fixed issue changes nothing: \"unchanged\": true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueFixInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/issues/{entry}/reopen": {
+      "post": {
+        "operationId": "reopenIssue",
+        "summary": "Reopen an issue (It's back, or back to open from watching)",
+        "description": "Needs a read and write key and Log on the vehicle. On an open issue it changes nothing: \"unchanged\": true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/issues/{entry}/attachments": {
+      "get": {
+        "operationId": "listIssueAttachments",
+        "summary": "List the files of an issue",
+        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadIssueAttachment",
+        "summary": "Attach a file to an issue",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own issue. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping. An archived vehicle is 409. (Phase 40.2)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/issues": {
+      "get": {
+        "operationId": "listAllIssues",
+        "summary": "Every visible active vehicle's issues, newest noticed first",
+        "description": "Needs the issues module (Phase 40.2). ?vehicle= for one vehicle.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "watching",
+                "fixed"
+              ]
+            },
+            "description": "One status; without it every status (Phase 40.2)."
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -18165,7 +18802,8 @@
                   "sale",
                   "valuation",
                   "trip",
-                  "incident"
+                  "incident",
+                  "issue"
                 ]
               },
               "id": {
@@ -18279,6 +18917,7 @@
               "valuation",
               "trip",
               "incident",
+              "issue",
               "tread_check",
               "tyre_details",
               "schedule",
@@ -18286,7 +18925,7 @@
               "vehicle",
               "reminder"
             ],
-            "description": "The history feed's kinds where it has one (`tyre` is a tyre change). `tyre_details`: entry_id is the tyre; `finance`: the agreement (a payment, quote or End updates it); `vehicle`: the vehicle; `reminder`: reminder.changed only."
+            "description": "The history feed's kinds where it has one (`tyre` is a tyre change). `tyre_details`: entry_id is the tyre; `issue`: an update, fix, unlink or reopen updates it; `finance`: the agreement (a payment, quote or End updates it); `vehicle`: the vehicle; `reminder`: reminder.changed only."
           },
           "entry_id": {
             "type": "integer"
@@ -18325,6 +18964,534 @@
                 "type": "string"
               }
             }
+          }
+        }
+      },
+      "IssueUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "noted_on",
+          "odometer",
+          "note",
+          "status_from",
+          "status_to",
+          "automatic"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "noted_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "open",
+              "watching",
+              "fixed",
+              null
+            ]
+          },
+          "status_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "open",
+              "watching",
+              "fixed",
+              null
+            ]
+          },
+          "automatic": {
+            "type": "boolean",
+            "description": "A status change Logbook wrote; it cannot be edited or deleted."
+          }
+        }
+      },
+      "Issue": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "An issue (spec §7.37): the owner's words, its status and what fixed it. Logbook never suggests a cause.",
+        "required": [
+          "id",
+          "vehicle_id",
+          "noticed_on",
+          "odometer",
+          "distance_unit",
+          "title",
+          "description",
+          "category",
+          "status",
+          "affects_safety",
+          "look_again_on",
+          "look_again_odometer",
+          "fixed_on",
+          "fixed_without_record",
+          "fixed_by",
+          "source",
+          "source_ref",
+          "updates",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "noticed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other",
+              null
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "watching",
+              "fixed"
+            ]
+          },
+          "affects_safety": {
+            "type": "boolean",
+            "description": "The owner's tick, never Logbook's."
+          },
+          "look_again_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "look_again_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "fixed_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "fixed_without_record": {
+            "type": "boolean"
+          },
+          "fixed_by": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The service record ids that fix it now."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "recommended_work",
+              "mot_advisory"
+            ]
+          },
+          "source_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueUpdate"
+            },
+            "description": "The timeline, oldest first."
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          }
+        }
+      },
+      "IssuePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Issue"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "IssueWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Issue"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "IssueEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Issue"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "IssueActionResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings",
+          "unchanged"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Issue"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "unchanged": {
+            "type": "boolean",
+            "description": "True when a retry changed nothing."
+          }
+        }
+      },
+      "IssueInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "description": "Validated as the issue form validates. noticed_on is today when left out; odometers are in distance_unit (the key user's unit when left out). A look-again point only with status watching. Fixing is POST …/fix.",
+        "properties": {
+          "noticed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "watching"
+            ]
+          },
+          "affects_safety": {
+            "type": "boolean"
+          },
+          "look_again_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "look_again_odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "IssuePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283), validated as the edit form validates; null clears an optional field. status is open or watching, and not on a fixed issue (use …/reopen).",
+        "properties": {
+          "noticed_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "service",
+                  "oil",
+                  "tyres",
+                  "brakes",
+                  "battery",
+                  "repair",
+                  "bodywork",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "watching"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affects_safety": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "look_again_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "look_again_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "IssueUpdateInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Add update: a note and/or a status change (open or watching, with an optional look-again point when watching). noted_on is today when left out.",
+        "properties": {
+          "noted_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "watching"
+            ]
+          },
+          "look_again_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "look_again_odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "IssueFixInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "records: the vehicle's service records (dated on or after noticed_on) that fixed it; or no records, with fixed_on (today when left out) and an optional note: fixed without a record.",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "description": "Ids as strings or numbers."
+          },
+          "fixed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000
           }
         }
       }

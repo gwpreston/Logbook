@@ -88,6 +88,29 @@ final class JsonInput
         'schedule_id' => 'schedule',
     ];
 
+    /** API field → form field, for the issue form (Phase 40.2). */
+    public const array ISSUE_FIELDS = [
+        'noticed_on' => 'noticed_on',
+        'odometer' => 'odometer',
+        'title' => 'title',
+        'description' => 'description',
+        'category' => 'category',
+        'status' => 'status',
+        'affects_safety' => 'affects_safety',
+        'look_again_on' => 'look_again_on',
+        'look_again_odometer' => 'look_again_odometer',
+    ];
+
+    /** API field → form field, for *Add update* (Phase 40.2). */
+    public const array ISSUE_UPDATE_FIELDS = [
+        'noted_on' => 'noted_on',
+        'odometer' => 'odometer',
+        'note' => 'note',
+        'status' => 'status',
+        'look_again_on' => 'look_again_on',
+        'look_again_odometer' => 'look_again_odometer',
+    ];
+
     /** API field → form field, for the incident form (Phase 27.1). */
     public const array INCIDENT_FIELDS = [
         'occurred_on' => 'occurred_on',
@@ -503,6 +526,101 @@ final class JsonInput
         return $errors->isEmpty()
             ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
             : $errors;
+    }
+
+    /**
+     * An issue body as the issue form's input (spec.md §7.20 *Issues*).
+     * `noticed_on` defaults to today; `status` takes `open` or `watching`
+     * only, as the form (fixing is `/fix`).
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function issue(array $body, DisplayPreferences $owner, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::ISSUE_FIELDS), 'distance_unit'], $errors);
+
+        $input = [];
+        foreach (self::ISSUE_FIELDS as $api => $form) {
+            $input[$form] = match ($api) {
+                'noticed_on' => self::text($body, $api, $errors, $today->format('Y-m-d')),
+                'odometer', 'look_again_odometer' => self::decimal($body, $api, $errors),
+                'affects_safety' => self::flag($body, $api, $errors),
+                default => self::text($body, $api, $errors),
+            };
+        }
+        if (!in_array($input['status'], ['', 'open', 'watching'], true)) {
+            $errors->add('status', 'api.validation.issue_status');
+        }
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * *Add update* over the API: `noted_on` (today by default), `odometer`,
+     * `note`, an optional `status` and look-again point.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function issueUpdate(array $body, DisplayPreferences $owner, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::ISSUE_UPDATE_FIELDS), 'distance_unit'], $errors);
+
+        $input = [];
+        foreach (self::ISSUE_UPDATE_FIELDS as $api => $form) {
+            $input[$form] = match ($api) {
+                'noted_on' => self::text($body, $api, $errors, $today->format('Y-m-d')),
+                'odometer', 'look_again_odometer' => self::decimal($body, $api, $errors),
+                default => self::text($body, $api, $errors),
+            };
+        }
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * `/fix`: `records`, a list of service record ids, or none with
+     * `fixed_on` (today by default) and an optional `note`.
+     *
+     * @param array<string, mixed> $body
+     * @return array{records: list<int>, input: array<string, string>}|ValidationErrors
+     */
+    public static function issueFix(array $body, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, ['records', 'fixed_on', 'note'], $errors);
+        $raw = $body['records'] ?? [];
+        $records = [];
+        if (!is_array($raw) || !array_is_list($raw)) {
+            $errors->add('records', 'api.validation.list');
+        } else {
+            foreach ($raw as $id) {
+                // Number tokens arrive as strings (decode()).
+                if (!is_string($id) || preg_match('/^[1-9][0-9]{0,18}$/', $id) !== 1) {
+                    $errors->add('records', 'api.validation.list');
+                    break;
+                }
+                $records[] = (int) $id;
+            }
+        }
+        $input = [
+            'fixed_on' => self::text($body, 'fixed_on', $errors, $today->format('Y-m-d')),
+            'note' => self::text($body, 'note', $errors),
+        ];
+        if ($records !== [] && (($body['fixed_on'] ?? null) !== null || ($body['note'] ?? null) !== null)) {
+            $errors->add('records', 'api.validation.issue_fix_either');
+        }
+
+        return $errors->isEmpty() ? ['records' => array_values(array_unique($records)), 'input' => $input] : $errors;
     }
 
     /**

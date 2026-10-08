@@ -115,9 +115,9 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months and the true cost per km (depreciation included), what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with the economy of the tank it closes and its economy-check flag (paged) |
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
-| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase) (paged) |
+| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase, issue, issue_update) (paged) |
 | `POST /vehicles/{id}/odometer` | add a reading (read and write key) |
-| `GET /vehicles/{id}/{list}/{entry}` | one entry of `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents`, `schedules` or `valuations`, exactly as its list returns it, with an `ETag` ([Reading one entry](#reading-one-entry)) |
+| `GET /vehicles/{id}/{list}/{entry}` | one entry of `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents`, `issues`, `schedules` or `valuations`, exactly as its list returns it, with an `ETag` ([Reading one entry](#reading-one-entry)) |
 | `GET /vehicles/{id}/maintenance` | service records (paged; `?category=`, and `?q=` for words in the title, vendor or description) |
 | `POST /vehicles/{id}/maintenance` | add a service record (read and write key) |
 | `GET /vehicles/{id}/documents` | compliance documents with their status and days left (paged; `?type=`, and `?current=1` for those in force today) |
@@ -152,7 +152,9 @@ user prefers, so automations can compare and chart them:
 | `GET /stations/{station}` | one station and what you paid there; a merged station's id answers with the station it became (stations module) |
 | `GET /fuel-prices/near` | *Cheapest near me*: listed prices near a point, ranked by effective cost for a vehicle ([Fuel prices](#fuel-prices); only while a price provider is enabled) |
 | `GET /fuel-prices/alerts` | your price alerts: station, grade, the price per litre below which it tells you, and whether it is armed (only while a price provider is enabled) |
-| `PATCH`, `DELETE /vehicles/{id}/{list}/{entry}` | edit or delete a fill-up, manual reading, service record, document, expense, trip or incident ([Editing and deleting](#editing-and-deleting); read and write key) |
+| `GET /vehicles/{id}/issues`, `GET /issues` | issues, newest noticed first (paged; `?status=`; [Issues](#issues); issues module) |
+| `PATCH`, `DELETE /vehicles/{id}/{list}/{entry}` | edit or delete a fill-up, manual reading, service record, document, expense, trip, incident or issue ([Editing and deleting](#editing-and-deleting); read and write key) |
+| `POST /vehicles/{id}/issues`, `…/issues/{issue}/updates`, `/fix`, `/reopen` | log an issue, add an update, mark it fixed, reopen it ([Issues](#issues); Log) |
 | `PATCH`, `DELETE /reminders/{id}` | edit or delete a manual reminder (Manage) |
 | `POST /vehicles`, `PATCH /vehicles/{id}` | add a vehicle (you own it) or edit one (Manage) ([More writes](#more-writes)) |
 | `POST /vehicles/{id}/archive`, `/restore` | the *Archive* page and *Restore* (Own) |
@@ -172,7 +174,7 @@ not exist.
 ## Lists: paging and dates
 
 The `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`,
-`incidents` and `valuations` lists are **newest first** and paged:
+`incidents`, `issues` and `valuations` lists are **newest first** and paged:
 
 - `?limit=` 1–200, default 50.
 - The response is `{"items": [...], "next": "<URL of the next page>"}`;
@@ -532,7 +534,7 @@ while no provider is enabled.
 
 From 3.5, `PATCH` edits an entry and `DELETE` deletes it, at the address
 it is read from: `/vehicles/{id}/{list}/{entry}` for `fuel`, `odometer`,
-`maintenance`, `documents`, `expenses`, `trips` and `incidents`, and
+`maintenance`, `documents`, `expenses`, `trips`, `incidents` and (from 3.6) `issues`, and
 `/reminders/{id}` for a manual reminder. They go through the page's edit
 form and delete confirmation, so the validation, the messages and the
 knock-on effects are the pages': a fill-up's odometer reading moves with
@@ -577,6 +579,39 @@ curl -X PATCH -H "Authorization: Bearer $KEY" -H "Content-Type: application/json
 
 # Delete an expense.
 curl -X DELETE -H "Authorization: Bearer $KEY" "$BASE/vehicles/1/expenses/7"
+```
+
+## Issues
+
+From 3.6 (issues module). An issue is a fault you've noticed and not
+fixed yet: the date, the mileage, your words, and a status (`open`,
+`watching`, `fixed`). Logbook records what you noted and what fixed it;
+it never suggests a cause.
+
+| Endpoint | Needs | Notes |
+|---|---|---|
+| `GET /vehicles/{id}/issues`, `GET /issues` | View | newest noticed first, paged; `?status=open\|watching\|fixed` (every status without it); `/issues` takes every vehicle you can see that isn't archived, or `?vehicle=`. Each issue has its `updates` (oldest first) and `fixed_by` (service record ids); sort on `affects_safety` to put safety issues first, as the pages do |
+| `GET /vehicles/{id}/issues/{issue}` | View | one issue, with an `ETag` that changes when an update, a fix or a status change is written |
+| `POST /vehicles/{id}/issues` | Log | `title` (required, up to 120), `noticed_on` (default today), `odometer`, `distance_unit`, `description`, `category` (the maintenance categories), `status` (`open` or `watching`), `look_again_on` and `look_again_odometer` (watching only), `affects_safety` (`true`/`false`). A retry with the same date and title answers `duplicate: true` |
+| `PATCH`, `DELETE …/issues/{issue}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting); `status` is `open` or `watching`, and not on a fixed issue |
+| `POST …/issues/{issue}/updates` | Log | `note`, `noted_on` (default today), `odometer`, and optionally `status` (`open` or `watching`, with a look-again point); `201` |
+| `POST …/issues/{issue}/fix` | Log | `{"records": [12, 15]}`: the vehicle's service records dated on or after it was noticed; or `{"fixed_on": "2026-09-29", "note": "Went away"}`: fixed without a record. On a fixed issue nothing changes and the answer says `"unchanged": true` |
+| `POST …/issues/{issue}/reopen` | Log | *It's back* on a fixed issue (the earlier fix is kept as history), or back to `open` from `watching`; `"unchanged": true` on an open one |
+
+The writes answer with the issue in `entry` and its new `ETag`, and honour
+`If-Match`. An issue's odometer adds a reading to the mileage log, except
+where the vehicle already has one that day at the same odometer. Fixing
+from the service record's side is the *Fixes* checklist on the page; over
+the API, use `/fix`.
+
+```sh
+# Log a noise, then link the service record that fixed it.
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"title": "Knock from front left under braking", "odometer": 25480, "distance_unit": "mi",
+          "affects_safety": true}' \
+     "$BASE/vehicles/1/issues"
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"records": [57]}' "$BASE/vehicles/1/issues/9/fix"
 ```
 
 ## More writes
@@ -643,7 +678,7 @@ of their metadata, except an incident's photos, which are kept as taken.
 
 | Endpoint | Needs | Notes |
 |---|---|---|
-| `GET /vehicles/{id}/{list}/{entry}/attachments` | as reading the entry | `{list}` is `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `valuations`, `trips` or `incidents`; `items` with `id`, `filename`, `content_type`, `size`, `uploaded_at`, `uploaded_by` and a `download` link |
+| `GET /vehicles/{id}/{list}/{entry}/attachments` | as reading the entry | `{list}` is `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `valuations`, `trips`, `incidents` or `issues`; `items` with `id`, `filename`, `content_type`, `size`, `uploaded_at`, `uploaded_by` and a `download` link |
 | `POST …/{entry}/attachments` | Log (your own entry) or Manage; Manage for valuations | `multipart/form-data`, **one file** in the field `file`; `201` with the attachment. A reading another entry wrote takes none (`409 reading_derived`) |
 | `GET`, `POST /vehicles/{id}/purchase/attachments` and `…/sale/attachments` | Can see costs; Manage to add | the purchase or sale paperwork; needs the purchase or sale date (`422`) |
 | `GET /attachments/{id}` | View | the file, as the pages serve it: an incident photo is the original only for its author or with *Can see incident details*, otherwise an upright copy without its metadata. `?download=1` downloads an image instead of opening it |
@@ -689,7 +724,8 @@ checked when you read it.
 
 `kind` is the history's kind where there is one (`fuel`, `odometer`,
 `maintenance`, `document`, `expense`, `tyre` for a tyre change,
-`valuation`, `trip`, `incident`), else `tread_check`, `tyre_details`
+`valuation`, `trip`, `incident`, and `issue`, whose updates, fixes,
+unlinks and reopens are `entry.updated` of the issue), else `tread_check`, `tyre_details`
 (`entry_id` is the tyre), `schedule`, `finance` (the agreement; a
 payment, quote or *End* updates it) and `vehicle`. `reminder.changed`
 has `kind: "reminder"` and `change`: `due`, `overdue`, `done`,

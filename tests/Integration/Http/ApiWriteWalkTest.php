@@ -137,7 +137,7 @@ final class ApiWriteWalkTest extends AppTestCase
                 // `{entry}` is the fill-up here; every list's own archived refusal is tested with its edits.
                 if (
                     in_array($route->getArgument('list'), ['schedules', 'odometer', 'maintenance', 'documents',
-                    'expenses', 'trips', 'incidents'], true)
+                    'expenses', 'trips', 'incidents', 'issues'], true)
                 ) {
                     continue;
                 }

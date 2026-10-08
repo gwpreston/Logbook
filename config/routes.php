@@ -71,6 +71,9 @@ use Logbook\Action\Api\IncidentHistoryAction as ApiIncidentHistoryAction;
 use Logbook\Action\Api\ListIncidentsAction as ApiIncidentsAction;
 use Logbook\Action\Api\ListJourneysAction as ApiJourneysAction;
 use Logbook\Action\Api\LogIncidentAction as ApiLogIncidentAction;
+use Logbook\Action\Api\ListIssuesAction as ApiIssuesAction;
+use Logbook\Action\Api\LogIssueAction as ApiLogIssueAction;
+use Logbook\Action\Api\IssueWriteAction as ApiIssueWriteAction;
 use Logbook\Action\Api\ListMaintenanceAction as ApiMaintenanceAction;
 use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
 use Logbook\Action\Api\ListTripsAction as ApiTripsAction;
@@ -390,6 +393,7 @@ return static function (App $app): void {
                     'valuations' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
                     'trips' => [VehicleAbility::View, VehicleAbility::Log, Feature::Trips],
                     'incidents' => [VehicleAbility::View, VehicleAbility::Log, Feature::Incidents],
+                    'issues' => [VehicleAbility::View, VehicleAbility::Log, Feature::Issues],
                     // #305: the paperwork proves a price, so its list needs ViewCosts, as the ownership card.
                     'purchase' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
                     'sale' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
@@ -693,6 +697,29 @@ return static function (App $app): void {
                     $edits($incidents, 'incidents');
                     $incidents->get('/incidents/history', ApiIncidentHistoryAction::class)->setName('api.incidents.history');
                 })->add($module(Feature::Incidents));
+                // Issues (Phase 40.2, spec.md §7.20 *Issues*, §7.37): View to read, Log to write; ApiEditor
+                // checks EntryAccess for an edit or delete. The fleet list takes the visible active vehicles.
+                $keyed->group('', function (Group $issues) use ($ability, $edits): void {
+                    $issues->get('/vehicles/{id:[0-9]+}/issues', ApiIssuesAction::class)
+                        ->setName('api.issues.index')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $issues->get('/vehicles/{id:[0-9]+}/issues/{entry:[0-9]+}', ApiShowEntryAction::class)
+                        ->setName('api.issues.show')
+                        ->setArgument('list', 'issues')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $issues->post('/vehicles/{id:[0-9]+}/issues', ApiLogIssueAction::class)
+                        ->setName('api.issues.create')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $edits($issues, 'issues');
+                    foreach (['updates', 'fix', 'reopen'] as $write) {
+                        $issues->post('/vehicles/{id:[0-9]+}/issues/{entry:[0-9]+}/' . $write, ApiIssueWriteAction::class)
+                            ->setName('api.issues.' . $write)
+                            ->setArgument('list', 'issues')
+                            ->setArgument('write', $write)
+                            ->setArgument($ability, VehicleAbility::Log->value);
+                    }
+                    $issues->get('/issues', ApiIssuesAction::class)->setName('api.issues');
+                })->add($module(Feature::Issues));
             })->add(VehicleAccessMiddleware::class)
                 ->add(ApiAuthMiddleware::class);
         })->add(ApiErrorMiddleware::class);

@@ -19,6 +19,7 @@ use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Incident\IncidentService;
+use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Trip\TripService;
@@ -57,6 +58,7 @@ final readonly class ApiAttachments
         'valuations' => AttachmentOwner::Valuation,
         'trips' => AttachmentOwner::Trip,
         'incidents' => AttachmentOwner::Incident,
+        'issues' => AttachmentOwner::Issue,
         'purchase' => AttachmentOwner::Purchase,
         'sale' => AttachmentOwner::Sale,
     ];
@@ -78,6 +80,7 @@ final readonly class ApiAttachments
         private ExpenseService $expenses,
         private TripService $trips,
         private IncidentService $incidents,
+        private IssueService $issues,
     ) {
     }
 
@@ -214,6 +217,7 @@ final readonly class ApiAttachments
             'expenses' => $this->expenses->get($vehicle, $id),
             'trips' => $this->trips->get($user, $vehicle, $id),
             'incidents' => $this->incidents->get($vehicle, $id),
+            'issues' => $this->issues->get($vehicle, $id),
         };
 
         return [
