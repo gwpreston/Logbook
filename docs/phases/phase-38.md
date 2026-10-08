@@ -2,7 +2,7 @@
 
 *One place for what Logbook has spotted and what you've asked it.*
 
-Status: 🚧 in progress · open questions decided 2026-10-07 (#272–#276)
+Status: ✅ complete · released as **v3.4.0** · open questions decided 2026-10-07 (#272–#276)
 
 Since Phase 33.4 the Insights page has the *Ask Logbook* card at the top,
 but asking there always opens the thread on `/ask` (#193), and Ask keeps
@@ -200,36 +200,36 @@ Written into `spec.md` before any code:
       migrate (threads keep their ids). In `CHANGELOG.md`.
 
 ### 38.6 Tests
-- [ ] *Your questions* lists only the user's threads, newest first;
+- [x] *Your questions* lists only the user's threads, newest first;
       *Delete* and *Delete all* work and need CSRF; hidden when Ask is
       unavailable (AI off, no `ask` model, `ai_ask` off, the user's *Use
       AI features* off).
-- [ ] Thread page: owner sees it; another user and an Ask-unavailable
+- [x] Thread page: owner sees it; another user and an Ask-unavailable
       user get 404; follow-ups carry the earlier messages as before.
-- [ ] New question: no-JS POST lands on the thread page; progress
+- [x] New question: no-JS POST lands on the thread page; progress
       endpoint works at its new path; the old path is 404.
-- [ ] Redirects: `/ask`, `/ask?q=`, `/ask?draft=`, an old thread URL; a
+- [x] Redirects: `/ask`, `/ask?q=`, `/ask?draft=`, an old thread URL; a
       stale `POST /ask` keeps the question and asks nothing.
-- [ ] Draft cards (Ask and MCP) *Add*, *Edit*, *Discard*, *Undo* work from
+- [x] Draft cards (Ask and MCP) *Add*, *Edit*, *Discard*, *Undo* work from
       the thread page and Insights; MCP drafts without Ask still work.
-- [ ] No *Ask* sidebar entry; navigation snapshot updated.
-- [ ] Existing Ask, drafting, MCP and Insights suites green after the
+- [x] No *Ask* sidebar entry; navigation snapshot updated.
+- [x] Existing Ask, drafting, MCP and Insights suites green after the
       route changes.
-- [ ] Design-reviewer clean of HIGH findings on Insights and the thread
+- [x] Design-reviewer clean of HIGH findings on Insights and the thread
       page at 375/768/1280 px, light and dark, with and without JS, by
       keyboard.
-- [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
+- [x] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
       or above the floor.
 
 ### 38.7 Release
-- [ ] `VERSION` → the next **minor** version (a page and a navigation
+- [x] `VERSION` → the next **minor** version (a page and a navigation
       entry are removed; no API change: the API and MCP stay as they
       are, apart from the link text).
-- [ ] `CHANGELOG.md`: *Changed* — Ask's questions are on Insights;
+- [x] `CHANGELOG.md`: *Changed* — Ask's questions are on Insights;
       *Removed* — the Ask page and its sidebar entry (old links
       redirect).
-- [ ] Rebuild assets; README and `ROADMAP.md` Phase 38 row ✅.
-- [ ] Tag once merged.
+- [x] Rebuild assets; README and `ROADMAP.md` Phase 38 row ✅.
+- [x] Tag once merged.
 
 ---
 

@@ -6,6 +6,8 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.4.0] — 2026-10-08
+
 Phase 38: **Ask lives on Insights**. One place for what Logbook has
 spotted and what you've asked it.
 
@@ -2539,7 +2541,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.3.1...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/gwpreston16/Logbook/compare/v3.3.1...v3.4.0
 [3.3.1]: https://github.com/gwpreston16/Logbook/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/gwpreston16/Logbook/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/gwpreston16/Logbook/compare/v3.1.0...v3.2.0

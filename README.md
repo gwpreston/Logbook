@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.3.1.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.4.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -88,7 +88,8 @@ your own server.
 > the email server set up in the app, and each person's own notification
 > channels (email, ntfy, Gotify, Telegram, Discord, Pushover, Mattermost,
 > Slack or a webhook), each with what it receives, a test, and quiet hours
-> that hold messages overnight; in English and German. Coming
+> that hold messages overnight; your Ask Logbook conversations kept on the
+> Insights page; in English and German. Coming
 > from 3.2? Email is off after upgrading until an admin sets it up in
 > Settings → Delivery: read the 3.3.0 upgrade notes. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
