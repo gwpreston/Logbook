@@ -3,7 +3,7 @@
 *Files go in and out over the API, and other systems hear when an entry
 changes.*
 
-Status: 📋 planned · releases **v3.5.0** (Phases 39.1 to 39.3) · file
+Status: 🚧 in progress · releases **v3.5.0** (Phases 39.1 to 39.3) · file
 lives in `docs/phases/`
 
 The last of Phase 39's three parts (#281). [Phase 39.1](phase-39.1.md)
@@ -46,25 +46,34 @@ Phase 27.1's incident-photo rules (#104).
 ### 39.3.1 Attachments
 - [ ] List per entry, download (the pages' authenticated handler), upload
       (multipart, field `file`, one file, the pages' checks and limits),
-      delete; every owner type of §7.12, including `vehicle_photo`.
+      delete; every owner type of §6 and §7.12, `trip` included (only for
+      those who may see the trip), under each entry's API path (#300).
+- [ ] The vehicle photo on its own path: `GET`, `POST` (multipart) and
+      `DELETE /vehicles/{id}/photo`, through the edit form's rules (#300).
 
 ### 39.3.2 Webhooks
-- [ ] Migration: `webhooks`, `webhook_deliveries` (reversible on every
-      engine).
+- [ ] Migration: `webhooks` (with `notice_pending`, #294),
+      `webhook_deliveries` (reversible on every engine).
 - [ ] Event recorder hooked into the entry services (one place per
       service, inside its transaction), so every path (form, import,
-      API, Ask draft, MCP) queues; `reminder.changed` on status changes.
-- [ ] `webhooks` job on the scheduler: signing, pinned destination under
-      §7.11's policy, backoff, pause after 50 failures with a notice
-      through the user's channels, 7-day cleanup; held by
+      API, Ask draft, MCP) queues, with §7.20's kinds (#290, #301);
+      vehicles and tyre details too; trips only for those who may see
+      them (#302); cost kinds for everyone with `View` (#295);
+      `reminder.changed` on status changes and a manual reminder's
+      create, edit and delete; nothing from a restore or the demo reset.
+- [ ] `webhooks` job on the scheduler, every pass (#291): signing,
+      pinned destination under §7.11's policy, backoff (minimums), pause
+      after 50 consecutive failed attempts, reset by a success (#293),
+      deliveries waiting while paused, 7-day cleanup; held by
       `WEBHOOKS_ENABLED=false` and `API_ENABLED=false`; a disabled or
       deleted user's webhooks stop.
 - [ ] Settings → API keys → Webhooks (`/settings/webhooks`): add, events,
       secret shown once (`Cache-Control: no-store`), status, *Send test*,
-      *Pause*, *Delete* (confirmation page), *Needs a new secret*; works
-      without JS.
-- [ ] The "webhook paused" notice through the user's channels (per
-      #294), translated.
+      *Pause*, *Resume* (failures back to 0), *New secret* (shown once),
+      *Delete* (confirmation page), *Needs a new secret*; works without
+      JS (#292).
+- [ ] The "webhook paused" notice: no category, every usable channel,
+      held until quiet hours end, sent once (#294); translated.
 - [ ] Backups (§7.19): `webhooks` in without `secret`, restored paused
       (`restored`); deliveries out.
 
@@ -80,12 +89,15 @@ Phase 27.1's incident-photo rules (#104).
       description, success and error.
 - [ ] **Access matrix:** attachments for owner, `manage`, `log`, `view`
       with and without *Can see costs*, and a stranger; a `read` key on
-      upload and delete.
+      upload and delete; a trip's files; the vehicle photo.
 - [ ] **Attachments:** content check, size limit, stripping, incident
       originals only with `ViewIncidentDetails`, the form's limits.
 - [ ] **Webhooks:** every event from every path (form, import, API, Ask
-      draft, MCP); payload has no amounts; signature verifies; refused
-      destinations per §7.11's setting; retry schedule; pause after 50;
+      draft, MCP); vehicles and tyre details; trips only to those who
+      see them; nothing from a restore; payload has no amounts; signature
+      verifies; refused destinations per §7.11's setting; retry
+      schedule; pause after 50, reset by a success, *Resume*; the notice
+      once, after quiet hours;
       a disabled user's webhooks stop; `API_ENABLED=false` and
       `WEBHOOKS_ENABLED=false` hold deliveries; backup and restore
       without the secret.
@@ -119,33 +131,50 @@ Phase 27.1's incident-photo rules (#104).
 4. Existing API clients work unchanged.
 5. Definition of done (CLAUDE.md §11) holds.
 
+
 ## Open questions
 
 This sub-phase's questions (#285, #286, #288, #289) were decided on
-2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). Still open
-(found while starting 39.1, #290; to decide before 39.3 starts):
+2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). The rest were
+decided on 2026-10-08, before 39.3 started:
 
-- **Which entries fire webhooks, and with which `kind`?** §7.20 says an
-  entry on a vehicle fires, with `kind` from the history feed's kinds,
-  but schedules, valuations, tyre changes, tyre sets, finance events
-  and attachments may not be history kinds. Options: (1) the history
-  feed's kinds only; (2) everything 39.2 can write, with new kinds where
-  the feed has none; (3) (2) without attachments.
-- **#291 How often does the `webhooks` job run?** A pass is every 15
-  minutes by default, so the 1- and 5-minute retries (#288) can't hold.
-  Options: (1) every pass, the intervals as minimums rounded up to the
-  next pass; (2) its own 1-minute interval, with a cron note in
-  `docs/deployment.md`; (3) the shortest retry becomes 15 minutes.
-- **#292 How does a paused or restored webhook come back?** Options:
-  *Resume* only; *Resume* and *New secret* (shown once); an *Edit* page
-  (name, URL, events, new secret) with *Resume*. And does resuming reset
-  the failure count?
-- **#293 What counts toward the 50 failures?** Options: each failed
-  attempt; each delivery given up after its retries; each attempt, reset
-  by any success. And what happens to queued deliveries when paused?
-- **#294 Where does the "webhook paused" notice go?** Options: every
-  channel the user has on; the channels that receive reminders, under
-  quiet hours; only on the Webhooks page and dashboard.
+- **Which entries fire webhooks, and with which `kind`?** (#290, found
+  while starting 39.1) — *Decided 2026-10-08:* everything 39.2 can write
+  on a vehicle, with the history feed's kind where it has one and new
+  kinds where it has none (`tread_check`, `tyre_details`, `schedule`,
+  `finance`, `vehicle`); attachments fire nothing of their own. spec
+  §7.20 *Webhooks*.
+- **#291 How often does the `webhooks` job run?** — *Decided
+  2026-10-08:* every pass; the retry intervals are minimums, rounded up
+  to the next pass; `docs/deployment.md` says how to make passes
+  shorter. spec §7.30.
+- **#292 How does a paused or restored webhook come back?** — *Decided
+  2026-10-08:* *Resume* and *New secret* (shown once); a restored one
+  needs a new secret before *Resume*; resuming sets the failures back
+  to 0.
+- **#293 What counts toward the 50 failures?** — *Decided 2026-10-08:*
+  each failed attempt, first tries and retries alike, set back to 0 by
+  any success. While paused, deliveries wait unattempted; on *Resume*
+  those under 7 days old are sent. spec §6 Webhook, §7.20.
+- **#294 Where does the "webhook paused" notice go?** — *Decided
+  2026-10-08:* no category, to every usable channel the user has on, as
+  the switched-off notice, held until quiet hours end, sent once (a new
+  `notice_pending` column), and shown on the Webhooks page.
 - **#295 Are events queued for a user without *Can see costs* on cost
-  entries** (expenses, valuations, finance)? Options: yes, ids and kind
-  only; no, those kinds are skipped for them. Related to #290.
+  entries?** — *Decided 2026-10-08:* yes, ids and kind only; the fetch
+  applies the rule.
+
+Found while starting 39.3 (2026-10-08):
+
+- **#300 Which attachment owner types?** §7.20 named `vehicle_photo` and
+  left out `trip`, but a vehicle photo is not an attachment (§6). —
+  *Decided 2026-10-08:* every real owner type, `trip` included (only for
+  those who may see the trip); the photo on its own `GET`, `POST` and
+  `DELETE /vehicles/{id}/photo`.
+- **#301 Do non-entry writes fire?** — *Decided 2026-10-08:* vehicle
+  create, edit, archive and restore (`vehicle`) and tyre details
+  (`tyre_details`) fire `entry.*`; a manual reminder's create, edit and
+  delete fire `reminder.changed` with `change` naming which.
+- **#302 Who hears about a trip?** — *Decided 2026-10-08:* only the
+  users who may see it (its author, and those who see everyone's
+  trips), as the history feed.

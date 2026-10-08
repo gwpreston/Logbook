@@ -88,7 +88,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [38](docs/phases/phase-38.md) | Ask lives on Insights; the Ask page goes + v3.4 release | ✅ |
 | [39.1](docs/phases/phase-39.1.md) | API reads and reminder actions | 🚧 |
 | [39.2](docs/phases/phase-39.2.md) | API writes, edit and delete | 🚧 |
-| [39.3](docs/phases/phase-39.3.md) | API attachments and entry webhooks + v3.5 release | 📋 |
+| [39.3](docs/phases/phase-39.3.md) | API attachments and entry webhooks + v3.5 release | 🚧 |
 | [40](docs/phases/phase-40.md) | Issues log + release | 📋 |
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |

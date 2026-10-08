@@ -267,9 +267,10 @@ Phase 39's questions, decided 2026-10-08 before 39.1 started (logged as
   *Decided 2026-10-08 (#289):* no, as channel secrets; a restored webhook
   is paused with *Needs a new secret*. In 39.3.
 
-Still open, for 39.3 (none of them blocks 39.1 or 39.2; see
-[Phase 39.3](phase-39.3.md#open-questions)): #290, found while starting,
-and #291–#295, raised by the spec review of 2026-10-08.
+For 39.3 (none of them blocked 39.1 or 39.2): #290, found while
+starting, and #291–#295, raised by the spec review of 2026-10-08, were
+decided on 2026-10-08 before 39.3 started; see
+[Phase 39.3](phase-39.3.md#open-questions).
 
 Found while building 39.1 (2026-10-08):
 
