@@ -157,17 +157,17 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       sections.
 
 ### 39.1.1 Shared plumbing for reads
-- [ ] Route conventions: nested entry paths (`/vehicles/{id}/{list}/{entry}`),
-      an entry of another vehicle answering 404; an `EntryGuard` (or the
-      existing equivalent) that loads an entry under its vehicle for API
-      actions, reused by 39.2.
-- [ ] `ETag` on single-entry reads: a hash of the entry's own stored
+- [x] Route conventions: nested entry paths (`/vehicles/{id}/{list}/{entry}`),
+      an entry of another vehicle answering 404 (`ApiEntries` loads it under
+      its vehicle through the service's `get`; the pages' `EntryGuard`
+      covers 39.2's edits).
+- [x] `ETag` on single-entry reads: a hash of the entry's own stored
       columns (no derived or viewer-dependent fields); no
       `If-None-Match`; `ETag` in CORS `Access-Control-Expose-Headers`.
-- [ ] OpenAPI `info.version` up one minor (the only bump in Phase 39).
+- [x] OpenAPI `info.version` up one minor (the only bump in Phase 39): 1.21.0.
 
 ### 39.1.2 Reads
-- [ ] Single-entry reads for fuel, odometer, maintenance, documents,
+- [x] Single-entry reads for fuel, odometer, maintenance, documents,
       expenses, trips and incidents, each exactly as its list returns it.
 - [ ] List filters: maintenance `?category=` and `?q=`; documents `?type=`
       and `?current=1` (the owner's time zone).

@@ -46,6 +46,7 @@ use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
+use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
 use Logbook\Action\Api\IncidentHistoryAction as ApiIncidentHistoryAction;
@@ -339,9 +340,18 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::View->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/odometer', ApiOdometerAction::class)->setName('api.odometer.index')
                     ->setArgument($ability, VehicleAbility::View->value);
+                // Single-entry reads (Phase 39.1, spec.md §7.20): as the list, with an ETag.
+                $keyed->get('/vehicles/{id:[0-9]+}/odometer/{entry:[0-9]+}', ApiShowEntryAction::class)
+                    ->setName('api.odometer.show')
+                    ->setArgument('list', 'odometer')
+                    ->setArgument($ability, VehicleAbility::View->value);
                 $keyed->post('/vehicles/{id:[0-9]+}/odometer', ApiLogReadingAction::class)->setName('api.odometer.create')
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/expenses', ApiExpensesAction::class)->setName('api.expenses.index')
+                    ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                $keyed->get('/vehicles/{id:[0-9]+}/expenses/{entry:[0-9]+}', ApiShowEntryAction::class)
+                    ->setName('api.expenses.show')
+                    ->setArgument('list', 'expenses')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
                 // True cost (Phase 32, spec.md §7.35): core, costs only.
                 $keyed->get('/vehicles/{id:[0-9]+}/true-cost', ApiTrueCostAction::class)->setName('api.true_cost')
@@ -355,6 +365,10 @@ return static function (App $app): void {
                     ->add($module(Feature::Reminders));
                 $keyed->group('', function (Group $fuel) use ($ability): void {
                     $fuel->get('/vehicles/{id:[0-9]+}/fuel', ApiFuelAction::class)->setName('api.fuel.index')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $fuel->get('/vehicles/{id:[0-9]+}/fuel/{entry:[0-9]+}', ApiShowEntryAction::class)
+                        ->setName('api.fuel.show')
+                        ->setArgument('list', 'fuel')
                         ->setArgument($ability, VehicleAbility::View->value);
                     $fuel->post('/vehicles/{id:[0-9]+}/fuel', ApiLogFuelAction::class)->setName('api.fuel.create')
                         ->setArgument($ability, VehicleAbility::Log->value);
@@ -370,6 +384,16 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Maintenance));
                 $keyed->get('/vehicles/{id:[0-9]+}/documents', ApiDocumentsAction::class)->setName('api.documents.index')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Compliance));
+                $keyed->get('/vehicles/{id:[0-9]+}/maintenance/{entry:[0-9]+}', ApiShowEntryAction::class)
+                    ->setName('api.maintenance.show')
+                    ->setArgument('list', 'maintenance')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Maintenance));
+                $keyed->get('/vehicles/{id:[0-9]+}/documents/{entry:[0-9]+}', ApiShowEntryAction::class)
+                    ->setName('api.documents.show')
+                    ->setArgument('list', 'documents')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Compliance));
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
@@ -394,6 +418,10 @@ return static function (App $app): void {
                 $keyed->group('', function (Group $trips) use ($ability): void {
                     $trips->get('/vehicles/{id:[0-9]+}/trips', ApiTripsAction::class)->setName('api.trips.index')
                         ->setArgument($ability, VehicleAbility::View->value);
+                    $trips->get('/vehicles/{id:[0-9]+}/trips/{entry:[0-9]+}', ApiShowEntryAction::class)
+                        ->setName('api.trips.show')
+                        ->setArgument('list', 'trips')
+                        ->setArgument($ability, VehicleAbility::View->value);
                     $trips->post('/vehicles/{id:[0-9]+}/trips', ApiLogTripAction::class)->setName('api.trips.create')
                         ->setArgument($ability, VehicleAbility::Log->value);
                     $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
@@ -403,6 +431,10 @@ return static function (App $app): void {
                 $keyed->group('', function (Group $incidents) use ($ability): void {
                     $incidents->get('/vehicles/{id:[0-9]+}/incidents', ApiIncidentsAction::class)
                         ->setName('api.incidents.index')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $incidents->get('/vehicles/{id:[0-9]+}/incidents/{entry:[0-9]+}', ApiShowEntryAction::class)
+                        ->setName('api.incidents.show')
+                        ->setArgument('list', 'incidents')
                         ->setArgument($ability, VehicleAbility::View->value);
                     $incidents->post('/vehicles/{id:[0-9]+}/incidents', ApiLogIncidentAction::class)
                         ->setName('api.incidents.create')

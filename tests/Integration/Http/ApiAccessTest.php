@@ -195,6 +195,16 @@ final class ApiAccessTest extends AppTestCase
     private function callRoute(ApiClient $api, RouteInterface $route, Vehicle $vehicle): ResponseInterface
     {
         $path = substr(str_replace('{id:[0-9]+}', (string) $vehicle->id, $route->getPattern()), strlen('/api/v1'));
+        if (str_contains($path, '/{entry:[0-9]+}')) {
+            // A single-entry read (Phase 39.1) has its list's access: read the list's first
+            // entry with the same key, or answer as the list when it has none to read.
+            $listResponse = $api->get(substr($path, 0, (int) strpos($path, '/{entry:[0-9]+}')));
+            $list = $listResponse->getStatusCode() === 200 ? ApiClient::json($listResponse) : null;
+            if ($list === null || !$list->has('items', 0)) {
+                return $listResponse;
+            }
+            $path = str_replace('{entry:[0-9]+}', (string) $list->int('items', 0, 'id'), $path);
+        }
 
         return in_array('GET', $route->getMethods(), true)
             ? $api->get($path)
