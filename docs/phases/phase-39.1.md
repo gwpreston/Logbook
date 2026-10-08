@@ -214,8 +214,10 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       for every demo vehicle and period.
 - [x] **Retries:** a repeated reminder action is `unchanged` and writes
       nothing.
-- [x] **Time zones:** documents `?current=1` and report periods at the
-      day boundary in a non-UTC owner zone.
+- [x] **Time zones:** documents `?current=1` at the day boundary in a
+      non-UTC zone (`ApiListFiltersTest`).
+- [ ] **Time zones:** report periods at the day boundary in a non-UTC
+      zone (parity runs in the demo user's zone only).
 - [x] Modules off: every new path of that module 404.
 - [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
       or above the floor; smoke test at a subpath.
