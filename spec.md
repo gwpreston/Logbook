@@ -4926,7 +4926,13 @@ stays `v1`, and existing responses don't change.
 - **Concurrency** (#282): `If-Match` is **optional** on `PATCH` and
   `DELETE`. When sent and it doesn't match the entry's current `ETag`,
   the answer is 412 (`precondition_failed`) and nothing is written.
-  Without it, the last write wins, as on the pages.
+  Without it, the last write wins, as on the pages. This holds for every
+  `PATCH` and every `DELETE` of a stored object (entries, reminders,
+  vehicles, valuations, schedules, tyre changes and tyres, journeys,
+  price alerts, agreements, payment events and quotes); a `PATCH`
+  answers with the object's new `ETag`. A favourite (`PUT`/`DELETE
+  …/favourite`) and *Hide* are idempotent switches with no stored object
+  to tag: they ignore `If-Match`.
 - **Abilities** are the pages'. Edit and delete declare `Log` and are
   checked with `EntryAccess::canChange` once the entry is loaded (`Manage`,
   or `Log` on the key user's own entry), 403 `forbidden` otherwise. Where

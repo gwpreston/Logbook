@@ -4900,6 +4900,9 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
           }
         ],
         "requestBody": {
@@ -4921,6 +4924,11 @@
                   "$ref": "#/components/schemas/JourneyEdit"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
             }
           },
           "400": {
@@ -4940,6 +4948,9 @@
           },
           "422": {
             "$ref": "#/components/responses/Invalid"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       },
@@ -4956,6 +4967,9 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
           }
         ],
         "responses": {
@@ -4973,6 +4987,9 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -4990,6 +5007,9 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
           }
         ],
         "requestBody": {
@@ -5012,6 +5032,11 @@
                   "$ref": "#/components/schemas/PriceAlertEdit"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
             }
           },
           "400": {
@@ -5031,6 +5056,9 @@
           },
           "422": {
             "$ref": "#/components/responses/Invalid"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       },
@@ -5046,6 +5074,9 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
           }
         ],
         "description": "The key user's own alert (Phase 39.2).",
@@ -5064,6 +5095,9 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -5348,6 +5382,9 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
           }
         ],
         "responses": {
@@ -5375,6 +5412,9 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -5476,6 +5516,9 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
           }
         ],
         "responses": {
@@ -5503,6 +5546,9 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -5722,6 +5768,9 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
           }
         ],
         "requestBody": {
@@ -5742,6 +5791,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/TyreEdit"
                 }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
               }
             }
           },
@@ -5765,6 +5819,9 @@
           },
           "422": {
             "$ref": "#/components/responses/Invalid"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }

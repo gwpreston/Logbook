@@ -47,7 +47,8 @@ final readonly class FinanceWriteAction
                 return $this->responder->json($entry($edited['body']))->withHeader('ETag', $edited['tag']);
             case 'payment':
                 if ($request->getMethod() === 'DELETE') {
-                    $this->finance->deletePayment($user, $vehicle, $id, (int) ($args['event'] ?? 0));
+                    $event = (int) ($args['event'] ?? 0);
+                    $this->finance->deletePayment($user, $vehicle, $id, $event, EditEntryAction::ifMatch($request));
 
                     return $response->withStatus(204);
                 }
@@ -55,7 +56,8 @@ final readonly class FinanceWriteAction
                 return $this->responder->json($entry($this->finance->payment($user, $vehicle, $id, $body())), 201);
             case 'quote':
                 if ($request->getMethod() === 'DELETE') {
-                    $this->finance->deleteQuote($user, $vehicle, $id, (int) ($args['quote'] ?? 0));
+                    $quote = (int) ($args['quote'] ?? 0);
+                    $this->finance->deleteQuote($user, $vehicle, $id, $quote, EditEntryAction::ifMatch($request));
 
                     return $response->withStatus(204);
                 }

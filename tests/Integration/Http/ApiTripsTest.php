@@ -422,7 +422,12 @@ final class ApiTripsTest extends AppTestCase
         $id = $journey->int('id');
         self::assertSame([$id], ApiClient::json($this->api->get('/journeys'))->column('id', 'items'));
 
-        $edited = ApiClient::json($this->api->patch('/journeys/' . $id, ['is_return' => true, 'purpose' => 'Site visit']));
+        $response = $this->api->patch('/journeys/' . $id, ['is_return' => true, 'purpose' => 'Site visit']);
+        $edited = ApiClient::json($response);
+        self::assertSame(412, $this->api->patch('/journeys/' . $id, ['to' => 'x'], ['If-Match' => '"stale"'])->getStatusCode());
+        self::assertSame(412, $this->api->delete('/journeys/' . $id, ['If-Match' => '"stale"'])->getStatusCode());
+        $tag = $response->getHeaderLine('ETag');
+        self::assertSame(200, $this->api->patch('/journeys/' . $id, ['to' => 'Belfast'], ['If-Match' => $tag])->getStatusCode());
         self::assertSame('Ballymena → Belfast → Ballymena', $edited->get('entry', 'journey'));
         self::assertSame('45.250', $edited->get('entry', 'distance_km'), 'unsent fields stay');
         self::assertNull(ApiClient::json($this->api->patch('/journeys/' . $id, ['purpose' => null]))->get('entry', 'purpose'));

@@ -82,6 +82,13 @@ nested routes, entry guard and `ETag`).
 - [x] Finance: agreements (create with the one-active rule, edit; the
       number never returned), payment events and settlement quotes
       (create and delete for each), *End*.
+- [x] Shared with the pages so the rules can't drift: the *Archive*
+      page's rules as `Service\Vehicle\VehicleArchiving`, the agreement
+      page's payment, quote and *End* rules as `Service\Finance\FinanceEvents`
+      (both read numbers in "en" for the API).
+- [x] `GET /vehicles/{id}` gains `disposal` and an `ETag`; every `PATCH`
+      answers with the object's new `ETag`, and `If-Match` applies to every
+      `PATCH` and `DELETE` of a stored object (favourites and *Hide* ignore it).
 
 ### 39.2.4 OpenAPI, docs, translations
 - [x] `docs/api/openapi.json`: every operation, schema and error code of

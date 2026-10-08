@@ -551,7 +551,8 @@ record before, and an entry's attachments go with it.
 - **Not here:** an archived vehicle (`409 vehicle_archived`); a reading
   written by another entry (`409 reading_derived`, with `links.entry`
   pointing at the entry to change instead); a reminder that follows a
-  schedule or document (`409 reminder_not_manual`).
+  schedule or document (`409 reminder_not_manual`); `journey_id` on a
+  trip (a saved journey fills a new trip only).
 - `PATCH` answers `200` with `entry` (as its single read returns it),
   `warnings`, and the new `ETag`. `DELETE` answers `204`.
 
@@ -559,7 +560,12 @@ record before, and an entry's attachments go with it.
 `ETag` you read and the edit (or delete) only goes through if nobody has
 changed the entry since; otherwise the answer is `412
 precondition_failed` and nothing is written. Without it, the last edit
-wins, as on the pages.
+wins, as on the pages. A reminder has no single read: its `PATCH`
+answer carries the `ETag` to send next time. The same goes for every
+other `PATCH` and `DELETE` in [More writes](#more-writes) (vehicles,
+valuations, schedules, tyre changes and tyres, journeys, alerts,
+agreements, payment events and quotes); favourites and *Hide* are
+switches and ignore it.
 
 ```sh
 # Correct a mistyped odometer on fill-up 42, only if it is unchanged since read.

@@ -80,7 +80,12 @@ final class ApiPriceAlertsTest extends FuelPricesTestCase
         self::assertTrue(ApiClient::json($again)->get('duplicate'));
         self::assertSame($id, ApiClient::json($again)->int('entry', 'id'));
 
-        $gallon = ApiClient::json($api->patch('/fuel-prices/alerts/' . $id, ['below' => '6.2', 'volume_unit' => 'gal_uk']));
+        $stale = $api->patch('/fuel-prices/alerts/' . $id, ['below' => '1'], ['If-Match' => '"stale"']);
+        self::assertSame(412, $stale->getStatusCode());
+        $patched = $api->patch('/fuel-prices/alerts/' . $id, ['below' => '6.2', 'volume_unit' => 'gal_uk']);
+        $gallon = ApiClient::json($patched);
+        self::assertSame(412, $api->delete('/fuel-prices/alerts/' . $id, ['If-Match' => '"stale"'])->getStatusCode());
+        self::assertNotSame('', $patched->getHeaderLine('ETag'));
         self::assertSame('1.364', $gallon->get('entry', 'below'), '6.2 per UK gallon, per litre');
         self::assertSame(422, $api->patch('/fuel-prices/alerts/' . $id, ['below' => '0'])->getStatusCode());
         self::assertSame(422, $api->patch('/fuel-prices/alerts/' . $id, ['grade' => 'e5_97'])->getStatusCode());

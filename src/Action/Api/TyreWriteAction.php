@@ -37,9 +37,11 @@ final readonly class TyreWriteAction
 
         if (($args['write'] ?? '') === 'tyre') {
             $body = JsonInput::decode((string) $request->getBody());
-            $tyre = $this->tyres->updateTyre($user, $vehicle, (int) ($args['tyre'] ?? 0), $body);
+            $id = (int) ($args['tyre'] ?? 0);
+            $tyre = $this->tyres->updateTyre($user, $vehicle, $id, $body, $ifMatch);
 
-            return $this->responder->json(['entry' => $tyre, 'warnings' => []]);
+            return $this->responder->json(['entry' => $tyre, 'warnings' => []])
+                ->withHeader('ETag', $this->tyres->tyreTag($vehicle, $id));
         }
         if (!isset($args['change'])) {
             $result = $this->tyres->record($user, $vehicle, JsonInput::decode((string) $request->getBody()));

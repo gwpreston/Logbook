@@ -42,6 +42,7 @@ final readonly class ApiUserWrites
         private ApiReader $reader,
         private VehicleAccess $access,
         private ValidationProblem $validation,
+        private ApiEditor $editor,
     ) {
     }
 
@@ -88,11 +89,14 @@ final readonly class ApiUserWrites
      *
      * @param array<string, mixed> $body
      * @return array<string, mixed> the journey as `GET /journeys` lists it
-     * @throws ApiProblem 404, 422
+     * @throws ApiProblem 404, 412, 422
      */
-    public function saveJourney(User $user, array $body, ?int $id = null): array
+    public function saveJourney(User $user, array $body, ?int $id = null, ?string $ifMatch = null): array
     {
         $journey = $id === null ? null : $this->journey($user, $id);
+        if ($journey !== null) {
+            $this->editor->precondition($ifMatch, $journey);
+        }
         $mapped = JsonInput::journey($body, $user->preferences);
         if ($mapped instanceof ValidationErrors) {
             throw $this->validation->of($mapped);
@@ -124,9 +128,27 @@ final readonly class ApiUserWrites
      *
      * @throws ApiProblem 404
      */
-    public function deleteJourney(User $user, int $id): void
+    public function deleteJourney(User $user, int $id, ?string $ifMatch = null): void
     {
-        $this->journeys->delete($user, $this->journey($user, $id));
+        $journey = $this->journey($user, $id);
+        $this->editor->precondition($ifMatch, $journey);
+        $this->journeys->delete($user, $journey);
+    }
+
+    /**
+     * The `ETag` of the user's journey as stored.
+     */
+    public function journeyTag(User $user, int $id): string
+    {
+        return $this->editor->tag($this->journey($user, $id));
+    }
+
+    /**
+     * The `ETag` of the user's price alert as stored.
+     */
+    public function alertTag(User $user, int $id): string
+    {
+        return $this->editor->tag($this->alert($user, $id));
     }
 
     /**
@@ -177,10 +199,11 @@ final readonly class ApiUserWrites
      * @return array<string, mixed>
      * @throws ApiProblem 404, 422
      */
-    public function changeAlert(User $user, int $id, array $body): array
+    public function changeAlert(User $user, int $id, array $body, ?string $ifMatch = null): array
     {
         $currency = $this->currency();
         $alert = $this->alert($user, $id);
+        $this->editor->precondition($ifMatch, $alert);
         $mapped = JsonInput::priceAlert($body, $user->preferences);
         $errors = $mapped instanceof ValidationErrors ? $mapped : new ValidationErrors();
         foreach (['station_id', 'grade'] as $field) {
@@ -208,10 +231,11 @@ final readonly class ApiUserWrites
      *
      * @throws ApiProblem 404
      */
-    public function removeAlert(User $user, int $id): void
+    public function removeAlert(User $user, int $id, ?string $ifMatch = null): void
     {
         $this->currency();
         $alert = $this->alert($user, $id);
+        $this->editor->precondition($ifMatch, $alert);
         $station = $this->stations->find($alert->stationId) ?? throw ApiProblem::notFound('There is no such alert.');
         $this->alerts->remove($user, $station, $alert->grade);
     }

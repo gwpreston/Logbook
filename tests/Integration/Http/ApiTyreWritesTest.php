@@ -210,6 +210,9 @@ final class ApiTyreWritesTest extends AppTestCase
         self::assertSame('Checked', ApiClient::json($edited)->get('entry', 'notes'));
         self::assertSame('EfficientGrip', ApiClient::json($edited)->get('entry', 'model'), 'unsent fields stay');
         self::assertSame(422, $this->api->patch($path, ['position' => 'fr'])->getStatusCode(), 'position comes from changes');
+        self::assertSame(412, $this->api->patch($path, ['notes' => 'x'], ['If-Match' => '"stale"'])->getStatusCode());
+        $tag = $edited->getHeaderLine('ETag');
+        self::assertSame(200, $this->api->patch($path, ['notes' => 'Again'], ['If-Match' => $tag])->getStatusCode());
 
         $logger = $this->createMember($this->app, 'logger');
         $this->service($this->app, VehicleShareRepository::class)

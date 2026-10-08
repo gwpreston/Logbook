@@ -148,6 +148,7 @@ final class ApiFinanceAgreementsTest extends AppTestCase
         $settlement = $api->post($agreement . '/payments', ['kind' => 'settlement', 'amount' => '1', 'paid_on' => '2026-07-01']);
         self::assertSame('validation.choice', ApiClient::json($settlement)->get('errors', 'kind', 'key'), '#299: through End');
         $missedId = ApiClient::json($late)->int('entry', 'events', 0, 'id');
+        self::assertSame(412, $api->delete($agreement . '/payments/' . $missedId, ['If-Match' => '"stale"'])->getStatusCode());
         self::assertSame(204, $api->delete($agreement . '/payments/' . $missedId)->getStatusCode());
         $events = ApiClient::json($api->get($path))->column('kind', 'items', 0, 'events');
         self::assertSame(['extra'], $events, 'its paid-late mark went too');
@@ -164,6 +165,7 @@ final class ApiFinanceAgreementsTest extends AppTestCase
             ['quoted_on' => '2026-07-10', 'amount' => '1', 'valid_until' => '2026-07-01'],
         );
         self::assertSame('finance.error.quote', ApiClient::json($backwards)->get('errors', 'valid_until', 'key'));
+        self::assertSame(412, $api->delete($agreement . '/quotes/' . $quoteId, ['If-Match' => '"stale"'])->getStatusCode());
         self::assertSame(204, $api->delete($agreement . '/quotes/' . $quoteId)->getStatusCode());
         self::assertSame(404, $api->delete($agreement . '/quotes/' . $quoteId)->getStatusCode());
 

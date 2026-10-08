@@ -18,7 +18,8 @@ use Psr\Http\Message\ServerRequestInterface;
  *
  * - `PUT`/`DELETE /stations/{station}/favourite`, `POST /attention/{key}/hide`: 204, idempotent.
  * - `POST /journeys`, `POST /fuel-prices/alerts`: 201 (200 when the alert existed and was changed).
- * - `PATCH /journeys/{journey}`, `/fuel-prices/alerts/{alert}`: 200; `DELETE`: 204.
+ * - `PATCH /journeys/{journey}`, `/fuel-prices/alerts/{alert}`: 200 with the `ETag`; `DELETE`: 204;
+ *   both take `If-Match` (412 when it no longer matches).
  */
 final readonly class UserWriteAction
 {
@@ -50,15 +51,16 @@ final readonly class UserWriteAction
             case 'journey':
                 $id = isset($args['journey']) ? (int) $args['journey'] : null;
                 if ($method === 'DELETE' && $id !== null) {
-                    $this->writes->deleteJourney($user, $id);
+                    $this->writes->deleteJourney($user, $id, EditEntryAction::ifMatch($request));
 
                     return $done;
                 }
-                $journey = $this->writes->saveJourney($user, $body(), $id);
+                $journey = $this->writes->saveJourney($user, $body(), $id, EditEntryAction::ifMatch($request));
 
                 return $id === null
                     ? $this->responder->json(['entry' => $journey, 'duplicate' => false, 'warnings' => []], 201)
-                    : $this->responder->json(['entry' => $journey, 'warnings' => []]);
+                    : $this->responder->json(['entry' => $journey, 'warnings' => []])
+                        ->withHeader('ETag', $this->writes->journeyTag($user, $id));
             case 'alert':
                 $id = isset($args['alert']) ? (int) $args['alert'] : null;
                 if ($id === null) {
@@ -70,12 +72,14 @@ final readonly class UserWriteAction
                     );
                 }
                 if ($method === 'DELETE') {
-                    $this->writes->removeAlert($user, $id);
+                    $this->writes->removeAlert($user, $id, EditEntryAction::ifMatch($request));
 
                     return $done;
                 }
+                $alert = $this->writes->changeAlert($user, $id, $body(), EditEntryAction::ifMatch($request));
 
-                return $this->responder->json(['entry' => $this->writes->changeAlert($user, $id, $body()), 'warnings' => []]);
+                return $this->responder->json(['entry' => $alert, 'warnings' => []])
+                    ->withHeader('ETag', $this->writes->alertTag($user, $id));
         }
 
         throw new \LogicException('The route names no user write.');

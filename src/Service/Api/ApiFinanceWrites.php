@@ -175,9 +175,13 @@ final readonly class ApiFinanceWrites
      *
      * @throws ApiProblem 404, 409
      */
-    public function deletePayment(User $user, Vehicle $vehicle, int $id, int $eventId): void
+    public function deletePayment(User $user, Vehicle $vehicle, int $id, int $eventId, ?string $ifMatch = null): void
     {
         $agreement = $this->open($user, $vehicle, $id);
+        $events = $this->finance->view($user, $vehicle, $agreement)->events;
+        $event = array_values(array_filter($events, static fn (PaymentEvent $e): bool => $e->id === $eventId))[0]
+            ?? throw ApiProblem::notFound('The agreement has no such payment event.');
+        $this->editor->precondition($ifMatch, $event);
         try {
             $this->finance->deleteEvent($user, $vehicle, $agreement, $eventId);
         } catch (FinanceAgreementNotFound) {
@@ -212,13 +216,13 @@ final readonly class ApiFinanceWrites
      *
      * @throws ApiProblem 404, 409
      */
-    public function deleteQuote(User $user, Vehicle $vehicle, int $id, int $quoteId): void
+    public function deleteQuote(User $user, Vehicle $vehicle, int $id, int $quoteId, ?string $ifMatch = null): void
     {
         $agreement = $this->credit($user, $vehicle, $id);
         $quotes = $this->finance->view($user, $vehicle, $agreement)->quotes;
-        if (array_filter($quotes, static fn (SettlementQuote $quote): bool => $quote->id === $quoteId) === []) {
-            throw ApiProblem::notFound('The agreement has no such quote.');
-        }
+        $quote = array_values(array_filter($quotes, static fn (SettlementQuote $q): bool => $q->id === $quoteId))[0]
+            ?? throw ApiProblem::notFound('The agreement has no such quote.');
+        $this->editor->precondition($ifMatch, $quote);
         $this->finance->deleteQuote($user, $vehicle, $agreement, $quoteId);
     }
 

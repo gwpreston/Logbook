@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Api;
 
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Tyre\Tyre;
 use Logbook\Domain\Tyre\TyreChange;
 use Logbook\Domain\Tyre\TyreChangeKind;
 use Logbook\Domain\User\User;
@@ -185,14 +186,11 @@ final readonly class ApiTyreWrites
      * @return array<string, mixed> the tyre as `GET …/tyres` lists it
      * @throws ApiProblem 404, 409, 422
      */
-    public function updateTyre(User $user, Vehicle $vehicle, int $id, array $body): array
+    public function updateTyre(User $user, Vehicle $vehicle, int $id, array $body, ?string $ifMatch = null): array
     {
-        try {
-            $tyre = $this->tyres->tyre($vehicle, $id);
-        } catch (TyreNotFound) {
-            throw ApiProblem::notFound('The vehicle has no such tyre.');
-        }
+        $tyre = $this->tyre($vehicle, $id);
         ApiWriter::assertActive($vehicle);
+        $this->editor->precondition($ifMatch, $tyre);
         $errors = new ValidationErrors();
         $sent = [];
         foreach ($body as $name => $value) {
@@ -221,6 +219,23 @@ final readonly class ApiTyreWrites
         }
 
         throw new \LogicException('A tyre just edited is missing from its vehicle.');
+    }
+
+    /**
+     * The `ETag` of a tyre as stored.
+     */
+    public function tyreTag(Vehicle $vehicle, int $id): string
+    {
+        return $this->editor->tag($this->tyre($vehicle, $id));
+    }
+
+    private function tyre(Vehicle $vehicle, int $id): Tyre
+    {
+        try {
+            return $this->tyres->tyre($vehicle, $id);
+        } catch (TyreNotFound) {
+            throw ApiProblem::notFound('The vehicle has no such tyre.');
+        }
     }
 
     /**

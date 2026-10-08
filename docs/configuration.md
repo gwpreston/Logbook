@@ -105,7 +105,7 @@ See [api.md](api.md).
 | Variable | Default | Meaning |
 |---|---|---|
 | `API_ENABLED` | `true` | The JSON API under `/api/v1`. Every call needs an API key (Settings → API keys, or `bin/api-key.php`), so it is closed until you make one. `false` makes every API address a 404. |
-| `API_CORS_ORIGINS` | *(empty)* | Comma-separated origins (`https://ha.example.com:8123`) whose pages may call the API from the browser. Empty: CORS off. Home Assistant sensors, Shortcuts, Grafana and Node-RED call from a server and need nothing here. |
+| `API_CORS_ORIGINS` | *(empty)* | Comma-separated origins (`https://ha.example.com:8123`) whose pages may call the API from the browser, reads and (with a read and write key) writes, edits and deletes. Empty: CORS off. Home Assistant sensors, Shortcuts, Grafana and Node-RED call from a server and need nothing here. |
 
 ## MCP server
 
