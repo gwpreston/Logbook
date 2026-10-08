@@ -178,6 +178,11 @@ id (`GET /vehicles/1/fuel/42`), exactly as the list returns it. An id that
 belongs to another vehicle answers `404`, and so does a trip someone else
 logged that you may not see.
 
+The history feeds and *Needs attention* link each item to the entry
+or list that holds it (`links.entry`, `links.fix`) as a path under
+`/api/v1`: add it to your base URL (`https://garage.example.com/api/v1`)
+to fetch it. `next` is a full URL.
+
 The response carries an `ETag`: a tag of the entry as it is stored. It
 changes when the entry is edited, never because something around it
 changed (a neighbouring fill-up altering this one's economy). It is there

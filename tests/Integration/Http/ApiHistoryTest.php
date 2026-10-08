@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Http;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleShareRepository;
+use Logbook\Service\Trip\TripService;
 use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\AppTestCase;
@@ -36,7 +39,7 @@ final class ApiHistoryTest extends AppTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = $this->createApp();
+        $this->app = $this->createApp(['FEATURES_TRIPS' => 'true']);
         $this->pinClock($this->app, '2026-09-30T12:00:00Z');
         $this->resetDatabase($this->app);
         $this->owner = $this->createOwner($this->app);
@@ -100,6 +103,25 @@ final class ApiHistoryTest extends AppTestCase
         }
         self::assertCount(6, array_unique($seen));
         self::assertSame(400, $this->api->get('/history?cursor=nonsense')->getStatusCode());
+    }
+
+    public function testAnotherDriversTripStaysOutOfTheFeed(): void
+    {
+        $this->service($this->app, TripService::class)->create($this->golf, new TripData(
+            new DateTimeImmutable('2026-09-10', new DateTimeZone('UTC')),
+            'Ballymena',
+            'Belfast',
+            true,
+            '90.5',
+        ));
+        self::assertSame(['trip'], ApiClient::json($this->api->get('/history'))->column('kind', 'items'));
+
+        $driver = $this->createMember($this->app, 'driver');
+        $this->service($this->app, VehicleShareRepository::class)
+            ->insert($this->golf->id, $driver->id, ShareLevel::Log, false, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+        $theirs = $this->api($this->app, $this->apiKey($this->app, $driver));
+        self::assertSame([], ApiClient::json($theirs->get('/history'))->get('items'), 'the owner\'s trip is not theirs to see');
+        self::assertSame([], ApiClient::json($theirs->get('/vehicles/' . $this->golf->id . '/history'))->get('items'));
     }
 
     public function testTheFleetFeedCoversTheVisibleVehiclesAndHidesAmountsWithoutCosts(): void

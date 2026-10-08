@@ -21,6 +21,7 @@ use Logbook\Service\Report\ReportService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Api\Serializer;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\AppTestCase;
@@ -100,6 +101,24 @@ final class ApiReportsTest extends AppTestCase
                 self::assertSame(200, $api->get('/reports/fuel' . $query)->getStatusCode(), $label);
             }
         }
+    }
+
+    public function testThePeriodIsTheKeyUsersCalendar(): void
+    {
+        $app = $this->createApp();
+        // 30 Sep 11:30 UTC is already 1 October in Auckland.
+        $this->pinClock($app, '2026-09-30T11:30:00Z');
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app, preferences: DisplayPreferences::defaults('en_GB', 'Pacific/Auckland', 'NZD'));
+        $golf = $this->vehicle($app);
+        $this->expense($app, $golf, '2026-09-30', '5.00');
+        $this->expense($app, $golf, '2026-10-01', '7.50');
+        $api = $this->api($app, $this->apiKey($app, $owner));
+
+        $month = ApiClient::json($api->get('/reports/costs?range=month'));
+        self::assertSame('2026-10-01', $month->get('period', 'from'));
+        self::assertSame('2026-10-01', $month->get('period', 'to'));
+        self::assertSame('7.500', $month->get('currencies', 0, 'total'), 'only 1 October counts');
     }
 
     public function testVehiclesWithoutVisibleCostsAreExcludedNotCounted(): void

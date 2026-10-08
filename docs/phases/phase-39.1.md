@@ -205,19 +205,22 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 ### 39.1.5 Tests
 - [x] **Contract:** every new response validated against the OpenAPI
       description, success and error.
-- [x] **Access matrix:** for each new endpoint, owner, `manage`, `log`,
-      `view` share with and without *Can see costs*, and a stranger; a
-      `read` key on the reminder actions (403 `insufficient_scope`); a
-      trip the key's user may not see read by id (404); an incident read
-      by id without `ViewIncidentDetails` (details left out).
+- [x] **Access matrix:** every new vehicle route walked with no access
+      (404), view only (200, or 403 for cost reads) and without costs
+      (`ApiAccessTest`, every single-entry route really requested); log
+      share and stranger on the reminder actions; view share on
+      incidents, expenses, valuations, ownership, history, reports and
+      finance; a `read` key on the reminder actions (403
+      `insufficient_scope`); a trip the key's user may not see, by id
+      and in history (404 / left out).
 - [x] **Reports parity:** each report's totals equal the Reports page's
       for every demo vehicle and period.
 - [x] **Retries:** a repeated reminder action is `unchanged` and writes
       nothing.
 - [x] **Time zones:** documents `?current=1` at the day boundary in a
       non-UTC zone (`ApiListFiltersTest`).
-- [ ] **Time zones:** report periods at the day boundary in a non-UTC
-      zone (parity runs in the demo user's zone only).
+- [x] **Time zones:** report periods at the day boundary in a non-UTC
+      zone (`ApiReportsTest`).
 - [x] Modules off: every new path of that module 404.
 - [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
       or above the floor; smoke test at a subpath.
