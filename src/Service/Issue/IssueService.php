@@ -208,6 +208,10 @@ final readonly class IssueService
         $this->transaction->run(function () use ($vehicle, $issue, $reason, $zone): void {
             $this->issues->update($vehicle->id, $issue->id, $issue->data->withStatus(IssueStatus::Open), $this->clock->now());
             $this->issues->setFixed($vehicle->id, $issue->id, null, null, $this->clock->now());
+            if ($issue->isFixed()) {
+                // The earlier fix is history: it no longer keeps the issue fixed.
+                $this->issues->markHistorical($issue->id);
+            }
             $this->automatic($issue, $issue->status(), IssueStatus::Open, $reason, $zone);
         });
 
@@ -308,10 +312,10 @@ final readonly class IssueService
     public function setFixesOf(Vehicle $vehicle, MaintenanceEntry $record, array $issueIds, DateTimeZone $zone): void
     {
         $today = LocalTime::today($this->clock, $zone);
-        foreach ($this->issues->fixedBy($record->id) as $issueId) {
+        foreach ($this->issues->fixedBy($record->id, currentOnly: true) as $issueId) {
             $issue = $this->issues->find($vehicle->id, $issueId);
-            // A link to an issue that is back (*It's back*) is history: the
-            // checklist shows it unticked, and leaving it so keeps it.
+            // A link kept as history (*It's back*) is shown unticked, and
+            // leaving it so keeps it.
             if ($issue !== null && $issue->isFixed() && !in_array($issueId, $issueIds, true)) {
                 $this->unlink($vehicle, $issue, $record->id, IssueUpdateReason::RecordUnlinked, $today);
             }
@@ -331,7 +335,7 @@ final readonly class IssueService
      */
     public function recordSaved(Vehicle $vehicle, MaintenanceEntry $record): void
     {
-        foreach ($this->issues->fixedBy($record->id) as $issueId) {
+        foreach ($this->issues->fixedBy($record->id, currentOnly: true) as $issueId) {
             $issue = $this->issues->find($vehicle->id, $issueId);
             if ($issue !== null && $issue->isFixed()) {
                 $this->refreshFixedOn($vehicle, $issue);
@@ -340,15 +344,15 @@ final readonly class IssueService
     }
 
     /**
-     * The issues a record fixes now: linked and still fixed (the checklist's
-     * ticks). A link to an issue that is back is history, not ticked.
+     * The issues a record fixes now: current links to issues still fixed
+     * (the checklist's ticks). A link kept as history is not ticked.
      *
      * @return list<int>
      */
     public function fixingNow(Vehicle $vehicle, int $recordId): array
     {
         return array_values(array_filter(
-            $this->issues->fixedBy($recordId),
+            $this->issues->fixedBy($recordId, currentOnly: true),
             fn (int $id): bool => $this->issues->find($vehicle->id, $id)?->isFixed() ?? false,
         ));
     }
@@ -584,7 +588,7 @@ final readonly class IssueService
         if (!$issue->isFixed() || $issue->statusBeforeFix === null) {
             return;
         }
-        if ($this->issues->fixesOf($issue->id) !== []) {
+        if ($this->issues->fixesOf($issue->id, currentOnly: true) !== []) {
             $this->refreshFixedOn($vehicle, $issue, $recordId);
 
             return;
@@ -605,7 +609,7 @@ final readonly class IssueService
             return;
         }
         $latest = null;
-        foreach ($this->issues->fixesOf($issue->id) as $recordId) {
+        foreach ($this->issues->fixesOf($issue->id, currentOnly: true) as $recordId) {
             $record = $recordId === $without ? null : $this->records->find($vehicle->id, $recordId);
             if ($record !== null && ($latest === null || $record->data->performedOn > $latest)) {
                 $latest = $record->data->performedOn;

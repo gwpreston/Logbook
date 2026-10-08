@@ -190,9 +190,23 @@ final readonly class IssueRepository
 
     // Fixes
 
+    /**
+     * Link a record as a current fix; a link kept as history becomes current again.
+     */
     public function addFix(int $issueId, int $recordId, DateTimeImmutable $now): void
     {
         if (in_array($recordId, $this->fixesOf($issueId), true)) {
+            $this->connection->update(
+                self::FIXES,
+                ['historical' => false],
+                ['issue_id' => $issueId, 'maintenance_entry_id' => $recordId],
+                [
+                    'historical' => ParameterType::BOOLEAN,
+                    'issue_id' => ParameterType::INTEGER,
+                    'maintenance_entry_id' => ParameterType::INTEGER,
+                ],
+            );
+
             return;
         }
         $this->connection->insert(self::FIXES, [
@@ -212,14 +226,32 @@ final readonly class IssueRepository
     }
 
     /**
+     * *It's back*: the issue's fixes so far are kept as history.
+     */
+    public function markHistorical(int $issueId): void
+    {
+        $this->connection->update(
+            self::FIXES,
+            ['historical' => true],
+            ['issue_id' => $issueId],
+            ['historical' => ParameterType::BOOLEAN, 'issue_id' => ParameterType::INTEGER],
+        );
+    }
+
+    /**
+     * @param bool $currentOnly leave out the fixes kept as history (*It's back*)
      * @return list<int> the service record ids that fixed the issue, oldest link first
      */
-    public function fixesOf(int $issueId): array
+    public function fixesOf(int $issueId, bool $currentOnly = false): array
     {
-        $ids = $this->connection->createQueryBuilder()
+        $query = $this->connection->createQueryBuilder()
             ->select('maintenance_entry_id')
             ->from(self::FIXES)
-            ->where('issue_id = :issue')
+            ->where('issue_id = :issue');
+        if ($currentOnly) {
+            $query->andWhere('historical = :no')->setParameter('no', false, ParameterType::BOOLEAN);
+        }
+        $ids = $query
             ->orderBy('created_at')
             ->addOrderBy('maintenance_entry_id')
             ->setParameter('issue', $issueId, ParameterType::INTEGER)
@@ -229,14 +261,19 @@ final readonly class IssueRepository
     }
 
     /**
+     * @param bool $currentOnly leave out the links kept as history (*It's back*)
      * @return list<int> the issue ids a service record fixes
      */
-    public function fixedBy(int $recordId): array
+    public function fixedBy(int $recordId, bool $currentOnly = false): array
     {
-        $ids = $this->connection->createQueryBuilder()
+        $query = $this->connection->createQueryBuilder()
             ->select('issue_id')
             ->from(self::FIXES)
-            ->where('maintenance_entry_id = :record')
+            ->where('maintenance_entry_id = :record');
+        if ($currentOnly) {
+            $query->andWhere('historical = :no')->setParameter('no', false, ParameterType::BOOLEAN);
+        }
+        $ids = $query
             ->orderBy('issue_id')
             ->setParameter('record', $recordId, ParameterType::INTEGER)
             ->fetchFirstColumn();
@@ -318,7 +355,8 @@ final readonly class IssueRepository
             ->select('f.issue_id', 'm.title', 'm.performed_on')
             ->from(self::FIXES, 'f')
             ->innerJoin('f', 'maintenance_entries', 'm', 'm.id = f.maintenance_entry_id')
-            ->where('f.issue_id IN (:issues)')
+            ->where('f.issue_id IN (:issues)', 'f.historical = :no')
+            ->setParameter('no', false, ParameterType::BOOLEAN)
             ->orderBy('f.created_at')
             ->addOrderBy('f.id')
             ->setParameter('issues', $issueIds, ArrayParameterType::INTEGER)

@@ -291,6 +291,22 @@ final class IssueServiceTest extends AppTestCase
         self::assertSame(IssueStatus::Fixed, $this->issues()->get($this->golf, $knock->id)->status());
     }
 
+    public function testAfterItsBackOnlyTheNewFixKeepsItFixed(): void
+    {
+        $knock = $this->log();
+        $this->record('2026-09-01', [$knock->id]);
+        $this->issues()->reopen($this->golf, $this->issues()->get($this->golf, $knock->id), self::zone());
+        $second = $this->record('2026-09-10', [$knock->id]);
+        self::assertSame('2026-09-10', $this->issues()->get($this->golf, $knock->id)->fixedOn?->format('Y-m-d'));
+
+        // Deleting the new fix reopens it: the first one is history.
+        $this->service($this->app, MaintenanceService::class)->delete($this->golf, $second, self::zone());
+        $back = $this->issues()->get($this->golf, $knock->id);
+        self::assertSame(IssueStatus::Open, $back->status());
+        // By date: both fixes on their records' dates, the rest today.
+        self::assertSame(['fixed', 'fixed', 'back', 'record_deleted'], $this->reasons($back));
+    }
+
     public function testAFixedIssueIsNeverWatchedOrChangedByAnUpdate(): void
     {
         $fixed = $this->issues()->fixWithoutRecord($this->golf, $this->log(), self::day('2026-09-02'), null);

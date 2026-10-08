@@ -12,7 +12,8 @@ use Phinx\Migration\AbstractMigration;
  *   converted through a time zone. `created_by` keeps the issue when the
  *   user is deleted (SET NULL), as for every other entry.
  * - `issue_fixes`: the service records that fixed an issue; either side's
- *   deletion removes the link.
+ *   deletion removes the link. `historical` marks a fix that came before
+ *   *It's back*: kept as history, it no longer keeps the issue fixed.
  * - `issue_updates`: the timeline: notes and automatic status changes;
  *   `reason` says why an automatic one was written, so it is shown in the
  *   reader's language.
@@ -65,6 +66,7 @@ final class CreateIssues extends AbstractMigration
         $this->table('issue_fixes')
             ->addColumn('issue_id', 'integer', ['null' => false, 'signed' => false])
             ->addColumn('maintenance_entry_id', 'integer', ['null' => false, 'signed' => false])
+            ->addColumn('historical', 'boolean', ['null' => false, 'default' => false])
             ->addColumn('created_at', 'datetime', ['null' => false])
             ->addIndex(['issue_id', 'maintenance_entry_id'], ['unique' => true, 'name' => 'issue_fixes_pair_uniq'])
             ->addIndex(['maintenance_entry_id'], ['name' => 'issue_fixes_record_idx'])

@@ -733,7 +733,10 @@ MySQL only.
 
 **IssueFix** (Phase 40.1), `issue_fixes`
 - id, issue_id (`ON DELETE CASCADE`), maintenance_entry_id (`ON DELETE
-  CASCADE`), created_at (UTC); unique on the pair. One record can fix
+  CASCADE`), historical (bool, default false: set by *It's back*, so an
+  earlier fix stays as history but no longer keeps the issue fixed nor
+  dates it; ticking that record again makes it current), created_at
+  (UTC); unique on the pair. One record can fix
   several issues (a brake job); a second attempt can be linked too.
 
 **IssueUpdate** (Phase 40.1), `issue_updates`
