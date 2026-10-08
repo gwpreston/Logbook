@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.4.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.5.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -89,7 +89,9 @@ your own server.
 > channels (email, ntfy, Gotify, Telegram, Discord, Pushover, Mattermost,
 > Slack or a webhook), each with what it receives, a test, and quiet hours
 > that hold messages overnight; your Ask Logbook conversations kept on the
-> Insights page; in English and German. Coming
+> Insights page; an API that reads, writes, corrects and deletes everything
+> the pages do, files included, and signed webhooks that tell your own
+> systems when an entry changes; in English and German. Coming
 > from 3.2? Email is off after upgrading until an admin sets it up in
 > Settings → Delivery: read the 3.3.0 upgrade notes. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for
@@ -131,7 +133,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message; reading receipts, documents and insurer letters |
 | [docs/sso.md](docs/sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link; header sign-in behind a forward-auth proxy (nginx, Traefik, Caddy, the Authentik outpost) and how to deploy it safely |
 | [docs/import.md](docs/import.md) | Importing CSV files and Fuelio exports: columns, units, what is skipped and why |
-| [docs/api.md](docs/api.md) | The REST API: keys, values, paging and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
+| [docs/api.md](docs/api.md) | The REST API: keys, values, paging, edits, attachments, webhooks and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/mcp.md](docs/mcp.md) | The MCP server: Claude Desktop, Claude Code and other assistants, keys and scopes, on your network or behind your reverse proxy, drafts to review |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |
 | [docs/trips.md](docs/trips.md) | Trips and mileage claims: logging, saved journeys, the business and private split, mileage rates, the claim report and what the figures mean |

@@ -3,7 +3,7 @@
 *Files go in and out over the API, and other systems hear when an entry
 changes.*
 
-Status: 🚧 in progress · releases **v3.5.0** (Phases 39.1 to 39.3) · file
+Status: ✅ complete · releases **v3.5.0** (Phases 39.1 to 39.3) · file
 lives in `docs/phases/`
 
 The last of Phase 39's three parts (#281). [Phase 39.1](phase-39.1.md)
@@ -107,16 +107,17 @@ Phase 27.1's incident-photo rules (#104).
       test at a subpath.
 
 ### 39.3.5 Release
-- [ ] `VERSION` → **3.5.0** (additive API; one new page; one migration).
-- [ ] `CHANGELOG.md`: *Added*, the endpoints by area (39.1–39.3, with
+- [x] `VERSION` → **3.5.0** (additive API; one new page; one migration).
+- [x] `CHANGELOG.md`: *Added*, the endpoints by area (39.1–39.3, with
       the vehicle's new `disposal` and `ETag`, and `If-Match` on 39.2's
       edits and deletes) and webhooks; *Upgrade notes*, the migration, `WEBHOOKS_ENABLED`, CORS
       now allowing `PUT`, `PATCH`, `DELETE` and `If-Match`.
-- [ ] `.env.example`, `docs/configuration.md` (`WEBHOOKS_ENABLED`; the
+- [x] `.env.example`, `docs/configuration.md` (`WEBHOOKS_ENABLED`; the
       `API_CORS_ORIGINS` row's methods and `If-Match`), the compose files'
       pass-through, `docs/deployment.md` (the job's cadence, per #291),
       `docs/demo-mode.md` (webhooks off).
-- [ ] README and `ROADMAP.md` rows for 39.1–39.3 ✅; tag once merged.
+- [x] README and `ROADMAP.md` rows for 39.1–39.3 ✅.
+- [ ] Tag v3.5.0 once merged.
 
 ---
 
