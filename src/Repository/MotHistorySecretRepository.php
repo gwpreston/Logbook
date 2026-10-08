@@ -65,9 +65,4 @@ final readonly class MotHistorySecretRepository
             ]);
         });
     }
-
-    public function remove(string $provider, string $slot): void
-    {
-        $this->connection->delete(self::TABLE, ['provider' => $provider, 'slot' => $slot]);
-    }
 }

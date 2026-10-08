@@ -155,9 +155,14 @@ and the decisions below win. In short:
       every other secret table.)
 
 ### 41.1 Provider
-- [ ] Interface, registry, `uk_dvsa` adapter (token, request, parsing,
-      unit conversion, error mapping), recorded-response fixtures.
-- [ ] Settings page, secrets, *Test*, last status; ability.
+- [x] Interface, registry, `uk_dvsa` adapter (token, request, parsing,
+      unit conversion, error mapping), fixtures. (2026-10-08: synthetic
+      fixtures from DVSA's OpenAPI specification;
+      `bin/record-mot-history.php` records real answers, scrubbed, once
+      credentials arrive, and `DvsaRecordedTest` checks them. Still to do
+      with a real key: confirm `bulk-download` accepts it, #327.)
+- [x] Settings page, secrets, *Test*, last status; ability. (Also the
+      migration, backups, demo block and job-log redaction.)
 
 ### 41.2 Fetch and store
 - [ ] Fetch, VIN fallback, mismatch refusal, upsert, readings, *Stop and
