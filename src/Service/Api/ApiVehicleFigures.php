@@ -46,6 +46,7 @@ final readonly class ApiVehicleFigures
         private VehicleService $vehicles,
         private DisplayFormatter $format,
         private ClockInterface $clock,
+        private EntityTag $tags,
     ) {
     }
 
@@ -72,7 +73,7 @@ final readonly class ApiVehicleFigures
         }
         foreach ($this->scheduleStates($user, $vehicle) as $state) {
             if ($state->schedule->id === $id) {
-                return new ApiEntry(Serializer::schedule($state), EntityTag::of($stored));
+                return new ApiEntry(Serializer::schedule($state), $this->tags->of($stored));
             }
         }
         throw new \LogicException('A schedule just read is missing from its vehicle.');
@@ -111,7 +112,7 @@ final readonly class ApiVehicleFigures
 
         return new ApiEntry(
             Serializer::valuation($valuation, $this->vehicles->currencyFor($user, $vehicle)),
-            EntityTag::of($valuation),
+            $this->tags->of($valuation),
         );
     }
 

@@ -4896,8 +4896,9 @@ stays `v1`, and existing responses don't change.
   unreadable vehicle does. Journeys, price alerts and stations belong to
   the user or the install, so their paths are top level.
 - **Read one:** every entry list (and schedules and valuations) gains `GET …/{entry}`, returning the
-  object exactly as the list returns it, with an `ETag`: a hash of the
-  entry's own stored columns, never of derived figures (a fill-up's
+  object exactly as the list returns it, with an `ETag`: a keyed hash
+  (HMAC-SHA256, key derived from `SESSION_SECRET`, so changing it changes
+  every tag) of the entry's own stored columns, never of derived figures (a fill-up's
   segment economy, which a neighbour's edit changes) or of what the
   viewer may see, so it changes exactly when the entry does. It exists
   for `If-Match`; `If-None-Match` and 304 are not supported. A single

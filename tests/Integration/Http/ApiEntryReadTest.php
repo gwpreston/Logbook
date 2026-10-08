@@ -15,7 +15,9 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Trip\TripService;
+use Logbook\Support\Api\EntityTag;
 use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\AppTestCase;
@@ -137,6 +139,18 @@ final class ApiEntryReadTest extends AppTestCase
         $stored = $fuel->get($this->golf, $second->id);
         $fuel->update($this->golf, $stored, $stored->data->withStation(null, 'Corner garage'));
         self::assertNotSame($after->getHeaderLine('ETag'), $this->api->get($path)->getHeaderLine('ETag'));
+    }
+
+    public function testTheTagIsKeyedSoAHiddenCostCannotBeMatchedOffline(): void
+    {
+        $record = $this->maintenance($this->app, $this->golf, '2026-09-05', 'Annual service', '187.43', '40800');
+        $tag = $this->api->get('/vehicles/' . $this->golf->id . '/maintenance/' . $record->id)->getHeaderLine('ETag');
+        $stored = $this->service($this->app, MaintenanceService::class)->get($this->golf, $record->id);
+
+        // The security review's attack: hash the rebuilt entity without the server's key.
+        $unkeyed = '"' . substr(hash('sha256', $stored::class . "\0" . serialize($stored)), 0, 32) . '"';
+        self::assertNotSame($unkeyed, $tag);
+        self::assertSame($tag, $this->service($this->app, EntityTag::class)->of($stored));
     }
 
     public function testATripTheKeysUserMayNotSeeIsNotFound(): void

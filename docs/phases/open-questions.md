@@ -97,7 +97,7 @@ started; the phase was split into 39.1, 39.2 and 39.3. #221, #279 and
 #280 were reviewed the same day and carried as they are: none of them
 changes Phase 39. #290 was found while starting Phase 39.1 and waits
 for a decision before Phase 39.3; the spec review of the same day
-raised #291–#295, also for 39.3. #296 was found while building 39.1.
+raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -397,6 +397,7 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1.
 | 294 | [39.3](phase-39.3.md) | Where does the "webhook paused" notice go, and do quiet hours apply? (found by the spec review) | Needs a decision | Options: every channel on; the reminder channels under quiet hours; the Webhooks page and dashboard only. Before 39.3. | — |
 | 295 | [39.3](phase-39.3.md) | Queue events on cost entries for a user without *Can see costs*? (found by the spec review) | Needs a decision | Options: yes, ids and kind only; no, skip those kinds for them. Related to #290. Before 39.3. | — |
 | 296 | [39.1](phase-39.1.md) | List and un-hide hidden *Needs attention* items over the API? The pages have no *Show again* (found while building 39.1) | Needs a decision | Options: leave both out (hide only, as the pages); API only; *Show again* on the pages too. Recommendation: leave out. 39.1 ships hide-only meanwhile, as the pages. | — |
+| 297 | [39.1](phase-39.1.md) | Should fuel grade verdicts (relative price and cost per distance) need *Can see costs*? The Fuel tab, Ask's `fuel_stats` and `GET /reports/fuel` show them without it (found by the 39.1 security review) | Needs a decision | Options: keep showing them (relative figures only, as now everywhere); hide `price` and `cost_per_distance` without cost access on all three. | — |
 
 ## Other loose ends found in the review
 

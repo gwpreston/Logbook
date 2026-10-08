@@ -281,3 +281,9 @@ Found while building 39.1 (2026-10-08), not decided:
   (2) add them to the API only; (3) add *Show again* to the pages as well,
   and the API with it. *Recommendation:* (1); (3) is a page feature for
   its own phase.
+- **#297 Grade verdicts without cost access.** The security review noted
+  that the fuel report's grade verdicts carry relative price and
+  cost-per-distance percentages to a user without *Can see costs*, as the
+  Fuel tab and Ask already do. Options: (1) keep them (relative figures
+  only); (2) hide `price` and `cost_per_distance` without cost access on
+  all three. Not changed in 39.1: it matches the pages.

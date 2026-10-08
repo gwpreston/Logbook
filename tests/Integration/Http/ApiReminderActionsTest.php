@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Http;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Api\ApiScope;
+use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleShareRepository;
+use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\ApiFixtures;
@@ -125,6 +131,21 @@ final class ApiReminderActionsTest extends AppTestCase
         $response = $this->api->post('/reminders/' . $wash . '/done', []);
         self::assertSame(409, $response->getStatusCode());
         self::assertSame('vehicle_archived', ApiClient::json($response)->get('code'));
+    }
+
+    public function testAReminderOfASwitchedOffModuleIsNotFound(): void
+    {
+        $this->service($this->app, ScheduleService::class)->create($this->golf, new MaintenanceScheduleData(
+            MaintenanceCategory::Oil,
+            'Oil change',
+            intervalMonths: 12,
+            baselineDoneOn: new DateTimeImmutable('2025-09-01', new DateTimeZone('UTC')),
+        ));
+        $id = ApiClient::json($this->api->get('/reminders'))->int('items', 0, 'id');
+        $this->service($this->app, FeatureToggles::class)
+            ->save(array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== Feature::Maintenance)));
+
+        self::assertSame(404, $this->api->post('/reminders/' . $id . '/done', [])->getStatusCode());
     }
 
     /**

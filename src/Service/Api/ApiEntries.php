@@ -50,6 +50,7 @@ final readonly class ApiEntries
         private TripService $trips,
         private IncidentService $incidents,
         private ApiVehicleFigures $figures,
+        private EntityTag $tags,
     ) {
     }
 
@@ -108,6 +109,6 @@ final readonly class ApiEntries
      */
     private function entry(object $stored, array $body): ApiEntry
     {
-        return new ApiEntry($body, EntityTag::of($stored));
+        return new ApiEntry($body, $this->tags->of($stored));
     }
 }

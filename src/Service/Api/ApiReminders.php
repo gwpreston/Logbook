@@ -8,6 +8,7 @@ use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderNotFound;
 use Logbook\Service\Reminder\ReminderService;
@@ -30,6 +31,7 @@ final readonly class ApiReminders
     public function __construct(
         private ReminderService $reminders,
         private ClockInterface $clock,
+        private FeatureToggles $features,
     ) {
     }
 
@@ -68,12 +70,22 @@ final readonly class ApiReminders
         return Serializer::reminder(new ReminderEntry($reminder, $vehicle), $today) + ['unchanged' => $unchanged];
     }
 
+    /**
+     * A reminder the user can see whose source module is on: one from a
+     * switched-off module is left out of the list, so it isn't found here.
+     */
     private function find(User $user, int $id): Reminder
     {
         try {
-            return $this->reminders->get($user, $id);
+            $reminder = $this->reminders->get($user, $id);
         } catch (ReminderNotFound) {
             throw ApiProblem::notFound('There is no such reminder.');
         }
+        $feature = $reminder->source->feature();
+        if ($feature !== null && !$this->features->isEnabled($feature)) {
+            throw ApiProblem::notFound('There is no such reminder.');
+        }
+
+        return $reminder;
     }
 }
