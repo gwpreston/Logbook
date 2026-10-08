@@ -426,10 +426,13 @@ even if the form is sent twice.
 
 **Recommended work.** When the invoice recommends work ("front pads in
 about 5,000 miles") or the MOT has advisories, a card after saving offers
-each as a reminder: *Add reminder* per line, or *Add all*. A date is kept
+each as a reminder: *Add reminder* per line, or *Add all as reminders*. A date is kept
 as printed; a distance becomes a reminder *due at* that odometer (shown
 with the date your usual mileage reaches it); a line with neither is due
 in 30 days, which you can change. Nothing is added without a press.
+With the issues module on, each line can also become an issue (*Add as
+issue*, *Watch*, *Add all as issues*; see
+[issues.md](issues.md#recommended-work)).
 
 **What is sent, and where.**
 - A **PDF with text** (most garage and insurer PDFs) is read as text, on

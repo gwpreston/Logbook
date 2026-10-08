@@ -1009,8 +1009,8 @@ MySQL only.
 **AiDraft** (Phase 26.3, §7.26 *Drafting entries*)
 - id, user_id (`ON DELETE CASCADE`), thread_id (optional, `ON DELETE
   SET NULL`), kind (`fuel` | `odometer` | `maintenance` | `document` |
-  `expense` | `tyre_check` | `reminder` | `incident`, the last from Phase
-  27.1), vehicle_id (`ON DELETE
+  `expense` | `tyre_check` | `reminder` | `incident` | `issue`;
+  `incident` from Phase 27.1, `issue` from Phase 40.2), vehicle_id (`ON DELETE
   CASCADE`), input (JSON: the validated API-shaped body), card (JSON:
   the formatted lines, derived marks and warnings shown on the card),
   form_values (JSON: the create form's values in the user's units and
@@ -1031,7 +1031,9 @@ MySQL only.
   CASCADE`: the incident a claim letter or estimate updates), status
   (`reading` | `read` | `failed` | `saved`), result (optional JSON: the validated,
   scrubbed extraction, or the failure code), recommendations (optional
-  JSON: what the saved entry's card still offers), created_at, expires_at
+  JSON: what the saved entry's card still offers, with the entry's date
+  and odometer and, per line, what it became: `added_as` `reminder` or
+  `issue`, from Phase 40.2), created_at, expires_at
   (24 hours later), all UTC.
   A scanned file waiting for the entry it will belong to. Served to its
   user only; another user's token answers 404. Saving the entry claims it
@@ -4956,7 +4958,7 @@ amounts.
   fixes only), `source` (`manual`, `recommended_work`, from Phase 41
   `mot_advisory`), `source_ref`, `updates` (oldest first: `id`, `noted_on`,
   `odometer`, `note`, `status_from`, `status_to`, `automatic`),
-  `created_at`, `updated_at`. `GET …/issues/{issue}` returns the same
+  `created_by`, `created_at`, `updated_at`. `GET …/issues/{issue}` returns the same
   with an `ETag` that changes when an update, a fix or a status change is
   written.
 - `POST /api/v1/vehicles/{id}/issues`: the form's fields (`noticed_on`,
@@ -5060,7 +5062,8 @@ stays `v1`, and existing responses don't change.
 - **OpenAPI:** every new operation, schema and error code, with the
   tests validating every response against it. `info.version` moves one
   minor version, once, in Phase 39.1 (each later sub-phase adds
-  operations under that version).
+  operations under that version), and once more for v3.6.0 (1.23.0, in
+  Phase 40.1; Phase 40.2 adds under it).
 
 *New reads* (scope `read`; Phase 39.1).
 
@@ -6565,7 +6568,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   own. A line is added once, as a reminder or as an issue, and then shows
   which ("Added as a reminder", "Added as an issue"); *Add all* and *Add
   all as issues* skip added lines. *Watch* takes the line's own date or
-  distance (never the 30-day default) as the look-again point. The card lives on the pending upload's result for 24
+  distance (never the 30-day default) as the look-again point; there is
+  no *Watch all*. The issue buttons need an active vehicle, and an issue
+  is noticed on the entry's date (today, if that is later). The card lives on the pending upload's result for 24
   hours, so a reload shows it again until each line is added or the card
   is dismissed.
 - **Failures:** an unreadable file, a timeout, an unassigned task, a model
@@ -8344,7 +8349,7 @@ that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
     upload, noticed on the entry's date at its odometer, title the line's
     text (up to 120). A line already added as a reminder or an issue is
     marked so.
-  - **Ask** (§7.26): read tool `issues(vehicle?, status?)` and draft tool
+  - **Ask** (§7.26): read tool `issues(vehicles?, status?)` and draft tool
     `draft_issue`. The system text gains: "Never suggest what may be
     causing a fault, even if asked; say Logbook only records what the
     owner noted, and suggest a qualified mechanic." AI insights never

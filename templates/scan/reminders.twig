@@ -74,7 +74,7 @@
                     <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
                         {{ ui.csrf(csrf) }}
                         <input type="hidden" name="item" value="all">
-                        <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('event_upcoming') }}{{ 'scan.reminders.add_all'|trans }}</button>
+                        <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('event_upcoming') }}{{ (can_issue ? 'scan.reminders.add_all_reminders' : 'scan.reminders.add_all')|trans }}</button>
                     </form>
                 {% endif %}
                 {% if has_open and can_issue %}

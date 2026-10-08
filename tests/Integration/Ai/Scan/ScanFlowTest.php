@@ -219,6 +219,33 @@ final class ScanFlowTest extends ScanTestCase
     }
 
     /**
+     * #313 by ability: with `Log` and no `Manage`, the card offers issues
+     * only, and a reminder press is refused.
+     */
+    public function testWithLogAndNoManageTheCardOffersIssuesOnly(): void
+    {
+        $golf = $this->garage['Golf'];
+        $container = $this->app->getContainer();
+        self::assertInstanceOf(\DI\Container::class, $container);
+        $access = new \Logbook\Tests\Support\ConfigurableVehicleAccess($this->service($this->app, VehicleRepository::class));
+        $access->except($golf, \Logbook\Domain\Access\VehicleAbility::Manage);
+        $container->set(\Logbook\Service\Access\VehicleAccess::class, $access);
+        [$form, $token] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());
+        $values = Html::formValues(Html::element(Html::document(self::body($form)), 'form.form'));
+        $saved = $this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', $values);
+        self::assertSame('/scan/' . $token . '/reminders', $saved->getHeaderLine('Location'));
+
+        $card = self::body($this->browser->get('/scan/' . $token . '/reminders'));
+        self::assertStringContainsString('Add as issue', $card);
+        self::assertStringNotContainsString('Add reminder', $card);
+        self::assertSame(404, $this->browser->post('/scan/' . $token . '/reminders', ['item' => '0'])->getStatusCode());
+        $issue = $this->browser->post('/scan/' . $token . '/reminders', ['item' => '0', 'as' => 'issue']);
+        self::assertSame(303, $issue->getStatusCode());
+        self::assertCount(1, $this->service($this->app, IssueRepository::class)->listForVehicle($golf->id));
+        self::assertSame([], $this->manualReminders());
+    }
+
+    /**
      * Acceptance 2: an MOT certificate fills an inspection document with its
      * expiry and mileage; the advisories are offered as reminders.
      */

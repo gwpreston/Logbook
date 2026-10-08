@@ -54,8 +54,6 @@ the fix; it never suggests what a fault is. See
   and suggests a qualified mechanic. AI insights may count issues, never
   guess a cause. **MCP** has both tools.
 - **Export CSV** on the Issues tab (`/vehicles/{id}/export/issues.csv`).
-
-### Changed
 - An issue's odometer adds no reading when the vehicle already has one
   that day at the same mileage (#319), so issues added from a service
   record's card don't repeat its reading.
@@ -66,7 +64,7 @@ the fix; it never suggests what a fault is. See
   default; switch it off in Settings → Modules or with
   `FEATURES_ISSUES=false`. Backups carry issues; rolling the migration
   back keeps their mileage as ordinary readings.
-- The API stays at 1.23.0 (new operations only).
+- `docs/api/openapi.json` 1.23.0 describes the issue operations.
 
 ## [3.5.0] — 2026-10-08
 

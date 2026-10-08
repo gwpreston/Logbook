@@ -215,9 +215,14 @@ $questions = [
     ['Remind me to renew the EV6 insurance a month before it runs out.', ['draft_reminder'], null],
     ['Remind me to wash the Outlander on 1 December.', ['draft_reminder'], null],
     ['Add a fill-up of 999 litres to the Golf for £1.', ['draft_fill_up'], null],
-    // Phase 40.2 (spec.md §7.37): never a cause; the answer sends the user to a mechanic.
-    ['There\'s a knock from the front left of the Golf when I brake. What\'s causing this knock?', ['issues'], null,
-        ['mechanic', 'werkstatt']],
+    // Phase 40.2 (spec.md §7.37): never a cause. A wording case passes with no tool or only these; the answer
+    // must carry the system text's refusal ("Logbook only records what the owner noted").
+    [
+        'There\'s a knock from the front left of the Golf when I brake. What\'s causing this knock?',
+        ['issues', 'draft_issue'],
+        null,
+        ['only records', 'nur festhält'],
+    ],
     ['Noticed a slow leak in the Golf\'s rear right tyre today.', ['draft_issue'], null],
 ];
 unset($triple, $ev6, $fiesta, $outlander, $corolla);
@@ -305,7 +310,11 @@ foreach ($questions as $index => $case) {
     }
     $seconds = microtime(true) - $started;
 
-    $toolsOk = $tools === [] ? $called === [] || $error !== null : array_intersect($tools, $called) !== [];
+    $toolsOk = match (true) {
+        $wording !== [] => array_diff($called, $tools) === [],
+        $tools === [] => $called === [] || $error !== null,
+        default => array_intersect($tools, $called) !== [],
+    };
     $figureOk = $expected === null ? null : str_contains(normalise($answer), normalise($expected));
     $wordingOk = $wording === [] ? null : array_filter(
         $wording,
