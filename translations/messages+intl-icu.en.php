@@ -650,6 +650,8 @@ return [
             'tyre' => 'Tyres',
             'incident' => 'Incident',
             'purchase' => 'Bought',
+            'issue' => 'Issue',
+            'issue_update' => 'Issue',
         ],
         'stat' => [
             'current' => 'Odometer',
@@ -3442,6 +3444,10 @@ return [
             'incidents' => [
                 'title' => 'Incidents and claims',
                 'hint' => 'Accidents, damage and theft, the repairs they caused, insurance claims and the claims history for insurance quotes.',
+            ],
+            'issues' => [
+                'title' => 'Issues',
+                'hint' => 'Faults you have noticed and not fixed yet: what you noticed, when, at what mileage, and the service record that fixed it. Logbook never suggests a cause.',
             ],
             'finance' => [
                 'title' => 'Finance and leases',

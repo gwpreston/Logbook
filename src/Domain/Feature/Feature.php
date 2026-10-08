@@ -19,6 +19,8 @@ enum Feature: string
     case Trips = 'trips';
     case Incidents = 'incidents';
     case Finance = 'finance';
+    // Phase 40.1 (spec.md §7.37): faults noticed and not yet fixed.
+    case Issues = 'issues';
     // Phase 30.1: part of the fuel pages, so off whenever fuel is.
     case Stations = 'stations';
     // AI features (Phase 26.1, spec.md §7.25): on by default but inert, and
@@ -56,6 +58,7 @@ enum Feature: string
             self::Trips => 'route',
             self::Incidents => 'car_crash',
             self::Finance => 'account_balance',
+            self::Issues => 'report',
             self::Stations => 'pin_drop',
             self::AiAsk => 'forum',
             self::AiActions => 'smart_toy',

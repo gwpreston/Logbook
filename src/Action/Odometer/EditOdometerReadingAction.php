@@ -98,6 +98,14 @@ final readonly class EditOdometerReadingAction
                 'id' => (string) $vehicle->id,
                 'incident' => (string) $reading->incidentId,
             ]),
+            $reading->issueId !== null => $this->redirect->toRoute('issues.edit', [
+                'id' => (string) $vehicle->id,
+                'issue' => (string) $reading->issueId,
+            ]),
+            $reading->issueUpdateId !== null => $this->redirect->toRoute('issues.updates.edit', [
+                'id' => (string) $vehicle->id,
+                'update' => (string) $reading->issueUpdateId,
+            ]),
             // Mileage when bought is set on the vehicle form (spec.md §6 OdometerReading).
             $reading->source === OdometerSource::Purchase => $this->redirect->toRoute('vehicles.edit', [
                 'id' => (string) $vehicle->id,

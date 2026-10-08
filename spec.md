@@ -431,12 +431,13 @@ MySQL only.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`|`issue`), note (optional),
+  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`|`issue`|`issue_update`), note (optional),
   fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
   by `ON DELETE CASCADE`), maintenance_entry_id, compliance_document_id and
   tyre_change_id (likewise, for `maintenance`, `document` and `tyre`
   readings), incident_id (likewise, for `incident` readings, Phase 27.1),
-  issue_id and issue_update_id (likewise, for `issue` readings, Phase 40.1:
+  issue_id and issue_update_id (likewise, for `issue` and `issue_update`
+  readings, Phase 40.1:
   an issue's or an update's odometer, §7.37),
   created/updated (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
@@ -8131,7 +8132,8 @@ that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
   lists, with the words "Affects safety" and the danger colour (never
   colour alone).
 - **Odometer** (decided 2026-10-08, #307): an issue's odometer, and an
-  update's, **adds a reading** (source `issue`, local noon on its date,
+  update's, **adds a reading** (source `issue` or `issue_update`, both
+  shown as *Issue*, local noon on its date,
   with the usual plausibility warning), written, moved and removed with
   the issue or update in the same transaction, as a service record's is.
 - **Fixing from the service record:** the maintenance form (page and
@@ -8630,6 +8632,7 @@ Real environment variables override `.env`; an empty value counts as unset.
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES`,
   `FEATURES_INCIDENTS` (Phase 27.1), `FEATURES_FINANCE` (Phase 29.1),
+  `FEATURES_ISSUES` (Phase 40.1),
   `FEATURES_STATIONS` (Phase 30.1; off whenever fuel is)
   (default true; see §7.10),
   `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,

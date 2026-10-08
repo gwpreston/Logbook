@@ -649,6 +649,8 @@ return [
             'tyre' => 'Reifen',
             'incident' => 'Schaden',
             'purchase' => 'Kauf',
+            'issue' => 'Mangel',
+            'issue_update' => 'Mangel',
         ],
         'stat' => [
             'current' => 'Kilometerstand',
@@ -3439,6 +3441,10 @@ return [
             'incidents' => [
                 'title' => 'Schäden und Versicherungsfälle',
                 'hint' => 'Unfälle, Schäden und Diebstahl, die Reparaturen dazu, Schadenmeldungen und die Schadenhistorie für Versicherungsangebote.',
+            ],
+            'issues' => [
+                'title' => 'Mängel',
+                'hint' => 'Mängel, die du bemerkt und noch nicht behoben hast: was, wann, bei welchem Kilometerstand und welcher Werkstatteintrag sie behoben hat. Logbook schlägt nie eine Ursache vor.',
             ],
             'finance' => [
                 'title' => 'Finanzierung und Leasing',
