@@ -25,7 +25,7 @@ receives*, quiet hours), §7.21 (`ViewCosts`), §7.24, §7.26 *AI
 insights*, and Phases 38, 40 and 42 first.
 
 **Prerequisites:** [Phase 42](phase-42.md) complete and green (and so
-Phase 38). [Phase 40](phase-40.md) for the open issues line (built
+Phase 38). [Phase 40.1](phase-40.1.md) for the open issues line (built
 without it when 40 hasn't shipped).
 
 ---

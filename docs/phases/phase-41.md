@@ -14,7 +14,7 @@ The DVSA MOT history API fits that pattern. For a UK vehicle it brings:
 - **past test mileages**, a free plausibility check against the owner's
   own readings and a mileage history for years before Logbook was used;
 - **advisories and defects**, the most useful input the issues log
-  ([Phase 40](phase-40.md)) could have;
+  ([Phase 40.1](phase-40.1.md)) could have;
 - **test dates, results and expiries**, which can become inspection
   documents and drive MOT reminders.
 
@@ -25,9 +25,9 @@ whose admin enabled it.
 Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §4, §6
 (Vehicle, OdometerReading, ComplianceDocument), §7.1 *First MOT due*,
 §7.2, §7.5, §7.24, §7.25 (secrets, `env:`), §7.30, §7.34 (the provider
-pattern this copies) and [Phase 40](phase-40.md) first.
+pattern this copies) and [Phase 40.1](phase-40.1.md) first.
 
-**Prerequisites:** [Phase 40](phase-40.md) complete and green.
+**Prerequisites:** [Phase 40.2](phase-40.2.md) complete and green (v3.6.0, the issues it writes through).
 
 **Before building:** confirm an individual running a self-hosted install
 can get credentials. DVSA approves applications and asks for the
@@ -192,8 +192,8 @@ duplicated, and DVSA's text replaces the stored text.
   defect's text (cut to 120 with the full text in the description),
   status `open` for `fail`, `dangerous`, `major` and `prs`; **`watching`**
   for `advisory` and `minor`, with *Look again* at the next MOT's expiry
-  less 30 days. With Phase 40's *Affects safety* (its question D) decided
-  yes, `dangerous` and `major` set it.
+  less 30 days. `dangerous` and `major` set *Affects safety* (Phase
+  40.1's question D, decided yes 2026-10-08, #310).
 - **Repeated advisories:** a defect whose text matches (case-folded,
   whitespace collapsed) one on the previous test that already became an
   issue is not offered again; the existing issue gets an update instead
