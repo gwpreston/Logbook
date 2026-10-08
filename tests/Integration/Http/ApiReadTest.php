@@ -229,7 +229,8 @@ final class ApiReadTest extends AppTestCase
             self::assertSame('invalid_parameter', ApiClient::json($response)->get('code'), $query);
         }
         self::assertSame(400, $this->api->get('/vehicles?status=sold')->getStatusCode());
-        self::assertSame(400, $this->api->get('/reminders?status=done')->getStatusCode());
+        self::assertSame(400, $this->api->get('/reminders?status=snoozed')->getStatusCode());
+        self::assertSame(400, $this->api->get('/reminders?closed=1&status=due')->getStatusCode(), 'closed with an open status');
         self::assertSame(404, $this->api->get('/upcoming?vehicle=999999')->getStatusCode());
     }
 

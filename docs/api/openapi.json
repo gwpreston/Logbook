@@ -1181,7 +1181,24 @@
               "enum": [
                 "overdue",
                 "due",
-                "upcoming"
+                "upcoming",
+                "done",
+                "dismissed"
+              ]
+            },
+            "description": "One status. done or dismissed lists the closed reminders (Phase 39.1)."
+          },
+          {
+            "name": "closed",
+            "in": "query",
+            "description": "1: the done and dismissed reminders instead of the open ones, most recently closed first, as the Reminders page lists them (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
               ]
             }
           }
@@ -1211,6 +1228,138 @@
           },
           "400": {
             "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/reminders/{reminder}/done": {
+      "post": {
+        "operationId": "markReminderDone",
+        "summary": "Mark a reminder done (the Reminders page's one-click form). Repeating it is safe: \"unchanged\": true.",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reminders/{reminder}/dismiss": {
+      "post": {
+        "operationId": "dismissReminder",
+        "summary": "Dismiss a reminder (the Reminders page's one-click form). Repeating it is safe: \"unchanged\": true.",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reminders/{reminder}/reopen": {
+      "post": {
+        "operationId": "reopenReminder",
+        "summary": "Reopen a done or dismissed reminder (the Reminders page's one-click form). Repeating it is safe: \"unchanged\": true.",
+        "parameters": [
+          {
+            "name": "reminder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
           }
         }
       }
@@ -3643,6 +3792,7 @@
           "distance_unit",
           "days_left",
           "lead_time_days",
+          "closed_at",
           "created_at",
           "updated_at"
         ],
@@ -3685,7 +3835,9 @@
             "enum": [
               "upcoming",
               "due",
-              "overdue"
+              "overdue",
+              "done",
+              "dismissed"
             ]
           },
           "due_on": {
@@ -3707,6 +3859,17 @@
           },
           "lead_time_days": {
             "type": "integer"
+          },
+          "closed_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it was marked done or dismissed; null while open (Phase 39.1)."
           },
           "created_at": {
             "$ref": "#/components/schemas/Instant"
@@ -7508,6 +7671,115 @@
             }
           }
         }
+      },
+      "ReminderActionResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "source",
+          "title",
+          "category",
+          "notes",
+          "status",
+          "due_on",
+          "due_odometer",
+          "distance_unit",
+          "days_left",
+          "lead_time_days",
+          "closed_at",
+          "created_at",
+          "updated_at",
+          "unchanged"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "compliance",
+              "tyre",
+              "first_inspection",
+              "manual",
+              "finance",
+              "finance_end"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "due",
+              "overdue",
+              "done",
+              "dismissed"
+            ]
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "due_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km",
+            "description": "Every distance and odometer value in this object is in kilometres."
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "lead_time_days": {
+            "type": "integer"
+          },
+          "closed_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it was marked done or dismissed; null while open (Phase 39.1)."
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "unchanged": {
+            "type": "boolean",
+            "description": "True when the action was already in effect: nothing was written."
+          }
+        },
+        "description": "A reminder after an action, as GET /reminders lists it, and whether anything changed."
       }
     }
   }

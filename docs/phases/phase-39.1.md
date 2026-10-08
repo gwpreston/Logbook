@@ -180,14 +180,14 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 - [ ] Reports: costs (`?group_by=`), cost per distance, fuel, mileage,
       with `excluded` for vehicles without `ViewCosts`.
 - [ ] Tyre changes and sets (vehicle and fleet).
-- [ ] Closed reminders: `?status=done|dismissed`, `?closed=1`.
+- [x] Closed reminders: `?status=done|dismissed`, `?closed=1`.
 - [ ] *Needs attention*, with each item's `key`, its fix's API link, and
       `?hidden=1`.
 - [ ] Price alerts (read); finance agreements (every one, with payment
       events and quotes, never the number).
 
 ### 39.1.3 Reminder actions
-- [ ] `POST /reminders/{id}/done`, `/dismiss`, `/reopen` through the
+- [x] `POST /reminders/{id}/done`, `/dismiss`, `/reopen` through the
       Reminders page's service, `Log`; any source; `"unchanged": true`
       on a repeat, writing nothing.
 

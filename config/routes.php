@@ -46,6 +46,7 @@ use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
+use Logbook\Action\Api\ReminderActionAction as ApiReminderActionAction;
 use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
@@ -333,6 +334,14 @@ return static function (App $app): void {
                 $keyed->get('/upcoming', ApiUpcomingAction::class)->setName('api.upcoming');
                 $keyed->get('/reminders', ApiRemindersAction::class)->setName('api.reminders')
                     ->add($module(Feature::Reminders));
+                // Reminder actions (Phase 39.1): the ability is checked on the reminder's vehicle by ApiReminders.
+                foreach (['done', 'dismiss', 'reopen'] as $action) {
+                    $keyed->post('/reminders/{reminder:[0-9]+}/' . $action, ApiReminderActionAction::class)
+                        ->setName('api.reminders.' . $action)
+                        ->setArgument('action', $action)
+                        ->setArgument($ability, VehicleAbility::Log->value)
+                        ->add($module(Feature::Reminders));
+                }
 
                 $keyed->get('/vehicles/{id:[0-9]+}', ApiVehicleAction::class)->setName('api.vehicles.show')
                     ->setArgument($ability, VehicleAbility::View->value);

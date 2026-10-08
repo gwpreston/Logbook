@@ -439,15 +439,17 @@ final readonly class ApiReader
     }
 
     /**
-     * Open reminders, most urgent first (spec.md §7.6).
+     * Open reminders, most urgent first (spec.md §7.6); or, with `$closed`
+     * (Phase 39.1), the done and dismissed ones as the Reminders page lists
+     * them, most recently closed first.
      *
      * @return list<array<string, mixed>>
      */
-    public function reminders(User $user, ?Vehicle $vehicle, ?ReminderStatus $status): array
+    public function reminders(User $user, ?Vehicle $vehicle, ?ReminderStatus $status, bool $closed = false): array
     {
         $overview = $this->reminders->overview($user);
         $entries = array_filter(
-            $overview->open,
+            $closed ? $overview->closed : $overview->open,
             static fn (ReminderEntry $entry): bool => ($vehicle === null || $entry->vehicle->id === $vehicle->id)
                 && ($status === null || $entry->reminder->status === $status),
         );

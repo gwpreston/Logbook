@@ -4973,7 +4973,8 @@ Reports page**, so the API's totals always match it, and a report's
   reminder of any source (schedule, document, tyre, finance, first MOT,
   manual) that the key user can act on. Answers `200` with the reminder.
   Repeating an action already in effect answers `200` with
-  `"unchanged": true` and writes nothing, so a retry is safe.
+  `"unchanged": true` and writes nothing, so a retry is safe. Reminders gain `closed_at` (when marked done or dismissed;
+  null while open) in every response that carries one.
 
 *Writes, edits and deletes* (scope `read_write`; Phase 39.2).
 - **Entries:** `PATCH` and `DELETE` for fill-ups, readings (manual only;

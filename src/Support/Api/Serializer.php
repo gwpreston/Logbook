@@ -497,6 +497,8 @@ final class Serializer
             'distance_unit' => self::DISTANCE_UNIT,
             'days_left' => $entry->daysLeft($today),
             'lead_time_days' => $reminder->leadTimeDays,
+            // Phase 39.1: when it was marked done or dismissed; null while open.
+            'closed_at' => $reminder->closedAt === null ? null : self::instant($reminder->closedAt),
             'created_at' => self::instant($reminder->createdAt),
             'updated_at' => self::instant($reminder->updatedAt),
         ];
