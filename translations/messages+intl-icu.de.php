@@ -3516,6 +3516,10 @@ return [
             'station_or_id' => 'Sende station_id oder station, nicht beides.',
             'station_unknown' => 'Diese Tankstelle gibt es nicht.',
             'interval_km_or_distance' => 'Sende interval_km oder interval_distance, nicht beides.',
+            'object' => 'Verwende ein Objekt.',
+            'by_tyre' => 'Verwende ein Objekt von Reifen-ID zu Wert.',
+            'lines' => 'Verwende eine Liste von Objekten.',
+            'set' => 'Verwende eine Satz-ID oder ein Objekt mit name und storage für einen neuen Satz.',
         ],
     ],
     'backup' => [

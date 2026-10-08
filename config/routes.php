@@ -62,6 +62,7 @@ use Logbook\Action\Api\UserWriteAction as ApiUserWriteAction;
 use Logbook\Action\Api\FigureWriteAction as ApiFigureWriteAction;
 use Logbook\Action\Api\VehicleWriteAction as ApiVehicleWriteAction;
 use Logbook\Action\Api\FinanceWriteAction as ApiFinanceWriteAction;
+use Logbook\Action\Api\TyreWriteAction as ApiTyreWriteAction;
 use Logbook\Action\Api\DeleteEntryAction as ApiDeleteEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
@@ -538,6 +539,21 @@ return static function (App $app): void {
                         ->setArgument($ability, VehicleAbility::View->value);
                     $tyres->get('/tyre-sets', ApiTyreReadAction::class)->setName('api.tyre_sets')
                         ->setArgument('list', 'sets');
+                    // Phase 39.2: changes replayed through the form (Log; an edit or delete is canChange's);
+                    // a tyre's own details need Manage, as the tyre edit page.
+                    $tyres->post('/vehicles/{id:[0-9]+}/tyres/changes', ApiTyreWriteAction::class)
+                        ->setName('api.tyres.changes.create')
+                        ->setArgument('write', 'change')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $change = '/vehicles/{id:[0-9]+}/tyres/changes/{change:[0-9]+}';
+                    $tyres->map(['PATCH', 'DELETE'], $change, ApiTyreWriteAction::class)
+                        ->setName('api.tyres.changes.edit')
+                        ->setArgument('write', 'change')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $tyres->patch('/vehicles/{id:[0-9]+}/tyres/{tyre:[0-9]+}', ApiTyreWriteAction::class)
+                        ->setName('api.tyres.edit')
+                        ->setArgument('write', 'tyre')
+                        ->setArgument($ability, VehicleAbility::Manage->value);
                 })->add($module(Feature::Tyres));
                 $keyed->post('/vehicles/{id:[0-9]+}/maintenance', ApiLogMaintenanceAction::class)
                     ->setName('api.maintenance.create')

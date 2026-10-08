@@ -73,7 +73,7 @@ nested routes, entry guard and `ETag`).
 - [x] Valuations: create, edit, delete; allowed on an archived vehicle
       within the sale-date rule.
 - [x] Schedules: create (duplicate key), edit, delete (records kept).
-- [ ] Tyre changes: create (replayed, every kind), edit, delete (replay,
+- [x] Tyre changes: create (replayed, every kind), edit, delete (replay,
       409 where the page refuses); tyre details edit.
 - [x] Journeys: create, edit, delete (trips kept).
 - [x] Station favourites (`PUT`, `DELETE`, idempotent); price alerts

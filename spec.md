@@ -5055,7 +5055,20 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   link); a delete replays the rest and answers 409 where the page would
   refuse it. `PATCH /vehicles/{id}/tyres/{tyre}` (`Manage`) edits a tyre's
   own details (brand, model, size, season, DOT code, notes); status and
-  position come only from changes.
+  position come only from changes. In the API's terms
+  (`Support\Api\TyreInput`): `existing` takes `tyres`, a list of
+  `{position, brand, model, size, season, dot, tread}`; `fit` takes
+  `tyre` `{brand, model, size, season}`, `tread` and `positions`, a list
+  of `{position, dot, replace}` (`replace`: `store` or a retire reason,
+  where a tyre is on); `swap` takes `set` (an id, or `{name, storage}`
+  for a new set), `on` (stored tyre id → position) and `depths` (tyre id
+  → depth); `rotate` takes `moves` (every fitted tyre id → position);
+  `repair` takes `tyres` (fitted tyre ids); `remove` takes `set`, `tyres`
+  (fitted tyre id → `store` or a retire reason) and `depths`. A form
+  error points at the body's path (`positions.0.dot`, `moves.12`); a
+  replay's refusal is the page's `form` error. The change edit's answer
+  carries the change's `ETag`; a refused delete is 409
+  `tyre_change_refused` with the page's message.
 - **Journeys** (module `trips`): `POST /journeys`, `PATCH` and `DELETE
   /journeys/{id}`, the Settings → Trips journey form, for the key's user
   only. Deleting leaves the trips logged from it.

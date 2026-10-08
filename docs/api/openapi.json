@@ -2355,6 +2355,59 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "recordTyreChange",
+        "summary": "Record a tyre change",
+        "description": "Needs a read and write key and Log; module tyres (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TyreChangeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreChangeWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/tyre-sets": {
@@ -5524,6 +5577,197 @@
           }
         }
       }
+    },
+    "/vehicles/{id}/tyres/changes/{change}": {
+      "patch": {
+        "operationId": "editTyreChange",
+        "summary": "Edit a tyre change",
+        "description": "Manage, or Log on the key user's own change (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "change",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TyreChangePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreChangeEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTyreChange",
+        "summary": "Delete a tyre change",
+        "description": "The rest is replayed without it; tyres it created go too (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "change",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), or later changes depend on this one (tyre_change_refused), as the page refuses.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/tyres/{tyre}": {
+      "patch": {
+        "operationId": "editTyre",
+        "summary": "Edit a tyre's details",
+        "description": "Manage, as the tyre edit page (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "tyre",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TyrePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5824,7 +6068,8 @@
               "reading_derived",
               "reminder_not_manual",
               "finance_active_exists",
-              "finance_ended"
+              "finance_ended",
+              "tyre_change_refused"
             ]
           },
           "detail": {
@@ -16173,6 +16418,391 @@
           },
           "damage_charge": {
             "$ref": "#/components/schemas/NumberInput"
+          }
+        }
+      },
+      "TyreChangeInput": {
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "description": "A tyre change, replayed through the change form (spec.md §7.17): every state the form refuses is refused (422). Tread checks are POST …/tyres/checks.",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "existing",
+              "fit",
+              "swap",
+              "rotate",
+              "repair",
+              "remove"
+            ]
+          },
+          "changed_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today."
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "depth_unit": {
+            "type": "string",
+            "enum": [
+              "mm",
+              "in32"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "service_record_id": {
+            "type": "integer",
+            "description": "With maintenance on: link a service record."
+          },
+          "cost": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "vendor": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "tyres": {
+            "description": "existing: a list of {position, brand, model, size, season, dot, tread}; repair: a list of fitted tyre ids; remove: fitted tyre id → store or a retire reason.",
+            "oneOf": [
+              {
+                "type": "array"
+              },
+              {
+                "type": "object",
+                "description": "remove",
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "store",
+                    "worn",
+                    "damaged",
+                    "puncture",
+                    "sold",
+                    "other"
+                  ],
+                  "description": "store, or a retire reason."
+                },
+                "propertyNames": {
+                  "pattern": "^[0-9]+$"
+                }
+              }
+            ]
+          },
+          "tyre": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "fit: the new tyres.",
+            "properties": {
+              "brand": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "size": {
+                "type": "string"
+              },
+              "season": {
+                "type": "string",
+                "enum": [
+                  "summer",
+                  "winter",
+                  "all_season"
+                ]
+              }
+            }
+          },
+          "tread": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "fit: depth when new, in depth_unit."
+          },
+          "positions": {
+            "type": "array",
+            "description": "fit: where they go.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "position"
+              ],
+              "properties": {
+                "position": {
+                  "type": "string",
+                  "enum": [
+                    "fl",
+                    "fr",
+                    "rl",
+                    "rr",
+                    "front",
+                    "rear",
+                    "spare"
+                  ]
+                },
+                "dot": {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}$",
+                  "description": "Week and year, e.g. 2325."
+                },
+                "replace": {
+                  "type": "string",
+                  "enum": [
+                    "store",
+                    "worn",
+                    "damaged",
+                    "puncture",
+                    "sold",
+                    "other"
+                  ],
+                  "description": "store, or a retire reason."
+                }
+              }
+            }
+          },
+          "set": {
+            "description": "swap and remove: a set id, or {name, storage} for a new set.",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "storage": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                }
+              }
+            ]
+          },
+          "on": {
+            "type": "object",
+            "description": "swap: stored tyre id → position.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "fl",
+                "fr",
+                "rl",
+                "rr",
+                "front",
+                "rear",
+                "spare"
+              ]
+            },
+            "propertyNames": {
+              "pattern": "^[0-9]+$"
+            }
+          },
+          "moves": {
+            "type": "object",
+            "description": "rotate: every fitted tyre id → its new position.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "fl",
+                "fr",
+                "rl",
+                "rr",
+                "front",
+                "rear",
+                "spare"
+              ]
+            },
+            "propertyNames": {
+              "pattern": "^[0-9]+$"
+            }
+          },
+          "depths": {
+            "type": "object",
+            "description": "swap and remove: tyre id → depth, in depth_unit.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NumberInput"
+            },
+            "propertyNames": {
+              "pattern": "^[0-9]+$"
+            }
+          }
+        }
+      },
+      "TyreChangePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "What the page's edit changes; the lines come only from the change itself. null clears an optional field.",
+        "properties": {
+          "changed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "service_record_id": {
+            "type": [
+              "integer",
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TyrePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A tyre's own details; status and position come only from changes.",
+        "properties": {
+          "brand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "season": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "summer",
+                  "winter",
+                  "all_season"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dot": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9]{4}$",
+                "description": "Week and year, e.g. 2325."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TyreChangeWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings",
+          "duplicate"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/TyreChange"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TyreChangeEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/TyreChange"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "TyreEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Tyre"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
           }
         }
       }
