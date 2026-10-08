@@ -69,12 +69,13 @@ final readonly class VehicleArchiving
      * Archive the vehicle as the page's form asks: `disposal` (one of the
      * choices; '' or missing just archives), `incident_id`, `sale_date`,
      * `sale_price`, `settle_from_sale` and `settlement` as that disposal
-     * needs them. The page's own messages on refusal.
+     * needs them. The page's own messages on refusal. Numbers are read in
+     * the user's locale, or `$locale` (the API's "en").
      *
      * @param array<array-key, mixed> $input
      * @return string|ValidationErrors the flash message key for what was done, or why not
      */
-    public function archive(User $user, Vehicle $vehicle, array $input): string|ValidationErrors
+    public function archive(User $user, Vehicle $vehicle, array $input, ?string $locale = null): string|ValidationErrors
     {
         $options = $this->options($user, $vehicle);
         $candidates = $options['candidates'];
@@ -86,7 +87,7 @@ final readonly class VehicleArchiving
             return 'vehicle.archived';
         }
 
-        $validator = new Validator($input, $user->preferences->locale);
+        $validator = new Validator($input, $locale ?? $user->preferences->locale);
         $incidentId = null;
         if ($chosen === self::WRITTEN_OFF) {
             $incidentId = $validator->choice(

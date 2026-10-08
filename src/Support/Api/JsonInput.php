@@ -228,6 +228,37 @@ final class JsonInput
         'settlement' => 'settlement',
     ];
 
+    /** The agreement form's fields (Phase 39.2, spec.md §7.32): the same names. */
+    public const array AGREEMENT_FIELDS = [
+        'type' => 'type', 'lender' => 'lender', 'agreement_number' => 'agreement_number',
+        'started_on' => 'started_on', 'first_payment_on' => 'first_payment_on',
+        'number_of_payments' => 'number_of_payments', 'regular_payment' => 'regular_payment',
+        'first_payment' => 'first_payment', 'final_payment' => 'final_payment', 'final_payment_on' => 'final_payment_on',
+        'cash_price' => 'cash_price', 'customer_deposit' => 'customer_deposit', 'dealer_contribution' => 'dealer_contribution',
+        'initial_rental' => 'initial_rental', 'amount_of_credit' => 'amount_of_credit',
+        'total_amount_payable' => 'total_amount_payable', 'apr' => 'apr', 'documentation_fee' => 'documentation_fee',
+        'option_to_purchase_fee' => 'option_to_purchase_fee', 'annual_mileage_allowance' => 'annual_mileage_allowance',
+        'mileage_unit' => 'mileage_unit', 'excess_mileage_charge' => 'excess_mileage_charge',
+        'start_odometer' => 'start_odometer', 'count_in_costs' => 'count_in_costs', 'notes' => 'notes',
+        'set_purchase_price' => 'set_purchase_price', 'clear_purchase_price' => 'clear_purchase_price',
+    ];
+    private const array AGREEMENT_TEXT = [
+        'type', 'lender', 'agreement_number', 'started_on', 'first_payment_on', 'final_payment_on', 'mileage_unit', 'notes',
+    ];
+    private const array AGREEMENT_FLAGS = ['count_in_costs', 'set_purchase_price', 'clear_purchase_price'];
+
+    /** The agreement page's payment, quote and *End* forms (Phase 39.2): API field → form field. */
+    public const array PAYMENT_FIELDS = [
+        'kind' => 'kind', 'due_on' => 'due_on', 'paid_on' => 'paid_on', 'amount' => 'amount', 'notes' => 'notes',
+    ];
+    public const array QUOTE_FIELDS = [
+        'quoted_on' => 'quoted_on', 'amount' => 'quote_amount', 'valid_until' => 'valid_until', 'notes' => 'quote_notes',
+    ];
+    public const array END_FIELDS = [
+        'outcome' => 'outcome', 'ended_on' => 'ended_on', 'settlement' => 'settlement',
+        'excess_charge' => 'excess_charge', 'damage_charge' => 'damage_charge',
+    ];
+
     /** A price alert's fields (Phase 39.2, spec.md §7.34). */
     public const array PRICE_ALERT_FIELDS = ['station_id', 'grade', 'below', 'volume_unit'];
 
@@ -760,6 +791,59 @@ final class JsonInput
             'settle_from_sale' => self::flag($body, 'settle_from_sale', $errors),
             'settlement' => self::decimal($body, 'settlement', $errors),
         ];
+
+        return $errors->isEmpty() ? $input : $errors;
+    }
+
+    /**
+     * An agreement body as the agreement form's input (Phase 39.2): money
+     * and counts as decimals, `start_odometer` in `distance_unit`, the
+     * flags as booleans (`count_in_costs` is on unless the body says
+     * otherwise, as the form starts).
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function agreement(array $body, DisplayPreferences $units): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::AGREEMENT_FIELDS), 'distance_unit'], $errors);
+        $input = [];
+        foreach (self::AGREEMENT_FIELDS as $api => $form) {
+            $input[$form] = match (true) {
+                in_array($api, self::AGREEMENT_TEXT, true) => self::text($body, $api, $errors),
+                in_array($api, self::AGREEMENT_FLAGS, true) => self::flag($body, $api, $errors, $api === 'count_in_costs'),
+                default => self::decimal($body, $api, $errors),
+            };
+        }
+        $distance = self::distanceUnit($body, $units, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($units, $distance, $units->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * One of the agreement page's small forms (payment, quote, *End*) as it posts.
+     *
+     * @param array<string, mixed> $body
+     * @param array<string, string> $fields API field → form field
+     * @param list<string> $flags fields that are booleans
+     * @return array<string, string>|ValidationErrors
+     */
+    public static function form(array $body, array $fields, array $flags = []): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys($fields), $errors);
+        $input = [];
+        foreach ($fields as $api => $form) {
+            $value = $body[$api] ?? null;
+            $input[$form] = match (true) {
+                in_array($api, $flags, true) => self::flag($body, $api, $errors),
+                is_string($value) && preg_match(self::NUMBER, $value) === 1 => $value,
+                default => self::text($body, $api, $errors),
+            };
+        }
 
         return $errors->isEmpty() ? $input : $errors;
     }

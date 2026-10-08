@@ -2499,6 +2499,66 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "createAgreement",
+        "summary": "Add a finance agreement",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/true-cost": {
@@ -5055,6 +5115,415 @@
           }
         }
       }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}": {
+      "patch": {
+        "operationId": "editAgreement",
+        "summary": "Edit a finance agreement",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/payments": {
+      "post": {
+        "operationId": "addPaymentEvent",
+        "summary": "Mark a payment missed or paid late, or add an extra payment",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/payments/{event}": {
+      "delete": {
+        "operationId": "deletePaymentEvent",
+        "summary": "Remove a payment event",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2). A missed mark goes with the paid-late mark that followed it.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "event",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/quotes": {
+      "post": {
+        "operationId": "addSettlementQuote",
+        "summary": "Add a settlement quote",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2). HP, PCP and loans only.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/quotes/{quote}": {
+      "delete": {
+        "operationId": "deleteSettlementQuote",
+        "summary": "Remove a settlement quote",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "quote",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/end": {
+      "post": {
+        "operationId": "endAgreement",
+        "summary": "End an agreement",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2). The page's End, for an agreement that ends while the vehicle stays.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5353,7 +5822,9 @@
               "internal_error",
               "precondition_failed",
               "reading_derived",
-              "reminder_not_manual"
+              "reminder_not_manual",
+              "finance_active_exists",
+              "finance_ended"
             ]
           },
           "detail": {
@@ -15145,6 +15616,563 @@
           "settlement": {
             "$ref": "#/components/schemas/NumberInput",
             "description": "With settle_from_sale: the amount settled."
+          }
+        }
+      },
+      "AgreementInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "lender",
+          "started_on",
+          "first_payment_on",
+          "number_of_payments",
+          "regular_payment"
+        ],
+        "description": "The agreement form (spec.md §7.32), its fields by type and its derivations; one active agreement per vehicle.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "hp",
+              "pcp",
+              "loan",
+              "lease"
+            ]
+          },
+          "lender": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "agreement_number": {
+            "type": "string",
+            "description": "Accepted and stored; never returned."
+          },
+          "started_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "first_payment_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "number_of_payments": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              }
+            ]
+          },
+          "final_payment_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "regular_payment": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "first_payment": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "final_payment": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "cash_price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "customer_deposit": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "dealer_contribution": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "initial_rental": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "amount_of_credit": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "total_amount_payable": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "documentation_fee": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "option_to_purchase_fee": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "apr": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "annual_mileage_allowance": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              }
+            ]
+          },
+          "mileage_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "excess_mileage_charge": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "start_odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "In distance_unit."
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "count_in_costs": {
+            "type": "boolean",
+            "description": "Default: true, as the form starts."
+          },
+          "set_purchase_price": {
+            "type": "boolean",
+            "description": "HP and PCP: set the vehicle's purchase price to the cash price."
+          },
+          "clear_purchase_price": {
+            "type": "boolean",
+            "description": "A lease: clear the vehicle's purchase price."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "AgreementPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field. The type is the agreement's own.",
+        "properties": {
+          "lender": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agreement_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Accepted and stored; never returned."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "started_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_payment_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "number_of_payments": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "final_payment_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "regular_payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "final_payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cash_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_deposit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dealer_contribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "initial_rental": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount_of_credit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_amount_payable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "documentation_fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "option_to_purchase_fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "apr": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "annual_mileage_allowance": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mileage_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "excess_mileage_charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "In distance_unit."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count_in_costs": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "Default: true, as the form starts."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_purchase_price": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "HP and PCP: set the vehicle's purchase price to the cash price."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clear_purchase_price": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "A lease: clear the vehicle's purchase price."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgreementWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/FinanceAgreementDetail"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "PaymentInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "description": "missed: due_on of a paid scheduled payment; paid_late: due_on of a missed one, paid_on optional; extra: amount and paid_on (not in the future). A settlement is recorded by POST …/end (#299).",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "missed",
+              "paid_late",
+              "extra"
+            ]
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "paid_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "QuoteInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quoted_on",
+          "amount",
+          "valid_until"
+        ],
+        "description": "The lender's settlement figure; valid_until not before quoted_on.",
+        "properties": {
+          "quoted_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "valid_until": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "EndInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "outcome",
+          "ended_on"
+        ],
+        "description": "End, while the vehicle stays (spec.md §7.32 Ending): ended_on not in the future nor before the start; completed not before the last payment; settlement when settled; excess_charge and damage_charge when handed back or ended. An ending with the vehicle leaving goes through POST /vehicles/{id}/archive.",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "settled",
+              "completed",
+              "handed_back",
+              "ended"
+            ]
+          },
+          "ended_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "excess_charge": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "damage_charge": {
+            "$ref": "#/components/schemas/NumberInput"
           }
         }
       }

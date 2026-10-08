@@ -17,6 +17,7 @@ use Logbook\Support\Validation\Validator;
  * paid late, add an extra payment, add a settlement quote, and *End*. The
  * rules are shared by the page and the API (Phase 39.2); each checks its
  * input, then records it, or answers why not with the form's messages.
+ * Numbers are read in the user's locale, or `$locale` (the API's "en").
  */
 final readonly class FinanceEvents
 {
@@ -40,8 +41,9 @@ final readonly class FinanceEvents
         Vehicle $vehicle,
         FinanceAgreement $agreement,
         array $input,
+        ?string $locale = null,
     ): PaymentEventKind|ValidationErrors {
-        $validator = new Validator($input, $user->preferences->locale);
+        $validator = new Validator($input, $locale ?? $user->preferences->locale);
         $kind = $validator->enum('kind', PaymentEventKind::class, true);
         $today = $this->finance->ownerToday($user, $vehicle);
 
@@ -99,9 +101,14 @@ final readonly class FinanceEvents
      *
      * @param array<array-key, mixed> $input
      */
-    public function quote(User $user, Vehicle $vehicle, FinanceAgreement $agreement, array $input): ?ValidationErrors
-    {
-        $validator = new Validator($input, $user->preferences->locale);
+    public function quote(
+        User $user,
+        Vehicle $vehicle,
+        FinanceAgreement $agreement,
+        array $input,
+        ?string $locale = null,
+    ): ?ValidationErrors {
+        $validator = new Validator($input, $locale ?? $user->preferences->locale);
         $quotedOn = $validator->date('quoted_on', true);
         $amount = $validator->decimal('quote_amount', true, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
         $validUntil = $validator->date('valid_until', true);
@@ -132,9 +139,10 @@ final readonly class FinanceEvents
         FinanceAgreement $agreement,
         AgreementView $view,
         array $input,
+        ?string $locale = null,
     ): AgreementStatus|ValidationErrors {
         $outcomes = FinanceService::endOutcomes($agreement->type());
-        $validator = new Validator($input, $user->preferences->locale);
+        $validator = new Validator($input, $locale ?? $user->preferences->locale);
         $outcome = AgreementStatus::tryFrom((string) $validator->choice(
             'outcome',
             array_map(static fn (AgreementStatus $s): string => $s->value, $outcomes),

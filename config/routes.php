@@ -61,6 +61,7 @@ use Logbook\Action\Api\EditReminderAction as ApiEditReminderAction;
 use Logbook\Action\Api\UserWriteAction as ApiUserWriteAction;
 use Logbook\Action\Api\FigureWriteAction as ApiFigureWriteAction;
 use Logbook\Action\Api\VehicleWriteAction as ApiVehicleWriteAction;
+use Logbook\Action\Api\FinanceWriteAction as ApiFinanceWriteAction;
 use Logbook\Action\Api\DeleteEntryAction as ApiDeleteEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
@@ -558,6 +559,31 @@ return static function (App $app): void {
                     ->setName('api.finance.agreements')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Finance));
+                // Finance writes (Phase 39.2, #287): Manage, then §7.32's access (ApiFinanceWrites, 404 without).
+                $keyed->group('/vehicles/{id:[0-9]+}/finance/agreements', function (Group $finance) use ($ability): void {
+                    $agreement = '/{agreement:[0-9]+}';
+                    $routes = [
+                        $finance->post('', ApiFinanceWriteAction::class)->setName('api.finance.create')
+                            ->setArgument('write', 'agreement'),
+                        $finance->patch($agreement, ApiFinanceWriteAction::class)->setName('api.finance.edit')
+                            ->setArgument('write', 'agreement'),
+                        $finance->post($agreement . '/payments', ApiFinanceWriteAction::class)->setName('api.finance.payments')
+                            ->setArgument('write', 'payment'),
+                        $finance->delete($agreement . '/payments/{event:[0-9]+}', ApiFinanceWriteAction::class)
+                            ->setName('api.finance.payments.delete')
+                            ->setArgument('write', 'payment'),
+                        $finance->post($agreement . '/quotes', ApiFinanceWriteAction::class)->setName('api.finance.quotes')
+                            ->setArgument('write', 'quote'),
+                        $finance->delete($agreement . '/quotes/{quote:[0-9]+}', ApiFinanceWriteAction::class)
+                            ->setName('api.finance.quotes.delete')
+                            ->setArgument('write', 'quote'),
+                        $finance->post($agreement . '/end', ApiFinanceWriteAction::class)->setName('api.finance.end')
+                            ->setArgument('write', 'end'),
+                    ];
+                    foreach ($routes as $route) {
+                        $route->setArgument($ability, VehicleAbility::Manage->value);
+                    }
+                })->add($module(Feature::Finance));
                 // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.
                 $keyed->group('', function (Group $trips) use ($ability, $edits): void {
                     $trips->get('/vehicles/{id:[0-9]+}/trips', ApiTripsAction::class)->setName('api.trips.index')

@@ -142,6 +142,14 @@ final readonly class ApiEditor
     }
 
     /**
+     * The `ETag` of a stored entity (EntityTag), for a write's answer.
+     */
+    public function tag(object $stored): string
+    {
+        return $this->tags->of($stored);
+    }
+
+    /**
      * 412 unless an `If-Match` header, when sent, names the entity's current tag
      * (spec.md §7.20 *Concurrency*, #282).
      *

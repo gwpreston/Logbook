@@ -96,6 +96,15 @@ final class ApiModulesOffTest extends AppTestCase
             ],
             Feature::Incidents->value => [['PATCH', $base . '/incidents/1'], ['DELETE', $base . '/incidents/1']],
             Feature::Reminders->value => [['PATCH', '/reminders/1'], ['DELETE', '/reminders/1']],
+            Feature::Finance->value => [
+                ['POST', $base . '/finance/agreements'],
+                ['PATCH', $base . '/finance/agreements/1'],
+                ['POST', $base . '/finance/agreements/1/payments'],
+                ['DELETE', $base . '/finance/agreements/1/payments/1'],
+                ['POST', $base . '/finance/agreements/1/quotes'],
+                ['DELETE', $base . '/finance/agreements/1/quotes/1'],
+                ['POST', $base . '/finance/agreements/1/end'],
+            ],
         ];
         $this->assertNotFoundWithModuleOff($app, $api, $paths);
     }

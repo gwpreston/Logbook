@@ -5087,7 +5087,13 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   `DELETE` for each. `POST …/agreements/{agreement}/end` is the page's
   *End* for an agreement that ends while the vehicle stays (settled
   early, completed); an ending with the vehicle leaving goes through
-  `POST /vehicles/{id}/archive` (§7.32 *Ending*).
+  `POST /vehicles/{id}/archive` (§7.32 *Ending*). The pages' rules for
+  payments, quotes and *End* are `Service\Finance\FinanceEvents`,
+  shared with the API. Each write answers with the agreement as
+  `GET …/finance/agreements` lists it, in `entry`. Without §7.32's
+  access every finance write is 404, as the reads; payments, events and
+  *End* on an agreement that has ended are 409 `finance_ended`; quotes on
+  a lease are 404 (it has none).
 
 *Attachments* (Phase 39.3, #286). Owner types as §7.12: `fuel`,
 `maintenance`, `document`, `expense`, `reading` (manual only),

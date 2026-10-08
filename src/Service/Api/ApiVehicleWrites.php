@@ -209,7 +209,7 @@ final readonly class ApiVehicleWrites
             $errors->add('disposal', 'validation.choice');
             throw $this->validation->of($errors);
         }
-        $done = $this->archiving->archive($user, $vehicle, $input);
+        $done = $this->archiving->archive($user, $vehicle, $input, 'en');
         if ($done instanceof ValidationErrors) {
             throw $this->validation->of($done);
         }
