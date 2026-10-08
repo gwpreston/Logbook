@@ -8,12 +8,21 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Api\ApiScope;
+use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Expense\ExpenseEntry;
+use Logbook\Domain\Fuel\FuelEntry;
+use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Maintenance\MaintenanceEntry;
+use Logbook\Domain\Maintenance\MaintenanceEntryData;
+use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Api\ApiIncidents;
+use Logbook\Service\Attachment\PendingUpload;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Compliance\ComplianceDocumentForm;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseEntryForm;
@@ -24,12 +33,15 @@ use Logbook\Service\Incident\IncidentForm;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
+use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Trip\TripForm;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Storage\FileUpload;
+use Logbook\Support\Storage\UploadKind;
 use Logbook\Support\Units\ConsumptionUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
@@ -40,6 +52,7 @@ use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Slim\App;
+use Slim\Psr7\UploadedFile;
 
 /**
  * Editing and deleting entries over the API (Phase 39.2, spec.md §7.20
@@ -54,7 +67,11 @@ final class ApiEntryEditTest extends AppTestCase
     use ApiFixtures;
     use CostFixtures;
 
-    /** The tables an entry edit can touch, for the parity checks. */
+    /**
+     * The tables an entry edit can touch, for the parity checks. Economy
+     * segments are worked out on read; only a fill-up's `economy_confirmed`
+     * is stored, in `fuel_entries`.
+     */
     private const array TABLES = [
         'fuel_entries', 'odometer_readings', 'maintenance_entries', 'maintenance_schedules', 'compliance_documents',
         'reminders', 'expense_entries', 'trips', 'incidents', 'attachments',
@@ -97,12 +114,30 @@ final class ApiEntryEditTest extends AppTestCase
      *
      * @return array<string, int> list → entry id
      */
-    private function garage(Vehicle $vehicle): array
+    private function garage(Vehicle $vehicle, bool $withFiles = false): array
     {
         $fill = $this->fillUp($this->app, $vehicle, '2026-08-01T07:30:00Z', '40000', '42.123', '61.37');
         $this->fillUp($this->app, $vehicle, '2026-09-01T08:00:00Z', '40700', '44.5', '66.01');
         $this->reading($this->app, $vehicle, '41000', '2026-09-20T12:00:00Z');
-        $service = $this->maintenance($this->app, $vehicle, '2026-09-05', 'Annual service', '187.43', '40800');
+        // A schedule the service record completes, so an edit or delete moves its last done and next due.
+        $schedule = $this->service($this->app, ScheduleService::class)->create($vehicle, new MaintenanceScheduleData(
+            MaintenanceCategory::Service,
+            'Annual service',
+            intervalMonths: 12,
+            baselineDoneOn: new DateTimeImmutable('2025-09-01', new DateTimeZone('UTC')),
+        ));
+        $service = $this->service($this->app, MaintenanceService::class)->create(
+            $vehicle,
+            new MaintenanceEntryData(
+                new DateTimeImmutable('2026-09-05', new DateTimeZone('UTC')),
+                MaintenanceCategory::Service,
+                'Annual service',
+                '187.43',
+                '40800',
+                scheduleId: $schedule->id,
+            ),
+            new DateTimeZone('Europe/London'),
+        );
         $document = $this->document(
             $this->app,
             $vehicle,
@@ -137,6 +172,9 @@ final class ApiEntryEditTest extends AppTestCase
             }
         }
         self::assertNotNull($manual);
+        if ($withFiles) {
+            $this->attach($vehicle, $fill, $service, $document, $expense);
+        }
 
         return [
             'fuel' => $fill->id,
@@ -432,8 +470,9 @@ final class ApiEntryEditTest extends AppTestCase
             [$api, $form] = $edits[$list];
             $byApi = $this->vehicle($this->app, 'Api', ucfirst($list));
             $byPage = $this->vehicle($this->app, 'Page', ucfirst($list));
-            $apiIds = $this->garage($byApi);
-            $pageIds = $this->garage($byPage);
+            $apiIds = $this->garage($byApi, true);
+            $pageIds = $this->garage($byPage, true);
+            self::assertNotSame([], $this->snapshot($byApi)['attachments'], 'the entries carry files');
 
             $response = $this->api->patch('/vehicles/' . $byApi->id . '/' . $list . '/' . $apiIds[$list], $api);
             self::assertSame(200, $response->getStatusCode(), $list . ': ' . self::body($response));
@@ -448,6 +487,34 @@ final class ApiEntryEditTest extends AppTestCase
             self::assertSame(303, $page->getStatusCode(), $list . ' page delete');
             self::assertSame($this->snapshot($byPage), $this->snapshot($byApi), $list . ': a delete leaves what the page leaves');
         }
+    }
+
+    /**
+     * A receipt on each of these entries, saved as their edit pages save one.
+     */
+    private function attach(
+        Vehicle $vehicle,
+        FuelEntry $fill,
+        MaintenanceEntry $service,
+        ComplianceDocument $document,
+        ExpenseEntry $expense,
+    ): void {
+        $zone = new DateTimeZone('Europe/London');
+        $this->service($this->app, FuelService::class)->update($vehicle, $fill, $fill->data, self::receipt());
+        $maintenance = $this->service($this->app, MaintenanceService::class);
+        $maintenance->update($vehicle, $service, $service->data, $zone, self::receipt());
+        $compliance = $this->service($this->app, ComplianceService::class);
+        $compliance->update($vehicle, $document, $document->data, $zone, self::receipt());
+        $this->service($this->app, ExpenseService::class)->update($vehicle, $expense, $expense->data, self::receipt());
+    }
+
+    private static function receipt(): PendingUploads
+    {
+        $path = (string) tempnam(sys_get_temp_dir(), 'logbook-upload-');
+        file_put_contents($path, "%PDF-1.4\n%receipt\n");
+        $file = new UploadedFile($path, 'receipt.pdf', 'application/pdf', (int) filesize($path), UPLOAD_ERR_OK);
+
+        return new PendingUploads([new PendingUpload($file, FileUpload::check($file, 1024 * 1024, UploadKind::Document))]);
     }
 
     /**
@@ -502,7 +569,8 @@ final class ApiEntryEditTest extends AppTestCase
             foreach ($query->setParameter('vehicle', $vehicle->id)->fetchAllAssociative() as $row) {
                 $kept = [];
                 foreach ($row as $column => $value) {
-                    if ($column === 'id' || str_ends_with($column, '_id') || str_ends_with($column, '_at')) {
+                    $link = $column === 'id' || $column === 'stored_path' || str_ends_with($column, '_id');
+                    if ($link || str_ends_with($column, '_at')) {
                         $kept[$column] = $value === null ? null : 'set';
                         continue;
                     }
