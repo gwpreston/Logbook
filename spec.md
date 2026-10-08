@@ -8480,6 +8480,17 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   Britain since 2005 and Northern Ireland since 2017. Credentials are
   free to individuals (#320): DVSA asks for a name, email and postal
   address and answers in about 5 working days (`docs/mot-history.md`).
+- **Sample provider** (#335): *Sample MOT history (development)*
+  (`sample`), registered only when `APP_ENV` is not `production` and
+  never in demo mode (which keeps MOT history blocked). It answers from
+  built-in records for the sample vehicles' registrations, needs no
+  credentials and sends nothing anywhere; any other registration has no
+  record. `bin/dev-setup.sh --with-sample-data` (the `DemoDataSeeder`)
+  enables it and stores the sample vehicles' history as a fetch would:
+  tests with passes, a fail, advisories that became issues and readings
+  that agree with the sample mileage, a new vehicle with only a first MOT
+  due date, and one outstanding recall, so *Fetch*, *Refresh*, the page
+  and the review card can be tried in development.
 - **Settings → MOT history** (`/settings/mot-history`, admins,
   `InstanceAbility::ManageMotHistory`):
   - **Provider:** *Off* (default) or *DVSA (UK)*, with its description,

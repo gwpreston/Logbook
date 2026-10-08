@@ -172,6 +172,8 @@ and the decisions below win. In short:
       advisories and defects to issues, repeats, *Not now*).
 - [ ] Recall state stored, shown and its *Needs attention* item (#325).
 - [ ] *Look up* on the add-vehicle form, with and without JS (#326).
+- [ ] Sample provider for development (#335) and MOT history in
+      `--with-sample-data` (`DemoDataSeeder`); README's flag text.
 
 ### 41.3 Refresh and elsewhere
 - [ ] `mot_history` job; keep-alive (#327); overview notice; reminder
@@ -229,7 +231,7 @@ and the decisions below win. In short:
 
 ## Open questions
 
-Logged as #320–#334 in [`open-questions.md`](open-questions.md). A was
+Logged as #320–#335 in [`open-questions.md`](open-questions.md). A was
 answered from DVSA's documentation; the owner decided B–G and the
 question found while starting on 2026-10-08, before the phase started.
 
@@ -289,6 +291,10 @@ Found while starting, decided by the owner on 2026-10-08:
 - Also from the specification: a test may have no number (keyed by its
   source and completed time) or, for heavy vehicles, no completed date
   (skipped, and the fetch says how many). (#334)
+- `bin/dev-setup.sh --with-sample-data` includes MOT history (asked
+  2026-10-08): a *Sample MOT history* provider, as fuel prices' sample
+  one, outside production only and not in demo mode; the seeder enables
+  it and stores the sample vehicles' history. Built with 41.2. (#335)
 - Answered from the spec: `mot_history_secrets` is never in backups, as
   §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
   *Spec addition* draft's "the secrets sealed as others" means that.
