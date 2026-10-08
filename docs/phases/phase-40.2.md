@@ -3,7 +3,7 @@
 *Recommended work becomes issues in one tap, and issues go everywhere
 entries go.*
 
-Status: 📋 planned · releases **v3.6.0** (Phases 40.1 and 40.2) · file
+Status: 🚧 in progress · releases **v3.6.0** (Phases 40.1 and 40.2) · file
 lives in `docs/phases/`
 
 The second of Phase 40's two parts (#318). [Phase 40.1](phase-40.1.md) has
@@ -21,9 +21,11 @@ and §7.28.
 ## Tasks
 
 ### 40.2.0 Spec first
-- [ ] §7.20 issue endpoints and the `issue` webhook kind; §7.26 tools and
+- [x] §7.20 issue endpoints and the `issue` webhook kind; §7.26 tools and
       system line; §7.27 card; §7.28 tools; §7.13 backups; `ROADMAP.md`
       row 🚧.
+- [x] #319 (found while starting) decided: no duplicate reading for an
+      issue noticed where the vehicle already has one.
 
 ### 40.2.1 Recommended work
 - [ ] The card shown with either right (#313); *Add as issue*, *Watch*
@@ -35,7 +37,9 @@ and §7.28.
       attachments with owner type `issue`; duplicate key; OpenAPI and
       `docs/api.md`.
 - [ ] Webhooks: kind `issue`; updates, fixes, unlinks and reopens are
-      `entry.updated` (#317).
+      `entry.updated` (#317). Create, edit and delete too: #317's note
+      that they "already" fired under #290 was wrong, as 40.1 queued none
+      (found while starting).
 
 ### 40.2.3 Ask, MCP, CSV, backups
 - [ ] Ask read tool `issues` and draft tool `draft_issue`; the system
@@ -72,4 +76,12 @@ and §7.28.
 
 ## Open questions
 
-None open. #313, #314 and #317 (decided 2026-10-08) are built here.
+None open. #313, #314 and #317 (decided 2026-10-08) are built here, and
+#319, found while starting:
+
+- **#319** An issue's odometer adds a reading (#307): should *Add all as
+  issues*, each noticed at the service record's odometer, add one reading
+  per line? *Decided 2026-10-08:* no. An issue or update reading is not
+  written when the vehicle already has a reading on the same day at the
+  same odometer; the issue keeps its odometer, and the next save writes
+  its own if that other reading goes (spec §7.37).

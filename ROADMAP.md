@@ -90,7 +90,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [39.2](docs/phases/phase-39.2.md) | API writes, edit and delete | ✅ |
 | [39.3](docs/phases/phase-39.3.md) | API attachments and entry webhooks + v3.5 release | ✅ |
 | [40.1](docs/phases/phase-40.1.md) | Issues log | ✅ |
-| [40.2](docs/phases/phase-40.2.md) | Issues everywhere + v3.6 release | 📋 |
+| [40.2](docs/phases/phase-40.2.md) | Issues everywhere + v3.6 release | 🚧 |
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
