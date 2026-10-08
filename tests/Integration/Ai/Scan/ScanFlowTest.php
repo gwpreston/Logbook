@@ -211,7 +211,8 @@ final class ScanFlowTest extends ScanTestCase
         self::assertIsArray($items[0]);
         $items[0]['added'] = true;
         $uploads->setRecommendations($upload->id, ['items' => $items] + $stored);
-        self::assertStringContainsString('Added as a reminder', self::body($this->browser->get('/scan/' . $token . '/reminders')));
+        $legacy = self::body($this->browser->get('/scan/' . $token . '/reminders'));
+        self::assertStringContainsString('Added as a reminder', $legacy);
 
         $this->switchOff(Feature::Issues);
         self::assertSame(404, $this->browser->get('/scan/' . $token . '/reminders')->getStatusCode(), 'neither right');
