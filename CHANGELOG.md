@@ -6,6 +6,15 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Editing an entry in miles or gallons** no longer nudges what you didn't
+  change: saving a fill-up, reading, service record, document, incident,
+  tyre change or trip with only the notes changed could move its odometer
+  by a metre (40 800 km became 40 800.001 km) and its volume and price by
+  their last decimal. A value saved as the form showed it now keeps the
+  stored one.
+
 ## [3.4.0] — 2026-10-08
 
 Phase 38: **Ask lives on Insights**. One place for what Logbook has

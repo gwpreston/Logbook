@@ -63,9 +63,13 @@ final class ComplianceDocumentForm
 
     /**
      * @param array<array-key, mixed> $input
+     * @param ?string $storedKm the edited document's odometer, kept unless changed
      */
-    public static function parse(array $input, DisplayPreferences $preferences): ComplianceDocumentData|ValidationErrors
-    {
+    public static function parse(
+        array $input,
+        DisplayPreferences $preferences,
+        ?string $storedKm = null,
+    ): ComplianceDocumentData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
 
         $type = $validator->enum('type', ComplianceType::class, true);
@@ -108,9 +112,7 @@ final class ComplianceDocumentForm
             expiryOn: $expiryOn,
             cost: $cost ?? Decimal::round('0', self::MONEY_SCALE),
             notes: $notes,
-            odometerKm: $odometer === null
-                ? null
-                : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
+            odometerKm: $odometer === null ? null : OdometerReadingForm::distanceToKm($odometer, $preferences, $storedKm),
         );
     }
 }

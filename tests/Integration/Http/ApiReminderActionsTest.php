@@ -148,6 +148,62 @@ final class ApiReminderActionsTest extends AppTestCase
         self::assertSame(404, $this->api->post('/reminders/' . $id . '/done', [])->getStatusCode());
     }
 
+    public function testAManualReminderIsEditedAndDeletedWithManage(): void
+    {
+        $wash = $this->manual('Wash the car', '2026-10-20');
+        $path = '/reminders/' . $wash;
+
+        $edited = $this->api->patch($path, ['due_on' => '2026-10-25', 'notes' => 'Before winter']);
+        self::assertSame(200, $edited->getStatusCode(), self::body($edited));
+        $entry = ApiClient::json($edited)->doc('entry');
+        self::assertSame('2026-10-25', $entry->get('due_on'));
+        self::assertSame('Wash the car', $entry->get('title'), 'unsent fields stay');
+        $tag = $edited->getHeaderLine('ETag');
+        self::assertMatchesRegularExpression('/^"[0-9a-f]{32}"$/', $tag);
+
+        $required = $this->api->patch($path, ['title' => null]);
+        self::assertSame(422, $required->getStatusCode());
+        self::assertSame(412, $this->api->patch($path, ['notes' => 'x'], ['If-Match' => '"stale"'])->getStatusCode());
+        self::assertSame(412, $this->api->delete($path, ['If-Match' => '"stale"'])->getStatusCode());
+
+        $logger = $this->createMember($this->app, 'logger');
+        $this->service($this->app, VehicleShareRepository::class)
+            ->insert($this->golf->id, $logger->id, ShareLevel::Log, false, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+        $theirs = $this->api($this->app, $this->apiKey($this->app, $logger));
+        self::assertSame(403, $theirs->patch($path, ['notes' => 'x'])->getStatusCode(), 'Manage, as the page');
+        self::assertSame(403, $theirs->delete($path)->getStatusCode());
+        $readKey = $this->api($this->app, $this->apiKey($this->app, $this->owner, ApiScope::Read));
+        self::assertSame('insufficient_scope', ApiClient::json($readKey->delete($path))->get('code'));
+
+        self::assertSame(204, $this->api->delete($path, ['If-Match' => $tag])->getStatusCode());
+        self::assertSame(404, $this->api->delete($path)->getStatusCode());
+        self::assertSame([], $this->ids('/reminders'));
+    }
+
+    public function testAReminderOfAnotherSourceChangesThroughItsSource(): void
+    {
+        $this->service($this->app, ScheduleService::class)->create($this->golf, new MaintenanceScheduleData(
+            MaintenanceCategory::Oil,
+            'Oil change',
+            intervalMonths: 12,
+            baselineDoneOn: new DateTimeImmutable('2025-09-01', new DateTimeZone('UTC')),
+        ));
+        $id = ApiClient::json($this->api->get('/reminders'))->int('items', 0, 'id');
+
+        foreach (['PATCH', 'DELETE'] as $method) {
+            $response = $method === 'PATCH'
+                ? $this->api->patch('/reminders/' . $id, ['title' => 'x'])
+                : $this->api->delete('/reminders/' . $id);
+            self::assertSame(409, $response->getStatusCode(), $method);
+            self::assertSame('reminder_not_manual', ApiClient::json($response)->get('code'));
+        }
+
+        $wash = $this->manual('Wash the car', '2026-10-20');
+        $this->service($this->app, VehicleService::class)->archive($this->owner, $this->golf);
+        $archived = $this->api->patch('/reminders/' . $wash, ['notes' => 'x']);
+        self::assertSame('vehicle_archived', ApiClient::json($archived)->get('code'));
+    }
+
     /**
      * @return list<int>
      */

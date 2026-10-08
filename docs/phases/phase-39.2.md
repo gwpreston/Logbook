@@ -3,7 +3,7 @@
 *What an entry form writes, a key can write; what the pages let you
 correct or remove, a key can correct or remove.*
 
-Status: 📋 planned · no release of its own (**v3.5.0** ships with
+Status: 🚧 in progress · no release of its own (**v3.5.0** ships with
 [Phase 39.3](phase-39.3.md)) · file lives in `docs/phases/`
 
 The second of Phase 39's three parts (#281). [Phase 39.1](phase-39.1.md)
@@ -44,21 +44,28 @@ nested routes, entry guard and `ETag`).
 ## Tasks
 
 ### 39.2.1 Shared plumbing for writes
-- [ ] JSON input adapter: `PATCH` overlay onto the stored entry before the
+- [x] JSON input adapter: `PATCH` overlay onto the stored entry before the
       edit form's parser; `null` clears an optional field; unknown fields
       refused.
-- [ ] `If-Match` on `PATCH` and `DELETE`: 412 `precondition_failed`,
+- [x] `If-Match` on `PATCH` and `DELETE`: 412 `precondition_failed`,
       nothing written.
-- [ ] 409 `reading_derived` with `links.entry`; 409 `vehicle_archived`
+- [x] 409 `reading_derived` with `links.entry`; 409 `vehicle_archived`
       on every write but restore and an allowed valuation.
-- [ ] CORS preflight: `PUT, PATCH, DELETE` and `If-Match`.
+- [x] CORS preflight: `PUT, PATCH, DELETE` and `If-Match`.
 
 ### 39.2.2 Edit and delete entries
-- [ ] `PATCH` and `DELETE` for fill-ups, readings (manual only), service
+- [x] `PATCH` and `DELETE` for fill-ups, readings (manual only), service
       records, documents, expenses, trips and incidents, through the edit
       and delete services, under `EntryAccess::canChange`.
-- [ ] Manual reminders: `PATCH`, `DELETE` (`Manage`); other sources 409
+- [x] Manual reminders: `PATCH`, `DELETE` (`Manage`); other sources 409
       `reminder_not_manual`.
+- [x] Page edits keep unchanged converted values (spec.md §8 *Units*):
+      the fill-up, reading, service record, document, incident, tyre
+      change and trip edit forms keep the stored km, litres and price per
+      litre when the submitted value equals what the form showed, so a
+      miles or gallons user saving a notes-only edit changes no stored
+      column (found while building the parity tests). Regression test per
+      form.
 
 ### 39.2.3 New writes
 - [ ] Vehicles: create (duplicate key over 10 minutes), edit, archive
@@ -120,3 +127,8 @@ nested routes, entry guard and `ETag`).
 This sub-phase's questions (#282–#284, #287, #288) were decided on
 2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). #296 (decided
 2026-10-08): no `unhide`; the API hides only, as the pages.
+
+- **#298** (found while starting, decided 2026-10-08): a fill-up `PATCH`
+  sending only one of volume, price per unit and total keeps the other
+  two as stored, as the edit form does; nothing is re-derived. spec
+  §7.20 *Conventions*.

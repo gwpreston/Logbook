@@ -39,6 +39,9 @@ final readonly class ApiEntries
         'fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents', 'schedules', 'valuations',
     ];
 
+    /** The lists whose entries the API edits and deletes (Phase 39.2). */
+    public const array EDITABLE = ['fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents'];
+
     public function __construct(
         private ApiReader $reader,
         private ApiIncidents $incidentReader,

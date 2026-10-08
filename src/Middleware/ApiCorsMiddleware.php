@@ -29,8 +29,11 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 final readonly class ApiCorsMiddleware implements MiddlewareInterface
 {
-    private const string METHODS = 'GET, POST, OPTIONS';
-    private const string HEADERS = 'Authorization, Content-Type';
+    /** Edits, deletes and favourites (Phase 39.2), with If-Match for a safe edit. */
+    private const string METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
+    private const string HEADERS = 'Authorization, Content-Type, If-Match';
+    /** The MCP endpoint's preflight is unchanged by Phase 39 (spec.md §7.20). */
+    private const string MCP_METHODS = 'GET, POST, OPTIONS';
     /** The MCP transport's own request headers (spec.md §7.28). */
     private const string MCP_HEADERS = 'Authorization, Content-Type, MCP-Protocol-Version, Mcp-Method, Mcp-Name';
     private const int MAX_AGE = 600;
@@ -63,7 +66,7 @@ final readonly class ApiCorsMiddleware implements MiddlewareInterface
             }
 
             return $this->withCors($this->responses->createResponse(204), $origin)
-                ->withHeader('Access-Control-Allow-Methods', self::METHODS)
+                ->withHeader('Access-Control-Allow-Methods', $mcp ? self::MCP_METHODS : self::METHODS)
                 ->withHeader('Access-Control-Allow-Headers', $mcp ? self::MCP_HEADERS : self::HEADERS)
                 ->withHeader('Access-Control-Max-Age', (string) self::MAX_AGE);
         }

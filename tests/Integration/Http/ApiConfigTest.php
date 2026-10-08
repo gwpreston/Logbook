@@ -113,6 +113,11 @@ final class ApiConfigTest extends AppTestCase
         self::assertStringContainsString('POST', $preflight->getHeaderLine('Access-Control-Allow-Methods'));
         self::assertStringContainsString('Authorization', $preflight->getHeaderLine('Access-Control-Allow-Headers'));
         self::assertFalse($preflight->hasHeader('Access-Control-Allow-Credentials'));
+        // Phase 39.2: edits, deletes and favourites, with If-Match.
+        foreach (['PUT', 'PATCH', 'DELETE'] as $method) {
+            self::assertStringContainsString($method, $preflight->getHeaderLine('Access-Control-Allow-Methods'));
+        }
+        self::assertStringContainsString('If-Match', $preflight->getHeaderLine('Access-Control-Allow-Headers'));
 
         $response = $api->get('/me', ['Origin' => self::ORIGIN]);
         self::assertSame(self::ORIGIN, $response->getHeaderLine('Access-Control-Allow-Origin'));

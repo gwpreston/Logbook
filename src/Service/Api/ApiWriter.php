@@ -36,6 +36,7 @@ use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Domain\Trip\Trip;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Fuel\FuelEntryForm;
@@ -122,6 +123,17 @@ final readonly class ApiWriter
         }
 
         $entry = $this->fuel->create($vehicle, $data);
+
+        return ['entry' => $entry, 'duplicate' => false, 'warnings' => $this->fuelWarnings($vehicle, $entry)];
+    }
+
+    /**
+     * A saved fill-up's warnings: the odometer and the economy check (spec.md §7.3).
+     *
+     * @return list<array{code: string, detail: string}>
+     */
+    public function fuelWarnings(Vehicle $vehicle, FuelEntry $entry): array
+    {
         $warnings = self::odometerWarnings($this->fuel->odometerWarning($vehicle, $entry));
         if ($this->fuel->checks($this->fuel->history($vehicle))->isFlagged($entry->id)) {
             $warnings[] = [
@@ -131,7 +143,25 @@ final readonly class ApiWriter
             ];
         }
 
-        return ['entry' => $entry, 'duplicate' => false, 'warnings' => $warnings];
+        return $warnings;
+    }
+
+    /**
+     * A trip's warning when it is longer than the odometer readings allow (spec.md §7.22).
+     *
+     * @return list<array{code: string, detail: string}>
+     */
+    public function tripWarnings(Vehicle $vehicle, TripData $data, \DateTimeZone $zone): array
+    {
+        $driven = $this->trips->longerThanDriven($vehicle, $data, $zone);
+
+        return $driven === null ? [] : [[
+            'code' => 'trip_longer_than_driven',
+            'detail' => sprintf(
+                'The odometer readings around this day allow at most %s km; check the distance.',
+                Decimal::trim($driven),
+            ),
+        ]];
     }
 
     /**
@@ -205,19 +235,8 @@ final readonly class ApiWriter
         }
 
         $trip = $this->trips->create($vehicle, $data);
-        $warnings = [];
-        $driven = $this->trips->longerThanDriven($vehicle, $data, $zone);
-        if ($driven !== null) {
-            $warnings[] = [
-                'code' => 'trip_longer_than_driven',
-                'detail' => sprintf(
-                    'The odometer readings around this day allow at most %s km; check the distance.',
-                    Decimal::trim($driven),
-                ),
-            ];
-        }
 
-        return ['trip' => $trip, 'duplicate' => false, 'warnings' => $warnings];
+        return ['trip' => $trip, 'duplicate' => false, 'warnings' => $this->tripWarnings($vehicle, $data, $zone)];
     }
 
     /**
@@ -356,13 +375,7 @@ final readonly class ApiWriter
         try {
             $check = $this->tyreChanges->record($vehicle, $parsed, $preferences->timeZone(), $preferences->locale);
         } catch (TyreChangeRefused $refused) {
-            $params = [];
-            foreach ($refused->params as $name => $value) {
-                $params[$name] = $value instanceof DateTimeImmutable ? $value->format('Y-m-d') : $value;
-            }
-            $errors = new ValidationErrors();
-            $errors->add($refused->field, $refused->key, $params);
-            throw $this->validation->of($errors);
+            throw $this->validation->of(self::refusal($refused));
         }
         $warnings = self::odometerWarnings($this->odometer->warningForEntry($vehicle, OdometerSource::Tyre, $check->id));
         foreach ($this->tyreChanges->deeperReadings($vehicle, $check) as $deeper) {
@@ -430,6 +443,21 @@ final readonly class ApiWriter
     }
 
     /**
+     * A tyre change the service refused (spec.md §7.17) as the form's error.
+     */
+    public static function refusal(TyreChangeRefused $refused): ValidationErrors
+    {
+        $params = [];
+        foreach ($refused->params as $name => $value) {
+            $params[$name] = $value instanceof DateTimeImmutable ? $value->format('Y-m-d') : $value;
+        }
+        $errors = new ValidationErrors();
+        $errors->add($refused->field, $refused->key, $params);
+
+        return $errors;
+    }
+
+    /**
      * @param array<int, string> $depths tyre id → mm
      */
     private static function treadKey(DateTimeImmutable $on, array $depths): string
@@ -470,7 +498,10 @@ final readonly class ApiWriter
         return null;
     }
 
-    private static function assertActive(Vehicle $vehicle): void
+    /**
+     * @throws ApiProblem 409 `vehicle_archived`
+     */
+    public static function assertActive(Vehicle $vehicle): void
     {
         if ($vehicle->isArchived()) {
             throw new ApiProblem(409, 'vehicle_archived', 'This vehicle is archived; restore it in the app to log entries.');
@@ -480,7 +511,7 @@ final readonly class ApiWriter
     /**
      * @return list<array{code: string, detail: string}>
      */
-    private static function odometerWarnings(?OdometerWarning $warning): array
+    public static function odometerWarnings(?OdometerWarning $warning): array
     {
         return match (true) {
             $warning === null => [],

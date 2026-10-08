@@ -27,6 +27,8 @@ final class ApiProblem extends RuntimeException
         public readonly array $headers = [],
         /** The form's errors with their parameters, for callers in the app itself (Ask's drafts, Phase 26.3). */
         public readonly ?ValidationErrors $validation = null,
+        /** @var array<string, mixed> more top-level members (`links` on `reading_derived`, Phase 39.2) */
+        public readonly array $extra = [],
     ) {
         parent::__construct($detail);
     }

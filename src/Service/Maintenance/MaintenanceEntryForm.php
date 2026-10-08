@@ -70,11 +70,13 @@ final class MaintenanceEntryForm
     /**
      * @param array<array-key, mixed> $input
      * @param list<int> $scheduleIds the vehicle's schedules (the only ones an entry may complete)
+     * @param ?string $storedKm the edited entry's odometer, kept unless changed
      */
     public static function parse(
         array $input,
         DisplayPreferences $preferences,
         array $scheduleIds,
+        ?string $storedKm = null,
     ): MaintenanceEntryData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
 
@@ -103,9 +105,7 @@ final class MaintenanceEntryForm
             category: $category,
             title: $title,
             cost: $cost ?? Decimal::round('0', self::MONEY_SCALE),
-            odometerKm: $odometer === null
-                ? null
-                : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
+            odometerKm: $odometer === null ? null : OdometerReadingForm::distanceToKm($odometer, $preferences, $storedKm),
             vendor: $vendor,
             description: $description,
             scheduleId: $schedule === null ? null : (int) $schedule,

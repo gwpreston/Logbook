@@ -95,6 +95,16 @@ final class TestBrowser
     }
 
     /**
+     * Any other method (PATCH, PUT, DELETE: the API's, Phase 39.2), with the session's cookies.
+     *
+     * @param array<string, string> $headers
+     */
+    public function send(string $method, string $path, array $headers = []): ResponseInterface
+    {
+        return $this->request($method, $path, [], [], $headers);
+    }
+
+    /**
      * Follow a redirect response with a GET.
      */
     public function follow(ResponseInterface $response): ResponseInterface

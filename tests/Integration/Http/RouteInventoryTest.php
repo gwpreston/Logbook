@@ -354,7 +354,11 @@ DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
             $path = (string) preg_replace('/\{[a-z]+:\[0-9\]\+\}/', '1', $route->getPattern());
             foreach ($route->getMethods() as $method) {
                 // Signed in, but no key: a session never opens the API.
-                $response = $method === 'GET' ? $browser->get($path) : $browser->post($path, [], [], false);
+                $response = match ($method) {
+                    'GET' => $browser->get($path),
+                    'POST' => $browser->post($path, [], [], false),
+                    default => $browser->send($method, $path),
+                };
                 $expected = $route->getName() === 'api.openapi' ? 200 : 401;
                 self::assertSame($expected, $response->getStatusCode(), $method . ' ' . $path);
             }

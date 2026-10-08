@@ -97,7 +97,7 @@ started; the phase was split into 39.1, 39.2 and 39.3. #221, #279 and
 #280 were reviewed the same day and carried as they are: none of them
 changes Phase 39. #290 was found while starting Phase 39.1 and waits
 for a decision before Phase 39.3; the spec review of the same day
-raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review; the owner answered both the same day.
+raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review; the owner answered both the same day. Phase 39.2's #298 was found while starting it and answered on 2026-10-08, before it was built; #279, #280 (Phase 38) and 39.3's #290–#295 stay open, none of them blocking 39.2.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -398,6 +398,7 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 295 | [39.3](phase-39.3.md) | Queue events on cost entries for a user without *Can see costs*? (found by the spec review) | Needs a decision | Options: yes, ids and kind only; no, skip those kinds for them. Related to #290. Before 39.3. | — |
 | 296 | [39.1](phase-39.1.md) | List and un-hide hidden *Needs attention* items over the API? The pages have no *Show again* (found while building 39.1) | Decided | No: the API does what the pages do, hide only; `?hidden=1` and `/unhide` are dropped. spec §7.20. | 2026-10-08 |
 | 297 | [39.1](phase-39.1.md) | Should fuel grade verdicts (relative price and cost per distance) need *Can see costs*? (found by the 39.1 security review) | Decided | No: they stay visible on the Fuel tab, in Ask and in the API; relative figures only, never amounts. | 2026-10-08 |
+| 298 | [39.2](phase-39.2.md) | A fill-up `PATCH` sending one of volume, price and total: re-derive the others? (found while starting) | Decided | No: as the edit form, the other two stay as stored. spec §7.20 *Conventions*. | 2026-10-08 |
 
 ## Other loose ends found in the review
 

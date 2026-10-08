@@ -50,7 +50,7 @@ final readonly class EditFuelEntryAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, $entry);
         }
 
-        $data = FuelEntryForm::parse(RequestContext::form($request), $user->preferences, $currency);
+        $data = FuelEntryForm::parse(RequestContext::form($request), $user->preferences, $currency, $entry);
         $files = $this->upload->fromRequest($request);
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {

@@ -4911,7 +4911,14 @@ stays `v1`, and existing responses don't change.
   and service**, as creates go through the add form's: the form's
   validation, messages (422), recomputation and `warnings`. Unknown
   fields are refused (`api.validation.unknown_field`). Answers `200` with
-  the entry.
+  `entry` (as its single read returns it), the form's `warnings`, and
+  the new `ETag`. A field not sent keeps its stored value exactly: it is
+  laid out in km and litres unless the body sends a value in that
+  dimension (or its unit), so it never goes through miles or gallons and
+  back. Nothing is re-derived that the form wouldn't: a fill-up
+  PATCH sending one of volume, price per unit and total keeps the other
+  two as stored, as posting the edit form does (decided 2026-10-08,
+  #298).
 - **Delete is `DELETE`**, through the same service as the delete
   confirmation page, with the same knock-on effects (a schedule falls back
   to the previous record, a fill-up's economy segments are recomputed, the
@@ -4988,7 +4995,10 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   and incidents, under the conventions above.
 - **Manual reminders:** `PATCH` and `DELETE /reminders/{id}` (`Manage`,
   as the page). Other sources answer 409 `reminder_not_manual`: they
-  change through their source (the schedule, the document).
+  change through their source (the schedule, the document). There is no
+  single reminder read, so the `PATCH` answer carries the reminder's
+  `ETag` for the next `If-Match`. A trip's `PATCH` refuses `journey_id`
+  (a saved journey fills a new trip only).
 - **Vehicles** (#284): `POST /vehicles`, the add form's fields (type,
   make, model and fuel type required; everything else optional, with the
   form's validation, including *First MOT due* and its suggestion when the
@@ -7954,6 +7964,20 @@ owner. Decided 2026-10-06 (#212–#217).
   Tread depth (Phase 11.2) is stored in millimetres and shown in `mm` or
   `in32` (1/32″ = 0.79375 mm, exact) through `Support\Units\DepthUnit`,
   the only place it is converted, parsed or formatted.
+  **Edits keep what wasn't changed** (Phase 39.2): an edit page shows a
+  stored value in the user's unit (an odometer or trip distance to 3
+  decimals in miles; a volume to 3 and a price per unit to 4 in gallons),
+  and converting that back can land a step off the stored km or litres
+  (40 800 km → 25 351.945 mi → 40 800.001 km). So when a submitted value
+  equals what the form showed for the stored entry (compared as numbers,
+  not text), the stored SI value is kept as is; only a changed value is
+  converted. Volume and price keep theirs only while the fuel's unit is
+  unchanged (petrol → electricity changes what the number means); a trip
+  keeps its stored distance when both odometers are kept, or, without
+  odometers, when the distance and *return* are both unchanged. This
+  covers the fill-up, reading, service record, document, incident, tyre
+  change and trip edit pages; the API's `PATCH` gets the same result by
+  never converting a field it isn't sent.
 - **Currency:** configurable + per-vehicle override; `intl` formatting; DECIMAL
   storage; zero is valid.
 - **Dates/timezone:** locale + timezone aware display, UTC storage,
