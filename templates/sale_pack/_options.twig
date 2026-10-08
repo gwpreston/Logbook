@@ -36,6 +36,16 @@
                 </span>
             </label>
         {% endif %}
+        {# Open issues (Phase 40.1, #312): off unless ticked; honest disclosure is the seller's choice. #}
+        {% if feature_enabled('issues') %}
+            <label class="toggle">
+                <input type="checkbox" name="issues" value="1"{% if options.openIssues %} checked{% endif %}>
+                <span class="toggle__text">
+                    <span class="toggle__title">{{ 'sale_pack.options.issues'|trans }}</span>
+                    <span class="toggle__hint">{{ 'sale_pack.options.issues_hint'|trans }}</span>
+                </span>
+            </label>
+        {% endif %}
         {# The cover page (Phase 21.1): off unless ticked; without a photo there is nothing to show. #}
         {% set has_photo = vehicle.hasPhoto() %}
         <label class="toggle">

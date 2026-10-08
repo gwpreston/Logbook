@@ -8,7 +8,7 @@
  # elsewhere, where the tab's own <h1> is visually hidden.
  #
  # Expects: vehicle, active_tab ('overview' | 'history' | 'odometer' | 'trips' | 'fuel' |
- # 'maintenance' | 'tyres' | 'compliance' | 'incidents' | 'finance' | 'expenses' | 'ownership').
+ # 'maintenance' | 'issues' | 'tyres' | 'compliance' | 'incidents' | 'finance' | 'expenses' | 'ownership').
  #}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/vehicles.twig' as vehicle_ui %}
@@ -21,6 +21,7 @@
     {route: 'trips.index', key: 'trips', icon: 'route', label: 'vehicle.tab.trips', feature: 'trips'},
     {route: 'fuel.index', key: 'fuel', icon: data.fuelType.isElectric() ? 'ev_station' : 'local_gas_station', label: 'vehicle.tab.fuel', feature: 'fuel'},
     {route: 'maintenance.index', key: 'maintenance', icon: 'build', label: 'vehicle.tab.maintenance', feature: 'maintenance'},
+    {route: 'issues.index', key: 'issues', icon: 'report', label: 'vehicle.tab.issues', feature: 'issues'},
     {route: 'tyres.index', key: 'tyres', icon: 'tire_repair', label: 'vehicle.tab.tyres', feature: 'tyres'},
     {route: 'compliance.index', key: 'compliance', icon: 'description', label: 'vehicle.tab.compliance', feature: 'compliance'},
     {route: 'incidents.index', key: 'incidents', icon: 'car_crash', label: 'vehicle.tab.incidents', feature: 'incidents'},

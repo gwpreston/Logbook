@@ -34,6 +34,10 @@ final readonly class OdometerReading
         public ?int $createdBy = null,
         /** The incident whose odometer this is (Phase 27.1). */
         public ?int $incidentId = null,
+        /** The issue whose odometer this is (Phase 40.1). */
+        public ?int $issueId = null,
+        /** The issue update whose odometer this is (Phase 40.1). */
+        public ?int $issueUpdateId = null,
     ) {
     }
 
@@ -56,6 +60,7 @@ final readonly class OdometerReading
             $this->maintenanceEntryId !== null => [AttachmentOwner::Maintenance, $this->maintenanceEntryId],
             $this->complianceDocumentId !== null => [AttachmentOwner::Compliance, $this->complianceDocumentId],
             $this->incidentId !== null => [AttachmentOwner::Incident, $this->incidentId],
+            $this->issueId !== null => [AttachmentOwner::Issue, $this->issueId],
             // Mileage when bought: the purchase paperwork is its receipt.
             $this->source === OdometerSource::Purchase => [AttachmentOwner::Purchase, $this->vehicleId],
             default => [AttachmentOwner::Odometer, $this->id],

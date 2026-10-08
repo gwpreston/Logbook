@@ -75,7 +75,7 @@
         <div class="list__item">
             <span class="list__icon{{ severity == 'now' ? ' list__icon--danger' : ' list__icon--warning' }}">{{ ui.icon(item.icon) }}</span>
             <span class="list__body">
-                <span class="list__title">{{ title }}</span>
+                <span class="list__title">{% if item.issue %}<a href="{{ url_for('issues.show', {id: item.vehicle.id, issue: item.issue.id}) }}">{{ title }}</a>{% else %}{{ title }}{% endif %}</span>
                 <span class="list__meta">
                     {%- set detail = wording.detail(item) -%}
                     {%- if opts.show_vehicle ?? false %}{{ item.vehicle.name() }}{% if detail %} · {% endif %}{% endif -%}
@@ -92,7 +92,21 @@
         </div>
         {% if item.canAct or item.canDismiss or item.canHide %}
         <div class="btn-row attention-item__actions">
-            {% if item.canAct %}
+            {% if item.canAct and item.issue %}
+                {# Issues (spec.md §7.37): no Hide; Watch sets one aside. #}
+                {% set at = {id: item.vehicle.id, issue: item.issue.id} %}
+                {% if feature_enabled('maintenance') %}
+                    <a class="btn btn--sm btn--soft" href="{{ url_for('maintenance.create', {id: item.vehicle.id}, {fixes: item.issue.id}) }}" data-modal>{{ ui.icon('build') }}{{ 'attention.action.log_repair'|trans }}<span class="visually-hidden">: {{ title }}</span></a>
+                {% endif %}
+                <a class="btn btn--sm btn--ghost" href="{{ url_for('issues.watch', at) }}" data-modal>{{ ui.icon('visibility') }}{{ (item.kind.value == 'issue_open' ? 'attention.action.watch' : 'attention.action.watch_again')|trans }}<span class="visually-hidden">: {{ title }}</span></a>
+                {% if item.kind.value == 'issue_look_again' %}
+                    <form method="post" action="{{ url_for('issues.reopen', at) }}">
+                        {{ ui.csrf(opts.csrf ?? null) }}
+                        {{ ui.return_field(opts.return_to ?? '') }}
+                        <button type="submit" class="btn btn--sm btn--ghost">{{ ui.icon('replay') }}{{ 'attention.action.reopen'|trans }}<span class="visually-hidden">: {{ title }}</span></button>
+                    </form>
+                {% endif %}
+            {% elseif item.canAct %}
                 {% if manual %}
                     <form method="post" action="{{ url_for('reminders.status', {reminder: item.reminderId, action: 'done'}) }}">
                         {{ ui.csrf(opts.csrf ?? null) }}

@@ -1,0 +1,39 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/issues.twig' as issues_ui %}
+
+{#
+ # Every visible active vehicle's open and watching issues (spec.md §7.37
+ # *Fleet*), safety first, each naming its vehicle. Reached from the *Needs
+ # attention* widget.
+ #}
+{% set active_nav = 'dashboard' %}
+
+{% block title %}{{ 'issue.fleet_title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'issue.fleet_title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'issue.fleet_lead'|trans }}</p>
+            </div>
+        </header>
+        <section class="card" aria-labelledby="fleet-issues">
+            <h2 id="fleet-issues" class="visually-hidden">{{ 'issue.fleet_title'|trans }}</h2>
+            {% if issues is empty %}
+                <div class="empty">
+                    {{ ui.icon('check_circle') }}
+                    <p class="empty__title">{{ 'issue.fleet_empty'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for issue in issues %}
+                        {% set vehicle = vehicles[issue.vehicleId] %}
+                        {{ issues_ui.row(issue, vehicle, 0, several ? vehicle.name() : null) }}
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
+{% import 'macros/issues.twig' as issues_ui %}
+
+{#
+ # The issue page (spec.md §7.37 *Pages*): what the owner noticed, its
+ # files, the look-again point, the timeline (oldest first), what fixed it,
+ # and the actions the viewer may take. Every action is a link or a form, so
+ # the page works without JS. No cause is ever suggested.
+ #}
+{% set active_nav = 'garage' %}
+{% set data = issue.data %}
+{% set status = issue.status().value %}
+{% set images = files|filter(f => f.isImage()) %}
+{% set documents = files|filter(f => not f.isImage()) %}
+
+{% block title %}{{ data.title }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('issues.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'issue.title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ data.title }}</h1>
+                <p class="page-header__lead">{{ issues_ui.meta(issue) }}</p>
+                <p class="btn-row issue-pills">{{ issues_ui.safety_pill(issue) }}{{ issues_ui.status_pill(issue) }}</p>
+            </div>
+            {% if can_log or can_change %}
+                <div class="btn-row">
+                    {% if can_log and status != 'fixed' %}
+                        <a class="btn btn--primary" href="{{ url_for('issues.fix', {id: vehicle.id, issue: issue.id}) }}" data-modal>{{ ui.icon('check_circle') }}{{ 'issue.mark_fixed'|trans }}</a>
+                    {% endif %}
+                    {% if can_log %}
+                        <a class="btn" href="{{ url_for('issues.updates.create', {id: vehicle.id, issue: issue.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'issue.update.add'|trans }}</a>
+                    {% endif %}
+                    {% if can_log and status == 'open' %}
+                        <a class="btn btn--ghost" href="{{ url_for('issues.watch', {id: vehicle.id, issue: issue.id}) }}" data-modal>{{ ui.icon('visibility') }}{{ 'issue.watch'|trans }}</a>
+                    {% endif %}
+                    {% if can_log and status == 'watching' %}
+                        <a class="btn btn--ghost" href="{{ url_for('issues.watch', {id: vehicle.id, issue: issue.id}) }}" data-modal>{{ ui.icon('event_repeat') }}{{ 'issue.watch_again'|trans }}</a>
+                        <form method="post" action="{{ url_for('issues.reopen', {id: vehicle.id, issue: issue.id}) }}">
+                            {{ ui.csrf(csrf) }}
+                            <input type="hidden" name="stop" value="1">
+                            <button type="submit" class="btn btn--ghost">{{ ui.icon('visibility_off') }}{{ 'issue.stop_watching'|trans }}</button>
+                        </form>
+                    {% endif %}
+                    {% if can_log and status == 'fixed' %}
+                        <form method="post" action="{{ url_for('issues.reopen', {id: vehicle.id, issue: issue.id}) }}">
+                            {{ ui.csrf(csrf) }}
+                            <button type="submit" class="btn">{{ ui.icon('replay') }}{{ 'issue.its_back'|trans }}</button>
+                        </form>
+                    {% endif %}
+                    {% if can_change %}
+                        <a class="btn btn--ghost" href="{{ url_for('issues.edit', {id: vehicle.id, issue: issue.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                        <a class="btn btn--ghost" href="{{ url_for('issues.delete', {id: vehicle.id, issue: issue.id}) }}" data-modal>{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </header>
+
+        <section class="card" aria-labelledby="issue-details">
+            <h2 id="issue-details" class="card__title">{{ 'issue.section.noticed'|trans }}</h2>
+            {% if data.description %}<p>{{ data.description|nl2br }}</p>{% endif %}
+            <dl class="meta-grid">
+                <div><dt>{{ 'issue.field.noticed_on'|trans }}</dt><dd>{{ data.noticedOn|local_date }}</dd></div>
+                {% if data.odometerKm is not null %}<div><dt>{{ 'issue.field.odometer'|trans }}</dt><dd class="tabular">{{ data.odometerKm|distance(0) }}</dd></div>{% endif %}
+                {% if data.category %}<div><dt>{{ 'issue.field.category'|trans }}</dt><dd>{{ ('maintenance.category.' ~ data.category.value)|trans }}</dd></div>{% endif %}
+                <div><dt>{{ 'issue.field.status'|trans }}</dt><dd>{{ issue.status().labelKey()|trans }}</dd></div>
+                {% if status == 'watching' %}
+                    <div><dt>{{ 'issue.field.look_again'|trans }}</dt><dd>{{ [issue.data.lookAgainOn ? issue.data.lookAgainOn|local_date : null, issue.data.lookAgainKm is not null ? issue.data.lookAgainKm|distance(0) : null]|filter(v => v)|join(' · ') ?: 'issue.look_again_none'|trans }}</dd></div>
+                {% endif %}
+                {% if issue.fixedOn %}<div><dt>{{ 'issue.field.fixed_on'|trans }}</dt><dd>{{ issue.fixedOn|local_date }}</dd></div>{% endif %}
+            </dl>
+            {{ ui.added_by(vehicle, issue.createdBy) }}
+        </section>
+
+        {% if files is not empty %}
+            <section class="card" aria-labelledby="issue-files">
+                <h2 id="issue-files" class="card__title">{{ 'issue.field.files'|trans }}</h2>
+                {% if images is not empty %}
+                    <ul class="incident-photos">
+                        {% for photo in images %}
+                            <li><a href="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}"><img src="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}" alt="{{ photo.filename }}" loading="lazy"></a></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if documents is not empty %}
+                    <ul class="attachment-list">{% for file in documents %}{{ paperclip.item(vehicle, file) }}{% endfor %}</ul>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="issue-fixes">
+            <h2 id="issue-fixes" class="card__title">{{ 'issue.fixes.title'|trans }}</h2>
+            {% if fixes is empty %}
+                <p class="muted">{{ status == 'fixed' ? 'issue.fixes.without_record'|trans : 'issue.fixes.none'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for record in fixes %}
+                        <li>
+                            <a class="list__item" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: record.id}) }}" data-modal>
+                                <span class="list__icon">{{ ui.icon(record.data.category.icon()) }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ record.data.title }}</span>
+                                    <span class="list__meta">{{ record.data.performedOn|local_date }} · {{ ('maintenance.category.' ~ record.data.category.value)|trans }}</span>
+                                </span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="issue-timeline">
+            <h2 id="issue-timeline" class="card__title">{{ 'issue.update.title'|trans }}</h2>
+            {% if updates is empty %}
+                <p class="muted">{{ 'issue.update.none'|trans }}</p>
+            {% else %}
+                <ol class="list">
+                    {% for update in updates %}
+                        <li>
+                            <div class="list__item">
+                                <span class="list__icon">{{ ui.icon(update.isAutomatic() ? update.statusTo.icon() : 'chat') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">
+                                        {%- if update.isAutomatic() -%}
+                                            {{ update.reason ? update.reason.labelKey()|trans : 'issue.update.reason.edited'|trans }}
+                                        {%- else -%}
+                                            {{ update.note }}
+                                        {%- endif -%}
+                                    </span>
+                                    {% if update.isAutomatic() and update.note %}<span class="list__meta">{{ update.note }}</span>{% endif %}
+                                    <span class="list__meta">
+                                        <time datetime="{{ update.notedOn|date('Y-m-d') }}">{{ update.notedOn|local_date }}</time>
+                                        {%- if update.odometerKm is not null %} · <span class="tabular">{{ update.odometerKm|distance(0) }}</span>{% endif -%}
+                                        {%- if update.isAutomatic() and update.statusFrom and update.statusFrom != update.statusTo %} · {{ 'issue.update.status_change'|trans({from: update.statusFrom.labelKey()|trans, to: update.statusTo.labelKey()|trans}) }}{% endif -%}
+                                    </span>
+                                    {{ ui.added_by(vehicle, update.createdBy) }}
+                                </span>
+                                {% if update.id in changeable_updates %}
+                                    <span class="btn-row">
+                                        <a class="btn btn--ghost btn--sm" href="{{ url_for('issues.updates.edit', {id: vehicle.id, update: update.id}) }}" data-modal>{{ ui.icon('edit') }}<span class="visually-hidden">{{ 'form.edit'|trans }}</span></a>
+                                        <a class="btn btn--ghost btn--sm" href="{{ url_for('issues.updates.delete', {id: vehicle.id, update: update.id}) }}" data-modal>{{ ui.icon('delete') }}<span class="visually-hidden">{{ 'form.delete'|trans }}</span></a>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

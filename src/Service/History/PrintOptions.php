@@ -49,7 +49,8 @@ final readonly class PrintOptions
      * The feed kinds to list: milestones always, then the chosen chips'.
      * Never valuations (spec.md §7.16): a service history handed to a buyer
      * must not carry the seller's own valuations. Never trips (§7.22):
-     * they are where someone went.
+     * they are where someone went. Never an issue's *noticed* line (Phase
+     * 40.1, §7.37): a fixed issue prints with its fix, an open one not at all.
      *
      * @return list<ActivityKind>
      */
@@ -62,7 +63,11 @@ final readonly class PrintOptions
 
         return array_values(array_filter(
             $kinds,
-            static fn (ActivityKind $kind): bool => $kind !== ActivityKind::Valuation && $kind !== ActivityKind::Trip,
+            static fn (ActivityKind $kind): bool => !in_array(
+                $kind,
+                [ActivityKind::Valuation, ActivityKind::Trip, ActivityKind::IssueNoticed],
+                true,
+            ),
         ));
     }
 }

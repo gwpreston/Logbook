@@ -293,7 +293,14 @@ final readonly class CsvImporter
                     // Tyre history and vehicle details are not imported, so a tyre change's
                     // reading and the mileage when bought are kept as manual ones (spec.md
                     // §7.13); the other owners write theirs on import.
-                    $owned = [OdometerSource::Manual->value, OdometerSource::Tyre->value, OdometerSource::Purchase->value];
+                    // Issues are not imported either (Phase 40.1), so theirs are kept likewise.
+                    $owned = [
+                        OdometerSource::Manual->value,
+                        OdometerSource::Tyre->value,
+                        OdometerSource::Purchase->value,
+                        OdometerSource::Issue->value,
+                        OdometerSource::IssueUpdate->value,
+                    ];
                     if ($source !== null && !in_array($source, $owned, true)) {
                         return ImportRowStatus::Implied;
                     }

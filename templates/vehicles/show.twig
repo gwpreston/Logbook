@@ -1,4 +1,5 @@
 {% extends 'layout.twig' %}
+{% import 'macros/issues.twig' as issues_ui %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/maintenance.twig' as maint %}
 {% import 'macros/compliance.twig' as docs %}
@@ -69,6 +70,19 @@
                     </ul>
                 {% endif %}
             </section>
+
+            {% if issues is not empty %}
+            {# Open and watching issues (spec.md §7.37 *Overview card*), safety first, five at most. #}
+            <section class="card" aria-labelledby="issues-card-heading">
+                <div class="card__header">
+                    <h2 id="issues-card-heading" class="card__title">{{ 'issue.title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('issues.index', {id: vehicle.id}) }}">{{ 'issue.view_all'|trans }}</a>
+                </div>
+                <ul class="list">
+                    {% for issue in issues|slice(0, 5) %}{{ issues_ui.row(issue, vehicle) }}{% endfor %}
+                </ul>
+            </section>
+            {% endif %}
 
             {% if feature_enabled('maintenance') %}
             <section class="card" aria-labelledby="maintenance-heading">

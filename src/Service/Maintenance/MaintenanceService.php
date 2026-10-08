@@ -18,6 +18,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
+use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Service\Tyre\TyreChangeRefused;
@@ -51,6 +52,7 @@ final readonly class MaintenanceService
         private TyreSync $tyres,
         private AccessContext $author,
         private WebhookEvents $webhooks,
+        private IssueService $issues,
     ) {
     }
 
@@ -76,19 +78,25 @@ final readonly class MaintenanceService
     /**
      * @param DateTimeZone $zone the owner's zone: the entry's odometer
      *                           reading is recorded at noon on its date there
+     * @param list<int>|null $fixes the issues it fixes (the *Fixes* checklist,
+     *                              spec.md §7.37); null leaves them alone
      */
     public function create(
         Vehicle $vehicle,
         MaintenanceEntryData $data,
         DateTimeZone $zone,
         PendingUploads $files = new PendingUploads(),
+        ?array $fixes = null,
     ): MaintenanceEntry {
-        $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone): int {
+        $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone, $fixes): int {
             $by = $this->author->authorId() ?? $vehicle->userId;
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->recordOdometer($vehicle, $id, $data, $zone);
             $this->recomputeSchedules($vehicle, $data->scheduleId);
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $id, $stored);
+            if ($fixes !== null) {
+                $this->issues->setFixesOf($vehicle, $this->get($vehicle, $id), $fixes, $zone);
+            }
             $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Maintenance, $id);
 
             return $id;
@@ -98,6 +106,7 @@ final readonly class MaintenanceService
     }
 
     /**
+     * @param list<int>|null $fixes the issues it fixes; null leaves them alone
      * @throws TyreChangeRefused when a linked tyre change cannot move to the new date or odometer
      */
     public function update(
@@ -106,13 +115,21 @@ final readonly class MaintenanceService
         MaintenanceEntryData $data,
         DateTimeZone $zone,
         PendingUploads $files = new PendingUploads(),
+        ?array $fixes = null,
     ): MaintenanceEntry {
-        $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $entry, $data, $zone): void {
+        $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $entry, $data, $zone, $fixes): void {
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $entry->id, $data, $zone);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId, $data->scheduleId);
             $this->tyres->followServiceRecord($vehicle, $this->get($vehicle, $entry->id), $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $entry->id, $stored);
+            // The issues it fixes follow its date, whether or not the checklist was sent.
+            $saved = $this->get($vehicle, $entry->id);
+            if ($fixes === null) {
+                $this->issues->recordSaved($vehicle, $saved);
+            } else {
+                $this->issues->setFixesOf($vehicle, $saved, $fixes, $zone);
+            }
             $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Maintenance, $entry->id);
         });
 
@@ -122,7 +139,8 @@ final readonly class MaintenanceService
     /**
      * Delete an entry with its odometer reading and attachments; the schedule
      * it completed falls back to the previous entry (or its baseline). Tyre
-     * changes linked to it are unlinked and write their own readings.
+     * changes linked to it are unlinked and write their own readings. The
+     * issues it fixed lose the link, and with none left are reopened.
      *
      * @param DateTimeZone $zone the owner's zone, for those readings
      */
@@ -130,6 +148,7 @@ final readonly class MaintenanceService
     {
         $this->transaction->run(function () use ($vehicle, $entry, $zone): void {
             $this->tyres->releaseServiceRecord($vehicle, $entry->id, $zone);
+            $this->issues->recordDeleted($vehicle, $entry->id, $zone);
             $this->odometer->forgetEntry($vehicle, OdometerSource::Maintenance, $entry->id);
             $this->entries->delete($vehicle->id, $entry->id);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId);

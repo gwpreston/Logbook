@@ -58,6 +58,7 @@ final readonly class Reminder
             ReminderSource::Tyre => 'tire_repair',
             ReminderSource::FirstInspection => ComplianceType::Inspection->icon(),
             ReminderSource::Finance, ReminderSource::FinanceEnd => 'account_balance',
+            ReminderSource::Issue => 'visibility',
             ReminderSource::Manual => 'notifications',
         };
     }

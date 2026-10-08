@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Incident\IncidentPicker;
+use Logbook\Action\Issue\IssueFixPicker;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
@@ -29,6 +30,7 @@ final readonly class MaintenanceFormPage
         private OdometerService $odometer,
         private AttachmentUpload $upload,
         private IncidentPicker $incidents,
+        private IssueFixPicker $fixes,
     ) {
     }
 
@@ -44,6 +46,7 @@ final readonly class MaintenanceFormPage
 
     /**
      * @param array<string, string> $values
+     * @param list<int>|null $ticked the issues shown ticked under *Fixes*; null = the record's own
      */
     public function render(
         ServerRequestInterface $request,
@@ -54,6 +57,7 @@ final readonly class MaintenanceFormPage
         ?MaintenanceEntry $entry = null,
         ?ValidationErrors $errors = null,
         int $status = 200,
+        ?array $ticked = null,
     ): ResponseInterface {
         return $this->view->render($request, $response, 'maintenance/form.twig', [
             'vehicle' => $vehicle,
@@ -65,6 +69,7 @@ final readonly class MaintenanceFormPage
             'schedules' => $this->schedules->list($vehicle),
             'latest' => $this->odometer->history($vehicle)->latest(),
         ] + $this->upload->formContext($vehicle, AttachmentOwner::Maintenance, $entry?->id)
-            + $this->incidents->context($vehicle), $status);
+            + $this->incidents->context($vehicle)
+            + $this->fixes->context($vehicle, $entry, $ticked), $status);
     }
 }

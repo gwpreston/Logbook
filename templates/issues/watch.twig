@@ -1,0 +1,48 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # *Watch* and *Watch again* (spec.md §7.37): keep an eye on an issue, with
+ # an optional look-again date and/or mileage that brings it back in *Needs
+ # attention* and as a reminder. A page and a desktop modal.
+ #}
+{% set active_nav = 'garage' %}
+{% set again = issue.status().value == 'watching' %}
+{% set heading = (again ? 'issue.watch_again' : 'issue.watch')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+
+{% block title %}{{ heading }} · {{ issue.data.title }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('issues.show', {id: vehicle.id, issue: issue.id}) }}">{{ ui.icon('chevron_left') }}{{ issue.data.title }}</a>
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }} · {{ issue.data.title }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'issue.watch_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        <form class="form" method="post" action="{{ url_for('issues.watch', {id: vehicle.id, issue: issue.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+            <section class="card">
+                <div class="form-row">
+                    {{ ui.input('look_again_on', 'issue.field.look_again_on'|trans, values, errors, {type: 'date', optional: true, min: 'now'|date('Y-m-d')}) }}
+                    {{ ui.input('look_again_odometer', 'issue.field.look_again_odometer'|trans, values, errors, {type: 'number', step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol, optional: true}) }}
+                </div>
+                <p class="field__hint">{{ 'issue.hint.look_again'|trans }}</p>
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('visibility') }}{{ heading }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: url_for('issues.show', {id: vehicle.id, issue: issue.id}) }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

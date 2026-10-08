@@ -37,7 +37,7 @@ final class FinanceTabTest extends AppTestCase
 
     /** Every tab, in the prototype's order (#179). */
     private const array TABS = [
-        '', '/history', '/odometer', '/trips', '/fuel', '/maintenance', '/tyres', '/documents', '/incidents',
+        '', '/history', '/odometer', '/trips', '/fuel', '/maintenance', '/issues', '/tyres', '/documents', '/incidents',
         '/finance', '/expenses', '/ownership',
     ];
 
@@ -154,8 +154,9 @@ final class FinanceTabTest extends AppTestCase
             $icons[] = substr((string) $use->getAttribute('href'), (int) strpos((string) $use->getAttribute('href'), '#') + 1);
         }
         self::assertSame('dashboard', $icons[0]);
-        self::assertSame('description', $icons[7]);
-        self::assertSame('account_balance', $icons[9]);
+        self::assertSame('report', $icons[6]);
+        self::assertSame('description', $icons[8]);
+        self::assertSame('account_balance', $icons[10]);
     }
 
     public function testTheFinanceTabIsForManageWithCostsAndTheHeaderButtonIsGone(): void

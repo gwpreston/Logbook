@@ -69,6 +69,8 @@ final readonly class AttentionWording
                 'date' => $this->formatter->date($item->finance?->dueOn),
             ]),
             AttentionKind::FinanceMileage => $this->mileageTitle($item->finance),
+            // The owner's words, never a cause (spec.md §7.37).
+            AttentionKind::IssueOpen, AttentionKind::IssueLookAgain => $item->issue->data->title ?? '',
         };
     }
 
@@ -131,6 +133,34 @@ final readonly class AttentionWording
                 'agreement' => $this->agreementName($item->finance),
             ]),
             AttentionKind::FinanceMileage => $this->mileageDetail($item->finance),
+            AttentionKind::IssueOpen => $this->safety($item) . $this->translator->trans('attention.issue.noticed', [
+                'date' => $this->formatter->date($item->issue?->data->noticedOn),
+            ] + self::ago($item->days ?? 0)),
+            AttentionKind::IssueLookAgain => $this->safety($item) . $this->translator->trans('attention.issue.watching_since', [
+                'date' => $this->formatter->date($item->since),
+            ]),
+        };
+    }
+
+    /**
+     * "Affects safety · " before a safety issue's detail: in words, never colour alone.
+     */
+    private function safety(AttentionItem $item): string
+    {
+        return ($item->issue->data->affectsSafety ?? false) ? $this->translator->trans('issue.affects_safety') . ' · ' : '';
+    }
+
+    /**
+     * How long ago, in days under two weeks, weeks under two months, months after.
+     *
+     * @return array{unit: string, n: int}
+     */
+    private static function ago(int $days): array
+    {
+        return match (true) {
+            $days < 14 => ['unit' => 'day', 'n' => $days],
+            $days < 61 => ['unit' => 'week', 'n' => intdiv($days, 7)],
+            default => ['unit' => 'month', 'n' => intdiv($days, 30)],
         };
     }
 

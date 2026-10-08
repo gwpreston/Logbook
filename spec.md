@@ -431,11 +431,14 @@ MySQL only.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`), note (optional),
+  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`|`issue`|`issue_update`), note (optional),
   fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
   by `ON DELETE CASCADE`), maintenance_entry_id, compliance_document_id and
   tyre_change_id (likewise, for `maintenance`, `document` and `tyre`
   readings), incident_id (likewise, for `incident` readings, Phase 27.1),
+  issue_id and issue_update_id (likewise, for `issue` and `issue_update`
+  readings, Phase 40.1:
+  an issue's or an update's odometer, §7.37),
   created/updated (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
   coherent series (see #230-style requirement). A fill-up writes its reading in
@@ -530,7 +533,9 @@ MySQL only.
   §7.32, whose source_id is the agreement: `finance` the final payment,
   `finance_end` *Agreement ends*, two sources because the row is unique
   per vehicle, source and source_id, decided 2026-10-02,
-  `docs/phases/open-questions.md` #130), source_id (the schedule or document; for `tyre` the
+  `docs/phases/open-questions.md` #130, and `issue` from Phase 40.1, §7.37,
+  whose source_id is the issue: its look-again point, #311),
+  source_id (the schedule or document; for `tyre` the
   **vehicle's own id**, because the source is the vehicle's tyres as a
   whole — one tyre reminder per vehicle, never one per tyre, so do not
   "fix" it into a tyre id; none for manual),
@@ -711,14 +716,52 @@ MySQL only.
   attachment rows (the files stay under `UPLOAD_PATH`) and drops the
   table.
 
+**Issue** (Phase 40.1, §7.37), `issues`
+- id, vehicle_id (`ON DELETE CASCADE`), created_by (user, `ON DELETE SET
+  NULL`, as entry authorship), noticed_on (calendar date, as
+  `performed_on`), odometer_km (optional `decimal(12,3)`), title (required,
+  up to 120), description (optional, up to 2,000), category (optional, a
+  maintenance category code), status (`open` | `watching` | `fixed`),
+  affects_safety (bool, default false; set only by the owner, #310),
+  look_again_on (optional date) and look_again_km (optional
+  `decimal(12,3)`), both only while `watching`; fixed_on (date, set while
+  `fixed`), status_before_fix (`open` | `watching`, set when fixed, for
+  unlinking), source (`manual` | `recommended_work` | `mot_advisory`, the
+  last from Phase 41), source_ref (optional, up to 100: the pending
+  upload or the MOT defect, for tracing), created/updated (UTC). Index
+  `(vehicle_id, status)`.
+
+**IssueFix** (Phase 40.1), `issue_fixes`
+- id, issue_id (`ON DELETE CASCADE`), maintenance_entry_id (`ON DELETE
+  CASCADE`), historical (bool, default false: set by *It's back*, so an
+  earlier fix stays as history but no longer keeps the issue fixed nor
+  dates it; ticking that record again makes it current), created_at
+  (UTC); unique on the pair. One record can fix
+  several issues (a brake job); a second attempt can be linked too.
+
+**IssueUpdate** (Phase 40.1), `issue_updates`
+- id, issue_id (`ON DELETE CASCADE`), noted_on (date), odometer_km
+  (optional `decimal(12,3)`), note (up to 1,000; optional when the update
+  is only a status change), status_from and status_to (optional; set on
+  an automatic status-change update, which cannot be edited or deleted),
+  created_by (`ON DELETE SET NULL`), created/updated (UTC). Index
+  `(issue_id, noted_on)`.
+- Upgrading to 3.6.0 creates the three tables, the reading links
+  (`odometer_readings.issue_id` and `issue_update_id`, `ON DELETE
+  CASCADE`) and the `issue` attachment owner type and reminder source.
+  Rolling it back turns `issue` readings into `manual` ones (links
+  cleared), removes `issue` attachment rows (the files stay under
+  `UPLOAD_PATH`) and `issue` reminders, and drops the tables.
+
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
   (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`|`purchase`|
-  `sale`|`valuation`|`trip`|`incident`; `odometer` for manual readings only;
+  `sale`|`valuation`|`trip`|`incident`|`issue`; `odometer` for manual readings only;
   `purchase` and
   `sale` for the vehicle's purchase and sale, Phase 12, with owner_id = the
   vehicle's id; `valuation` for a valuation, Phase 14.1; `trip` for a trip,
-  Phase 22; `incident` for an incident's photos and files, Phase 27.1),
+  Phase 22; `incident` for an incident's photos and files, Phase 27.1;
+  `issue` for an issue's photos and files, Phase 40.1),
   owner_id, filename (the uploaded name,
   sanitised, for display and downloads only), mime (detected from the
   content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
@@ -826,7 +869,7 @@ MySQL only.
   odometer_readings (`manual` readings; a derived reading's author is its
   entry's), maintenance_entries, compliance_documents, expense_entries,
   tyre_changes, vehicle_valuations and trips (Phase 22; a trip's author is
-  its driver and claimant), and uploaded_by on attachments.
+  its driver and claimant), issues and issue_updates (Phase 40.1), and uploaded_by on attachments.
   Every create path sets it: forms, CSV import and the API take the
   signed-in or key's user; the command line and seeds, which have none,
   name the vehicle's owner. Upgrading to 2.0.0 names each vehicle's owner
@@ -1519,7 +1562,7 @@ jumps, going backwards) without blocking.
   history), *average per year since first registered* (below), distance
   logged; odometer-over-time chart; readings newest first (25 per page) with
   the distance since the one before and their source (*Manual*, *Fill-up*,
-  *Service*, *Document*, *Tyres*). Each row shows a paperclip with its number of
+  *Service*, *Document*, *Tyres*, and *Issue* from Phase 40.1). Each row shows a paperclip with its number of
   files: a manual reading's own, a derived reading's owning entry's.
 - Manual readings take attachments (a photo of the dashboard) through the
   shared attachment input (§7.12) on their add and edit forms; deleting the
@@ -1601,7 +1644,8 @@ math stays correct across gaps. Show per-fill and rolling consumption
 - **Fast path:** a "+ Log entry" button (sidebar, and the centre "+" of the
   mobile tab bar) opens the *Log something* chooser (`/log/new`; a modal on
   desktop, §5): Fill-up, Odometer reading, Service record, Expense,
-  Document, Service interval, Tyre change (Phase 11.1; opens *Fit tyres*) —
+  Document, Service interval, Tyre change (Phase 11.1; opens *Fit tyres*),
+  Issue (Phase 40.1, §7.37) —
   choices of a switched-off module are left out. Fill-up goes to
   `/fuel/new`; the others to `/log/new/{odometer|maintenance|expense|
   document|schedule|tyre}`. Each goes straight to the form
@@ -1836,7 +1880,8 @@ reminders. Attach invoices/receipts. Cost of 0 is valid.
 - **Entries:** date (defaults to today), what was done, category, optional
   odometer (typed in the user's distance unit; adds a reading to the mileage
   log, with the usual plausibility warning), cost (blank or 0 for free work),
-  garage/shop, details, and optionally the schedule it completes. Listed
+  garage/shop, details, optionally the schedule it completes and, from
+  Phase 40.1, the issues it *Fixes* (§7.37). Listed
   newest first (25 per page) and filterable by category (`?category=`).
 - **Last done** for a schedule is its latest entry (by date, then odometer);
   with none yet, the "last done" typed on the schedule.
@@ -2978,7 +3023,8 @@ Disabled modules are removed from nav, routes, and dashboard.
 - Modules: `fuel`, `maintenance`, `compliance`, `reminders`, `reports`,
   `tyres` (Phase 11.1), `trips` (Phase 22), `incidents` (Phase 27.1, on by
   default, decided 2026-10-01, `docs/phases/open-questions.md` #94),
-  `finance` (Phase 29.1, on by default, §7.32), `stations` (Phase 30.1,
+  `finance` (Phase 29.1, on by default, §7.32), `issues` (Phase 40.1, on
+  by default, §7.37), `stations` (Phase 30.1,
   on by default, §7.33; off whenever `fuel` is off), and
   from Phase 26.1 the AI
   modules `ai_ask`, `ai_actions` and `ai_scan` (§7.25: on by default, but
@@ -3044,6 +3090,7 @@ Disabled modules are removed from nav, routes, and dashboard.
   - `maintenance` off leaves tyres working: the cost, garage and link fields
     are hidden on tyre forms, existing links are kept untouched, and a
     linked change is listed on its own in history (without a cost).
+  - `issues` off: as §7.37 *Module* lists. The data is kept.
   - *Coming up* (§7.18) is core, like history: each module's items simply
     leave it. `maintenance` off: schedule items and tyre costs; `compliance`
     off: renewals; `tyres` off: tyre items; `reminders` off: manual
@@ -4032,6 +4079,8 @@ with a printable service history to hand to a buyer.
   | Odometer reading | `recorded_at`, as a local date (manual readings only) | note |
   | Tyres (Phase 11.1) | `done_on` | "Fitted 2 × Michelin Primacy 4 (front)", "Swapped to Winter wheels", "Rotated 4 tyres", "Repaired front left", "Removed 2 tyres" |
 | Valuation (Phase 14.1) | `valued_on` | "Valued at £9,800 · Auto Trader valuation" |
+  | Issue noticed (Phase 40.1) | `noticed_on` | title; "Affects safety" |
+  | Issue fixed (Phase 40.1) | `fixed_on` | title; the record(s) that fixed it, or "Fixed without a record" |
 
   **A tyre change linked to a service record is never listed on its own**
   (§7.17): the service record's row carries the change's summary as a second
@@ -4074,10 +4123,10 @@ with a printable service history to hand to a buyer.
   under the *Fuel* chip, and only the History pages fold (the widget and the
   print view list plainly).
 - **Kind chips** under the toolbar: *Everything* (default), *Service*,
-  *Fuel*, *Tyres*, *Documents*, *Expenses*, *Mileage*, and *Incidents*
-  (Phase 27.1, §7.29). Each is a link
+  *Fuel*, *Tyres*, *Documents*, *Expenses*, *Mileage*, *Incidents*
+  (Phase 27.1, §7.29) and *Issues* (Phase 40.1, §7.37). Each is a link
   (`?kind=service` / `fuel` / `tyres` / `documents` / `expenses` /
-  `mileage` / `incidents`), one chosen at a time,
+  `mileage` / `incidents` / `issues`), one chosen at a time,
   with `aria-current` on the chosen one; a switched-off module's chip is
   hidden, and an unknown (or switched-off) value falls back to *Everything*.
   Milestones show under *Everything* only.
@@ -4557,6 +4606,8 @@ available for active and archived vehicles.
     the authenticated photo route and never goes in the ZIP.
   - *Include incidents* (Phase 27.1): off by default; the *Incidents*
     group, the write-off line and the seller notice are §7.29's.
+  - *Include open issues* (Phase 40.1, #312): off by default; the *Open
+    issues* section and its notice are §7.37's.
   - Which kinds of paperwork go in the ZIP (below).
   The options panel and every seller notice are screen-only and are never
   printed.
@@ -5621,6 +5672,9 @@ wrong.
     From Phase 29.2 a finance payment marked `missed` with no later
     `paid_late` is a *Now* item ("Finance payment due 1 Mar marked
     missed"), linking to the agreement, with the same access.
+    From Phase 40.1 (`issues` on) *Now* also holds **Open issue** and
+    **Look again** (§7.37), safety issues first within *Now*; they have
+    no *Hide*: *Watch* sets an issue aside.
 - **Thresholds** (Settings → Reminders, a *Needs attention* card shown
   with or without the `reminders` module): *Mileage not updated after*
   (days, 7–365, default 60) and *Valuation is stale after* (months, 1–60,
@@ -6428,7 +6482,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 - **Recommended work** (service invoices' recommendations, and an
   inspection's advisories): saving the entry goes on to its card
   (`/scan/{token}/reminders`), which offers each as a manual reminder
-  (§7.6), *Add reminder* per line and *Add all*, and *Not now* back to
+  (§7.6), *Add reminder* per line and *Add all* (and, from Phase 40.2, as
+  an issue: §7.37), and *Not now* back to
   where the save would have gone:
   - a date is taken as is;
   - a distance is stored as a distance (decided 2026-10-01,
@@ -8049,6 +8104,198 @@ owner. Decided 2026-10-06 (#212–#217).
   visitors, a second demo account (#217), anything that overwrites data
   from an environment variable alone, hosting or analytics.
 
+### 7.37 Issues (Phases 40.1 and 40.2)
+
+A fault the owner has noticed and not fixed yet: "knock from front left
+under braking", "slow leak, rear right", "advisory: brake pipes corroded".
+An issue has a date, the mileage, the owner's description and a status
+(*open*, *watching*, *fixed*), and closes by linking to the service record
+that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
+#307–#318).
+
+- **No diagnosis, ever** (decided 2026-10-08 by the owner). Logbook records
+  the owner's words and links the fix; it never suggests what a fault is,
+  in any form: no "possible causes", no Ask tool that offers one, no AI
+  insight about a cause. A confident wrong guess about brakes or steering
+  could hurt someone, and it is not grounded in the owner's data.
+- **Data:** §6 Issue, IssueFix, IssueUpdate; the odometer reading source
+  `issue`; the attachment owner type `issue`; the reminder source `issue`.
+- **Statuses.**
+  - *Open:* noticed, not dealt with.
+  - *Watching:* the owner has decided to keep an eye on it (an advisory, a
+    noise that comes and goes), with an optional *Look again on* date
+    and/or *at* mileage (typed in the owner's distance unit). A look-again
+    point is only kept while watching: leaving *watching* clears it.
+  - *Fixed:* linked to the service record(s) that fixed it, or fixed
+    without a record (below), with *fixed on* (a date).
+- **Affects safety** (decided 2026-10-08, #310): a tick the **owner** sets
+  on the issue; Logbook never sets or suggests it (Phase 41's MOT
+  *dangerous* and *major* defects will set it on the issues they create).
+  A safety issue is listed first in *Needs attention* and on the issue
+  lists, with the words "Affects safety" and the danger colour (never
+  colour alone).
+- **Odometer** (decided 2026-10-08, #307): an issue's odometer, and an
+  update's, **adds a reading** (source `issue` or `issue_update`, both
+  shown as *Issue*, local noon on its date,
+  with the usual plausibility warning), written, moved and removed with
+  the issue or update in the same transaction, as a service record's is.
+  Issues are not imported, so a CSV import of the mileage log keeps an
+  `issue` or `issue_update` reading as a manual one, as it does a tyre
+  change's.
+- **Fixing from the service record:** the maintenance form (page and
+  modal) gains *Fixes*: a checklist of the vehicle's open and watching
+  issues (and, when editing, the ones this record already fixes), beside
+  *Completes* (schedules). Saving links the ticked ones and sets each to
+  *fixed* with the record's date. Works without JS. Shown only with the
+  `issues` module on and at least one issue to list.
+- **Fixing from the issue:** *Mark fixed* offers, in this order:
+  1. *Log the repair*: the maintenance form prefilled (category, title
+     from the issue, today) with the issue ticked under *Fixes*;
+  2. *Link an existing record*: a picker of the vehicle's service records
+     dated on or after the issue was noticed, newest first;
+  3. *Fixed without a record* (decided 2026-10-08, #308): a date (today
+     by default) and an optional note ("Went away on its own"), written as
+     an update. Some faults just stop, and forcing an invented record
+     would be worse data.
+- **Unlinking:** unticking an issue on the record, or deleting the record,
+  takes the link away. An issue left with no link and not fixed without a
+  record goes back to the status it had before it was fixed (stored when
+  it was fixed), with an automatic update saying so ("Service record
+  deleted; reopened"); a look-again point it had is not restored.
+- **It's back:** reopening a fixed issue keeps its links (the earlier fix
+  is history), clears *fixed on* and adds an update. Status *open*.
+- **Updates** (the timeline): *Add update* on the issue page (date, odometer,
+  note, optional status change). A status change from any path (the
+  status control, *Watch*, a fix, an unlink, *It's back*) writes an
+  automatic update with `status_from` and `status_to`. Updates with a
+  note can be edited and deleted (decided 2026-10-08, #316) under
+  `EntryAccess`, their reading moving or going with them; automatic
+  status-change updates cannot be edited or deleted.
+- **Look-again reminders** (decided 2026-10-08, #311): a watching issue
+  with a look-again point raises a reminder (§7.6, source `issue`,
+  source_id the issue), due at that date and/or odometer, judged as a
+  manual reminder by distance (whichever comes first) with the owner's
+  manual lead time, titled "Look again: {title}". It is a generated
+  reminder: *Sync* creates, moves and removes it with the look-again
+  point; it cannot be edited or deleted on its own; fixing, reopening,
+  un-watching or deleting the issue removes it, and a new look-again
+  point is a new occurrence. *Done* on it means **Looked at it**: the
+  look-again point is cleared and the issue stays *watching*, with an
+  automatic update. *Dismiss* dismisses that occurrence only. It reaches
+  the notification channels as any reminder does and is listed on
+  Reminders, the calendar and its feed. It needs the `reminders` module;
+  without it the issue still comes back in *Needs attention*.
+- **Pages:**
+  - **Issues tab** (decided 2026-10-08, #309) under the vehicle,
+    `/vehicles/{id}/issues`, after *Maintenance*: filters *Open*
+    (default), *Watching*, *Fixed*, *All* (`?status=`, links with
+    `aria-current`); safety issues first, then newest noticed first, 25
+    per page; the list toolbar with *Export CSV* (Phase 40.2) and *Add
+    issue*.
+  - **Overview card** *Issues*: open and watching issues, safety first,
+    then newest first, up to five, *Show all* to the tab. Hidden when
+    there are none.
+  - **Issue page** (`/vehicles/{id}/issues/{issue}`): title, status,
+    *Affects safety*, noticed date and mileage, category, description,
+    files, the look-again point, the updates timeline (oldest first),
+    what fixed it (each record's date, title and link), and the actions
+    the viewer may take: *Edit*, *Delete* (its own confirmation page),
+    *Add update*, *Watch* / *Stop watching*, *Mark fixed*, *It's back*.
+  - **Add / edit** as every entry form: a modal on desktop and its own
+    page without JS. Fields: noticed on (today by default, not after
+    today), odometer, title (required, up to 120), description (up to
+    2,000), category (optional, the maintenance categories, so a fix can
+    be prefilled), status (open or watching), look-again point
+    (watching only), *Affects safety*, files. Changing the status to
+    *fixed* is not on the form: *Mark fixed* does it.
+  - **Fleet** `/issues`: every visible active vehicle's open and watching
+    issues, safety first, each naming its vehicle, linked from the *Needs
+    attention* widget.
+  - ***Log entry* chooser:** *Issue* (`/log/new/issue`), after *Service
+    record*.
+  - **Archived vehicles** keep their issues read-only (the tab and pages
+    show, nothing can be added or changed); open ones raise nothing and
+    their reminders are not listed.
+- ***Needs attention*** (§7.24): two *Now* items, shown to everyone who
+  can view the vehicle, safety issues first within *Now*:
+  - **Open issue**, one per open issue: "Knock from front left under
+    braking · noticed 12 Aug, 3 weeks ago". Actions: *Log the repair*
+    (`Log`) and *Watch* (`Log`; sets *watching*, asking for an optional
+    look-again point).
+  - **Look again**, one per watching issue whose look-again date has
+    come (on or after it, the owner's today) or whose mileage has been
+    reached (latest reading): "Brake pipes corroded · watching since March". Actions
+    (decided 2026-10-08, #315): *Log the repair*, *Watch again* (a new
+    look-again point, or none) and *Reopen* (back to *open*), each `Log`.
+    With reminders on, an issue whose look-again reminder is dismissed or
+    done is left out, and the reminder itself is not listed again as an
+    overdue reminder (item 1), so it appears once.
+  - No *Hide*: *Watch* is how an issue is set aside, so there is one
+    place for it. Both count in the widget and the garage marker.
+- **History** (§7.16): kinds *Issue noticed* (dated `noticed_on`,
+  summary: the title, "Affects safety" when set) and *Issue fixed* (dated
+  `fixed_on`, linking the record(s) that fixed it, or "Fixed without a
+  record"), under an *Issues* chip. Updates are not listed. The printable
+  service history includes fixed issues with their fix (an *Issues*
+  option, on by default), never open or watching ones.
+- **Sale pack** (§7.19, decided 2026-10-08, #312): *Include open issues*,
+  off by default; with it on, an *Open issues* section lists open and
+  watching issues (title, noticed date and mileage, status, "Affects
+  safety"), with a screen-only notice that it is there by the seller's
+  choice. Honest disclosure is the owner's choice to make.
+- **Module:** `issues`, **on by default** (Settings → Modules,
+  `FEATURES_ISSUES`). Off: the tab, the pages, the fleet page and the
+  routes (404), the overview card, the chooser's *Issue*, the *Fixes*
+  checklist (existing links kept untouched), the *Needs attention* items,
+  the look-again reminders (kept, neither listed nor sent), the History
+  kinds and chip, the print and sale-pack options, and, from Phase 40.2,
+  the recommended-work buttons, the API routes, the Ask and MCP tools and
+  the CSV. Readings already written by issues stay in the mileage log.
+  The data is kept.
+- **Access** (§7.21): viewing needs `View`; adding, *Add update*, *Watch*,
+  *Mark fixed*, *It's back* and *Reopen* need `Log`; editing and deleting
+  an issue or an update follow `EntryAccess` (own under `Log`, any under
+  `Manage`). Issues carry no amounts, so *Can see costs* plays no part.
+- **Phase 40.2 — elsewhere:**
+  - **Recommended work** (§7.27, decided 2026-10-08, #313, #314): the
+    card is shown when the user may add reminders (`Manage`, `reminders`
+    on) **or** issues (`Log`, `issues` on); each button checks its own
+    rule. Per line, beside *Add reminder*: *Add as issue* (status *open*)
+    and *Watch* (status *watching*, the line's date or distance, if any,
+    as the look-again point, a distance added to the entry's odometer as
+    for reminders); and *Add all as issues* (all *open*) beside *Add all*.
+    Each issue is source `recommended_work`, source_ref the pending
+    upload, noticed on the entry's date at its odometer, title the line's
+    text (up to 120). A line already added as a reminder or an issue is
+    marked so.
+  - **Ask** (§7.26): read tool `issues(vehicle?, status?)` and draft tool
+    `draft_issue`. The system text gains: "Never suggest what may be
+    causing a fault, even if asked; say Logbook only records what the
+    owner noted, and suggest a qualified mechanic." AI insights never
+    take an issue's cause as a topic; they may note counts ("2 issues
+    open on the Golf for over 3 months").
+  - **MCP** (§7.28): the read tool, and `draft_issue` as a pending draft.
+  - **API** (§7.20): `GET` and `POST /vehicles/{id}/issues`, `GET`,
+    `PATCH` and `DELETE /vehicles/{id}/issues/{issue}` (with `ETag` and
+    `If-Match`), `GET /issues` (`?status=`), `POST
+    /vehicles/{id}/issues/{issue}/updates`, `POST
+    /vehicles/{id}/issues/{issue}/fix` (record ids, or none with a note),
+    `POST /vehicles/{id}/issues/{issue}/reopen`, and attachments with
+    owner type `issue`. Duplicate key on create: same date, title and
+    source reference. Webhooks (decided 2026-10-08, #317): kind `issue`;
+    create, edit and delete are `entry.created`, `entry.updated` and
+    `entry.deleted`; an update, a fix from either side, an unlink and a
+    reopen are each `entry.updated` of the issue (a service record's save
+    that fixes issues fires its own `maintenance` event too).
+  - **CSV:** `/vehicles/{id}/export/issues.csv` (date noticed, mileage,
+    title, description, category, status, affects safety, fixed on, fixed
+    by). Backups and `bin/export-user.php` carry the three tables (built
+    in Phase 40.1, ahead of the rest, so no restore loses issues).
+- **Not in scope:** costing an issue (estimates live in quotes, and once
+  paid in the service record); a severity set by Logbook; MOT advisories
+  as a source (Phase 41, which writes through this create path); video
+  files.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -8391,6 +8638,7 @@ Real environment variables override `.env`; an empty value counts as unset.
 - `FEATURES_FUEL`, `FEATURES_MAINTENANCE`, `FEATURES_COMPLIANCE`,
   `FEATURES_REMINDERS`, `FEATURES_REPORTS`, `FEATURES_TYRES`,
   `FEATURES_INCIDENTS` (Phase 27.1), `FEATURES_FINANCE` (Phase 29.1),
+  `FEATURES_ISSUES` (Phase 40.1),
   `FEATURES_STATIONS` (Phase 30.1; off whenever fuel is)
   (default true; see §7.10),
   `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,
@@ -9075,6 +9323,24 @@ task breakdowns live in the per-phase files; this is the map.
   keys → Webhooks; `WEBHOOKS_ENABLED` (§6, §7.11, §7.20, §7.30, §9;
   #285, #286, #288–#295, #300–#302). One migration. Release
   v3.5.0 (Phases 39.1 to 39.3).
+- **Phase 40.1 — Issues log.** Faults noticed and not yet fixed: date,
+  mileage, description, files, *Affects safety*, status *open*,
+  *watching* (with a look-again point that raises a reminder) or
+  *fixed* by the service record(s) linked from either side, or without
+  one; an updates timeline; the Issues tab, overview card, issue page,
+  fleet `/issues` and chooser entry; *Needs attention* *Open issue* and
+  *Look again*; History kinds, print and the sale pack's *Include open
+  issues*; module `issues`; backups and `bin/export-user.php`; demo
+  seed. No AI diagnosis (§6, §7.4, §7.6,
+  §7.10, §7.16, §7.19, §7.24, §7.37; #307–#312, #315–#318). One
+  migration. Ships with Phase 40.2 as v3.6.0.
+- **Phase 40.2 — Issues everywhere + v3.6 release.** The recommended-work
+  card's *Add as issue*, *Watch* and *Add all as issues*; the API (list,
+  read, create, `PATCH`, `DELETE`, updates, fix, reopen, attachments) and
+  `issue` webhooks; Ask's `issues` and `draft_issue` with the no-cause
+  system line; MCP; CSV (§7.13, §7.20, §7.26, §7.27, §7.28, §7.37;
+  #313, #314, #317). No migration.
+  Release v3.6.0 (Phases 40.1 and 40.2).
 ---
 
 ## 14. Definition of done

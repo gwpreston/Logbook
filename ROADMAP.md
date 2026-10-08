@@ -89,7 +89,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [39.1](docs/phases/phase-39.1.md) | API reads and reminder actions | ✅ |
 | [39.2](docs/phases/phase-39.2.md) | API writes, edit and delete | ✅ |
 | [39.3](docs/phases/phase-39.3.md) | API attachments and entry webhooks + v3.5 release | ✅ |
-| [40](docs/phases/phase-40.md) | Issues log + release | 📋 |
+| [40.1](docs/phases/phase-40.1.md) | Issues log | ✅ |
+| [40.2](docs/phases/phase-40.2.md) | Issues everywhere + v3.6 release | 📋 |
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
@@ -1046,19 +1047,38 @@ list of choices in Settings.*
 
 ---
 
-## Phase 40 — Issues log + release
+## Phase 40.1 — Issues log
 *The fault you've noticed and haven't fixed yet.*
 
-- Issues with a date, mileage, description and status (*open*,
-  *watching*, *fixed*), updates over time and attached photos or PDFs.
-- A service record fixes one or more issues, from either side; open
-  issues, and watching ones past their look-again point, appear in *Needs
-  attention*.
-- The recommended-work card offers *Add as issue*; issues go everywhere
-  entries go (History, CSV, backups, API, Ask, MCP, the demo seed).
-- No AI diagnosis, in any form (decided 2026-10-08). Release.
+- Issues with a date, mileage, description, files and status (*open*,
+  *watching*, *fixed*), an owner-set *Affects safety* and updates over
+  time; an issue's mileage joins the mileage log.
+- A service record fixes one or more issues, from either side, or an
+  issue is fixed without one; open issues, and watching ones past their
+  look-again point, appear in *Needs attention*, and the look-again point
+  raises a reminder.
+- An Issues tab and overview card, History, print and the sale pack's
+  *Include open issues*; backups and `bin/export-user.php`. No AI diagnosis, in any form (decided
+  2026-10-08).
+- Phase 40 planned as one, split in two (#318); open questions A–F and
+  six found while starting (#307–#318) decided 2026-10-08. Ships with
+  40.2 as **v3.6.0**.
 
-→ [`phase-40.md`](docs/phases/phase-40.md)
+→ [`phase-40.1.md`](docs/phases/phase-40.1.md)
+
+---
+
+## Phase 40.2 — Issues everywhere + v3.6 release
+*Recommended work becomes issues in one tap, and issues go everywhere
+entries go.*
+
+- The recommended-work card offers *Add as issue*, *Watch* and *Add all
+  as issues*.
+- Issues in the API (with edit, delete, attachments and `issue`
+  webhooks), Ask (a read tool, a draft tool, and a system line that never
+  suggests a cause), MCP and CSV. Release v3.6.0.
+
+→ [`phase-40.2.md`](docs/phases/phase-40.2.md)
 
 ---
 
@@ -1073,7 +1093,7 @@ record.*
   defects stored; test mileages join the mileage log and its plausibility
   checks; passed tests can become inspection documents and fill *First
   MOT due*.
-- Advisories and defects offered as Phase 40 issues; History, Ask, API
+- Advisories and defects offered as Phase 40.1 issues; History, Ask, API
   and backups. Waits if individuals can't get DVSA credentials. Release.
 
 → [`phase-41.md`](docs/phases/phase-41.md)

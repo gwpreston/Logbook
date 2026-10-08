@@ -133,6 +133,7 @@ final readonly class ActivityDateRepository
             DatedSource::Valuation => 'vehicle_valuations',
             DatedSource::Trip => 'trips',
             DatedSource::Incident => 'incidents',
+            DatedSource::IssueNoticed, DatedSource::IssueFixed => 'issues',
         };
     }
 
@@ -147,6 +148,8 @@ final readonly class ActivityDateRepository
             DatedSource::Valuation => 'valued_on',
             DatedSource::Trip => 'travelled_on',
             DatedSource::Incident => 'occurred_on',
+            DatedSource::IssueNoticed => 'noticed_on',
+            DatedSource::IssueFixed => 'fixed_on',
         };
     }
 }

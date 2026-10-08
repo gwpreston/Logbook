@@ -25,4 +25,6 @@ enum AttachmentOwner: string
     case Valuation = 'valuation';
     case Trip = 'trip';
     case Incident = 'incident';
+    /** An issue's photos and files (Phase 40.1, spec.md §7.37). */
+    case Issue = 'issue';
 }

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.22.0",
+    "version": "1.23.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -7975,7 +7975,9 @@
               "document",
               "tyre",
               "incident",
-              "purchase"
+              "purchase",
+              "issue",
+              "issue_update"
             ]
           },
           "source_id": {
@@ -8674,7 +8676,8 @@
               "first_inspection",
               "manual",
               "finance",
-              "finance_end"
+              "finance_end",
+              "issue"
             ]
           },
           "title": {
@@ -8851,7 +8854,9 @@
                   "document",
                   "tyre",
                   "incident",
-                  "purchase"
+                  "purchase",
+                  "issue",
+                  "issue_update"
                 ]
               }
             }
@@ -9195,6 +9200,7 @@
               "trips",
               "incidents",
               "finance",
+              "issues",
               "stations"
             ],
             "properties": {
@@ -9223,6 +9229,9 @@
                 "type": "boolean"
               },
               "finance": {
+                "type": "boolean"
+              },
+              "issues": {
                 "type": "boolean"
               },
               "stations": {
@@ -12563,7 +12572,8 @@
               "first_inspection",
               "manual",
               "finance",
-              "finance_end"
+              "finance_end",
+              "issue"
             ]
           },
           "title": {
@@ -13091,6 +13101,8 @@
               "valuation",
               "trip",
               "incident",
+              "issue_noticed",
+              "issue_fixed",
               "milestone"
             ]
           },
@@ -14146,6 +14158,8 @@
             "enum": [
               "overdue",
               "finance_missed",
+              "issue_open",
+              "issue_look_again",
               "reading",
               "economy",
               "mileage_stale",
