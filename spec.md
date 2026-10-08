@@ -4892,8 +4892,14 @@ stays `v1`, and existing responses don't change.
   unreadable vehicle does. Journeys, price alerts and stations belong to
   the user or the install, so their paths are top level.
 - **Read one:** every entry list gains `GET …/{entry}`, returning the
-  object exactly as the list returns it, with an `ETag` (a strong
-  validator over the stored entry, so any change to it changes the tag).
+  object exactly as the list returns it, with an `ETag`: a hash of the
+  entry's own stored columns, never of derived figures (a fill-up's
+  segment economy, which a neighbour's edit changes) or of what the
+  viewer may see, so it changes exactly when the entry does. It exists
+  for `If-Match`; `If-None-Match` and 304 are not supported. A single
+  read applies its list's visibility (a trip the key's user may not see
+  answers 404; incident details need `ViewIncidentDetails`), not only
+  the vehicle's `View`.
 - **Edit is `PATCH`** (#283): only the fields sent change, and `null`
   clears an optional field. The stored entry is loaded, the sent fields
   are laid over it, and the result goes through the **edit form's parser

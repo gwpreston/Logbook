@@ -95,7 +95,8 @@ built; they replace #192 and #193, now obsolete. Its reviews raised
 found while starting it) were answered on 2026-10-08, before Phase 39.1
 started; the phase was split into 39.1, 39.2 and 39.3. #221, #279 and
 #280 were reviewed the same day and carried as they are: none of them
-changes Phase 39.
+changes Phase 39. #290 was found while starting Phase 39.1 and waits
+for a decision before Phase 39.3.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -388,6 +389,7 @@ changes Phase 39.
 | 287 | [39.2](phase-39.2.md) | G. Finance writes in this phase? | Scheduled | Yes: agreements, payment events, settlement quotes and *End*; leaving with the vehicle goes through archive. Built in [39.2](phase-39.2.md). spec §7.20. | 2026-10-08 |
 | 288 | [39.3](phase-39.3.md) | H. The proposed numbers | Scheduled | Kept and written into spec §7.20 as tested values: pause a webhook after 50 consecutive failures; delivery rows kept 7 days; retries after 1 min, 5 min, 30 min, 2 h and 6 h; a 10-minute duplicate window for vehicle create (39.2). | 2026-10-08 |
 | 289 | [39.3](phase-39.3.md) | Is a webhook's signing secret in backups? (found while starting) | Scheduled | No, as channel secrets (#227): the webhook is backed up without it; a restored webhook is paused and shows *Needs a new secret* until the user makes one. Built in [39.3](phase-39.3.md). spec §6 Webhook, §7.20. | 2026-10-08 |
+| 290 | [39.3](phase-39.3.md) | Which entries fire webhooks, and with which `kind`? Schedules, valuations, tyre changes and sets, finance events and attachments may not be history kinds (found while starting 39.1) | Needs a decision | Options: the history feed's kinds only; everything 39.2 can write, with new kinds; the same without attachments. Before 39.3 starts. | — |
 
 ## Other loose ends found in the review
 

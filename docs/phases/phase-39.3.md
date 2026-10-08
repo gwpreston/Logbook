@@ -115,5 +115,13 @@ Phase 27.1's incident-photo rules (#104).
 
 ## Open questions
 
-None open. This sub-phase's questions (#285, #286, #288, #289) were
-decided on 2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions).
+This sub-phase's questions (#285, #286, #288, #289) were decided on
+2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). Still open
+(found while starting 39.1, #290; to decide before 39.3 starts):
+
+- **Which entries fire webhooks, and with which `kind`?** §7.20 says an
+  entry on a vehicle fires, with `kind` from the history feed's kinds,
+  but schedules, valuations, tyre changes, tyre sets, finance events
+  and attachments may not be history kinds. Options: (1) the history
+  feed's kinds only; (2) everything 39.2 can write, with new kinds where
+  the feed has none; (3) (2) without attachments.

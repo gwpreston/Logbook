@@ -161,8 +161,9 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       an entry of another vehicle answering 404; an `EntryGuard` (or the
       existing equivalent) that loads an entry under its vehicle for API
       actions, reused by 39.2.
-- [ ] `ETag` on single-entry reads: a strong validator over the stored
-      entry; `ETag` in CORS `Access-Control-Expose-Headers`.
+- [ ] `ETag` on single-entry reads: a hash of the entry's own stored
+      columns (no derived or viewer-dependent fields); no
+      `If-None-Match`; `ETag` in CORS `Access-Control-Expose-Headers`.
 - [ ] OpenAPI `info.version` up one minor (the only bump in Phase 39).
 
 ### 39.1.2 Reads
@@ -204,7 +205,9 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       description, success and error.
 - [ ] **Access matrix:** for each new endpoint, owner, `manage`, `log`,
       `view` share with and without *Can see costs*, and a stranger; a
-      `read` key on the reminder actions (403 `insufficient_scope`).
+      `read` key on the reminder actions (403 `insufficient_scope`); a
+      trip the key's user may not see read by id (404); an incident read
+      by id without `ViewIncidentDetails` (details left out).
 - [ ] **Reports parity:** each report's totals equal the Reports page's
       for every demo vehicle and period.
 - [ ] **Retries:** a repeated reminder action is `unchanged` and writes
