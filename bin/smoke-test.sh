@@ -264,6 +264,28 @@ $compose exec -T app sh -c 'ls var/cache/api-throttle/*.json' >/dev/null || fail
 echo "ok  failed-key counter written"
 api /openapi.json 200 '"openapi":"3.1.0"'
 
+# Writes, edits and deletes (Phase 39.2): POST, PATCH with If-Match and DELETE through the
+# web server and proxy, at the root or the subpath.
+rw="$($compose exec -T -u www-data app php bin/api-key.php create --user smoke --name Writes --scope read_write)" \
+    || fail "bin/api-key.php create (read_write) failed"
+send() { # send <method> <path> <status> [json] [extra header]
+    status="$(curl -s -o /tmp/smoke.body -D /tmp/smoke.head -w '%{http_code}' -X "$1" -H "Authorization: Bearer $rw" \
+        ${4:+-H 'Content-Type: application/json' -d "$4"} ${5:+-H "$5"} "$base/api/v1$2")" || fail "$1 $base/api/v1$2 failed"
+    [ "$status" = "$3" ] || fail "$1 $base/api/v1$2 returned $status, expected $3: $(cat /tmp/smoke.body)"
+    echo "ok  $3  API $1 $2"
+}
+send POST /vehicles 201 '{"type":"car","make":"Smoke","model":"Test","fuel_type":"petrol"}'
+vid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
+[ -n "$vid" ] || fail "no vehicle id in $(cat /tmp/smoke.body)"
+send POST "/vehicles/$vid/odometer" 201 '{"odometer":1000,"distance_unit":"km"}'
+rid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
+send GET "/vehicles/$vid/odometer/$rid" 200
+etag="$(sed -n 's/^[Ee][Tt][Aa][Gg]: *\(.*\)\r*$/\1/p' /tmp/smoke.head | tr -d '\r')"
+[ -n "$etag" ] || fail "no ETag on the single read"
+send PATCH "/vehicles/$vid/odometer/$rid" 412 '{"note":"stale"}' 'If-Match: "0000"'
+send PATCH "/vehicles/$vid/odometer/$rid" 200 '{"note":"Smoke"}' "If-Match: $etag"
+send DELETE "/vehicles/$vid/odometer/$rid" 204
+
 # MCP server (Phase 26.5): the same key at /mcp, through the web server (and,
 # in the header variant, nginx's forward-auth exemption).
 mcp() { # mcp <status> <body-substring> [token]

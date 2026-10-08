@@ -68,46 +68,55 @@ nested routes, entry guard and `ETag`).
       form.
 
 ### 39.2.3 New writes
-- [ ] Vehicles: create (duplicate key over 10 minutes), edit, archive
+- [x] Vehicles: create (duplicate key over 10 minutes), edit, archive
       (each disposal, through the archive page's service), restore.
-- [ ] Valuations: create, edit, delete; allowed on an archived vehicle
+- [x] Valuations: create, edit, delete; allowed on an archived vehicle
       within the sale-date rule.
-- [ ] Schedules: create (duplicate key), edit, delete (records kept).
-- [ ] Tyre changes: create (replayed, every kind), edit, delete (replay,
+- [x] Schedules: create (duplicate key), edit, delete (records kept).
+- [x] Tyre changes: create (replayed, every kind), edit, delete (replay,
       409 where the page refuses); tyre details edit.
-- [ ] Journeys: create, edit, delete (trips kept).
-- [ ] Station favourites (`PUT`, `DELETE`, idempotent); price alerts
+- [x] Journeys: create, edit, delete (trips kept).
+- [x] Station favourites (`PUT`, `DELETE`, idempotent); price alerts
       (create, edit, delete, the form's limits); attention hide
       (idempotent; no unhide, #296).
-- [ ] Finance: agreements (create with the one-active rule, edit; the
+- [x] Finance: agreements (create with the one-active rule, edit; the
       number never returned), payment events and settlement quotes
       (create and delete for each), *End*.
+- [x] Shared with the pages so the rules can't drift: the *Archive*
+      page's rules as `Service\Vehicle\VehicleArchiving`, the agreement
+      page's payment, quote and *End* rules as `Service\Finance\FinanceEvents`
+      (both read numbers in "en" for the API).
+- [x] `GET /vehicles/{id}` gains `disposal` and an `ETag`; every `PATCH`
+      answers with the object's new `ETag`, and `If-Match` applies to every
+      `PATCH` and `DELETE` of a stored object (favourites and *Hide* ignore it).
 
 ### 39.2.4 OpenAPI, docs, translations
-- [ ] `docs/api/openapi.json`: every operation, schema and error code of
+- [x] `docs/api/openapi.json`: every operation, schema and error code of
       this sub-phase (under 39.1's `info.version`).
-- [ ] `docs/api.md`: editing and deleting with `If-Match`; logging a
+- [x] `docs/api.md`: editing and deleting with `If-Match`; logging a
       valuation from a Shortcut; creating a vehicle from an importer.
-- [ ] Translations for every new string, in every shipped locale.
+- [x] Translations for every new string, in every shipped locale.
 
 ### 39.2.5 Tests
-- [ ] **Contract:** every new response validated against the OpenAPI
+- [x] **Contract:** every new response validated against the OpenAPI
       description, success and error.
-- [ ] **Access matrix:** each new endpoint for owner, `manage`, `log`,
+- [x] **Access matrix:** each new endpoint for owner, `manage`, `log`,
       `view` share with and without *Can see costs*, and a stranger; a
       `read` key on each write (403 `insufficient_scope`); a `log` share
       editing its own and someone else's entry.
-- [ ] **Parity:** an edit and a delete over the API leave the database
+- [x] **Parity:** an edit and a delete over the API leave the database
       exactly as the page's form does (economy segments, schedules,
       reminders, readings, attachments) for each entry type.
-- [ ] **Retries:** duplicate keys on vehicles, valuations and schedules;
+- [x] **Retries:** duplicate keys on vehicles, valuations and schedules;
       idempotent favourites and attention hiding.
-- [ ] **Concurrency:** a stale `If-Match` answers 412 and writes nothing.
-- [ ] **Archived vehicles:** every write refused (409) except restore and
+- [x] **Concurrency:** a stale `If-Match` answers 412 and writes nothing.
+- [x] **Archived vehicles:** every write refused (409) except restore and
       an allowed valuation.
-- [ ] Modules off: every path of that module 404.
-- [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
-      or above the floor; smoke test at a subpath.
+- [x] Modules off: every path of that module 404.
+- [x] Suite green on SQLite, PostgreSQL, MySQL and MariaDB (3,436 tests,
+      2026-10-08); line coverage 94.71% over the 94% floor, 90.7% of the
+      changed `src/` lines; smoke test at `/logbook` behind nginx writes,
+      edits with `If-Match` and deletes.
 
 ---
 
@@ -132,3 +141,8 @@ This sub-phase's questions (#282–#284, #287, #288) were decided on
   sending only one of volume, price per unit and total keeps the other
   two as stored, as the edit form does; nothing is re-derived. spec
   §7.20 *Conventions*.
+- **#299** (found while building, decided 2026-10-08): `POST
+  …/payments` takes `missed`, `paid_late` and `extra`, as the page;
+  `settlement` answers 422, because a settlement is recorded by
+  `…/end` with outcome `settled`, which also ends the agreement. spec
+  §7.20 *Writes, edits and deletes*.

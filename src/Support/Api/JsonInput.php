@@ -159,6 +159,109 @@ final class JsonInput
         'notes' => 'notes',
     ];
 
+    /** API field → form field, for the saved journey form (Phase 39.2); in km, one way. */
+    public const array JOURNEY_FIELDS = [
+        'from' => 'from_place',
+        'to' => 'to_place',
+        'distance_km' => 'distance',
+        'is_return' => 'is_return_default',
+        'is_business' => 'is_business_default',
+        'purpose' => 'purpose_default',
+    ];
+
+    /** API field → form field, for the valuation form (Phase 39.2). */
+    public const array VALUATION_FIELDS = [
+        'valued_on' => 'valued_on',
+        'amount' => 'amount',
+        'source' => 'source',
+        'notes' => 'notes',
+    ];
+
+    /** API field → form field, for the schedule form (Phase 39.2); distances reach it in km. */
+    public const array SCHEDULE_FIELDS = [
+        'category' => 'category',
+        'title' => 'title',
+        'interval_km' => 'interval_distance',
+        'interval_distance' => 'interval_distance',
+        'interval_months' => 'interval_months',
+        'baseline_done_on' => 'last_done_on',
+        'baseline_odometer' => 'last_done_odometer',
+    ];
+
+    /** API field → form field, for the vehicle form (Phase 39.2): the same names. */
+    public const array VEHICLE_FIELDS = [
+        'type' => 'type',
+        'nickname' => 'nickname',
+        'make' => 'make',
+        'model' => 'model',
+        'variant' => 'variant',
+        'year' => 'year',
+        'first_registered_on' => 'first_registered_on',
+        'first_inspection_due_on' => 'first_inspection_due_on',
+        'registration' => 'registration',
+        'vin' => 'vin',
+        'fuel_type' => 'fuel_type',
+        'default_grade' => 'default_grade',
+        'capacity' => 'capacity',
+        'currency' => 'currency',
+        'purchase_date' => 'purchase_date',
+        'purchase_price' => 'purchase_price',
+        'purchase_seller' => 'purchase_seller',
+        'purchase_odometer' => 'purchase_odometer',
+        'sale_date' => 'sale_date',
+        'sale_price' => 'sale_price',
+    ];
+
+    /** Only on the add form: the starting reading and the day it was read. */
+    public const array NEW_VEHICLE_FIELDS = [
+        'current_odometer' => 'current_odometer',
+        'current_odometer_on' => 'current_odometer_on',
+    ];
+
+    /** The *Archive* page's fields (Phase 39.2, spec.md §7.1). */
+    public const array ARCHIVE_FIELDS = [
+        'disposal' => 'disposal',
+        'incident_id' => 'incident_id',
+        'sale_date' => 'sale_date',
+        'sale_price' => 'sale_price',
+        'settle_from_sale' => 'settle_from_sale',
+        'settlement' => 'settlement',
+    ];
+
+    /** The agreement form's fields (Phase 39.2, spec.md §7.32): the same names. */
+    public const array AGREEMENT_FIELDS = [
+        'type' => 'type', 'lender' => 'lender', 'agreement_number' => 'agreement_number',
+        'started_on' => 'started_on', 'first_payment_on' => 'first_payment_on',
+        'number_of_payments' => 'number_of_payments', 'regular_payment' => 'regular_payment',
+        'first_payment' => 'first_payment', 'final_payment' => 'final_payment', 'final_payment_on' => 'final_payment_on',
+        'cash_price' => 'cash_price', 'customer_deposit' => 'customer_deposit', 'dealer_contribution' => 'dealer_contribution',
+        'initial_rental' => 'initial_rental', 'amount_of_credit' => 'amount_of_credit',
+        'total_amount_payable' => 'total_amount_payable', 'apr' => 'apr', 'documentation_fee' => 'documentation_fee',
+        'option_to_purchase_fee' => 'option_to_purchase_fee', 'annual_mileage_allowance' => 'annual_mileage_allowance',
+        'mileage_unit' => 'mileage_unit', 'excess_mileage_charge' => 'excess_mileage_charge',
+        'start_odometer' => 'start_odometer', 'count_in_costs' => 'count_in_costs', 'notes' => 'notes',
+        'set_purchase_price' => 'set_purchase_price', 'clear_purchase_price' => 'clear_purchase_price',
+    ];
+    private const array AGREEMENT_TEXT = [
+        'type', 'lender', 'agreement_number', 'started_on', 'first_payment_on', 'final_payment_on', 'mileage_unit', 'notes',
+    ];
+    private const array AGREEMENT_FLAGS = ['count_in_costs', 'set_purchase_price', 'clear_purchase_price'];
+
+    /** The agreement page's payment, quote and *End* forms (Phase 39.2): API field → form field. */
+    public const array PAYMENT_FIELDS = [
+        'kind' => 'kind', 'due_on' => 'due_on', 'paid_on' => 'paid_on', 'amount' => 'amount', 'notes' => 'notes',
+    ];
+    public const array QUOTE_FIELDS = [
+        'quoted_on' => 'quoted_on', 'amount' => 'quote_amount', 'valid_until' => 'valid_until', 'notes' => 'quote_notes',
+    ];
+    public const array END_FIELDS = [
+        'outcome' => 'outcome', 'ended_on' => 'ended_on', 'settlement' => 'settlement',
+        'excess_charge' => 'excess_charge', 'damage_charge' => 'damage_charge',
+    ];
+
+    /** A price alert's fields (Phase 39.2, spec.md §7.34). */
+    public const array PRICE_ALERT_FIELDS = ['station_id', 'grade', 'below', 'volume_unit'];
+
     /**
      * The body as an object, numbers as strings.
      *
@@ -538,6 +641,241 @@ final class JsonInput
         return $errors->isEmpty()
             ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
             : $errors;
+    }
+
+    /**
+     * A saved journey body as the journey form's input (Phase 39.2), in km
+     * and one way, as `GET /journeys` returns it. A new journey is a
+     * business one unless the body says otherwise, as the form starts.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function journey(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::JOURNEY_FIELDS), $errors);
+
+        $input = [
+            'from_place' => self::text($body, 'from', $errors),
+            'to_place' => self::text($body, 'to', $errors),
+            'distance' => self::decimal($body, 'distance_km', $errors),
+            'is_return_default' => self::flag($body, 'is_return', $errors),
+            'is_business_default' => self::flag($body, 'is_business', $errors, true),
+            'purpose_default' => self::text($body, 'purpose', $errors),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, DistanceUnit::Kilometre, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A valuation body as the valuation form's input (Phase 39.2): the date
+     * defaults to today in the owner's time zone.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function valuation(array $body, DisplayPreferences $owner, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::VALUATION_FIELDS), $errors);
+
+        $input = [
+            'valued_on' => self::text($body, 'valued_on', $errors, $today->format('Y-m-d')),
+            'amount' => self::decimal($body, 'amount', $errors),
+            'source' => self::text($body, 'source', $errors),
+            'notes' => self::text($body, 'notes', $errors),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $owner->distanceUnit, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A schedule body as the schedule form's input (Phase 39.2), parsed in
+     * km: `interval_km` is km; `interval_distance` and `baseline_odometer`
+     * are in `distance_unit` (the owner's when left out) and converted here.
+     * One interval field or the other, not both.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function schedule(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::SCHEDULE_FIELDS), 'distance_unit'], $errors);
+        $unit = self::distanceUnit($body, $owner, $errors);
+        $toKm = static fn (string $value): string => $value === '' ? '' : Decimal::trim($unit->toKmDecimal($value, 3));
+
+        $km = self::decimal($body, 'interval_km', $errors);
+        $distance = self::decimal($body, 'interval_distance', $errors);
+        if (($body['interval_km'] ?? null) !== null && ($body['interval_distance'] ?? null) !== null) {
+            $errors->add('interval_distance', 'api.validation.interval_km_or_distance');
+        }
+        $input = [
+            'category' => self::text($body, 'category', $errors),
+            'title' => self::text($body, 'title', $errors),
+            'interval_distance' => $km !== '' ? $km : $toKm($distance),
+            'interval_months' => self::decimal($body, 'interval_months', $errors),
+            'last_done_on' => self::text($body, 'baseline_done_on', $errors),
+            'last_done_odometer' => $toKm(self::decimal($body, 'baseline_odometer', $errors)),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, DistanceUnit::Kilometre, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A vehicle body as the vehicle form's input (Phase 39.2): odometers in
+     * `distance_unit`, the capacity in `volume_unit` (the given units'
+     * when left out; kWh for electricity, as the form). With `$new`, the
+     * add form's starting reading too; a *First MOT due* sent as `null`
+     * is cleared rather than suggested, as the form's script says.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function vehicle(array $body, DisplayPreferences $units, bool $new): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        $fields = $new ? self::VEHICLE_FIELDS + self::NEW_VEHICLE_FIELDS : self::VEHICLE_FIELDS;
+        self::unknownFields($body, [...array_keys($fields), 'distance_unit', 'volume_unit'], $errors);
+
+        $input = [];
+        foreach ($fields as $api => $form) {
+            $input[$form] = match ($api) {
+                'year', 'capacity', 'purchase_price', 'purchase_odometer', 'sale_price', 'current_odometer'
+                    => self::decimal($body, $api, $errors),
+                default => self::text($body, $api, $errors),
+            };
+        }
+        if (array_key_exists('first_inspection_due_on', $body)) {
+            // Sent (a date, or null to clear it): never the suggestion (the form's script flag).
+            $input['first_inspection_js'] = '1';
+        }
+        $distance = self::distanceUnit($body, $units, $errors);
+        $volume = $units->volumeUnit;
+        $unit = $body['volume_unit'] ?? null;
+        if ($unit !== null) {
+            $volume = is_string($unit) ? VolumeUnit::tryFrom($unit) : null;
+            if ($volume === null) {
+                $errors->add('volume_unit', 'validation.choice');
+                $volume = $units->volumeUnit;
+            }
+        }
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($units, $distance, $volume)]
+            : $errors;
+    }
+
+    /**
+     * The *Archive* page's fields as its form posts them.
+     *
+     * @param array<string, mixed> $body
+     * @return array<string, string>|ValidationErrors
+     */
+    public static function archive(array $body): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::ARCHIVE_FIELDS), $errors);
+        $input = [
+            'disposal' => self::text($body, 'disposal', $errors),
+            'incident_id' => self::decimal($body, 'incident_id', $errors),
+            'sale_date' => self::text($body, 'sale_date', $errors),
+            'sale_price' => self::decimal($body, 'sale_price', $errors),
+            'settle_from_sale' => self::flag($body, 'settle_from_sale', $errors),
+            'settlement' => self::decimal($body, 'settlement', $errors),
+        ];
+
+        return $errors->isEmpty() ? $input : $errors;
+    }
+
+    /**
+     * An agreement body as the agreement form's input (Phase 39.2): money
+     * and counts as decimals, `start_odometer` in `distance_unit`, the
+     * flags as booleans (`count_in_costs` is on unless the body says
+     * otherwise, as the form starts).
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function agreement(array $body, DisplayPreferences $units): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::AGREEMENT_FIELDS), 'distance_unit'], $errors);
+        $input = [];
+        foreach (self::AGREEMENT_FIELDS as $api => $form) {
+            $input[$form] = match (true) {
+                in_array($api, self::AGREEMENT_TEXT, true) => self::text($body, $api, $errors),
+                in_array($api, self::AGREEMENT_FLAGS, true) => self::flag($body, $api, $errors, $api === 'count_in_costs'),
+                default => self::decimal($body, $api, $errors),
+            };
+        }
+        $distance = self::distanceUnit($body, $units, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($units, $distance, $units->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * One of the agreement page's small forms (payment, quote, *End*) as it posts.
+     *
+     * @param array<string, mixed> $body
+     * @param array<string, string> $fields API field → form field
+     * @param list<string> $flags fields that are booleans
+     * @return array<string, string>|ValidationErrors
+     */
+    public static function form(array $body, array $fields, array $flags = []): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys($fields), $errors);
+        $input = [];
+        foreach ($fields as $api => $form) {
+            $value = $body[$api] ?? null;
+            $input[$form] = match (true) {
+                in_array($api, $flags, true) => self::flag($body, $api, $errors),
+                is_string($value) && preg_match(self::NUMBER, $value) === 1 => $value,
+                default => self::text($body, $api, $errors),
+            };
+        }
+
+        return $errors->isEmpty() ? $input : $errors;
+    }
+
+    /**
+     * A price alert body (Phase 39.2): the station, the grade, and the
+     * price per `volume_unit` (the owner's when left out) as a decimal.
+     *
+     * @param array<string, mixed> $body
+     * @return array{station_id: string, grade: string, below: string, volume: VolumeUnit}|ValidationErrors
+     */
+    public static function priceAlert(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, self::PRICE_ALERT_FIELDS, $errors);
+        $volume = $owner->volumeUnit;
+        $unit = $body['volume_unit'] ?? null;
+        if ($unit !== null) {
+            $volume = is_string($unit) ? VolumeUnit::tryFrom($unit) : null;
+            if ($volume === null) {
+                $errors->add('volume_unit', 'validation.choice');
+                $volume = $owner->volumeUnit;
+            }
+        }
+        $values = [
+            'station_id' => self::stationId($body, $errors),
+            'grade' => self::text($body, 'grade', $errors),
+            'below' => self::decimal($body, 'below', $errors),
+            'volume' => $volume,
+        ];
+
+        return $errors->isEmpty() ? $values : $errors;
     }
 
     /**

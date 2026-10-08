@@ -6,10 +6,14 @@ namespace Logbook\Tests\Integration\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Api\ApiScope;
 use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Attention\AttentionHiding;
 use Logbook\Service\Valuation\ValuationService;
+use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\AppTestCase;
@@ -83,5 +87,35 @@ final class ApiAttentionTest extends AppTestCase
             ->hide($owner, $this->golf, 'valuation_stale', (int) $subject, $fingerprint));
         $after = ApiClient::json($this->api->get('/attention'));
         self::assertSame(['overdue'], $after->column('kind', 'items'), 'hidden: left out');
+    }
+
+    public function testHideOverTheApiIsThePagesAndIdempotent(): void
+    {
+        $this->service($this->app, ValuationService::class)->create($this->golf, new VehicleValuationData(
+            new DateTimeImmutable('2024-06-01', new DateTimeZone('UTC')),
+            '12000',
+        ));
+        $key = ApiClient::json($this->api->get('/attention'))->string('items', 0, 'key');
+
+        $viewer = $this->createMember($this->app, 'viewer');
+        $this->service($this->app, VehicleShareRepository::class)
+            ->insert($this->golf->id, $viewer->id, ShareLevel::View, true, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+        $theirs = $this->api($this->app, $this->apiKey($this->app, $viewer));
+        self::assertSame(403, $theirs->post('/attention/' . $key . '/hide', [])->getStatusCode(), 'Log, as the page');
+        $stranger = $this->api($this->app, $this->apiKey($this->app, $this->createMember($this->app, 'stranger')));
+        self::assertSame(404, $stranger->post('/attention/' . $key . '/hide', [])->getStatusCode());
+        $reader = $this->api($this->app, $this->apiKey($this->app, $this->owner($this->app), ApiScope::Read));
+        self::assertSame('insufficient_scope', ApiClient::json($reader->post('/attention/' . $key . '/hide', []))->get('code'));
+
+        self::assertSame(204, $this->api->post('/attention/' . $key . '/hide', [])->getStatusCode());
+        self::assertSame([], ApiClient::json($this->api->get('/attention'))->get('items'), 'hidden for this user');
+        self::assertSame(204, $this->api->post('/attention/' . $key . '/hide', [])->getStatusCode(), 'again: a no-op');
+
+        [$vehicle, $kind, $subject] = explode('.', $key);
+        foreach (["{$vehicle}.{$kind}.{$subject}.0000", 'nonsense', "{$vehicle}.overdue.{$subject}.abc"] as $stale) {
+            self::assertSame(404, $this->api->post('/attention/' . $stale . '/hide', [])->getStatusCode(), $stale);
+        }
+        $this->service($this->app, VehicleService::class)->archive($this->owner($this->app), $this->golf);
+        self::assertSame(409, $this->api->post('/attention/' . $key . '/hide', [])->getStatusCode());
     }
 }

@@ -235,6 +235,9 @@ final class ApiAccessTest extends AppTestCase
             $path = str_replace('{entry:[0-9]+}', (string) $id, $path);
         }
 
+        // Other ids (a finance agreement, event or quote): any, the access check comes first.
+        $path = (string) preg_replace('/\{[a-z]+:\[0-9\]\+\}/', '1', $path);
+
         return match ($route->getMethods()[0]) {
             'GET' => $api->get($path),
             // Phase 39.2: edits and deletes, refused before anything is read from the body.

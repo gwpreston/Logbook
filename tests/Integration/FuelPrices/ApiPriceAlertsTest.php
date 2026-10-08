@@ -52,4 +52,70 @@ final class ApiPriceAlertsTest extends FuelPricesTestCase
         [$app, $owner] = $this->pricesApp(false);
         self::assertSame(404, $this->api($app, $this->apiKey($app, $owner))->get('/fuel-prices/alerts')->getStatusCode());
     }
+
+    public function testAnAlertIsSetChangedAndRemovedAsTheStationPageDoes(): void
+    {
+        [$app, $owner] = $this->pricesApp();
+        $this->sync($app);
+        $tesco = $this->service($app, StationLinker::class)->addFromProvider($owner, self::ref('antrim-tesco'));
+        $api = $this->api($app, $this->apiKey($app, $owner));
+        $body = ['station_id' => $tesco->id, 'grade' => 'e10_95', 'below' => '1.369', 'volume_unit' => 'l'];
+
+        $refused = $api->post('/fuel-prices/alerts', $body);
+        self::assertSame(422, $refused->getStatusCode(), 'a favourite only');
+        self::assertSame(
+            'fuel_prices.alert.refused.not_favourite',
+            ApiClient::json($refused)->get('errors', 'station_id', 'key'),
+        );
+        self::assertSame(204, $api->put('/stations/' . $tesco->id . '/favourite')->getStatusCode());
+        self::assertSame(204, $api->put('/stations/' . $tesco->id . '/favourite')->getStatusCode(), 'idempotent');
+        self::assertTrue(ApiClient::json($api->get('/stations/' . $tesco->id))->get('favourite'));
+
+        $created = $api->post('/fuel-prices/alerts', $body);
+        self::assertSame(201, $created->getStatusCode(), self::body($created));
+        $id = ApiClient::json($created)->int('entry', 'id');
+        self::assertSame('1.369', ApiClient::json($created)->get('entry', 'below'));
+        $again = $api->post('/fuel-prices/alerts', ['below' => '1.359'] + $body);
+        self::assertSame(200, $again->getStatusCode(), 'that station and grade: changed, as the form');
+        self::assertTrue(ApiClient::json($again)->get('duplicate'));
+        self::assertSame($id, ApiClient::json($again)->int('entry', 'id'));
+
+        $stale = $api->patch('/fuel-prices/alerts/' . $id, ['below' => '1'], ['If-Match' => '"stale"']);
+        self::assertSame(412, $stale->getStatusCode());
+        $patched = $api->patch('/fuel-prices/alerts/' . $id, ['below' => '6.2', 'volume_unit' => 'gal_uk']);
+        $gallon = ApiClient::json($patched);
+        self::assertSame(412, $api->delete('/fuel-prices/alerts/' . $id, ['If-Match' => '"stale"'])->getStatusCode());
+        self::assertNotSame('', $patched->getHeaderLine('ETag'));
+        self::assertSame('1.364', $gallon->get('entry', 'below'), '6.2 per UK gallon, per litre');
+        self::assertSame(422, $api->patch('/fuel-prices/alerts/' . $id, ['below' => '0'])->getStatusCode());
+        self::assertSame(422, $api->patch('/fuel-prices/alerts/' . $id, ['grade' => 'e5_97'])->getStatusCode());
+        self::assertSame(422, $api->post('/fuel-prices/alerts', ['grade' => 'nonsense'] + $body)->getStatusCode());
+
+        $member = $this->createMember($app, 'partner');
+        $theirs = $this->api($app, $this->apiKey($app, $member));
+        self::assertSame(404, $theirs->patch('/fuel-prices/alerts/' . $id, ['below' => '1'])->getStatusCode());
+        self::assertSame(404, $theirs->delete('/fuel-prices/alerts/' . $id)->getStatusCode());
+
+        self::assertSame(204, $api->delete('/fuel-prices/alerts/' . $id)->getStatusCode());
+        self::assertSame([], ApiClient::json($api->get('/fuel-prices/alerts'))->get('items'));
+        self::assertSame(404, $api->delete('/fuel-prices/alerts/' . $id)->getStatusCode());
+
+        self::assertSame(201, $api->post('/fuel-prices/alerts', $body)->getStatusCode());
+        self::assertSame(204, $api->delete('/stations/' . $tesco->id . '/favourite')->getStatusCode());
+        $alerts = ApiClient::json($api->get('/fuel-prices/alerts'))->get('items');
+        self::assertSame([], $alerts, 'unstarring removes its alerts');
+        self::assertSame(204, $api->delete('/stations/' . $tesco->id . '/favourite')->getStatusCode(), 'idempotent');
+        self::assertSame(404, $api->put('/stations/999999/favourite')->getStatusCode());
+    }
+
+    public function testWithoutAProviderAlertWritesAreNotFound(): void
+    {
+        [$app, $owner] = $this->pricesApp(false);
+        $api = $this->api($app, $this->apiKey($app, $owner));
+
+        $body = ['station_id' => 1, 'grade' => 'e10_95', 'below' => '1'];
+        self::assertSame(404, $api->post('/fuel-prices/alerts', $body)->getStatusCode());
+        self::assertSame(404, $api->patch('/fuel-prices/alerts/1', ['below' => '1'])->getStatusCode());
+        self::assertSame(404, $api->delete('/fuel-prices/alerts/1')->getStatusCode());
+    }
 }

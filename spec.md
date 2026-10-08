@@ -4926,7 +4926,13 @@ stays `v1`, and existing responses don't change.
 - **Concurrency** (#282): `If-Match` is **optional** on `PATCH` and
   `DELETE`. When sent and it doesn't match the entry's current `ETag`,
   the answer is 412 (`precondition_failed`) and nothing is written.
-  Without it, the last write wins, as on the pages.
+  Without it, the last write wins, as on the pages. This holds for every
+  `PATCH` and every `DELETE` of a stored object (entries, reminders,
+  vehicles, valuations, schedules, tyre changes and tyres, journeys,
+  price alerts, agreements, payment events and quotes); a `PATCH`
+  answers with the object's new `ETag`. A favourite (`PUT`/`DELETE
+  …/favourite`) and *Hide* are idempotent switches with no stored object
+  to tag: they ignore `If-Match`.
 - **Abilities** are the pages'. Edit and delete declare `Log` and are
   checked with `EntryAccess::canChange` once the entry is loaded (`Manage`,
   or `Log` on the key user's own entry), 403 `forbidden` otherwise. Where
@@ -5012,8 +5018,17 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   `returned_lessor`) and the fields the *Archive* page asks for with that
   reason (sale date and price; the settled incident for a write-off; the
   finance agreement's ending), through the archive page's service (§7.1,
-  §7.29 *Total loss*, §7.32 *Ending*). `POST /vehicles/{id}/restore`
-  (`Own`) is *Restore*.
+  §7.29 *Total loss*, §7.32 *Ending*; `Service\Vehicle\VehicleArchiving`,
+  shared with the page); no `disposal` just archives, a disposal the page
+  doesn't offer that vehicle is 422, and an archived vehicle 409.
+  `POST /vehicles/{id}/restore` (`Own`) is *Restore*; an active vehicle
+  is left as it is. The vehicle gains `disposal` (`sold`, `written_off`,
+  `returned_lender`, `returned_lessor`, or null) and `GET
+  /vehicles/{id}` an `ETag` of the stored vehicle, for `If-Match` on
+  `PATCH`. Create, edit, archive and restore answer with the vehicle as
+  `GET /vehicles/{id}` returns it, in `entry`. *First MOT due* left out
+  on create gets the form's suggestion for the owner's locale; sent as
+  `null`, none.
 - **Valuations** (`Manage`): `POST /vehicles/{id}/valuations` with
   `valued_on` (default today in the key owner's time zone), `amount`,
   `source`, `notes`, and the form's validation (not after today, not
@@ -5028,7 +5043,9 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   `distance_unit`, `interval_months` (at least one interval),
   `baseline_done_on`, `baseline_odometer`; next due is computed and
   stored as by the form. Duplicate key: same category, title and
-  intervals. `PATCH` and `DELETE …/schedules/{schedule}`; deleting keeps
+  intervals. `interval_km` and `interval_distance` can't both be sent
+  (`api.validation.interval_km_or_distance`); `baseline_odometer` is in
+  `distance_unit`. `PATCH` and `DELETE …/schedules/{schedule}`; deleting keeps
   the records that completed it (§7.4).
 - **Tyres** (module `tyres`): `POST /vehicles/{id}/tyres/changes` (`Log`)
   with `kind` (`existing`, `fit`, `swap`, `rotate`, `repair`, `remove`),
@@ -5044,31 +5061,58 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   link); a delete replays the rest and answers 409 where the page would
   refuse it. `PATCH /vehicles/{id}/tyres/{tyre}` (`Manage`) edits a tyre's
   own details (brand, model, size, season, DOT code, notes); status and
-  position come only from changes.
+  position come only from changes. In the API's terms
+  (`Support\Api\TyreInput`): `existing` takes `tyres`, a list of
+  `{position, brand, model, size, season, dot, tread}`; `fit` takes
+  `tyre` `{brand, model, size, season}`, `tread` and `positions`, a list
+  of `{position, dot, replace}` (`replace`: `store` or a retire reason,
+  where a tyre is on); `swap` takes `set` (an id, or `{name, storage}`
+  for a new set), `on` (stored tyre id → position) and `depths` (tyre id
+  → depth); `rotate` takes `moves` (every fitted tyre id → position);
+  `repair` takes `tyres` (fitted tyre ids); `remove` takes `set`, `tyres`
+  (fitted tyre id → `store` or a retire reason) and `depths`. A form
+  error points at the body's path (`positions.0.dot`, `moves.12`); a
+  replay's refusal is the page's `form` error. The change edit's answer
+  carries the change's `ETag`; a refused delete is 409
+  `tyre_change_refused` with the page's message.
 - **Journeys** (module `trips`): `POST /journeys`, `PATCH` and `DELETE
   /journeys/{id}`, the Settings → Trips journey form, for the key's user
   only. Deleting leaves the trips logged from it.
 - **Station favourites** (module `stations`): `PUT` and `DELETE
-  /stations/{id}/favourite`, the key user's favourite, idempotent.
-  Stations are still created only by naming one on a fill-up.
+  /stations/{id}/favourite`, the key user's favourite, idempotent
+  (`204`); unstarring removes the station's price alerts, as on the
+  page. Stations are still created only by naming one on a fill-up.
 - **Price alerts** (a price provider enabled): `POST /fuel-prices/alerts`,
   `PATCH` and `DELETE /fuel-prices/alerts/{id}`, the alert form's fields
-  and limits (§7.34, #138).
+  and limits (§7.34, #138): `station_id`, `grade`, `below` per
+  `volume_unit` (the owner's when left out; stored per litre). An alert
+  already set for that station and grade is changed, as the form does,
+  and answers `200` with `duplicate: true`. `PATCH` changes the price
+  only; the station and grade are the alert's own.
 - **Needs attention:** `POST /attention/{key}/hide`, the page's *Hide*
   for the key's user (§6 AttentionHidden); no un-hide, as the pages have
   no *Show again* (decided 2026-10-08, #296),
-  idempotent.
+  idempotent (`204`), with `Log` on the key's vehicle as the page. The
+  item is judged again first: a key that no longer names a hideable item
+  answers 404.
 - **Finance** (#287; module `finance`, `Manage`): `POST
   /vehicles/{id}/finance/agreements` and `PATCH
   …/agreements/{agreement}` with the agreement form's fields, derivations
   and *one active agreement* rule (409 `finance_active_exists`); the
   agreement number is accepted but **never returned**. `POST
   …/agreements/{agreement}/payments` (kind `missed`, `paid_late`,
-  `extra`, `settlement`) and `POST …/agreements/{agreement}/quotes`, with
+  `extra`, as the page; `settlement` is 422: a settlement is recorded by
+  `…/end` with outcome `settled`, decided 2026-10-08, #299) and `POST …/agreements/{agreement}/quotes`, with
   `DELETE` for each. `POST …/agreements/{agreement}/end` is the page's
   *End* for an agreement that ends while the vehicle stays (settled
   early, completed); an ending with the vehicle leaving goes through
-  `POST /vehicles/{id}/archive` (§7.32 *Ending*).
+  `POST /vehicles/{id}/archive` (§7.32 *Ending*). The pages' rules for
+  payments, quotes and *End* are `Service\Finance\FinanceEvents`,
+  shared with the API. Each write answers with the agreement as
+  `GET …/finance/agreements` lists it, in `entry`. Without §7.32's
+  access every finance write is 404, as the reads; payments, events and
+  *End* on an agreement that has ended are 409 `finance_ended`; quotes on
+  a lease are 404 (it has none).
 
 *Attachments* (Phase 39.3, #286). Owner types as §7.12: `fuel`,
 `maintenance`, `document`, `expense`, `reading` (manual only),

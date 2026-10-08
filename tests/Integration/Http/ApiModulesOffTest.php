@@ -72,11 +72,45 @@ final class ApiModulesOffTest extends AppTestCase
         // Phase 39.2: edits, deletes and the new writes.
         $paths = [
             Feature::Fuel->value => [['PATCH', $base . '/fuel/1'], ['DELETE', $base . '/fuel/1']],
-            Feature::Maintenance->value => [['PATCH', $base . '/maintenance/1'], ['DELETE', $base . '/maintenance/1']],
+            Feature::Maintenance->value => [
+                ['PATCH', $base . '/maintenance/1'],
+                ['DELETE', $base . '/maintenance/1'],
+                ['POST', $base . '/schedules'],
+                ['PATCH', $base . '/schedules/1'],
+                ['DELETE', $base . '/schedules/1'],
+            ],
             Feature::Compliance->value => [['PATCH', $base . '/documents/1'], ['DELETE', $base . '/documents/1']],
-            Feature::Trips->value => [['PATCH', $base . '/trips/1'], ['DELETE', $base . '/trips/1']],
+            Feature::Trips->value => [
+                ['PATCH', $base . '/trips/1'],
+                ['DELETE', $base . '/trips/1'],
+                ['POST', '/journeys'],
+                ['PATCH', '/journeys/1'],
+                ['DELETE', '/journeys/1'],
+            ],
+            Feature::Stations->value => [
+                ['PUT', '/stations/1/favourite'],
+                ['DELETE', '/stations/1/favourite'],
+                ['POST', '/fuel-prices/alerts'],
+                ['PATCH', '/fuel-prices/alerts/1'],
+                ['DELETE', '/fuel-prices/alerts/1'],
+            ],
             Feature::Incidents->value => [['PATCH', $base . '/incidents/1'], ['DELETE', $base . '/incidents/1']],
+            Feature::Tyres->value => [
+                ['POST', $base . '/tyres/changes'],
+                ['PATCH', $base . '/tyres/changes/1'],
+                ['DELETE', $base . '/tyres/changes/1'],
+                ['PATCH', $base . '/tyres/1'],
+            ],
             Feature::Reminders->value => [['PATCH', '/reminders/1'], ['DELETE', '/reminders/1']],
+            Feature::Finance->value => [
+                ['POST', $base . '/finance/agreements'],
+                ['PATCH', $base . '/finance/agreements/1'],
+                ['POST', $base . '/finance/agreements/1/payments'],
+                ['DELETE', $base . '/finance/agreements/1/payments/1'],
+                ['POST', $base . '/finance/agreements/1/quotes'],
+                ['DELETE', $base . '/finance/agreements/1/quotes/1'],
+                ['POST', $base . '/finance/agreements/1/end'],
+            ],
         ];
         $this->assertNotFoundWithModuleOff($app, $api, $paths);
     }

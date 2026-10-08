@@ -11,12 +11,11 @@ use Logbook\Domain\Vehicle\Disposal;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Finance\AgreementView;
-use Logbook\Service\Finance\EndAgreement;
+use Logbook\Service\Finance\FinanceEvents;
 use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Validation\ValidationErrors;
-use Logbook\Support\Validation\Validator;
 use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -32,11 +31,9 @@ use Slim\Exception\HttpNotFoundException;
  */
 final readonly class EndFinanceAction
 {
-    private const int MONEY_SCALE = 2;
-    private const int MONEY_WHOLE_DIGITS = 11;
-
     public function __construct(
         private FinanceService $finance,
+        private FinanceEvents $events,
         private VehicleAccess $access,
         private View $view,
         private Redirector $redirect,
@@ -68,41 +65,14 @@ final readonly class EndFinanceAction
             ]);
         }
 
-        $validator = new Validator(RequestContext::form($request), $user->preferences->locale);
-        $outcome = AgreementStatus::tryFrom((string) $validator->choice(
-            'outcome',
-            array_map(static fn (AgreementStatus $s): string => $s->value, $outcomes),
-            true,
-        ));
-        $endedOn = $validator->date('ended_on', true);
-        $today = $this->finance->ownerToday($user, $vehicle);
-        if ($endedOn !== null && $endedOn > $today) {
-            $validator->addError('ended_on', 'finance.end.error_future');
-        } elseif ($endedOn !== null && $endedOn < $agreement->data->startedOn) {
-            $validator->addError('ended_on', 'finance.end.error_before_start');
-        }
-        $lastPayment = $view->figures->endsOn;
-        if ($outcome === AgreementStatus::Completed && $endedOn !== null && $lastPayment !== null && $endedOn < $lastPayment) {
-            $validator->addError('ended_on', 'finance.end.error_completed');
-        }
-        $settlement = $outcome === AgreementStatus::Settled
-            ? $validator->decimal('settlement', true, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS)
-            : null;
-        $returned = $outcome === AgreementStatus::HandedBack || $outcome === AgreementStatus::Ended;
-        $charge = fn (string $field): ?string => $returned
-            ? $validator->decimal($field, false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS)
-            : null;
-        $excess = $charge('excess_charge');
-        $damage = $charge('damage_charge');
-
-        if (!$validator->errors()->isEmpty() || $outcome === null || $endedOn === null) {
+        $outcome = $this->events->end($user, $vehicle, $agreement, $view, RequestContext::form($request));
+        if ($outcome instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
-            return $this->render($request, $response, $vehicle, $view, $values, $validator->errors(), 422);
+            return $this->render($request, $response, $vehicle, $view, $values, $outcome, 422);
         }
-
-        $this->finance->end($user, $vehicle, $agreement, new EndAgreement($outcome, $endedOn, $settlement, $excess, $damage));
         RequestContext::session($request)->flash('success', 'finance.end.done.' . $outcome->value);
+        $returned = $outcome === AgreementStatus::HandedBack || $outcome === AgreementStatus::Ended;
 
         if ($returned && $this->access->can($user, VehicleAbility::Own, $vehicle)) {
             $disposal = $agreement->type() === AgreementType::Lease ? Disposal::ReturnedLessor : Disposal::ReturnedLender;

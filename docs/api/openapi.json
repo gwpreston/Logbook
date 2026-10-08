@@ -98,6 +98,58 @@
             "$ref": "#/components/responses/BadParameter"
           }
         }
+      },
+      "post": {
+        "operationId": "createVehicle",
+        "summary": "Add a vehicle",
+        "description": "The add form (#284). The key's user becomes the owner. The same owner, registration (when given), make and model added in the last 10 minutes is a retry: that vehicle comes back with duplicate true (Phase 39.2).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already added (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}": {
@@ -118,6 +170,11 @@
                   "$ref": "#/components/schemas/Vehicle"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
             }
           },
           "401": {
@@ -131,6 +188,70 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editVehicle",
+        "summary": "Edit a vehicle",
+        "description": "The edit form, Manage (Phase 39.2). Refused on an archived vehicle (409).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiclePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -1095,6 +1216,69 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "createSchedule",
+        "summary": "Add a maintenance schedule",
+        "description": "Needs Manage; module maintenance. Refused on an archived vehicle (409). One with the same category, title and intervals as a stored one is not written again: it comes back with duplicate true (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/schedules/{entry}": {
@@ -1136,6 +1320,112 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editSchedule",
+        "summary": "Edit a maintenance schedule",
+        "description": "Needs Manage; module maintenance. Refused on an archived vehicle (409). Through the edit form (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchedulePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSchedule",
+        "summary": "Delete a maintenance schedule",
+        "description": "Needs Manage; module maintenance. Refused on an archived vehicle (409). Records that completed it are kept. (Phase 39.2)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -1748,6 +2038,69 @@
             "$ref": "#/components/responses/BadParameter"
           }
         }
+      },
+      "post": {
+        "operationId": "createValuation",
+        "summary": "Add a valuation",
+        "description": "Needs Manage. Accepted on an archived vehicle within the sale-date rule (a scrapped car's scrap value). One with the same date, amount and source as a stored one is not written again: it comes back with duplicate true (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValuationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/valuations/{entry}": {
@@ -1789,6 +2142,112 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editValuation",
+        "summary": "Edit a valuation",
+        "description": "Needs Manage. Accepted on an archived vehicle within the sale-date rule (a scrapped car's scrap value). Through the edit form (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValuationPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteValuation",
+        "summary": "Delete a valuation",
+        "description": "Needs Manage. Accepted on an archived vehicle within the sale-date rule (a scrapped car's scrap value). (Phase 39.2)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -1894,6 +2353,59 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordTyreChange",
+        "summary": "Record a tyre change",
+        "description": "Needs a read and write key and Log; module tyres (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TyreChangeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreChangeWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -2038,6 +2550,66 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAgreement",
+        "summary": "Add a finance agreement",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -3202,6 +3774,51 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "createJourney",
+        "summary": "Save a journey",
+        "description": "The Settings → Trips journey form, for the key's user (Phase 39.2). Module trips.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/openapi.json": {
@@ -3980,6 +4597,61 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "setPriceAlert",
+        "summary": "Set a price alert",
+        "description": "The station page's alert form, with its limits (Phase 39.2). An alert already set for that station and grade is changed and answers 200 with duplicate true. 404 while fuel prices are off.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceAlertInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Changed (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/reminders/{reminder}": {
@@ -4106,6 +4778,1050 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/stations/{station}/favourite": {
+      "put": {
+        "operationId": "favouriteStation",
+        "summary": "Star a station",
+        "description": "The station page's star, for the key's user; idempotent. Needs a read and write key (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "station",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "A favourite"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unfavouriteStation",
+        "summary": "Unstar a station",
+        "description": "Idempotent; the station's price alerts go too, as on the page (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "station",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Not a favourite"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/attention/{key}/hide": {
+      "post": {
+        "operationId": "hideAttention",
+        "summary": "Hide a Needs attention item",
+        "description": "The page's Hide, for the key's user (spec.md §7.24), with Log on the key's vehicle. The item is judged again first: a key that no longer names a hideable item (it changed or is gone) answers 404. Hiding again is a no-op. There is no un-hide, as the pages have no Show again (#296).",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "An item's key from GET /attention."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Hidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}": {
+      "patch": {
+        "operationId": "editJourney",
+        "summary": "Edit a saved journey",
+        "description": "The key user's own; another user's is not found (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "journey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteJourney",
+        "summary": "Delete a saved journey",
+        "description": "Trips logged from it keep what they copied (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "journey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      }
+    },
+    "/fuel-prices/alerts/{alert}": {
+      "patch": {
+        "operationId": "editPriceAlert",
+        "summary": "Change a price alert's price",
+        "parameters": [
+          {
+            "name": "alert",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceAlertPatch"
+              }
+            }
+          }
+        },
+        "description": "The key user's own alert (Phase 39.2).",
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePriceAlert",
+        "summary": "Remove a price alert",
+        "parameters": [
+          {
+            "name": "alert",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "description": "The key user's own alert (Phase 39.2).",
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/archive": {
+      "post": {
+        "operationId": "archiveVehicle",
+        "summary": "Archive a vehicle",
+        "description": "The Archive page, Own (Phase 39.2): its disposals, fields and messages; an active finance agreement ends as the page ends it. 409 when archived already.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Archived",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/restore": {
+      "post": {
+        "operationId": "restoreVehicle",
+        "summary": "Restore an archived vehicle",
+        "description": "Restore, Own (Phase 39.2); an active vehicle is left as it is.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleEdit"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}": {
+      "patch": {
+        "operationId": "editAgreement",
+        "summary": "Edit a finance agreement",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/payments": {
+      "post": {
+        "operationId": "addPaymentEvent",
+        "summary": "Mark a payment missed or paid late, or add an extra payment",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/payments/{event}": {
+      "delete": {
+        "operationId": "deletePaymentEvent",
+        "summary": "Remove a payment event",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2). A missed mark goes with the paid-late mark that followed it.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "event",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/quotes": {
+      "post": {
+        "operationId": "addSettlementQuote",
+        "summary": "Add a settlement quote",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2). HP, PCP and loans only.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/quotes/{quote}": {
+      "delete": {
+        "operationId": "deleteSettlementQuote",
+        "summary": "Remove a settlement quote",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "quote",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/finance/agreements/{agreement}/end": {
+      "post": {
+        "operationId": "endAgreement",
+        "summary": "End an agreement",
+        "description": "Needs a read and write key, Manage and ViewCosts on the vehicle, and the finance module; 404 without, as the reads (Phase 39.2). The page's End, for an agreement that ends while the vehicle stays.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "agreement",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), it has an active agreement already (finance_active_exists), or the agreement has ended (finance_ended).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/tyres/changes/{change}": {
+      "patch": {
+        "operationId": "editTyreChange",
+        "summary": "Edit a tyre change",
+        "description": "Manage, or Log on the key user's own change (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "change",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TyreChangePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreChangeEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTyreChange",
+        "summary": "Delete a tyre change",
+        "description": "The rest is replayed without it; tyres it created go too (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "change",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "description": "The vehicle is archived (vehicle_archived), or later changes depend on this one (tyre_change_refused), as the page refuses.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/tyres/{tyre}": {
+      "patch": {
+        "operationId": "editTyre",
+        "summary": "Edit a tyre's details",
+        "description": "Manage, as the tyre edit page (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "tyre",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TyrePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -4407,7 +6123,10 @@
               "internal_error",
               "precondition_failed",
               "reading_derived",
-              "reminder_not_manual"
+              "reminder_not_manual",
+              "finance_active_exists",
+              "finance_ended",
+              "tyre_change_refused"
             ]
           },
           "detail": {
@@ -4480,7 +6199,8 @@
           "archived_at",
           "has_photo",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "disposal"
         ],
         "properties": {
           "id": {
@@ -4647,6 +6367,20 @@
           },
           "sale_price": {
             "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "disposal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "sold",
+              "written_off",
+              "returned_lender",
+              "returned_lessor",
+              null
+            ],
+            "description": "How it left (Phase 39.2): sold while it has a sale date; archiving sets the rest. Null otherwise."
           }
         }
       },
@@ -13070,6 +14804,2056 @@
         "properties": {
           "entry": {
             "$ref": "#/components/schemas/Reminder"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "JourneyInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "distance_km"
+        ],
+        "description": "The Settings → Trips journey form: one way, in km, as GET /journeys returns it.",
+        "properties": {
+          "from": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "to": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "One way."
+          },
+          "is_return": {
+            "type": "boolean",
+            "description": "What a trip logged from it starts with. Default: false."
+          },
+          "is_business": {
+            "type": "boolean",
+            "description": "Default: true, as the form starts."
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        }
+      },
+      "JourneyPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "One way."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_return": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "What a trip logged from it starts with. Default: false."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_business": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "Default: true, as the form starts."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "JourneyWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/SavedJourney"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "JourneyEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/SavedJourney"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "PriceAlertInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "station_id",
+          "grade",
+          "below"
+        ],
+        "description": "The station page's alert form (spec.md §7.34): a favourite station with listed prices, a grade it sells, a price from 0.001 to 99.999 per litre, at most 20 alerts.",
+        "properties": {
+          "station_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "grade": {
+            "type": "string"
+          },
+          "below": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "The price per volume_unit to alert below."
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "gal_uk",
+              "gal_us"
+            ],
+            "description": "Default: the owner's."
+          }
+        }
+      },
+      "PriceAlertPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A new price; the station and grade are the alert's own (refused here).",
+        "properties": {
+          "below": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "The price per volume_unit to alert below."
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "gal_uk",
+              "gal_us"
+            ],
+            "description": "Default: the owner's."
+          }
+        }
+      },
+      "PriceAlertWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/PriceAlert"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PriceAlertEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/PriceAlert"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ValuationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "amount"
+        ],
+        "description": "The valuation form: not after today, not before the purchase date, not after the sale date; amount zero or more. A figure someone quoted: Logbook never fetches one.",
+        "properties": {
+          "valued_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today in the key user's time zone."
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        }
+      },
+      "ValuationPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "valued_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ValuationWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Valuation"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ValuationEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Valuation"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ScheduleInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "title"
+        ],
+        "description": "The schedule form: at least one interval. interval_km is in km; interval_distance and baseline_odometer are in distance_unit. Next due is computed and stored as by the form.",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "interval_km": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "interval_distance": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "interval_months": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "baseline_done_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "baseline_odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          }
+        }
+      },
+      "SchedulePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "service",
+                  "oil",
+                  "tyres",
+                  "brakes",
+                  "battery",
+                  "repair",
+                  "bodywork",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interval_km": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interval_distance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interval_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 600
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_done_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ScheduleWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Schedule"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ScheduleEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Schedule"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "VehicleInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "make",
+          "model",
+          "fuel_type"
+        ],
+        "description": "The add form (#284), validated as it validates. The key's user becomes the owner.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "car",
+              "bike"
+            ]
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "make": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "variant": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "year": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]{4}$"
+              }
+            ]
+          },
+          "first_registered_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "first_inspection_due_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "With the documents module on. Left out on create: the suggestion for the owner's locale, as the form; null: none."
+          },
+          "registration": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "vin": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "fuel_type": {
+            "type": "string",
+            "enum": [
+              "petrol",
+              "diesel",
+              "ev",
+              "hybrid",
+              "phev",
+              "lpg",
+              "cng",
+              "other"
+            ]
+          },
+          "default_grade": {
+            "type": "string",
+            "enum": [
+              "e10_95",
+              "e5_95",
+              "e5_97",
+              "e5_98",
+              "e10_98",
+              "e5_99",
+              "e0",
+              "e85",
+              "e15",
+              "e20",
+              "aki_87",
+              "aki_89",
+              "aki_91",
+              "b7",
+              "b7_premium",
+              "b10",
+              "b20",
+              "b100",
+              "xtl",
+              "home",
+              "ac",
+              "dc",
+              "dc_rapid",
+              "dc_ultra"
+            ]
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "In volume_unit; kWh for electricity."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "An override of the owner's currency."
+          },
+          "purchase_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "purchase_price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "purchase_seller": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "purchase_odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "Mileage when bought, in distance_unit; needs purchase_date."
+          },
+          "sale_date": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Marks the vehicle Sold; clearing it clears that."
+          },
+          "sale_price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "gal_uk",
+              "gal_us"
+            ],
+            "description": "Default: the owner's."
+          },
+          "current_odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "A starting reading, in distance_unit; 0 is valid."
+          },
+          "current_odometer_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "When it was read. Default: today."
+          }
+        }
+      },
+      "VehiclePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "The edit form: only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "car",
+                  "bike"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "make": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_registered_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_inspection_due_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date",
+                "description": "With the documents module on. Left out on create: the suggestion for the owner's locale, as the form; null: none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registration": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fuel_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "petrol",
+                  "diesel",
+                  "ev",
+                  "hybrid",
+                  "phev",
+                  "lpg",
+                  "cng",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default_grade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "e10_95",
+                  "e5_95",
+                  "e5_97",
+                  "e5_98",
+                  "e10_98",
+                  "e5_99",
+                  "e0",
+                  "e85",
+                  "e15",
+                  "e20",
+                  "aki_87",
+                  "aki_89",
+                  "aki_91",
+                  "b7",
+                  "b7_premium",
+                  "b10",
+                  "b20",
+                  "b100",
+                  "xtl",
+                  "home",
+                  "ac",
+                  "dc",
+                  "dc_rapid",
+                  "dc_ultra"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "In volume_unit; kWh for electricity."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$",
+                "description": "An override of the owner's currency."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_seller": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "Mileage when bought, in distance_unit; needs purchase_date."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sale_date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date",
+                "description": "Marks the vehicle Sold; clearing it clears that."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sale_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "l",
+                  "gal_uk",
+                  "gal_us"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "VehicleWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "VehicleEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ArchiveInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "The Archive page (spec.md §7.1, §7.29 Total loss, §7.32 Ending). Left out, disposal just archives. Each disposal is offered only where the page offers it: written_off with a settled write-off incident; sold, returned_lender and returned_lessor with a finance agreement.",
+        "properties": {
+          "disposal": {
+            "type": "string",
+            "enum": [
+              "sold",
+              "written_off",
+              "returned_lender",
+              "returned_lessor"
+            ]
+          },
+          "incident_id": {
+            "type": "integer",
+            "description": "written_off: the settled incident."
+          },
+          "sale_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "sale_price": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "sold and written_off."
+          },
+          "settle_from_sale": {
+            "type": "boolean",
+            "description": "sold with an active HP or PCP: end it as settled early on the sale date."
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "With settle_from_sale: the amount settled."
+          }
+        }
+      },
+      "AgreementInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "lender",
+          "started_on",
+          "first_payment_on",
+          "number_of_payments",
+          "regular_payment"
+        ],
+        "description": "The agreement form (spec.md §7.32), its fields by type and its derivations; one active agreement per vehicle.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "hp",
+              "pcp",
+              "loan",
+              "lease"
+            ]
+          },
+          "lender": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "agreement_number": {
+            "type": "string",
+            "description": "Accepted and stored; never returned."
+          },
+          "started_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "first_payment_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "number_of_payments": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              }
+            ]
+          },
+          "final_payment_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "regular_payment": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "first_payment": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "final_payment": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "cash_price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "customer_deposit": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "dealer_contribution": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "initial_rental": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "amount_of_credit": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "total_amount_payable": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "documentation_fee": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "option_to_purchase_fee": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "apr": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "annual_mileage_allowance": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              }
+            ]
+          },
+          "mileage_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "excess_mileage_charge": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "start_odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "In distance_unit."
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "count_in_costs": {
+            "type": "boolean",
+            "description": "Default: true, as the form starts."
+          },
+          "set_purchase_price": {
+            "type": "boolean",
+            "description": "HP and PCP: set the vehicle's purchase price to the cash price."
+          },
+          "clear_purchase_price": {
+            "type": "boolean",
+            "description": "A lease: clear the vehicle's purchase price."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "AgreementPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field. The type is the agreement's own.",
+        "properties": {
+          "lender": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agreement_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Accepted and stored; never returned."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "started_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_payment_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "number_of_payments": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "final_payment_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "regular_payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "final_payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cash_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_deposit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dealer_contribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "initial_rental": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount_of_credit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_amount_payable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "documentation_fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "option_to_purchase_fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "apr": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "annual_mileage_allowance": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mileage_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "excess_mileage_charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "In distance_unit."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count_in_costs": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "Default: true, as the form starts."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_purchase_price": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "HP and PCP: set the vehicle's purchase price to the cash price."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clear_purchase_price": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "A lease: clear the vehicle's purchase price."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgreementWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/FinanceAgreementDetail"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "PaymentInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "description": "missed: due_on of a paid scheduled payment; paid_late: due_on of a missed one, paid_on optional; extra: amount and paid_on (not in the future). A settlement is recorded by POST …/end (#299).",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "missed",
+              "paid_late",
+              "extra"
+            ]
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "paid_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "QuoteInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quoted_on",
+          "amount",
+          "valid_until"
+        ],
+        "description": "The lender's settlement figure; valid_until not before quoted_on.",
+        "properties": {
+          "quoted_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "valid_until": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "EndInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "outcome",
+          "ended_on"
+        ],
+        "description": "End, while the vehicle stays (spec.md §7.32 Ending): ended_on not in the future nor before the start; completed not before the last payment; settlement when settled; excess_charge and damage_charge when handed back or ended. An ending with the vehicle leaving goes through POST /vehicles/{id}/archive.",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "settled",
+              "completed",
+              "handed_back",
+              "ended"
+            ]
+          },
+          "ended_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "excess_charge": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "damage_charge": {
+            "$ref": "#/components/schemas/NumberInput"
+          }
+        }
+      },
+      "TyreChangeInput": {
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "description": "A tyre change, replayed through the change form (spec.md §7.17): every state the form refuses is refused (422). Tread checks are POST …/tyres/checks.",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "existing",
+              "fit",
+              "swap",
+              "rotate",
+              "repair",
+              "remove"
+            ]
+          },
+          "changed_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today."
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "depth_unit": {
+            "type": "string",
+            "enum": [
+              "mm",
+              "in32"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "service_record_id": {
+            "type": "integer",
+            "description": "With maintenance on: link a service record."
+          },
+          "cost": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "vendor": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "tyres": {
+            "description": "existing: a list of {position, brand, model, size, season, dot, tread}; repair: a list of fitted tyre ids; remove: fitted tyre id → store or a retire reason.",
+            "oneOf": [
+              {
+                "type": "array"
+              },
+              {
+                "type": "object",
+                "description": "remove",
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "store",
+                    "worn",
+                    "damaged",
+                    "puncture",
+                    "sold",
+                    "other"
+                  ],
+                  "description": "store, or a retire reason."
+                },
+                "propertyNames": {
+                  "pattern": "^[0-9]+$"
+                }
+              }
+            ]
+          },
+          "tyre": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "fit: the new tyres.",
+            "properties": {
+              "brand": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "size": {
+                "type": "string"
+              },
+              "season": {
+                "type": "string",
+                "enum": [
+                  "summer",
+                  "winter",
+                  "all_season"
+                ]
+              }
+            }
+          },
+          "tread": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "fit: depth when new, in depth_unit."
+          },
+          "positions": {
+            "type": "array",
+            "description": "fit: where they go.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "position"
+              ],
+              "properties": {
+                "position": {
+                  "type": "string",
+                  "enum": [
+                    "fl",
+                    "fr",
+                    "rl",
+                    "rr",
+                    "front",
+                    "rear",
+                    "spare"
+                  ]
+                },
+                "dot": {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}$",
+                  "description": "Week and year, e.g. 2325."
+                },
+                "replace": {
+                  "type": "string",
+                  "enum": [
+                    "store",
+                    "worn",
+                    "damaged",
+                    "puncture",
+                    "sold",
+                    "other"
+                  ],
+                  "description": "store, or a retire reason."
+                }
+              }
+            }
+          },
+          "set": {
+            "description": "swap and remove: a set id, or {name, storage} for a new set.",
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "storage": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                }
+              }
+            ]
+          },
+          "on": {
+            "type": "object",
+            "description": "swap: stored tyre id → position.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "fl",
+                "fr",
+                "rl",
+                "rr",
+                "front",
+                "rear",
+                "spare"
+              ]
+            },
+            "propertyNames": {
+              "pattern": "^[0-9]+$"
+            }
+          },
+          "moves": {
+            "type": "object",
+            "description": "rotate: every fitted tyre id → its new position.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "fl",
+                "fr",
+                "rl",
+                "rr",
+                "front",
+                "rear",
+                "spare"
+              ]
+            },
+            "propertyNames": {
+              "pattern": "^[0-9]+$"
+            }
+          },
+          "depths": {
+            "type": "object",
+            "description": "swap and remove: tyre id → depth, in depth_unit.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NumberInput"
+            },
+            "propertyNames": {
+              "pattern": "^[0-9]+$"
+            }
+          }
+        }
+      },
+      "TyreChangePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "What the page's edit changes; the lines come only from the change itself. null clears an optional field.",
+        "properties": {
+          "changed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "service_record_id": {
+            "type": [
+              "integer",
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TyrePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A tyre's own details; status and position come only from changes.",
+        "properties": {
+          "brand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "season": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "summer",
+                  "winter",
+                  "all_season"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dot": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9]{4}$",
+                "description": "Week and year, e.g. 2325."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TyreChangeWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings",
+          "duplicate"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/TyreChange"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TyreChangeEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/TyreChange"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "TyreEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Tyre"
           },
           "warnings": {
             "type": "array",

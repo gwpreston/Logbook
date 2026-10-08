@@ -58,6 +58,11 @@ use Logbook\Action\Api\ReminderActionAction as ApiReminderActionAction;
 use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
 use Logbook\Action\Api\EditEntryAction as ApiEditEntryAction;
 use Logbook\Action\Api\EditReminderAction as ApiEditReminderAction;
+use Logbook\Action\Api\UserWriteAction as ApiUserWriteAction;
+use Logbook\Action\Api\FigureWriteAction as ApiFigureWriteAction;
+use Logbook\Action\Api\VehicleWriteAction as ApiVehicleWriteAction;
+use Logbook\Action\Api\FinanceWriteAction as ApiFinanceWriteAction;
+use Logbook\Action\Api\TyreWriteAction as ApiTyreWriteAction;
 use Logbook\Action\Api\DeleteEntryAction as ApiDeleteEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
@@ -358,6 +363,9 @@ return static function (App $app): void {
                 };
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
+                // Phase 39.2 (#284): the key's user becomes the owner; no vehicle to check yet.
+                $keyed->post('/vehicles', ApiVehicleWriteAction::class)->setName('api.vehicles.create')
+                    ->setArgument('write', 'create');
                 $keyed->get('/upcoming', ApiUpcomingAction::class)->setName('api.upcoming');
                 // Reports (Phase 39.1, spec.md §7.7): over the vehicles the user may see; costs only where visible.
                 foreach (['costs', 'cost-per-distance', 'mileage'] as $report) {
@@ -369,6 +377,9 @@ return static function (App $app): void {
                     ->add($module(Feature::Fuel));
                 // Needs attention (Phase 39.1, spec.md §7.24): the visible active vehicles.
                 $keyed->get('/attention', ApiAttentionAction::class)->setName('api.attention');
+                // Phase 39.2: Hide, for the key's user; Log on the key's vehicle, checked by ApiUserWrites.
+                $keyed->post('/attention/{key:[^/]+}/hide', ApiUserWriteAction::class)->setName('api.attention.hide')
+                    ->setArgument('write', 'hide');
                 // History (Phase 39.1, spec.md §7.16): the fleet's, or one vehicle's below.
                 $keyed->get('/history', ApiHistoryAction::class)->setName('api.history');
                 $keyed->get('/vehicles/{id:[0-9]+}/history', ApiHistoryAction::class)->setName('api.history.vehicle')
@@ -392,6 +403,16 @@ return static function (App $app): void {
 
                 $keyed->get('/vehicles/{id:[0-9]+}', ApiVehicleAction::class)->setName('api.vehicles.show')
                     ->setArgument($ability, VehicleAbility::View->value);
+                // Phase 39.2: the edit form (Manage), the Archive page and Restore (Own).
+                $keyed->patch('/vehicles/{id:[0-9]+}', ApiVehicleWriteAction::class)->setName('api.vehicles.edit')
+                    ->setArgument('write', 'edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+                foreach (['archive', 'restore'] as $write) {
+                    $keyed->post('/vehicles/{id:[0-9]+}/' . $write, ApiVehicleWriteAction::class)
+                        ->setName('api.vehicles.' . $write)
+                        ->setArgument('write', $write)
+                        ->setArgument($ability, VehicleAbility::Own->value);
+                }
                 $keyed->get('/vehicles/{id:[0-9]+}/summary', ApiSummaryAction::class)->setName('api.vehicles.summary')
                     ->setArgument($ability, VehicleAbility::View->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/odometer', ApiOdometerAction::class)->setName('api.odometer.index')
@@ -418,6 +439,14 @@ return static function (App $app): void {
                     ->setName('api.valuations.show')
                     ->setArgument('list', 'valuations')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                // Phase 39.2: Manage, as the valuation pages; allowed on an archived vehicle (ApiFigureWrites).
+                $keyed->post('/vehicles/{id:[0-9]+}/valuations', ApiFigureWriteAction::class)->setName('api.valuations.create')
+                    ->setArgument('list', 'valuations')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+                $keyed->map(['PATCH', 'DELETE'], '/vehicles/{id:[0-9]+}/valuations/{entry:[0-9]+}', ApiFigureWriteAction::class)
+                    ->setName('api.valuations.edit')
+                    ->setArgument('list', 'valuations')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/ownership', ApiOwnershipAction::class)->setName('api.ownership')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
                 // True cost (Phase 32, spec.md §7.35): core, costs only.
@@ -449,6 +478,15 @@ return static function (App $app): void {
                     $stations->get('/fuel-prices/near', FuelPricesNearAction::class)->setName('api.fuel_prices.near');
                     // Phase 39.1: the key user's price alerts, also 404 until a provider is enabled.
                     $stations->get('/fuel-prices/alerts', ApiPriceAlertsAction::class)->setName('api.fuel_prices.alerts');
+                    // Phase 39.2: the key user's favourites and alerts (ApiUserWrites).
+                    $stations->map(['PUT', 'DELETE'], '/stations/{station:[0-9]+}/favourite', ApiUserWriteAction::class)
+                        ->setName('api.stations.favourite')
+                        ->setArgument('write', 'favourite');
+                    $stations->post('/fuel-prices/alerts', ApiUserWriteAction::class)->setName('api.fuel_prices.alerts.create')
+                        ->setArgument('write', 'alert');
+                    $stations->map(['PATCH', 'DELETE'], '/fuel-prices/alerts/{alert:[0-9]+}', ApiUserWriteAction::class)
+                        ->setName('api.fuel_prices.alerts.edit')
+                        ->setArgument('write', 'alert');
                 })->add($module(Feature::Stations));
                 $keyed->get('/vehicles/{id:[0-9]+}/maintenance', ApiMaintenanceAction::class)->setName('api.maintenance.index')
                     ->setArgument($ability, VehicleAbility::View->value)
@@ -477,6 +515,16 @@ return static function (App $app): void {
                     ->setArgument('list', 'schedules')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Maintenance));
+                // Phase 39.2: Manage, as the schedule pages.
+                $keyed->post('/vehicles/{id:[0-9]+}/schedules', ApiFigureWriteAction::class)->setName('api.schedules.create')
+                    ->setArgument('list', 'schedules')
+                    ->setArgument($ability, VehicleAbility::Manage->value)
+                    ->add($module(Feature::Maintenance));
+                $keyed->map(['PATCH', 'DELETE'], '/vehicles/{id:[0-9]+}/schedules/{entry:[0-9]+}', ApiFigureWriteAction::class)
+                    ->setName('api.schedules.edit')
+                    ->setArgument('list', 'schedules')
+                    ->setArgument($ability, VehicleAbility::Manage->value)
+                    ->add($module(Feature::Maintenance));
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Tyres));
@@ -491,6 +539,21 @@ return static function (App $app): void {
                         ->setArgument($ability, VehicleAbility::View->value);
                     $tyres->get('/tyre-sets', ApiTyreReadAction::class)->setName('api.tyre_sets')
                         ->setArgument('list', 'sets');
+                    // Phase 39.2: changes replayed through the form (Log; an edit or delete is canChange's);
+                    // a tyre's own details need Manage, as the tyre edit page.
+                    $tyres->post('/vehicles/{id:[0-9]+}/tyres/changes', ApiTyreWriteAction::class)
+                        ->setName('api.tyres.changes.create')
+                        ->setArgument('write', 'change')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $change = '/vehicles/{id:[0-9]+}/tyres/changes/{change:[0-9]+}';
+                    $tyres->map(['PATCH', 'DELETE'], $change, ApiTyreWriteAction::class)
+                        ->setName('api.tyres.changes.edit')
+                        ->setArgument('write', 'change')
+                        ->setArgument($ability, VehicleAbility::Log->value);
+                    $tyres->patch('/vehicles/{id:[0-9]+}/tyres/{tyre:[0-9]+}', ApiTyreWriteAction::class)
+                        ->setName('api.tyres.edit')
+                        ->setArgument('write', 'tyre')
+                        ->setArgument($ability, VehicleAbility::Manage->value);
                 })->add($module(Feature::Tyres));
                 $keyed->post('/vehicles/{id:[0-9]+}/maintenance', ApiLogMaintenanceAction::class)
                     ->setName('api.maintenance.create')
@@ -512,6 +575,31 @@ return static function (App $app): void {
                     ->setName('api.finance.agreements')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Finance));
+                // Finance writes (Phase 39.2, #287): Manage, then §7.32's access (ApiFinanceWrites, 404 without).
+                $keyed->group('/vehicles/{id:[0-9]+}/finance/agreements', function (Group $finance) use ($ability): void {
+                    $agreement = '/{agreement:[0-9]+}';
+                    $routes = [
+                        $finance->post('', ApiFinanceWriteAction::class)->setName('api.finance.create')
+                            ->setArgument('write', 'agreement'),
+                        $finance->patch($agreement, ApiFinanceWriteAction::class)->setName('api.finance.edit')
+                            ->setArgument('write', 'agreement'),
+                        $finance->post($agreement . '/payments', ApiFinanceWriteAction::class)->setName('api.finance.payments')
+                            ->setArgument('write', 'payment'),
+                        $finance->delete($agreement . '/payments/{event:[0-9]+}', ApiFinanceWriteAction::class)
+                            ->setName('api.finance.payments.delete')
+                            ->setArgument('write', 'payment'),
+                        $finance->post($agreement . '/quotes', ApiFinanceWriteAction::class)->setName('api.finance.quotes')
+                            ->setArgument('write', 'quote'),
+                        $finance->delete($agreement . '/quotes/{quote:[0-9]+}', ApiFinanceWriteAction::class)
+                            ->setName('api.finance.quotes.delete')
+                            ->setArgument('write', 'quote'),
+                        $finance->post($agreement . '/end', ApiFinanceWriteAction::class)->setName('api.finance.end')
+                            ->setArgument('write', 'end'),
+                    ];
+                    foreach ($routes as $route) {
+                        $route->setArgument($ability, VehicleAbility::Manage->value);
+                    }
+                })->add($module(Feature::Finance));
                 // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.
                 $keyed->group('', function (Group $trips) use ($ability, $edits): void {
                     $trips->get('/vehicles/{id:[0-9]+}/trips', ApiTripsAction::class)->setName('api.trips.index')
@@ -525,6 +613,12 @@ return static function (App $app): void {
                     $edits($trips, 'trips');
                     $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
                     $trips->get('/journeys', ApiJourneysAction::class)->setName('api.journeys');
+                    // Phase 39.2: the Settings → Trips journey form, the key user's own.
+                    $trips->post('/journeys', ApiUserWriteAction::class)->setName('api.journeys.create')
+                        ->setArgument('write', 'journey');
+                    $trips->map(['PATCH', 'DELETE'], '/journeys/{journey:[0-9]+}', ApiUserWriteAction::class)
+                        ->setName('api.journeys.edit')
+                        ->setArgument('write', 'journey');
                 })->add($module(Feature::Trips));
                 // Incidents (spec.md §7.20, §7.29): the access rules of IncidentAccess.
                 $keyed->group('', function (Group $incidents) use ($ability, $edits): void {

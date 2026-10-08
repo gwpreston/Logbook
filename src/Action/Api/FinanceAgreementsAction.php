@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Logbook\Action\Api;
 
 use Logbook\Domain\Finance\FinanceAgreement;
-use Logbook\Domain\Finance\PaymentEvent;
-use Logbook\Domain\Finance\SettlementQuote;
+use Logbook\Service\Api\ApiFinanceWrites;
 use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Api\ApiResponder;
-use Logbook\Support\Api\Serializer;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -26,6 +24,7 @@ final readonly class FinanceAgreementsAction
 {
     public function __construct(
         private FinanceService $finance,
+        private ApiFinanceWrites $writes,
         private ApiResponder $responder,
     ) {
     }
@@ -38,26 +37,9 @@ final readonly class FinanceAgreementsAction
             throw new HttpNotFoundException($request);
         }
 
-        return $this->responder->json(['items' => array_map(function (FinanceAgreement $agreement) use ($user, $vehicle): array {
-            $view = $this->finance->view($user, $vehicle, $agreement);
-
-            return Serializer::financeAgreement($view) + [
-                'events' => array_map(static fn (PaymentEvent $event): array => [
-                    'id' => $event->id,
-                    'kind' => $event->kind->value,
-                    'due_on' => Serializer::date($event->dueOn),
-                    'amount' => Serializer::dec($event->amount, Serializer::QUANTITY_SCALE),
-                    'paid_on' => Serializer::date($event->paidOn),
-                    'notes' => $event->notes,
-                ], $view->events),
-                'quotes' => array_map(static fn (SettlementQuote $quote): array => [
-                    'id' => $quote->id,
-                    'quoted_on' => Serializer::date($quote->quotedOn),
-                    'amount' => Serializer::dec($quote->amount, Serializer::QUANTITY_SCALE),
-                    'valid_until' => Serializer::date($quote->validUntil),
-                    'notes' => $quote->notes,
-                ], $view->quotes),
-            ];
-        }, $this->finance->forVehicle($user, $vehicle))]);
+        return $this->responder->json(['items' => array_map(
+            fn (FinanceAgreement $agreement): array => $this->writes->read($user, $vehicle, $agreement),
+            $this->finance->forVehicle($user, $vehicle),
+        )]);
     }
 }

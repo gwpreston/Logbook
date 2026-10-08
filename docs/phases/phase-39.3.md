@@ -96,8 +96,9 @@ Phase 27.1's incident-photo rules (#104).
 
 ### 39.3.5 Release
 - [ ] `VERSION` → **3.5.0** (additive API; one new page; one migration).
-- [ ] `CHANGELOG.md`: *Added*, the endpoints by area (39.1–39.3) and
-      webhooks; *Upgrade notes*, the migration, `WEBHOOKS_ENABLED`, CORS
+- [ ] `CHANGELOG.md`: *Added*, the endpoints by area (39.1–39.3, with
+      the vehicle's new `disposal` and `ETag`, and `If-Match` on 39.2's
+      edits and deletes) and webhooks; *Upgrade notes*, the migration, `WEBHOOKS_ENABLED`, CORS
       now allowing `PUT`, `PATCH`, `DELETE` and `If-Match`.
 - [ ] `.env.example`, `docs/configuration.md` (`WEBHOOKS_ENABLED`; the
       `API_CORS_ORIGINS` row's methods and `If-Match`), the compose files'
