@@ -3,7 +3,7 @@
 *Recommended work becomes issues in one tap, and issues go everywhere
 entries go.*
 
-Status: 🚧 in progress · releases **v3.6.0** (Phases 40.1 and 40.2) · file
+Status: ✅ complete · releases **v3.6.0** (Phases 40.1 and 40.2) · file
 lives in `docs/phases/`
 
 The second of Phase 40's two parts (#318). [Phase 40.1](phase-40.1.md) has
@@ -59,14 +59,18 @@ and §7.28.
       question in `bin/ai-eval.php`'s set asking "what's causing this
       knock?" expects the refusal wording (a new optional fourth element:
       words any of which the answer must contain).
-- [ ] API contract and access; webhooks queued; backup round-trip; CSV;
-      suite green on every engine; coverage at or above the floor.
+- [x] API contract and access (`ApiIssuesTest`, `ApiAccessTest`,
+      `ApiWriteWalkTest`, `RouteInventoryTest`); webhooks queued
+      (`WebhooksTest`); backup round-trip (built and tested in 40.1:
+      `BackupTest`); CSV (`CsvExportTest`); suite green on SQLite,
+      PostgreSQL, MySQL and MariaDB; coverage 94.8% (floor 94%), 96% of
+      the changed `src/` lines.
 
 ### 40.2.5 Release
 - [x] `VERSION` → 3.6.0; `CHANGELOG.md` (*Added* — issues log; *Upgrade
       notes* — one migration, module on by default).
-- [ ] `docs/issues.md`, README, `ROADMAP.md` rows ✅. Tag v3.6.0 once
-      merged.
+- [x] `docs/issues.md`, README, `ROADMAP.md` rows ✅.
+- [ ] Tag v3.6.0 once merged.
 
 ---
 
@@ -76,6 +80,39 @@ and §7.28.
 2. Issues are in the API, webhooks, Ask, MCP and CSV (backups since 40.1).
 3. Nowhere does Logbook suggest what a fault is.
 4. Definition of done (CLAUDE.md §11) holds.
+
+### Reviews (2026-10-08)
+
+- **Bug hunt:** no high or medium. Fixed (low): `PATCH {"status":"open"}`
+  on a watching issue refused the stored look-again point it had not sent
+  (now cleared, as leaving watching does); an update on a watching issue
+  with a new point dropped it (now moves it, as *Watch again*); `/fix`
+  linked service records while the maintenance module was off (now 422, as
+  the page offers none); deleting a record kept only as history told a
+  webhook of an unchanged issue (now silent). Each has a regression test.
+- **Security:** nothing found. Access on all 18 routes, IDOR on record
+  and issue ids, read-only keys, mass assignment, the card's per-button
+  rights and CSRF, CSV injection, demo mode and the prompts were tried.
+  Noted, not changed: issue files and webhooks with the module off follow
+  incidents' existing behaviour (View still required; links answer 404).
+- **Design:** no high or medium. Fixed (low): *Add all* says *Add all as
+  reminders* beside *Add all as issues*; the lead mentions *Watch*;
+  *Export CSV* is hidden on an empty Issues tab, as on Valuations.
+  Static review only: the card has no prototype screen.
+- **Spec:** §6 draft kind and card fields, the OpenAPI version note, the
+  issue field list (`created_by`), the card's archived and date rules, and
+  `docs/ai.md`'s card, all brought in step.
+- Not run: `deploy-checker` and `performance-auditor`.
+
+## Acceptance criteria — checked
+
+1. One tap: `ScanFlowTest::testRecommendedWorkBecomesIssues`.
+2. API (`ApiIssuesTest`), webhooks (`WebhooksTest`), Ask
+   (`IssuesToolTest`), MCP (`McpToolsTest`), CSV (`CsvExportTest`),
+   backups (40.1).
+3. No cause: the system lines (`ConversationTest`, `AiInsightsTest`), the
+   tool descriptions (`IssuesToolTest`), the eval refusal case.
+4. Definition of done: lint, analyse, four engines, coverage.
 
 ## Open questions
 
