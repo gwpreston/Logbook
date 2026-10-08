@@ -193,13 +193,14 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       on a repeat, writing nothing.
 
 ### 39.1.4 OpenAPI, docs, translations
-- [ ] `docs/api/openapi.json`: every operation, schema and error code of
+- [x] `docs/api/openapi.json`: every operation, schema and error code of
       this sub-phase.
-- [ ] `docs/api.md`: reading one entry and its `ETag`; reports; history;
+- [x] `docs/api.md`: reading one entry and its `ETag`; reports; history;
       marking a reminder done from a Home Assistant notification.
-- [ ] Translations for any new string (the `display` strings and
+- [x] Translations for any new string (the `display` strings and
       *Needs attention* words reuse the pages' keys), in every shipped
-      locale.
+      locale. None were needed: no new page strings, and problem details
+      are English by design (§7.20).
 
 ### 39.1.5 Tests
 - [ ] **Contract:** every new response validated against the OpenAPI

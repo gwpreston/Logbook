@@ -111,19 +111,33 @@ user prefers, so automations can compare and chart them:
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
 | `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase) (paged) |
 | `POST /vehicles/{id}/odometer` | add a reading (read and write key) |
-| `GET /vehicles/{id}/maintenance` | service records (paged) |
+| `GET /vehicles/{id}/{list}/{entry}` | one entry of `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents`, `schedules` or `valuations`, exactly as its list returns it, with an `ETag` ([Reading one entry](#reading-one-entry)) |
+| `GET /vehicles/{id}/maintenance` | service records (paged; `?category=`, and `?q=` for words in the title, vendor or description) |
 | `POST /vehicles/{id}/maintenance` | add a service record (read and write key) |
-| `GET /vehicles/{id}/documents` | compliance documents with their status and days left (paged) |
+| `GET /vehicles/{id}/documents` | compliance documents with their status and days left (paged; `?type=`, and `?current=1` for those in force today) |
 | `POST /vehicles/{id}/documents` | add a document (read and write key) |
 | `GET /vehicles/{id}/expenses` | expenses (paged; needs cost access) |
 | `POST /vehicles/{id}/expenses` | add an expense (read and write key; cost access not needed) |
 | `GET /vehicles/{id}/tyres` | tyres: fitted, stored, retired, with tread and what is due |
+| `GET /vehicles/{id}/tyres/changes` | tyre changes and tread checks, newest first, with their lines (tyres module) |
+| `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | tyre sets with their tyres, for one vehicle or every active one (`?vehicle=`; tyres module) |
+| `GET /vehicles/{id}/schedules` | maintenance schedules with their due state, most urgent first, as the Maintenance tab (maintenance module) |
+| `GET /vehicles/{id}/valuations` | valuations, newest first (paged; cost access) |
+| `GET /vehicles/{id}/ownership` | cost of ownership and depreciation, as the overview's card (cost access, else `403`) |
+| `GET /vehicles/{id}/history`, `GET /history` | the history feed of one vehicle or every active one, newest first (`?kinds=fuel,expense`, `?since=` / `?until=` days, paged); amounts only where you may see them |
 | `POST /vehicles/{id}/tyres/checks` | record a tread check (read and write key) |
 | `GET /vehicles/{id}/true-cost` | true cost per km for `?period=last_12_months` (default) or `since_bought`: each part (fuel, maintenance, compliance, other, depreciation) and insurance payouts, adding up exactly, the change against the 12 months before, each calendar year and what changed from the year before, with translated sentences (cost access, else `403`) |
 | `GET /vehicles/{id}/finance` | the active finance agreement's figures and schedule, else the latest ended one's; estimates marked as such, never the agreement number (Manage and cost access, else `404`; finance module) |
+| `GET /vehicles/{id}/finance/agreements` | every agreement, the active one first, each with its payment events and settlement quotes (as above) |
 | `POST /vehicles/{id}/reminders` | add a manual reminder (read and write key; Manage) |
 | `GET /upcoming` | *Coming up* over the next 12 months (`?vehicle=`) |
-| `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`) |
+| `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`); `?closed=1` (or `?status=done\|dismissed`) the done and dismissed ones, most recently closed first |
+| `POST /reminders/{id}/done`, `/dismiss`, `/reopen` | the Reminders page's buttons, for a reminder of any kind; safe to repeat (`"unchanged": true`) (read and write key; Log) |
+| `GET /attention` | *Needs attention* for every active vehicle (`?vehicle=`), in the page's order and words, each with a link to its fix |
+| `GET /reports/costs` | spend by category group, month or vehicle (`?group_by=`), per currency ([Reports](#reports)) |
+| `GET /reports/cost-per-distance` | cost per km, per vehicle and in all ([Reports](#reports)) |
+| `GET /reports/fuel` | fuel statistics per vehicle, kind and grade, with the grade verdicts ([Reports](#reports); fuel module) |
+| `GET /reports/mileage` | distance driven in the period, and the averages ([Reports](#reports)) |
 | `GET /vehicles/{id}/trips` | trips: your own, or every driver's when you manage or own the vehicle (paged; trips module) |
 | `POST /vehicles/{id}/trips` | log a trip, or one from a saved journey (read and write key; trips module) |
 | `GET /trips/claim` | your mileage claim's figures for a tax year or date range (trips module) |
@@ -131,6 +145,7 @@ user prefers, so automations can compare and chart them:
 | `GET /stations` | stations, your favourites first, then by your last visit, each with what you paid there per grade (`?q=` name, brand or postcode; `?favourites=true`; stations module) |
 | `GET /stations/{station}` | one station and what you paid there; a merged station's id answers with the station it became (stations module) |
 | `GET /fuel-prices/near` | *Cheapest near me*: listed prices near a point, ranked by effective cost for a vehicle ([Fuel prices](#fuel-prices); only while a price provider is enabled) |
+| `GET /fuel-prices/alerts` | your price alerts: station, grade, the price per litre below which it tells you, and whether it is armed (only while a price provider is enabled) |
 | `GET /openapi.json` | the OpenAPI description (no key) |
 
 A vehicle id the key's user cannot see answers `404`, like one that does
@@ -138,8 +153,8 @@ not exist.
 
 ## Lists: paging and dates
 
-The `fuel`, `odometer`, `maintenance`, `documents`, `expenses` and `trips` lists are
-**newest first** and paged:
+The `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`,
+`incidents` and `valuations` lists are **newest first** and paged:
 
 - `?limit=` 1–200, default 50.
 - The response is `{"items": [...], "next": "<URL of the next page>"}`;
@@ -149,8 +164,48 @@ The `fuel`, `odometer`, `maintenance`, `documents`, `expenses` and `trips` lists
   end of that day in UTC) or an instant (`2026-09-01T08:00:00Z`, or with an
   offset), both inclusive, on the entry's own date or time.
 
-`/vehicles`, `/tyres`, `/upcoming` and `/reminders` are short and come
-whole.
+`/vehicles`, `/tyres`, `/upcoming`, `/reminders`, `/schedules`,
+`/tyres/changes`, `/tyre-sets` and `/attention` are short and come whole.
+
+The history feeds page the same way, but `since` and `until` there are
+calendar days on your calendar (the entries are dated by day), and their
+cursor is their own: follow `next` as it is.
+
+## Reading one entry
+
+Every list's entry can be read on its own at the list's address plus its
+id (`GET /vehicles/1/fuel/42`), exactly as the list returns it. An id that
+belongs to another vehicle answers `404`, and so does a trip someone else
+logged that you may not see.
+
+The response carries an `ETag`: a tag of the entry as it is stored. It
+changes when the entry is edited, never because something around it
+changed (a neighbouring fill-up altering this one's economy). It is there
+for the edits that come next: send it back in `If-Match` and an edit that
+would overwrite someone else's change is refused. `If-None-Match` is not
+supported.
+
+```sh
+curl -si -H "Authorization: Bearer $LOGBOOK_KEY" \
+  https://garage.example.com/api/v1/vehicles/1/fuel/42 | grep -i etag
+```
+
+## Reports
+
+The reports take the Reports page's choices: `range` (`month`, `3m`,
+`12m` the default, `ytd`, `all`, or `custom` with `from` and `to`),
+`vehicle` (one; otherwise every active vehicle) and `include_archived=1`.
+Their figures come from the same code as the page, so they always agree
+with it. Money is per currency and never added across currencies.
+Vehicles whose costs you may not see are not counted; their ids are in
+`excluded`. A value that can't be read answers `400`, where the page's
+form would fall back to the default.
+
+```sh
+# This year's spend, month by month.
+curl -s -H "Authorization: Bearer $LOGBOOK_KEY" \
+  "https://garage.example.com/api/v1/reports/costs?range=ytd&group_by=month"
+```
 
 ## Logging fill-ups and readings
 
@@ -556,6 +611,26 @@ Logbook shows it, use `value_json.display.odometer` or
 `value_json.display.economy` ("44.4 mpg"). For an electric car use
 `fuel.electric` in place of `fuel.liquid` (kWh/100 km), and for CNG `fuel.gas`
 (kg/100 km).
+
+### Mark a reminder done from a notification
+
+With a **read and write** key, a
+[RESTful command](https://www.home-assistant.io/integrations/rest_command/)
+marks a reminder done, so an actionable notification can do it from the
+phone. `GET /reminders` gives the ids.
+
+```yaml
+rest_command:
+  logbook_reminder_done:
+    url: "https://garage.example.com/api/v1/reminders/{{ reminder_id }}/done"
+    method: post
+    headers:
+      Authorization: !secret logbook_auth
+```
+
+Call it from the notification's action with `reminder_id`. Pressing it
+twice is harmless: the second answers `"unchanged": true` and changes
+nothing. `/dismiss` and `/reopen` work the same way.
 
 ## Apple Shortcuts
 
