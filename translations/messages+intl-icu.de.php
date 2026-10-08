@@ -3644,7 +3644,7 @@ return [
             'not_a_zip' => 'Das ist keine ZIP-Datei.',
             'not_a_backup' => 'Diese ZIP-Datei ist keine Logbook-Sicherung.',
             'format_version' => 'Diese Sicherung hat ein Format, das diese Logbook-Version nicht lesen kann.',
-            'schema' => 'Diese Sicherung stammt von Logbook {version}, dessen Datenbank sich von dieser unterscheidet ({current}). Stelle sie mit Logbook {version} wieder her und aktualisiere dann.',
+            'schema' => 'Diese Sicherung stammt von Logbook {version} mit Datenbankversion {schema}; diese Datenbank hat Version {current}. Stelle sie mit Logbook {version} wieder her und aktualisiere dann.',
             'corrupt' => 'Diese Sicherung ist beschädigt oder unvollständig und kann nicht wiederhergestellt werden.',
             'too_large' => 'Diese Sicherung enthält eine Tabelle, die zu groß ist, um sie hier wiederherzustellen.',
             'unexpected_file' => 'Diese Sicherung enthält eine Datei, die nicht hineingehört ({name}), und wurde daher nicht wiederhergestellt.',

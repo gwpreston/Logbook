@@ -3647,7 +3647,7 @@ return [
             'not_a_zip' => 'This is not a ZIP file.',
             'not_a_backup' => 'This ZIP file is not a Logbook backup.',
             'format_version' => 'This backup was made in a format this version of Logbook cannot read.',
-            'schema' => 'This backup was made by Logbook {version}, whose database differs from this one ({current}). Restore it with Logbook {version}, then upgrade.',
+            'schema' => 'This backup was made by Logbook {version} with database version {schema}; this database is at version {current}. Restore it with Logbook {version}, then upgrade.',
             'corrupt' => 'This backup is damaged or incomplete, so it cannot be restored.',
             'too_large' => 'This backup contains a table too large to restore here.',
             'unexpected_file' => 'This backup contains a file that does not belong in it ({name}), so it was not restored.',

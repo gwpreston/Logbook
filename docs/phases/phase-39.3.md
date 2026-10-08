@@ -192,3 +192,11 @@ Found while starting 39.3 (2026-10-08):
 - **#302 Who hears about a trip?** — *Decided 2026-10-08:* only the
   users who may see it (its author, and those who see everyone's
   trips), as the history feed.
+
+Still open (found by the upgrade review, 2026-10-08; blocks nothing):
+
+- **#306 Database newer than the code?** Rolling the code back before the
+  database leaves a migration the old code has no file for; it runs on
+  regardless and its backups won't restore. Options: warn on `/health`
+  and the admin dashboard; refuse to start; documentation only (the
+  *Upgrading* guide now gives the right order).

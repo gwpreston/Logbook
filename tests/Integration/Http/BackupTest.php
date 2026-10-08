@@ -317,7 +317,7 @@ final class BackupTest extends AppTestCase
                 $good,
                 static fn (ZipArchive $z) => $z->deleteName('manifest.json'),
             ),
-            'whose database differs from this one' => $this->variant($good, static function (ZipArchive $zip): void {
+            'database version 20200101000000; this database' => $this->variant($good, static function (ZipArchive $zip): void {
                 $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
                 assert(is_array($manifest));
                 $manifest['schema_version'] = '20200101000000';

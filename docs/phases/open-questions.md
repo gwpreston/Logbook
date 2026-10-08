@@ -97,7 +97,7 @@ started; the phase was split into 39.1, 39.2 and 39.3. #221, #279 and
 #280 were reviewed the same day and carried as they are: none of them
 changes Phase 39. #290 was found while starting Phase 39.1 and waits
 for a decision before Phase 39.3; the spec review of the same day
-raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review; the owner answered both the same day. Phase 39.2's #298 was found while starting it and answered on 2026-10-08, before it was built, and #299 while building it, answered the same day; #279 and #280 (Phase 38) stay open, none of them blocking 39.2. The owner answered 39.3's #290–#295 on 2026-10-08, before it started, with #300–#302, found while starting it, and #303–#305, found while building it; #279 and #280 still don't change Phase 39.
+raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review; the owner answered both the same day. Phase 39.2's #298 was found while starting it and answered on 2026-10-08, before it was built, and #299 while building it, answered the same day; #279 and #280 (Phase 38) stay open, none of them blocking 39.2. The owner answered 39.3's #290–#295 on 2026-10-08, before it started, with #300–#302, found while starting it, and #303–#305, found while building it; #306, found by its upgrade review, waits for a decision and blocks nothing; #279 and #280 still don't change Phase 39.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -406,6 +406,7 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 303 | [39.3](phase-39.3.md) | Who may download an expense's or valuation's file by id? A share without *Can see costs* could, on the API and the page (found while building) | Decided | Only with *Can see costs* or one's own upload, on both routes; 404 otherwise. spec §7.12, §7.20 *Attachments*. | 2026-10-08 |
 | 304 | [39.3](phase-39.3.md) | How many webhooks may a user have? One change queues a call per webhook (found by the security review) | Decided | 10 per user. spec §7.20 *Webhooks*. | 2026-10-08 |
 | 305 | [39.3](phase-39.3.md) | Purchase and sale paperwork proves a price hidden without *Can see costs*: restrict it too? (found by the security review) | Decided | Yes: #303's rule, and its list needs *Can see costs*; fuel and service files stay with their entry. spec §7.12, §7.20. | 2026-10-08 |
+| 306 | [39.3](phase-39.3.md) | Should Logbook warn or refuse when the database is newer than its code (a migration in phinxlog it has no file for, after rolling the code back first)? (found by the upgrade review) | Needs a decision | Options: a warning on `/health` and the admin dashboard; refuse to start; documentation only (done in 39.3: `docs/deployment.md` *Upgrading* now rolls back with the new code). Doesn't block 39.3. | — |
 
 ## Other loose ends found in the review
 

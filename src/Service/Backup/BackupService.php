@@ -223,9 +223,12 @@ final readonly class BackupService
 
         $current = $this->repository->schemaVersion();
         if ($manifest->schemaVersion !== $current) {
+            // Name the database versions too: an install whose code was rolled back over a newer
+            // database reports the same app version on both sides (upgrade review, Phase 39.3).
             throw new InvalidBackup('backup.error.schema', [
                 'version' => $manifest->appVersion,
-                'current' => Kernel::version(),
+                'schema' => $manifest->schemaVersion,
+                'current' => $current,
             ]);
         }
 

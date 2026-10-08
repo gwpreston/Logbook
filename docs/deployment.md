@@ -602,10 +602,21 @@ cannot do, and how to stop being a demo are in [demo-mode.md](demo-mode.md).
      If PHP runs with opcache, reload php-fpm/Apache afterwards.
 4. Check `<your URL>/health` and sign in.
 
-Database changes always ship as reversible migrations. To go back: restore the
-previous code, run `vendor/bin/phinx rollback -e production -t <version>`
-(the version before the upgrade, from `vendor/bin/phinx status`), or restore
-the backup from step 2 with the previous version.
+Database changes always ship as reversible migrations. To go back, roll the
+database back **with the new code still in place**, then switch to the old
+code or image: the old code doesn't have the new migration files, so its
+rollback finds nothing to undo and leaves the newer database behind (backups
+it then makes won't restore anywhere).
+
+- Bare PHP: `vendor/bin/phinx rollback -e production -t <version>` (the
+  version before the upgrade, from `vendor/bin/phinx status`), then restore
+  the previous code.
+- Docker: `docker compose exec -u www-data app vendor/bin/phinx rollback -e production -t <version>`
+  in the new container, then switch to the previous image.
+
+Or start an empty database with the previous version and restore the backup
+from step 2. A rollback drops what only the newer version stores (each
+release's upgrade notes say what).
 
 New environment variables always have a default that keeps the old behaviour,
 so an existing `.env` keeps working.

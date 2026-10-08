@@ -68,7 +68,16 @@ and out, and have Logbook tell other systems when something changes.
 
 ### Upgrade notes
 - Pull and restart. **One migration** adds the `webhooks` and
-  `webhook_deliveries` tables; it rolls back cleanly.
+  `webhook_deliveries` tables.
+- **Backups move to a new database version**: a 3.4.0 backup restores into
+  3.4.0; restore it there, then upgrade.
+- **Going back to 3.4.0:** run `vendor/bin/phinx rollback -e production -t
+  20261105100000` **with 3.5.0** (Docker: `docker compose exec -u www-data
+  app vendor/bin/phinx rollback -e production -t 20261105100000`) before
+  switching to the old version or image; run with the old code it does
+  nothing. Rolling back deletes every webhook and queued call: after
+  upgrading again, add them again and give each receiver its new secret
+  ([deployment](docs/deployment.md#upgrading)).
 - New setting `WEBHOOKS_ENABLED` (default `true`; `false` queues and sends
   nothing). Webhooks are sent by the scheduler, so they arrive with the
   next pass; run passes more often to have them sooner
