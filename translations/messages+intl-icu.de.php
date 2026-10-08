@@ -6333,7 +6333,7 @@ return [
             'number' => 'Prüfung {number}',
             'tested_as' => 'geprüft als {registration}',
             'document' => 'Als Dokument erfasst',
-            'issue' => 'Mangel',
+            'issue' => 'Zum Mangel',
         ],
         'recall' => [
             'heading' => 'Rückrufe',

@@ -94,9 +94,11 @@
                    js/vehicle-lookup.js fills them in place; without JS the form comes back filled. #}
                 {% if with_lookup %}
                     <div class="field" data-vehicle-lookup>
-                        <button type="submit" name="lookup" value="1" formnovalidate class="btn btn--soft" data-lookup-button
-                                data-working="{{ 'mot_history.lookup.working'|trans }}">{{ ui.icon('fact_check') }}{{ 'mot_history.lookup.button'|trans }}</button>
-                        <p class="field__hint">{{ ui.icon('shield') }} {{ 'mot_history.lookup.sends'|trans }}</p>
+                        <div class="btn-row">
+                            <button type="submit" name="lookup" value="1" formnovalidate class="btn btn--soft" data-lookup-button
+                                    data-working="{{ 'mot_history.lookup.working'|trans }}">{{ ui.icon('fact_check') }}{{ 'mot_history.lookup.button'|trans }}</button>
+                        </div>
+                        <p class="field__hint">{{ 'mot_history.lookup.sends'|trans }}</p>
                         <p class="field__hint" role="status" aria-live="polite" data-lookup-message>
                             {%- if lookup %}{{ lookup.message|trans(lookup.params) }}{% endif -%}
                         </p>

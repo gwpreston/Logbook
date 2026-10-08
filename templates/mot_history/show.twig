@@ -61,7 +61,7 @@
                 {% else %}
                     <form method="post" action="{{ url_for('mot_history.fetch', {id: vehicle.id}) }}">
                         {{ ui.csrf(csrf) }}
-                        <p data-statement>{{ ui.icon('shield') }} {{ 'mot_history.fetch.statement'|trans({provider: provider.nameKey()|trans}) }}</p>
+                        <p data-statement>{{ 'mot_history.fetch.statement'|trans({provider: provider.nameKey()|trans}) }}</p>
                         <label class="toggle">
                             <input type="checkbox" name="confirm" value="1" required>
                             <span class="toggle__text"><span class="toggle__title">{{ 'mot_history.fetch.confirm'|trans }}</span></span>
@@ -93,18 +93,14 @@
                                     {% if test.expiryOn %} · {{ 'mot_history.page.expires'|trans({date: test.expiryOn|local_date}) }}{% endif %}
                                     {% if test.reference() %} · {{ 'mot_history.page.number'|trans({number: test.reference()}) }}{% endif %}
                                     {% if test.registrationAtTest and test.registrationAtTest|replace({' ': ''}) != (vehicle.data.registration ?? '')|replace({' ': ''})|upper %} · {{ 'mot_history.page.tested_as'|trans({registration: test.registrationAtTest}) }}{% endif %}
+                                    {% if documents[test.id] %} · <a href="{{ url_for('compliance.edit', {id: vehicle.id, document: documents[test.id]}) }}">{{ 'mot_history.page.document'|trans }}</a>{% endif %}
                                 </span>
-                                {% if documents[test.id] %}
-                                    <a class="list__meta" href="{{ url_for('compliance.edit', {id: vehicle.id, document: documents[test.id]}) }}">{{ ui.icon('verified_user') }}{{ 'mot_history.page.document'|trans }}</a>
-                                {% endif %}
                                 {% if test.defects is not empty %}
                                     <ul class="list mot-defects">
                                         {% for defect in test.defects %}
                                             <li class="mot-defect">
                                                 {{ mot.defect_type(defect) }} {{ defect.text }}
-                                                {% if defect.issueId and issues_on %}
-                                                    <a href="{{ url_for('issues.show', {id: vehicle.id, issue: defect.issueId}) }}">{{ ui.icon('report') }}{{ 'mot_history.page.issue'|trans }}</a>
-                                                {% endif %}
+                                                {%- if defect.issueId and issues_on %} · <a href="{{ url_for('issues.show', {id: vehicle.id, issue: defect.issueId}) }}">{{ 'mot_history.page.issue'|trans }}</a>{% endif %}
                                             </li>
                                         {% endfor %}
                                     </ul>

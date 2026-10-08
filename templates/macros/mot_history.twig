@@ -1,7 +1,7 @@
 {# A test's result as text and an icon, never colour alone (spec.md §7.38). #}
 {% macro result(test) -%}
     {%- import 'macros/ui.twig' as ui -%}
-    <span class="pill {{ test.passed() ? 'pill--valid' : 'pill--overdue' }}">{{ ui.icon(test.passed() ? 'check_circle' : 'cancel') }}{{ test.result.labelKey()|trans }}</span>
+    <span class="pill {{ test.passed() ? 'pill--valid' : 'pill--overdue' }}">{{ ui.icon(test.passed() ? 'check_circle' : 'error') }}{{ test.result.labelKey()|trans }}</span>
 {%- endmacro %}
 
 {# A defect's type as text and an icon. #}

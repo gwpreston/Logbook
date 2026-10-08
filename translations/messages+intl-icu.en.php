@@ -6336,7 +6336,7 @@ return [
             'number' => 'test {number}',
             'tested_as' => 'tested as {registration}',
             'document' => 'Logged as a document',
-            'issue' => 'Issue',
+            'issue' => 'See the issue',
         ],
         'recall' => [
             'heading' => 'Recalls',

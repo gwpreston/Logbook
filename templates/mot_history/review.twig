@@ -37,7 +37,7 @@
         {% if card.firstDueOffered %}
             <section class="card" data-first-due>
                 <p>{{ 'mot_history.review.first_due'|trans({date: card.firstDueOffered|local_date}) }}</p>
-                {% if can_manage %}{{ self.post(csrf, vehicle, {do: 'first_due'}, 'mot_history.review.use_date'|trans, 'event') }}{% endif %}
+                {% if can_manage %}{{ self.post(csrf, vehicle, {do: 'first_due'}, 'mot_history.review.use_date'|trans, 'calendar_month') }}{% endif %}
             </section>
         {% endif %}
 
@@ -75,7 +75,7 @@
                                 {% else %}
                                     <div class="btn-row scan-offer__actions">
                                         {{ self.post(csrf, vehicle, {do: 'issue', defect: defect.id}, 'mot_history.review.add_issue'|trans, 'report', 'btn btn--sm', defect.text) }}
-                                        {{ self.post(csrf, vehicle, {do: 'not_now', defect: defect.id}, 'mot_history.review.not_now'|trans, 'schedule', 'btn btn--sm btn--soft', defect.text) }}
+                                        {{ self.post(csrf, vehicle, {do: 'not_now', defect: defect.id}, 'mot_history.review.not_now'|trans, 'visibility_off', 'btn btn--sm btn--soft', defect.text) }}
                                     </div>
                                 {% endif %}
                             </li>
@@ -95,7 +95,7 @@
                     {% if issues_on and item.defects|filter(r => r.offered()) is not empty %}
                         {{ self.post(csrf, vehicle, {do: 'issues', test: test.id}, 'mot_history.review.add_all_issues'|trans, 'report') }}
                     {% endif %}
-                    {{ self.post(csrf, vehicle, {do: 'done', test: test.id}, 'mot_history.review.done'|trans, 'done', 'btn btn--sm btn--soft') }}
+                    {{ self.post(csrf, vehicle, {do: 'done', test: test.id}, 'mot_history.review.done'|trans, 'check', 'btn btn--sm btn--soft') }}
                 </div>
             </section>
         {% endfor %}
