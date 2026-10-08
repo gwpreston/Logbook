@@ -81,6 +81,7 @@ final class ApiAttentionTest extends AppTestCase
         $owner = $this->owner($this->app);
         self::assertTrue($this->service($this->app, AttentionHiding::class)
             ->hide($owner, $this->golf, 'valuation_stale', (int) $subject, $fingerprint));
-        self::assertSame(['overdue'], ApiClient::json($this->api->get('/attention'))->column('kind', 'items'), 'hidden: left out');
+        $after = ApiClient::json($this->api->get('/attention'));
+        self::assertSame(['overdue'], $after->column('kind', 'items'), 'hidden: left out');
     }
 }
