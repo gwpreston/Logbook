@@ -98,7 +98,7 @@ final class SampleMotProvider implements MotHistoryProvider, MotHistoryClient
             'hasOutstandingRecall' => 'No',
             'motTests' => [
                 ['completedDate' => '2025-09-12T08:45:00.000Z', 'testResult' => 'PASSED', 'expiryDate' => '2026-09-11',
-                    'odometerValue' => '19387', 'odometerUnit' => 'MI', 'odometerResultType' => 'READ',
+                    'odometerValue' => '19168', 'odometerUnit' => 'MI', 'odometerResultType' => 'READ',
                     'motTestNumber' => '660925091201', 'registrationAtTimeOfTest' => 'LK22VXN', 'dataSource' => 'DVSA',
                     'defects' => [
                         [

@@ -89,7 +89,9 @@ final readonly class AttentionWording
         $previous = $item->warning?->previous;
         [$yours, $mot] = $item->motPair === 'before' ? [$previous, $flagged] : [$flagged, $previous];
 
-        return $this->translator->trans('attention.reading.mot_' . $item->motPair, [
+        $key = $item->motPair === 'before' ? 'attention.reading.mot_before' : 'attention.reading.mot_after';
+
+        return $this->translator->trans($key, [
             'date' => $this->formatter->instantDate($yours?->recordedAt),
             'odometer' => $this->formatter->distance($yours?->readingKm),
             'mot_date' => $this->formatter->instantDate($mot?->recordedAt),

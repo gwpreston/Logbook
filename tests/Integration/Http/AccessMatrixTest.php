@@ -37,6 +37,8 @@ use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\TestBrowser;
 use Logbook\Tests\Support\VehicleRoutes;
 use Psr\Container\ContainerInterface;
+use Logbook\Service\MotHistory\MotHistoryConfig;
+use Logbook\Service\MotHistory\Sample\SampleMotProvider;
 use Psr\Http\Message\ResponseInterface;
 use Slim\App;
 use Slim\Interfaces\RouteInterface;
@@ -148,6 +150,12 @@ final class AccessMatrixTest extends AppTestCase
         'issues.edit' => self::MANAGE,
         'issues.delete' => self::MANAGE,
         'issues.watch' => self::LOG,
+        // Phase 41 (spec.md §7.38): anyone who can see the vehicle reads its MOT history;
+        // Log reviews it; fetching sends the registration out, so it is the owner's (#321).
+        'mot_history.show' => self::VIEW,
+        'mot_history.review' => self::LOG,
+        'mot_history.fetch' => self::OWN,
+        'mot_history.stop' => self::OWN,
         'issues.reopen' => self::LOG,
         'issues.fix' => self::LOG,
         'issues.updates.create' => self::LOG,
@@ -263,6 +271,8 @@ final class AccessMatrixTest extends AppTestCase
     {
         $browsers = ['owner' => $this->signedIn($app)];
         $owner = $this->owner($app);
+        // MOT history answers 404 while no provider is on: the sample one, which sends nothing.
+        $this->service($app, MotHistoryConfig::class)->saveProvider(new SampleMotProvider());
         $vehicle = $this->vehicle($app);
         $day = static fn (string $date): DateTimeImmutable => new DateTimeImmutable($date, new DateTimeZone('UTC'));
         $db = $this->connection($app);
