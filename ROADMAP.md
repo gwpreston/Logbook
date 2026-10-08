@@ -86,6 +86,11 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours + v3.3 release | ✅ |
 | [37](docs/phases/phase-37.md) | Space between the Fuel prices providers + patch release | ✅ |
 | [38](docs/phases/phase-38.md) | Ask lives on Insights; the Ask page goes + v3.4 release | ✅ |
+| [39](docs/phases/phase-39.md) | The rest of the REST API + release | 📋 |
+| [40](docs/phases/phase-40.md) | Issues log + release | 📋 |
+| [41](docs/phases/phase-41.md) | DVSA MOT history + release | 📋 |
+| [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
+| [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -974,7 +979,7 @@ list of choices in Settings.*
 
 ---
 
-## Phase 38 — Ask lives on Insights; the Ask page goes + release
+## Phase 38 — Ask lives on Insights; the Ask page goes + v3.4 release
 *One place for what Logbook has spotted and what you've asked it.*
 
 - *Your questions* (the thread list, with *Delete* and *Delete all*) and
@@ -984,9 +989,94 @@ list of choices in Settings.*
   the matching Insights page. Reverses #192 and #193.
 - Open questions A–E (#272–#276: where *Your questions* sits, the top-bar button,
   thread page or inline, retention, *Show all*) decided 2026-10-07.
-- Releases the next minor version.
+- Released as **v3.4.0**.
 
 → [`phase-38.md`](docs/phases/phase-38.md)
+
+---
+
+## Phase 39 — The rest of the REST API + release
+*Everything you can do to a vehicle in Logbook, an automation can do too:
+read it, log it, change it, and hear about it.*
+
+- Reads for everything a vehicle's pages show: single entries, schedules,
+  valuations, ownership, reports, history, tyre changes and sets,
+  stations, *Needs attention*, price alerts and closed reminders.
+- Reminder actions (done, dismiss, reopen); writes for vehicles,
+  valuations, schedules, tyre changes, journeys, finance, price alerts,
+  attention hiding and station favourites; edit and delete for every
+  entry under `EntryAccess`, with optional optimistic concurrency.
+- Attachments (list, download, upload, delete) and webhooks for entries
+  created, changed and deleted.
+- Administration, sharing, deleting a vehicle and Ask stay out. The API
+  stays `v1` (additive only); OpenAPI and `docs/api.md` updated. Minor
+  release.
+
+→ [`phase-39.md`](docs/phases/phase-39.md)
+
+---
+
+## Phase 40 — Issues log + release
+*The fault you've noticed and haven't fixed yet.*
+
+- Issues with a date, mileage, description and status (*open*,
+  *watching*, *fixed*), updates over time and attached photos or PDFs.
+- A service record fixes one or more issues, from either side; open
+  issues, and watching ones past their look-again point, appear in *Needs
+  attention*.
+- The recommended-work card offers *Add as issue*; issues go everywhere
+  entries go (History, CSV, backups, API, Ask, MCP, the demo seed).
+- No AI diagnosis, in any form (decided 2026-10-08). Release.
+
+→ [`phase-40.md`](docs/phases/phase-40.md)
+
+---
+
+## Phase 41 — DVSA MOT history + release
+*Past MOT tests, their mileages and advisories, from the official UK
+record.*
+
+- Reopens #7. Settings → *MOT history* for admins, off until enabled,
+  behind a provider interface like Fuel Finder's; only the registration
+  (or VIN) leaves the server, for vehicles whose owner fetches.
+- Per vehicle *Fetch MOT history* and *Refresh*: every test and its
+  defects stored; test mileages join the mileage log and its plausibility
+  checks; passed tests can become inspection documents and fill *First
+  MOT due*.
+- Advisories and defects offered as Phase 40 issues; History, Ask, API
+  and backups. Waits if individuals can't get DVSA credentials. Release.
+
+→ [`phase-41.md`](docs/phases/phase-41.md)
+
+---
+
+## Phase 42 — Fuel saving and economy up as computed insights + release
+*Sums done by Logbook; the model keeps only what no single service can
+see.*
+
+- **Fuel saving:** yearly volume × (usual station's price − cheapest
+  nearby effective price), from figures *Cheapest near me* already has.
+- **Economy up:** Phase 25's drift check judged for an improvement.
+- AI insights no longer asked for these or to work out any figure, and
+  kept from repeating a computed insight; an Ask tool for the computed
+  insights. Partly replaces #174. Release.
+
+→ [`phase-42.md`](docs/phases/phase-42.md)
+
+---
+
+## Phase 43 — The monthly briefing + release
+*Last month in one message: what's due, how far you drove, what it cost,
+and what Logbook spotted.*
+
+- The monthly digest gains **Last month** (distance, spend and cost per
+  distance per vehicle against the 12-month average, with a fleet line)
+  and **Insights** (computed and the latest AI insights; no model call).
+- Open issues in the attention section; sections ordered so a short
+  channel keeps what matters most.
+- A user choice of what the digest includes; delivery unchanged. Release.
+
+→ [`phase-43.md`](docs/phases/phase-43.md)
 
 ---
 

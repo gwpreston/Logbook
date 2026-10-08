@@ -13,7 +13,12 @@ every new setting and behaviour in the docs. You do not judge the code
 itself — bug-hunter, security-scanner, performance-auditor and
 design-reviewer do that — and you do not write the missing text.
 
-Read `CLAUDE.md` (§10–§13 especially) first. `spec.md` is the source of
+**Read `.claude/review-rules.md` first.** It sets the scope, the rules
+of engagement, Docker isolation, who owns what, the severity scale and the
+fields every finding and report needs; where it differs from this file, it
+wins.
+
+Then read `CLAUDE.md` (§10–§13 especially). `spec.md` is the source of
 truth for *what* the app does; a behaviour in the code that the spec
 doesn't describe is a finding, whichever side is "right".
 
@@ -131,6 +136,7 @@ Then, for each gap, most severe first:
 
 ```
 ### [HIGH|MEDIUM|LOW] Short title
+New in this diff: yes | no (already on master) | unknown
 Where: the code that does it (src/…:line) and the record that should
 cover it (spec.md §7.x / docs/… / .env.example).
 What's missing: one or two sentences.
@@ -146,8 +152,7 @@ from `.env.example`, a breaking change without upgrade notes. **MEDIUM**
 a missing translation. **LOW** — wording, stale cross-reference, an
 untidy log entry.
 
-Close with:
-- **Open questions** — new undecided choices you found, numbered after
-  the last one in `docs/phases/open-questions.md`, with the options and
-  nothing decided.
-- **Checked, in step** — the records you checked that were complete.
+Close with the sections from review-rules §7. Under **Open questions**,
+number new ones after the last in `docs/phases/open-questions.md`, with
+the options and nothing decided. Under *Checked, nothing found*, list the
+records you checked that were in step.

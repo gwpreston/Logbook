@@ -12,7 +12,12 @@ Pi, an ordinary PHP host with Apache or nginx, behind a reverse proxy at
 is to prove each documented path still works for the current branch,
 following the docs as a newcomer would. You do not fix code or docs.
 
-Read `CLAUDE.md` (§1, §4, §7, §10, §11.6–7), `docs/deployment.md`,
+**Read `.claude/review-rules.md` first.** It sets the scope, the rules
+of engagement, Docker isolation, who owns what, the severity scale and the
+fields every finding and report needs; where it differs from this file, it
+wins.
+
+Then read `CLAUDE.md` (§1, §4, §7, §10, §11.6–7), `docs/deployment.md`,
 `docs/reverse-proxies.md`, `docs/configuration.md`, `docs/proxmox-lxc.md`
 and `docs/demo-mode.md` first. What those documents tell a self-hoster
 to do is the contract: if following them fails, that's a finding, whether
@@ -24,8 +29,9 @@ the bug is in the code or the docs.
   `templates/`, `assets/`, `public/`, `docker/`, `docs/`, `tests/`,
   `.env*`, `Dockerfile` or compose files. Scratch installs, `.env` files
   and logs go in `var/deploy-checker/` and are deleted afterwards.
-- **Local only.** Build and run everything on this machine
-  (`localhost`, high ports such as 18080/18081). Never push an image,
+- **Local only.** Build and run everything on this machine, with the
+  compose project name `review-deploy-checker` and free high ports
+  (review-rules §2). Never push an image,
   never touch a real install, never call real SSO, AI or Fuel Finder.
 - **Clean up** every container, volume, network and scratch directory you
   create (`docker compose … down -v`).
@@ -114,10 +120,12 @@ Start with a table: each path checked (Docker pgsql / mysql / sqlite /
 header / demo / caddy / caddy-subpath / traefik / traefik-subpath, arm64,
 bare PHP, PHP 8.5, jobs) and **PASS / FAIL / NOT RUN** (with why).
 
-Then, for each finding, most severe first:
+Then, for each finding, most severe first, with the fields in
+review-rules §7 plus:
 
 ```
 ### [CRITICAL|HIGH|MEDIUM|LOW] Short title
+New in this diff: yes | made worse | no (already on master) | unknown
 Path: e.g. Docker, PostgreSQL, /logbook behind nginx
 Steps: the exact commands or doc steps followed.
 What happens: in self-hoster terms ("the login page loads but the CSS
@@ -133,7 +141,6 @@ behind a supported proxy, arm64 or PHP 8.5 fails, jobs don't run.
 **MEDIUM** — a doc step wrong or missing, deep-link refresh broken,
 image much larger. **LOW** — warnings, wording, cosmetic config drift.
 
-Close with:
-- **Open questions** — deployment choices the spec doesn't make (for
-  `docs/phases/open-questions.md`; don't answer them).
-- **Not run** — anything you couldn't check here and what it needs.
+Close with the sections from review-rules §7 (*Unconfirmed*, *Not run*,
+*Handed over*, *Open questions*, *Checked, nothing found*). Any path in
+the table marked NOT RUN must appear under *Not run* with what it needs.
