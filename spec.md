@@ -4895,7 +4895,7 @@ stays `v1`, and existing responses don't change.
   An entry id that belongs to another vehicle answers 404, as an
   unreadable vehicle does. Journeys, price alerts and stations belong to
   the user or the install, so their paths are top level.
-- **Read one:** every entry list gains `GET …/{entry}`, returning the
+- **Read one:** every entry list (and schedules and valuations) gains `GET …/{entry}`, returning the
   object exactly as the list returns it, with an `ETag`: a hash of the
   entry's own stored columns, never of derived figures (a fill-up's
   segment economy, which a neighbour's edit changes) or of what the
@@ -4946,7 +4946,7 @@ stays `v1`, and existing responses don't change.
 |---|---|---|
 | `GET /vehicles/{id}/{list}/{entry}` for `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents` | one entry, as its list returns it, with `ETag` | as its list |
 | `GET /vehicles/{id}/maintenance` | gains `?category=` and `?q=` (every word, any case, in the title, vendor, description or category code), searched as Ask's `maintenance` tool does | `View` |
-| `GET /vehicles/{id}/documents` | gains `?type=` and `?current=1`: in force today in the key user's time zone, as the list's status (started, not expired, not replaced) | `View` |
+| `GET /vehicles/{id}/documents` | gains `?type=` and `?current=1` (or `true`; `0` and `false` don't filter): in force today in the key user's time zone, as the list's status (started, not expired, not replaced) | `View` |
 | `GET /vehicles/{id}/schedules`, `…/schedules/{schedule}` | schedules with interval, baseline, stored last done and next due, and the Maintenance tab's due state in the owner's lead times: `status` (the app's codes `overdue`, `soon`, `ok`, `unknown`), `trigger`, `due_on` (the date limit, or the projected day of the distance limit, flagged `due_on_projected`), `days_left`, `distance_left` (§7.4); module `maintenance` | `View` |
 | `GET /vehicles/{id}/valuations`, `…/valuations/{valuation}` | valuations, newest first, paged as the entry lists | `ViewCosts` |
 | `GET /vehicles/{id}/ownership` | Phase 14.2's figures: lifetime running cost, purchase and current value, depreciation (amount, percentage, per year, per distance, or the state that stops it: `no_purchase_price`, `no_value`), the stale-valuation flag, with `display` strings | `ViewCosts` (403 without) |

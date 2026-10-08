@@ -121,7 +121,7 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/tyres` | tyres: fitted, stored, retired, with tread and what is due |
 | `GET /vehicles/{id}/tyres/changes` | tyre changes and tread checks, newest first, with their lines (tyres module) |
 | `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | tyre sets with their tyres, for one vehicle or every active one (`?vehicle=`; tyres module) |
-| `GET /vehicles/{id}/schedules` | maintenance schedules with their due state, most urgent first, as the Maintenance tab (maintenance module) |
+| `GET /vehicles/{id}/schedules` | maintenance schedules with their due state, most urgent first, as the Maintenance tab: `status` (`overdue`, `soon`, `ok`, `unknown` in your lead times), the `trigger` that applies (date or distance), `due_on` (the date, or the day the distance is projected to be reached: `due_on_projected`), `days_left`, `distance_left` (maintenance module) |
 | `GET /vehicles/{id}/valuations` | valuations, newest first (paged; cost access) |
 | `GET /vehicles/{id}/ownership` | cost of ownership and depreciation, as the overview's card (cost access, else `403`) |
 | `GET /vehicles/{id}/history`, `GET /history` | the history feed of one vehicle or every active one, newest first (`?kinds=fuel,expense`, `?since=` / `?until=` days, paged); amounts only where you may see them |
@@ -131,9 +131,9 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/finance/agreements` | every agreement, the active one first, each with its payment events and settlement quotes (as above) |
 | `POST /vehicles/{id}/reminders` | add a manual reminder (read and write key; Manage) |
 | `GET /upcoming` | *Coming up* over the next 12 months (`?vehicle=`) |
-| `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`); `?closed=1` (or `?status=done\|dismissed`) the done and dismissed ones, most recently closed first |
+| `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`); `?closed=1` (or `?status=done\|dismissed`) the done and dismissed ones, most recently closed first; every reminder carries `closed_at` (null while open) |
 | `POST /reminders/{id}/done`, `/dismiss`, `/reopen` | the Reminders page's buttons, for a reminder of any kind; safe to repeat (`"unchanged": true`) (read and write key; Log) |
-| `GET /attention` | *Needs attention* for every active vehicle (`?vehicle=`), in the page's order and words, each with a link to its fix |
+| `GET /attention` | *Needs attention* for every active vehicle (`?vehicle=`), in the page's order and words, each with a link to its fix; an item you can hide carries a `key` (hiding over the API comes with the writes) |
 | `GET /reports/costs` | spend by category group, month or vehicle (`?group_by=`), per currency ([Reports](#reports)) |
 | `GET /reports/cost-per-distance` | cost per km, per vehicle and in all ([Reports](#reports)) |
 | `GET /reports/fuel` | fuel statistics per vehicle, kind and grade, with the grade verdicts ([Reports](#reports); fuel module) |

@@ -117,5 +117,8 @@ nested routes, entry guard and `ETag`).
 
 ## Open questions
 
-None open. This sub-phase's questions (#282–#284, #287, #288) were decided
-on 2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions).
+This sub-phase's questions (#282–#284, #287, #288) were decided on
+2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). Still open:
+**#296** decides whether `POST /attention/{key}/unhide` exists (the pages
+have no *Show again*); it doesn't block 39.2's *Hide*. Until it is
+decided the API does what the pages do: hide only.

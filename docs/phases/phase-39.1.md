@@ -50,7 +50,7 @@ Phase 39. The last column says which sub-phase closes the gap.
 | Trips, journeys (§7.22) | trips add, edit, delete; journeys add, edit, delete | trips list and add; journeys list | trip read one; trip edit and delete; journey writes | 39.1; 39.2 |
 | Incidents (§7.29) | add, edit, delete | list, add, history | read one; edit, delete | 39.1; 39.2 |
 | Finance (§7.32) | agreement add and edit, payment events, settlement quotes | the active agreement, read only | every agreement (read); the writes | 39.1; 39.2 |
-| Needs attention (§7.24) | the list; hide and unhide an item | none | the list; hide, unhide | 39.1; 39.2 |
+| Needs attention (§7.24) | the list; hide an item (no *Show again*) | none | the list; hide (unhide open, #296) | 39.1; 39.2 |
 | Stations (§7.33) | list, favourites | list (`?q=`, `?favourites=`), read one | favourite, unfavourite | 39.2 |
 | Fuel prices (§7.34) | cheapest near me, price alerts | cheapest near me | price alerts (read; write) | 39.1; 39.2 |
 | Attachments (§7.12) | upload, list, download, delete | none | everything | 39.3 |
