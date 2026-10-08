@@ -3,7 +3,7 @@
 *What an entry form writes, a key can write; what the pages let you
 correct or remove, a key can correct or remove.*
 
-Status: 📋 planned · no release of its own (**v3.5.0** ships with
+Status: 🚧 in progress · no release of its own (**v3.5.0** ships with
 [Phase 39.3](phase-39.3.md)) · file lives in `docs/phases/`
 
 The second of Phase 39's three parts (#281). [Phase 39.1](phase-39.1.md)
@@ -120,3 +120,8 @@ nested routes, entry guard and `ETag`).
 This sub-phase's questions (#282–#284, #287, #288) were decided on
 2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). #296 (decided
 2026-10-08): no `unhide`; the API hides only, as the pages.
+
+- **#298** (found while starting, decided 2026-10-08): a fill-up `PATCH`
+  sending only one of volume, price per unit and total keeps the other
+  two as stored, as the edit form does; nothing is re-derived. spec
+  §7.20 *Conventions*.

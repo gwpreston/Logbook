@@ -4911,7 +4911,10 @@ stays `v1`, and existing responses don't change.
   and service**, as creates go through the add form's: the form's
   validation, messages (422), recomputation and `warnings`. Unknown
   fields are refused (`api.validation.unknown_field`). Answers `200` with
-  the entry.
+  the entry. Nothing is re-derived that the form wouldn't: a fill-up
+  PATCH sending one of volume, price per unit and total keeps the other
+  two as stored, as posting the edit form does (decided 2026-10-08,
+  #298).
 - **Delete is `DELETE`**, through the same service as the delete
   confirmation page, with the same knock-on effects (a schedule falls back
   to the previous record, a fill-up's economy segments are recomputed, the
