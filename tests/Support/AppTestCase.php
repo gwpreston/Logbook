@@ -168,6 +168,11 @@ abstract class AppTestCase extends TestCase
             'station_favourites',
             'places',
             'stations',
+            // Phase 41: MOT tests and defects (after the readings that point at them), and the
+            // provider's credentials.
+            'mot_defects',
+            'mot_tests',
+            'mot_history_secrets',
             'vehicles',
             'api_keys',
             // Phase 36.1: the email server's password.
