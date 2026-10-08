@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Api;
 
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Issue\Issue;
 use Logbook\Domain\Issue\IssueSource;
 use Logbook\Domain\Issue\IssueStatus;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Issue\IssueForm;
 use Logbook\Service\Issue\IssueNotFound;
 use Logbook\Service\Issue\IssueService;
@@ -38,6 +40,7 @@ final readonly class ApiIssues
         private ValidationProblem $validation,
         private EntityTag $tags,
         private ClockInterface $clock,
+        private FeatureToggles $features,
     ) {
     }
 
@@ -195,6 +198,11 @@ final readonly class ApiIssues
         }
         $stored = IssueForm::values($issue, $mapped['preferences']);
         $input = JsonInput::overlay($stored, $body, $mapped['input'], JsonInput::ISSUE_FIELDS);
+        if (($body['status'] ?? null) === IssueStatus::Open->value && !array_key_exists('look_again_on', $body)) {
+            // Leaving watching clears the point (spec.md §7.37), unless the body says otherwise.
+            $input['look_again_on'] = '';
+            $input['look_again_odometer'] = '';
+        }
         if ($issue->isFixed()) {
             // The form's status for a fixed issue is not one it accepts back.
             $input['status'] = IssueStatus::Open->value;
@@ -256,8 +264,13 @@ final readonly class ApiIssues
             throw $this->validation->of($parsed);
         }
         $records = $parsed['records'];
-        $allowed = array_map(static fn ($record): int => $record->id, $this->issues->linkableRecords($vehicle, $issue));
-        $allowed = [...$allowed, ...$state->fixedBy];
+        // Service records are linked only while the maintenance module is on, as on the page.
+        $allowed = $this->features->isEnabled(Feature::Maintenance)
+            ? [
+                ...array_map(static fn ($record): int => $record->id, $this->issues->linkableRecords($vehicle, $issue)),
+                ...$state->fixedBy,
+            ]
+            : [];
         if (array_diff($records, $allowed) !== []) {
             $errors = new ValidationErrors();
             $errors->add('records', 'api.validation.issue_records');

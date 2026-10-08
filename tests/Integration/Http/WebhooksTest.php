@@ -217,6 +217,13 @@ final class WebhooksTest extends ReminderTestCase
         $api->post($base . '/issues/' . $issue . '/fix', ['note' => 'Went away']);
         $api->post($base . '/issues/' . $issue . '/fix', []);
         $api->post($base . '/issues/' . $issue . '/reopen', []);
+        // A record kept only as history (after *It's back*) is deleted: the issue is unchanged, nothing is told.
+        $record = $json($api->post($base . '/maintenance', [
+            'performed_on' => '2026-09-25', 'category' => 'brakes', 'title' => 'Pads',
+        ]))->int('entry', 'id');
+        $api->post($base . '/issues/' . $issue . '/fix', ['records' => [$record]]);
+        $api->post($base . '/issues/' . $issue . '/reopen', []);
+        $api->delete($base . '/maintenance/' . $record);
         $api->delete($base . '/issues/' . $issue);
 
         $seen = array_map(
@@ -243,7 +250,7 @@ final class WebhooksTest extends ReminderTestCase
         }
         self::assertSame(2, count(array_keys($seen, 'entry.updated vehicle ' . $this->golf->id, true)), 'archive and restore');
         $updated = count(array_keys($seen, 'entry.updated issue ' . $issue, true));
-        self::assertSame(3, $updated, 'update, fix, reopen; a repeated fix is not told');
+        self::assertSame(5, $updated, 'update, fix, reopen, fix, reopen; a repeated fix and a history link are not told');
         foreach ($this->queued($webhook) as $delivery) {
             self::assertMatchesPayloadSchema($delivery->payload);
         }

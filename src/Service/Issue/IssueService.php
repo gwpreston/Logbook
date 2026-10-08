@@ -391,11 +391,15 @@ final readonly class IssueService
     public function recordDeleted(Vehicle $vehicle, int $recordId, DateTimeZone $zone): void
     {
         $today = LocalTime::today($this->clock, $zone);
+        $current = $this->issues->fixedBy($recordId, currentOnly: true);
         foreach ($this->issues->fixedBy($recordId) as $issueId) {
             $issue = $this->issues->find($vehicle->id, $issueId);
             if ($issue !== null) {
                 $this->unlink($vehicle, $issue, $recordId, IssueUpdateReason::RecordDeleted, $today);
-                $this->changed($vehicle, $issueId);
+                // A link kept as history changes nothing a receiver can read.
+                if (in_array($issueId, $current, true)) {
+                    $this->changed($vehicle, $issueId);
+                }
             }
         }
     }
@@ -510,8 +514,12 @@ final readonly class IssueService
             $to = $data->status;
             // A fixed issue changes status only by *It's back* (the form refuses it too).
             $changed = $to !== null && $to !== IssueStatus::Fixed && !$issue->isFixed() && $to !== $issue->status();
-            if ($changed) {
-                $next = $to === IssueStatus::Watching
+            // Still watching with a new point given: the point moves, as *Watch again*.
+            // (The form gives a point only with *watching* chosen; on a watching issue that is no status change.)
+            $moved = !$changed && $issue->status() === IssueStatus::Watching
+                && ($data->lookAgainOn !== null || $data->lookAgainKm !== null);
+            if ($changed || $moved) {
+                $next = $moved || $to === IssueStatus::Watching
                     ? $issue->data->watching($data->lookAgainOn, $data->lookAgainKm)
                     : $issue->data->withStatus($to);
                 $this->issues->update($vehicle->id, $issue->id, $next, $now);

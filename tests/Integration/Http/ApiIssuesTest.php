@@ -304,6 +304,30 @@ final class ApiIssuesTest extends AppTestCase
         self::assertNotNull($reading, 'another odometer is a reading');
     }
 
+    public function testStatusOpenLeavesWatchingAndANewPointMovesIt(): void
+    {
+        // Bug hunt 2026-10-08: PATCH status open drops the stored point; an update while watching moves it.
+        $id = $this->logged(['status' => 'watching', 'look_again_on' => '2026-10-20']);
+        $moved = $this->api->post($this->path . '/' . $id . '/updates', [
+            'note' => 'Moved it', 'status' => 'watching', 'look_again_on' => '2026-11-20',
+        ]);
+        self::assertSame('2026-11-20', ApiClient::json($moved)->get('entry', 'look_again_on'));
+
+        $open = $this->api->patch($this->path . '/' . $id, ['status' => 'open']);
+        self::assertSame(200, $open->getStatusCode(), self::body($open));
+        self::assertSame('open', ApiClient::json($open)->get('entry', 'status'));
+        self::assertNull(ApiClient::json($open)->get('entry', 'look_again_on'));
+    }
+
+    public function testNoRecordIsLinkedWhileMaintenanceIsOff(): void
+    {
+        $id = $this->logged();
+        $record = $this->record('2026-09-01');
+        $toggles = $this->service($this->app, FeatureToggles::class);
+        $toggles->save(array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== Feature::Maintenance)));
+        self::assertSame(422, $this->api->post($this->path . '/' . $id . '/fix', ['records' => [$record]])->getStatusCode());
+    }
+
     public function testWithTheModuleOffEveryIssuePathIsNotFound(): void
     {
         $id = $this->logged();
