@@ -107,7 +107,7 @@ final readonly class CreateMaintenanceEntryAction
 
         $done = $this->redirect->backOr($request, 'maintenance.index', ['id' => (string) $vehicle->id]);
 
-        return $this->scan->after($request, $claimed, $vehicle, $entry->data->odometerKm, $done);
+        return $this->scan->after($request, $claimed, $vehicle, $entry->data->odometerKm, $done, $entry->data->performedOn);
     }
 
     /**

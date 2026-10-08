@@ -85,6 +85,6 @@ final readonly class CreateComplianceDocumentAction
 
         $done = $this->redirect->backOr($request, 'compliance.index', ['id' => (string) $vehicle->id]);
 
-        return $this->scan->after($request, $claimed, $vehicle, $document->data->odometerKm, $done);
+        return $this->scan->after($request, $claimed, $vehicle, $document->data->odometerKm, $done, $document->data->startOn);
     }
 }

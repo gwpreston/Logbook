@@ -2,8 +2,10 @@
 {% import 'macros/ui.twig' as ui %}
 {#
  # Recommended work as reminders (spec.md §7.27 *Recommended work*): after a
- # scanned entry is saved, each line offered as a manual reminder. Nothing
- # is added without a press. Forms work without JS.
+ # scanned entry is saved, each line offered as a manual reminder and, from
+ # Phase 40.2 (§7.37, #313, #314), as an issue: open, or watching with the
+ # line's own date or distance. Each button shows only to those who may use
+ # it. Nothing is added without a press. Forms work without JS.
  #}
 {% set active_nav = 'reminders' %}
 {% set heading = 'scan.reminders.title'|trans %}
@@ -16,7 +18,7 @@
             <div>
                 <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
                 <h1 class="page-header__title">{{ heading }}</h1>
-                <p class="page-header__lead">{{ 'scan.reminders.lead'|trans }}</p>
+                <p class="page-header__lead">{{ (can_remind and can_issue ? 'scan.reminders.lead_both' : (can_issue ? 'scan.reminders.lead_issues' : 'scan.reminders.lead'))|trans }}</p>
             </div>
         </header>
         {% block modal_body %}
@@ -31,30 +33,56 @@
                                         {{ item.projected_on
                                             ? 'scan.reminders.at_distance_projected'|trans({distance: item.distance_km|distance, date: item.projected_at|local_date})
                                             : 'scan.reminders.at_distance'|trans({distance: item.distance_km|distance, odometer: item.due_km|distance}) }}
-                                    {% elseif item.due_on %}
+                                    {% elseif item.due_on and (can_remind or not item.guessed) %}
                                         {{ (item.guessed ? 'scan.reminders.guessed' : 'scan.reminders.on')|trans({date: item.due_at|local_date, days: constant('Logbook\\Service\\Ai\\Scan\\Recommendations::DEFAULT_DAYS')}) }}
                                     {% endif %}
                                 </span>
                             </div>
-                            {% if item.added %}
-                                <span class="pill pill--valid">{{ ui.icon('check') }}{{ 'scan.reminders.added_one'|trans }}</span>
+                            {% if item.added_as %}
+                                <span class="pill pill--valid">{{ ui.icon('check') }}{{ (item.added_as == 'issue' ? 'scan.reminders.added_issue' : 'scan.reminders.added_reminder')|trans }}</span>
                             {% else %}
-                                <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
-                                    {{ ui.csrf(csrf) }}
-                                    <input type="hidden" name="item" value="{{ loop.index0 }}">
-                                    <button type="submit" class="btn btn--sm">{{ ui.icon('add') }}{{ 'scan.reminders.add'|trans }}<span class="visually-hidden">: {{ item.text }}</span></button>
-                                </form>
+                                <div class="btn-row scan-offer__actions">
+                                    {% if can_remind %}
+                                        <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
+                                            {{ ui.csrf(csrf) }}
+                                            <input type="hidden" name="item" value="{{ loop.index0 }}">
+                                            <button type="submit" class="btn btn--sm">{{ ui.icon('add') }}{{ 'scan.reminders.add'|trans }}<span class="visually-hidden">: {{ item.text }}</span></button>
+                                        </form>
+                                    {% endif %}
+                                    {% if can_issue %}
+                                        <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
+                                            {{ ui.csrf(csrf) }}
+                                            <input type="hidden" name="item" value="{{ loop.index0 }}">
+                                            <input type="hidden" name="as" value="issue">
+                                            <button type="submit" class="btn btn--sm">{{ ui.icon('report') }}{{ 'scan.reminders.add_issue'|trans }}<span class="visually-hidden">: {{ item.text }}</span></button>
+                                        </form>
+                                        <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
+                                            {{ ui.csrf(csrf) }}
+                                            <input type="hidden" name="item" value="{{ loop.index0 }}">
+                                            <input type="hidden" name="as" value="watch">
+                                            <button type="submit" class="btn btn--sm btn--ghost">{{ ui.icon('visibility') }}{{ 'scan.reminders.watch'|trans }}<span class="visually-hidden">: {{ item.text }}</span></button>
+                                        </form>
+                                    {% endif %}
+                                </div>
                             {% endif %}
                         </li>
                     {% endfor %}
                 </ul>
             </section>
             <div class="btn-row">
-                {% if has_open %}
+                {% if has_open and can_remind %}
                     <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
                         {{ ui.csrf(csrf) }}
                         <input type="hidden" name="item" value="all">
                         <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('event_upcoming') }}{{ 'scan.reminders.add_all'|trans }}</button>
+                    </form>
+                {% endif %}
+                {% if has_open and can_issue %}
+                    <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <input type="hidden" name="item" value="all">
+                        <input type="hidden" name="as" value="issue">
+                        <button type="submit" class="btn {{ can_remind ? '' : 'btn--primary ' }}btn--lg">{{ ui.icon('report') }}{{ 'scan.reminders.add_all_issues'|trans }}</button>
                     </form>
                 {% endif %}
                 <form method="post" action="{{ url_for('scan.reminders', {token: upload.token}) }}">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Scan;
 
+use DateTimeImmutable;
 use Closure;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Ai\Scan\ScanKind;
@@ -229,9 +230,11 @@ final readonly class ScanPrefill
     /**
      * After the save: the pending file goes, and the user is taken to the
      * recommendations card when the reading offers any (and they may add
-     * reminders to this vehicle); otherwise $response as it was.
+     * reminders or, from Phase 40.2, issues to this vehicle, #313);
+     * otherwise $response as it was.
      *
      * @param string|null $atKm the saved entry's odometer, km
+     * @param DateTimeImmutable|null $on the saved entry's date: an issue added from the card is noticed then
      */
     public function after(
         ServerRequestInterface $request,
@@ -239,6 +242,7 @@ final readonly class ScanPrefill
         Vehicle $vehicle,
         ?string $atKm,
         ResponseInterface $response,
+        ?DateTimeImmutable $on = null,
     ): ResponseInterface {
         if ($claimed === null) {
             return $response;
@@ -246,17 +250,19 @@ final readonly class ScanPrefill
         $offers = [];
         $reading = ScanReader::extraction($claimed);
         $user = RequestContext::requireUser($request);
-        if (
-            $reading !== null
-            && $this->features->isEnabled(Feature::Reminders)
-            && $this->access->can($user, VehicleAbility::Manage, $vehicle)
-        ) {
+        $canRemind = $this->features->isEnabled(Feature::Reminders)
+            && $this->access->can($user, VehicleAbility::Manage, $vehicle);
+        $canIssue = $this->features->isEnabled(Feature::Issues)
+            && $this->access->can($user, VehicleAbility::Log, $vehicle);
+        if ($reading !== null && ($canRemind || $canIssue)) {
             $as = ScanKind::tryFrom(self::string(RequestContext::form($request), 'scan_kind'));
             $offers = $this->recommendations->offers($user, $vehicle, $as === null ? $reading : $reading->as($as), $atKm);
         }
         $this->uploads->finish($claimed->id, $offers === [] ? null : [
             'vehicle_id' => $vehicle->id,
             'return_to' => $response->getHeaderLine('Location'),
+            'noticed_on' => $on?->format('Y-m-d'),
+            'odometer_km' => $atKm,
             'items' => $offers,
         ]);
         $this->files->delete($claimed->storedPath);
