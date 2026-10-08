@@ -60,6 +60,7 @@ use Logbook\Action\Api\EditEntryAction as ApiEditEntryAction;
 use Logbook\Action\Api\EditReminderAction as ApiEditReminderAction;
 use Logbook\Action\Api\UserWriteAction as ApiUserWriteAction;
 use Logbook\Action\Api\FigureWriteAction as ApiFigureWriteAction;
+use Logbook\Action\Api\VehicleWriteAction as ApiVehicleWriteAction;
 use Logbook\Action\Api\DeleteEntryAction as ApiDeleteEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
@@ -360,6 +361,9 @@ return static function (App $app): void {
                 };
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
+                // Phase 39.2 (#284): the key's user becomes the owner; no vehicle to check yet.
+                $keyed->post('/vehicles', ApiVehicleWriteAction::class)->setName('api.vehicles.create')
+                    ->setArgument('write', 'create');
                 $keyed->get('/upcoming', ApiUpcomingAction::class)->setName('api.upcoming');
                 // Reports (Phase 39.1, spec.md §7.7): over the vehicles the user may see; costs only where visible.
                 foreach (['costs', 'cost-per-distance', 'mileage'] as $report) {
@@ -397,6 +401,16 @@ return static function (App $app): void {
 
                 $keyed->get('/vehicles/{id:[0-9]+}', ApiVehicleAction::class)->setName('api.vehicles.show')
                     ->setArgument($ability, VehicleAbility::View->value);
+                // Phase 39.2: the edit form (Manage), the Archive page and Restore (Own).
+                $keyed->patch('/vehicles/{id:[0-9]+}', ApiVehicleWriteAction::class)->setName('api.vehicles.edit')
+                    ->setArgument('write', 'edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+                foreach (['archive', 'restore'] as $write) {
+                    $keyed->post('/vehicles/{id:[0-9]+}/' . $write, ApiVehicleWriteAction::class)
+                        ->setName('api.vehicles.' . $write)
+                        ->setArgument('write', $write)
+                        ->setArgument($ability, VehicleAbility::Own->value);
+                }
                 $keyed->get('/vehicles/{id:[0-9]+}/summary', ApiSummaryAction::class)->setName('api.vehicles.summary')
                     ->setArgument($ability, VehicleAbility::View->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/odometer', ApiOdometerAction::class)->setName('api.odometer.index')

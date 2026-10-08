@@ -5012,8 +5012,17 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   `returned_lessor`) and the fields the *Archive* page asks for with that
   reason (sale date and price; the settled incident for a write-off; the
   finance agreement's ending), through the archive page's service (§7.1,
-  §7.29 *Total loss*, §7.32 *Ending*). `POST /vehicles/{id}/restore`
-  (`Own`) is *Restore*.
+  §7.29 *Total loss*, §7.32 *Ending*; `Service\Vehicle\VehicleArchiving`,
+  shared with the page); no `disposal` just archives, a disposal the page
+  doesn't offer that vehicle is 422, and an archived vehicle 409.
+  `POST /vehicles/{id}/restore` (`Own`) is *Restore*; an active vehicle
+  is left as it is. The vehicle gains `disposal` (`sold`, `written_off`,
+  `returned_lender`, `returned_lessor`, or null) and `GET
+  /vehicles/{id}` an `ETag` of the stored vehicle, for `If-Match` on
+  `PATCH`. Create, edit, archive and restore answer with the vehicle as
+  `GET /vehicles/{id}` returns it, in `entry`. *First MOT due* left out
+  on create gets the form's suggestion for the owner's locale; sent as
+  `null`, none.
 - **Valuations** (`Manage`): `POST /vehicles/{id}/valuations` with
   `valued_on` (default today in the key owner's time zone), `amount`,
   `source`, `notes`, and the form's validation (not after today, not

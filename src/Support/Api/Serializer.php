@@ -119,6 +119,8 @@ final class Serializer
             'currency' => $currency,
             'currency_override' => $data->currency,
             'status' => $vehicle->status->value,
+            // Phase 39.2: how it left (a sale date marks it sold; archive sets the rest).
+            'disposal' => $vehicle->disposal?->value,
             'archived_at' => self::instant($vehicle->archivedAt),
             'has_photo' => $vehicle->hasPhoto(),
             'created_at' => self::instant($vehicle->createdAt),

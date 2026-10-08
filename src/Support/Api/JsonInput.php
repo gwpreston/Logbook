@@ -188,6 +188,46 @@ final class JsonInput
         'baseline_odometer' => 'last_done_odometer',
     ];
 
+    /** API field → form field, for the vehicle form (Phase 39.2): the same names. */
+    public const array VEHICLE_FIELDS = [
+        'type' => 'type',
+        'nickname' => 'nickname',
+        'make' => 'make',
+        'model' => 'model',
+        'variant' => 'variant',
+        'year' => 'year',
+        'first_registered_on' => 'first_registered_on',
+        'first_inspection_due_on' => 'first_inspection_due_on',
+        'registration' => 'registration',
+        'vin' => 'vin',
+        'fuel_type' => 'fuel_type',
+        'default_grade' => 'default_grade',
+        'capacity' => 'capacity',
+        'currency' => 'currency',
+        'purchase_date' => 'purchase_date',
+        'purchase_price' => 'purchase_price',
+        'purchase_seller' => 'purchase_seller',
+        'purchase_odometer' => 'purchase_odometer',
+        'sale_date' => 'sale_date',
+        'sale_price' => 'sale_price',
+    ];
+
+    /** Only on the add form: the starting reading and the day it was read. */
+    public const array NEW_VEHICLE_FIELDS = [
+        'current_odometer' => 'current_odometer',
+        'current_odometer_on' => 'current_odometer_on',
+    ];
+
+    /** The *Archive* page's fields (Phase 39.2, spec.md §7.1). */
+    public const array ARCHIVE_FIELDS = [
+        'disposal' => 'disposal',
+        'incident_id' => 'incident_id',
+        'sale_date' => 'sale_date',
+        'sale_price' => 'sale_price',
+        'settle_from_sale' => 'settle_from_sale',
+        'settlement' => 'settlement',
+    ];
+
     /** A price alert's fields (Phase 39.2, spec.md §7.34). */
     public const array PRICE_ALERT_FIELDS = ['station_id', 'grade', 'below', 'volume_unit'];
 
@@ -656,6 +696,72 @@ final class JsonInput
         return $errors->isEmpty()
             ? ['input' => $input, 'preferences' => self::preferences($owner, DistanceUnit::Kilometre, $owner->volumeUnit)]
             : $errors;
+    }
+
+    /**
+     * A vehicle body as the vehicle form's input (Phase 39.2): odometers in
+     * `distance_unit`, the capacity in `volume_unit` (the given units'
+     * when left out; kWh for electricity, as the form). With `$new`, the
+     * add form's starting reading too; a *First MOT due* sent as `null`
+     * is cleared rather than suggested, as the form's script says.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function vehicle(array $body, DisplayPreferences $units, bool $new): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        $fields = $new ? self::VEHICLE_FIELDS + self::NEW_VEHICLE_FIELDS : self::VEHICLE_FIELDS;
+        self::unknownFields($body, [...array_keys($fields), 'distance_unit', 'volume_unit'], $errors);
+
+        $input = [];
+        foreach ($fields as $api => $form) {
+            $input[$form] = match ($api) {
+                'year', 'capacity', 'purchase_price', 'purchase_odometer', 'sale_price', 'current_odometer'
+                    => self::decimal($body, $api, $errors),
+                default => self::text($body, $api, $errors),
+            };
+        }
+        if (array_key_exists('first_inspection_due_on', $body)) {
+            // Sent (a date, or null to clear it): never the suggestion (the form's script flag).
+            $input['first_inspection_js'] = '1';
+        }
+        $distance = self::distanceUnit($body, $units, $errors);
+        $volume = $units->volumeUnit;
+        $unit = $body['volume_unit'] ?? null;
+        if ($unit !== null) {
+            $volume = is_string($unit) ? VolumeUnit::tryFrom($unit) : null;
+            if ($volume === null) {
+                $errors->add('volume_unit', 'validation.choice');
+                $volume = $units->volumeUnit;
+            }
+        }
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($units, $distance, $volume)]
+            : $errors;
+    }
+
+    /**
+     * The *Archive* page's fields as its form posts them.
+     *
+     * @param array<string, mixed> $body
+     * @return array<string, string>|ValidationErrors
+     */
+    public static function archive(array $body): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::ARCHIVE_FIELDS), $errors);
+        $input = [
+            'disposal' => self::text($body, 'disposal', $errors),
+            'incident_id' => self::decimal($body, 'incident_id', $errors),
+            'sale_date' => self::text($body, 'sale_date', $errors),
+            'sale_price' => self::decimal($body, 'sale_price', $errors),
+            'settle_from_sale' => self::flag($body, 'settle_from_sale', $errors),
+            'settlement' => self::decimal($body, 'settlement', $errors),
+        ];
+
+        return $errors->isEmpty() ? $input : $errors;
     }
 
     /**

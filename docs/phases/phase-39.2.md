@@ -68,7 +68,7 @@ nested routes, entry guard and `ETag`).
       form.
 
 ### 39.2.3 New writes
-- [ ] Vehicles: create (duplicate key over 10 minutes), edit, archive
+- [x] Vehicles: create (duplicate key over 10 minutes), edit, archive
       (each disposal, through the archive page's service), restore.
 - [x] Valuations: create, edit, delete; allowed on an archived vehicle
       within the sale-date rule.

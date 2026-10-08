@@ -98,6 +98,58 @@
             "$ref": "#/components/responses/BadParameter"
           }
         }
+      },
+      "post": {
+        "operationId": "createVehicle",
+        "summary": "Add a vehicle",
+        "description": "The add form (#284). The key's user becomes the owner. The same owner, registration (when given), make and model added in the last 10 minutes is a retry: that vehicle comes back with duplicate true (Phase 39.2).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already added (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}": {
@@ -118,6 +170,11 @@
                   "$ref": "#/components/schemas/Vehicle"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
             }
           },
           "401": {
@@ -131,6 +188,70 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editVehicle",
+        "summary": "Edit a vehicle",
+        "description": "The edit form, Manage (Phase 39.2). Refused on an archived vehicle (409).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiclePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
           }
         }
       }
@@ -4833,6 +4954,107 @@
           }
         }
       }
+    },
+    "/vehicles/{id}/archive": {
+      "post": {
+        "operationId": "archiveVehicle",
+        "summary": "Archive a vehicle",
+        "description": "The Archive page, Own (Phase 39.2): its disposals, fields and messages; an active finance agreement ends as the page ends it. 409 when archived already.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Archived",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/restore": {
+      "post": {
+        "operationId": "restoreVehicle",
+        "summary": "Restore an archived vehicle",
+        "description": "Restore, Own (Phase 39.2); an active vehicle is left as it is.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleEdit"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5204,7 +5426,8 @@
           "archived_at",
           "has_photo",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "disposal"
         ],
         "properties": {
           "id": {
@@ -5371,6 +5594,20 @@
           },
           "sale_price": {
             "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "disposal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "sold",
+              "written_off",
+              "returned_lender",
+              "returned_lessor",
+              null
+            ],
+            "description": "How it left (Phase 39.2): sold while it has a sale date; archiving sets the rest. Null otherwise."
           }
         }
       },
@@ -14373,6 +14610,541 @@
             "items": {
               "$ref": "#/components/schemas/Warning"
             }
+          }
+        }
+      },
+      "VehicleInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "make",
+          "model",
+          "fuel_type"
+        ],
+        "description": "The add form (#284), validated as it validates. The key's user becomes the owner.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "car",
+              "bike"
+            ]
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "make": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "variant": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "year": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]{4}$"
+              }
+            ]
+          },
+          "first_registered_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "first_inspection_due_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "With the documents module on. Left out on create: the suggestion for the owner's locale, as the form; null: none."
+          },
+          "registration": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "vin": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "fuel_type": {
+            "type": "string",
+            "enum": [
+              "petrol",
+              "diesel",
+              "ev",
+              "hybrid",
+              "phev",
+              "lpg",
+              "cng",
+              "other"
+            ]
+          },
+          "default_grade": {
+            "type": "string",
+            "enum": [
+              "e10_95",
+              "e5_95",
+              "e5_97",
+              "e5_98",
+              "e10_98",
+              "e5_99",
+              "e0",
+              "e85",
+              "e15",
+              "e20",
+              "aki_87",
+              "aki_89",
+              "aki_91",
+              "b7",
+              "b7_premium",
+              "b10",
+              "b20",
+              "b100",
+              "xtl",
+              "home",
+              "ac",
+              "dc",
+              "dc_rapid",
+              "dc_ultra"
+            ]
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "In volume_unit; kWh for electricity."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "An override of the owner's currency."
+          },
+          "purchase_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "purchase_price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "purchase_seller": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "purchase_odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "Mileage when bought, in distance_unit; needs purchase_date."
+          },
+          "sale_date": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Marks the vehicle Sold; clearing it clears that."
+          },
+          "sale_price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "gal_uk",
+              "gal_us"
+            ],
+            "description": "Default: the owner's."
+          },
+          "current_odometer": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "A starting reading, in distance_unit; 0 is valid."
+          },
+          "current_odometer_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "When it was read. Default: today."
+          }
+        }
+      },
+      "VehiclePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "The edit form: only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "car",
+                  "bike"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "make": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_registered_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_inspection_due_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date",
+                "description": "With the documents module on. Left out on create: the suggestion for the owner's locale, as the form; null: none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registration": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fuel_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "petrol",
+                  "diesel",
+                  "ev",
+                  "hybrid",
+                  "phev",
+                  "lpg",
+                  "cng",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default_grade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "e10_95",
+                  "e5_95",
+                  "e5_97",
+                  "e5_98",
+                  "e10_98",
+                  "e5_99",
+                  "e0",
+                  "e85",
+                  "e15",
+                  "e20",
+                  "aki_87",
+                  "aki_89",
+                  "aki_91",
+                  "b7",
+                  "b7_premium",
+                  "b10",
+                  "b20",
+                  "b100",
+                  "xtl",
+                  "home",
+                  "ac",
+                  "dc",
+                  "dc_rapid",
+                  "dc_ultra"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "In volume_unit; kWh for electricity."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$",
+                "description": "An override of the owner's currency."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_seller": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "Mileage when bought, in distance_unit; needs purchase_date."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sale_date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date",
+                "description": "Marks the vehicle Sold; clearing it clears that."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sale_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "l",
+                  "gal_uk",
+                  "gal_us"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "VehicleWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "VehicleEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ArchiveInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "The Archive page (spec.md §7.1, §7.29 Total loss, §7.32 Ending). Left out, disposal just archives. Each disposal is offered only where the page offers it: written_off with a settled write-off incident; sold, returned_lender and returned_lessor with a finance agreement.",
+        "properties": {
+          "disposal": {
+            "type": "string",
+            "enum": [
+              "sold",
+              "written_off",
+              "returned_lender",
+              "returned_lessor"
+            ]
+          },
+          "incident_id": {
+            "type": "integer",
+            "description": "written_off: the settled incident."
+          },
+          "sale_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "sale_price": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "sold and written_off."
+          },
+          "settle_from_sale": {
+            "type": "boolean",
+            "description": "sold with an active HP or PCP: end it as settled early on the sale date."
+          },
+          "settlement": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "With settle_from_sale: the amount settled."
           }
         }
       }

@@ -61,6 +61,8 @@ final class RouteInventoryTest extends AppTestCase
         'scheduler.tick',
         'api.me',
         'api.trips.claim',
+        // Phase 39.2: a new vehicle is the key user's own (#284).
+        'api.vehicles.create',
         // Phase 39.2: the key user's own journeys, favourites and alerts.
         'api.journeys.create',
         'api.journeys.edit',
