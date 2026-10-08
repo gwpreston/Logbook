@@ -106,7 +106,7 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         self::assertStringContainsString('5 new tests.', $page);
         self::assertStringContainsString('1 test without a date was not stored.', $page);
         self::assertStringContainsString('DVSA lists it as a GOLF MATCH TSI.', $page, 'a different model is a note');
-        self::assertCount(5, $this->service($this->app, \Logbook\Repository\MotTestRepository::class)->listForVehicle($golf->id));
+        self::assertCount(5, $this->service($this->app, MotTestRepository::class)->listForVehicle($golf->id));
     }
 
     public function testAMismatchedMakeIsRefusedAndNothingStored(): void
