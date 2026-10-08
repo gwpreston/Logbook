@@ -52,36 +52,32 @@ final readonly class MotReview
     }
 
     /**
+     * Read-only: a test with nothing left to decide is left out, and marked
+     * reviewed only when something is done on the card (#337 review).
+     *
      * @param bool $issuesOn whether defects are offered (the `issues` module)
      */
     public function card(Vehicle $vehicle, bool $issuesOn): ReviewCard
     {
         $all = $this->tests->listForVehicle($vehicle->id);
         $oldestFirst = array_reverse($all);
-        $previous = null;
         $tests = [];
-        foreach ($oldestFirst as $test) {
-            if ($test->reviewedAt === null) {
-                $review = new ReviewTest(
-                    $test,
-                    $test->passed() && !$this->logged($vehicle, $test),
-                    $issuesOn ? array_map(
-                        fn (MotDefect $defect): ReviewDefect => new ReviewDefect(
-                            $defect,
-                            $defect->issueId !== null && $previous !== null && $this->repeats($defect, $previous),
-                        ),
-                        $test->defects,
-                    ) : [],
-                    $issuesOn && $previous !== null ? $this->notSeenAgain($previous, $test) : [],
-                );
-                if ($review->anythingOffered() || $review->notSeenAgain !== []) {
-                    $tests[] = $review;
-                } else {
-                    // Nothing left to decide: it reviews itself.
-                    $this->tests->markReviewed($test->id, $this->clock->now());
-                }
+        foreach ($oldestFirst as $index => $test) {
+            if ($test->reviewedAt !== null) {
+                continue;
             }
-            $previous = $test;
+            $review = new ReviewTest(
+                $test,
+                $test->passed() && !$this->logged($vehicle, $test),
+                $issuesOn ? array_map(
+                    fn (MotDefect $defect): ReviewDefect => new ReviewDefect($defect, $this->isRepeat($defect, $all)),
+                    $test->defects,
+                ) : [],
+                $issuesOn ? $this->notSeenAgain(array_slice($oldestFirst, 0, $index), $test) : [],
+            );
+            if ($review->anythingOffered() || $review->notSeenAgain !== []) {
+                $tests[] = $review;
+            }
         }
         $state = $this->tests->state($vehicle->id);
         $firstDue = $all === [] && $state->firstDueOn !== null && $vehicle->data->firstInspectionDueOn === null
@@ -99,35 +95,41 @@ final readonly class MotReview
      */
     public function applyRepeats(Vehicle $vehicle, DateTimeZone $zone): int
     {
-        $count = 0;
-        $previous = null;
-        foreach (array_reverse($this->tests->listForVehicle($vehicle->id)) as $test) {
-            if ($previous !== null) {
-                foreach ($test->defects as $defect) {
-                    if ($defect->settled()) {
-                        continue;
-                    }
-                    $earlier = $this->match($defect, $previous);
-                    $issue = $earlier?->issueId === null ? null : $this->issues->find($vehicle, $earlier->issueId);
-                    if ($issue === null) {
-                        continue;
-                    }
-                    $this->issues->addUpdate($vehicle, $issue, new IssueUpdateData(
-                        $this->day($test, $zone),
-                        $this->translator->trans('mot_history.review.advised_again', [
-                            'date' => $this->formatter->instantDate($test->completedAt),
-                            'odometer' => $test->odometerKm === null ? '' : $this->formatter->distance($test->odometerKm),
-                        ]),
-                        $test->odometerKm,
-                        null,
-                        null,
-                        null,
-                    ), $zone);
-                    $this->tests->linkIssue($defect->id, $issue->id);
-                    $count++;
+        $all = $this->tests->listForVehicle($vehicle->id);
+        $live = [];
+        foreach ($this->issues->list($vehicle, [IssueStatus::Open, IssueStatus::Watching]) as $issue) {
+            $live[$issue->id] = $issue;
+        }
+        // The text of every live issue made from an MOT defect (#338).
+        $byKey = [];
+        foreach ($all as $test) {
+            foreach ($test->defects as $defect) {
+                if ($defect->issueId !== null && isset($live[$defect->issueId])) {
+                    $byKey[$defect->key()] ??= $live[$defect->issueId];
                 }
             }
-            $previous = $test;
+        }
+        $count = 0;
+        foreach (array_reverse($all) as $test) {
+            foreach ($test->defects as $defect) {
+                $issue = $defect->settled() ? null : ($byKey[$defect->key()] ?? null);
+                if ($issue === null) {
+                    continue;
+                }
+                $this->issues->addUpdate($vehicle, $issue, new IssueUpdateData(
+                    $this->day($test, $zone),
+                    $this->translator->trans('mot_history.review.advised_again', [
+                        'date' => $this->formatter->instantDate($test->completedAt),
+                        'odometer' => $test->odometerKm === null ? '' : $this->formatter->distance($test->odometerKm),
+                    ]),
+                    $test->odometerKm,
+                    null,
+                    null,
+                    null,
+                ), $zone);
+                $this->tests->linkIssue($defect->id, $issue->id);
+                $count++;
+            }
         }
 
         return $count;
@@ -189,9 +191,7 @@ final readonly class MotReview
         }
         $title = mb_substr($defect->text, 0, IssueForm::TITLE_MAX);
         $watching = !$defect->type->opensIssue();
-        $lookAgain = $watching && $test->expiryOn !== null
-            ? $test->expiryOn->modify(sprintf('-%d days', self::LOOK_AGAIN_DAYS))
-            : null;
+        $lookAgain = $watching ? $this->lookAgain($vehicle, $zone) : null;
         $data = new IssueData(
             $this->day($test, $zone),
             $title,
@@ -300,36 +300,74 @@ final readonly class MotReview
     }
 
     /**
+     * *Look again* (#337): 30 days before the latest stored test's expiry,
+     * so before the next MOT whichever test the defect is from; none when
+     * that is already past in the owner's today.
+     */
+    private function lookAgain(Vehicle $vehicle, DateTimeZone $zone): ?DateTimeImmutable
+    {
+        foreach ($this->tests->listForVehicle($vehicle->id) as $test) {
+            if ($test->expiryOn === null) {
+                continue;
+            }
+            $on = $test->expiryOn->modify(sprintf('-%d days', self::LOOK_AGAIN_DAYS));
+            $today = $this->clock->now()->setTimezone($zone)->format('Y-m-d');
+
+            return $on->format('Y-m-d') > $today ? $on : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Advised again (#338): its issue is one an earlier defect became.
+     *
+     * @param list<MotTest> $all
+     */
+    private function isRepeat(MotDefect $defect, array $all): bool
+    {
+        if ($defect->issueId === null) {
+            return false;
+        }
+        foreach ($all as $test) {
+            foreach ($test->defects as $other) {
+                if ($other->id !== $defect->id && $other->issueId === $defect->issueId && $test->id !== $defect->motTestId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Issues from earlier tests' defects not on this one, judged only at a
+     * pass (a retest after a fail lists none, #338), and only against the
+     * pass that comes next.
+     *
+     * @param list<MotTest> $earlier oldest first
      * @return list<int>
      */
-    private function notSeenAgain(MotTest $previous, MotTest $test): array
+    private function notSeenAgain(array $earlier, MotTest $test): array
     {
+        if (!$test->passed()) {
+            return [];
+        }
+        $keys = array_map(static fn (MotDefect $defect): string => $defect->key(), $test->defects);
         $ids = [];
-        foreach ($previous->defects as $defect) {
-            if ($defect->issueId !== null && $this->match($defect, $test) === null) {
-                $ids[] = $defect->issueId;
+        // Back to the previous pass: the tests this pass is the next pass after.
+        foreach (array_reverse($earlier) as $before) {
+            foreach ($before->defects as $defect) {
+                if ($defect->issueId !== null && !in_array($defect->key(), $keys, true)) {
+                    $ids[] = $defect->issueId;
+                }
+            }
+            if ($before->passed()) {
+                break;
             }
         }
 
         return array_values(array_unique($ids));
-    }
-
-    private function repeats(MotDefect $defect, MotTest $previous): bool
-    {
-        $earlier = $this->match($defect, $previous);
-
-        return $earlier !== null && $earlier->issueId === $defect->issueId;
-    }
-
-    private function match(MotDefect $defect, MotTest $in): ?MotDefect
-    {
-        foreach ($in->defects as $candidate) {
-            if ($candidate->key() === $defect->key()) {
-                return $candidate;
-            }
-        }
-
-        return null;
     }
 
     /**

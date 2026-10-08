@@ -231,7 +231,7 @@ and the decisions below win. In short:
 
 ## Open questions
 
-Logged as #320–#336 in [`open-questions.md`](open-questions.md). A was
+Logged as #320–#338 in [`open-questions.md`](open-questions.md). A was
 answered from DVSA's documentation; the owner decided B–G and the
 question found while starting on 2026-10-08, before the phase started.
 
@@ -299,6 +299,13 @@ Found while starting, decided by the owner on 2026-10-08:
   Merc allowed); a different model is noted, never refused, since owners
   write "3 Series" where DVSA writes "320D M SPORT" (found while building
   41.2). *Look up* fills no colour: vehicles have no colour field. (#336)
+- *Look again* for an issue from any test is 30 days before the latest
+  test's expiry (before the next MOT), none when that has passed, so an
+  older advisory never raises an overdue item the moment it is added
+  (found while building 41.2). (#337)
+- Repeats match any open or watching issue made from a defect with the
+  same text, and "not advised again" is judged at the next pass, so a
+  retest after a fail breaks neither (found while building 41.2). (#338)
 - Answered from the spec: `mot_history_secrets` is never in backups, as
   §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
   *Spec addition* draft's "the secrets sealed as others" means that.

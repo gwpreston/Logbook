@@ -8569,8 +8569,11 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   warnings and *Needs attention* item 2 (*Implausible readings*, §7.24)
   apply. When the flagged pair is a `mot` reading and one of the
   owner's, the item says which is which: "Your reading on 2 Mar 2026
-  (41,200 mi) is lower than the MOT on 14 Feb 2026 (43,950 mi)", and
-  *Fix* goes to the owner's reading, never the MOT's.
+  (41,200 mi) is lower than the MOT on 14 Feb 2026 (43,950 mi)", or,
+  for a reading of the owner's before the MOT, "Your reading on 10 Jan
+  2025 (45,000 mi) is higher than the MOT on 14 Feb 2025 (41,950 mi)";
+  *Fix* goes to the owner's reading, never the MOT's. On the Mileage
+  tab an MOT reading's row opens the MOT history page.
 
 #### Review card
 
@@ -8597,17 +8600,26 @@ overview while any test is unreviewed. A test is reviewed
   - status `open` for `fail`, `dangerous` and `major`;
     **`watching`** for `advisory`, `minor` (#324), `user_entered` (a
     tester's own note, #328), `non_specific` and `system_generated`
-    (#333),
-    with *Look again* on the test's expiry less 30 days (none when the
-    test has no expiry);
+    (#333), with *Look again* 30 days before the latest stored test's
+    expiry, whichever test the defect is from, so before the next MOT;
+    none when that is already past in the owner's today (#337);
   - `dangerous` (type or flag) and `major` set *Affects safety* (#310).
-- **Repeats:** a defect whose text matches (case-folded, whitespace
-  collapsed) one on the vehicle's previous test that became an issue is
-  not offered; that issue gets an update instead ("Advised again at the
-  MOT on 14 Feb 2026, 43,950 mi") and the defect links to it.
-- **Not seen again:** an issue from a defect that is not on the next
-  test is never closed by Logbook; the card notes "Not advised at the
-  following MOT" beside it, for the owner.
+- **Repeats** (#338): a defect whose text matches (case-folded,
+  whitespace collapsed) that of a defect on any of the vehicle's tests
+  whose issue is still open or watching is not offered; after each fetch
+  that issue gets an update instead ("Advised again at the MOT on 14 Feb
+  2026, 43,950 mi") and the defect links to it. A retest in between
+  changes nothing.
+- **Not seen again** (#338): an issue from a defect that is not on the
+  next *pass* is never closed by Logbook; that pass's card notes "not
+  advised at the following MOT" beside it, for the owner. A fail and its
+  retest are judged together at the retest.
+- **Done:** each test on the card has *Done*: what is still offered on
+  it is put off (*Not now*) and the card no longer shows it. *Add all
+  passes as documents* shows when more than one is offered. *Use this
+  date* needs `Manage`, as the vehicle form. Viewing the card or the MOT
+  history page changes nothing: a test is marked reviewed only by what
+  is done on the card.
 
 #### Recalls (#325)
 
@@ -8628,8 +8640,10 @@ overview while any test is unreviewed. A test is reviewed
   this registration to DVSA" beside it; the click is the choice. With JS
   the form is filled in place; without it, a submit redraws the form
   filled.
-- It fills only blank fields: make, model, fuel type (DVSA's fuel mapped
-  to §7.3's types; unmapped left blank), first registration and,
+- It fills only blank fields: make, model (DVSA's capitals title-cased,
+  words of three letters or fewer kept: "Golf Match TSI"), fuel type
+  while it is still the form's default (DVSA's fuel mapped to §7.3's
+  types; unmapped left alone), first registration and,
   for a vehicle with no tests, *First MOT due*. Nothing is stored until
   the owner saves; the lookup doesn't enable MOT history for the new
   vehicle. Errors and "No DVSA record for AB12 CDE" show beside the

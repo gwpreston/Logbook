@@ -23,7 +23,18 @@ final class VehicleLookupTest extends MotHistoryTestCase
         $browser = $this->browserFor($this->app, 'owner');
 
         self::assertStringNotContainsString('data-vehicle-lookup', (string) $browser->get('/vehicles/new')->getBody());
-        $browser->post('/vehicles/new', ['registration' => 'AB12 CDE', 'lookup' => '1']);
+        // A complete form with lookup=1 (MOT history switched off after the page loaded) is never saved.
+        $response = $browser->post('/vehicles/new', [
+            'type' => 'car',
+            'make' => 'Volkswagen',
+            'model' => 'Golf',
+            'fuel_type' => 'petrol',
+            'registration' => 'AB12 CDE',
+            'lookup' => '1',
+        ]);
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('MOT history is off.', (string) $response->getBody());
+        self::assertSame(0, $this->vehicles());
         self::assertSame([], $this->requests);
     }
 

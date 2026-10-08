@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\MotHistory;
 
+use DateTimeImmutable;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Issue\Issue;
 use Logbook\Domain\Issue\IssueSource;
 use Logbook\Domain\Issue\IssueStatus;
@@ -19,6 +21,7 @@ use Logbook\Repository\IssueRepository;
 use Logbook\Repository\MotTestRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Tests\Support\TestBrowser;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
@@ -112,14 +115,15 @@ final class MotReviewTest extends MotHistoryTestCase
         self::assertFalse($byTitle['Headlamp aim too high']->data->affectsSafety, 'a fail alone is not a safety flag');
         foreach (['Customer advised of wiper wear', 'Test station note', 'Corrosion noted', 'No type given'] as $watched) {
             self::assertSame(IssueStatus::Watching, $byTitle[$watched]->status(), $watched);
-            // A failed test has no expiry, so no look-again point.
-            self::assertNull($byTitle[$watched]->data->lookAgainOn);
+            // Even from the fail: before the next MOT (#337).
+            self::assertSame('2027-02-11', $byTitle[$watched]->data->lookAgainOn?->format('Y-m-d'));
         }
 
-        // An advisory on a pass: watching, looked at again 30 days before that MOT expires.
+        // An advisory on an older pass: watching, looked at again 30 days before the latest
+        // test's expiry, so before the next MOT (#337).
         $advisory = $byTitle['Nearside Front Tyre worn close to legal limit/worn on edge (5.2.3 (e))'];
         self::assertSame(IssueStatus::Watching, $advisory->status());
-        self::assertSame('2026-02-11', $advisory->data->lookAgainOn?->format('Y-m-d'));
+        self::assertSame('2027-02-11', $advisory->data->lookAgainOn?->format('Y-m-d'));
         self::assertFalse($advisory->data->affectsSafety);
 
         // No second reading: the issue's odometer is the MOT's (#319).
@@ -161,6 +165,61 @@ final class MotReviewTest extends MotHistoryTestCase
         $response = $browser->get('/vehicles/' . $golf->id . '/mot-history');
         self::assertStringNotContainsString('data-review-link', (string) $response->getBody());
         self::assertSame([], $this->issues($golf), 'Done adds nothing');
+    }
+
+    public function testNoLookAgainPointOnceTheLatestMotIsDue(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        // 12 Feb 2027: past 30 days before the latest expiry (13 Mar 2027).
+        $this->clock->set(new DateTimeImmutable('2027-02-12T09:00:00Z'));
+        // Months on, a fresh sign-in.
+        $browser = $this->browserFor($this->app, 'owner');
+
+        $browser->post($this->url($golf), ['do' => 'issue', 'defect' => (string) $this->tests($golf)[2]->defects[0]->id]);
+
+        $issue = $this->issues($golf)[0];
+        self::assertSame(IssueStatus::Watching, $issue->status());
+        self::assertNull($issue->data->lookAgainOn, 'never a point already passed');
+    }
+
+    public function testAnAdviceRepeatedAfterARetestStillFindsItsIssue(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $browser->post($this->url($golf), ['do' => 'issue', 'defect' => (string) $this->tests($golf)[2]->defects[0]->id]);
+
+        // A year on, after the 2026 fail and its retest (no defects), the tyre is advised again (#338).
+        $this->answer = fn (): MockResponse => $this->withNextTest(
+            'Nearside Front Tyre worn close to legal limit/worn on edge (5.2.3 (e))',
+        );
+        $this->fetch($golf, $browser);
+
+        $issues = $this->issues($golf);
+        self::assertCount(1, $issues);
+        $latest = $this->tests($golf)[0];
+        self::assertSame('2027-03-01', $latest->completedAt->format('Y-m-d'));
+        self::assertSame($issues[0]->id, $latest->defects[0]->issueId);
+    }
+
+    public function testTheCardIsReadOnlyWhileIssuesAreOff(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $toggles = $this->service($this->app, FeatureToggles::class);
+        $toggles->save(array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== Feature::Issues)));
+        $browser->get('/vehicles/' . $golf->id . '/mot-history');
+        $browser->get($this->url($golf));
+
+        $toggles->save(Feature::cases());
+
+        self::assertStringContainsString('Add as issue', (string) $browser->get($this->url($golf))->getBody());
+        foreach ($this->tests($golf) as $test) {
+            self::assertNull($test->reviewedAt, 'viewing reviews nothing');
+        }
     }
 
     public function testAnAdvisoryAdvisedAgainUpdatesItsIssue(): void
@@ -281,6 +340,32 @@ final class MotReviewTest extends MotHistoryTestCase
             }
         }
         self::fail('No defect ' . $text);
+    }
+
+    /**
+     * The fixture with a 2027 pass on top, advising $text.
+     */
+    private function withNextTest(string $text): MockResponse
+    {
+        $json = (string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json');
+        $data = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        $tests = $data['motTests'] ?? null;
+        self::assertIsArray($tests);
+        array_unshift($tests, [
+            'completedDate' => '2027-03-01T10:00:00.000Z',
+            'testResult' => 'PASSED',
+            'expiryDate' => '2028-03-13',
+            'odometerValue' => '47000',
+            'odometerUnit' => 'MI',
+            'odometerResultType' => 'READ',
+            'motTestNumber' => '423456789099',
+            'dataSource' => 'DVSA',
+            'defects' => [['text' => $text, 'type' => 'ADVISORY', 'dangerous' => false]],
+        ]);
+        $data['motTests'] = $tests;
+
+        return new MockResponse((string) json_encode($data));
     }
 
     /**

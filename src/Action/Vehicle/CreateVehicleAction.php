@@ -61,7 +61,8 @@ final readonly class CreateVehicleAction
         }
 
         // *Look up* (spec.md §7.38, #326): DVSA's details for the blank fields; nothing is saved.
-        if ((RequestContext::form($request)['lookup'] ?? null) === '1' && $this->lookup->available()) {
+        // Never a save, even when MOT history was switched off after the page loaded.
+        if ((RequestContext::form($request)['lookup'] ?? null) === '1') {
             return $this->lookUp($request, $response);
         }
 
@@ -117,6 +118,7 @@ final readonly class CreateVehicleAction
     private function lookUp(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $values = RequestContext::formValues($request);
+        unset($values['lookup']);
         $result = $this->lookup->lookUp($values);
         if ($request->getHeaderLine('X-Lookup') === '1') {
             $response->getBody()->write((string) json_encode([

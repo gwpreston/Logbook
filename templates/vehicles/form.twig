@@ -92,6 +92,9 @@
                 </div>
                 {# Look up (spec.md §7.38, #326, #330): DVSA's details for the blank fields.
                    js/vehicle-lookup.js fills them in place; without JS the form comes back filled. #}
+                {% if lookup and not with_lookup %}
+                    <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ lookup.message|trans(lookup.params) }}</span></div>
+                {% endif %}
                 {% if with_lookup %}
                     <div class="field" data-vehicle-lookup>
                         <div class="btn-row">
