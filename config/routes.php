@@ -58,6 +58,7 @@ use Logbook\Action\Api\ReminderActionAction as ApiReminderActionAction;
 use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
+use Logbook\Action\Api\FinanceAgreementsAction as ApiFinanceAgreementsAction;
 use Logbook\Action\Api\IncidentHistoryAction as ApiIncidentHistoryAction;
 use Logbook\Action\Api\ListIncidentsAction as ApiIncidentsAction;
 use Logbook\Action\Api\ListJourneysAction as ApiJourneysAction;
@@ -475,6 +476,11 @@ return static function (App $app): void {
                     ->add($module(Feature::Tyres));
                 // Finance (spec.md §7.20, §7.32): read only; FinanceAction answers 404 without Manage and ViewCosts.
                 $keyed->get('/vehicles/{id:[0-9]+}/finance', ApiFinanceAction::class)->setName('api.finance.show')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Finance));
+                // Every agreement (Phase 39.1), with the same access rules.
+                $keyed->get('/vehicles/{id:[0-9]+}/finance/agreements', ApiFinanceAgreementsAction::class)
+                    ->setName('api.finance.agreements')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Finance));
                 // Trips (spec.md §7.22, §7.23): the claim is the key user's own, across their vehicles.

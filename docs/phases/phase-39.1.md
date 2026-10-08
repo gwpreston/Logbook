@@ -184,7 +184,7 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 - [x] *Needs attention*, with each item's `key` and its fix's API link.
       (`?hidden=1` waits for #296.)
 - [x] Price alerts (read).
-- [ ] Finance agreements (every one, with payment events and quotes,
+- [x] Finance agreements (every one, with payment events and quotes,
       never the number).
 
 ### 39.1.3 Reminder actions
