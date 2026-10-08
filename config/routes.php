@@ -46,6 +46,7 @@ use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
+use Logbook\Action\Api\AttentionAction as ApiAttentionAction;
 use Logbook\Action\Api\HistoryAction as ApiHistoryAction;
 use Logbook\Action\Api\ReportAction as ApiReportAction;
 use Logbook\Action\Api\TyreReadAction as ApiTyreReadAction;
@@ -346,6 +347,8 @@ return static function (App $app): void {
                 $keyed->get('/reports/fuel', ApiReportAction::class)->setName('api.reports.fuel')
                     ->setArgument('report', 'fuel')
                     ->add($module(Feature::Fuel));
+                // Needs attention (Phase 39.1, spec.md §7.24): the visible active vehicles.
+                $keyed->get('/attention', ApiAttentionAction::class)->setName('api.attention');
                 // History (Phase 39.1, spec.md §7.16): the fleet's, or one vehicle's below.
                 $keyed->get('/history', ApiHistoryAction::class)->setName('api.history');
                 $keyed->get('/vehicles/{id:[0-9]+}/history', ApiHistoryAction::class)->setName('api.history.vehicle')

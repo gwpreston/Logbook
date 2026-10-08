@@ -70,8 +70,8 @@ nested routes, entry guard and `ETag`).
       409 where the page refuses); tyre details edit.
 - [ ] Journeys: create, edit, delete (trips kept).
 - [ ] Station favourites (`PUT`, `DELETE`, idempotent); price alerts
-      (create, edit, delete, the form's limits); attention hide and
-      unhide (idempotent).
+      (create, edit, delete, the form's limits); attention hide
+      (idempotent; unhide per #296).
 - [ ] Finance: agreements (create with the one-active rule, edit; the
       number never returned), payment events and settlement quotes
       (create and delete for each), *End*.

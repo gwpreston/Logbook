@@ -1549,6 +1549,41 @@
         }
       }
     },
+    "/attention": {
+      "get": {
+        "operationId": "listAttention",
+        "summary": "Needs attention for the active vehicles (or ?vehicle=), in the page's order",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttentionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/reports/costs": {
       "get": {
         "operationId": "reportCosts",
@@ -10102,6 +10137,109 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TyreSet"
+            }
+          }
+        }
+      },
+      "AttentionItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicle_id",
+          "kind",
+          "severity",
+          "title",
+          "detail",
+          "days",
+          "reminder_id",
+          "key",
+          "links"
+        ],
+        "properties": {
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "finance_missed",
+              "reading",
+              "economy",
+              "mileage_stale",
+              "trips_exceed",
+              "valuation_stale",
+              "drift_liquid",
+              "drift_electric",
+              "drift_gas",
+              "fuel_price",
+              "maintenance_cost",
+              "stalled_claim",
+              "finance_mileage"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "now",
+              "check"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "days": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "reminder_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Names a hideable item for POST /attention/{key}/hide (Phase 39.2); null when it can't be hidden."
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fix"
+            ],
+            "properties": {
+              "fix": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The entry or list that fixes it, as a path under /api/v1."
+              }
+            }
+          }
+        },
+        "description": "One Needs attention item, in the page's words (spec.md §7.24)."
+      },
+      "AttentionList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttentionItem"
             }
           }
         }

@@ -181,8 +181,8 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       with `excluded` for vehicles without `ViewCosts`.
 - [x] Tyre changes and sets (vehicle and fleet).
 - [x] Closed reminders: `?status=done|dismissed`, `?closed=1`.
-- [ ] *Needs attention*, with each item's `key`, its fix's API link, and
-      `?hidden=1`.
+- [x] *Needs attention*, with each item's `key` and its fix's API link.
+      (`?hidden=1` waits for #296.)
 - [ ] Price alerts (read); finance agreements (every one, with payment
       events and quotes, never the number).
 
@@ -263,3 +263,14 @@ Phase 39's questions, decided 2026-10-08 before 39.1 started (logged as
 Still open, for 39.3 (none of them blocks 39.1 or 39.2; see
 [Phase 39.3](phase-39.3.md#open-questions)): #290, found while starting,
 and #291–#295, raised by the spec review of 2026-10-08.
+
+Found while building 39.1 (2026-10-08), not decided:
+
+- **#296 Listing and un-hiding hidden *Needs attention* items.** The plan
+  had `GET /attention?hidden=1` (39.1) and `POST /attention/{key}/unhide`
+  (39.2), mirroring a *Show again* the pages don't have: §7.24 hides an
+  item until what was judged changes, and offers no way back. Options:
+  (1) leave both out, so the API does what the pages do (hide only);
+  (2) add them to the API only; (3) add *Show again* to the pages as well,
+  and the API with it. *Recommendation:* (1); (3) is a page feature for
+  its own phase.
