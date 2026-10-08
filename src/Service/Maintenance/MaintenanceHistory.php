@@ -42,6 +42,41 @@ final readonly class MaintenanceHistory
             : array_values(array_filter($entries, static fn (MaintenanceEntry $e): bool => $e->data->category === $category));
     }
 
+    /**
+     * Newest first, one category or all, and only records whose title,
+     * vendor, description or category code hold every word of `$text`
+     * (any case). The maintenance list's `?q=` (spec.md §7.20) and Ask's
+     * `maintenance` tool (§7.26) both search this way.
+     *
+     * @return list<MaintenanceEntry>
+     */
+    public function search(?MaintenanceCategory $category = null, ?string $text = null): array
+    {
+        $words = $text === null ? [] : (preg_split('/\s+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY) ?: []);
+        if ($words === []) {
+            return $this->newestFirst($category);
+        }
+
+        return array_values(array_filter(
+            $this->newestFirst($category),
+            static function (MaintenanceEntry $entry) use ($words): bool {
+                $haystack = mb_strtolower(implode(' ', array_filter([
+                    $entry->data->title,
+                    $entry->data->vendor,
+                    $entry->data->description,
+                    $entry->data->category->value,
+                ])));
+                foreach ($words as $word) {
+                    if (!str_contains($haystack, $word)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+        ));
+    }
+
     public function latest(): ?MaintenanceEntry
     {
         return $this->entries === [] ? null : $this->entries[array_key_last($this->entries)];

@@ -51,4 +51,16 @@ enum DocumentStatus: string
     {
         return $this !== self::Replaced;
     }
+
+    /**
+     * In force today: started, not expired and not replaced (the documents
+     * list's `?current=1`, spec.md §7.20).
+     */
+    public function isInForce(): bool
+    {
+        return match ($this) {
+            self::Valid, self::Expiring, self::Open => true,
+            self::Expired, self::Upcoming, self::Replaced => false,
+        };
+    }
 }

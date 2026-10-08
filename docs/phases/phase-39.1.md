@@ -169,8 +169,8 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 ### 39.1.2 Reads
 - [x] Single-entry reads for fuel, odometer, maintenance, documents,
       expenses, trips and incidents, each exactly as its list returns it.
-- [ ] List filters: maintenance `?category=` and `?q=`; documents `?type=`
-      and `?current=1` (the owner's time zone).
+- [x] List filters: maintenance `?category=` and `?q=`; documents `?type=`
+      and `?current=1` (in force today in the key user's time zone).
 - [ ] Schedules (list and one), with status and the projected date of the
       distance limit.
 - [ ] Valuations (list, paged, and one); ownership (`ViewCosts`, 403

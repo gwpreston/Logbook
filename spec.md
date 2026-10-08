@@ -4945,8 +4945,8 @@ stays `v1`, and existing responses don't change.
 | Endpoint | Returns | Needs |
 |---|---|---|
 | `GET /vehicles/{id}/{list}/{entry}` for `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents` | one entry, as its list returns it, with `ETag` | as its list |
-| `GET /vehicles/{id}/maintenance` | gains `?category=` and `?q=` (text in title, vendor, description), as the page and Ask's `maintenance` tool | `View` |
-| `GET /vehicles/{id}/documents` | gains `?type=` and `?current=1` (not expired today in the owner's time zone) | `View` |
+| `GET /vehicles/{id}/maintenance` | gains `?category=` and `?q=` (every word, any case, in the title, vendor, description or category code), searched as Ask's `maintenance` tool does | `View` |
+| `GET /vehicles/{id}/documents` | gains `?type=` and `?current=1`: in force today in the key user's time zone, as the list's status (started, not expired, not replaced) | `View` |
 | `GET /vehicles/{id}/schedules`, `…/schedules/{schedule}` | schedules with interval, baseline, stored last done and next due, status (`overdue`, `due_soon`, `on_track`, `unknown`), and the projected date of the distance limit (§7.4) | `View` |
 | `GET /vehicles/{id}/valuations`, `…/valuations/{valuation}` | valuations, newest first, paged as the entry lists | `ViewCosts` |
 | `GET /vehicles/{id}/ownership` | Phase 14.2's figures: lifetime running cost, purchase and current value, depreciation (amount, percentage, per year, per distance, or the state that stops it: `no_purchase_price`, `no_value`), the stale-valuation flag, with `display` strings | `ViewCosts` (403 without) |

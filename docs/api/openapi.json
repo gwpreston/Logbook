@@ -502,6 +502,32 @@
           },
           {
             "$ref": "#/components/parameters/until"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Only this category (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "service",
+                "oil",
+                "tyres",
+                "brakes",
+                "battery",
+                "repair",
+                "bodywork",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Only records whose title, vendor, description or category hold every word (any case), as Ask searches (Phase 39.1). Up to 100 characters are read.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -658,6 +684,35 @@
           },
           {
             "$ref": "#/components/parameters/until"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Only this type (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "insurance",
+                "pollution",
+                "registration",
+                "inspection",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "current",
+            "in": "query",
+            "description": "1: only documents in force today in the key user's time zone: started, not expired and not replaced (Phase 39.1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
           }
         ],
         "responses": {
