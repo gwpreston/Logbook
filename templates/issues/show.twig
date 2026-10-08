@@ -141,7 +141,7 @@
                                     {{ ui.added_by(vehicle, update.createdBy) }}
                                 </span>
                                 {% if update.id in changeable_updates %}
-                                    <span class="list__end btn-row">
+                                    <span class="btn-row">
                                         <a class="btn btn--ghost btn--sm" href="{{ url_for('issues.updates.edit', {id: vehicle.id, update: update.id}) }}" data-modal>{{ ui.icon('edit') }}<span class="visually-hidden">{{ 'form.edit'|trans }}</span></a>
                                         <a class="btn btn--ghost btn--sm" href="{{ url_for('issues.updates.delete', {id: vehicle.id, update: update.id}) }}" data-modal>{{ ui.icon('delete') }}<span class="visually-hidden">{{ 'form.delete'|trans }}</span></a>
                                     </span>

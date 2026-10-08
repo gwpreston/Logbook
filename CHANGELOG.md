@@ -6,6 +6,44 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 40.1 (ships with 40.2 as **v3.6.0**): **the issues log**, for the
+fault you've noticed and haven't fixed yet. Logbook records your words and
+links the fix; it never suggests what a fault is. See
+[docs/issues.md](docs/issues.md).
+
+### Added
+- An **Issues** tab on each vehicle, after Maintenance, and an *Issue* in
+  *Log entry*: what you noticed, when, the mileage (which joins the mileage
+  log), details, an area, photos or PDFs, and **Affects safety**, your own
+  tick, which lists the issue first and in red.
+- Each issue is **open**, **watching** (with an optional look-again date or
+  mileage) or **fixed**, with a timeline of your notes and every status
+  change. Notes can be edited and deleted; the status lines can't.
+- **Fixes** on the service record form: tick the issues a repair fixed and
+  they're marked fixed on its date. From an issue, **Mark fixed** offers
+  *Log the repair* (the form prefilled, the issue ticked), *Link an
+  existing record*, or *Fixed without a record* with a note. Unticking or
+  deleting the record reopens the issue; **It's back** reopens a fixed one
+  and keeps its history.
+- **Needs attention** lists every open issue (*Log the repair*, *Watch*)
+  and every watched one whose look-again point has come (*Log the repair*,
+  *Watch again*, *Reopen*), safety issues first.
+- A look-again point raises a **reminder** ("Look again: …") that reaches
+  your notification channels; *Looked at it* clears the point.
+- An **Issues** card on the overview, an **Issues** chip in History
+  (*Issue noticed*, *Issue fixed*), fixed issues with their fix in the
+  printable service history, and **Include open issues** in the sale pack,
+  off by default. `/issues` lists every open and watched issue; the *Needs
+  attention* widget links to it.
+- Settings → Modules: **Issues**, on by default (`FEATURES_ISSUES`).
+- The demo Golf has an open knock, a watched brake-pipe advisory and
+  grinding brakes fixed by its June pads.
+
+### Upgrade notes
+- One migration (`issues`, `issue_fixes`, `issue_updates`, and two links
+  on `odometer_readings`). Nothing to do. Backups carry issues; rolling
+  the migration back keeps their mileage as ordinary readings.
+
 ## [3.5.0] — 2026-10-08
 
 Phase 39: **the API does what the pages do**. Read everything a vehicle's

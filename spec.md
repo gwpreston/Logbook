@@ -8136,6 +8136,9 @@ that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
   shown as *Issue*, local noon on its date,
   with the usual plausibility warning), written, moved and removed with
   the issue or update in the same transaction, as a service record's is.
+  Issues are not imported, so a CSV import of the mileage log keeps an
+  `issue` or `issue_update` reading as a manual one, as it does a tyre
+  change's.
 - **Fixing from the service record:** the maintenance form (page and
   modal) gains *Fixes*: a checklist of the vehicle's open and watching
   issues (and, when editing, the ones this record already fixes), beside
@@ -8199,7 +8202,7 @@ that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
     page without JS. Fields: noticed on (today by default, not after
     today), odometer, title (required, up to 120), description (up to
     2,000), category (optional, the maintenance categories, so a fix can
-    be prefilled), status (open or watching on add), look-again point
+    be prefilled), status (open or watching), look-again point
     (watching only), *Affects safety*, files. Changing the status to
     *fixed* is not on the form: *Mark fixed* does it.
   - **Fleet** `/issues`: every visible active vehicle's open and watching
@@ -8217,8 +8220,8 @@ that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
     (`Log`) and *Watch* (`Log`; sets *watching*, asking for an optional
     look-again point).
   - **Look again**, one per watching issue whose look-again date has
-    passed (owner's today) or whose mileage has been reached (latest
-    reading): "Brake pipes corroded · watching since March". Actions
+    come (on or after it, the owner's today) or whose mileage has been
+    reached (latest reading): "Brake pipes corroded · watching since March". Actions
     (decided 2026-10-08, #315): *Log the repair*, *Watch again* (a new
     look-again point, or none) and *Reopen* (back to *open*), each `Log`.
     With reminders on, an issue whose look-again reminder is dismissed or
@@ -8283,8 +8286,8 @@ that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
     that fixes issues fires its own `maintenance` event too).
   - **CSV:** `/vehicles/{id}/export/issues.csv` (date noticed, mileage,
     title, description, category, status, affects safety, fixed on, fixed
-    by). Backups and `bin/export-user.php` carry the three tables; a
-    v3.5.0 backup without them restores with no issues.
+    by). Backups and `bin/export-user.php` carry the three tables (built
+    in Phase 40.1, ahead of the rest, so no restore loses issues).
 - **Not in scope:** costing an issue (estimates live in quotes, and once
   paid in the service record); a severity set by Logbook; MOT advisories
   as a source (Phase 41, which writes through this create path); video

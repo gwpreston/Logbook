@@ -290,6 +290,26 @@ final class IssuesTest extends AppTestCase
         self::assertStringNotContainsString('Knock', self::body($browser->get('/issues')), 'archived vehicles raise nothing');
     }
 
+    public function testWorksBehindASubpath(): void
+    {
+        $app = $this->createApp(['APP_BASE_PATH' => '/logbook']);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $created = $browser->post('/logbook/vehicles/' . $golf->id . '/issues/new', self::form());
+        $issue = $this->only($app, $golf);
+        self::assertSame('/logbook/vehicles/' . $golf->id . '/issues/' . $issue->id, $created->getHeaderLine('Location'));
+
+        // Hard refresh with the prefix stripped by the proxy.
+        $page = self::body($browser->get('/vehicles/' . $golf->id . '/issues/' . $issue->id));
+        self::assertStringContainsString('href="/logbook/vehicles/' . $golf->id . '/issues/' . $issue->id . '/fix"', $page);
+        self::assertStringContainsString('href="/logbook/vehicles/' . $golf->id . '/issues"', $page);
+        $fleet = self::body($browser->get('/issues'));
+        self::assertStringContainsString('href="/logbook/vehicles/' . $golf->id . '/issues/' . $issue->id . '"', $fleet);
+        $watched = $browser->post('/logbook/vehicles/' . $golf->id . '/issues/' . $issue->id . '/watch', []);
+        self::assertSame('/logbook/vehicles/' . $golf->id . '/issues/' . $issue->id, $watched->getHeaderLine('Location'));
+    }
+
     public function testTheModuleSwitchedOffIs404Everywhere(): void
     {
         $app = $this->createApp();
