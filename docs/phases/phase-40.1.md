@@ -2,8 +2,8 @@
 
 *The fault you've noticed and haven't fixed yet.*
 
-Status: 🚧 in progress · ships with [Phase 40.2](phase-40.2.md) as
-**v3.6.0** · file lives in `docs/phases/`
+Status: ✅ complete · no release of its own (ships with [Phase 40.2](phase-40.2.md) as
+**v3.6.0**) · file lives in `docs/phases/`
 
 Logbook records what was done to a car (service records), what happened
 to it (incidents) and what is due (schedules, documents, reminders). It
@@ -168,22 +168,22 @@ Issue, IssueFix and IssueUpdate. In short:
 - [x] Translations (every shipped locale).
 
 ### 40.1.4 Tests
-- [ ] Validation (date not after today, title length, look-again only
+- [x] Validation (date not after today, title length, look-again only
       while watching, fixed without a record needs a date).
-- [ ] Fixing from both sides; one record fixing several issues; deleting
+- [x] Fixing from both sides; one record fixing several issues; deleting
       the record reopens to the earlier status; fixed without a record;
       *It's back*.
-- [ ] Odometer readings written, moved and removed with the issue and
+- [x] Odometer readings written, moved and removed with the issue and
       updates; plausibility warnings.
-- [ ] *Needs attention*: open issues listed; watching ones only past the
+- [x] *Needs attention*: open issues listed; watching ones only past the
       look-again date or mileage; safety first; archived vehicles raise
       nothing.
-- [ ] Look-again reminder created, moved and removed with the point;
+- [x] Look-again reminder created, moved and removed with the point;
       *Done* clears the point; module off neither lists nor sends.
-- [ ] Access matrix for every route; module off is 404 everywhere.
-- [ ] Migration up, down, up on SQLite, PostgreSQL, MySQL and MariaDB;
+- [x] Access matrix for every route; module off is 404 everywhere.
+- [x] Migration up, down, up on SQLite, PostgreSQL, MySQL and MariaDB;
       suite green on every engine; coverage at or above the floor.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; subpath).
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; subpath).
 
 ### Design review (2026-10-08)
 
