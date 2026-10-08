@@ -203,20 +203,20 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       are English by design (§7.20).
 
 ### 39.1.5 Tests
-- [ ] **Contract:** every new response validated against the OpenAPI
+- [x] **Contract:** every new response validated against the OpenAPI
       description, success and error.
-- [ ] **Access matrix:** for each new endpoint, owner, `manage`, `log`,
+- [x] **Access matrix:** for each new endpoint, owner, `manage`, `log`,
       `view` share with and without *Can see costs*, and a stranger; a
       `read` key on the reminder actions (403 `insufficient_scope`); a
       trip the key's user may not see read by id (404); an incident read
       by id without `ViewIncidentDetails` (details left out).
-- [ ] **Reports parity:** each report's totals equal the Reports page's
+- [x] **Reports parity:** each report's totals equal the Reports page's
       for every demo vehicle and period.
-- [ ] **Retries:** a repeated reminder action is `unchanged` and writes
+- [x] **Retries:** a repeated reminder action is `unchanged` and writes
       nothing.
-- [ ] **Time zones:** documents `?current=1` and report periods at the
+- [x] **Time zones:** documents `?current=1` and report periods at the
       day boundary in a non-UTC owner zone.
-- [ ] Modules off: every new path of that module 404.
+- [x] Modules off: every new path of that module 404.
 - [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
       or above the floor; smoke test at a subpath.
 
