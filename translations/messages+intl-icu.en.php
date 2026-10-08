@@ -583,6 +583,7 @@ return [
             'expenses' => 'Expenses',
             'mileage' => 'Mileage',
             'incidents' => 'Incidents',
+            'issues' => 'Issues',
             'trips' => 'Trips',
         ],
         'years_label' => 'Other years',
@@ -600,6 +601,8 @@ return [
             'valuation' => 'Valuation',
             'trip_business' => 'Business trip',
             'trip_private' => 'Private trip',
+            'issue_noticed' => 'Issue noticed',
+            'issue_fixed' => 'Issue fixed',
         ],
         'run' => [
             'fill_ups' => '{count, plural, one {# fill-up} other {# fill-ups}}',
@@ -3892,6 +3895,7 @@ return [
         'last' => '{list} and {last}',
     ],
     'sale_pack' => [
+        'issues_notice' => 'Listed because you chose to include them. Logbook never describes a fault beyond your words.',
         'title' => 'Sale pack',
         'title_for' => 'Sale pack · {name}',
         'prepare' => 'Prepare for sale',
@@ -3905,6 +3909,8 @@ return [
         'options' => [
             'incidents' => 'Include incidents',
             'incidents_hint' => 'What was damaged and how it was repaired. Never the fault, the claim, payouts, the driver or the other party.',
+            'issues' => 'Include open issues',
+            'issues_hint' => 'Faults you have noticed and not fixed yet, and those you are watching, in your words. Off unless you tick it.',
             'legend' => 'Include',
             'due' => 'Show what’s due next',
             'due_hint' => 'Buyers ask anyway. Costs are never shown.',
@@ -3977,6 +3983,7 @@ return [
         ],
         'history' => [
             'incidents' => 'Incidents',
+            'issues' => 'Open issues',
             'title' => 'History',
             'services' => 'Service and repairs',
             'documents' => 'Inspections and certificates',

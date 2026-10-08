@@ -6,6 +6,8 @@ namespace Logbook\Service\History;
 
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\Incident;
+use Logbook\Repository\IssueRepository;
+use Logbook\Domain\Issue\Issue;
 use Logbook\Repository\IncidentRepository;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -82,6 +84,7 @@ final readonly class ActivityFeed
         private TripRepository $trips,
         private VehicleAccess $access,
         private IncidentRepository $incidents,
+        private IssueRepository $issues,
     ) {
     }
 
@@ -242,6 +245,22 @@ final readonly class ActivityFeed
         $linkedSummaries = $this->incidents->linkedSummaries(array_map(static fn (Incident $i): int => $i->id, $incidents));
         $partOf = static fn (?int $incidentId): ?Incident => $incidentId === null ? null : ($incidentsOf[$incidentId] ?? null);
 
+        // Issues (Phase 40.1): noticed on their date and, once fixed, fixed on theirs.
+        $noticed = [];
+        $fixedIssues = [];
+        if ($query->includes(ActivityKind::IssueNoticed) || $query->includes(ActivityKind::IssueFixed)) {
+            foreach ($this->issues->listTouching($ids, $query->from, $query->until) as $issue) {
+                if ($query->includes(ActivityKind::IssueNoticed) && $query->covers($issue->data->noticedOn)) {
+                    $noticed[] = $issue;
+                }
+                $fixed = $issue->isFixed() && $issue->fixedOn !== null && $query->covers($issue->fixedOn);
+                if ($query->includes(ActivityKind::IssueFixed) && $fixed) {
+                    $fixedIssues[] = $issue;
+                }
+            }
+        }
+        $fixSummaries = $this->issues->fixSummaries(array_map(static fn (Issue $i): int => $i->id, $fixedIssues));
+
         $milestones = [];
         if ($query->includes(ActivityKind::Milestone)) {
             foreach ($query->vehicles as $vehicle) {
@@ -266,6 +285,7 @@ final readonly class ActivityFeed
             AttachmentOwner::Valuation->value => array_map(static fn ($v): int => $v->id, $valuations),
             AttachmentOwner::Trip->value => array_map(static fn (Trip $t): int => $t->id, $trips),
             AttachmentOwner::Incident->value => array_map(static fn (Incident $i): int => $i->id, $incidents),
+            AttachmentOwner::Issue->value => array_map(static fn (Issue $i): int => $i->id, $noticed),
             AttachmentOwner::Purchase->value => $paperwork(AttachmentOwner::Purchase),
             AttachmentOwner::Sale->value => $paperwork(AttachmentOwner::Sale),
         ]));
@@ -450,6 +470,46 @@ final readonly class ActivityFeed
                     ...($data->severity === null ? [] : [$data->severity->labelKey()]),
                 ],
                 linked: $linkedSummaries[$incident->id] ?? [],
+            );
+        }
+        foreach ($noticed as $issue) {
+            $data = $issue->data;
+            // The owner's words, never a cause (spec.md §7.37).
+            $items[] = new ActivityItem(
+                kind: ActivityKind::IssueNoticed,
+                vehicle: $vehicles[$issue->vehicleId],
+                entryId: $issue->id,
+                date: $data->noticedOn,
+                createdAt: $issue->createdAt,
+                label: $data->title,
+                labelKey: 'history.kind.issue_noticed',
+                icon: 'report',
+                odometerKm: $data->odometerKm,
+                note: $data->affectsSafety ? 'issue.affects_safety' : null,
+                files: $counts->of(AttachmentOwner::Issue, $issue->id),
+                createdBy: $issue->createdBy,
+            );
+        }
+        foreach ($fixedIssues as $issue) {
+            $fixedOn = $issue->fixedOn ?? $issue->data->noticedOn;
+            $linked = array_map(
+                static fn (array $fix): array => ['title' => $fix['title'], 'isKey' => false, 'date' => $fix['date']],
+                $fixSummaries[$issue->id] ?? [],
+            );
+            $items[] = new ActivityItem(
+                kind: ActivityKind::IssueFixed,
+                vehicle: $vehicles[$issue->vehicleId],
+                entryId: $issue->id,
+                date: $fixedOn,
+                // After the record that fixed it on the same day.
+                createdAt: $issue->updatedAt,
+                label: $issue->data->title,
+                labelKey: 'history.kind.issue_fixed',
+                icon: 'check_circle',
+                createdBy: $issue->createdBy,
+                linked: $linked !== []
+                    ? $linked
+                    : [['title' => 'issue.fixes.without_record', 'isKey' => true, 'date' => $fixedOn]],
             );
         }
         foreach ($milestones as [$vehicle, $milestone, $date, $price]) {

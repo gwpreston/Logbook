@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\SalePack;
 
 use Logbook\Domain\Incident\WriteOffCategory;
+use Logbook\Domain\Issue\Issue;
 use DateTimeImmutable;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -71,6 +72,13 @@ final readonly class SalePack
         /** The latest write-off on record (`incidents` on), shown or noticed (spec.md §7.29). */
         public ?WriteOffCategory $writeOff = null,
         public ?DateTimeImmutable $writeOffOn = null,
+        /**
+         * Open and watching issues, safety first, with *Include open issues*
+         * (Phase 40.1, #312); null otherwise. Honest disclosure is the seller's choice.
+         *
+         * @var list<Issue>|null
+         */
+        public ?array $openIssues = null,
     ) {
     }
 

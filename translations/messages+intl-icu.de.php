@@ -582,6 +582,7 @@ return [
             'expenses' => 'Ausgaben',
             'mileage' => 'Kilometerstand',
             'incidents' => 'Schäden',
+            'issues' => 'Mängel',
             'trips' => 'Fahrten',
         ],
         'years_label' => 'Andere Jahre',
@@ -599,6 +600,8 @@ return [
             'valuation' => 'Bewertung',
             'trip_business' => 'Dienstfahrt',
             'trip_private' => 'Privatfahrt',
+            'issue_noticed' => 'Mangel bemerkt',
+            'issue_fixed' => 'Mangel behoben',
         ],
         'run' => [
             'fill_ups' => '{count, plural, one {# Tankvorgang} other {# Tankvorgänge}}',
@@ -3889,6 +3892,7 @@ return [
         'last' => '{list} und {last}',
     ],
     'sale_pack' => [
+        'issues_notice' => 'Aufgeführt, weil du sie aufnehmen wolltest. Logbook beschreibt einen Mangel nie über deine Worte hinaus.',
         'title' => 'Verkaufsmappe',
         'title_for' => 'Verkaufsmappe · {name}',
         'prepare' => 'Verkauf vorbereiten',
@@ -3902,6 +3906,8 @@ return [
         'options' => [
             'incidents' => 'Schäden einbeziehen',
             'incidents_hint' => 'Was beschädigt und wie es repariert wurde. Nie die Schuld, der Versicherungsfall, Zahlungen, der Fahrer oder der Unfallgegner.',
+            'issues' => 'Offene Mängel aufnehmen',
+            'issues_hint' => 'Bemerkte, noch nicht behobene und beobachtete Mängel, in deinen Worten. Aus, bis du es ankreuzt.',
             'legend' => 'Einschließen',
             'due' => 'Anstehendes zeigen',
             'due_hint' => 'Käufer fragen ohnehin danach. Kosten werden nie gezeigt.',
@@ -3974,6 +3980,7 @@ return [
         ],
         'history' => [
             'incidents' => 'Schäden',
+            'issues' => 'Offene Mängel',
             'title' => 'Historie',
             'services' => 'Wartung und Reparaturen',
             'documents' => 'Prüfungen und Bescheinigungen',

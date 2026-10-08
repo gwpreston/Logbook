@@ -7975,7 +7975,9 @@
               "document",
               "tyre",
               "incident",
-              "purchase"
+              "purchase",
+              "issue",
+              "issue_update"
             ]
           },
           "source_id": {
@@ -8851,7 +8853,9 @@
                   "document",
                   "tyre",
                   "incident",
-                  "purchase"
+                  "purchase",
+                  "issue",
+                  "issue_update"
                 ]
               }
             }
@@ -13095,6 +13099,8 @@
               "valuation",
               "trip",
               "incident",
+              "issue_noticed",
+              "issue_fixed",
               "milestone"
             ]
           },

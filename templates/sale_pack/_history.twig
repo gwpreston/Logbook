@@ -75,6 +75,33 @@
             </ol>
         {% endif %}
     {% endif %}
+
+    {# Open issues (Phase 40.1, *Include open issues*): the owner's words, status and safety; no cause. #}
+    {% if pack.openIssues is not null %}
+        <h3 class="sale-pack__group">{{ 'sale_pack.history.issues'|trans }}</h3>
+        <p class="muted no-print" role="note">{{ 'sale_pack.issues_notice'|trans }}</p>
+        {% if pack.openIssues is empty %}
+            <p class="muted">{{ 'sale_pack.history.none'|trans }}</p>
+        {% else %}
+            <ol class="list history-print__list">
+                {% for issue in pack.openIssues %}
+                    <li class="history-print__item">
+                        <div class="list__item">
+                            <span class="list__icon">{{ ui.icon('report') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ issue.data.title }}</span>
+                                <span class="list__meta">
+                                    {{- 'issue.noticed_on'|trans({date: issue.data.noticedOn|local_date}) -}}
+                                    {%- if issue.data.odometerKm is not null %} · {{ issue.data.odometerKm|distance(0) }}{% endif %} · {{ issue.status().labelKey()|trans -}}
+                                    {%- if issue.data.affectsSafety %} · {{ 'issue.affects_safety'|trans }}{% endif -%}
+                                </span>
+                            </span>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+    {% endif %}
 </section>
 
 {% if pack.timeline is not null %}

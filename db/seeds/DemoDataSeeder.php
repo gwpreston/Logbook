@@ -275,6 +275,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedValuations($now);
         $this->seedSalePack($now);
         $this->seedIncidents($now, $userId);
+        $this->seedIssues($now, $userId);
         $this->seedTrips($now, $userId);
         $this->seedPartner($now, $userId);
         $this->seedFinance($now, $userId);
@@ -1778,6 +1779,108 @@ final class DemoDataSeeder extends AbstractSeed
      * makes it *upcoming* for age. The bike's rear is measured at fitting
      * and once since.
      */
+    /**
+     * The Golf's issues (Phase 40.1, spec.md §7.37): a knock noticed three
+     * weeks ago and still open, with a note; an MOT-style advisory being
+     * watched, looked at again in three months; and grinding brakes fixed by
+     * the June brake pads.
+     */
+    private function seedIssues(string $now, int $userId): void
+    {
+        $golf = $this->vehicleIds()['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
+        // Open: a knock, with its reading and a later note.
+        $noticed = self::day('2026-09-15');
+        $km = $this->odometerOn($golf, $noticed);
+        $knock = $this->issueRow($golf, $now, $userId, [
+            'noticed_on' => $noticed,
+            'odometer_km' => $km,
+            'title' => 'Knock from front left over bumps',
+            'description' => 'A dull knock from the front left wheel over speed bumps, worse when cold. Not under braking.',
+            'category' => 'repair',
+        ]);
+        $this->table('odometer_readings')->insert([
+            'vehicle_id' => $golf, 'reading_km' => $km, 'recorded_at' => self::localNoon($noticed),
+            'source' => 'issue', 'issue_id' => $knock, 'created_at' => $now, 'updated_at' => $now,
+        ])->saveData();
+        $this->issueLine($now, $userId, $knock, self::day('2026-09-29'), ['note' => 'Still there, and now on the drive too.']);
+
+        // Watching: an advisory, looked at again in three months.
+        $advised = self::day('2026-08-05');
+        $pipes = $this->issueRow($golf, $now, $userId, [
+            'noticed_on' => $advised,
+            'title' => 'Advisory: brake pipes corroded',
+            'description' => 'Rear brake pipes slightly corroded (advisory at the garage).',
+            'category' => 'brakes',
+            'status' => 'watching',
+            'look_again_on' => self::day('2027-01-04'),
+        ]);
+        $watch = ['status_from' => 'open', 'status_to' => 'watching', 'reason' => 'watch'];
+        $this->issueLine($now, $userId, $pipes, $advised, $watch);
+
+        // Fixed: grinding brakes, fixed by the June brake pads.
+        $row = $this->fetchRow(sprintf(
+            "SELECT id, performed_on FROM maintenance_entries WHERE vehicle_id = %d AND title = 'Front brake pads'",
+            $golf,
+        ));
+        $pads = is_array($row) ? self::intValue($row['id'] ?? $row[0] ?? 0) : 0;
+        $fixedOn = self::day('2026-06-18');
+        $grinding = $this->issueRow($golf, $now, $userId, [
+            'noticed_on' => self::day('2026-06-02'),
+            'title' => 'Grinding from the front brakes',
+            'category' => 'brakes',
+            'status' => 'fixed',
+            'fixed_on' => $fixedOn,
+            'status_before_fix' => 'open',
+        ]);
+        if ($pads > 0) {
+            $this->insertRow('issue_fixes', ['issue_id' => $grinding, 'maintenance_entry_id' => $pads, 'created_at' => $now]);
+        }
+        $fixed = ['status_from' => 'open', 'status_to' => 'fixed', 'reason' => 'fixed'];
+        $this->issueLine($now, $userId, $grinding, $fixedOn, $fixed);
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     */
+    private function issueRow(int $vehicle, string $now, int $userId, array $values): int
+    {
+        return $this->insertRow('issues', $values + [
+            'vehicle_id' => $vehicle,
+            'created_by' => $userId,
+            'description' => null,
+            'category' => null,
+            'status' => 'open',
+            'affects_safety' => false,
+            'look_again_on' => null,
+            'look_again_km' => null,
+            'fixed_on' => null,
+            'status_before_fix' => null,
+            'source' => 'manual',
+            'source_ref' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     */
+    private function issueLine(string $now, int $userId, int $issueId, string $on, array $values): int
+    {
+        return $this->insertRow('issue_updates', $values + [
+            'issue_id' => $issueId,
+            'noted_on' => $on,
+            'odometer_km' => null,
+            'note' => null,
+            'status_from' => null,
+            'status_to' => null,
+            'reason' => null,
+            'created_by' => $userId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
     private function seedTyres(string $now): void
     {
         $ids = $this->vehicleIds();

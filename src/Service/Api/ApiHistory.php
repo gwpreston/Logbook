@@ -124,7 +124,8 @@ final readonly class ApiHistory
             ActivityKind::Trip => 'trips',
             ActivityKind::Incident => 'incidents',
             ActivityKind::Milestone => '',
-            ActivityKind::Tyre => null,
+            // Phase 40.2 gives issues their API.
+            ActivityKind::Tyre, ActivityKind::IssueNoticed, ActivityKind::IssueFixed => null,
         };
 
         return match ($list) {

@@ -6,6 +6,8 @@ namespace Logbook\Service\SalePack;
 
 use Logbook\Domain\Incident\Incident;
 use Logbook\Repository\IncidentRepository;
+use Logbook\Repository\IssueRepository;
+use Logbook\Domain\Issue\IssueStatus;
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
@@ -69,6 +71,7 @@ final readonly class SalePackBuilder
         private FeatureToggles $features,
         private ClockInterface $clock,
         private IncidentRepository $incidents,
+        private IssueRepository $issues,
     ) {
     }
 
@@ -161,6 +164,9 @@ final readonly class SalePackBuilder
             incidents: $incidents,
             writeOff: $writeOff?->data->writeOff,
             writeOffOn: $writeOff?->data->occurredOn,
+            openIssues: $enabled[Feature::Issues->value] && $options->openIssues
+                ? $this->issues->listForVehicle($vehicle->id, [IssueStatus::Open, IssueStatus::Watching])
+                : null,
         );
     }
 

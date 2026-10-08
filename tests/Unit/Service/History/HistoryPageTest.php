@@ -169,6 +169,7 @@ final class HistoryPageTest extends TestCase
             'tyres' => true,
             'trips' => true,
             'incidents' => true,
+            'issues' => true,
         ];
         $off = [
             'fuel' => false,
@@ -177,11 +178,13 @@ final class HistoryPageTest extends TestCase
             'tyres' => false,
             'trips' => false,
             'incidents' => false,
+            'issues' => false,
         ] + $on;
 
-        self::assertCount(9, HistoryChip::available($on));
+        self::assertCount(10, HistoryChip::available($on));
         self::assertSame(HistoryChip::Incidents, HistoryChip::available($on)[7], 'Incidents before Trips (Phase 27.1)');
-        self::assertSame(HistoryChip::Trips, HistoryChip::available($on)[8], 'Trips last (Phase 22)');
+        self::assertSame(HistoryChip::Issues, HistoryChip::available($on)[8], 'Issues after Incidents (Phase 40.1)');
+        self::assertSame(HistoryChip::Trips, HistoryChip::available($on)[9], 'Trips last (Phase 22)');
         self::assertNotContains(ActivityKind::Trip, HistoryChip::Everything->kinds(), 'trips never under Everything');
         self::assertSame([ActivityKind::Trip], HistoryChip::Trips->kinds());
         self::assertSame(HistoryChip::Tyres, HistoryChip::available($on)[3], 'Tyres after Fuel');

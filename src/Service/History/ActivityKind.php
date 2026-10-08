@@ -31,6 +31,13 @@ enum ActivityKind: string
     case Trip = 'trip';
     /** Incidents (Phase 27.1): under *Everything*, their chip and *Recent activity*; in print only when ticked. */
     case Incident = 'incident';
+    /**
+     * Issues (Phase 40.1, spec.md §7.37): noticed on its date and, once
+     * fixed, fixed on its date with what fixed it. Updates are not listed;
+     * print shows fixed ones only.
+     */
+    case IssueNoticed = 'issue_noticed';
+    case IssueFixed = 'issue_fixed';
     case Milestone = 'milestone';
 
     /**
@@ -49,6 +56,8 @@ enum ActivityKind: string
             self::Tyre,
             self::Valuation,
             self::Incident,
+            self::IssueNoticed,
+            self::IssueFixed,
         ];
     }
 
@@ -71,6 +80,7 @@ enum ActivityKind: string
             self::Trip => ['trips.edit', 'entry'],
             // The incident page, where its photos and linked records are.
             self::Incident => ['incidents.show', 'incident'],
+            self::IssueNoticed, self::IssueFixed => ['issues.show', 'issue'],
             self::Milestone => ['vehicles.edit', null],
         };
     }
@@ -87,6 +97,7 @@ enum ActivityKind: string
             self::Tyre => Feature::Tyres,
             self::Trip => Feature::Trips,
             self::Incident => Feature::Incidents,
+            self::IssueNoticed, self::IssueFixed => Feature::Issues,
             self::Odometer, self::Expense, self::Valuation, self::Milestone => null,
         };
     }
@@ -106,7 +117,9 @@ enum ActivityKind: string
             self::Valuation => AttachmentOwner::Valuation,
             self::Trip => AttachmentOwner::Trip,
             self::Incident => AttachmentOwner::Incident,
-            self::Tyre, self::Milestone => null,
+            self::IssueNoticed => AttachmentOwner::Issue,
+            // Its files are counted once, on the noticed line.
+            self::Tyre, self::Milestone, self::IssueFixed => null,
         };
     }
 
@@ -125,6 +138,8 @@ enum ActivityKind: string
             self::Valuation => DatedSource::Valuation,
             self::Trip => DatedSource::Trip,
             self::Incident => DatedSource::Incident,
+            self::IssueNoticed => DatedSource::IssueNoticed,
+            self::IssueFixed => DatedSource::IssueFixed,
             self::Document, self::Milestone => null,
         };
     }
@@ -139,7 +154,7 @@ enum ActivityKind: string
             self::Odometer, self::Valuation, self::Milestone, self::Trip => 'muted',
             self::Maintenance, self::Tyre => 'c-maint',
             self::Document => 'c-ins',
-            self::Expense, self::Incident => 'c-other',
+            self::Expense, self::Incident, self::IssueNoticed, self::IssueFixed => 'c-other',
         };
     }
 }

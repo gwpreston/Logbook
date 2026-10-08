@@ -143,7 +143,7 @@ Issue, IssueFix and IssueUpdate. In short:
       `.env.example` and the configuration docs).
 
 ### 40.1.2 Pages
-- [ ] Issues tab (filters, safety first), overview card, issue page with
+- [x] Issues tab (filters, safety first), overview card, issue page with
       timeline and fixes, fleet `/issues`, add/edit modal and page,
       delete confirmation, *Add update* (and edit/delete of a note),
       *Watch* / *Stop watching*, *Mark fixed* (three routes), *It's back*.
@@ -156,16 +156,16 @@ Issue, IssueFix and IssueUpdate. In short:
       and a release-less master should not lose issues on restore).
 
 ### 40.1.3 Integrations
-- [ ] *Needs attention*: *Open issue* and *Look again* items, safety
+- [x] *Needs attention*: *Open issue* and *Look again* items, safety
       first, widget and garage marker counts.
-- [ ] Look-again reminders: source `issue` in *Sync*, *Done* as *Looked
+- [x] Look-again reminders: source `issue` in *Sync*, *Done* as *Looked
       at it*, listed on Reminders and the calendar, sent as any reminder.
-- [ ] History kinds and *Issues* chip; printable service history option;
+- [x] History kinds and *Issues* chip; printable service history option;
       sale pack *Include open issues*.
-- [ ] Demo seed: the Golf with one open issue (noticed knock), one
+- [x] Demo seed: the Golf with one open issue (noticed knock), one
       watching (advisory, look again in 3 months), one fixed by a brake
       service record.
-- [ ] Translations (every shipped locale).
+- [x] Translations (every shipped locale).
 
 ### 40.1.4 Tests
 - [ ] Validation (date not after today, title length, look-again only

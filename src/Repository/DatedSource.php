@@ -19,6 +19,9 @@ enum DatedSource
     case Valuation;
     case Trip;
     case Incident;
+    /** Phase 40.1: an issue's noticed date, and its fixed date. */
+    case IssueNoticed;
+    case IssueFixed;
 
     public function isInstant(): bool
     {

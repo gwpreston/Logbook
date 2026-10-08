@@ -302,6 +302,38 @@ final readonly class IssueRepository
         return $since;
     }
 
+    /**
+     * What fixed each issue, for History's second line: the records' titles
+     * and dates, oldest link first, in one query.
+     *
+     * @param list<int> $issueIds
+     * @return array<int, list<array{title: string, date: DateTimeImmutable}>> by issue id
+     */
+    public function fixSummaries(array $issueIds): array
+    {
+        if ($issueIds === []) {
+            return [];
+        }
+        $rows = $this->connection->createQueryBuilder()
+            ->select('f.issue_id', 'm.title', 'm.performed_on')
+            ->from(self::FIXES, 'f')
+            ->innerJoin('f', 'maintenance_entries', 'm', 'm.id = f.maintenance_entry_id')
+            ->where('f.issue_id IN (:issues)')
+            ->orderBy('f.created_at')
+            ->addOrderBy('f.id')
+            ->setParameter('issues', $issueIds, ArrayParameterType::INTEGER)
+            ->fetchAllAssociative();
+        $fixes = [];
+        foreach ($rows as $row) {
+            $date = Row::nullableDate($row, 'performed_on');
+            if ($date !== null) {
+                $fixes[Row::int($row, 'issue_id')][] = ['title' => Row::string($row, 'title'), 'date' => $date];
+            }
+        }
+
+        return $fixes;
+    }
+
     // Updates
 
     public function insertUpdate(
